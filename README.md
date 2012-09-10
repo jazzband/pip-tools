@@ -2,7 +2,7 @@ pip-refresh
 ===========
 
 This command line tool helps to keep your `pip`-based packages fresh, even when
-you've pinned them.  You _do_ pin them, right?
+you've pinned them.  You _do_ pin them, right?  {TODO: Link to blog post}
 
 It's useful to run this on a regular basis, to keep your dependencies fresh,
 but explicitly pinned, too.
@@ -25,3 +25,5 @@ Or, specify any packages explicitly:
     $ pip-refresh foo bar qux
     All packages are up-to-date.
 
+
+{TODO: Support interactive invocations}
