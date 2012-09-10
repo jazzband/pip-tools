@@ -1,5 +1,6 @@
 from functools import partial
 import subprocess
+import multiprocessing
 import requests
 
 
@@ -24,8 +25,9 @@ def latest_version(pkg_name, session, silent=False):
 
 def get_latest_versions(pkg_names):
     with requests.session() as session:
+        pool = multiprocessing.Pool(min(12, len(pkg_names)))
         get_latest = partial(latest_version, session=session, silent=True)
-        versions = map(get_latest, pkg_names)
+        versions = pool.map(get_latest, pkg_names)
     return zip(pkg_names, versions)
 
 
