@@ -12,7 +12,7 @@ def setup_logging(verbose):
     else:
         level = logging.INFO
 
-    logging.basicConfig(level=level, format='%(name)s %(message)s')
+    logging.basicConfig(level=level, format='%(message)s')
     logging.getLogger('requests').setLevel(logging.WARNING)
 
 
