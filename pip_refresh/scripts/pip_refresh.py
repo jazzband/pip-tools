@@ -2,7 +2,6 @@
 from __future__ import absolute_import
 import argparse
 import logging
-#from pip_refresh import check_for_updates
 from pip_refresh import get_latest_versions, get_installed_pkgs
 
 
