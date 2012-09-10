@@ -37,17 +37,23 @@ def main():
     non_editables = [name for name, _, editable in installed if not editable]
     latest_versions = dict(get_latest_versions(non_editables))
 
+    all_ok = True
     for pkg, installed_version, editable in installed:
         if editable:
             logging.debug('Skipping -e %s' % (pkg,))
+            all_ok = False
             continue
 
         latest_version = latest_versions[pkg]
         if latest_version != installed_version:
             logging.info('%s==%s is available (you have %s)' % (pkg,
                 latest_version, installed_version))
+            all_ok = False
         else:
             logging.debug('%s==%s is up-to-date' % (pkg, installed_version))
+
+    if all_ok:
+        logging.info('Everything up-to-date')
 
 
 if __name__ == '__main__':
