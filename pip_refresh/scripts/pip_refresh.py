@@ -33,17 +33,21 @@ def main():
     args = parse_args()
     setup_logging(args.verbose)
 
-    installed_pkgs = get_installed_pkgs()
-    logging.info('Installed packages:')
-    for pkg, version in installed_pkgs:
-        logging.info('- %s %s' % (pkg, version))
+    installed = list(get_installed_pkgs(editables=False))
+    non_editables = [name for name, _, editable in installed if not editable]
+    latest_versions = dict(get_latest_versions(non_editables))
 
-    pkgs = get_latest_versions(args.pkgname)
-    for pkg, version in pkgs:
-        if version is None:
-            logging.warning('%s not found on PyPI' % (pkg,))
+    for pkg, installed_version, editable in installed:
+        if editable:
+            logging.debug('Skipping -e %s' % (pkg,))
+            continue
+
+        latest_version = latest_versions[pkg]
+        if latest_version != installed_version:
+            logging.info('%s==%s is available (you have %s)' % (pkg,
+                latest_version, installed_version))
         else:
-            logging.info('%s==%s is available' % (pkg, version,))
+            logging.debug('%s==%s is up-to-date' % (pkg, installed_version))
 
 
 if __name__ == '__main__':
