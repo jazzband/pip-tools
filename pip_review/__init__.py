@@ -3,9 +3,11 @@ import subprocess
 import urllib2
 import multiprocessing
 import json
+import logging
 
 
 def get_pkg_info(pkg_name):
+    logging.debug('Checking for updates of %r' % (pkg_name,))
     req = urllib2.Request('http://pypi.python.org/pypi/%s/json' % (pkg_name,))
     handler = urllib2.urlopen(req)
     status = handler.getcode()
