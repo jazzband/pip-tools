@@ -14,16 +14,18 @@ Show a list of packages that could be updated:
     redis==2.4.13 available (you have 2.4.9)
     rq==0.3.2 available (you have 0.3.0)
 
-This invocation checks your default (virtual) Python environment.
+Or, when all is fine:
 
-    $ pip-review -r requirements.txt
-    requests==0.13.9 available (you have 0.13.4, you require >=0.13,<0.14)
-    Flask==0.9 available (you have 0.8, you require any version)
-
-Or, specify any packages explicitly:
-
-    $ pip-review foo bar qux
-    All packages are up-to-date.
+    $ pip-review
+    Everything up-to-date
 
 
-{TODO: Support interactive invocations}
+TODO
+====
+* Nag about version mismatches between what's installed and what's in
+  `requirements.txt` (keeps `requirements.txt` up-to-date)
+* Automatically have it update your `requirements.txt` with all the new
+  versions
+* Respect bounds that are stated in `requirements.txt` (for example, when
+  your project requires `lxml>=2.3,<2.4`, don't nag about 2.4.5 being
+  available).
