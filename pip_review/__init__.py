@@ -1,13 +1,14 @@
 from functools import partial
 import subprocess
-import multiprocessing
 import requests
+import multiprocessing
+import json
 
 
 def get_pkg_info(pkg_name, session):
     r = session.get('http://pypi.python.org/pypi/%s/json' % (pkg_name,))
     if r.status_code == requests.codes.ok:
-        return r.json
+        return json.loads(r.text)
     else:
         raise ValueError('Package %r not found on PyPI.' % (pkg_name,))
 
