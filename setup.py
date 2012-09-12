@@ -1,5 +1,5 @@
 """
-pip-refresh keeps your Python package dependencies fresh, yet pinned down.
+pip-review keeps your Python package dependencies fresh, yet pinned down.
 """
 import sys
 import os
@@ -8,7 +8,7 @@ from setuptools import setup, find_packages
 
 def get_version():
     basedir = os.path.dirname(__file__)
-    with open(os.path.join(basedir, 'pip_refresh/version.py')) as f:
+    with open(os.path.join(basedir, 'pip_review/version.py')) as f:
         VERSION = None
         exec(f.read())
         return VERSION
@@ -16,13 +16,13 @@ def get_version():
 
 
 setup(
-    name='pip-refresh',
+    name='pip-review',
     version=get_version(),
-    url='https://github.com/nvie/pip-refresh/',
+    url='https://github.com/nvie/pip-review/',
     license='BSD',
     author='Vincent Driessen',
     author_email='vincent@3rdcloud.com',
-    description='pip-refresh keeps your Python package dependencies fresh, yet '
+    description='pip-review keeps your Python package dependencies fresh, yet '
             'pinned down.',
     #long_description='',
     packages=find_packages(),
@@ -32,7 +32,7 @@ setup(
     install_requires=['pip'],
     entry_points='''\
     [console_scripts]
-    pip-refresh = pip_refresh.scripts.pip_refresh:main
+    pip-review = pip_review.scripts.pip_review:main
     ''',
     classifiers=[
         # As from http://pypi.python.org/pypi?%3Aaction=list_classifiers
