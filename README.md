@@ -2,7 +2,7 @@ pip-review
 ==========
 
 This command line tool helps to keep your `pip`-based packages fresh, even when
-you've pinned them.  [You _do_ pin them, right?][blog]
+you've pinned them.  [You _do_ pin them, right?][0]
 
 It's useful to run this on a regular basis, to keep your dependencies fresh,
 but explicitly pinned, too.
@@ -30,4 +30,8 @@ TODO
   your project requires `lxml>=2.3,<2.4`, don't nag about 2.4.5 being
   available).
 
-[blog]: http://nvie.com/posts/pin-your-packages/
+[![Flattr this][2]][1]
+
+[0]: http://nvie.com/posts/pin-your-packages/
+[1]: https://flattr.com/thing/882478/Pin-Your-Packages
+[2]: http://api.flattr.com/button/button-static-50x60.png
