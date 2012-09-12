@@ -1,21 +1,24 @@
 from functools import partial
 import subprocess
-import requests
+import urllib2
 import multiprocessing
 import json
 
 
-def get_pkg_info(pkg_name, session):
-    r = session.get('http://pypi.python.org/pypi/%s/json' % (pkg_name,))
-    if r.status_code == requests.codes.ok:
-        return json.loads(r.text)
+def get_pkg_info(pkg_name):
+    req = urllib2.Request('http://pypi.python.org/pypi/%s/json' % (pkg_name,))
+    handler = urllib2.urlopen(req)
+    status = handler.getcode()
+    if status == 200:
+        content = handler.read()
+        return json.loads(content)
     else:
         raise ValueError('Package %r not found on PyPI.' % (pkg_name,))
 
 
-def latest_version(pkg_name, session, silent=False):
+def latest_version(pkg_name, silent=False):
     try:
-        info = get_pkg_info(pkg_name, session)
+        info = get_pkg_info(pkg_name)
     except ValueError:
         if silent:
             return None
@@ -25,10 +28,9 @@ def latest_version(pkg_name, session, silent=False):
 
 
 def get_latest_versions(pkg_names):
-    with requests.session() as session:
-        pool = multiprocessing.Pool(min(12, len(pkg_names)))
-        get_latest = partial(latest_version, session=session, silent=True)
-        versions = pool.map(get_latest, pkg_names)
+    pool = multiprocessing.Pool(min(12, len(pkg_names)))
+    get_latest = partial(latest_version, silent=True)
+    versions = pool.map(get_latest, pkg_names)
     return zip(pkg_names, versions)
 
 
