@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import absolute_import
 import os.path
+import glob
 import argparse
 import logging
 from itertools import dropwhile, takewhile
@@ -11,6 +12,8 @@ check_call = partial(_check_call, shell=True)
 check_output = partial(_check_output, shell=True)
 
 # Constants
+DEFAULT_REQUIREMENTS_FILE = 'requirements.txt'
+GLOB_PATTERN = '*requirements.txt'
 PIP_IGNORE_FILE = '.pipignore'
 SPLIT_PATTERN = '## The following requirements were added by pip --freeze:'
 
@@ -73,12 +76,23 @@ def dump_requirements(files):
         rewrite(filename, pkgs)
 
 
+def find_default_files():
+    req_files = glob.glob(GLOB_PATTERN)
+    req_files.remove(DEFAULT_REQUIREMENTS_FILE)
+
+    files = [DEFAULT_REQUIREMENTS_FILE]
+    files += req_files
+    if os.path.exists(PIP_IGNORE_FILE):
+        files.append(PIP_IGNORE_FILE)
+    return files
+
+
 def main():
     args = parse_args()
     setup_logging(args.verbose)
 
     if not args.files:
-        args.files = ['requirements.txt', PIP_IGNORE_FILE]
+        args.files = find_default_files()
     dump_requirements(args.files)
 
 
