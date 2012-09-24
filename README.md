@@ -47,16 +47,6 @@ Example:
     Werkzeug==0.8.3
 
 
-TODO
-====
-* Nag about version mismatches between what's installed and what's in
-  `requirements.txt` (keeps `requirements.txt` up-to-date)
-* Automatically have it update your `requirements.txt` with all the new
-  versions
-* Respect bounds that are stated in `requirements.txt` (for example, when
-  your project requires `lxml>=2.3,<2.4`, don't nag about 2.4.5 being
-  available).
-
 [![Flattr this][2]][1]
 
 [0]: http://nvie.com/posts/pin-your-packages/
