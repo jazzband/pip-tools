@@ -47,7 +47,8 @@ def pip_partition(lines):
 
 
 def pip_info(filename):
-    raw = check_output('pip freeze -r {}'.format(filename))
+    cmd = 'pip freeze -r {}'.format(filename)
+    raw = check_output(cmd)
     lines = raw.split('\n')
     p = pip_partition(lines)
     return p
