@@ -7,7 +7,14 @@ fresh, even when you've pinned them.  [You _do_ pin them, right?][0]
 It's useful to run this on a regular basis, to keep your dependencies fresh,
 but explicitly pinned, too.
 
-Show a list of packages that could be updated:
+pip-review
+==========
+
+`pip-review` checks PyPI to see if there are updates available for packages
+that are currently installed.  It only works on your **active environment**, it
+does not check or touch `requirements.txt`.
+
+Example:
 
     $ pip-review
     requests==0.13.4 available (you have 0.13.2)
@@ -18,6 +25,26 @@ Or, when all is fine:
 
     $ pip-review
     Everything up-to-date
+
+
+pip-dump
+========
+
+`pip-dump` dumps the exact versions of installed packages in your **active
+environment** to your `requirements.txt` file.  If you have more than one file
+matching the `*requirements.txt` pattern (for example `dev-requirements.txt`),
+it will update each of them smartly.  You can also put package names you don't
+want to dump in requirement files in a file named `.pipignore`.
+
+Example:
+
+    $ cat requirements.txt
+    Flask
+    $ pip-dump
+    $ cat requirements.txt
+    Flask==0.9
+    Jinja2==2.6
+    Werkzeug==0.8.3
 
 
 TODO
