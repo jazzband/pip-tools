@@ -10,9 +10,9 @@ but explicitly pinned, too.
 pip-review
 ==========
 
-`pip-review` checks PyPI to see if there are updates available for packages
-that are currently installed.  It only works on your **active environment**, it
-does not check or touch `requirements.txt`.
+`pip-review` checks PyPI and reports available updates.  It uses the list of
+currently installed packages to check for updates, it does not use any
+requirements.txt
 
 Example:
 
@@ -30,11 +30,10 @@ Or, when all is fine:
 pip-dump
 ========
 
-`pip-dump` dumps the exact versions of installed packages in your **active
-environment** to your `requirements.txt` file.  If you have more than one file
+`pip-dump` dumps the exact versions of installed packages in your active
+environment to your `requirements.txt` file.  If you have more than one file
 matching the `*requirements.txt` pattern (for example `dev-requirements.txt`),
-it will update each of them smartly.  You can also put package names you don't
-want to dump in requirement files in a file named `.pipignore`.
+it will update each of them smartly.
 
 Example:
 
@@ -45,6 +44,9 @@ Example:
     Flask==0.9
     Jinja2==2.6
     Werkzeug==0.8.3
+
+Packages that you don't want to dump but want to have installed
+locally nonetheless can be put in an optional file called `.pipignore`.
 
 
 [![Flattr this][2]][1]
