@@ -2,7 +2,7 @@
 from __future__ import absolute_import
 import argparse
 import logging
-from pip_tools import get_latest_versions, get_installed_pkgs
+from pip_tools.review import get_latest_versions, get_installed_pkgs
 
 
 def setup_logging(verbose):
