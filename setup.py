@@ -33,6 +33,7 @@ setup(
     entry_points='''\
     [console_scripts]
     pip-review = pip_tools.scripts.pip_review:main
+    pip-dump = pip_tools.scripts.pip_dump:main
     ''',
     classifiers=[
         # As from http://pypi.python.org/pypi?%3Aaction=list_classifiers
