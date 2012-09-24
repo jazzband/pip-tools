@@ -1,7 +1,6 @@
 from functools import partial
 import subprocess
 import urllib2
-import multiprocessing
 import json
 import logging
 
@@ -30,9 +29,8 @@ def latest_version(pkg_name, silent=False):
 
 
 def get_latest_versions(pkg_names):
-    pool = multiprocessing.Pool(min(12, len(pkg_names)))
     get_latest = partial(latest_version, silent=True)
-    versions = pool.map(get_latest, pkg_names)
+    versions = map(get_latest, pkg_names)
     return zip(pkg_names, versions)
 
 

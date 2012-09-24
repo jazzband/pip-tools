@@ -21,10 +21,6 @@ def parse_args():
             'fresh.')
     parser.add_argument('--verbose', '-v', action='store_true', default=False,
             help='Show more output')
-    #parser.add_argument('--requirement', '-r', metavar='FILENAME',
-    #        help='Specify requirements file to check.')
-    #parser.add_argument('pkgname', nargs='*',
-    #        help='Specify package names to update.')
     return parser.parse_args()
 
 
