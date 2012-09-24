@@ -37,34 +37,38 @@ def parse_args():
     return parser.parse_args()
 
 
-def dump_requirements(files):
-    def pip_partition(lines):
-        no_split_match = lambda line: line != SPLIT_PATTERN
-        split_match = lambda line: line == SPLIT_PATTERN
-        first = takewhile(no_split_match, lines)
-        second = dropwhile(split_match, dropwhile(no_split_match, lines))
-        return (list(first), list(second))
+def pip_partition(lines):
+    no_split_match = lambda line: line != SPLIT_PATTERN
+    split_match = lambda line: line == SPLIT_PATTERN
+    first = takewhile(no_split_match, lines)
+    second = dropwhile(split_match, dropwhile(no_split_match, lines))
+    return (list(first), list(second))
 
-    def pip_info(filename):
-        raw = check_output('pip freeze -r {}'.format(filename))
-        lines = raw.split('\n')
-        p = pip_partition(lines)
-        return p
 
-    def append_lines(lines, filename):
-        with open(filename, 'a') as f:
-            for line in lines:
+def pip_info(filename):
+    raw = check_output('pip freeze -r {}'.format(filename))
+    lines = raw.split('\n')
+    p = pip_partition(lines)
+    return p
+
+
+def append_lines(lines, filename):
+    with open(filename, 'a') as f:
+        for line in lines:
+            f.write('%s\n' % line)
+
+
+def rewrite(filename, lines):
+    with open(filename, 'w') as f:
+        for line in sorted(lines, key=str.lower):
+            line = line.strip()
+            if line:
                 f.write('%s\n' % line)
 
-    def rewrite(filename, lines):
-        with open(filename, 'w') as f:
-            for line in sorted(lines, key=str.lower):
-                line = line.strip()
-                if line:
-                    f.write('%s\n' % line)
 
+def dump_requirements(files):
     TMP_FILE = '/tmp/.foo.txt'
-    check_call('cat {} | sort -u > {}'.format(' '.join(files), TMP_FILE))
+    check_call('cat {} | sort -fu > {}'.format(' '.join(files), TMP_FILE))
     _, new = pip_info(TMP_FILE)
     check_call('rm {}'.format(TMP_FILE))
     append_lines(new, files[0])
