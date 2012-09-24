@@ -3,6 +3,7 @@ import subprocess
 import urllib2
 import json
 import logging
+from urllib2 import HTTPError
 
 
 def get_pkg_info(pkg_name):
@@ -20,7 +21,7 @@ def get_pkg_info(pkg_name):
 def latest_version(pkg_name, silent=False):
     try:
         info = get_pkg_info(pkg_name)
-    except ValueError:
+    except (ValueError, HTTPError):
         if silent:
             return None
         else:

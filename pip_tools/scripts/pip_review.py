@@ -40,7 +40,10 @@ def main():
             continue
 
         latest_version = latest_versions[pkg]
-        if latest_version != installed_version:
+        if latest_version is None:
+            logging.warning('No update information found for %s' % (pkg,))
+            all_ok = False
+        elif latest_version != installed_version:
             logging.info('%s==%s is available (you have %s)' % (pkg,
                 latest_version, installed_version))
             all_ok = False
