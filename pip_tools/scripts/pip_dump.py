@@ -4,6 +4,7 @@ import os.path
 import glob
 import argparse
 import logging
+import tempfile
 from itertools import dropwhile, takewhile
 from functools import partial
 from subprocess import check_call as _check_call, check_output as _check_output
@@ -67,10 +68,10 @@ def rewrite(filename, lines):
 
 
 def dump_requirements(files):
-    TMP_FILE = '/tmp/.foo.txt'
-    check_call('cat {} | sort -fu > {}'.format(' '.join(files), TMP_FILE))
-    _, new = pip_info(TMP_FILE)
-    check_call('rm {}'.format(TMP_FILE))
+    _, tmpfile = tempfile.mkstemp()
+    check_call('cat {} | sort -fu > {}'.format(' '.join(files), tmpfile))
+    _, new = pip_info(tmpfile)
+    check_call('rm {}'.format(tmpfile))
     append_lines(new, files[0])
 
     for filename in files:
