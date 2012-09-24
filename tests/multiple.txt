@@ -2,6 +2,7 @@ Create a new playground first:
 
   $ virtualenv FOO >/dev/null
   $ PATH=FOO/bin:$PATH
+  $ alias pip-dump="$TESTDIR/../pip-dump"
 
 Setup:
 

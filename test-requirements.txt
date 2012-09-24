@@ -1,1 +1,0 @@
--e hg+http://bitbucket.org/sjl/cram@8fc2f25d0cce69c630f165e3bbf6d7fc93ba667f#egg=cram-dev
