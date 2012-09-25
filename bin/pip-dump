@@ -26,7 +26,6 @@ def setup_logging(verbose):
         level = logging.INFO
 
     logging.basicConfig(level=level, format='%(message)s')
-    logging.getLogger('requests').setLevel(logging.WARNING)
 
 
 def parse_args():

@@ -18,7 +18,7 @@ setup(
     #include_package_data=True,
     zip_safe=False,
     platforms='any',
-    install_requires=['requests'],  # ugh
+    #install_requires=[],
     classifiers=[
         # As from http://pypi.python.org/pypi?%3Aaction=list_classifiers
         #'Development Status :: 1 - Planning',
