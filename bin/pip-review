@@ -74,6 +74,28 @@ def setup_logging(verbose):
     logging.basicConfig(level=level, format='%(message)s')
 
 
+
+class InteractiveAsker(object):
+    def __init__(self):
+        self.cached_answer = None
+
+    def ask(self, prompt):
+        if self.cached_answer is not None:
+            return self.cached_answer
+
+        answer = ''
+        while answer not in ['y', 'n', 'a', 'q']:
+            answer = raw_input('{} [Y]es, [N]o, [A]ll, [Q]uit '.format(prompt))
+            answer = answer.strip().lower()
+
+        if answer in ['q', 'a']:
+            self.cached_answer = answer
+
+        return answer
+
+ask_to_install = partial(InteractiveAsker().ask, prompt='Upgrade now?')
+
+
 def main():
     args = parse_args()
     setup_logging(args.verbose)
@@ -97,17 +119,15 @@ def main():
             logging.warning('No update information found for %s' % (pkg,))
             all_ok = False
         elif latest_version != installed_version:
-            if args.interactive:
-                answer = ''
-                while answer not in ['y', 'n', 'a']:
-                    answer = raw_input('%s==%s is available (you have %s)\nUpgrade now? [Y]es, [N]o, [A]ll ' % (pkg, latest_version, installed_version))
-                if answer in ['y', 'a']:
-                    os.system('pip install {}=={}'.format(pkg, latest_version))
-            elif args.raw:
+            if args.raw:
                 logging.info('%s==%s' % (pkg, latest_version))
             else:
                 logging.info('%s==%s is available (you have %s)' % (pkg,
                     latest_version, installed_version))
+                if args.interactive:
+                    answer = ask_to_install()
+                    if answer in ['y', 'a']:
+                        os.system('pip install {}=={}'.format(pkg, latest_version))
             all_ok = False
         elif not args.raw:
             logging.debug('%s==%s is up-to-date' % (pkg, installed_version))
