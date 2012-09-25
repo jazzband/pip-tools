@@ -15,6 +15,8 @@ def parse_args():
             'fresh.')
     parser.add_argument('--verbose', '-v', action='store_true', default=False,
             help='Show more output')
+    parser.add_argument('--raw', '-r', action='store_true', default=False,
+            help='Print raw lines (suitable for passing to pip install)')
     return parser.parse_args()
 
 
@@ -90,13 +92,16 @@ def main():
             logging.warning('No update information found for %s' % (pkg,))
             all_ok = False
         elif latest_version != installed_version:
-            logging.info('%s==%s is available (you have %s)' % (pkg,
-                latest_version, installed_version))
+            if args.raw:
+                logging.info('%s==%s' % (pkg, latest_version))
+            else:
+                logging.info('%s==%s is available (you have %s)' % (pkg,
+                    latest_version, installed_version))
             all_ok = False
-        else:
+        elif not args.raw:
             logging.debug('%s==%s is up-to-date' % (pkg, installed_version))
 
-    if all_ok:
+    if all_ok and not args.raw:
         logging.info('Everything up-to-date')
 
 
