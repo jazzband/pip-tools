@@ -84,7 +84,10 @@ def dump_requirements(files):
 
 def find_default_files():
     req_files = glob.glob(GLOB_PATTERN)
-    req_files.remove(DEFAULT_REQUIREMENTS_FILE)
+    try:
+        req_files.remove(DEFAULT_REQUIREMENTS_FILE)
+    except ValueError:
+        pass
 
     files = [DEFAULT_REQUIREMENTS_FILE]
     files += req_files
