@@ -2,7 +2,7 @@ Create a new playground first:
 
   $ virtualenv FOO >/dev/null
   $ PATH=FOO/bin:$PATH
-  $ alias pip-dump="$TESTDIR/../pip-dump"
+  $ alias pip-dump="$TESTDIR/../bin/pip-dump"
 
 Setup:
 
@@ -10,7 +10,6 @@ Setup:
   $ pip install -r requirements.txt >/dev/null 2>&1
   $ echo "Flask\nWerkzeug\nJinja2" > more-requirements.txt
   $ pip install -r more-requirements.txt >/dev/null 2>&1
-  $ echo "wsgiref" > .pipignore
 
 Next, let's see what pip-dump does:
 
