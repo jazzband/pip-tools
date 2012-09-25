@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import absolute_import
+import os
 import argparse
 from functools import partial
 import logging
@@ -17,6 +18,8 @@ def parse_args():
             help='Show more output')
     parser.add_argument('--raw', '-r', action='store_true', default=False,
             help='Print raw lines (suitable for passing to pip install)')
+    parser.add_argument('--interactive', '-i', action='store_true', default=False,
+            help='Ask interactively to install updates')
     return parser.parse_args()
 
 
@@ -76,6 +79,9 @@ def main():
     args = parse_args()
     setup_logging(args.verbose)
 
+    if args.raw and args.interactive:
+        raise SystemExit('--raw and --interactive cannot be used together')
+
     installed = list(get_installed_pkgs(editables=False))
     non_editables = [name for name, _, editable in installed if not editable]
     latest_versions = dict(get_latest_versions(non_editables))
@@ -92,7 +98,13 @@ def main():
             logging.warning('No update information found for %s' % (pkg,))
             all_ok = False
         elif latest_version != installed_version:
-            if args.raw:
+            if args.interactive:
+                answer = ''
+                while answer not in ['y', 'n', 'a']:
+                    answer = raw_input('%s==%s is available (you have %s)\nUpgrade now? [Y]es, [N]o, [A]ll ' % (pkg, latest_version, installed_version))
+                if answer in ['y', 'a']:
+                    os.system('pip install {}=={}'.format(pkg, latest_version))
+            elif args.raw:
                 logging.info('%s==%s' % (pkg, latest_version))
             else:
                 logging.info('%s==%s is available (you have %s)' % (pkg,
