@@ -9,6 +9,15 @@ import json
 from urllib2 import HTTPError
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+            description='Keeps your Python package dependencies pinned, but '
+            'fresh.')
+    parser.add_argument('--verbose', '-v', action='store_true', default=False,
+            help='Show more output')
+    return parser.parse_args()
+
+
 def get_pkg_info(pkg_name):
     logging.debug('Checking for updates of %r' % (pkg_name,))
     req = urllib2.Request('http://pypi.python.org/pypi/%s/json' % (pkg_name,))
@@ -59,15 +68,6 @@ def setup_logging(verbose):
 
     logging.basicConfig(level=level, format='%(message)s')
     logging.getLogger('requests').setLevel(logging.WARNING)
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-            description='Keeps your Python package dependencies pinned, but '
-            'fresh.')
-    parser.add_argument('--verbose', '-v', action='store_true', default=False,
-            help='Show more output')
-    return parser.parse_args()
 
 
 def main():
