@@ -22,6 +22,8 @@ def parse_args():
             help='Ask interactively to install updates')
     parser.add_argument('--auto', '-a', action='store_true', default=False,
             help='Automatically install every update found')
+    parser.add_argument('--editables', '-e', action='store_true', default=False,
+            help='Also include editable packages in PyPI lookup')
     return parser.parse_args()
 
 
@@ -54,14 +56,16 @@ def get_latest_versions(pkg_names):
     return zip(pkg_names, versions)
 
 
-def get_installed_pkgs(editables=False):
+def get_installed_pkgs():
     for line in subprocess.check_output(['pip', 'freeze']).split('\n'):
         if not line or line.startswith('##'):
             continue
 
         if line.startswith('-e'):
-            if editables:
-                yield line.split('#egg=', 1)[1], None, True
+            name = line.split('#egg=', 1)[1]
+            if name.endswith('-dev'):
+                name = name[:-4]
+            yield name, 'dev', True
         else:
             name, version = line.split('==')
             yield name, version, False
@@ -102,6 +106,14 @@ def update_pkg(pkg, version):
     os.system('pip install {}=={}'.format(pkg, version))
 
 
+def confirm(question):
+    answer = ''
+    while not answer in ['y', 'n']:
+        answer = raw_input(question)
+        answer = answer.strip().lower()
+    return answer == 'y'
+
+
 def main():
     args = parse_args()
     setup_logging(args.verbose)
@@ -109,14 +121,20 @@ def main():
     if args.raw and args.interactive:
         raise SystemExit('--raw and --interactive cannot be used together')
 
-    installed = list(get_installed_pkgs(editables=False))
-    non_editables = [name for name, _, editable in installed if not editable]
-    latest_versions = dict(get_latest_versions(non_editables))
+    if args.auto and args.editables:
+        if not confirm('WARNING: Using --auto and --editables at the same time might lead to unintended upgrades.\n'
+                'Are you sure? [yn] '):
+            raise SystemExit('Quitting')
+
+    installed = list(get_installed_pkgs())
+    lookup_on_pypi = [name for name, _, editable in installed
+            if not editable or args.editables]
+    latest_versions = dict(get_latest_versions(lookup_on_pypi))
 
     all_ok = True
     for pkg, installed_version, editable in installed:
-        if editable:
-            logging.debug('Skipping -e %s' % (pkg,))
+        if editable and not args.editables:
+            logging.debug('Skipping -e {}=={}'.format(pkg, installed_version))
             all_ok = False
             continue
 
