@@ -6,9 +6,6 @@ fresh, even when you've pinned them.
 
 [You _do_ pin them, right?][0]
 
-It's useful to use these tools on a regular basis, to keep your dependencies
-both explicitly pinned, and fresh, simultaneously.
-
 ![pip-tools overview](https://github.com/downloads/nvie/pip-tools/pip-tools.png)
 
 
