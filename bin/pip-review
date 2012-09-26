@@ -20,6 +20,8 @@ def parse_args():
             help='Print raw lines (suitable for passing to pip install)')
     parser.add_argument('--interactive', '-i', action='store_true', default=False,
             help='Ask interactively to install updates')
+    parser.add_argument('--auto', '-a', action='store_true', default=False,
+            help='Automatically install every update found')
     return parser.parse_args()
 
 
@@ -96,6 +98,10 @@ class InteractiveAsker(object):
 ask_to_install = partial(InteractiveAsker().ask, prompt='Upgrade now?')
 
 
+def update_pkg(pkg, version):
+    os.system('pip install {}=={}'.format(pkg, version))
+
+
 def main():
     args = parse_args()
     setup_logging(args.verbose)
@@ -122,12 +128,15 @@ def main():
             if args.raw:
                 logging.info('%s==%s' % (pkg, latest_version))
             else:
-                logging.info('%s==%s is available (you have %s)' % (pkg,
-                    latest_version, installed_version))
-                if args.interactive:
-                    answer = ask_to_install()
-                    if answer in ['y', 'a']:
-                        os.system('pip install {}=={}'.format(pkg, latest_version))
+                if args.auto:
+                    update_pkg(pkg, latest_version)
+                else:
+                    logging.info('%s==%s is available (you have %s)' % (pkg,
+                        latest_version, installed_version))
+                    if args.interactive:
+                        answer = ask_to_install()
+                        if answer in ['y', 'a']:
+                            update_pkg(pkg, latest_version)
             all_ok = False
         elif not args.raw:
             logging.debug('%s==%s is up-to-date' % (pkg, installed_version))
