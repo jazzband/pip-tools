@@ -17,17 +17,29 @@ pip-review
 currently installed packages to check for updates, it does not use any
 requirements.txt
 
-Example:
+Example, report-only:
 
     $ pip-review
     requests==0.13.4 available (you have 0.13.2)
     redis==2.4.13 available (you have 2.4.9)
     rq==0.3.2 available (you have 0.3.0)
 
-Or, when all is fine:
+Example, actually install everything:
 
-    $ pip-review
-    Everything up-to-date
+    $ pip-review --auto
+    ... <pip install output>
+
+Example, run interactively, ask to upgrade for each package:
+
+    $ pip-review --interactive
+    requests==0.14.0 available (you have 0.13.2)
+    Upgrade now? [Y]es, [N]o, [A]ll, [Q]uit y
+    ...
+    redis==2.6.2 available (you have 2.4.9)
+    Upgrade now? [Y]es, [N]o, [A]ll, [Q]uit n
+    rq==0.3.2 available (you have 0.3.0)
+    Upgrade now? [Y]es, [N]o, [A]ll, [Q]uit y
+    ...
 
 
 pip-dump
