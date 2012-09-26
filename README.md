@@ -2,10 +2,12 @@ pip-tools = pip-review + pip-dump
 =================================
 
 A set of two command line tools to help you keep your `pip`-based packages
-fresh, even when you've pinned them.  [You _do_ pin them, right?][0]
+fresh, even when you've pinned them.
 
-It's useful to run this on a regular basis, to keep your dependencies fresh,
-but explicitly pinned, too.
+[You _do_ pin them, right?][0]
+
+It's useful to use these tools on a regular basis, to keep your dependencies
+both explicitly pinned, and fresh, simultaneously.
 
 ![pip-tools overview](https://github.com/downloads/nvie/pip-tools/pip-tools.png)
 
