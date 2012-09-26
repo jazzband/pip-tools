@@ -63,7 +63,10 @@ def get_installed_pkgs(editables=False):
             if editables:
                 yield line.split('#egg=', 1)[1], None, True
         else:
-            name, version = line.split('==')
+            try:
+                name, version = line.split('==')
+            except ValueError:
+                continue
             yield name, version, False
 
 
