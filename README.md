@@ -19,27 +19,33 @@ requirements.txt
 
 Example, report-only:
 
-    $ pip-review
-    requests==0.13.4 available (you have 0.13.2)
-    redis==2.4.13 available (you have 2.4.9)
-    rq==0.3.2 available (you have 0.3.0)
+```console
+$ pip-review
+requests==0.13.4 available (you have 0.13.2)
+redis==2.4.13 available (you have 2.4.9)
+rq==0.3.2 available (you have 0.3.0)
+```
 
 Example, actually install everything:
 
-    $ pip-review --auto
-    ... <pip install output>
+```console
+$ pip-review --auto
+... <pip install output>
+```
 
 Example, run interactively, ask to upgrade for each package:
 
-    $ pip-review --interactive
-    requests==0.14.0 available (you have 0.13.2)
-    Upgrade now? [Y]es, [N]o, [A]ll, [Q]uit y
-    ...
-    redis==2.6.2 available (you have 2.4.9)
-    Upgrade now? [Y]es, [N]o, [A]ll, [Q]uit n
-    rq==0.3.2 available (you have 0.3.0)
-    Upgrade now? [Y]es, [N]o, [A]ll, [Q]uit y
-    ...
+```console
+$ pip-review --interactive
+requests==0.14.0 available (you have 0.13.2)
+Upgrade now? [Y]es, [N]o, [A]ll, [Q]uit y
+...
+redis==2.6.2 available (you have 2.4.9)
+Upgrade now? [Y]es, [N]o, [A]ll, [Q]uit n
+rq==0.3.2 available (you have 0.3.0)
+Upgrade now? [Y]es, [N]o, [A]ll, [Q]uit y
+...
+```
 
 
 pip-dump
@@ -52,19 +58,19 @@ it will update each of them smartly.
 
 Example:
 
-    $ cat requirements.txt
-    Flask
-    $ cat dev-requirements.txt
-    ipython
-
-    $ pip-dump
-
-    $ cat requirements.txt
-    Flask==0.9
-    Jinja2==2.6
-    Werkzeug==0.8.3
-    $ cat dev-requirements.txt
-    ipython==0.13
+```console
+$ cat requirements.txt
+Flask
+$ cat dev-requirements.txt
+ipython
+$ pip-dump
+$ cat requirements.txt
+Flask==0.9
+Jinja2==2.6
+Werkzeug==0.8.3
+$ cat dev-requirements.txt
+ipython==0.13
+```
 
 Packages that you don't want to dump but want to have installed
 locally nonetheless can be put in an optional file called `.pipignore`.
@@ -75,7 +81,9 @@ Installation
 
 To install, simply use pip:
 
-    $ pip install pip-tools
+```console
+$ pip install pip-tools
+```
 
 Decide for yourself whether you want to install the tools system-wide, or
 inside a virtual env.  Both are supported.
@@ -86,7 +94,9 @@ Testing
 
 The tools are lightly tested, with [cram][3].  To run the tests, run:
 
-    $ cram tests
+```console
+$ cram tests
+```
 
 The tests run a bit slow, since they actually interact with PyPI, which
 involves downloading packages, etc.  I didn't bother to stub it.
