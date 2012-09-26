@@ -56,17 +56,14 @@ def get_latest_versions(pkg_names):
 
 def get_installed_pkgs(editables=False):
     for line in subprocess.check_output(['pip', 'freeze']).split('\n'):
-        if not line:
+        if not line or line.startswith('##'):
             continue
 
         if line.startswith('-e'):
             if editables:
                 yield line.split('#egg=', 1)[1], None, True
         else:
-            try:
-                name, version = line.split('==')
-            except ValueError:
-                continue
+            name, version = line.split('==')
             yield name, version, False
 
 
