@@ -42,11 +42,17 @@ Example:
 
     $ cat requirements.txt
     Flask
+    $ cat dev-requirements.txt
+    ipython
+
     $ pip-dump
+
     $ cat requirements.txt
     Flask==0.9
     Jinja2==2.6
     Werkzeug==0.8.3
+    $ cat dev-requirements.txt
+    ipython==0.13
 
 Packages that you don't want to dump but want to have installed
 locally nonetheless can be put in an optional file called `.pipignore`.
