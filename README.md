@@ -93,14 +93,20 @@ inside a virtual env.  Both are supported.
 Testing
 =======
 
-The tools are lightly tested, with [cram][3].  To run the tests, run:
+To test with your active Python version:
 
 ```console
-$ cram tests
+$ ./run-tests.sh
 ```
 
-The tests run a bit slow, since they actually interact with PyPI, which
-involves downloading packages, etc.  I didn't bother to stub it.
+To test under all (supported) Python versions:
+
+```console
+$ tox
+```
+
+The tests run quite slow, since they actually interact with PyPI, which
+involves downloading packages, etc.  So please be patient.
 
 
 [![Flattr this][2]][1]
