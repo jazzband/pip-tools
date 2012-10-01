@@ -7,10 +7,10 @@ import logging
 import tempfile
 from itertools import dropwhile, takewhile
 from functools import partial
-from subprocess import check_call as _check_call, check_output as _check_output
+from subprocess import check_call as _check_call
+import subprocess
 
 check_call = partial(_check_call, shell=True)
-check_output = partial(_check_output, shell=True)
 
 # Constants
 DEFAULT_REQUIREMENTS_FILE = 'requirements.txt'
@@ -46,8 +46,8 @@ def pip_partition(lines):
 
 
 def pip_info(filename):
-    cmd = 'pip freeze -lr {}'.format(filename)
-    raw = check_output(cmd)
+    # Use Popen instead of check_output to support Python 2.6
+    raw = subprocess.Popen(['pip', 'freeze', '-lr', filename], stdout=subprocess.PIPE).communicate()[0]
     lines = raw.split('\n')
     p = pip_partition(lines)
     return p
@@ -69,9 +69,9 @@ def rewrite(filename, lines):
 
 def dump_requirements(files):
     _, tmpfile = tempfile.mkstemp()
-    check_call('cat {} | sort -fu > {}'.format(' '.join(files), tmpfile))
+    check_call('cat %s | sort -fu > %s' % (' '.join(files), tmpfile))
     _, new = pip_info(tmpfile)
-    check_call('rm {}'.format(tmpfile))
+    check_call('rm %s' % tmpfile)
     append_lines(new, files[0])
 
     for filename in files:

@@ -18,7 +18,7 @@ setup(
     #include_package_data=True,
     zip_safe=False,
     platforms='any',
-    #install_requires=[],
+    install_requires=['argparse==1.2.1'],  # needed for python 2.6
     classifiers=[
         # As from http://pypi.python.org/pypi?%3Aaction=list_classifiers
         #'Development Status :: 1 - Planning',

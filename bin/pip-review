@@ -57,7 +57,10 @@ def get_latest_versions(pkg_names):
 
 
 def get_installed_pkgs():
-    for line in subprocess.check_output(['pip', 'freeze']).split('\n'):
+    # Use Popen instead of check_output to support Python 2.6
+    output = subprocess.Popen(['pip', 'freeze'], stdout=subprocess.PIPE).communicate()[0]
+
+    for line in output.split('\n'):
         if not line or line.startswith('##'):
             continue
 
@@ -91,7 +94,7 @@ class InteractiveAsker(object):
 
         answer = ''
         while answer not in ['y', 'n', 'a', 'q']:
-            answer = raw_input('{} [Y]es, [N]o, [A]ll, [Q]uit '.format(prompt))
+            answer = raw_input('%s [Y]es, [N]o, [A]ll, [Q]uit ' % prompt)
             answer = answer.strip().lower()
 
         if answer in ['q', 'a']:
@@ -103,7 +106,7 @@ ask_to_install = partial(InteractiveAsker().ask, prompt='Upgrade now?')
 
 
 def update_pkg(pkg, version):
-    os.system('pip install {}=={}'.format(pkg, version))
+    os.system('pip install %s==%s' % (pkg, version))
 
 
 def confirm(question):
@@ -134,7 +137,7 @@ def main():
     all_ok = True
     for pkg, installed_version, editable in installed:
         if editable and not args.editables:
-            logging.debug('Skipping -e {}=={}'.format(pkg, installed_version))
+            logging.debug('Skipping -e %s==%s' % (pkg, installed_version))
             all_ok = False
             continue
 
