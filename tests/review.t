@@ -2,6 +2,7 @@ Create a new playground first:
 
   $ virtualenv --python="$(which python)" FOO >/dev/null
   $ PATH=FOO/bin:$PATH
+  $ pip install argparse >/dev/null 2>&1
   $ alias pip-review="$TESTDIR/../bin/pip-review"
 
 Setup. Let's pretend we have some outdated package versions installed:
