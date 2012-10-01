@@ -8,6 +8,7 @@ python:
   - "3.2"
   - "3.3"
 install:
+  - "pip install cram --use-mirrors"
   - "pip install . --use-mirrors"
 script:
   - "cram tests/*.t"
