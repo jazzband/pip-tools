@@ -1,6 +1,6 @@
 Create a new playground first:
 
-  $ virtualenv FOO >/dev/null
+  $ virtualenv --python="$(which python)" FOO >/dev/null
   $ PATH=FOO/bin:$PATH
   $ alias pip-dump="$TESTDIR/../bin/pip-dump"
 
