@@ -9,8 +9,6 @@ def get_dependencies():
     deps = []
     if sys.version_info < (2, 7):
         deps += ['argparse']
-    if sys.version_info < (2, 6):
-        deps += ['simplejson']
     return deps
 
 
