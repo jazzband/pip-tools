@@ -8,9 +8,22 @@ import tempfile
 from itertools import dropwhile, takewhile
 from functools import partial
 from subprocess import check_call as _check_call
-import subprocess
+try:
+    from subprocess import check_ouput as _check_ouput
+except ImportError:
+    import subprocess
+
+    def _check_output(*args, **kwargs):
+        process = subprocess.Popen(stdout=subprocess.PIPE, *args, **kwargs)
+        output, _ = process.communicate()
+        retcode = process.poll()
+        if retcode:
+            raise subprocess.CalledProcessError(retcode, cmd, output=output)
+        return output
+
 
 check_call = partial(_check_call, shell=True)
+check_output = partial(_check_output, shell=True)
 
 # Constants
 DEFAULT_REQUIREMENTS_FILE = 'requirements.txt'
@@ -46,8 +59,8 @@ def pip_partition(lines):
 
 
 def pip_info(filename):
-    # Use Popen instead of check_output to support Python 2.6
-    raw = subprocess.Popen(['pip', 'freeze', '-lr', filename], stdout=subprocess.PIPE).communicate()[0]
+    cmd = 'pip freeze -lr {}'.format(filename)
+    raw = check_output(cmd)
     lines = raw.split('\n')
     p = pip_partition(lines)
     return p

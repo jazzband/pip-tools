@@ -8,6 +8,20 @@ import subprocess
 import urllib2
 import json
 from urllib2 import HTTPError
+try:
+    from subprocess import check_ouput as _check_ouput
+except ImportError:
+    import subprocess
+
+    def _check_output(*args, **kwargs):
+        process = subprocess.Popen(stdout=subprocess.PIPE, *args, **kwargs)
+        output, _ = process.communicate()
+        retcode = process.poll()
+        if retcode:
+            raise subprocess.CalledProcessError(retcode, cmd, output=output)
+        return output
+
+check_output = partial(_check_output, shell=True)
 
 
 def parse_args():
@@ -57,8 +71,7 @@ def get_latest_versions(pkg_names):
 
 
 def get_installed_pkgs():
-    # Use Popen instead of check_output to support Python 2.6
-    output = subprocess.Popen(['pip', 'freeze'], stdout=subprocess.PIPE).communicate()[0]
+    output = check_output('pip freeze')
 
     for line in output.split('\n'):
         if not line or line.startswith('##'):
