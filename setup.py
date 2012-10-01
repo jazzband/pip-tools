@@ -5,6 +5,13 @@ import sys
 from setuptools import setup
 
 
+def get_dependencies():
+    deps = []
+    if sys.version_info < (2, 7):
+        deps += ['argparse']
+    return deps
+
+
 setup(
     name='pip-tools',
     version='0.2',
@@ -18,7 +25,7 @@ setup(
     #include_package_data=True,
     zip_safe=False,
     platforms='any',
-    #install_requires=[],
+    install_requires=get_dependencies(),
     classifiers=[
         # As from http://pypi.python.org/pypi?%3Aaction=list_classifiers
         #'Development Status :: 1 - Planning',

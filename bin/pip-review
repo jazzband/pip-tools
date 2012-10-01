@@ -8,6 +8,20 @@ import subprocess
 import urllib2
 import json
 from urllib2 import HTTPError
+try:
+    from subprocess import check_ouput as _check_ouput
+except ImportError:
+    import subprocess
+
+    def _check_output(*args, **kwargs):
+        process = subprocess.Popen(stdout=subprocess.PIPE, *args, **kwargs)
+        output, _ = process.communicate()
+        retcode = process.poll()
+        if retcode:
+            raise subprocess.CalledProcessError(retcode, cmd, output=output)
+        return output
+
+check_output = partial(_check_output, shell=True)
 
 
 def parse_args():
@@ -57,7 +71,9 @@ def get_latest_versions(pkg_names):
 
 
 def get_installed_pkgs():
-    for line in subprocess.check_output(['pip', 'freeze']).split('\n'):
+    output = check_output('pip freeze')
+
+    for line in output.split('\n'):
         if not line or line.startswith('##'):
             continue
 
@@ -91,7 +107,7 @@ class InteractiveAsker(object):
 
         answer = ''
         while answer not in ['y', 'n', 'a', 'q']:
-            answer = raw_input('{} [Y]es, [N]o, [A]ll, [Q]uit '.format(prompt))
+            answer = raw_input('%s [Y]es, [N]o, [A]ll, [Q]uit ' % prompt)
             answer = answer.strip().lower()
 
         if answer in ['q', 'a']:
@@ -103,7 +119,7 @@ ask_to_install = partial(InteractiveAsker().ask, prompt='Upgrade now?')
 
 
 def update_pkg(pkg, version):
-    os.system('pip install {}=={}'.format(pkg, version))
+    os.system('pip install %s==%s' % (pkg, version))
 
 
 def confirm(question):
@@ -134,7 +150,7 @@ def main():
     all_ok = True
     for pkg, installed_version, editable in installed:
         if editable and not args.editables:
-            logging.debug('Skipping -e {}=={}'.format(pkg, installed_version))
+            logging.debug('Skipping -e %s==%s' % (pkg, installed_version))
             all_ok = False
             continue
 

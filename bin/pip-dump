@@ -7,7 +7,20 @@ import logging
 import tempfile
 from itertools import dropwhile, takewhile
 from functools import partial
-from subprocess import check_call as _check_call, check_output as _check_output
+from subprocess import check_call as _check_call
+try:
+    from subprocess import check_ouput as _check_ouput
+except ImportError:
+    import subprocess
+
+    def _check_output(*args, **kwargs):
+        process = subprocess.Popen(stdout=subprocess.PIPE, *args, **kwargs)
+        output, _ = process.communicate()
+        retcode = process.poll()
+        if retcode:
+            raise subprocess.CalledProcessError(retcode, cmd, output=output)
+        return output
+
 
 check_call = partial(_check_call, shell=True)
 check_output = partial(_check_output, shell=True)
@@ -69,9 +82,9 @@ def rewrite(filename, lines):
 
 def dump_requirements(files):
     _, tmpfile = tempfile.mkstemp()
-    check_call('cat {} | sort -fu > {}'.format(' '.join(files), tmpfile))
+    check_call('cat %s | sort -fu > %s' % (' '.join(files), tmpfile))
     _, new = pip_info(tmpfile)
-    check_call('rm {}'.format(tmpfile))
+    check_call('rm %s' % tmpfile)
     append_lines(new, files[0])
 
     for filename in files:
