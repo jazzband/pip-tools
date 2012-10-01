@@ -12,7 +12,11 @@ Also install library, which caused warning message:
 
   $ pip install http://www.effbot.org/media/downloads/cElementTree-1.0.5-20051216.tar.gz >/dev/null 2>&1
 
-Next, let's see what pip-dump does:
+Install argparse so pip-review works in Python 2.6
+
+  $ pip install argparse >/dev/null 2>&1
+
+Next, let's see what pip-review does:
 
   $ pip-review
   Warning: cannot find svn location for cElementTree==1.0.5-20051216
