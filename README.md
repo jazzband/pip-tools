@@ -1,3 +1,5 @@
+[![Build status](https://secure.travis-ci.org/nvie/pip-tools.png?branch=master)](https://secure.travis-ci.org/nvie/pip-tools)
+
 pip-tools = pip-review + pip-dump
 =================================
 
