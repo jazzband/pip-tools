@@ -14,14 +14,14 @@ def get_dependencies():
 
 setup(
     name='pip-tools',
-    version='0.2',
+    version='1.0',
     url='https://github.com/nvie/pip-tools/',
     license='BSD',
     author='Vincent Driessen',
     author_email='vincent@3rdcloud.com',
     description=__doc__,
     #packages=[],
-    scripts=['bin/pip-review', 'bin/pip-dump'],
+    scripts=['bin/pip-compile', 'bin/pip-sync', 'bin/pip-review'],
     #include_package_data=True,
     zip_safe=False,
     platforms='any',
