@@ -11,7 +11,7 @@ Setup:
   $ pip install -r requirements.txt >/dev/null 2>&1
   $ echo "Flask" > more-requirements.txt
   $ echo "Werkzeug" >> more-requirements.txt
-  $ echo Jinja2" >> more-requirements.txt
+  $ echo "Jinja2" >> more-requirements.txt
   $ pip install -r more-requirements.txt >/dev/null 2>&1
 
 Next, let's see what pip-dump does:
