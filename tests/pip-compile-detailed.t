@@ -18,8 +18,12 @@ Compile with --dry-run:
   dev-requirements.in: nose
   ===> Unfolding dependency tree
   raven==1.9.3
-    simplejson>=2.3.0,<2.5.0
-  nose
+    simplejson>=2.3.0,<2.5.0    ! First problem: we should download the best
+                                ! match at this point and unfold dependencies
+                                ! from there onward
+  nose                          ! Same for this one: we should download the
+                                ! best match for nose and see what dependencies
+                                ! that yield before continuing
   ===> Compiling pinned versions
   raven==1.9.3
     simplejson==2.4.0
