@@ -4,6 +4,8 @@ Create a new playground first:
   $ PATH=FOO/bin:$PATH
   $ pip install argparse >/dev/null 2>&1
   $ alias pip-compile="$TESTDIR/../bin/pip-compile"
+  $ alias pip-sync="$TESTDIR/../bin/pip-sync"
+  $ alias pip-review="$TESTDIR/../bin/pip-review"
 
 First, create our requirements.in file (manually).  We start by creating
 a non-pinned version of it:
@@ -25,13 +27,14 @@ dependency is automatically inferred and added:
 
 Note that this did not touch our environment in any way:
 
-  $ pip freeze -l
+  $ pip freeze -l | grep -v argparse
+  [1]
 
 That only happens when we run pip-sync:
 
   $ pip-sync >/dev/null 2>&1
 
-  $ pip freeze -l
+  $ pip freeze -l | grep -v argparse
   python-dateutil==* (glob)
   six==* (glob)
 
@@ -79,17 +82,17 @@ Okay, to recap, we have:
 
 Now, show available updates for packages in requirements.in:
 
-  $ pip-outdated requirements.in
+  $ pip-review requirements.in
   - raven==* (glob)
 
 Or show them for all Recorded State:
 
-  $ pip-outdated
+  $ pip-review
   requirements.in:
   - raven==* (glob)
 
-@Bruno: Don't you think the above pip-outdated output should also report
-outdated secondary dependencies?  For example, when simplejson==2.6.2 is
+@Bruno: Don't you think the above pip-review output should also report
+review secondary dependencies?  For example, when simplejson==2.6.2 is
 available, this should be suggested, right (given that 2.6.2 matches raven deps
 criteria)?
 
@@ -121,7 +124,8 @@ CONFLICT DETECTION
 
 Warn about a conflict situation:
 
-  $ echo "raven==1.9.3\nsimplejson==2.6.2" > requirements.in
+  $ echo "raven==1.9.3" > requirements.in
+  $ echo "simplejson==2.6.2" >> requirements.in
   $ pip-compile
   error: you requested simplejson==2.6.2 but raven==1.9.3 requires simplejson>=2.3.0,<2.5.0
 

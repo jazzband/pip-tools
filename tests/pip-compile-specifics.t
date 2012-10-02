@@ -7,8 +7,7 @@ Create a new playground first:
 
 Let's create a simple requirements.in file:
 
-  $ cat requirements.in
-  raven==1.9.3
+  $ echo "raven==1.9.3" > requirements.in
 
 Compiling yields the obvious result: it will lookup the dependencies, pick the
 latest versions of them that yield no conflict, and pin them:

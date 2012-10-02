@@ -1,2 +1,193 @@
 #!/usr/bin/env python
-print 'TODO: Implement'
+from __future__ import absolute_import
+
+import argparse
+import glob
+import logging
+import os
+import shutil
+import subprocess
+import sys
+import tarfile
+import zipfile
+
+try:
+    from urllib.parse import quote
+except ImportError:
+    from urllib import quote
+
+from pip.backwardcompat import ConfigParser
+from pip.download import _download_url, _get_response_from_url
+from pip.index import PackageFinder
+from pip.locations import default_config_file
+from pip.req import InstallRequirement
+
+
+DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
+GLOB_PATTERN = '*requirements.in'
+
+
+def setup_logging(verbose):
+    if verbose:
+        level = logging.DEBUG
+    else:
+        level = logging.INFO
+
+    logging.basicConfig(level=level, format='%(message)s')
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+            description='Rewrites requirements.txt to match your virtualenv.')
+    parser.add_argument('--verbose', '-v', action='store_true', default=False,
+            help='Show more output')
+    parser.add_argument('files', nargs='*')
+    return parser.parse_args()
+
+
+def download_cache():
+    pip_config = ConfigParser.RawConfigParser()
+    pip_config.read([default_config_file])
+    download_cache = None
+    for key, value in pip_config.items('global'):
+        if key == 'download-cache':
+            download_cache = value
+            break
+    if download_cache is not None:
+        download_cache = os.path.expanduser(download_cache)
+    return download_cache
+
+
+def resolve_deps(file_name):
+    name, ext = os.path.splitext(file_name)
+    if not ext == '.in':
+        raise ValueError("Top-level requirements should be named "
+                         "*requirements.in")
+    with open(file_name, 'r') as f:
+        reqs = f.read()
+    download_dir = os.path.join(os.path.expanduser('~'),
+                                '.pip-tools', 'cache')
+
+    if not os.path.isdir(download_dir):
+        os.makedirs(download_dir)
+
+    deps = {}
+
+    for line in reqs.splitlines():
+        resolve_dep(line, deps)
+
+    reqs = "\n".join(sorted(deps.keys()))
+    with open('{}.txt'.format(name), 'w') as f:
+        f.write(reqs + '\n')
+
+
+def extract_archive(path, build_dir):
+    if (path.endswith('.tar.gz') or
+        path.endswith('.tar') or
+        path.endswith('.tar.bz2') or
+        path.endswith('.tgz')):
+
+        archive = tarfile.open(path)
+    elif path.endswith('.zip'):
+        archive = zipfile.ZipFile(path)
+    else:
+        assert False, "Unsupported archive file: {}".format(path)
+
+    archive.extractall(build_dir)
+    archive.close()
+
+
+def egg_info(name, dist_dir):
+    try:
+        subprocess.check_call([sys.executable, 'setup.py', 'egg_info'],
+                              cwd=dist_dir, stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError:
+        logging.debug("egg_info failed for {}".format(name))
+        return False
+    return True
+
+
+def read_requires(dist_dir, name):
+    egg_info_dir = '{0}.egg-info'.format(name.replace('-', '_'))
+    for dirpath, dirnames, filenames in os.walk(dist_dir):
+        if egg_info_dir in dirnames:
+            requires = os.path.join(dirpath, egg_info_dir, 'requires.txt')
+            if not os.path.exists(requires):
+                logging.debug("{} has no declared dependencies".format(name))
+                break
+            return requires
+
+
+def resolve_dep(line, deps):
+    logging.info("Resolving {}".format(line))
+    path = download_requirement(line)
+
+    build_dir = os.path.join(os.path.dirname(path), 'build')
+    if os.path.exists(build_dir):
+        shutil.rmtree(build_dir)
+
+    extract_archive(path, build_dir)
+
+    name = os.listdir(build_dir)[0]
+    dist_dir = os.path.join(build_dir, name)
+    name, version = name.rsplit('-', 1)
+    deps['{0}=={1}'.format(name, version)] = path
+
+    if not egg_info(name, dist_dir):
+        return
+
+    requires = read_requires(dist_dir, name)
+    if not requires:
+        return
+
+    with open(requires, 'r') as requirements:
+        for dep in requirements.readlines():
+            dep = dep.strip()
+            if dep == '[test]' or not dep:
+                break
+            resolve_dep(dep, deps)
+
+
+def download_requirement(line):
+    req = InstallRequirement.from_line(line)
+    finder = PackageFinder(
+        find_links=[],
+        index_urls=['http://pypi.python.org/simple/'],
+        use_mirrors=True,
+        mirrors=[],
+    )
+    found = finder.find_requirement(req, False)
+
+    download_dir = os.path.join(os.path.expanduser('~'),
+                                '.pip-tools', 'cache')
+    filename = quote(found.url.split('#')[0], '')
+    final_path = os.path.join(download_dir, filename)
+    if os.path.exists(final_path):
+        # requirement already cached
+        return final_path
+
+    cache_path = os.path.join(download_cache(), filename)
+    if os.path.exists(cache_path):
+        # pip has a cached version, copy it
+        shutil.copyfile(cache_path, final_path)
+
+    else:
+        # actually download the requirement
+        response = _get_response_from_url(found.url.split('#')[0], found)
+        _download_url(response, found, final_path)
+    return final_path
+
+
+def main():
+    args = parse_args()
+    setup_logging(args.verbose)
+
+    for f in args.files or glob.glob(GLOB_PATTERN):
+        logging.info("Compiling {}".format(f))
+        resolve_deps(f)
+    logging.info("Dependencies updated.")
+
+
+if __name__ == '__main__':
+    main()
