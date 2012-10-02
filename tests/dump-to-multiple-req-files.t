@@ -9,7 +9,7 @@ Setup:
 
   $ echo "python-dateutil" > requirements.txt
   $ pip install -r requirements.txt >/dev/null 2>&1
-  $ echo "Flask\nWerkzeug\nJinja2\n" > more-requirements.txt
+  $ echo -e "Flask\nWerkzeug\nJinja2\n" > more-requirements.txt
   $ pip install -r more-requirements.txt >/dev/null 2>&1
 
 Next, let's see what pip-dump does:
