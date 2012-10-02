@@ -17,8 +17,6 @@ except ImportError:
         output, _ = process.communicate()
         retcode = process.poll()
         if retcode:
-            # python2.6's CalledProcessError doesn't have the output=
-            # keyword argument
             error = subprocess.CalledProcessError(retcode, args[0])
             error.output = output
             raise error
