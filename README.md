@@ -8,7 +8,7 @@ fresh, even when you've pinned them.
 
 [You _do_ pin them, right?][0]
 
-![pip-tools overview](https://github.com/downloads/nvie/pip-tools/pip-tools.png)
+![pip-tools overview for phase II](https://github.com/downloads/nvie/pip-tools/pip-tools-phase-II-overview.png)
 
 
 Installation
