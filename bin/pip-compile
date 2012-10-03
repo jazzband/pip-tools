@@ -64,12 +64,12 @@ def get_pip_cache_root():
     return download_cache
 
 
-def resolve_deps(file_name):
-    name, ext = os.path.splitext(file_name)
+def resolve_deps(filename):
+    name, ext = os.path.splitext(filename)
     if not ext == '.in':
         raise ValueError("Top-level requirements should be named "
                          "*requirements.in")
-    with open(file_name, 'r') as f:
+    with open(filename, 'r') as f:
         reqs = f.read()
     download_dir = os.path.join(os.path.expanduser('~'),
                                 '.pip-tools', 'cache')
