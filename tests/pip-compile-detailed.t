@@ -13,7 +13,7 @@ Let's create a simple requirements.in file:
 Compile with --dry-run:
 
   $ pip-compile --dry-run --verbose
-  ===> Parsing source requirements
+  ===> Collecting source requirements
   requirements.in: raven==1.9.3
   dev-requirements.in: nose
   ===> Unfolding dependency tree
@@ -43,7 +43,7 @@ Let's create a simple requirements.in file:
 Compile with --dry-run:
 
   $ pip-compile --dry-run --verbose
-  ===> Parsing source requirements
+  ===> Collecting source requirements
   requirements.in: raven==1.9.3
   requirements.in: simplejson==2.3.3
   dev-requirements.in: nose
@@ -70,7 +70,7 @@ Let's create a simple requirements.in file:
 Compile with --dry-run:
 
   $ pip-compile --dry-run --verbose
-  ===> Parsing source requirements
+  ===> Collecting source requirements
   requirements.in: sentry==5.0.13
   ===> Unfolding dependency tree
   sentry==5.0.13
