@@ -38,7 +38,9 @@ def setup_logging(verbose):
 
 def parse_args():
     parser = argparse.ArgumentParser(
-            description='Rewrites requirements.txt to match your virtualenv.')
+            description='Compiles requirements.txt from requirements.in specs.')
+    parser.add_argument('--dry-run', action='store_true', default=False,
+            help="Only show what would happen, don't change anything")
     parser.add_argument('--verbose', '-v', action='store_true', default=False,
             help='Show more output')
     parser.add_argument('files', nargs='*')
@@ -189,10 +191,15 @@ def main():
     args = parse_args()
     setup_logging(args.verbose)
 
-    for f in args.files or glob.glob(GLOB_PATTERN):
+    src_files = args.files or glob.glob(GLOB_PATTERN)
+    for f in src_files:
         logging.info("Compiling {}".format(f))
         resolve_deps(f)
-    logging.info("Dependencies updated.")
+
+    if args.dry_run:
+        logging.info("Dry-run, so nothing updated.")
+    else:
+        logging.info("Dependencies updated.")
 
 
 if __name__ == '__main__':
