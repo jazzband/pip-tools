@@ -108,7 +108,6 @@ def resolve_dep(line, deps):
     if os.path.exists(build_dir):
         shutil.rmtree(build_dir)
 
-    print '**', path
     extract_archive(path, build_dir)
 
     name = os.listdir(build_dir)[0]
@@ -175,7 +174,7 @@ def compile_specs(source_files, dry_run=False):
         logging.debug('Finding package match for %s' % (spec,))
         url = find_best_package_url(spec)
         path = get_package_location(url)
-        print path
+        print('TODO: We should now extract dependency info from %s' % (path,))
 
     # TODO: Implement the rest
     # We have the normalized spec_set for the top-level dependencies.
