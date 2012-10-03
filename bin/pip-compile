@@ -106,6 +106,10 @@ class SpecSet(object):
         self._byname[spec.name].append(spec)
 
     def normalize_specs_for_name(self, name):
+        # TODO: This method should not lose source information, as it does
+        # right now.  When normalizing, we might drop a few specs, but for the
+        # ones we are keeping, the source should remain clear.
+
         """Normalizes specs for the given package name.
 
         Example before normalizing:
@@ -226,6 +230,9 @@ class SpecSet(object):
         return inferred_spec
 
     def normalize(self):
+        # TODO: Would it be nicer if this function returns a new SpecSet
+        # instance?  I think so.
+
         self._normalized_by_name = {}
         for name in self._byname:
             self._normalized_by_name[name] = self.normalize_specs_for_name(name)
@@ -431,9 +438,19 @@ def compile_specs(source_files, dry_run=False):
 
     spec_set = SpecSet()
     spec_set.add_specs(top_level_specs)
+
     print spec_set  # normalizes the spec set and prints the resulting set
 
-    # TODO: Implement the rest of this
+    # TODO: Implement the rest
+    # We have the normalized spec_set for the top-level dependencies.
+    #
+    # Still to be done:
+    # - For the normalized spec set, try to find packages using the
+    #   PackageFinder.  If not found, the spec can't be compiled.
+    # - Get a list of next-level dependency Specs (this will mean some
+    #   download, unarchive, inspect work)
+    # - Add those new specs to the SpecSet, and normalize() again.
+    # - Repeat until no new specs are added.
 
 
 def main():
