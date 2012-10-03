@@ -220,12 +220,12 @@ def collect_source_specs(filenames):
 def compile_specs(source_files, dry_run=False):
     top_level_specs = list(collect_source_specs(source_files))
 
-    logging.debug('')
-    logging.debug('===> Normalizing source requirements')
     spec_set = SpecSet()
     spec_set.add_specs(top_level_specs)
-
     spec_set = spec_set.normalize()
+
+    logging.debug('')
+    logging.debug('===> Normalizing source requirements')
     print spec_set
 
     # TODO: Implement the rest
