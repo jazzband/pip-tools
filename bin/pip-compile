@@ -103,7 +103,7 @@ def extract_archive(path, build_dir):
     archive.close()
 
 
-def egg_info(name, dist_dir):
+def has_egg_info(name, dist_dir):
     try:
         subprocess.check_call([sys.executable, 'setup.py', 'egg_info'],
                               cwd=dist_dir, stdout=subprocess.PIPE,
@@ -140,7 +140,7 @@ def resolve_dep(line, deps):
     name, version = name.rsplit('-', 1)
     deps['{0}=={1}'.format(name, version)] = path
 
-    if not egg_info(name, dist_dir):
+    if not has_egg_info(name, dist_dir):
         return
 
     requires = read_requires(dist_dir, name)
