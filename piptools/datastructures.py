@@ -214,16 +214,15 @@ class SpecSet(object):
         return inferred_spec
 
     def normalize(self):
-        # TODO: Would it be nicer if this function returns a new SpecSet
-        # instance?  I think so.
-
-        self._normalized_by_name = {}
+        """Generates a new spec set that is more compact, but equivalent to
+        this spec set.
+        """
+        new_spec_set = SpecSet()
         for name in self._byname:
-            self._normalized_by_name[name] = self.normalize_specs_for_name(name)
+            new_spec_set.add_spec(self.normalize_specs_for_name(name))
+        return new_spec_set
 
     def __str__(self):
-        self.normalize()
-        lines = []
-        for spec in self._normalized_by_name.values():
-            lines.append(unicode(spec))
+        """Print the spec set: one line per spec in the set."""
+        lines = map(unicode, flatten(self._byname.values()))
         return '\n'.join(lines)

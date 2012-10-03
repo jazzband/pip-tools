@@ -218,12 +218,15 @@ def collect_source_specs(filenames):
 
 
 def compile_specs(source_files, dry_run=False):
-    top_level_specs = collect_source_specs(source_files)
+    top_level_specs = list(collect_source_specs(source_files))
 
+    logging.debug('')
+    logging.debug('===> Normalizing source requirements')
     spec_set = SpecSet()
     spec_set.add_specs(top_level_specs)
 
-    print spec_set  # normalizes the spec set and prints the resulting set
+    spec_set = spec_set.normalize()
+    print spec_set
 
     # TODO: Implement the rest
     # We have the normalized spec_set for the top-level dependencies.
