@@ -5,24 +5,14 @@ import argparse
 import glob
 import logging
 import os
-import shutil
 import subprocess
 import sys
 import tarfile
 import zipfile
 
-try:
-    from urllib.parse import quote
-except ImportError:
-    from urllib import quote  # noqa
-
-from pip.backwardcompat import ConfigParser
-from pip.download import _download_url, _get_response_from_url
-from pip.index import PackageFinder
-from pip.locations import default_config_file
-from pip.req import InstallRequirement
-
 from piptools.datastructures import Spec, SpecSet, FileSource
+from piptools.pypi import find_best_package_url
+from piptools.cache import get_package_location
 
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
@@ -47,23 +37,6 @@ def parse_args():
             help='Show more output')
     parser.add_argument('files', nargs='*')
     return parser.parse_args()
-
-
-def get_pip_cache_root():
-    """Returns pip's cache root, or None if no such cache root is configured."""
-    pip_config = ConfigParser.RawConfigParser()
-    pip_config.read([default_config_file])
-    download_cache = None
-    try:
-        for key, value in pip_config.items('global'):
-            if key == 'download-cache':
-                download_cache = value
-                break
-    except ConfigParser.NoSectionError:
-        pass
-    if download_cache is not None:
-        download_cache = os.path.expanduser(download_cache)
-    return download_cache
 
 
 def resolve_deps(filename):
@@ -129,12 +102,13 @@ def read_requires(dist_dir, name):
 
 def resolve_dep(line, deps):
     logging.info("Resolving {}".format(line))
-    path = download_requirement(line)
+    path = get_package_location(line)
 
     build_dir = os.path.join(os.path.dirname(path), 'build')
     if os.path.exists(build_dir):
         shutil.rmtree(build_dir)
 
+    print '**', path
     extract_archive(path, build_dir)
 
     name = os.listdir(build_dir)[0]
@@ -155,38 +129,6 @@ def resolve_dep(line, deps):
             if dep == '[test]' or not dep:
                 break
             resolve_dep(dep, deps)
-
-
-def download_requirement(line):
-    req = InstallRequirement.from_line(line)
-    finder = PackageFinder(
-        find_links=[],
-        index_urls=['http://pypi.python.org/simple/'],
-        use_mirrors=True,
-        mirrors=[],
-    )
-    found = finder.find_requirement(req, False)
-
-    download_dir = os.path.join(os.path.expanduser('~'),
-                                '.pip-tools', 'cache')
-    filename = quote(found.url.split('#')[0], '')
-    final_path = os.path.join(download_dir, filename)
-    if os.path.exists(final_path):
-        # requirement already cached
-        return final_path
-
-    pip_cache_root = get_pip_cache_root()
-    if pip_cache_root:
-        cache_path = os.path.join(pip_cache_root, filename)
-        if os.path.exists(cache_path):
-            # pip has a cached version, copy it
-            shutil.copyfile(cache_path, final_path)
-
-    else:
-        # actually download the requirement
-        response = _get_response_from_url(found.url.split('#')[0], found)
-        _download_url(response, found, final_path)
-    return final_path
 
 
 def walk_specfile(filename):
@@ -226,7 +168,14 @@ def compile_specs(source_files, dry_run=False):
 
     logging.debug('')
     logging.debug('===> Normalizing source requirements')
-    print spec_set
+    #print spec_set
+
+    from piptools.datastructures import flatten
+    for spec in flatten(spec_set._byname.values()):  # TODO: Instead of this ugliness, add an iterator interface to SpecSet
+        logging.debug('Finding package match for %s' % (spec,))
+        url = find_best_package_url(spec)
+        path = get_package_location(url)
+        print path
 
     # TODO: Implement the rest
     # We have the normalized spec_set for the top-level dependencies.
