@@ -213,7 +213,7 @@ def collect_source_specs(filenames):
     logging.debug('===> Collecting source requirements')
     for filename in filenames:
         for spec in walk_specfile(filename):
-            logging.debug('%s: %s' % (spec.source, spec))
+            logging.debug('%s' % (spec.description(),))
             yield spec
 
 

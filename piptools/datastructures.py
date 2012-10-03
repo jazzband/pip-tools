@@ -29,9 +29,15 @@ class Spec(object):
         self.specs = specs if specs else []
         self.source = source
 
+    def description(self, with_source=True):
+        qualifiers = ','.join(map(''.join, self.specs))
+        source = ''
+        if with_source and self.source:
+            source = ' (from %s)' % (self.source,)
+        return '%s%s%s' % (self.name, qualifiers, source)
+
     def __str__(self):
-        specs_string = ','.join(map(''.join, self.specs))
-        return '%s%s' % (self.name, specs_string)
+        return self.description(with_source=False)
 
     def __unicode__(self):
         return unicode(str(self))
