@@ -45,14 +45,18 @@ def parse_args():
     return parser.parse_args()
 
 
-def download_cache():
+def get_pip_cache_root():
+    """Returns pip's cache root, or None if no such cache root is configured."""
     pip_config = ConfigParser.RawConfigParser()
     pip_config.read([default_config_file])
     download_cache = None
-    for key, value in pip_config.items('global'):
-        if key == 'download-cache':
-            download_cache = value
-            break
+    try:
+        for key, value in pip_config.items('global'):
+            if key == 'download-cache':
+                download_cache = value
+                break
+    except ConfigParser.NoSectionError:
+        pass
     if download_cache is not None:
         download_cache = os.path.expanduser(download_cache)
     return download_cache
@@ -167,10 +171,12 @@ def download_requirement(line):
         # requirement already cached
         return final_path
 
-    cache_path = os.path.join(download_cache(), filename)
-    if os.path.exists(cache_path):
-        # pip has a cached version, copy it
-        shutil.copyfile(cache_path, final_path)
+    pip_cache_root = get_pip_cache_root()
+    if pip_cache_root:
+        cache_path = os.path.join(pip_cache_root, filename)
+        if os.path.exists(cache_path):
+            # pip has a cached version, copy it
+            shutil.copyfile(cache_path, final_path)
 
     else:
         # actually download the requirement
