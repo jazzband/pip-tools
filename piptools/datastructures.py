@@ -29,12 +29,12 @@ class Spec(object):
         self.specs = specs if specs else []
         self.source = source
 
-    def __unicode__(self):
+    def __str__(self):
         specs_string = ','.join(map(''.join, self.specs))
         return '%s%s' % (self.name, specs_string)
 
-    def __str__(self):
-        return str(unicode(self))
+    def __unicode__(self):
+        return unicode(str(self))
 
     def __repr__(self):
         return str(self)
