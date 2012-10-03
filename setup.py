@@ -2,7 +2,7 @@
 pip-tools keeps your pinned dependencies fresh.
 """
 import sys
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 def get_dependencies():
@@ -20,7 +20,7 @@ setup(
     author='Vincent Driessen',
     author_email='vincent@3rdcloud.com',
     description=__doc__,
-    #packages=[],
+    packages=find_packages(),
     scripts=['bin/pip-compile', 'bin/pip-sync', 'bin/pip-review'],
     #include_package_data=True,
     zip_safe=False,
