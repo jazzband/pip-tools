@@ -32,3 +32,13 @@ class TestSpecSet(unittest.TestCase):
         normalized = specset.normalize()
 
         assert 'Django==1.3.2' in map(str, normalized)
+
+    def test_normalizing_2(self):
+        """Normalizing combines predicates to a single Spec."""
+        specset = SpecSet()
+
+        specset.add_spec('Django')
+        specset.add_spec('Django<1.4')
+
+        normalized = specset.normalize()
+        assert 'Django<1.4' in map(str, normalized)
