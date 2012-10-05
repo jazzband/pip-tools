@@ -42,8 +42,9 @@ class FakePackageManager(BasePackageManager):
         """
         # Sanity check (parsing will return errors if content is wrongly
         # formatted)
-        for pkg_key in fake_contents:
+        for pkg_key, list_of_specs in fake_contents.items():
             self.parse_package_key(pkg_key)
+            assert isinstance(list_of_specs, list)
 
         self._contents = fake_contents
 
