@@ -2,7 +2,7 @@ class NoPackageMatch(Exception):
     pass
 
 
-class PackageManager(object):
+class BasePackageManager(object):
     def find_best_match(self, spec):
         raise NotImplementedError('Implement this in a subclass.')
 
