@@ -9,7 +9,6 @@ branches:
   except:
     - future
 install:
-  - "pip install cram --use-mirrors"
-  - "pip install . --use-mirrors"
+  - "pip install cram pytest . --use-mirrors"
 script:
   - "./run-tests.sh"
