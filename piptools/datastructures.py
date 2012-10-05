@@ -87,6 +87,12 @@ class SpecSet(object):
         self._byname = defaultdict(list)
         self._items = []
 
+    def __iter__(self):
+        """Iterate over all specs in the set."""
+        for specs in self._byname.itervalues():
+            for spec in specs:
+                yield spec
+
     def add_specs(self, iterable):
         for spec in iterable:
             self.add_spec(spec)
