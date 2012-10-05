@@ -98,6 +98,9 @@ class SpecSet(object):
             self.add_spec(spec)
 
     def add_spec(self, spec):
+        if isinstance(spec, basestring):
+            spec = Spec.from_line(spec)
+
         self._items.append(spec)
         self._byname[spec.name].append(spec)
 
