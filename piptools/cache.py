@@ -69,7 +69,7 @@ def get_package_location(link):
     """Returns the package location for the given link.  Will try the local
     package cache first, then try to download it.
     """
-    fullpath = get_local_package_path(link.url_fragment)
+    fullpath = get_local_package_path(link.url_without_fragment)
 
     if os.path.exists(fullpath):
         # package in local cache already

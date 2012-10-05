@@ -5,14 +5,16 @@ import argparse
 import glob
 import logging
 import os
+import shutil
 import subprocess
 import sys
 import tarfile
 import zipfile
 
-from piptools.datastructures import Spec, SpecSet, FileSource
-from piptools.pypi import find_best_package_url
 from piptools.cache import get_package_location
+from piptools.datastructures import (Spec, SpecSet, FileSource,
+                                     RequiredBySource, InferredSource)
+from piptools.pypi import find_best_package_url
 
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
@@ -37,29 +39,6 @@ def parse_args():
             help='Show more output')
     parser.add_argument('files', nargs='*')
     return parser.parse_args()
-
-
-def resolve_deps(filename):
-    name, ext = os.path.splitext(filename)
-    if not ext == '.in':
-        raise ValueError("Top-level requirements should be named "
-                         "*requirements.in")
-    with open(filename, 'r') as f:
-        reqs = f.read()
-    download_dir = os.path.join(os.path.expanduser('~'),
-                                '.pip-tools', 'cache')
-
-    if not os.path.isdir(download_dir):
-        os.makedirs(download_dir)
-
-    deps = {}
-
-    for line in reqs.splitlines():
-        resolve_dep(line, deps)
-
-    reqs = "\n".join(sorted(deps.keys()))
-    with open('{}.txt'.format(name), 'w') as f:
-        f.write(reqs + '\n')
 
 
 def extract_archive(path, build_dir):
@@ -100,9 +79,15 @@ def read_requires(dist_dir, name):
             return requires
 
 
-def resolve_dep(line, deps):
-    logging.info("Resolving {}".format(line))
-    path = get_package_location(line)
+def resolve_dep(spec, specs, required_by=None):
+    """Recursively resolves the dependencies for `spec` and appends
+    them to `specs`."""
+    if required_by is None:
+        logging.info("Resolving {}".format(spec))
+    else:
+        logging.info("Resolving {} (from {})".format(spec, required_by))
+    link = find_best_package_url(spec)
+    path = get_package_location(link)
 
     build_dir = os.path.join(os.path.dirname(path), 'build')
     if os.path.exists(build_dir):
@@ -113,7 +98,14 @@ def resolve_dep(line, deps):
     name = os.listdir(build_dir)[0]
     dist_dir = os.path.join(build_dir, name)
     name, version = name.rsplit('-', 1)
-    deps['{0}=={1}'.format(name, version)] = path
+
+    spec = Spec.from_line('{0}=={1}'.format(name, version))
+    if required_by is None:
+        # TODO: other source type for PyPI 'best matches'?
+        spec.source = InferredSource()
+    else:
+        spec.source = RequiredBySource(required_by)
+    specs.append(Spec.from_line('{0}=={1}'.format(name, version)))
 
     if not has_egg_info(name, dist_dir):
         return
@@ -127,7 +119,7 @@ def resolve_dep(line, deps):
             dep = dep.strip()
             if dep == '[test]' or not dep:
                 break
-            resolve_dep(dep, deps)
+            resolve_dep(Spec.from_line(dep), specs, required_by=name)
 
 
 def walk_specfile(filename):
@@ -170,22 +162,18 @@ def compile_specs(source_files, dry_run=False):
     #print spec_set
 
     from piptools.datastructures import flatten
+    new_spec = SpecSet()
     for spec in flatten(spec_set._byname.values()):  # TODO: Instead of this ugliness, add an iterator interface to SpecSet
         logging.debug('Finding package match for %s' % (spec,))
-        url = find_best_package_url(spec)
-        path = get_package_location(url)
-        print('TODO: We should now extract dependency info from %s' % (path,))
+        deps = []
+        resolve_dep(spec, deps)
+        new_spec.add_specs(deps)
+    new_spec.normalize()  # checks for conflicts with all requirements pinned
+    print new_spec
 
-    # TODO: Implement the rest
-    # We have the normalized spec_set for the top-level dependencies.
-    #
-    # Still to be done:
-    # - For the normalized spec set, try to find packages using the
-    #   PackageFinder.  If not found, the spec can't be compiled.
-    # - Get a list of next-level dependency Specs (this will mean some
-    #   download, unarchive, inspect work)
-    # - Add those new specs to the SpecSet, and normalize() again.
-    # - Repeat until no new specs are added.
+    # TODO: new_spec has everything pinned but for all spec files. If there
+    # is only one that's not an issue but for multiple specs we need to dump
+    # the appropriate dependency tree in each compiled file.
 
 
 def main():
