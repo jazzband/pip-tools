@@ -107,7 +107,7 @@ class FakePackageManager(BasePackageManager):
 
     def get_dependencies(self, name, version):
         pkg_key = '%s-%s' % (name, version)
-        return Spec.from_line(self._contents[pkg_key])
+        return map(Spec.from_line, self._contents[pkg_key])
 
 
 class PackageManager(BasePackageManager):
