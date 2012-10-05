@@ -13,6 +13,12 @@ content = {
 }
 
 
+def print_specset(specset, round):
+    print('After round #%s:' % (round,))
+    for spec in specset:
+        print('  - %s' % (spec.description(),))
+
+
 class TestDependencyResolving(unittest.TestCase):
     def test_find_dependencies_simple(self):
         """A simple scenario for finding dependencies."""
@@ -21,7 +27,10 @@ class TestDependencyResolving(unittest.TestCase):
         spec_set = SpecSet()
         spec_set.add_spec('foo')
 
+        round = 1
+        print_specset(spec_set, round)
         while True:
+            round += 1
             new_deps = []
             for spec in spec_set.normalize():
                 name, version = pkgmgr.find_best_match(spec)
@@ -34,23 +43,16 @@ class TestDependencyResolving(unittest.TestCase):
             # "changes anything" to the spec set.  In order words: if no
             # significant new constraints are added, we're done
 
-            # XXX: FIXME: Current, we "just stop" if all new_deps keys exist
-            # (to prevent endless loops), but obviously this is not the
-            # correct impl!
-            do_add_em = False
-            existing_specs = set([s.name for s in spec_set])
-            for spec in new_deps:
-                if spec.name not in existing_specs:
-                    # Significant change, add all of them!
-                    do_add_em = True
-                    break
-
-            if do_add_em:
-                #print('Adding %s to spec set.' % (new_deps,))
-                spec_set.add_specs(new_deps)
-            else:
-                # We're done---nothing significant added
+            # XXX: FIXME: Current, we "just stop" after X rounds (to prevent
+            # endless loops), but obviously this is not the correct impl!
+            if round > 4:
                 break
+
+            spec_set.add_specs(new_deps)
+            print_specset(spec_set, round)
+
+        # Print the final result:
+        print_specset(spec_set.normalize(), 'final')
 
         spec_set = spec_set.normalize()
         self.assertItemsEqual(['foo', 'qux', 'bar', 'simplejson<2.6'], map(str, spec_set))
