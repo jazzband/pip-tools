@@ -1,7 +1,16 @@
+import re
 import operator
 from functools import partial
 from version import NormalizedVersion  # PEP386 compatible version numbers
 from datastructures import Spec
+
+
+invalid_package_chars = re.compile('[^a-zA-Z0-9-]+')
+
+
+def normalized_name(name):
+    # TODO: Find out the exact name normalization PyPI applies
+    return invalid_package_chars.sub('-', name).lower()
 
 
 class NoPackageMatch(Exception):
@@ -51,8 +60,9 @@ class FakePackageManager(BasePackageManager):
 
     def iter_versions(self, given_name):
         """Will return all versions available for the current package name."""
+        nname = normalized_name(given_name)
         for name, version in self.iter_package_versions():
-            if name == given_name:
+            if normalized_name(name) == nname:
                 yield version
 
     def matches_qual(self, version, qual, value):
@@ -80,7 +90,20 @@ class FakePackageManager(BasePackageManager):
             versions = filter(pred, versions)
         if len(versions) == 0:
             raise NoPackageMatch('No package found for %s' % (spec,))
-        return self.pick_highest(versions)
+
+        highest = self.pick_highest(versions)
+
+        # Now, this is a bit of a necessary evil because we need to return the
+        # "real name" for the package now.  Package specs are case-insensitive
+        # and we need to return the correct casing for the match, along with
+        # the version.
+        realname = spec.name
+        for name, version in self.iter_package_versions():
+            if (normalized_name(name) == normalized_name(spec.name) and
+                    NormalizedVersion(version) == NormalizedVersion(highest)):
+                realname = name
+                break
+        return realname, highest
 
     def get_dependencies(self, name, version):
         pkg_key = '%s-%s' % (name, version)
