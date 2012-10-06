@@ -2,7 +2,7 @@ import re
 import operator
 from functools import partial
 from version import NormalizedVersion  # PEP386 compatible version numbers
-from datastructures import Spec, RequiredBySource
+from datastructures import Spec
 
 
 invalid_package_chars = re.compile('[^a-zA-Z0-9-]+')
@@ -110,8 +110,7 @@ class FakePackageManager(BasePackageManager):
         pkg_key = '%s-%s' % (name, version)
         specs = []
         for specline in self._contents[pkg_key]:
-            spec = Spec.from_line(specline)
-            spec.source = RequiredBySource('%s==%s' % (name, version))
+            spec = Spec.from_line(specline, source='%s==%s' % (name, version))
             specs.append(spec)
         return specs
 

@@ -21,14 +21,9 @@ class Spec(object):
 
         Each Spec belongs to a single package name, and can have multiple
         'specs' (lowercase), which are the famous (qualifier, version) tuples.
-
-        The source is an instance of SpecSource, and defines where this spec
-        comes from.
         """
         self.name = name
         self.specs = frozenset(specs if specs else [])
-
-        assert source is None or isinstance(source, SpecSource)  # sanity check
         self.source = source
 
     def description(self, with_source=True):
@@ -56,39 +51,6 @@ class Spec(object):
         return (hash(self.name) ^
                 hash(self.specs) ^
                 hash(self.source))
-
-
-class SpecSource(object):
-    def __str__(self):
-        return str(unicode(self))
-
-
-class FileSource(SpecSource):
-    def __init__(self, filename, lineno):
-        """Records a given filename and line number as a spec source."""
-        self.filename = filename
-        self.lineno = lineno
-
-    def __unicode__(self):
-        return '%s:%s' % (self.filename, self.lineno)
-
-
-class InferredSource(SpecSource):
-    def __init__(self):
-        """Records that this spec source was inferred."""
-        pass
-
-    def __unicode__(self):
-        return 'inferred'
-
-
-class RequiredBySource(SpecSource):
-    def __init__(self, package):
-        """Records a dependency of another package."""
-        self.required_by = package
-
-    def __unicode__(self):
-        return unicode(self.required_by)
 
 
 class SpecSet(object):
@@ -236,7 +198,7 @@ class SpecSet(object):
             if less_than and greater_than:
                 assert less_than > greater_than, 'Conflict: %s%s and %s%s' % (less_than_op, less_than, greater_than_op, greater_than)  # noqa
 
-        inferred_spec = Spec(name, by_qualifiers.items(), source=InferredSource())
+        inferred_spec = Spec(name, by_qualifiers.items(), source='<inferred>')
         return inferred_spec
 
     def normalize(self):
