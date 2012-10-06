@@ -85,7 +85,6 @@ class SpecSet(object):
         conflict detection.
         """
         self._byname = defaultdict(list)
-        self._items = []
 
     def __iter__(self):
         """Iterate over all specs in the set."""
@@ -101,7 +100,6 @@ class SpecSet(object):
         if isinstance(spec, basestring):
             spec = Spec.from_line(spec)
 
-        self._items.append(spec)
         self._byname[spec.name].append(spec)
 
     def normalize_specs_for_name(self, name):
