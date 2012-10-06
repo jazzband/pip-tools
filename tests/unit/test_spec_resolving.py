@@ -9,19 +9,20 @@ def print_specset(specset, round):
         print('  - %s' % (spec.description(),))
 
 
+simple = {
+    'foo-0.1': ['bar'],
+    'bar-1.2': ['qux', 'simplejson'],
+    'qux-0.1': ['simplejson<2.6'],
+
+    'simplejson-2.4.0': [],
+    'simplejson-2.6.2': [],
+}
+
+
 class TestDependencyResolving(unittest.TestCase):
     def test_find_dependencies_simple(self):
         """A simple scenario for finding dependencies."""
-        content = {
-            'foo-0.1': ['bar'],
-            'bar-1.2': ['qux', 'simplejson'],
-            'qux-0.1': ['simplejson<2.6'],
-
-            'simplejson-2.4.0': [],
-            'simplejson-2.6.2': [],
-        }
-
-        pkgmgr = FakePackageManager(content)
+        pkgmgr = FakePackageManager(simple)
 
         spec_set = SpecSet()
         spec_set.add_spec('foo')
