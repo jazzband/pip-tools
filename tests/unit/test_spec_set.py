@@ -16,8 +16,7 @@ class TestSpecSet(unittest.TestCase):
 
         # If we now add a 'foo' spec from a specific source, they're not
         # considered equal
-        spec = Spec.from_line('foo')
-        spec.source = RequiredBySource('bar==1.2.4')
+        spec = Spec.from_line('foo', source=RequiredBySource('bar==1.2.4'))
         specset.add_spec(spec)
 
         self.assertItemsEqual(

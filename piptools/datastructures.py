@@ -9,11 +9,11 @@ def flatten(list_of_lists):
 
 class Spec(object):
     @classmethod
-    def from_line(cls, line):
+    def from_line(cls, line, source=None):
         """Parses a spec line from a requirements file and returns a Spec."""
         from pkg_resources import Requirement
         req = Requirement.parse(line)
-        return cls(req.project_name, req.specs)
+        return cls(req.project_name, req.specs, source)
 
     def __init__(self, name, specs, source=None):
         """The Spec class represents a package version specification,
@@ -27,6 +27,8 @@ class Spec(object):
         """
         self.name = name
         self.specs = frozenset(specs if specs else [])
+
+        assert source is None or isinstance(source, SpecSource)  # sanity check
         self.source = source
 
     def description(self, with_source=True):
