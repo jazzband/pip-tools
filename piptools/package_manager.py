@@ -110,8 +110,7 @@ class FakePackageManager(BasePackageManager):
         pkg_key = '%s-%s' % (name, version)
         specs = []
         for specline in self._contents[pkg_key]:
-            spec = Spec.from_line(specline, source='%s==%s' % (name, version))
-            specs.append(spec)
+            specs.append(Spec.from_line(specline))
         return specs
 
 

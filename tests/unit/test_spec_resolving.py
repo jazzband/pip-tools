@@ -73,7 +73,12 @@ class TestDependencyResolving(unittest.TestCase):
             new_deps = []
             for spec in spec_set.normalize():
                 name, version = pkgmgr.find_best_match(spec)
-                new_deps += pkgmgr.get_dependencies(name, version)
+                pkg_deps = pkgmgr.get_dependencies(name, version)
+
+                # Append source information to the new specs
+                source = '%s==%s' % (name, version)
+                pkg_deps = [s.add_source(source) for s in pkg_deps]
+                new_deps += pkg_deps
 
             if not new_deps:
                 break
@@ -95,4 +100,3 @@ class TestDependencyResolving(unittest.TestCase):
 
         spec_set = spec_set.normalize()
         self.assertItemsEqual(['foo', 'qux', 'bar', 'simplejson<2.6'], map(str, spec_set))
-

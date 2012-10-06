@@ -40,6 +40,12 @@ class Spec(object):
         self._specs = frozenset(specs if specs else [])
         self._source = source
 
+    def add_source(self, source):
+        """Creates a new, immutable, Spec which is a copy of the current Spec,
+        but with the given source attached to it.
+        """
+        return Spec(self.name, self.specs, source)
+
 
     @property  # noqa
     def name(self):
