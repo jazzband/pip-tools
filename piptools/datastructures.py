@@ -1,10 +1,24 @@
 from collections import defaultdict
 from itertools import chain
+from .version import NormalizedVersion
 
 
 def flatten(list_of_lists):
     """Flatten an iterable of iterables."""
     return chain.from_iterable(list_of_lists)
+
+
+def spec_cmp(spec1, spec2):
+    """Compares two (qual, value) tuples."""
+    qual1, val1 = spec1
+    qual2, val2 = spec2
+    result = -cmp(qual1, qual2)  # sort qualifiers reversed alphabetically
+    if result != 0:
+        return result
+
+    val1 = NormalizedVersion(val1)
+    val2 = NormalizedVersion(val2)
+    return cmp(val1, val2)
 
 
 class Spec(object):
@@ -27,7 +41,7 @@ class Spec(object):
         self.source = source
 
     def description(self, with_source=True):
-        qualifiers = ','.join(map(''.join, self.specs))
+        qualifiers = ','.join(map(''.join, sorted(self.specs, cmp=spec_cmp)))
         source = ''
         if with_source and self.source:
             source = ' (from %s)' % (self.source,)
