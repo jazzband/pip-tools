@@ -36,11 +36,25 @@ class Spec(object):
         Each Spec belongs to a single package name, and can have multiple
         'specs' (lowercase), which are the famous (qualifier, version) tuples.
         """
-        self.name = name
-        self.specs = frozenset(specs if specs else [])
-        self.source = source
+        self._name = name
+        self._specs = frozenset(specs if specs else [])
+        self._source = source
 
-    def description(self, with_source=True):
+
+    @property  # noqa
+    def name(self):
+        return self._name
+
+    @property
+    def specs(self):
+        return self._specs
+
+    @property
+    def source(self):
+        return self._source
+
+
+    def description(self, with_source=True):  # noqa
         qualifiers = ','.join(map(''.join, sorted(self.specs, cmp=spec_cmp)))
         source = ''
         if with_source and self.source:
