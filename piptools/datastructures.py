@@ -248,5 +248,5 @@ class SpecSet(object):
 
     def __str__(self):
         """Print the spec set: one line per spec in the set."""
-        lines = map(lambda s: s.description(), flatten(self._byname.values()))
+        lines = [s.description for s in self]
         return '\n'.join(lines)
