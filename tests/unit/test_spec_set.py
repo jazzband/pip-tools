@@ -1,10 +1,31 @@
 import unittest
-from piptools.datastructures import SpecSet
+from piptools.datastructures import SpecSet, Spec, RequiredBySource
 
 
 class TestSpecSet(unittest.TestCase):
-    def test_adding_specs(self):
-        """Adding specs to a set."""
+    def test_adding_spec(self):
+        """Adding a spec to a set."""
+        specset = SpecSet()
+
+        specset.add_spec('foo')
+        specset.add_spec('foo')
+
+        self.assertItemsEqual(
+                list(specset),
+                [Spec.from_line('foo')])
+
+        # If we now add a 'foo' spec from a specific source, they're not
+        # considered equal
+        spec = Spec.from_line('foo')
+        spec.source = RequiredBySource('bar==1.2.4')
+        specset.add_spec(spec)
+
+        self.assertItemsEqual(
+                list(specset),
+                [spec, Spec.from_line('foo')])
+
+    def test_adding_multiple_specs(self):
+        """Adding multiple specs to a set."""
         specset = SpecSet()
 
         specset.add_spec('Django>=1.3')

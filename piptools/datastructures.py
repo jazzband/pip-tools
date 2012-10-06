@@ -26,7 +26,7 @@ class Spec(object):
         comes from.
         """
         self.name = name
-        self.specs = specs if specs else []
+        self.specs = frozenset(specs if specs else [])
         self.source = source
 
     def description(self, with_source=True):
@@ -44,6 +44,16 @@ class Spec(object):
 
     def __repr__(self):
         return str(self)
+
+    def __eq__(self, other):
+        return (self.name == other.name and
+                self.specs == other.specs and
+                self.source == other.source)
+
+    def __hash__(self):
+        return (hash(self.name) ^
+                hash(self.specs) ^
+                hash(self.source))
 
 
 class SpecSource(object):
@@ -84,12 +94,13 @@ class SpecSet(object):
         """A collection of Spec instances that can be normalized and used for
         conflict detection.
         """
-        self._byname = defaultdict(list)
+        self._byname = defaultdict(set)
 
     def __iter__(self):
         """Iterate over all specs in the set."""
-        for specs in self._byname.itervalues():
-            for spec in specs:
+        for key in sorted(self._byname.keys(), key=str.lower):
+            specs = self._byname[key]
+            for spec in sorted(specs):
                 yield spec
 
     def add_specs(self, iterable):
@@ -100,7 +111,7 @@ class SpecSet(object):
         if isinstance(spec, basestring):
             spec = Spec.from_line(spec)
 
-        self._byname[spec.name].append(spec)
+        self._byname[spec.name].add(spec)
 
     def normalize_specs_for_name(self, name):
         # TODO: This method should not lose source information, as it does
