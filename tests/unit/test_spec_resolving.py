@@ -3,16 +3,6 @@ from piptools.datastructures import SpecSet
 from piptools.package_manager import FakePackageManager
 
 
-content = {
-    'foo-0.1': ['bar'],
-    'bar-1.2': ['qux', 'simplejson'],
-    'qux-0.1': ['simplejson<2.6'],
-
-    'simplejson-2.4.0': [],
-    'simplejson-2.6.2': [],
-}
-
-
 def print_specset(specset, round):
     print('After round #%s:' % (round,))
     for spec in specset:
@@ -22,6 +12,15 @@ def print_specset(specset, round):
 class TestDependencyResolving(unittest.TestCase):
     def test_find_dependencies_simple(self):
         """A simple scenario for finding dependencies."""
+        content = {
+            'foo-0.1': ['bar'],
+            'bar-1.2': ['qux', 'simplejson'],
+            'qux-0.1': ['simplejson<2.6'],
+
+            'simplejson-2.4.0': [],
+            'simplejson-2.6.2': [],
+        }
+
         pkgmgr = FakePackageManager(content)
 
         spec_set = SpecSet()
@@ -56,3 +55,4 @@ class TestDependencyResolving(unittest.TestCase):
 
         spec_set = spec_set.normalize()
         self.assertItemsEqual(['foo', 'qux', 'bar', 'simplejson<2.6'], map(str, spec_set))
+
