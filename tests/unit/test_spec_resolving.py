@@ -2,18 +2,7 @@ import unittest
 from piptools.datastructures import SpecSet
 from piptools.resolver import Resolver
 from piptools.package_manager import FakePackageManager
-
-
-simple = {
-    'foo-0.1': ['bar'],
-    'bar-1.2': ['qux', 'simplejson'],
-    'qux-0.1': ['simplejson<2.6'],
-
-    'simplejson-2.4.0': [],
-    'simplejson-2.6.2': [],
-}
-
-
+from fixtures import simple
 
 
 class TestDependencyResolving(unittest.TestCase):
