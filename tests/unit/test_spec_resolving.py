@@ -76,7 +76,10 @@ class TestDependencyResolving(unittest.TestCase):
                 pkg_deps = pkgmgr.get_dependencies(name, version)
 
                 # Append source information to the new specs
-                source = '%s==%s' % (name, version)
+                if spec.source:
+                    source = '%s ~> %s==%s' % (spec.source, name, version)
+                else:
+                    source = '%s==%s' % (name, version)
                 pkg_deps = [s.add_source(source) for s in pkg_deps]
                 new_deps += pkg_deps
 
