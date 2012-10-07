@@ -29,22 +29,23 @@ class Spec(object):
         req = Requirement.parse(line)
         return cls(req.project_name, req.specs, source)
 
-    def __init__(self, name, specs, source=None):
+    def __init__(self, name, preds, source=None):
         """The Spec class represents a package version specification,
         typically given by a single line in a requirements.txt file.
 
         Each Spec belongs to a single package name, and can have multiple
-        'specs' (lowercase), which are the famous (qualifier, version) tuples.
+        'preds', short for predicates, which are the famous (qualifier,
+        version) tuples.
         """
         self._name = name
-        self._specs = frozenset(specs if specs else [])
+        self._preds = frozenset(preds if preds else [])
         self._source = source
 
     def add_source(self, source):
         """Creates a new, immutable, Spec which is a copy of the current Spec,
         but with the given source attached to it.
         """
-        return Spec(self.name, self.specs, source)
+        return Spec(self.name, self.preds, source)
 
 
     @property  # noqa
@@ -52,8 +53,8 @@ class Spec(object):
         return self._name
 
     @property
-    def specs(self):
-        return self._specs
+    def preds(self):
+        return self._preds
 
     @property
     def source(self):
@@ -61,7 +62,7 @@ class Spec(object):
 
 
     def description(self, with_source=True):  # noqa
-        qualifiers = ','.join(map(''.join, sorted(self.specs, cmp=spec_cmp)))
+        qualifiers = ','.join(map(''.join, sorted(self.preds, cmp=spec_cmp)))
         source = ''
         if with_source and self.source:
             source = ' (from %s)' % (self.source,)
@@ -78,12 +79,12 @@ class Spec(object):
 
     def __eq__(self, other):
         return (self.name == other.name and
-                self.specs == other.specs and
+                self.preds == other.preds and
                 self.source == other.source)
 
     def __hash__(self):
         return (hash(self.name) ^
-                hash(self.specs) ^
+                hash(self.preds) ^
                 hash(self.source))
 
 
@@ -136,19 +137,19 @@ class SpecSet(object):
         After normalizing:
             [Spec('Django', [('==', '1.3.2')])]
         """
-        specs = list(flatten(map(lambda s: s.specs, self._byname[name])))
+        all_preds = list(flatten(map(lambda s: s.preds, self._byname[name])))
 
-        # First, group the flattened spec list by qualifier
+        # First, group the flattened pred list by qualifier
         by_qualifiers = defaultdict(list)
-        for spec in specs:
-            qualifier, version = spec
+        for pred in all_preds:
+            qualifier, version = pred
             by_qualifiers[qualifier].append(version)
 
         # For each qualifier type, apply selection logic.  For the unequality
         # qualifiers, select the value that yields the narrowest range
         # possible.
 
-        # Pick the smallest less-than spec
+        # Pick the smallest less-than pred
         if '<' in by_qualifiers:
             by_qualifiers['<'] = sorted(by_qualifiers['<'])[0]
         if '<=' in by_qualifiers:
@@ -161,7 +162,7 @@ class SpecSet(object):
             else:
                 del by_qualifiers['<']
 
-        # Pick the highest greater-than spec
+        # Pick the highest greater-than pred
         if '>' in by_qualifiers:
             by_qualifiers['>'] = sorted(by_qualifiers['>'])[-1]
         if '>=' in by_qualifiers:
@@ -192,7 +193,7 @@ class SpecSet(object):
 
             # Any non-'==' key is a conflict if the pinned version does not
             # fall in that range.  Otherwise, the unequality variant can be
-            # removed from the spec set.
+            # removed from the pred set.
             pinned_version = by_qualifiers['==']
             for qual, value in by_qualifiers.items():
                 if qual == '==':
@@ -209,7 +210,7 @@ class SpecSet(object):
                     assert pinned_version <= value, 'Conflict: %s==%s with %s<=%s' % (name, pinned_version, name, value)
 
                 # If no conflicts are found, prefer the pinned version and
-                # discard the inequality spec
+                # discard the inequality pred
                 del by_qualifiers[qual]
         else:
             # Checks for conflicts due to non-overlapping ranges

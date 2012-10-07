@@ -86,7 +86,7 @@ class FakePackageManager(BasePackageManager):
         finds a pacakge for a given spec, but it's not too hard.
         """
         versions = list(self.iter_versions(spec.name))
-        for qual, value in spec.specs:
+        for qual, value in spec.preds:
             pred = partial(self.matches_qual, qual=qual, value=value)
             versions = filter(pred, versions)
         if len(versions) == 0:
