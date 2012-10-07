@@ -19,9 +19,6 @@ simple = {
 }
 
 
-}
-
-
 class TestDependencyResolving(unittest.TestCase):
     def test_find_dependencies_simple(self):
         """A simple scenario for finding dependencies."""
@@ -36,14 +33,14 @@ class TestDependencyResolving(unittest.TestCase):
             round += 1
             new_deps = []
             for spec in spec_set.normalize():
-                name, version = pkgmgr.find_best_match(spec)
-                pkg_deps = pkgmgr.get_dependencies(name, version)
+                version = pkgmgr.find_best_match(spec)
+                pkg_deps = pkgmgr.get_dependencies(spec.name, version)
 
                 # Append source information to the new specs
                 if spec.source:
-                    source = '%s ~> %s==%s' % (spec.source, name, version)
+                    source = '%s ~> %s==%s' % (spec.source, spec.name, version)
                 else:
-                    source = '%s==%s' % (name, version)
+                    source = '%s==%s' % (spec.name, version)
                 pkg_deps = [s.add_source(source) for s in pkg_deps]
                 new_deps += pkg_deps
 
