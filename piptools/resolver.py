@@ -8,16 +8,11 @@ def print_specset(specset, round):
 
 
 class Resolver(object):
-    def __init__(self, spec_set, package_manager=None):
+    def __init__(self, spec_set, package_manager):
         """This class resolves a given SpecSet by querying the given
         PackageManager.
         """
-        # TODO: If no specific PackageManager instance is used, use the
-        # default package manager (locally cached PyPI).
         self.spec_set = spec_set
-        #if package_manager is None:
-        #    from piptools.package_manager import PackageManager
-        #    package_manager = PackageManager(...)
         self.pkgmgr = package_manager
 
     def resolve_one_round(self):
