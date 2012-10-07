@@ -257,8 +257,15 @@ class SpecSet(object):
 
         # Lookup which sources were used to construct this normalized spec set
         preds = by_qualifiers.items()
-        used_sources = {source for pred in preds for source in sources[pred]} - {None}
-        source = ' and '.join(sorted(used_sources, key=str.lower))
+        if preds:
+            used_sources = {source for pred in preds for source in sources[pred]} - {None}
+            source = ' and '.join(sorted(used_sources, key=str.lower))
+
+        else:
+            # No predicates, un-pinned requirement. Needs special-casing to
+            # keep the original source.
+            assert len(self._byname[name]) == 1
+            source = list(self._byname[name])[0].source
         return Spec(name, preds, source)
 
     def normalize(self):
