@@ -4,17 +4,10 @@ from __future__ import absolute_import
 import argparse
 import glob
 import logging
-import os
-import shutil
-import subprocess
-import sys
-import tarfile
-import zipfile
 
-from piptools.cache import get_package_location
-from piptools.datastructures import (Spec, SpecSet, FileSource,
-                                     RequiredBySource, InferredSource)
-from piptools.pypi import find_best_package_url
+from piptools.datastructures import Spec, SpecSet
+from piptools.package_manager import PackageManager
+from piptools.resolver import Resolver
 
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
@@ -41,87 +34,6 @@ def parse_args():
     return parser.parse_args()
 
 
-def extract_archive(path, build_dir):
-    if (path.endswith('.tar.gz') or
-        path.endswith('.tar') or
-        path.endswith('.tar.bz2') or
-        path.endswith('.tgz')):
-
-        archive = tarfile.open(path)
-    elif path.endswith('.zip'):
-        archive = zipfile.ZipFile(path)
-    else:
-        assert False, "Unsupported archive file: {}".format(path)
-
-    archive.extractall(build_dir)
-    archive.close()
-
-
-def has_egg_info(name, dist_dir):
-    try:
-        subprocess.check_call([sys.executable, 'setup.py', 'egg_info'],
-                              cwd=dist_dir, stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE)
-    except subprocess.CalledProcessError:
-        logging.debug("egg_info failed for {}".format(name))
-        return False
-    return True
-
-
-def read_requires(dist_dir, name):
-    egg_info_dir = '{0}.egg-info'.format(name.replace('-', '_'))
-    for dirpath, dirnames, filenames in os.walk(dist_dir):
-        if egg_info_dir in dirnames:
-            requires = os.path.join(dirpath, egg_info_dir, 'requires.txt')
-            if not os.path.exists(requires):
-                logging.debug("{} has no declared dependencies".format(name))
-                break
-            return requires
-
-
-def resolve_dep(spec, specs, required_by=None):
-    """Recursively resolves the dependencies for `spec` and appends
-    them to `specs`."""
-    if required_by is None:
-        logging.info("Resolving {}".format(spec))
-    else:
-        logging.info("Resolving {} (from {})".format(spec, required_by))
-    link = find_best_package_url(spec)
-    path = get_package_location(link)
-
-    build_dir = os.path.join(os.path.dirname(path), 'build')
-    if os.path.exists(build_dir):
-        shutil.rmtree(build_dir)
-
-    extract_archive(path, build_dir)
-
-    name = os.listdir(build_dir)[0]
-    dist_dir = os.path.join(build_dir, name)
-    name, version = name.rsplit('-', 1)
-
-    spec = Spec.from_line('{0}=={1}'.format(name, version))
-    if required_by is None:
-        # TODO: other source type for PyPI 'best matches'?
-        spec.source = InferredSource()
-    else:
-        spec.source = RequiredBySource(required_by)
-    specs.append(Spec.from_line('{0}=={1}'.format(name, version)))
-
-    if not has_egg_info(name, dist_dir):
-        return
-
-    requires = read_requires(dist_dir, name)
-    if not requires:
-        return
-
-    with open(requires, 'r') as requirements:
-        for dep in requirements.readlines():
-            dep = dep.strip()
-            if dep == '[test]' or not dep:
-                break
-            resolve_dep(Spec.from_line(dep), specs, required_by=name)
-
-
 def walk_specfile(filename):
     """Walks over the given file, and returns (req, filename, lineno)
     tuples for each entry.
@@ -134,8 +46,7 @@ def walk_specfile(filename):
         if not line or line.startswith('#'):
             continue
 
-        spec = Spec.from_line(line)
-        spec.source = FileSource(filename, lineno)
+        spec = Spec.from_line(line, source='{0}:{1}'.format(filename, lineno))
         yield spec
 
 
@@ -159,17 +70,26 @@ def compile_specs(source_files, dry_run=False):
 
     logging.debug('')
     logging.debug('===> Normalizing source requirements')
-    #print spec_set
 
-    from piptools.datastructures import flatten
-    new_spec = SpecSet()
-    for spec in flatten(spec_set._byname.values()):  # TODO: Instead of this ugliness, add an iterator interface to SpecSet
-        logging.debug('Finding package match for %s' % (spec,))
-        deps = []
-        resolve_dep(spec, deps)
-        new_spec.add_specs(deps)
-    new_spec.normalize()  # checks for conflicts with all requirements pinned
-    print new_spec
+    package_manager = PackageManager()
+
+    for spec in spec_set:
+        logging.debug('')
+        logging.debug('Finding package match for {0}'.format(spec))
+        version = package_manager.find_best_match(spec)
+        deps = package_manager.get_dependencies(spec.name, version)
+        spec_set.add_specs(deps)
+    new_spec = spec_set.normalize()
+
+    logging.debug('')
+    logging.debug('===> Resolving full tree')
+
+    resolver = Resolver(new_spec, package_manager=package_manager)
+    pinned_spec_set = resolver.resolve()
+
+    logging.debug('')
+    logging.debug('===> Pinned spec set resolved')
+    print pinned_spec_set
 
     # TODO: new_spec has everything pinned but for all spec files. If there
     # is only one that's not an issue but for multiple specs we need to dump
