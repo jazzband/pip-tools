@@ -62,3 +62,13 @@ class TestSpecSet(unittest.TestCase):
 
         normalized = specset.normalize()
         assert 'Django<1.4' in map(str, normalized)
+
+    def test_normalizing_keeps_source_info(self):
+        """Normalizing keeps source information for specs."""
+        specset = SpecSet()
+
+        specset.add_spec(Spec.from_line('Django', source='foo'))
+        specset.add_spec(Spec.from_line('Django<1.4', source='bar'))
+
+        normalized = specset.normalize()
+        assert 'bar' in [spec.source for spec in normalized]
