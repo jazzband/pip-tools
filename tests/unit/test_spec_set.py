@@ -36,7 +36,7 @@ class TestSpecSet(unittest.TestCase):
         specset.add_spec('Django<1.4')
         self.assertItemsEqual(['Django>=1.3', 'django-pipeline', 'Django<1.4'], map(str, specset))
 
-    def test_normalizing(self):
+    def test_normalizing_combines(self):
         """Normalizing combines predicates to a single Spec."""
         specset = SpecSet()
 
@@ -53,7 +53,7 @@ class TestSpecSet(unittest.TestCase):
 
         assert 'Django==1.3.2' in map(str, normalized)
 
-    def test_normalizing_2(self):
+    def test_normalizing_drops_obsoletes(self):
         """Normalizing combines predicates to a single Spec."""
         specset = SpecSet()
 
