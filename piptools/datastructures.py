@@ -272,5 +272,5 @@ class SpecSet(object):
 
     def __str__(self):
         """Print the spec set: one line per spec in the set."""
-        lines = [s.description for s in self]
+        lines = [s.description() for s in self]
         return '\n'.join(lines)
