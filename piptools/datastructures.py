@@ -3,6 +3,12 @@ from itertools import chain
 from .version import NormalizedVersion
 
 
+def first(iterable, default=None):
+    for item in iterable:
+        return item
+    return default
+
+
 def flatten(list_of_lists):
     """Flatten an iterable of iterables."""
     return chain.from_iterable(list_of_lists)
@@ -112,12 +118,19 @@ class SpecSet(object):
 
         self._byname[spec.name].add(spec)
 
-    def normalize_specs_for_name(self, name):
-        # TODO: This method should not lose source information, as it does
-        # right now.  When normalizing, we might drop a few specs, but for the
-        # ones we are keeping, the source should remain clear.
+    def explode(self, name):
+        """Explodes the list of all Specs for the given package name into
+        a list of Specs with maximally one predicate.
+        """
+        specs = self._byname[name]
+        return [Spec(spec.name, [pred], spec.source)
+                for spec in specs
+                for pred in spec.preds]
 
-        """Normalizes specs for the given package name.
+    def normalize_specs_for_name(self, name):
+        """Normalizes specs for the given package name.  Normalizing here
+        means dropping as much specs as possible while still addressing the
+        same package space.
 
         Example before normalizing:
             [
@@ -137,7 +150,16 @@ class SpecSet(object):
         After normalizing:
             [Spec('Django', [('==', '1.3.2')])]
         """
-        all_preds = list(flatten(map(lambda s: s.preds, self._byname[name])))
+        exploded_spec_list = self.explode(name)
+
+        # Keep a pred->source mapping around, which we need to reattach the
+        # original source to the preds once we've normalized the set
+        sources = defaultdict(set)
+        all_preds = set()
+        for spec in exploded_spec_list:
+            pred = first(spec.preds)  # it's the _only_ pred in the set, since it's exploded
+            sources[pred].add(spec.source)
+            all_preds.add(pred)
 
         # First, group the flattened pred list by qualifier
         by_qualifiers = defaultdict(list)
@@ -233,8 +255,11 @@ class SpecSet(object):
             if less_than and greater_than:
                 assert less_than > greater_than, 'Conflict: %s%s and %s%s' % (less_than_op, less_than, greater_than_op, greater_than)  # noqa
 
-        inferred_spec = Spec(name, by_qualifiers.items(), source='<inferred>')
-        return inferred_spec
+        # Lookup which sources were used to construct this normalized spec set
+        preds = by_qualifiers.items()
+        used_sources = {source for pred in preds for source in sources[pred]} - {None}
+        source = ' and '.join(sorted(used_sources, key=str.lower))
+        return Spec(name, preds, source)
 
     def normalize(self):
         """Generates a new spec set that is more compact, but equivalent to

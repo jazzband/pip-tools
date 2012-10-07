@@ -36,6 +36,17 @@ class TestSpecSet(unittest.TestCase):
         specset.add_spec('Django<1.4')
         self.assertItemsEqual(['Django>=1.3', 'django-pipeline', 'Django<1.4'], map(str, specset))
 
+    def test_explode(self):
+        """Exploding a spec list into specs of max one predicate."""
+        specset = SpecSet()
+
+        specset.add_spec('Django>=1.3,<1.4')
+        specset.add_spec('Django>=1.3.2,<1.5')
+
+        self.assertItemsEqual(
+                ['Django>=1.3', 'Django>=1.3.2', 'Django<1.4', 'Django<1.5'],
+                map(str, specset.explode('Django')))
+
     def test_normalizing_combines(self):
         """Normalizing combines predicates to a single Spec."""
         specset = SpecSet()
@@ -69,6 +80,8 @@ class TestSpecSet(unittest.TestCase):
 
         specset.add_spec(Spec.from_line('Django', source='foo'))
         specset.add_spec(Spec.from_line('Django<1.4', source='bar'))
+        specset.add_spec(Spec.from_line('Django<1.4', source='qux'))
+        specset.add_spec(Spec.from_line('Django<1.4', source='mutt'))
 
         normalized = specset.normalize()
-        assert 'bar' in [spec.source for spec in normalized]
+        assert 'bar and mutt and qux' in [spec.source for spec in normalized]
