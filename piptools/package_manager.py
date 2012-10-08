@@ -251,7 +251,7 @@ class PackageManager(BasePackageManager):
         logger.debug('- Getting dependencies for %s-%s' % (name, version))
         with logger.indent():
             spec = Spec.from_pinned(name, version)
-            path = self.get_package_location(str(spec))
+            path = self.get_or_download_package(str(spec))
             if path in self._dependency_cache:
                 deps = self._dependency_cache[path]
                 source = 'dependency cache'
@@ -273,7 +273,7 @@ class PackageManager(BasePackageManager):
         fullpath = os.path.join(self.download_cache_root, cache_key)
         return fullpath
 
-    def get_package_location(self, specline):
+    def get_or_download_package(self, specline):
         """Returns the local path from the package cache, downloading as
         needed.
         """
