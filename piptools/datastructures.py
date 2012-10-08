@@ -1,6 +1,18 @@
+import operator
+from functools import partial
 from collections import defaultdict
 from itertools import chain
 from .version import NormalizedVersion
+
+
+ops = {
+    '==': operator.eq,
+    '!=': operator.ne,
+    '<': operator.lt,
+    '>': operator.gt,
+    '<=': operator.le,
+    '>=': operator.ge,
+}
 
 
 def first(iterable, default=None):
@@ -172,10 +184,10 @@ class SpecSet(object):
             all_preds.add(pred)
 
         # First, group the flattened pred list by qualifier
-        by_qualifiers = defaultdict(list)
+        by_qualifiers = defaultdict(set)
         for pred in all_preds:
             qualifier, version = pred
-            by_qualifiers[qualifier].append(version)
+            by_qualifiers[qualifier].add(version)
 
         # For each qualifier type, apply selection logic.  For the unequality
         # qualifiers, select the value that yields the narrowest range
@@ -194,6 +206,16 @@ class SpecSet(object):
             else:
                 del by_qualifiers['<']
 
+        # foo<=1.2 + foo!=1.2 = foo<1.2
+        if '<=' in by_qualifiers and '!=' in by_qualifiers:
+            try:
+                by_qualifiers['!='].remove(by_qualifiers['<='])
+            except KeyError:
+                pass
+            else:
+                by_qualifiers['<'] = by_qualifiers['<=']
+                del by_qualifiers['<=']
+
         # Pick the highest greater-than pred
         if '>' in by_qualifiers:
             by_qualifiers['>'] = sorted(by_qualifiers['>'])[-1]
@@ -207,11 +229,21 @@ class SpecSet(object):
             else:
                 del by_qualifiers['>']
 
+        # foo>=1.2 + foo!=1.2 = foo>1.2
+        if '>=' in by_qualifiers and '!=' in by_qualifiers:
+            try:
+                by_qualifiers['!='].remove(by_qualifiers['>='])
+            except KeyError:
+                pass
+            else:
+                by_qualifiers['>'] = by_qualifiers['>=']
+                del by_qualifiers['>=']
+
         # Normalize less-than/greater-than in the specific case where they
         # overlap on a specific version
         if '>=' in by_qualifiers and '<=' in by_qualifiers:
             if by_qualifiers['>='] == by_qualifiers['<=']:
-                by_qualifiers['=='].append(by_qualifiers['<='])
+                by_qualifiers['=='].add(by_qualifiers['<='])
                 del by_qualifiers['>=']
                 del by_qualifiers['<=']
 
@@ -221,7 +253,7 @@ class SpecSet(object):
             assert len(set(by_qualifiers['=='])) <= 1, 'Conflict! %s' % (' with '.join(map(lambda v: '%s==%s' % (name, v), by_qualifiers['=='],)))  # noqa
 
             # Pick the only == qualifier
-            by_qualifiers['=='] = by_qualifiers['=='][0]
+            by_qualifiers['=='] = first(by_qualifiers['=='])
 
             # Any non-'==' key is a conflict if the pinned version does not
             # fall in that range.  Otherwise, the unequality variant can be
@@ -240,6 +272,10 @@ class SpecSet(object):
                     assert pinned_version < value, 'Conflict: %s==%s with %s<%s' % (name, pinned_version, name, value)
                 if qual == '<=':
                     assert pinned_version <= value, 'Conflict: %s==%s with %s<=%s' % (name, pinned_version, name, value)
+                if qual == '!=':
+                    # != is the only qualifier than can have multiple values
+                    for val in value:
+                        assert pinned_version != val, 'Conflict: %s==%s with %s!=%s' % (name, pinned_version, name, val)
 
                 # If no conflicts are found, prefer the pinned version and
                 # discard the inequality pred
@@ -265,8 +301,34 @@ class SpecSet(object):
             if less_than and greater_than:
                 assert less_than > greater_than, 'Conflict: %s%s and %s%s' % (less_than_op, less_than, greater_than_op, greater_than)  # noqa
 
+            # Remove obsolete not-equal versions
+            if '!=' in by_qualifiers:
+                disallowed_versions = by_qualifiers['!=']
+                print disallowed_versions, type(disallowed_versions)
+                for qual, version in by_qualifiers.items():
+                    if qual == '!=':
+                        continue
+
+                    op = ops[qual]
+
+                    def inverse_op(v1, v2):
+                        return not op(v1, v2)
+
+                    disallowed_versions = set(filter(partial(inverse_op, version), disallowed_versions))
+                by_qualifiers['!='] = set(disallowed_versions)
+
+        # Now, take special care regarding the rare, but valid, != operator,
+        # of which multiple values can occur and still make perfect sense.
+        preds = []
+        for qual, value in by_qualifiers.items():
+            if qual == '!=':
+                values = value  # it's plural
+                for val in values:
+                    preds.append((qual, val))
+            else:
+                preds.append((qual, value))
+
         # Lookup which sources were used to construct this normalized spec set
-        preds = by_qualifiers.items()
         if preds:
             used_sources = {source for pred in preds for source in sources[pred]} - {None}
         else:

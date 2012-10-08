@@ -112,6 +112,7 @@ class FakePackageManager(BasePackageManager):
         qual, value = pred
         ops = {
             '==': operator.eq,
+            '!=': operator.ne,
             '<': operator.lt,
             '>': operator.gt,
             '<=': operator.le,

@@ -73,6 +73,72 @@ class TestSpecSet(unittest.TestCase):
 
         normalized = specset.normalize()
         assert 'Django<1.4' in map(str, normalized)
+        assert 'Django' not in map(str, normalized)
+
+        specset = SpecSet()
+        specset.add_spec('Django>=1.4.1')
+        specset.add_spec('Django!=1.3.3')
+
+        normalized = specset.normalize()
+        assert 'Django>=1.4.1' in map(str, normalized)
+        assert 'Django!=1.3.3' not in map(str, normalized)
+
+    def test_normalizing_multiple_notequal_ops(self):
+        """Normalizing multiple not-equal ops."""
+        specset = SpecSet()
+        specset.add_spec('Django!=1.3')
+        specset.add_spec('Django!=1.4')
+
+        normalized = specset.normalize()
+        assert 'Django!=1.3,!=1.4' in map(str, normalized)
+
+    def test_normalizing_unequal_op(self):
+        """Normalizing inequality and not-equal ops."""
+        specset = SpecSet()
+        specset.add_spec('Django>=1.4.1')
+        specset.add_spec('Django!=1.4.1')
+
+        normalized = specset.normalize()
+        assert 'Django>1.4.1' in map(str, normalized)
+
+        specset = SpecSet()
+        specset.add_spec('Django<=1.4.1')
+        specset.add_spec('Django!=1.4.1')
+
+        normalized = specset.normalize()
+        assert 'Django<1.4.1' in map(str, normalized)
+
+        specset = SpecSet()
+        specset.add_spec('Django>=1.4.1')
+        specset.add_spec('Django!=1.4.2')
+
+        normalized = specset.normalize()
+        assert 'Django>=1.4.1,!=1.4.2' in map(str, normalized)
+
+        specset = SpecSet()
+        specset.add_spec('Django<=1.4.1')
+        specset.add_spec('Django>=1.4.1')
+        specset.add_spec('Django!=1.4.1')
+
+        with self.assertRaises(AssertionError):
+            specset.normalize()
+
+    def test_normalizing_is_pep386_version_aware(self):
+        specset = SpecSet()
+        specset.add_spec('Django>=1.4.0')
+        specset.add_spec('Django!=1.4')  # detects that 1.4.0 is the same as 1.4
+
+        normalized = specset.normalize()
+        assert 'Django>1.4.0' in map(str, normalized)
+
+    def test_normalizing_conflicts(self):
+        """Normalizing can lead to conflicts."""
+        specset = SpecSet()
+        specset.add_spec('Django==1.4.1')
+        specset.add_spec('Django!=1.4.1')
+
+        with self.assertRaises(AssertionError):
+            specset.normalize()
 
     def test_normalizing_keeps_source_info(self):
         """Normalizing keeps source information for specs."""
