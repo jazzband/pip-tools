@@ -189,7 +189,7 @@ class PackageManager(BasePackageManager):
         spec = Spec.from_pinned(name, version)
         path = self.get_package_location(str(spec))
         if not path in self._dependency_cache:
-            dep_strings = self.extract_dependencies(path)
+            deps = self.extract_dependencies(path)
             self._dependency_cache[path] = [Spec.from_line(dep) for dep in deps]
         return self._dependency_cache[path]
 
