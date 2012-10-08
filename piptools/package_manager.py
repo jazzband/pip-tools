@@ -15,10 +15,10 @@ except ImportError:
 
 from functools import partial
 
-from pip.backwardcompat import ConfigParser
+#from pip.backwardcompat import ConfigParser
 from pip.download import _download_url, _get_response_from_url
 from pip.index import PackageFinder
-from pip.locations import default_config_file
+#from pip.locations import default_config_file
 from pip.req import InstallRequirement
 from pip.util import splitext
 
@@ -185,22 +185,23 @@ class PackageManager(BasePackageManager):
         ))
         return self.download_package(link)
 
-    def get_pip_cache_root():
-        """Returns pip's cache root, or None if no such cache root is
-        configured."""
-        pip_config = ConfigParser.RawConfigParser()
-        pip_config.read([default_config_file])
-        download_cache = None
-        try:
-            for key, value in pip_config.items('global'):
-                if key == 'download-cache':
-                    download_cache = value
-                    break
-        except ConfigParser.NoSectionError:
-            pass
-        if download_cache is not None:
-            download_cache = os.path.expanduser(download_cache)
-        return download_cache
+    # def get_pip_cache_root():
+    #     """Returns pip's cache root, or None if no such cache root is
+    #     configured.
+    #     """
+    #     pip_config = ConfigParser.RawConfigParser()
+    #     pip_config.read([default_config_file])
+    #     download_cache = None
+    #     try:
+    #         for key, value in pip_config.items('global'):
+    #             if key == 'download-cache':
+    #                 download_cache = value
+    #                 break
+    #     except ConfigParser.NoSectionError:
+    #         pass
+    #     if download_cache is not None:
+    #         download_cache = os.path.expanduser(download_cache)
+    #     return download_cache
 
     def download_package(self, link):
         """Downloads the given package link contents to the local
