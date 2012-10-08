@@ -81,8 +81,9 @@ class FakePackageManager(BasePackageManager):
             if name == given_name:
                 yield version
 
-    def matches_qual(self, version, qual, value):
-        """Returns whether version matches the qualifier and the given value."""
+    def matches_pred(self, version, pred):
+        """Returns whether version matches the given predicate."""
+        qual, value = pred
         ops = {
             '==': operator.eq,
             '<': operator.lt,
@@ -101,9 +102,9 @@ class FakePackageManager(BasePackageManager):
         finds a pacakge for a given spec, but it's not too hard.
         """
         versions = list(self.iter_versions(spec.name))
-        for qual, value in spec.preds:
-            pred = partial(self.matches_qual, qual=qual, value=value)
-            versions = filter(pred, versions)
+        for pred in spec.preds:
+            is_version_match = partial(self.matches_pred, pred=pred)
+            versions = filter(is_version_match, versions)
         if len(versions) == 0:
             raise NoPackageMatch('No package found for %s' % (spec,))
         return self.pick_highest(versions)
