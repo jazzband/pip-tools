@@ -32,9 +32,16 @@ class NoPackageMatch(Exception):
 
 class BasePackageManager(object):
     def find_best_match(self, spec):
+        """Return a version string that indicates the best match for the given
+        Spec.
+        """
         raise NotImplementedError('Implement this in a subclass.')
 
     def get_dependencies(self, name, version):
+        """Return a list of Spec instances, representing the dependencies of
+        the specific package version indicated by the args.
+        The Spec instances don't require sources to be set by this method.
+        """
         raise NotImplementedError('Implement this in a subclass.')
 
 
@@ -227,7 +234,7 @@ class PackageManager(BasePackageManager):
     def get_dependencies(self, name, version):
         spec = Spec.from_pinned(name, version)
         specs = []
-        self.get_all_dependencies(spec, specs, source=name)
+        self.get_all_dependencies(spec, specs)
         return specs
 
     def get_all_dependencies(self, spec, specs, source):
