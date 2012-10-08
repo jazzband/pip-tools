@@ -267,42 +267,47 @@ class PackageManager(BasePackageManager):
             return False
         return True
 
+    def read_package_dependencies(self, package_dir):
+        """Returns a list of dependencies for an unpacked package dir."""
+        name = os.listdir(package_dir)[0]
+        dist_dir = os.path.join(package_dir, name)
+        name, version = name.rsplit('-', 1)
+        if not self.has_egg_info(dist_dir):
+            return []
+
+        egg_info_dir = '{0}.egg-info'.format(name.replace('-', '_'))
+        for dirpath, dirnames, _ in os.walk(dist_dir):
+            if egg_info_dir in dirnames:
+                requires = os.path.join(dirpath, egg_info_dir,
+                                        'requires.txt')
+                if os.path.exists(requires):
+                    break
+        else:  # requires.txt not found
+            return []
+
+        deps = []
+        with open(requires, 'r') as requirements:
+            for requirement in requirements.readlines():
+                dep = requirement.strip()
+                if dep == '[test]' or not dep:
+                    break
+                deps.append(dep)
+        return deps
+
     def extract_dependencies(self, path):
         """Returns a list of dependencies for a given distribution."""
         if not path in self._dependency_cache:
             build_dir = tempfile.mkdtemp()
             unpack_dir = os.path.join(build_dir, 'build')
-            self.unpack_archive(path, unpack_dir)
-            name = os.listdir(unpack_dir)[0]
-            dist_dir = os.path.join(unpack_dir, name)
-            name, version = name.rsplit('-', 1)
-            if not self.has_egg_info(dist_dir):
+            try:
+                self.unpack_archive(path, unpack_dir)
+                deps = self.read_package_dependencies(unpack_dir)
+            finally:
                 shutil.rmtree(build_dir)
-                self._dependency_cache[path] = None
-                return
 
-            egg_info_dir = '{0}.egg-info'.format(name.replace('-', '_'))
-            for dirpath, dirnames, filenames in os.walk(dist_dir):
-                if egg_info_dir in dirnames:
-                    requires = os.path.join(dirpath, egg_info_dir,
-                                            'requires.txt')
-                    if os.path.exists(requires):
-                        break
-            else:  # requires.txt not found
-                shutil.rmtree(build_dir)
-                self._dependency_cache[path] = None
-                return
-
-            deps = []
-            with open(requires, 'r') as requirements:
-                for requirement in requirements.readlines():
-                    dep = requirement.strip()
-                    if dep == '[test]' or not dep:
-                        break
-                    deps.append(dep)
-            shutil.rmtree(build_dir)
             self._dependency_cache[path] = deps
         return self._dependency_cache[path]
+
 
 if __name__ == '__main__':
     pass
