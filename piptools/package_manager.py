@@ -270,8 +270,13 @@ class PackageManager(BasePackageManager):
         else:
             assert False, "Unsupported archive file: {}".format(path)
 
-        archive.extractall(target_directory)
-        archive.close()
+        try:
+            archive.extractall(target_directory)
+        except IOError:
+            logging.error("Error extracting %s" % (path,))
+            raise
+        finally:
+            archive.close()
 
     def has_egg_info(self, dist_dir):
         try:
