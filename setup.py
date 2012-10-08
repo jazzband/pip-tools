@@ -21,7 +21,6 @@ setup(
     author_email='vincent@3rdcloud.com',
     description=__doc__,
     packages=find_packages(),
-    scripts=['bin/pip-compile', 'bin/pip-sync', 'bin/pip-review'],
     #include_package_data=True,
     zip_safe=False,
     platforms='any',
@@ -52,5 +51,12 @@ setup(
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
         'Topic :: System :: Systems Administration',
-    ]
+    ],
+    entry_points = {
+        'console_scripts': [
+            'pip-compile = piptools.commands.compile:main',
+            'pip-review = piptools.commands.review:main',
+            'pip-sync = piptools.commands.sync:main',
+        ]
+    },
 )
