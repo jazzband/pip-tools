@@ -119,12 +119,12 @@ class FakePackageManager(BasePackageManager):
 
 class PackageManager(BasePackageManager):
     """The default package manager that goes to PyPI and caches locally."""
-    cache_path = os.path.join(os.path.expanduser('~'), '.pip-tools', 'cache')
+    cache_root = os.path.join(os.path.expanduser('~'), '.pip-tools', 'cache')
 
     def __init__(self):
         # TODO: provide options for pip, such as index URL or use-mirrors
-        if not os.path.exists(self.cache_path):
-            os.makedirs(self.cache_path)
+        if not os.path.exists(self.cache_root):
+            os.makedirs(self.cache_root)
         self._link_cache = {}
         self._dependency_cache = {}
 
@@ -168,7 +168,7 @@ class PackageManager(BasePackageManager):
         can be used to calculate the destination path for a download.
         """
         cache_key = quote(url, '')
-        fullpath = os.path.join(self.cache_path, cache_key)
+        fullpath = os.path.join(self.cache_root, cache_key)
         return fullpath
 
     def get_package_location(self, spec):
