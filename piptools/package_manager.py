@@ -149,7 +149,9 @@ class PackageManager(BasePackageManager):
         self._link_cache = {}
         self._dependency_cache = {}
 
-    def find_best_match(self, spec):
+
+    # BasePackageManager interface
+    def find_best_match(self, spec):  # noqa
         # TODO: if the spec is pinned, we might be able to go straight to the
         # local cache without having to use the PackageFinder. Cached file
         # names look like this:
@@ -183,7 +185,16 @@ class PackageManager(BasePackageManager):
         package, version = splitext(link.filename)[0].rsplit('-', 1)
         return version
 
-    def get_local_package_path(self, url):
+    def get_dependencies(self, name, version):
+        spec = Spec.from_pinned(name, version)
+        path = self.get_package_location(str(spec))
+        if not path in self._dependency_cache:
+            self._dependency_cache[path] = self.extract_dependencies(path)
+        return self._dependency_cache[path]
+
+
+    # Helper methods
+    def get_local_package_path(self, url):  # noqa
         """Returns the full local path name for a given URL.  This
         does not require the package archive to exist locally.  In fact, this
         can be used to calculate the destination path for a download.
@@ -245,13 +256,6 @@ class PackageManager(BasePackageManager):
         response = _get_response_from_url(url, link)
         _download_url(response, link, fullpath)
         return fullpath
-
-    def get_dependencies(self, name, version):
-        spec = Spec.from_pinned(name, version)
-        path = self.get_package_location(str(spec))
-        if not path in self._dependency_cache:
-            self._dependency_cache[path] = self.extract_dependencies(path)
-        return self._dependency_cache[path]
 
     def unpack_archive(self, path, target_directory):
         if (path.endswith('.tar.gz') or
