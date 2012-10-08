@@ -197,7 +197,7 @@ class PackageManager(BasePackageManager):
         if not os.path.exists(self.download_cache_root):
             os.makedirs(self.download_cache_root)
         self._link_cache = {}
-        self._dependency_cache = PersistentCache(self.dep_cache_file)
+        self._dep_cache = PersistentCache(self.dep_cache_file)
 
 
     # BasePackageManager interface
@@ -252,14 +252,14 @@ class PackageManager(BasePackageManager):
         with logger.indent():
             spec = Spec.from_pinned(name, version)
             path = self.get_or_download_package(str(spec))
-            if path in self._dependency_cache:
-                deps = self._dependency_cache[path]
+            if path in self._dep_cache:
+                deps = self._dep_cache[path]
                 source = 'dependency cache'
             else:
                 deps = self.extract_dependencies(path)
-                self._dependency_cache[path] = deps
+                self._dep_cache[path] = deps
                 source = 'package archive'
-        logger.debug('  Found: %s (from %s)' % (self._dependency_cache[path], source))
+        logger.debug('  Found: %s (from %s)' % (self._dep_cache[path], source))
         return [Spec.from_line(dep) for dep in deps]
 
 
