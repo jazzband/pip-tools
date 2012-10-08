@@ -1,4 +1,3 @@
-import logging
 import operator
 import os
 import shutil
@@ -23,6 +22,7 @@ from pip.index import Link, PackageFinder
 from pip.req import InstallRequirement
 from pip.util import splitext
 
+from .logging import logger
 from .datastructures import Spec
 from .version import NormalizedVersion  # PEP386 compatible version numbers
 
@@ -171,26 +171,35 @@ class PackageManager(BasePackageManager):
         # canonical PyPI. The shouldn't do it, and this is probably an edge
         # case but it's still worth making a decision.
         specline = str(spec)
-        if specline not in self._link_cache:
-            requirement = InstallRequirement.from_line(specline)
-            finder = PackageFinder(
-                find_links=[],
-                index_urls=['http://pypi.python.org/simple/'],
-                use_mirrors=True,
-                mirrors=[],
-            )
-            link = finder.find_requirement(requirement, False)
-            self._link_cache[specline] = link
-        link = self._link_cache[specline]
-        package, version = splitext(link.filename)[0].rsplit('-', 1)
+        logger.debug('- Finding best package matching %s' % (specline,))
+        with logger.indent():
+            if specline not in self._link_cache:
+                requirement = InstallRequirement.from_line(specline)
+                finder = PackageFinder(
+                    find_links=[],
+                    index_urls=['http://pypi.python.org/simple/'],
+                    use_mirrors=True,
+                    mirrors=[],
+                )
+                link = finder.find_requirement(requirement, False)
+                self._link_cache[specline] = link
+                source = 'PyPI'
+            else:
+                link = self._link_cache[specline]
+                source = 'link cache'
+            package, version = splitext(link.filename)[0].rsplit('-', 1)
+        logger.debug('  Found best match: %s (from %s)' % (version, source))
         return version
 
     def get_dependencies(self, name, version):
-        spec = Spec.from_pinned(name, version)
-        path = self.get_package_location(str(spec))
-        if not path in self._dependency_cache:
-            deps = self.extract_dependencies(path)
-            self._dependency_cache[path] = [Spec.from_line(dep) for dep in deps]
+        logger.debug('- Getting dependencies for (%s, %s)' % (name, version))
+        with logger.indent():
+            spec = Spec.from_pinned(name, version)
+            path = self.get_package_location(str(spec))
+            if not path in self._dependency_cache:
+                deps = self.extract_dependencies(path)
+                self._dependency_cache[path] = [Spec.from_line(dep) for dep in deps]
+        logger.debug('  Found: %s' % (self._dependency_cache[path],))
         return self._dependency_cache[path]
 
 
@@ -208,18 +217,20 @@ class PackageManager(BasePackageManager):
         """Returns the local path from the package cache, downloading as
         needed.
         """
-        self.find_best_match(spec)
-        link = self._link_cache[str(spec)]
-        fullpath = self.get_local_package_path(url_without_fragment(link))
+        logger.debug('- Getting package location for %s' % (spec,))
+        with logger.indent():
+            self.find_best_match(spec)
+            link = self._link_cache[str(spec)]
+            fullpath = self.get_local_package_path(url_without_fragment(link))
 
-        if os.path.exists(fullpath):
-            logging.debug('Archive cache hit: {0}'.format(link.filename))
-            return fullpath
+            if os.path.exists(fullpath):
+                logger.debug('  Archive cache hit: {0}'.format(link.filename))
+                return fullpath
 
-        logging.debug('Archive cache miss, downloading {0}...'.format(
-            link.filename
-        ))
-        return self.download_package(link)
+            logger.debug('  Archive cache miss, downloading {0}...'.format(
+                link.filename
+            ))
+            return self.download_package(link)
 
     # def get_pip_cache_root():
     #     """Returns pip's cache root, or None if no such cache root is
@@ -253,42 +264,49 @@ class PackageManager(BasePackageManager):
         #else:
         #    actually download the requirement
         url = url_without_fragment(link)
-        fullpath = self.get_local_package_path(url)
-        response = _get_response_from_url(url, link)
-        _download_url(response, link, fullpath)
-        return fullpath
+        logger.debug('- Downloading package from %s' % (url,))
+        with logger.indent():
+            fullpath = self.get_local_package_path(url)
+            response = _get_response_from_url(url, link)
+            _download_url(response, link, fullpath)
+            return fullpath
 
     def unpack_archive(self, path, target_directory):
-        if (path.endswith('.tar.gz') or
-            path.endswith('.tar') or
-            path.endswith('.tar.bz2') or
-            path.endswith('.tgz')):
+        logger.debug('- Unpacking %s' % (path,))
+        with logger.indent():
+            if (path.endswith('.tar.gz') or
+                path.endswith('.tar') or
+                path.endswith('.tar.bz2') or
+                path.endswith('.tgz')):
 
-            archive = tarfile.open(path)
-        elif path.endswith('.zip'):
-            archive = zipfile.ZipFile(path)
-        else:
-            assert False, "Unsupported archive file: {}".format(path)
+                archive = tarfile.open(path)
+            elif path.endswith('.zip'):
+                archive = zipfile.ZipFile(path)
+            else:
+                assert False, "Unsupported archive file: {}".format(path)
 
-        try:
-            archive.extractall(target_directory)
-        except IOError:
-            logging.error("Error extracting %s" % (path,))
-            raise
-        finally:
-            archive.close()
+            try:
+                archive.extractall(target_directory)
+            except IOError:
+                logger.error("Error extracting %s" % (path,))
+                raise
+            finally:
+                archive.close()
 
     def has_egg_info(self, dist_dir):
-        try:
-            subprocess.check_call([sys.executable, 'setup.py', 'egg_info'],
-                                  cwd=dist_dir, stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE)
-        except subprocess.CalledProcessError:
-            logging.debug("egg_info failed for {0}".format(
-                dist_dir.rsplit('/', 1)[-1]
-            ))
-            return False
-        return True
+        logger.debug('- Running egg_info in %s' % (dist_dir,))
+        logger.debug('  (This can take a while.)')
+        with logger.indent():
+            try:
+                subprocess.check_call([sys.executable, 'setup.py', 'egg_info'],
+                                    cwd=dist_dir, stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+            except subprocess.CalledProcessError:
+                logger.debug("  egg_info failed for {0}".format(
+                    dist_dir.rsplit('/', 1)[-1]
+                ))
+                return False
+            return True
 
     def read_package_requires_file(self, package_dir):
         """Returns a list of dependencies for an unpacked package dir."""
@@ -321,13 +339,16 @@ class PackageManager(BasePackageManager):
         """Returns a list of string representations of dependencies for
         a given distribution.
         """
-        build_dir = tempfile.mkdtemp()
-        unpack_dir = os.path.join(build_dir, 'build')
-        try:
-            self.unpack_archive(path, unpack_dir)
-            deps = self.read_package_requires_file(unpack_dir)
-        finally:
-            shutil.rmtree(build_dir)
+        logger.debug('- Extracting dependencies for %s' % (path,))
+        with logger.indent():
+            build_dir = tempfile.mkdtemp()
+            unpack_dir = os.path.join(build_dir, 'build')
+            try:
+                self.unpack_archive(path, unpack_dir)
+                deps = self.read_package_requires_file(unpack_dir)
+            finally:
+                shutil.rmtree(build_dir)
+        logger.debug('Found: %s' % (deps,))
         return deps
 
 

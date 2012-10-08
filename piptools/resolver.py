@@ -42,7 +42,6 @@ class Resolver(object):
                 # Break as soon as nothing significant is added in this round
                 break
 
-            print 'After round #%d' % round
             print_specset(self.spec_set, round)
 
         # Return the pinned spec set

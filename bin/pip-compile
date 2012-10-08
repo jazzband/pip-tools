@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import argparse
 import glob
 import logging
+from piptools.logging import logger
 
 from piptools.datastructures import Spec, SpecSet
 from piptools.package_manager import PackageManager
@@ -20,7 +21,11 @@ def setup_logging(verbose):
     else:
         level = logging.INFO
 
-    logging.basicConfig(level=level, format='%(message)s')
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(message)s', None)
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    logger.setLevel(level)
 
 
 def parse_args():
@@ -54,42 +59,44 @@ def collect_source_specs(filenames):
     """This function collects all of the (primary) source specs into
     a flattened list of specs.
     """
-    logging.debug('===> Collecting source requirements')
     for filename in filenames:
         for spec in walk_specfile(filename):
-            logging.debug('%s' % (spec.description(),))
             yield spec
 
 
 def compile_specs(source_files, dry_run=False):
+    logger.debug('===> Collecting source requirements')
     top_level_specs = list(collect_source_specs(source_files))
 
     spec_set = SpecSet()
     spec_set.add_specs(top_level_specs)
-    spec_set = spec_set.normalize()
+    logger.debug('%s' % (spec_set,))
 
-    logging.debug('')
-    logging.debug('===> Normalizing source requirements')
+    logger.debug('')
+    logger.debug('===> Normalizing source requirements')
+    spec_set = spec_set.normalize()
+    logger.debug('%s' % (spec_set,))
 
     package_manager = PackageManager()
 
-    for spec in spec_set:
-        logging.debug('')
-        logging.debug('Finding package match for {0}'.format(spec))
-        version = package_manager.find_best_match(spec)
-        deps = package_manager.get_dependencies(spec.name, version)
-        spec_set.add_specs(deps)
-    new_spec = spec_set.normalize()
+    #for spec in spec_set:
+    #    logger.debug('')
+    #    logger.debug('Finding package match for {0}'.format(spec))
+    #    version = package_manager.find_best_match(spec)
+    #    deps = package_manager.get_dependencies(spec.name, version)
+    #    spec_set.add_specs(deps)
+    #new_spec = spec_set.normalize()
 
-    logging.debug('')
-    logging.debug('===> Resolving full tree')
+    logger.debug('')
+    logger.debug('===> Resolving full tree')
 
-    resolver = Resolver(new_spec, package_manager=package_manager)
+    resolver = Resolver(spec_set, package_manager=package_manager)
     pinned_spec_set = resolver.resolve()
 
-    logging.debug('')
-    logging.debug('===> Pinned spec set resolved')
-    print pinned_spec_set
+    logger.debug('')
+    logger.debug('===> Pinned spec set resolved')
+    for spec in pinned_spec_set:
+        logger.info('- %s' % (spec,))
 
     # TODO: new_spec has everything pinned but for all spec files. If there
     # is only one that's not an issue but for multiple specs we need to dump
@@ -104,9 +111,9 @@ def main():
     compile_specs(src_files, dry_run=args.dry_run)
 
     if args.dry_run:
-        logging.info("Dry-run, so nothing updated.")
+        logger.info("Dry-run, so nothing updated.")
     else:
-        logging.info("Dependencies updated.")
+        logger.info("Dependencies updated.")
 
 
 if __name__ == '__main__':
