@@ -156,8 +156,8 @@ class PackageManager(BasePackageManager):
                 use_mirrors=True,
                 mirrors=[],
             )
-            self._link_cache[specline] = finder.find_requirement(requirement,
-                                                                 False)
+            link = finder.find_requirement(requirement, False)
+            self._link_cache[specline] = link
         link = self._link_cache[specline]
         package, version = splitext(link.filename)[0].rsplit('-', 1)
         return version
