@@ -147,17 +147,18 @@ class PackageManager(BasePackageManager):
         # packages as the same names/versions as the originals on the
         # canonical PyPI. The shouldn't do it, and this is probably an edge
         # case but it's still worth making a decision.
-        if str(spec) not in self._link_cache:
-            requirement = InstallRequirement.from_line(str(spec))
+        specline = str(spec)
+        if specline not in self._link_cache:
+            requirement = InstallRequirement.from_line(specline)
             finder = PackageFinder(
                 find_links=[],
                 index_urls=['http://pypi.python.org/simple/'],
                 use_mirrors=True,
                 mirrors=[],
             )
-            self._link_cache[str(spec)] = finder.find_requirement(requirement,
-                                                                  False)
-        link = self._link_cache[str(spec)]
+            self._link_cache[specline] = finder.find_requirement(requirement,
+                                                                 False)
+        link = self._link_cache[specline]
         package, version = splitext(link.filename)[0].rsplit('-', 1)
         return version
 
