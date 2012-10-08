@@ -164,7 +164,7 @@ class PackageManager(BasePackageManager):
 
     def get_local_package_path(self, url):
         """Returns the full local path name for a given URL.  This
-        does not require the package to exist locally.  In fact, this
+        does not require the package archive to exist locally.  In fact, this
         can be used to calculate the destination path for a download.
         """
         cache_key = quote(url, '')
@@ -172,6 +172,9 @@ class PackageManager(BasePackageManager):
         return fullpath
 
     def get_package_location(self, spec):
+        """Returns the local path from the package cache, downloading as
+        needed.
+        """
         self.find_best_match(spec)
         link = self._link_cache[str(spec)]
         fullpath = self.get_local_package_path(link.url_without_fragment)
