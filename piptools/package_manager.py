@@ -28,7 +28,7 @@ from pip.req import InstallRequirement
 from pip.util import splitext
 
 from .logging import logger
-from .datastructures import Spec
+from .datastructures import Spec, first
 from .version import NormalizedVersion  # PEP386 compatible version numbers
 
 
@@ -186,6 +186,12 @@ class PersistentCache(object):
         self.cache[key] = value
         self.write_cache()
 
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
 
 class PackageManager(BasePackageManager):
     """The default package manager that goes to PyPI and caches locally."""
@@ -220,9 +226,20 @@ class PackageManager(BasePackageManager):
         # packages as the same names/versions as the originals on the
         # canonical PyPI. The shouldn't do it, and this is probably an edge
         # case but it's still worth making a decision.
-        specline = str(spec)
-        logger.debug('- Finding best package matching %s' % (specline,))
-        with logger.indent():
+
+        def _find_cached_match(spec):
+            if spec.is_pinned:
+                # If this is a pinned spec, we can take a shortcut: if it is
+                # found in the dependency cache, we can safely assume it has
+                # been downloaded before, and thus must exist.  We can know
+                # this without every reaching out to PyPI and avoid the
+                # network overhead.
+                name, version = spec.name, first(spec.preds)[1]
+                if (name, version) in self._dep_cache:
+                    source = 'dependency cache'
+                    return version, source
+
+            # Try the link cache, and otherwise, try PyPI
             if specline in self._link_cache:
                 link = self._link_cache[specline]
                 source = 'link cache'
@@ -237,29 +254,35 @@ class PackageManager(BasePackageManager):
                 link = finder.find_requirement(requirement, False)
                 self._link_cache[specline] = link
                 source = 'PyPI'
-            package, version = splitext(link.filename)[0].rsplit('-', 1)
+            _, version = splitext(link.filename)[0].rsplit('-', 1)
 
             # Take this moment to smartly insert the pinned variant of this
             # spec into the link_cache, too
             pinned_spec = Spec.from_pinned(spec.name, version)
             if pinned_spec not in self._link_cache:
                 self._link_cache[str(pinned_spec)] = link
+            return version, source
+
+        specline = str(spec)
+        logger.debug('- Finding best package matching %s' % (specline,))
+        with logger.indent():
+            version, source = _find_cached_match(spec)
         logger.debug('  Found best match: %s (from %s)' % (version, source))
         return version
 
     def get_dependencies(self, name, version):
         logger.debug('- Getting dependencies for %s-%s' % (name, version))
         with logger.indent():
-            spec = Spec.from_pinned(name, version)
-            path = self.get_or_download_package(str(spec))
-            if path in self._dep_cache:
-                deps = self._dep_cache[path]
+            deps = self._dep_cache.get((name, version))
+            if deps is not None:
                 source = 'dependency cache'
             else:
+                spec = Spec.from_pinned(name, version)
+                path = self.get_or_download_package(str(spec))
                 deps = self.extract_dependencies(path)
-                self._dep_cache[path] = deps
+                self._dep_cache[(name, version)] = deps
                 source = 'package archive'
-        logger.debug('  Found: %s (from %s)' % (self._dep_cache[path], source))
+        logger.debug('  Found: %s (from %s)' % (deps, source))
         return [Spec.from_line(dep) for dep in deps]
 
 
