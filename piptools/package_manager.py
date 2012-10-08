@@ -39,7 +39,8 @@ class BasePackageManager(object):
 
     def get_dependencies(self, name, version):
         """Return a list of Spec instances, representing the dependencies of
-        the specific package version indicated by the args.
+        the specific package version indicated by the args.  This method only
+        returns the direct (next-level) dependencies of the package.
         The Spec instances don't require sources to be set by this method.
         """
         raise NotImplementedError('Implement this in a subclass.')
@@ -233,24 +234,10 @@ class PackageManager(BasePackageManager):
 
     def get_dependencies(self, name, version):
         spec = Spec.from_pinned(name, version)
-        specs = []
-        self.get_all_dependencies(spec, specs)
-        return specs
-
-    def get_all_dependencies(self, spec, specs, source):
-        logging.info("Looking up dependencies for {0} (from {1})".format(
-            spec, source
-        ))
-
         path = self.get_package_location(str(spec))
-        deps = self.extract_dependencies(path)
-        if not deps:
-            return
-
-        for dep in deps:
-            dependency = Spec.from_line(dep, source=source)
-            specs.append(dependency)
-            self.get_all_dependencies(dependency, specs, source=str(spec))
+        if not path in self._dependency_cache:
+            self._dependency_cache[path] = self.extract_dependencies(path)
+        return self._dependency_cache[path]
 
     def unpack_archive(self, path, target_directory):
         if (path.endswith('.tar.gz') or
@@ -279,7 +266,7 @@ class PackageManager(BasePackageManager):
             return False
         return True
 
-    def read_package_dependencies(self, package_dir):
+    def read_package_requires_file(self, package_dir):
         """Returns a list of dependencies for an unpacked package dir."""
         name = os.listdir(package_dir)[0]
         dist_dir = os.path.join(package_dir, name)
@@ -308,17 +295,14 @@ class PackageManager(BasePackageManager):
 
     def extract_dependencies(self, path):
         """Returns a list of dependencies for a given distribution."""
-        if not path in self._dependency_cache:
-            build_dir = tempfile.mkdtemp()
-            unpack_dir = os.path.join(build_dir, 'build')
-            try:
-                self.unpack_archive(path, unpack_dir)
-                deps = self.read_package_dependencies(unpack_dir)
-            finally:
-                shutil.rmtree(build_dir)
-
-            self._dependency_cache[path] = deps
-        return self._dependency_cache[path]
+        build_dir = tempfile.mkdtemp()
+        unpack_dir = os.path.join(build_dir, 'build')
+        try:
+            self.unpack_archive(path, unpack_dir)
+            deps = self.read_package_requires_file(unpack_dir)
+        finally:
+            shutil.rmtree(build_dir)
+        return deps
 
 
 if __name__ == '__main__':
