@@ -29,6 +29,13 @@ def spec_cmp(spec1, spec2):
 
 class Spec(object):
     @classmethod
+    def from_pinned(cls, name, version, source=None):
+        """Creates a spec line for a pinned representation directly, no
+        parsing involved.  Takes an optional source.
+        """
+        return cls(name, [('==', version)], source)
+
+    @classmethod
     def from_line(cls, line, source=None):
         """Parses a spec line from a requirements file and returns a Spec."""
         from pkg_resources import Requirement

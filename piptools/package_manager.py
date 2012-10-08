@@ -221,7 +221,7 @@ class PackageManager(BasePackageManager):
         return fullpath
 
     def get_dependencies(self, name, version):
-        spec = Spec.from_line('{0}=={1}'.format(name, version))
+        spec = Spec.from_pinned(name, version)
         specs = []
         self.get_all_dependencies(spec, specs, source=name)
         return specs
