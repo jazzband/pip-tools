@@ -79,9 +79,14 @@ class TestSpecSet(unittest.TestCase):
         specset = SpecSet()
 
         specset.add_spec(Spec.from_line('Django', source='foo'))
+
+        normalized = specset.normalize()
+        assert 'foo' in [spec.source for spec in normalized]
+
         specset.add_spec(Spec.from_line('Django<1.4', source='bar'))
         specset.add_spec(Spec.from_line('Django<1.4', source='qux'))
         specset.add_spec(Spec.from_line('Django<1.4', source='mutt'))
 
         normalized = specset.normalize()
+        assert 'foo' not in [spec.source for spec in normalized]
         assert 'bar and mutt and qux' in [spec.source for spec in normalized]
