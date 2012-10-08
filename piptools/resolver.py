@@ -1,10 +1,11 @@
+from piptools.logging import logger
 from piptools.datastructures import SpecSet, Spec
 
 
 def print_specset(specset, round):
-    print('After round #%s:' % (round,))
+    logger.debug('After round #%s:' % (round,))
     for spec in specset:
-        print('  - %s' % (spec.description(),))
+        logger.debug('  - %s' % (spec.description(),))
 
 
 class Resolver(object):
