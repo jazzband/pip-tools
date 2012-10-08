@@ -143,38 +143,38 @@ class FakePackageManager(BasePackageManager):
         return specs
 
 
-class DependencyCache(object):
+class PersistentCache(object):
     def __init__(self, cache_file):
-        """Creates a new dependency cache instance, retrieving/storing cached
-        dependencies from/to the given filename.
+        """Creates a new persistent cache, retrieving/storing cached key-value
+        pairs from/to the given filename.
         """
         self._cache_file = cache_file
-        self._dependency_cache = None
+        self._cache = None
 
     @property
     def cache(self):
         """The dictionary that is the actual in-memory cache.  This property
         lazily loads the cache from disk.
         """
-        if self._dependency_cache is None:
+        if self._cache is None:
             self.read_cache()
-        return self._dependency_cache
+        return self._cache
 
     def read_cache(self):
         """Reads the cached contents into memory."""
         if os.path.exists(self._cache_file):
             with open(self._cache_file, 'r') as f:
-                self._dependency_cache = pickle.load(f)
+                self._cache = pickle.load(f)
         else:
             # Create a new, empty cache otherwise (store a __format__ field
             # that can be used to version the file, should we need to make
             # changes to its internals)
-            self._dependency_cache = {'__format__': 1}
+            self._cache = {'__format__': 1}
 
     def write_cache(self):
         """Writes (pickles) the cache to disk."""
         with open(self._cache_file, 'w') as f:
-            pickle.dump(self._dependency_cache, f)
+            pickle.dump(self._cache, f)
 
     def __contains__(self, item):
         return item in self.cache
@@ -197,7 +197,7 @@ class PackageManager(BasePackageManager):
         if not os.path.exists(self.download_cache_root):
             os.makedirs(self.download_cache_root)
         self._link_cache = {}
-        self._dependency_cache = DependencyCache(self.dep_cache_file)
+        self._dependency_cache = PersistentCache(self.dep_cache_file)
 
 
     # BasePackageManager interface

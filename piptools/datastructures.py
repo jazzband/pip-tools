@@ -270,7 +270,6 @@ class SpecSet(object):
         if preds:
             used_sources = {source for pred in preds for source in sources[pred]} - {None}
             source = ' and '.join(sorted(used_sources, key=str.lower))
-
         else:
             # No predicates, un-pinned requirement. Needs special-casing to
             # keep the original source.
