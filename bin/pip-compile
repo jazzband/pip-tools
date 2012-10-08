@@ -79,14 +79,6 @@ def compile_specs(source_files, dry_run=False):
 
     package_manager = PackageManager()
 
-    #for spec in spec_set:
-    #    logger.debug('')
-    #    logger.debug('Finding package match for {0}'.format(spec))
-    #    version = package_manager.find_best_match(spec)
-    #    deps = package_manager.get_dependencies(spec.name, version)
-    #    spec_set.add_specs(deps)
-    #new_spec = spec_set.normalize()
-
     logger.debug('')
     logger.debug('===> Resolving full tree')
 
