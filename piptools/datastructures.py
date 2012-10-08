@@ -272,7 +272,8 @@ class SpecSet(object):
         else:
             # No predicates, un-pinned requirement. Needs special-casing to
             # keep the original source.
-            used_sources = [spec.source for spec in self._byname[name]]
+            used_sources = [spec.source for spec in self._byname[name]
+                            if spec.source is not None]
         source = ' and '.join(sorted(used_sources, key=str.lower))
         return Spec(name, preds, source)
 
