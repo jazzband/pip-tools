@@ -12,6 +12,11 @@ try:
 except ImportError:
     from urllib import quote  # noqa
 
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle as pickle  # noqa
+
 from functools import partial
 import urlparse
 
@@ -138,16 +143,61 @@ class FakePackageManager(BasePackageManager):
         return specs
 
 
+class DependencyCache(object):
+    def __init__(self, cache_file):
+        """Creates a new dependency cache instance, retrieving/storing cached
+        dependencies from/to the given filename.
+        """
+        self._cache_file = cache_file
+        self._dependency_cache = None
+
+    @property
+    def cache(self):
+        """The dictionary that is the actual in-memory cache.  This property
+        lazily loads the cache from disk.
+        """
+        if self._dependency_cache is None:
+            self.read_cache()
+        return self._dependency_cache
+
+    def read_cache(self):
+        """Reads the cached contents into memory."""
+        if os.path.exists(self._cache_file):
+            with open(self._cache_file, 'r') as f:
+                self._dependency_cache = pickle.load(f)
+        else:
+            # Create a new, empty cache otherwise (store a __format__ field
+            # that can be used to version the file, should we need to make
+            # changes to its internals)
+            self._dependency_cache = {'__format__': 1}
+
+    def write_cache(self):
+        """Writes (pickles) the cache to disk."""
+        with open(self._cache_file, 'w') as f:
+            pickle.dump(self._dependency_cache, f)
+
+    def __contains__(self, item):
+        return item in self.cache
+
+    def __getitem__(self, key):
+        return self.cache[key]
+
+    def __setitem__(self, key, value):
+        self.cache[key] = value
+        self.write_cache()
+
+
 class PackageManager(BasePackageManager):
     """The default package manager that goes to PyPI and caches locally."""
-    cache_root = os.path.join(os.path.expanduser('~'), '.pip-tools', 'cache')
+    dep_cache_file = os.path.join(os.path.expanduser('~'), '.pip-tools', 'dependencies.pickle')
+    download_cache_root = os.path.join(os.path.expanduser('~'), '.pip-tools', 'cache')
 
     def __init__(self):
         # TODO: provide options for pip, such as index URL or use-mirrors
-        if not os.path.exists(self.cache_root):
-            os.makedirs(self.cache_root)
+        if not os.path.exists(self.download_cache_root):
+            os.makedirs(self.download_cache_root)
         self._link_cache = {}
-        self._dependency_cache = {}
+        self._dependency_cache = DependencyCache(self.dep_cache_file)
 
 
     # BasePackageManager interface
@@ -173,7 +223,10 @@ class PackageManager(BasePackageManager):
         specline = str(spec)
         logger.debug('- Finding best package matching %s' % (specline,))
         with logger.indent():
-            if specline not in self._link_cache:
+            if specline in self._link_cache:
+                link = self._link_cache[specline]
+                source = 'link cache'
+            else:
                 requirement = InstallRequirement.from_line(specline)
                 finder = PackageFinder(
                     find_links=[],
@@ -184,23 +237,30 @@ class PackageManager(BasePackageManager):
                 link = finder.find_requirement(requirement, False)
                 self._link_cache[specline] = link
                 source = 'PyPI'
-            else:
-                link = self._link_cache[specline]
-                source = 'link cache'
             package, version = splitext(link.filename)[0].rsplit('-', 1)
+
+            # Take this moment to smartly insert the pinned variant of this
+            # spec into the link_cache, too
+            pinned_spec = Spec.from_pinned(spec.name, version)
+            if pinned_spec not in self._link_cache:
+                self._link_cache[str(pinned_spec)] = link
         logger.debug('  Found best match: %s (from %s)' % (version, source))
         return version
 
     def get_dependencies(self, name, version):
-        logger.debug('- Getting dependencies for (%s, %s)' % (name, version))
+        logger.debug('- Getting dependencies for %s-%s' % (name, version))
         with logger.indent():
             spec = Spec.from_pinned(name, version)
             path = self.get_package_location(str(spec))
-            if not path in self._dependency_cache:
+            if path in self._dependency_cache:
+                deps = self._dependency_cache[path]
+                source = 'dependency cache'
+            else:
                 deps = self.extract_dependencies(path)
-                self._dependency_cache[path] = [Spec.from_line(dep) for dep in deps]
-        logger.debug('  Found: %s' % (self._dependency_cache[path],))
-        return self._dependency_cache[path]
+                self._dependency_cache[path] = deps
+                source = 'package archive'
+        logger.debug('  Found: %s (from %s)' % (self._dependency_cache[path], source))
+        return [Spec.from_line(dep) for dep in deps]
 
 
     # Helper methods
@@ -210,17 +270,16 @@ class PackageManager(BasePackageManager):
         can be used to calculate the destination path for a download.
         """
         cache_key = quote(url, '')
-        fullpath = os.path.join(self.cache_root, cache_key)
+        fullpath = os.path.join(self.download_cache_root, cache_key)
         return fullpath
 
-    def get_package_location(self, spec):
+    def get_package_location(self, specline):
         """Returns the local path from the package cache, downloading as
         needed.
         """
-        logger.debug('- Getting package location for %s' % (spec,))
+        logger.debug('- Getting package location for %s' % (specline,))
         with logger.indent():
-            self.find_best_match(spec)
-            link = self._link_cache[str(spec)]
+            link = self._link_cache[str(specline)]
             fullpath = self.get_local_package_path(url_without_fragment(link))
 
             if os.path.exists(fullpath):
