@@ -183,7 +183,7 @@ class PackageManager(BasePackageManager):
         logging.debug('Archive cache miss, downloading {0}...'.format(
             link.filename
         ))
-        return self.download_packge(link)
+        return self.download_package(link)
 
     def get_pip_cache_root():
         """Returns pip's cache root, or None if no such cache root is
