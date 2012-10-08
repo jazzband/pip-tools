@@ -73,6 +73,9 @@ class Spec(object):
     def source(self):
         return self._source
 
+    @property
+    def is_pinned(self):
+        return any([qual == '==' for qual, _ in self._preds])
 
     def description(self, with_source=True):  # noqa
         qualifiers = ','.join(map(''.join, sorted(self.preds, cmp=spec_cmp)))
