@@ -14,16 +14,29 @@ except ImportError:
     from urllib import quote  # noqa
 
 from functools import partial
+from urlparse import urlparse
 
 #from pip.backwardcompat import ConfigParser
 from pip.download import _download_url, _get_response_from_url
-from pip.index import PackageFinder
+from pip.index import Link, PackageFinder
 #from pip.locations import default_config_file
 from pip.req import InstallRequirement
 from pip.util import splitext
 
 from .datastructures import Spec
 from .version import NormalizedVersion  # PEP386 compatible version numbers
+
+
+def url_without_fragment(link):
+    """Included here for compatibility reasons with pip<1.2, which does not
+    have the Link.url_without_fragment() method.
+    """
+    assert isinstance(link, Link), 'Argument should be a pip.index.Link instance.'
+    try:
+        return link.url_without_fragment
+    except AttributeError:
+        scheme, netloc, path, query, fragment = urlparse.urlsplit(link.url)
+        return urlparse.urlunsplit((scheme, netloc, path, query, None))
 
 
 class NoPackageMatch(Exception):
@@ -185,7 +198,7 @@ class PackageManager(BasePackageManager):
         """
         self.find_best_match(spec)
         link = self._link_cache[str(spec)]
-        fullpath = self.get_local_package_path(link.url_without_fragment)
+        fullpath = self.get_local_package_path(url_without_fragment(link))
 
         if os.path.exists(fullpath):
             logging.debug('Archive cache hit: {0}'.format(link.filename))
@@ -227,8 +240,9 @@ class PackageManager(BasePackageManager):
         #        shutil.copyfile(cache_path, fullpath)
         #else:
         #    actually download the requirement
-        fullpath = self.get_local_package_path(link.url_fragment)
-        response = _get_response_from_url(link.url_fragment, link)
+        url = url_without_fragment(link)
+        fullpath = self.get_local_package_path(url)
+        response = _get_response_from_url(url, link)
         _download_url(response, link, fullpath)
         return fullpath
 
