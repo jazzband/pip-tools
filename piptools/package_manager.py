@@ -14,7 +14,7 @@ except ImportError:
     from urllib import quote  # noqa
 
 from functools import partial
-from urlparse import urlparse
+import urlparse
 
 #from pip.backwardcompat import ConfigParser
 from pip.download import _download_url, _get_response_from_url
