@@ -189,55 +189,69 @@ class SpecSet(object):
             qualifier, version = pred
             by_qualifiers[qualifier].add(version)
 
+        # The following nested helper methods each perform in-place
+        # modifications on the by_qualifiers dict.
+
+        def select_strongest(qual, selector):
+            """Selects the version that defines the narrowest range for the
+            given qualifier.  Assumes the values of by_qualifiers to be an
+            iterable and will convert that into a single version.
+            """
+            if qual in by_qualifiers:
+                by_qualifiers[qual] = selector(by_qualifiers[qual])
+
+        def drop_either_inequality(qual, qual_or_equal):
+            """Keeps one of the given inequality specs and drops the other.
+
+            For example: foo>1.2 and foo>=1.3 will drop foo>1.2; and
+                         foo>1.3 and foo>=1.2 will drop foo>=1.2; but
+                         foo>1.3 and foo>=1.3 will drop foo>=1.3.
+            """
+            op = ops[qual_or_equal]
+            if qual in by_qualifiers and qual_or_equal in by_qualifiers:
+                v1 = by_qualifiers[qual]
+                v2 = by_qualifiers[qual_or_equal]
+                if op(v1, v2):
+                    del by_qualifiers[qual_or_equal]
+                else:
+                    del by_qualifiers[qual]
+
+        def rewrite_inequalities(qual):
+            """Tries to get rid of any non-equal spec, if possible.
+
+            For example: foo<=1.2 and foo!=1.2 can be rewritten to foo<1.2.
+            """
+            if '!=' not in by_qualifiers:
+                return
+
+            qual_or_equal = qual + '='
+            if qual_or_equal in by_qualifiers:
+                try:
+                    by_qualifiers['!='].remove(by_qualifiers[qual_or_equal])
+                except KeyError:
+                    pass
+                else:
+                    by_qualifiers[qual] = by_qualifiers[qual_or_equal]
+                    del by_qualifiers[qual_or_equal]
+
         # For each qualifier type, apply selection logic.  For the unequality
-        # qualifiers, select the value that yields the narrowest range
+        # qualifiers, select the value that yields the strongest range
         # possible.
 
         # Pick the smallest less-than pred
-        if '<' in by_qualifiers:
-            by_qualifiers['<'] = min(by_qualifiers['<'])
-        if '<=' in by_qualifiers:
-            by_qualifiers['<='] = min(by_qualifiers['<='])
+        select_strongest('<', min)
+        select_strongest('<=', min)
+        select_strongest('>', max)
+        select_strongest('>=', max)
 
-        if '<' in by_qualifiers and '<=' in by_qualifiers:
-            if by_qualifiers['<'] <= by_qualifiers['<=']:
-                # < xyz wins over <= xyz
-                del by_qualifiers['<=']
-            else:
-                del by_qualifiers['<']
+        # Pick either the less-than of less-than-or-equal expression if both
+        # are present
+        drop_either_inequality('<', '<=')
+        drop_either_inequality('>', '>=')
 
-        # foo<=1.2 + foo!=1.2 = foo<1.2
-        if '<=' in by_qualifiers and '!=' in by_qualifiers:
-            try:
-                by_qualifiers['!='].remove(by_qualifiers['<='])
-            except KeyError:
-                pass
-            else:
-                by_qualifiers['<'] = by_qualifiers['<=']
-                del by_qualifiers['<=']
-
-        # Pick the highest greater-than pred
-        if '>' in by_qualifiers:
-            by_qualifiers['>'] = max(by_qualifiers['>'])
-        if '>=' in by_qualifiers:
-            by_qualifiers['>='] = max(by_qualifiers['>='])
-
-        if '>' in by_qualifiers and '>=' in by_qualifiers:
-            if by_qualifiers['>'] >= by_qualifiers['>=']:
-                # > xyz wins over >= xyz
-                del by_qualifiers['>=']
-            else:
-                del by_qualifiers['>']
-
-        # foo>=1.2 + foo!=1.2 = foo>1.2
-        if '>=' in by_qualifiers and '!=' in by_qualifiers:
-            try:
-                by_qualifiers['!='].remove(by_qualifiers['>='])
-            except KeyError:
-                pass
-            else:
-                by_qualifiers['>'] = by_qualifiers['>=']
-                del by_qualifiers['>=']
+        # Tries to rewrite inequalities to shorter form
+        rewrite_inequalities('<')
+        rewrite_inequalities('>')
 
         # Normalize less-than/greater-than in the specific case where they
         # overlap on a specific version
