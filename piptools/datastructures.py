@@ -195,9 +195,9 @@ class SpecSet(object):
 
         # Pick the smallest less-than pred
         if '<' in by_qualifiers:
-            by_qualifiers['<'] = sorted(by_qualifiers['<'])[0]
+            by_qualifiers['<'] = min(by_qualifiers['<'])
         if '<=' in by_qualifiers:
-            by_qualifiers['<='] = sorted(by_qualifiers['<='])[0]
+            by_qualifiers['<='] = min(by_qualifiers['<='])
 
         if '<' in by_qualifiers and '<=' in by_qualifiers:
             if by_qualifiers['<'] <= by_qualifiers['<=']:
@@ -218,9 +218,9 @@ class SpecSet(object):
 
         # Pick the highest greater-than pred
         if '>' in by_qualifiers:
-            by_qualifiers['>'] = sorted(by_qualifiers['>'])[-1]
+            by_qualifiers['>'] = max(by_qualifiers['>'])
         if '>=' in by_qualifiers:
-            by_qualifiers['>='] = sorted(by_qualifiers['>='])[-1]
+            by_qualifiers['>='] = max(by_qualifiers['>='])
 
         if '>' in by_qualifiers and '>=' in by_qualifiers:
             if by_qualifiers['>'] >= by_qualifiers['>=']:
