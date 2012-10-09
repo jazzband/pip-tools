@@ -304,7 +304,6 @@ class SpecSet(object):
             # Remove obsolete not-equal versions
             if '!=' in by_qualifiers:
                 disallowed_versions = by_qualifiers['!=']
-                print disallowed_versions, type(disallowed_versions)
                 for qual, version in by_qualifiers.items():
                     if qual == '!=':
                         continue
