@@ -1,17 +1,26 @@
 import operator
-from functools import partial
+from functools import partial, wraps
 from collections import defaultdict
 from itertools import chain
 from .version import NormalizedVersion
 
 
+def normalized_op(op):
+    @wraps(op)
+    def _normalized(v1, v2):
+        nv1 = NormalizedVersion(v1)
+        nv2 = NormalizedVersion(v2)
+        return op(nv1, nv2)
+    return _normalized
+
+
 ops = {
-    '==': operator.eq,
-    '!=': operator.ne,
-    '<': operator.lt,
-    '>': operator.gt,
-    '<=': operator.le,
-    '>=': operator.ge,
+    '==': normalized_op(operator.eq),
+    '!=': normalized_op(operator.ne),
+    '<': normalized_op(operator.lt),
+    '>': normalized_op(operator.gt),
+    '<=': normalized_op(operator.le),
+    '>=': normalized_op(operator.ge),
 }
 
 

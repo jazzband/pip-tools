@@ -123,14 +123,6 @@ class TestSpecSet(unittest.TestCase):
         with self.assertRaises(AssertionError):
             specset.normalize()
 
-    def test_normalizing_is_pep386_version_aware(self):
-        specset = SpecSet()
-        specset.add_spec('Django>=1.4.0')
-        specset.add_spec('Django!=1.4')  # detects that 1.4.0 is the same as 1.4
-
-        normalized = specset.normalize()
-        assert 'Django>1.4.0' in map(str, normalized)
-
     def test_normalizing_conflicts(self):
         """Normalizing can lead to conflicts."""
         specset = SpecSet()
