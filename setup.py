@@ -19,7 +19,7 @@ setup(
     license='BSD',
     author='Vincent Driessen',
     author_email='vincent@3rdcloud.com',
-    description=__doc__,
+    description=__doc__.strip('\n'),
     #packages=[],
     scripts=['bin/pip-review', 'bin/pip-dump'],
     #include_package_data=True,
