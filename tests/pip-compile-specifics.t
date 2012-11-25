@@ -3,6 +3,7 @@ Create a new playground first:
   $ virtualenv --python="$(which python)" FOO >/dev/null
   $ PATH=FOO/bin:$PATH
   $ pip install argparse >/dev/null 2>&1
+  $ export PYTHONPATH=$PYTHONPATH:$TESTDIR/..
   $ alias pip-compile="$TESTDIR/../bin/pip-compile"
 
 Let's create a simple requirements.in file:
@@ -18,10 +19,10 @@ latest versions of them that yield no conflict, and pin them:
   simplejson==2.4.0
 
 But what if we want to use simplejson==2.3.3 (which is also supported by
-raven)?  Let's say we change the requirements.txt file to reflect that:
+raven)?  Let's say we change the requirements.in file to reflect that:
 
-  $ echo "raven==1.9.3" > requirements.txt
-  $ echo "simplejson==2.3.3" >> requirements.txt
+  $ echo "raven==1.9.3" > requirements.in
+  $ echo "simplejson==2.3.3" >> requirements.in
 
 Now, recompiling should NOT change the file back to simplejson==2.4.0!
 
@@ -29,6 +30,3 @@ Now, recompiling should NOT change the file back to simplejson==2.4.0!
   $ cat requirements.txt
   raven==1.9.3
   simplejson==2.3.3
-
-In other words: the behaviour of pip-compile depends on what's already in
-requirements.txt.
