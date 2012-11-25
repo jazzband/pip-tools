@@ -266,18 +266,14 @@ class PackageManager(BasePackageManager):
             return version, source
 
         specline = str(spec)
-        if '==' not in specline:
-            if specline not in self._best_match_call_cache:
-                logger.debug('- Finding best package matching %s' % [specline])
-            with logger.indent():
-                version, source = _find_cached_match(spec)
-            if specline not in self._best_match_call_cache:
-                logger.debug('  Found best match: %s (from %s)' % (version,
-                                                                   source))
-            self._best_match_call_cache[specline] = True
-            return version
-        else:
-            return specline.split('==')[1]
+        if '==' not in specline or specline not in self._best_match_call_cache:
+            logger.debug('- Finding best package matching %s' % [specline])
+        with logger.indent():
+            version, source = _find_cached_match(spec)
+        if '==' not in specline or specline not in self._best_match_call_cache:
+            logger.debug('  Found best match: %s (from %s)' % (version, source))
+        self._best_match_call_cache[specline] = True
+        return version
 
     def get_dependencies(self, name, version):
         key = '{0}-{1}'.format(name, version)
