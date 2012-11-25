@@ -4,7 +4,7 @@ from piptools.datastructures import SpecSet, Spec
 
 def print_specset(specset, round):
     logger.debug('After round #%s:' % (round,))
-    for spec in specset:
+    for spec in sorted(specset, key=lambda s: s.description()):
         logger.debug('  - %s' % (spec.description(),))
 
 
