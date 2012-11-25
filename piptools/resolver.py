@@ -1,3 +1,5 @@
+import sys
+
 from piptools.logging import logger
 from piptools.datastructures import SpecSet, Spec
 

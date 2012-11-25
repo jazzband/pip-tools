@@ -6,9 +6,10 @@ import argparse
 import glob
 import logging
 import os
-from piptools.logging import logger
+import sys
 
-from piptools.datastructures import Spec, SpecSet
+from piptools.datastructures import Spec, SpecSet, ConflictError
+from piptools.logging import logger
 from piptools.package_manager import PackageManager
 from piptools.resolver import Resolver
 
@@ -85,7 +86,11 @@ def compile_specs(source_files, dry_run=False):
     logger.debug('===> Resolving full tree')
 
     resolver = Resolver(spec_set, package_manager=package_manager)
-    pinned_spec_set = resolver.resolve()
+    try:
+        pinned_spec_set = resolver.resolve()
+    except ConflictError as e:
+        logger.error("error: {0}".format(e))
+        sys.exit(1)
 
     logger.debug('')
     logger.debug('===> Pinned spec set resolved')

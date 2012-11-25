@@ -5,6 +5,10 @@ from itertools import chain
 from .version import NormalizedVersion
 
 
+class ConflictError(Exception):
+    pass
+
+
 def normalized_op(op):
     @wraps(op)
     def _normalized(v1, v2):
@@ -287,18 +291,19 @@ class SpecSet(object):
                     continue
 
                 # Perform conflict checks
-                if qual == '>':
-                    assert pinned_version > value, 'Conflict: %s==%s with %s>%s' % (name, pinned_version, name, value)
-                if qual == '>=':
-                    assert pinned_version >= value, 'Conflict: %s==%s with %s>=%s' % (name, pinned_version, name, value)
-                if qual == '<':
-                    assert pinned_version < value, 'Conflict: %s==%s with %s<%s' % (name, pinned_version, name, value)
-                if qual == '<=':
-                    assert pinned_version <= value, 'Conflict: %s==%s with %s<=%s' % (name, pinned_version, name, value)
+                if qual == '>' and not pinned_version > value:
+                    raise ConflictError('Conflict: %s==%s with %s>%s' % (name, pinned_version, name, value))
+                if qual == '>=' and not pinned_version >= value:
+                    raise ConflictError('Conflict: %s==%s with %s>=%s' % (name, pinned_version, name, value))
+                if qual == '<' and not pinned_version < value:
+                    raise ConflictError('Conflict: %s==%s with %s<%s' % (name, pinned_version, name, value))
+                if qual == '<=' and not pinned_version <= value:
+                    raise ConflictError('Conflict: %s==%s with %s<=%s' % (name, pinned_version, name, value))
                 if qual == '!=':
                     # != is the only qualifier than can have multiple values
                     for val in value:
-                        assert pinned_version != val, 'Conflict: %s==%s with %s!=%s' % (name, pinned_version, name, val)
+                        if pinned_version == val:
+                            raise ConflictError('Conflict: %s==%s with %s!=%s' % (name, pinned_version, name, val))
 
                 # If no conflicts are found, prefer the pinned version and
                 # discard the inequality pred

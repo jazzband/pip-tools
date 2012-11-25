@@ -3,6 +3,7 @@ Create a new playground first:
   $ virtualenv --python="$(which python)" FOO >/dev/null
   $ PATH=FOO/bin:$PATH
   $ pip install argparse >/dev/null 2>&1
+  $ export PYTHONPATH=$PYTHONPATH:$TESTDIR/..
   $ alias pip-compile="$TESTDIR/../bin/pip-compile"
   $ alias pip-sync="$TESTDIR/../bin/pip-sync"
   $ alias pip-review="$TESTDIR/../bin/pip-review"
@@ -11,7 +12,6 @@ First, create our requirements.in file (manually).  We start by creating
 a non-pinned version of it:
 
   $ echo "python-dateutil" > requirements.in
-
 
 COMPILING & SYNCING
 ===================
@@ -127,7 +127,8 @@ Warn about a conflict situation:
   $ echo "raven==1.9.3" > requirements.in
   $ echo "simplejson==2.6.2" >> requirements.in
   $ pip-compile
-  error: you requested simplejson==2.6.2 but raven==1.9.3 requires simplejson>=2.3.0,<2.5.0
+  error: Conflict: simplejson==2.6.2 with simplejson<2.5.0
+  [1]
 
 When pip-compile ends in an error, requirements.txt should've been untouched:
 
