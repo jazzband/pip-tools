@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 from __future__ import absolute_import
+from collections import defaultdict
 
 import argparse
 import glob
 import logging
+import os
 from piptools.logging import logger
 
 from piptools.datastructures import Spec, SpecSet
@@ -88,11 +90,33 @@ def compile_specs(source_files, dry_run=False):
     logger.debug('')
     logger.debug('===> Pinned spec set resolved')
     for spec in pinned_spec_set:
-        logger.info('- %s' % (spec,))
+        logger.debug('- %s' % (spec,))
 
-    # TODO: new_spec has everything pinned but for all spec files. If there
-    # is only one that's not an issue but for multiple specs we need to dump
-    # the appropriate dependency tree in each compiled file.
+    if dry_run:
+        return
+
+    logger.debug('')
+    logger.debug('===> Writing compiled files')
+
+    # The spec set is global for all files passed to pip-compile. Here we go
+    # through the resolver again (which will use its cache from the initial
+    # run) to determine where to write each dependency.
+    split = defaultdict(SpecSet)
+    for spec in top_level_specs:
+        split[spec.source.split(':')[0]].add_spec(spec)
+
+    for source_file, spec_set in split.iteritems():
+        resolver = Resolver(spec_set, package_manager=package_manager)
+        with logger.silent():
+            local_pinned = resolver.resolve()
+        name, ext = os.path.splitext(source_file)
+        compiled_file = '{0}.txt'.format(name)
+        assert source_file != compiled_file, "Can't overwrite %s" % source_file
+        logger.debug('{0} -> {1}'.format(source_file, compiled_file))
+        with open(compiled_file, 'w') as f:
+            for line in local_pinned:
+                f.write(unicode(line))
+                f.write('\n')
 
 
 def main():
