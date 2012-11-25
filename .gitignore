@@ -1,3 +1,5 @@
 # Ignore cram test output
 *.t.err
 /.tox
+dist
+pip_tools.egg-info
