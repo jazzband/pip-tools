@@ -205,10 +205,10 @@ class PackageManager(BasePackageManager):
             os.makedirs(self.download_cache_root)
         self._link_cache = {}
         self._dep_cache = PersistentCache(self.dep_cache_file)
-
+        self._dep_call_cache = {}
 
     # BasePackageManager interface
-    def find_best_match(self, spec):  # noqa
+    def find_best_match(self, spec):
         # TODO: if the spec is pinned, we might be able to go straight to the
         # local cache without having to use the PackageFinder. Cached file
         # names look like this:
@@ -265,14 +265,19 @@ class PackageManager(BasePackageManager):
             return version, source
 
         specline = str(spec)
-        logger.debug('- Finding best package matching %s' % (specline,))
-        with logger.indent():
-            version, source = _find_cached_match(spec)
-        logger.debug('  Found best match: %s (from %s)' % (version, source))
-        return version
+        if '==' not in specline:
+            logger.debug('- Finding best package matching %s' % (specline,))
+            with logger.indent():
+                version, source = _find_cached_match(spec)
+            logger.debug('  Found best match: %s (from %s)' % (version, source))
+            return version
+        else:
+            return specline.split('==')[1]
 
     def get_dependencies(self, name, version):
-        logger.debug('- Getting dependencies for %s-%s' % (name, version))
+        key = '{0}-{1}'.format(name, version)
+        if key not in self._dep_call_cache:
+            logger.debug('- Getting dependencies for %s-%s' % (name, version))
         with logger.indent():
             deps = self._dep_cache.get((name, version))
             if deps is not None:
@@ -283,7 +288,9 @@ class PackageManager(BasePackageManager):
                 deps = self.extract_dependencies(path)
                 self._dep_cache[(name, version)] = deps
                 source = 'package archive'
-        logger.debug('  Found: %s (from %s)' % (deps, source))
+        if key not in self._dep_call_cache:
+            logger.debug('  Found: %s (from %s)' % (deps, source))
+        self._dep_call_cache[key] = True
         return [Spec.from_line(dep) for dep in deps]
 
 
