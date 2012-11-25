@@ -206,6 +206,7 @@ class PackageManager(BasePackageManager):
         self._link_cache = {}
         self._dep_cache = PersistentCache(self.dep_cache_file)
         self._dep_call_cache = {}
+        self._best_match_call_cache = {}
 
     # BasePackageManager interface
     def find_best_match(self, spec):
@@ -266,10 +267,14 @@ class PackageManager(BasePackageManager):
 
         specline = str(spec)
         if '==' not in specline:
-            logger.debug('- Finding best package matching %s' % (specline,))
+            if specline not in self._best_match_call_cache:
+                logger.debug('- Finding best package matching %s' % [specline])
             with logger.indent():
                 version, source = _find_cached_match(spec)
-            logger.debug('  Found best match: %s (from %s)' % (version, source))
+            if specline not in self._best_match_call_cache:
+                logger.debug('  Found best match: %s (from %s)' % (version,
+                                                                   source))
+            self._best_match_call_cache[specline] = True
             return version
         else:
             return specline.split('==')[1]
