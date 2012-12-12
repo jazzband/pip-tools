@@ -277,7 +277,10 @@ class SpecSet(object):
         # Detect any conflicts
         if '==' in by_qualifiers:
             # Multiple '==' keys are conflicts
-            assert len(set(by_qualifiers['=='])) <= 1, 'Conflict! %s' % (' with '.join(map(lambda v: '%s==%s' % (name, v), by_qualifiers['=='],)))  # noqa
+            if len(set(by_qualifiers['=='])) > 1:
+                raise ConflictError('Conflict: %s' %
+                                    (' with '.join(map(lambda v: '%s==%s' % (name, v),
+                                                       by_qualifiers['=='],))))
 
             # Pick the only == qualifier
             by_qualifiers['=='] = first(by_qualifiers['=='])
@@ -327,7 +330,9 @@ class SpecSet(object):
                 greater_than_op = '>='
 
             if less_than and greater_than:
-                assert less_than > greater_than, 'Conflict: %s%s and %s%s' % (less_than_op, less_than, greater_than_op, greater_than)  # noqa
+                if less_than <= greater_than:
+                    raise ConflictError('Conflict: %s%s and %s%s' %
+                                        (less_than_op, less_than, greater_than_op, greater_than))
 
             # Remove obsolete not-equal versions
             if '!=' in by_qualifiers:

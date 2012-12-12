@@ -1,5 +1,5 @@
 import unittest
-from piptools.datastructures import SpecSet, Spec
+from piptools.datastructures import SpecSet, Spec, ConflictError
 
 
 class TestSpecSet(unittest.TestCase):
@@ -120,7 +120,7 @@ class TestSpecSet(unittest.TestCase):
         specset.add_spec('Django>=1.4.1')
         specset.add_spec('Django!=1.4.1')
 
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ConflictError):
             specset.normalize()
 
     def test_normalizing_conflicts(self):
@@ -129,7 +129,7 @@ class TestSpecSet(unittest.TestCase):
         specset.add_spec('Django==1.4.1')
         specset.add_spec('Django!=1.4.1')
 
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(ConflictError):
             specset.normalize()
 
     def test_normalizing_keeps_source_info(self):
