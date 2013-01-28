@@ -97,7 +97,7 @@ def dump_requirements(files):
 
 
 def find_default_files():
-    req_files = list(chain.from_iterable(glob(pattern) for pattern in GLOB_PATTERNS))
+    req_files = list(chain.from_iterable(glob.glob(pattern) for pattern in GLOB_PATTERNS))
     try:
         req_files.remove(DEFAULT_REQUIREMENTS_FILE)
     except ValueError:
