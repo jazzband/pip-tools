@@ -18,8 +18,7 @@ Setup:
   $ pip install -r requirements/develop.txt >/dev/null 2>&1
   $ echo "bpython" > requirements-prod-debug.txt
   $ echo "Pygments" >> requirements-prod-debug.txt
-  $ pip install -r requirements-prod-debug.txt >/dev/null 2>&1
-  
+  $ pip install -r requirements-prod-debug.txt >/dev/null 2>&1  
 
 Next, let's see what pip-dump does:
 
