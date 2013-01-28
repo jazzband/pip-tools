@@ -17,7 +17,7 @@ Setup:
   $ echo "pep8" > requirements/develop.txt
   $ pip install -r requirements/develop.txt >/dev/null 2>&1
   $ echo "bpython" > requirements-prod-debug.txt
-  $ echo "Pygments" > requirements-prod-debug.txt
+  $ echo "Pygments" >> requirements-prod-debug.txt
   $ pip install -r requirements-prod-debug.txt >/dev/null 2>&1
   
 
@@ -40,5 +40,5 @@ It should've updated requirements.txt with pinned versions of all requirements:
   pep8==* (glob)
 
   $ cat requirements-prod-debug.txt
-  Pygments==* (glob)
   bpython==* (glob)
+  Pygments==* (glob)
