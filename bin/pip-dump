@@ -29,7 +29,7 @@ check_output = partial(_check_output, shell=True)
 
 # Constants
 DEFAULT_REQUIREMENTS_FILE = 'requirements.txt'
-GLOB_PATTERN = '*requirements.txt'
+GLOB_PATTERNS = ('*requirements.txt', 'requirements[_-]*.txt', 'requirements/*.txt')
 PIP_IGNORE_FILE = '.pipignore'
 SPLIT_PATTERN = '## The following requirements were added by pip --freeze:'
 
@@ -97,7 +97,7 @@ def dump_requirements(files):
 
 
 def find_default_files():
-    req_files = glob.glob(GLOB_PATTERN)
+    req_files = list(it.chain.from_iterable(glob.glob(pattern) for pattern in GLOB_PATTERNS))
     try:
         req_files.remove(DEFAULT_REQUIREMENTS_FILE)
     except ValueError:
