@@ -40,6 +40,8 @@ def parse_args():
         description='Shows information about registered PyPI package.')
     parser.add_argument('--verbose', '-v', action='store_true', default=False,
         help='Show more output')
+    parser.add_argument('--with-description', '-d', action='store_true', default=False,
+        help='Ask interactively to show full description')
     parser.add_argument('package', nargs='*')
     return parser.parse_args()
 
@@ -92,7 +94,7 @@ def main():
         for info_key, value in short_info_keys.iteritems():
             logging.info('\n'.join(['{0}: \t{1}'.format(value, short_info.get(info_key))]))
         full_description = pkg_info['info'].get('description', None)
-        if full_description:
+        if full_description and args.with_description:
             answer = ask_for_full_descrition()
             print '' # For logical separation of packages, nothing more.
             if answer in ['y', 'a']:
