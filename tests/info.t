@@ -3,6 +3,7 @@ Create a new playground first:
   $ virtualenv --python="$(which python)" FOO >/dev/null
   $ PATH=FOO/bin:$PATH
   $ pip install argparse >/dev/null 2>&1
+  $ pip install ordereddict >/dev/null 2>&1
   $ alias pip-info="$TESTDIR/../bin/pip-info"
 
 Next, let's see what pip-info does:
