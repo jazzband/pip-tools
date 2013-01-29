@@ -1,3 +1,4 @@
 # Ignore cram test output
 *.t.err
 /.tox
+.idea
