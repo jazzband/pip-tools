@@ -3,8 +3,12 @@ from __future__ import absolute_import
 from functools import partial
 import argparse
 import logging
+from pydoc import plainpager, tempfilepager, plain, ttypager, pipepager
+import os
 import urllib2
 import json
+import sys
+import types
 
 try:
     from subprocess import check_ouput as _check_ouput
@@ -15,6 +19,40 @@ try:
     from collections import OrderedDict
 except ImportError:
     from ordereddict import OrderedDict
+
+
+# Re-declaring because of this issue:
+# http://stackoverflow.com/questions/14573485/pygments-piped-to-less-inside-python-script-breaks-highlighting
+def getpager():
+    """Decide what method to use for paging through text."""
+    if type(sys.stdout) is not types.FileType:
+        return plainpager
+    if not sys.stdin.isatty() or not sys.stdout.isatty():
+        return plainpager
+    if 'PAGER' in os.environ:
+        if sys.platform == 'win32': # pipes completely broken in Windows
+            return lambda text: tempfilepager(plain(text), os.environ['PAGER'])
+        elif os.environ.get('TERM') in ('dumb', 'emacs'):
+            return lambda text: pipepager(plain(text), os.environ['PAGER'])
+        else:
+            return lambda text: pipepager(text, os.environ['PAGER'])
+    if os.environ.get('TERM') in ('dumb', 'emacs'):
+        return plainpager
+    if sys.platform == 'win32' or sys.platform.startswith('os2'):
+        return lambda text: tempfilepager(plain(text), 'more <')
+    if hasattr(os, 'system') and os.system('(less) 2>/dev/null') == 0:
+        return lambda text: pipepager(text, 'less -R')
+
+    import tempfile
+    (fd, filename) = tempfile.mkstemp()
+    os.close(fd)
+    try:
+        if hasattr(os, 'system') and os.system('more "%s"' % filename) == 0:
+            return lambda text: pipepager(text, 'more')
+        else:
+            return ttypager
+    finally:
+        os.unlink(filename)
 
 
 class InteractiveAsker(object):
@@ -111,10 +149,7 @@ def main():
                 except ImportError:
                     pass
 
-                p = subprocess.Popen(['less', '-R'], stdin=subprocess.PIPE)
-                p.stdin.write(full_description)
-                p.stdin.close()
-                p.wait()
+                getpager()(full_description)
 
 if __name__ == '__main__':
     main()
