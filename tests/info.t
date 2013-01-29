@@ -8,9 +8,9 @@ Create a new playground first:
 Next, let's see what pip-info does:
 
   $ pip-info pep8
-  Package name: 	pep8
-  Home page: 	http://pep8.readthedocs.org/
-  Documentation: 	None
-  Summary: 	Python style guide checker
-  Version: 	* (glob)
-  PyPI page: 	http://pypi.python.org/pypi/pep8
+  Package name: \tpep8
+  Home page: \thttp://pep8.readthedocs.org/
+  Documentation: \tNone
+  Summary: \tPython style guide checker
+  Version: \t* (glob)
+  PyPI page: \thttp://pypi.python.org/pypi/pep8
