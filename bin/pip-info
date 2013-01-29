@@ -1,0 +1,155 @@
+#!/usr/bin/env python
+from __future__ import absolute_import
+from functools import partial
+import argparse
+import logging
+from pydoc import plainpager, tempfilepager, plain, ttypager, pipepager
+import os
+import urllib2
+import json
+import sys
+import types
+
+try:
+    from subprocess import check_ouput as _check_ouput
+except ImportError:
+    import subprocess
+
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
+
+
+# Re-declaring because of this issue:
+# http://stackoverflow.com/questions/14573485/pygments-piped-to-less-inside-python-script-breaks-highlighting
+def getpager():
+    """Decide what method to use for paging through text."""
+    if type(sys.stdout) is not types.FileType:
+        return plainpager
+    if not sys.stdin.isatty() or not sys.stdout.isatty():
+        return plainpager
+    if 'PAGER' in os.environ:
+        if sys.platform == 'win32': # pipes completely broken in Windows
+            return lambda text: tempfilepager(plain(text), os.environ['PAGER'])
+        elif os.environ.get('TERM') in ('dumb', 'emacs'):
+            return lambda text: pipepager(plain(text), os.environ['PAGER'])
+        else:
+            return lambda text: pipepager(text, os.environ['PAGER'])
+    if os.environ.get('TERM') in ('dumb', 'emacs'):
+        return plainpager
+    if sys.platform == 'win32' or sys.platform.startswith('os2'):
+        return lambda text: tempfilepager(plain(text), 'more <')
+    if hasattr(os, 'system') and os.system('(less) 2>/dev/null') == 0:
+        return lambda text: pipepager(text, 'less -R')
+
+    import tempfile
+    (fd, filename) = tempfile.mkstemp()
+    os.close(fd)
+    try:
+        if hasattr(os, 'system') and os.system('more "%s"' % filename) == 0:
+            return lambda text: pipepager(text, 'more')
+        else:
+            return ttypager
+    finally:
+        os.unlink(filename)
+
+
+class InteractiveAsker(object):
+    def __init__(self):
+        self.cached_answer = None
+
+    def ask(self, prompt):
+        if self.cached_answer is not None:
+            return self.cached_answer
+
+        answer = ''
+        while answer not in ['y', 'n', 'a']:
+            answer = raw_input(prompt)
+            answer = answer.strip().lower()
+
+        if answer == 'a':
+            self.cached_answer = answer
+
+        return answer
+
+
+ask_for_full_descrition = partial(InteractiveAsker().ask, 'Show full description? [Y]es, [N]o, [A]ll ')
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='Shows information about registered PyPI package.')
+    parser.add_argument('--verbose', '-v', action='store_true', default=False,
+        help='Show more output')
+    parser.add_argument('--with-description', '-d', action='store_true', default=False,
+        help='Ask interactively to show full description')
+    parser.add_argument('package', nargs='*')
+    return parser.parse_args()
+
+
+def get_pkg_info(pkg_name):
+    logging.debug('Checking for info of %r' % (pkg_name,))
+
+    try:
+        req = urllib2.Request('http://pypi.python.org/pypi/%s/json' % (pkg_name,))
+        handler = urllib2.urlopen(req)
+    except urllib2.HTTPError:
+        req = urllib2.Request('http://pypi.python.org/pypi/%s/json' % (pkg_name.capitalize(),))
+        handler = urllib2.urlopen(req)
+
+    status = handler.getcode()
+    if status == 200:
+        content = handler.read()
+        return json.loads(content)
+    else:
+        raise ValueError('Package %r not found on PyPI.' % (pkg_name,))
+
+
+def setup_logging(verbose):
+    if verbose:
+        level = logging.DEBUG
+    else:
+        level = logging.INFO
+
+    logging.basicConfig(level=level, format='%(message)s')
+
+
+def main():
+    args = parse_args()
+    setup_logging(args.verbose)
+
+    if not args.package:
+        logging.info('Provide package name or more than one.')
+    packages = set(args.package)
+    for package in packages:
+        pkg_info = get_pkg_info(package)
+        short_info_keys = OrderedDict({
+            'name': 'Package name',
+            'summary': 'Summary',
+            'version': 'Version',
+            'package_url': 'PyPI page',
+            'home_page': 'Home page',
+            'docs_url': 'Documentation',
+        })
+        short_info = dict([(key, pkg_info['info'].get(key)) for key in short_info_keys if pkg_info['info'].get(key)])
+        for info_key, value in short_info_keys.iteritems():
+            logging.info('\n'.join(['{0}: \t{1}'.format(value, short_info.get(info_key))]))
+        full_description = pkg_info['info'].get('description', None)
+        if full_description and args.with_description:
+            answer = ask_for_full_descrition()
+            print '' # For logical separation of packages, nothing more.
+            if answer in ['y', 'a']:
+                try:
+                    from pygments.lexers import RstLexer
+                    from pygments.formatters import TerminalFormatter
+                    from pygments import highlight
+
+                    full_description = highlight(full_description, RstLexer(), TerminalFormatter())
+                except ImportError:
+                    pass
+
+                getpager()(full_description)
+
+if __name__ == '__main__':
+    main()

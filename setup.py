@@ -8,7 +8,7 @@ from setuptools import setup
 def get_dependencies():
     deps = []
     if sys.version_info < (2, 7):
-        deps += ['argparse']
+        deps += ['argparse', 'ordereddict']
     return deps
 
 
@@ -21,7 +21,7 @@ setup(
     author_email='vincent@3rdcloud.com',
     description=__doc__.strip('\n'),
     #packages=[],
-    scripts=['bin/pip-review', 'bin/pip-dump'],
+    scripts=['bin/pip-review', 'bin/pip-dump', 'bin/pip-info'],
     #include_package_data=True,
     zip_safe=False,
     platforms='any',
