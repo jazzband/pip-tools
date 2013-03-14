@@ -7,8 +7,9 @@ import logging
 import urllib2
 import json
 from urllib2 import HTTPError
+
 try:
-    from subprocess import check_ouput as _check_ouput
+    from subprocess import check_output as _check_output
 except ImportError:
     import subprocess
 
@@ -27,31 +28,30 @@ check_output = partial(_check_output, shell=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(
-            description='Keeps your Python package dependencies pinned, but '
-            'fresh.')
+        description='Keeps your Python package dependencies pinned, but fresh.')
     parser.add_argument('--verbose', '-v', action='store_true', default=False,
-            help='Show more output')
+                        help='Show more output')
     parser.add_argument('--raw', '-r', action='store_true', default=False,
-            help='Print raw lines (suitable for passing to pip install)')
+                        help='Print raw lines (suitable for passing to pip install)')
     parser.add_argument('--interactive', '-i', action='store_true', default=False,
-            help='Ask interactively to install updates')
+                        help='Ask interactively to install updates')
     parser.add_argument('--auto', '-a', action='store_true', default=False,
-            help='Automatically install every update found')
+                        help='Automatically install every update found')
     parser.add_argument('--editables', '-e', action='store_true', default=False,
-            help='Also include editable packages in PyPI lookup')
+                        help='Also include editable packages in PyPI lookup')
     return parser.parse_args()
 
 
 def get_pkg_info(pkg_name):
-    logging.debug('Checking for updates of %r' % (pkg_name,))
-    req = urllib2.Request('http://pypi.python.org/pypi/%s/json' % (pkg_name,))
+    logging.debug('Checking for updates of {0}'.format(pkg_name))
+    req = urllib2.Request('http://pypi.python.org/pypi/{0}/json'.format(pkg_name))
     handler = urllib2.urlopen(req)
     status = handler.getcode()
     if status == 200:
         content = handler.read()
         return json.loads(content)
     else:
-        raise ValueError('Package %r not found on PyPI.' % (pkg_name,))
+        raise ValueError('Package {0} not found on PyPI.'.format(pkg_name))
 
 
 def latest_version(pkg_name, silent=False):
@@ -97,7 +97,6 @@ def setup_logging(verbose):
     logging.basicConfig(level=level, format='%(message)s')
 
 
-
 class InteractiveAsker(object):
     def __init__(self):
         self.cached_answer = None
@@ -108,7 +107,7 @@ class InteractiveAsker(object):
 
         answer = ''
         while answer not in ['y', 'n', 'a', 'q']:
-            answer = raw_input('%s [Y]es, [N]o, [A]ll, [Q]uit ' % prompt)
+            answer = raw_input('{0} [Y]es, [N]o, [A]ll, [Q]uit '.format(prompt))
             answer = answer.strip().lower()
 
         if answer in ['q', 'a']:
@@ -116,11 +115,12 @@ class InteractiveAsker(object):
 
         return answer
 
+
 ask_to_install = partial(InteractiveAsker().ask, prompt='Upgrade now?')
 
 
 def update_pkg(pkg, version):
-    os.system('pip install %s==%s' % (pkg, version))
+    os.system('pip install {0}=={1}'.format(pkg, version))
 
 
 def confirm(question):
@@ -140,41 +140,42 @@ def main():
 
     if args.auto and args.editables:
         if not confirm('WARNING: Using --auto and --editables at the same time might lead to unintended upgrades.\n'
-                'Are you sure? [yn] '):
+                       'Are you sure? [y/n] '):
             raise SystemExit('Quitting')
 
     installed = list(get_installed_pkgs())
     lookup_on_pypi = [name for name, _, editable in installed
-            if not editable or args.editables]
+                      if not editable or args.editables]
     latest_versions = dict(get_latest_versions(lookup_on_pypi))
 
     all_ok = True
     for pkg, installed_version, editable in installed:
         if editable and not args.editables:
-            logging.debug('Skipping -e %s==%s' % (pkg, installed_version))
+            logging.debug('Skipping -e {0}=={1}'.format(pkg, installed_version))
             all_ok = False
             continue
 
         latest_version = latest_versions[pkg]
         if latest_version is None:
-            logging.warning('No update information found for %s' % (pkg,))
+            logging.warning('No update information found for {0}'.format(pkg))
             all_ok = False
         elif latest_version != installed_version:
             if args.raw:
-                logging.info('%s==%s' % (pkg, latest_version))
+                logging.info('{0}=={1}'.format(pkg, latest_version))
             else:
                 if args.auto:
                     update_pkg(pkg, latest_version)
                 else:
-                    logging.info('%s==%s is available (you have %s)' % (pkg,
-                        latest_version, installed_version))
+                    logging.info('{0}=={1} is available (you have {2})'.format(
+                        pkg, latest_version, installed_version
+                    ))
                     if args.interactive:
                         answer = ask_to_install()
                         if answer in ['y', 'a']:
                             update_pkg(pkg, latest_version)
             all_ok = False
         elif not args.raw:
-            logging.debug('%s==%s is up-to-date' % (pkg, installed_version))
+            logging.debug('{0}=={1} is up-to-date'.format(pkg, installed_version))
 
     if all_ok and not args.raw:
         logging.info('Everything up-to-date')
