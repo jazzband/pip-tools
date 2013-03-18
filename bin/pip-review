@@ -39,6 +39,9 @@ def parse_args():
             help='Automatically install every update found')
     parser.add_argument('--editables', '-e', action='store_true', default=False,
             help='Also include editable packages in PyPI lookup')
+    parser.add_argument('--local', '-l', action='store_true', default=False,
+            help='If in a virtualenv that has global access, do not output '
+                 'globally-installed packages')
     return parser.parse_args()
 
 
@@ -71,8 +74,12 @@ def get_latest_versions(pkg_names):
     return zip(pkg_names, versions)
 
 
-def get_installed_pkgs():
-    output = check_output('pip freeze')
+def get_installed_pkgs(local=False):
+    command = 'pip freeze'        
+    if local:
+        command += ' --local'
+
+    output = check_output(command)
 
     for line in output.split('\n'):
         if not line or line.startswith('##'):
@@ -143,7 +150,7 @@ def main():
                 'Are you sure? [yn] '):
             raise SystemExit('Quitting')
 
-    installed = list(get_installed_pkgs())
+    installed = list(get_installed_pkgs(local=args.local))
     lookup_on_pypi = [name for name, _, editable in installed
             if not editable or args.editables]
     latest_versions = dict(get_latest_versions(lookup_on_pypi))
