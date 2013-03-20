@@ -1,6 +1,12 @@
 History
 =======
 
+0.3 (2013-03-20)
+------------------
+   - Compares versions, so version numbers reported are always higher than the
+   	 current versions (assumes PEP 386 compliance)
+   - Detects more filename patterns for requirements files
+
 0.2.1 (2012-10-26)
 ------------------
    - Python 2.6 support
