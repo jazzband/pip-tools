@@ -6,7 +6,7 @@ from setuptools import setup
 
 
 def get_dependencies():
-    deps = []
+    deps = ['verlib']
     if sys.version_info < (2, 7):
         deps += ['argparse']
     return deps
