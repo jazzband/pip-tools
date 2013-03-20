@@ -7,6 +7,7 @@ import logging
 import urllib2
 import json
 from urllib2 import HTTPError
+from verlib import NormalizedVersion, suggest_normalized_version
 try:
     from subprocess import check_ouput as _check_ouput
 except ImportError:
@@ -21,6 +22,10 @@ except ImportError:
             error.output = output
             raise error
         return output
+
+
+class InvalidVersion(ValueError): pass
+
 
 check_output = partial(_check_output, shell=True)
 
@@ -53,6 +58,21 @@ def get_pkg_info(pkg_name):
     else:
         raise ValueError('Package %r not found on PyPI.' % (pkg_name,))
 
+    
+def validate_version(pkg_name, version):
+    rversion = suggest_normalized_version(version)
+    if rversion is None:
+        raise InvalidVersion('Cannot work with {name}=={version} because version '
+                             'number can\'t be normalized.'.format(name=pkg_name,
+                                                                   version=version))
+    if rversion != version:
+        logging.warning('Package "{name}" has wrong version. '
+                        'It was transformed from {vfrom} into {vto} '
+                        'for interoperability.'.format(name=pkg_name,
+                                                       vfrom=version,
+                                                       vto=rversion))
+    return NormalizedVersion(rversion)
+
 
 def latest_version(pkg_name, silent=False):
     try:
@@ -62,7 +82,7 @@ def latest_version(pkg_name, silent=False):
             return None
         else:
             raise
-    return info['info']['version']
+    return validate_version(pkg_name, info['info']['version'])
 
 
 def get_latest_versions(pkg_names):
@@ -85,7 +105,12 @@ def get_installed_pkgs():
             yield name, 'dev', True
         else:
             name, version = line.split('==')
-            yield name, version, False
+            try:
+                version = validate_version(name, version)
+            except InvalidVersion as e:
+                logging.error(e)
+            else:
+                yield name, version, False
 
 
 def setup_logging(verbose):
@@ -159,22 +184,23 @@ def main():
         if latest_version is None:
             logging.warning('No update information found for %s' % (pkg,))
             all_ok = False
-        elif latest_version != installed_version:
-            if args.raw:
-                logging.info('%s==%s' % (pkg, latest_version))
-            else:
-                if args.auto:
-                    update_pkg(pkg, latest_version)
+        else:
+            if latest_version > installed_version:
+                if args.raw:
+                    logging.info('%s==%s' % (pkg, latest_version))
                 else:
-                    logging.info('%s==%s is available (you have %s)' % (pkg,
-                        latest_version, installed_version))
-                    if args.interactive:
-                        answer = ask_to_install()
-                        if answer in ['y', 'a']:
-                            update_pkg(pkg, latest_version)
-            all_ok = False
-        elif not args.raw:
-            logging.debug('%s==%s is up-to-date' % (pkg, installed_version))
+                    if args.auto:
+                        update_pkg(pkg, latest_version)
+                    else:
+                        logging.info('%s==%s is available (you have %s)' % (pkg,
+                            latest_version, installed_version))
+                        if args.interactive:
+                            answer = ask_to_install()
+                            if answer in ['y', 'a']:
+                                update_pkg(pkg, latest_version)
+                all_ok = False
+            elif not args.raw:
+                logging.debug('%s==%s is up-to-date' % (pkg, installed_version))
 
     if all_ok and not args.raw:
         logging.info('Everything up-to-date')
