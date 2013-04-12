@@ -4,6 +4,7 @@ import os.path
 import glob
 import argparse
 import logging
+import sys
 import tempfile
 from itertools import dropwhile, takewhile, chain
 from functools import partial
@@ -34,13 +35,34 @@ PIP_IGNORE_FILE = '.pipignore'
 SPLIT_PATTERN = '## The following requirements were added by pip --freeze:'
 
 
+class StdOutFilter(logging.Filter):
+    def filter(self, record):
+        return record.levelno in [logging.DEBUG, logging.INFO]
+
+
 def setup_logging(verbose):
     if verbose:
         level = logging.DEBUG
     else:
         level = logging.INFO
 
-    logging.basicConfig(level=level, format='%(message)s')
+    format = '%(message)s'
+
+    logger = logging.getLogger('pip-dump')
+
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler.addFilter(StdOutFilter())
+    stdout_handler.setFormatter(logging.Formatter(format))
+    stdout_handler.setLevel(logging.DEBUG)
+
+    stderr_handler = logging.StreamHandler(sys.stderr)
+    stderr_handler.setFormatter(logging.Formatter(format))
+    stderr_handler.setLevel(logging.WARNING)
+
+    logger.setLevel(level)
+    logger.addHandler(stderr_handler)
+    logger.addHandler(stdout_handler)
+    return logger
 
 
 def parse_args():
@@ -113,7 +135,7 @@ def find_default_files():
 
 def main():
     args = parse_args()
-    setup_logging(args.verbose)
+    logger = setup_logging(args.verbose)
 
     if not args.files:
         args.files = find_default_files()

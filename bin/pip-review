@@ -4,6 +4,7 @@ import os
 import argparse
 from functools import partial
 import logging
+import sys
 import urllib2
 import json
 from urllib2 import HTTPError
@@ -51,7 +52,8 @@ def parse_args():
 
 
 def get_pkg_info(pkg_name):
-    logging.debug('Checking for updates of %r' % (pkg_name,))
+    logger = logging.getLogger('pip-review')
+    logger.debug('Checking for updates of %r' % (pkg_name,))
     req = urllib2.Request('http://pypi.python.org/pypi/%s/json' % (pkg_name,))
     handler = urllib2.urlopen(req)
     status = handler.getcode()
@@ -61,15 +63,16 @@ def get_pkg_info(pkg_name):
     else:
         raise ValueError('Package %r not found on PyPI.' % (pkg_name,))
 
-    
+
 def validate_version(pkg_name, version):
+    logger = logging.getLogger('pip-review')
     rversion = suggest_normalized_version(version)
     if rversion is None:
         raise InvalidVersion('Cannot work with {name}=={version} because version '
                              'number can\'t be normalized.'.format(name=pkg_name,
                                                                    version=version))
     if rversion != version:
-        logging.warning('Package "{name}" has wrong version. '
+        logger.warning('Package "{name}" has wrong version. '
                         'It was transformed from {vfrom} into {vto} '
                         'for interoperability.'.format(name=pkg_name,
                                                        vfrom=version,
@@ -95,7 +98,8 @@ def get_latest_versions(pkg_names):
 
 
 def get_installed_pkgs(local=False):
-    command = 'pip freeze'        
+    logger = logging.getLogger('pip-review')
+    command = 'pip freeze'
     if local:
         command += ' --local'
 
@@ -115,9 +119,14 @@ def get_installed_pkgs(local=False):
             try:
                 version = validate_version(name, version)
             except InvalidVersion as e:
-                logging.error(e)
+                logger.error(e)
             else:
                 yield name, version, False
+
+
+class StdOutFilter(logging.Filter):
+    def filter(self, record):
+        return record.levelno in [logging.DEBUG, logging.INFO]
 
 
 def setup_logging(verbose):
@@ -126,8 +135,23 @@ def setup_logging(verbose):
     else:
         level = logging.INFO
 
-    logging.basicConfig(level=level, format='%(message)s')
+    format = '%(message)s'
 
+    logger = logging.getLogger('pip-review')
+
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    stdout_handler.addFilter(StdOutFilter())
+    stdout_handler.setFormatter(logging.Formatter(format))
+    stdout_handler.setLevel(logging.DEBUG)
+
+    stderr_handler = logging.StreamHandler(sys.stderr)
+    stderr_handler.setFormatter(logging.Formatter(format))
+    stderr_handler.setLevel(logging.WARNING)
+
+    logger.setLevel(level)
+    logger.addHandler(stderr_handler)
+    logger.addHandler(stdout_handler)
+    return logger
 
 
 class InteractiveAsker(object):
@@ -165,7 +189,7 @@ def confirm(question):
 
 def main():
     args = parse_args()
-    setup_logging(args.verbose)
+    logger = setup_logging(args.verbose)
 
     if args.raw and args.interactive:
         raise SystemExit('--raw and --interactive cannot be used together')
@@ -183,23 +207,23 @@ def main():
     all_ok = True
     for pkg, installed_version, editable in installed:
         if editable and not args.editables:
-            logging.debug('Skipping -e %s==%s' % (pkg, installed_version))
+            logger.debug('Skipping -e %s==%s' % (pkg, installed_version))
             all_ok = False
             continue
 
         latest_version = latest_versions[pkg]
         if latest_version is None:
-            logging.warning('No update information found for %s' % (pkg,))
+            logger.warning('No update information found for %s' % (pkg,))
             all_ok = False
         else:
             if latest_version > installed_version:
                 if args.raw:
-                    logging.info('%s==%s' % (pkg, latest_version))
+                    logger.info('%s==%s' % (pkg, latest_version))
                 else:
                     if args.auto:
                         update_pkg(pkg, latest_version)
                     else:
-                        logging.info('%s==%s is available (you have %s)' % (pkg,
+                        logger.warning('%s==%s is available (you have %s)' % (pkg,
                             latest_version, installed_version))
                         if args.interactive:
                             answer = ask_to_install()
@@ -207,10 +231,10 @@ def main():
                                 update_pkg(pkg, latest_version)
                 all_ok = False
             elif not args.raw:
-                logging.debug('%s==%s is up-to-date' % (pkg, installed_version))
+                logger.debug('%s==%s is up-to-date' % (pkg, installed_version))
 
     if all_ok and not args.raw:
-        logging.info('Everything up-to-date')
+        logger.info('Everything up-to-date')
 
 
 if __name__ == '__main__':
