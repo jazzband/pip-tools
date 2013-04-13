@@ -295,7 +295,7 @@ class SpecSet(object):
 
                 # Perform conflict checks
                 for op in ['>', '>=', '<', '<=']:
-                    if qual == op and ops['op'](pinned_version, value):
+                    if qual == op and not ops[op](pinned_version, value):
                         raise ConflictError(
                             "Conflict: {name}=={pinned} with "
                             "{name}{op}{version}".format(
