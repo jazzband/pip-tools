@@ -119,8 +119,8 @@ def compile_specs(source_files, dry_run=False):
         assert source_file != compiled_file, "Can't overwrite %s" % source_file
         logger.debug('{0} -> {1}'.format(source_file, compiled_file))
         with open(compiled_file, 'w') as f:
-            for line in local_pinned:
-                f.write(unicode(line))
+            for line in sorted(map(unicode, local_pinned)):
+                f.write(line)
                 f.write('\n')
 
 
