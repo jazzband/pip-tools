@@ -294,19 +294,22 @@ class SpecSet(object):
                     continue
 
                 # Perform conflict checks
-                if qual == '>' and not pinned_version > value:
-                    raise ConflictError('Conflict: %s==%s with %s>%s' % (name, pinned_version, name, value))
-                if qual == '>=' and not pinned_version >= value:
-                    raise ConflictError('Conflict: %s==%s with %s>=%s' % (name, pinned_version, name, value))
-                if qual == '<' and not pinned_version < value:
-                    raise ConflictError('Conflict: %s==%s with %s<%s' % (name, pinned_version, name, value))
-                if qual == '<=' and not pinned_version <= value:
-                    raise ConflictError('Conflict: %s==%s with %s<=%s' % (name, pinned_version, name, value))
+                for op in ['>', '>=', '<', '<=']:
+                    if qual == op and ops['op'](pinned_version, value):
+                        raise ConflictError(
+                            "Conflict: {name}=={pinned} with "
+                            "{name}{op}{version}".format(
+                                name=name, pinned=pinned_version,
+                                op=op, version=value))
                 if qual == '!=':
                     # != is the only qualifier than can have multiple values
                     for val in value:
                         if pinned_version == val:
-                            raise ConflictError('Conflict: %s==%s with %s!=%s' % (name, pinned_version, name, val))
+                            raise ConflictError(
+                                "Conflict: {name}=={pinned} with "
+                                "{name}!={version}".format(
+                                    name=name, pinned=pinned_version,
+                                    version=val))
 
                 # If no conflicts are found, prefer the pinned version and
                 # discard the inequality pred
@@ -330,9 +333,12 @@ class SpecSet(object):
                 greater_than_op = '>='
 
             if less_than and greater_than:
-                if less_than <= greater_than:
-                    raise ConflictError('Conflict: %s%s and %s%s' %
-                                        (less_than_op, less_than, greater_than_op, greater_than))
+                if ops['<='](less_than, greater_than):
+                    raise ConflictError(
+                        'Conflict: {name}{ltop}{lt} and '
+                        '{name}{gtop}{gt}'.format(
+                            name=name, ltop=less_than_op, lt=less_than,
+                            gtop=greater_than_op, gt=greater_than))
 
             # Remove obsolete not-equal versions
             if '!=' in by_qualifiers:
