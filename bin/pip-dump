@@ -8,8 +8,9 @@ import tempfile
 from itertools import dropwhile, takewhile, chain
 from functools import partial
 from subprocess import check_call as _check_call
+
 try:
-    from subprocess import check_ouput as _check_ouput
+    from subprocess import check_output as _check_output
 except ImportError:
     import subprocess
 
@@ -22,7 +23,6 @@ except ImportError:
             error.output = output
             raise error
         return output
-
 
 check_call = partial(_check_call, shell=True)
 check_output = partial(_check_output, shell=True)
@@ -45,9 +45,11 @@ def setup_logging(verbose):
 
 def parse_args():
     parser = argparse.ArgumentParser(
-            description='Rewrites requirements.txt to match your virtualenv.')
-    parser.add_argument('--verbose', '-v', action='store_true', default=False,
-            help='Show more output')
+        description='Rewrites requirements.txt to match your virtualenv.'
+    )
+    parser.add_argument(
+        '--verbose', '-v', action='store_true', default=False, help='Show more output'
+    )
     parser.add_argument('files', nargs='*')
     return parser.parse_args()
 
@@ -57,11 +59,11 @@ def pip_partition(lines):
     split_match = lambda line: line == SPLIT_PATTERN
     first = takewhile(no_split_match, lines)
     second = dropwhile(split_match, dropwhile(no_split_match, lines))
-    return (list(first), list(second))
+    return list(first), list(second)
 
 
 def pip_info(filename):
-    cmd = 'pip freeze -lr %s' % (filename,)
+    cmd = 'pip freeze -lr {0}'.format(filename, )
     raw = check_output(cmd)
     lines = raw.split('\n')
     p = pip_partition(lines)
@@ -71,7 +73,7 @@ def pip_info(filename):
 def append_lines(lines, filename):
     with open(filename, 'a') as f:
         for line in lines:
-            f.write('%s\n' % line)
+            f.write('{0}\n'.format(line))
 
 
 def rewrite(filename, lines):
@@ -79,14 +81,14 @@ def rewrite(filename, lines):
         for line in sorted(lines, key=str.lower):
             line = line.strip()
             if line:
-                f.write('%s\n' % line)
+                f.write('{0}\n'.format(line))
 
 
 def dump_requirements(files):
     _, tmpfile = tempfile.mkstemp()
-    check_call('cat %s | sort -fu > %s' % (' '.join(files), tmpfile))
+    check_call('cat {0} | sort -fu > {1}'.format(' '.join(files), tmpfile))
     _, new = pip_info(tmpfile)
-    check_call('rm %s' % tmpfile)
+    check_call('rm {0}'.format(tmpfile))
     append_lines(new, files[0])
 
     for filename in files:
