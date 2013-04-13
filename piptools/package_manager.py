@@ -213,7 +213,7 @@ class PackageManager(BasePackageManager):
         # TODO: if the spec is pinned, we might be able to go straight to the
         # local cache without having to use the PackageFinder. Cached file
         # names look like this:
-        # http%3A%2F%2Fpypi.python.org%2Fpackages%2Fsource%2Fs%2Fsix%2Fsix-1.2.0.tar.gz
+        # https%3A%2F%2Fpypi.python.org%2Fpackages%2Fsource%2Fs%2Fsix%2Fsix-1.2.0.tar.gz
         # This is easy to guess from a package==version spec but requires the
         # package to be actually hosted on pypi, which is not the case for
         # everything (e.g. redis).
@@ -249,7 +249,7 @@ class PackageManager(BasePackageManager):
                 requirement = InstallRequirement.from_line(specline)
                 finder = PackageFinder(
                     find_links=[],
-                    index_urls=['http://pypi.python.org/simple/'],
+                    index_urls=['https://pypi.python.org/simple/'],
                     use_mirrors=True,
                     mirrors=[],
                 )
