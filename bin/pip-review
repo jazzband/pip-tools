@@ -223,7 +223,7 @@ def main():
                     if args.auto:
                         update_pkg(pkg, latest_version)
                     else:
-                        logger.warning('%s==%s is available (you have %s)' % (pkg,
+                        logger.info('%s==%s is available (you have %s)' % (pkg,
                             latest_version, installed_version))
                         if args.interactive:
                             answer = ask_to_install()
