@@ -64,15 +64,15 @@ def get_pkg_info(pkg_name):
 def validate_version(pkg_name, version):
     rversion = suggest_normalized_version(version)
     if rversion is None:
-        raise InvalidVersion('Cannot work with {name}=={version} because version '
-                             'number can\'t be normalized.'.format(name=pkg_name,
-                                                                   version=version))
-    if rversion != version:
-        logging.warning('Package "{name}" has wrong version. '
-                        'It was transformed from {vfrom} into {vto} '
-                        'for interoperability.'.format(name=pkg_name,
-                                                       vfrom=version,
-                                                       vto=rversion))
+        raise InvalidVersion(
+            'Cannot work with {name}=={version} because version number can\'t '
+            'be normalized.'.format(name=pkg_name, version=version))
+    # if rversion != version:
+    #     logging.warning('Package "{name}" has wrong version. '
+    #                     'It was transformed from {vfrom} into {vto} '
+    #                     'for interoperability.'.format(name=pkg_name,
+    #                                                    vfrom=version,
+    #                                                    vto=rversion))
     return NormalizedVersion(rversion)
 
 
@@ -111,13 +111,13 @@ def get_installed_pkgs(local=False):
                 name = name[:-4]
             yield name, 'dev', True
         else:
-            name, version = line.split('==')
+            name, raw_version = line.split('==')
             try:
-                version = validate_version(name, version)
+                version = validate_version(name, raw_version)
             except InvalidVersion as e:
                 logging.error(e)
             else:
-                yield name, version, False
+                yield name, version, raw_version, False
 
 
 def setup_logging(verbose):
@@ -176,14 +176,14 @@ def main():
             raise SystemExit('Quitting')
 
     installed = list(get_installed_pkgs(local=args.local))
-    lookup_on_pypi = [name for name, _, editable in installed
+    lookup_on_pypi = [name for name, _, _, editable in installed
                       if not editable or args.editables]
     latest_versions = dict(get_latest_versions(lookup_on_pypi))
 
     all_ok = True
-    for pkg, installed_version, editable in installed:
+    for pkg, installed_version, installed_raw_version, editable in installed:
         if editable and not args.editables:
-            logging.debug('Skipping -e {0}=={1}'.format(pkg, installed_version))
+            logging.debug('Skipping -e {0}=={1}'.format(pkg, installed_raw_version))
             all_ok = False
             continue
 
@@ -193,13 +193,13 @@ def main():
             all_ok = False
         elif latest_version != installed_version:
             if args.raw:
-                logging.info('{0}=={1}'.format(pkg, latest_version))
+                logging.info('{0}=={1}'.format(pkg, raw_version))
             else:
                 if args.auto:
                     update_pkg(pkg, raw_version)
                 else:
                     logging.info('{0}=={1} is available (you have {2})'.format(
-                        pkg, latest_version, installed_version
+                        pkg, raw_version, installed_raw_version
                     ))
                     if args.interactive:
                         answer = ask_to_install()
@@ -207,7 +207,7 @@ def main():
                             update_pkg(pkg, raw_version)
             all_ok = False
         elif not args.raw:
-            logging.debug('{0}=={1} is up-to-date'.format(pkg, installed_version))
+            logging.debug('{0}=={1} is up-to-date'.format(pkg, installed_raw_version))
 
     if all_ok and not args.raw:
         logging.info('Everything up-to-date')
