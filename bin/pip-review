@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import absolute_import
 import os
+import re
 import argparse
 from functools import partial
 import logging
@@ -54,23 +55,46 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_pkg_info(pkg_name):
+def load_pkg_info(pkg_name):
+    if pkg_name is None:
+        return
     logging.debug('Checking for updates of {0}'.format(pkg_name))
+
     req = urllib2.Request(
         'http://pypi.python.org/pypi/{0}/json'.format(pkg_name))
-    handler = urllib2.urlopen(req)
-    status = handler.getcode()
-    if status == 200:
+    try:
+        handler = urllib2.urlopen(req)
+    except HTTPError:
+        return
+
+    if handler.getcode() == 200:
         content = handler.read()
         return json.loads(content)
-    else:
+
+
+def guess_pkg_name(pkg_name):
+    logging.debug('Try to guess package {0} name on PyPI.'.format(pkg_name))
+    req = urllib2.Request(
+        'http://pypi.python.org/simple/{0}/'.format(pkg_name))
+    handler = urllib2.urlopen(req)
+    if handler.getcode() == 200:
+        url_match = re.search(r'/pypi\.python\.org/simple/([^/]+)/',
+                              handler.geturl())
+        if url_match:
+            return url_match.group(1)
+
+
+def get_pkg_info(pkg_name):
+    info = load_pkg_info(pkg_name) or load_pkg_info(guess_pkg_name(pkg_name))
+    if info is None:
         raise ValueError('Package {0} not found on PyPI.'.format(pkg_name))
+    return info
 
 
 def latest_version(pkg_name, silent=False):
     try:
         info = get_pkg_info(pkg_name)
-    except (ValueError, HTTPError):
+    except ValueError:
         if silent:
             return None, None
         else:
