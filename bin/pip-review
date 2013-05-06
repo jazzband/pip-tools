@@ -7,7 +7,7 @@ import logging
 import urllib2
 import json
 from urllib2 import HTTPError
-from verlib import NormalizedVersion, suggest_normalized_version
+from pkg_resources import parse_version
 
 try:
     from subprocess import check_output as _check_output
@@ -23,10 +23,6 @@ except ImportError:
             error.output = output
             raise error
         return output
-
-
-class InvalidVersion(ValueError):
-    pass
 
 
 check_output = partial(_check_output, shell=True)
@@ -71,21 +67,6 @@ def get_pkg_info(pkg_name):
         raise ValueError('Package {0} not found on PyPI.'.format(pkg_name))
 
 
-def validate_version(pkg_name, version):
-    rversion = suggest_normalized_version(version)
-    if rversion is None:
-        raise InvalidVersion(
-            'Cannot work with {name}=={version} because version number can\'t '
-            'be normalized.'.format(name=pkg_name, version=version))
-    # if rversion != version:
-    #     logging.warning('Package "{name}" has wrong version. '
-    #                     'It was transformed from {vfrom} into {vto} '
-    #                     'for interoperability.'.format(name=pkg_name,
-    #                                                    vfrom=version,
-    #                                                    vto=rversion))
-    return NormalizedVersion(rversion)
-
-
 def latest_version(pkg_name, silent=False):
     try:
         info = get_pkg_info(pkg_name)
@@ -94,8 +75,8 @@ def latest_version(pkg_name, silent=False):
             return None, None
         else:
             raise
-    raw_version = info['info']['version']
-    return validate_version(pkg_name, raw_version), raw_version
+    version = info['info']['version']
+    return parse_version(version), version
 
 
 def get_latest_versions(pkg_names):
@@ -121,13 +102,8 @@ def get_installed_pkgs(local=False):
                 name = name[:-4]
             yield name, 'dev', 'dev', True
         else:
-            name, raw_version = line.split('==')
-            try:
-                version = validate_version(name, raw_version)
-            except InvalidVersion as e:
-                logging.error(e)
-            else:
-                yield name, version, raw_version, False
+            name, version = line.split('==')
+            yield name, parse_version(version), version, False
 
 
 def setup_logging(verbose):
@@ -193,35 +169,35 @@ def main():
     latest_versions = dict(get_latest_versions(lookup_on_pypi))
 
     all_ok = True
-    for pkg, installed_version, installed_raw_version, editable in installed:
+    for pkg, installed_raw_version, installed_version, editable in installed:
         if editable and not args.editables:
             logging.debug(
-                'Skipping -e {0}=={1}'.format(pkg, installed_raw_version))
+                'Skipping -e {0}=={1}'.format(pkg, installed_version))
             all_ok = False
             continue
 
-        latest_version, raw_version = latest_versions[pkg]
-        if latest_version is None:
+        raw_version, latest_version = latest_versions[pkg]
+        if raw_version is None:
             logging.warning('No update information found for {0}'.format(pkg))
             all_ok = False
-        elif latest_version != installed_version:
+        elif raw_version != installed_raw_version:
             if args.raw:
-                logging.info('{0}=={1}'.format(pkg, raw_version))
+                logging.info('{0}=={1}'.format(pkg, latest_version))
             else:
                 if args.auto:
-                    update_pkg(pkg, raw_version)
+                    update_pkg(pkg, latest_version)
                 else:
                     logging.info('{0}=={1} is available (you have {2})'.format(
-                        pkg, raw_version, installed_raw_version
+                        pkg, latest_version, installed_version
                     ))
                     if args.interactive:
                         answer = ask_to_install()
                         if answer in ['y', 'a']:
-                            update_pkg(pkg, raw_version)
+                            update_pkg(pkg, latest_version)
             all_ok = False
         elif not args.raw:
             logging.debug(
-                '{0}=={1} is up-to-date'.format(pkg, installed_raw_version))
+                '{0}=={1} is up-to-date'.format(pkg, installed_version))
 
     if all_ok and not args.raw:
         logging.info('Everything up-to-date')

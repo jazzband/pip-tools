@@ -2,7 +2,7 @@ Create a new playground first:
 
   $ virtualenv --python="$(which python)" FOO >/dev/null
   $ PATH=FOO/bin:$PATH
-  $ pip install argparse verlib >/dev/null 2>&1
+  $ pip install argparse >/dev/null 2>&1
   $ alias pip-dump="$TESTDIR/../bin/pip-dump"
 
 Setup:
@@ -16,7 +16,7 @@ Next, let's see what pip-dump does:
 
 It should've updated requirements.txt with pinned versions of all requirements:
 
-  $ cat requirements.txt | grep -v argparse | grep -v verlib
+  $ cat requirements.txt | grep -v argparse
   python-dateutil==* (glob)
   six==* (glob)
 
