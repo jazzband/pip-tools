@@ -190,13 +190,23 @@ def main():
         if latest_version is None:
             logging.warning('No update information found for {0}'.format(pkg))
             all_ok = False
-        else:
-            if latest_version > installed_version:
-                    logging.info('{0}=={1}'.format(pkg, latest_version))
-                        logging.info('{0}=={1} is available (you have {2})'.format(
-                            pkg, latest_version, installed_version
-                        ))
-                logging.debug('{0}=={1} is up-to-date'.format(pkg, installed_version))
+        elif latest_version != installed_version:
+            if args.raw:
+                logging.info('{0}=={1}'.format(pkg, latest_version))
+            else:
+                if args.auto:
+                    update_pkg(pkg, latest_version)
+                else:
+                    logging.info('{0}=={1} is available (you have {2})'.format(
+                        pkg, latest_version, installed_version
+                    ))
+                    if args.interactive:
+                        answer = ask_to_install()
+                        if answer in ['y', 'a']:
+                            update_pkg(pkg, latest_version)
+            all_ok = False
+        elif not args.raw:
+            logging.debug('{0}=={1} is up-to-date'.format(pkg, installed_version))
 
     if all_ok and not args.raw:
         logging.info('Everything up-to-date')
