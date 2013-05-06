@@ -8,6 +8,7 @@ import urllib2
 import json
 from urllib2 import HTTPError
 from verlib import NormalizedVersion, suggest_normalized_version
+
 try:
     from subprocess import check_output as _check_output
 except ImportError:
@@ -24,7 +25,8 @@ except ImportError:
         return output
 
 
-class InvalidVersion(ValueError): pass
+class InvalidVersion(ValueError):
+    pass
 
 
 check_output = partial(_check_output, shell=True)
@@ -32,26 +34,34 @@ check_output = partial(_check_output, shell=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Keeps your Python package dependencies pinned, but fresh.')
-    parser.add_argument('--verbose', '-v', action='store_true', default=False,
-                        help='Show more output')
-    parser.add_argument('--raw', '-r', action='store_true', default=False,
-                        help='Print raw lines (suitable for passing to pip install)')
-    parser.add_argument('--interactive', '-i', action='store_true', default=False,
-                        help='Ask interactively to install updates')
-    parser.add_argument('--auto', '-a', action='store_true', default=False,
-                        help='Automatically install every update found')
-    parser.add_argument('--editables', '-e', action='store_true', default=False,
-            help='Also include editable packages in PyPI lookup')
-    parser.add_argument('--local', '-l', action='store_true', default=False,
-            help='If in a virtualenv that has global access, do not output '
-                 'globally-installed packages')
+        description='Keeps your Python package dependencies pinned, '
+                    'but fresh.')
+    parser.add_argument(
+        '--verbose', '-v', action='store_true', default=False,
+        help='Show more output')
+    parser.add_argument(
+        '--raw', '-r', action='store_true', default=False,
+        help='Print raw lines (suitable for passing to pip install)')
+    parser.add_argument(
+        '--interactive', '-i', action='store_true', default=False,
+        help='Ask interactively to install updates')
+    parser.add_argument(
+        '--auto', '-a', action='store_true', default=False,
+        help='Automatically install every update found')
+    parser.add_argument(
+        '--editables', '-e', action='store_true', default=False,
+        help='Also include editable packages in PyPI lookup')
+    parser.add_argument(
+        '--local', '-l', action='store_true', default=False,
+        help='If in a virtualenv that has global access, do not output '
+             'globally-installed packages')
     return parser.parse_args()
 
 
 def get_pkg_info(pkg_name):
     logging.debug('Checking for updates of {0}'.format(pkg_name))
-    req = urllib2.Request('http://pypi.python.org/pypi/{0}/json'.format(pkg_name))
+    req = urllib2.Request(
+        'http://pypi.python.org/pypi/{0}/json'.format(pkg_name))
     handler = urllib2.urlopen(req)
     status = handler.getcode()
     if status == 200:
@@ -139,7 +149,8 @@ class InteractiveAsker(object):
 
         answer = ''
         while answer not in ['y', 'n', 'a', 'q']:
-            answer = raw_input('{0} [Y]es, [N]o, [A]ll, [Q]uit '.format(prompt))
+            answer = raw_input(
+                '{0} [Y]es, [N]o, [A]ll, [Q]uit '.format(prompt))
             answer = answer.strip().lower()
 
         if answer in ['q', 'a']:
@@ -171,7 +182,8 @@ def main():
         raise SystemExit('--raw and --interactive cannot be used together')
 
     if args.auto and args.editables:
-        if not confirm('WARNING: Using --auto and --editables at the same time might lead to unintended upgrades.\n'
+        if not confirm('WARNING: Using --auto and --editables at the same '
+                       'time might lead to unintended upgrades.\n'
                        'Are you sure? [y/n] '):
             raise SystemExit('Quitting')
 
@@ -183,7 +195,8 @@ def main():
     all_ok = True
     for pkg, installed_version, installed_raw_version, editable in installed:
         if editable and not args.editables:
-            logging.debug('Skipping -e {0}=={1}'.format(pkg, installed_raw_version))
+            logging.debug(
+                'Skipping -e {0}=={1}'.format(pkg, installed_raw_version))
             all_ok = False
             continue
 
@@ -207,7 +220,8 @@ def main():
                             update_pkg(pkg, raw_version)
             all_ok = False
         elif not args.raw:
-            logging.debug('{0}=={1} is up-to-date'.format(pkg, installed_raw_version))
+            logging.debug(
+                '{0}=={1} is up-to-date'.format(pkg, installed_raw_version))
 
     if all_ok and not args.raw:
         logging.info('Everything up-to-date')
