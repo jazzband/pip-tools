@@ -91,7 +91,7 @@ def latest_version(pkg_name, silent=False):
         info = get_pkg_info(pkg_name)
     except (ValueError, HTTPError):
         if silent:
-            return None
+            return None, None
         else:
             raise
     raw_version = info['info']['version']
@@ -119,7 +119,7 @@ def get_installed_pkgs(local=False):
             name = line.split('#egg=', 1)[1]
             if name.endswith('-dev'):
                 name = name[:-4]
-            yield name, 'dev', True
+            yield name, 'dev', 'dev', True
         else:
             name, raw_version = line.split('==')
             try:
