@@ -1,3 +1,5 @@
 # Ignore cram test output
 *.t.err
 /.tox
+/FOO
+
