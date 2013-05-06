@@ -84,7 +84,8 @@ def latest_version(pkg_name, silent=False):
             return None
         else:
             raise
-    return validate_version(pkg_name, info['info']['version'])
+    raw_version = info['info']['version']
+    return validate_version(pkg_name, raw_version), raw_version
 
 
 def get_latest_versions(pkg_names):
@@ -186,7 +187,7 @@ def main():
             all_ok = False
             continue
 
-        latest_version = latest_versions[pkg]
+        latest_version, raw_version = latest_versions[pkg]
         if latest_version is None:
             logging.warning('No update information found for {0}'.format(pkg))
             all_ok = False
@@ -195,7 +196,7 @@ def main():
                 logging.info('{0}=={1}'.format(pkg, latest_version))
             else:
                 if args.auto:
-                    update_pkg(pkg, latest_version)
+                    update_pkg(pkg, raw_version)
                 else:
                     logging.info('{0}=={1} is available (you have {2})'.format(
                         pkg, latest_version, installed_version
@@ -203,7 +204,7 @@ def main():
                     if args.interactive:
                         answer = ask_to_install()
                         if answer in ['y', 'a']:
-                            update_pkg(pkg, latest_version)
+                            update_pkg(pkg, raw_version)
             all_ok = False
         elif not args.raw:
             logging.debug('{0}=={1} is up-to-date'.format(pkg, installed_version))
