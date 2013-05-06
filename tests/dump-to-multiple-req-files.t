@@ -2,7 +2,7 @@ Create a new playground first:
 
   $ virtualenv --python="$(which python)" FOO >/dev/null
   $ PATH=FOO/bin:$PATH
-  $ pip install argparse >/dev/null 2>&1
+  $ pip install argparse verlib >/dev/null 2>&1
   $ alias pip-dump="$TESTDIR/../bin/pip-dump"
   $ mkdir requirements
 
@@ -18,7 +18,7 @@ Setup:
   $ pip install -r requirements/develop.txt >/dev/null 2>&1
   $ echo "bpython" > requirements-prod-debug.txt
   $ echo "Pygments" >> requirements-prod-debug.txt
-  $ pip install -r requirements-prod-debug.txt >/dev/null 2>&1  
+  $ pip install -r requirements-prod-debug.txt >/dev/null 2>&1
 
 Next, let's see what pip-dump does:
 
@@ -26,7 +26,7 @@ Next, let's see what pip-dump does:
 
 It should've updated requirements.txt with pinned versions of all requirements:
 
-  $ cat requirements.txt | grep -v argparse
+  $ cat requirements.txt | grep -v argparse | grep -v verlib
   python-dateutil==* (glob)
   six==* (glob)
 
@@ -41,3 +41,7 @@ It should've updated requirements.txt with pinned versions of all requirements:
   $ cat requirements-prod-debug.txt
   bpython==* (glob)
   Pygments==* (glob)
+
+Cleanup our playground:
+
+  $ rm -rf FOO
