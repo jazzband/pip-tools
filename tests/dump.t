@@ -19,3 +19,7 @@ It should've updated requirements.txt with pinned versions of all requirements:
   $ cat requirements.txt | grep -v argparse
   python-dateutil==* (glob)
   six==* (glob)
+
+Cleanup our playground:
+
+  $ rm -rf FOO
