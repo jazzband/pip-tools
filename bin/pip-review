@@ -192,10 +192,10 @@ def main():
             all_ok = False
         else:
             if latest_version > installed_version:
-                    logging.info('{0}=={1}'.format(pkg, latest_version))
-                        logging.info('{0}=={1} is available (you have {2})'.format(
-                            pkg, latest_version, installed_version
-                        ))
+                logging.info('{0}=={1}'.format(pkg, latest_version))
+                logging.info('{0}=={1} is available (you have {2})'.format(
+                    pkg, latest_version, installed_version
+                ))
                 logging.debug('{0}=={1} is up-to-date'.format(pkg, installed_version))
 
     if all_ok and not args.raw:
