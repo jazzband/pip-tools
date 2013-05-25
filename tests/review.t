@@ -33,3 +33,7 @@ We can also install these updates automatically:
   $ pip-review
   Warning: cannot find svn location for cElementTree==1.0.2-20050302
   Everything up-to-date
+
+Cleanup our playground:
+
+  $ rm -rf FOO

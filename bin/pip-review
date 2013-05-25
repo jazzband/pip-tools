@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 from __future__ import absolute_import
 import os
+import re
 import argparse
 from functools import partial
 import logging
 import urllib2
 import json
 from urllib2 import HTTPError
-from verlib import NormalizedVersion, suggest_normalized_version
+from pkg_resources import parse_version
+
 try:
     from subprocess import check_output as _check_output
 except ImportError:
@@ -24,67 +26,81 @@ except ImportError:
         return output
 
 
-class InvalidVersion(ValueError): pass
-
-
 check_output = partial(_check_output, shell=True)
 
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description='Keeps your Python package dependencies pinned, but fresh.')
-    parser.add_argument('--verbose', '-v', action='store_true', default=False,
-                        help='Show more output')
-    parser.add_argument('--raw', '-r', action='store_true', default=False,
-                        help='Print raw lines (suitable for passing to pip install)')
-    parser.add_argument('--interactive', '-i', action='store_true', default=False,
-                        help='Ask interactively to install updates')
-    parser.add_argument('--auto', '-a', action='store_true', default=False,
-                        help='Automatically install every update found')
-    parser.add_argument('--editables', '-e', action='store_true', default=False,
-            help='Also include editable packages in PyPI lookup')
-    parser.add_argument('--local', '-l', action='store_true', default=False,
-            help='If in a virtualenv that has global access, do not output '
-                 'globally-installed packages')
+        description='Keeps your Python package dependencies pinned, '
+                    'but fresh.')
+    parser.add_argument(
+        '--verbose', '-v', action='store_true', default=False,
+        help='Show more output')
+    parser.add_argument(
+        '--raw', '-r', action='store_true', default=False,
+        help='Print raw lines (suitable for passing to pip install)')
+    parser.add_argument(
+        '--interactive', '-i', action='store_true', default=False,
+        help='Ask interactively to install updates')
+    parser.add_argument(
+        '--auto', '-a', action='store_true', default=False,
+        help='Automatically install every update found')
+    parser.add_argument(
+        '--editables', '-e', action='store_true', default=False,
+        help='Also include editable packages in PyPI lookup')
+    parser.add_argument(
+        '--local', '-l', action='store_true', default=False,
+        help='If in a virtualenv that has global access, do not output '
+             'globally-installed packages')
     return parser.parse_args()
 
 
-def get_pkg_info(pkg_name):
+def load_pkg_info(pkg_name):
+    if pkg_name is None:
+        return
     logging.debug('Checking for updates of {0}'.format(pkg_name))
-    req = urllib2.Request('http://pypi.python.org/pypi/{0}/json'.format(pkg_name))
-    handler = urllib2.urlopen(req)
-    status = handler.getcode()
-    if status == 200:
+
+    req = urllib2.Request(
+        'http://pypi.python.org/pypi/{0}/json'.format(pkg_name))
+    try:
+        handler = urllib2.urlopen(req)
+    except HTTPError:
+        return
+
+    if handler.getcode() == 200:
         content = handler.read()
         return json.loads(content)
-    else:
+
+
+def guess_pkg_name(pkg_name):
+    logging.debug('Try to guess package {0} name on PyPI.'.format(pkg_name))
+    req = urllib2.Request(
+        'http://pypi.python.org/simple/{0}/'.format(pkg_name))
+    handler = urllib2.urlopen(req)
+    if handler.getcode() == 200:
+        url_match = re.search(r'/pypi\.python\.org/simple/([^/]+)/',
+                              handler.geturl())
+        if url_match:
+            return url_match.group(1)
+
+
+def get_pkg_info(pkg_name):
+    info = load_pkg_info(pkg_name) or load_pkg_info(guess_pkg_name(pkg_name))
+    if info is None:
         raise ValueError('Package {0} not found on PyPI.'.format(pkg_name))
-
-
-def validate_version(pkg_name, version):
-    rversion = suggest_normalized_version(version)
-    if rversion is None:
-        raise InvalidVersion('Cannot work with {name}=={version} because version '
-                             'number can\'t be normalized.'.format(name=pkg_name,
-                                                                   version=version))
-    if rversion != version:
-        logging.warning('Package "{name}" has wrong version. '
-                        'It was transformed from {vfrom} into {vto} '
-                        'for interoperability.'.format(name=pkg_name,
-                                                       vfrom=version,
-                                                       vto=rversion))
-    return NormalizedVersion(rversion)
+    return info
 
 
 def latest_version(pkg_name, silent=False):
     try:
         info = get_pkg_info(pkg_name)
-    except (ValueError, HTTPError):
+    except ValueError:
         if silent:
-            return None
+            return None, None
         else:
             raise
-    return validate_version(pkg_name, info['info']['version'])
+    version = info['info']['version']
+    return parse_version(version), version
 
 
 def get_latest_versions(pkg_names):
@@ -108,15 +124,10 @@ def get_installed_pkgs(local=False):
             name = line.split('#egg=', 1)[1]
             if name.endswith('-dev'):
                 name = name[:-4]
-            yield name, 'dev', True
+            yield name, 'dev', 'dev', True
         else:
             name, version = line.split('==')
-            try:
-                version = validate_version(name, version)
-            except InvalidVersion as e:
-                logging.error(e)
-            else:
-                yield name, version, False
+            yield name, parse_version(version), version, False
 
 
 def setup_logging(verbose):
@@ -138,7 +149,8 @@ class InteractiveAsker(object):
 
         answer = ''
         while answer not in ['y', 'n', 'a', 'q']:
-            answer = raw_input('{0} [Y]es, [N]o, [A]ll, [Q]uit '.format(prompt))
+            answer = raw_input(
+                '{0} [Y]es, [N]o, [A]ll, [Q]uit '.format(prompt))
             answer = answer.strip().lower()
 
         if answer in ['q', 'a']:
@@ -170,33 +182,46 @@ def main():
         raise SystemExit('--raw and --interactive cannot be used together')
 
     if args.auto and args.editables:
-        if not confirm('WARNING: Using --auto and --editables at the same time might lead to unintended upgrades.\n'
+        if not confirm('WARNING: Using --auto and --editables at the same '
+                       'time might lead to unintended upgrades.\n'
                        'Are you sure? [y/n] '):
             raise SystemExit('Quitting')
 
     installed = list(get_installed_pkgs(local=args.local))
-    lookup_on_pypi = [name for name, _, editable in installed
+    lookup_on_pypi = [name for name, _, _, editable in installed
                       if not editable or args.editables]
     latest_versions = dict(get_latest_versions(lookup_on_pypi))
 
     all_ok = True
-    for pkg, installed_version, editable in installed:
+    for pkg, installed_raw_version, installed_version, editable in installed:
         if editable and not args.editables:
+            logging.debug(
             logging.debug('Skipping -e {0}=={1}'.format(pkg, installed_version))
             all_ok = False
             continue
 
-        latest_version = latest_versions[pkg]
-        if latest_version is None:
+        raw_version, latest_version = latest_versions[pkg]
+        if raw_version is None:
             logging.warning('No update information found for {0}'.format(pkg))
             all_ok = False
-        else:
-            if latest_version > installed_version:
+        elif raw_version != installed_raw_version:
+            if args.raw:
                 logging.info('{0}=={1}'.format(pkg, latest_version))
-                logging.info('{0}=={1} is available (you have {2})'.format(
-                    pkg, latest_version, installed_version
-                ))
-                logging.debug('{0}=={1} is up-to-date'.format(pkg, installed_version))
+            else:
+                if args.auto:
+                    update_pkg(pkg, latest_version)
+                else:
+                    logging.info('{0}=={1} is available (you have {2})'.format(
+                        pkg, latest_version, installed_version
+                    ))
+                    if args.interactive:
+                        answer = ask_to_install()
+                        if answer in ['y', 'a']:
+                            update_pkg(pkg, latest_version)
+            all_ok = False
+        elif not args.raw:
+            logging.debug(
+                '{0}=={1} is up-to-date'.format(pkg, installed_version))
 
     if all_ok and not args.raw:
         logging.info('Everything up-to-date')
