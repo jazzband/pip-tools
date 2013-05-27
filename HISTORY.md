@@ -1,6 +1,11 @@
 History
 =======
 
+0.3.4 (2013-05-27)
+------------------
+   - Fix bug where non-PyPI packages inside .pipignore broke things when
+   	 running pip-review
+
 0.3.3 (2013-05-27)
 ------------------
    - Bugfixes related to non-existing requirements files
