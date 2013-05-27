@@ -12,13 +12,13 @@ Setup:
   $ pip install -r requirements.txt >/dev/null 2>&1
   $ echo "Flask" > more-requirements.txt
   $ echo "Werkzeug" >> more-requirements.txt
-  $ echo "Jinja2" >> more-requirements.txt
+  $ echo "Jinja2==2.6" >> more-requirements.txt
   $ pip install -r more-requirements.txt >/dev/null 2>&1
   $ echo "pep8" > requirements/develop.txt
   $ pip install -r requirements/develop.txt >/dev/null 2>&1
   $ echo "bpython" > requirements-prod-debug.txt
   $ echo "Pygments" >> requirements-prod-debug.txt
-  $ pip install -r requirements-prod-debug.txt >/dev/null 2>&1  
+  $ pip install -r requirements-prod-debug.txt >/dev/null 2>&1
 
 Next, let's see what pip-dump does:
 
@@ -41,3 +41,7 @@ It should've updated requirements.txt with pinned versions of all requirements:
   $ cat requirements-prod-debug.txt
   bpython==* (glob)
   Pygments==* (glob)
+
+Cleanup our playground:
+
+  $ rm -rf FOO

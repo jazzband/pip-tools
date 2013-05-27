@@ -18,14 +18,14 @@ Next, let's see what pip-review does:
   $ pip-review
   Warning: cannot find svn location for cElementTree==1.0.5-20051216
   cElementTree==1.0.2-20050302 is available (you have 1.0.5-20051216)
-  python-dateutil==2.1 is available (you have 2.0)
+  python-dateutil==* is available (you have 2.0) (glob)
 
 Or in raw mode:
 
   $ pip-review --raw
   Warning: cannot find svn location for cElementTree==1.0.5-20051216
   cElementTree==1.0.2-20050302
-  python-dateutil==2.1
+  python-dateutil==* (glob)
 
 We can also install these updates automatically:
 
@@ -33,3 +33,7 @@ We can also install these updates automatically:
   $ pip-review
   Warning: cannot find svn location for cElementTree==1.0.2-20050302
   Everything up-to-date
+
+Cleanup our playground:
+
+  $ rm -rf FOO
