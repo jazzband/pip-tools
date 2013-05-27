@@ -3,8 +3,8 @@ History
 
 0.3.1 (2013-03-20)
 ------------------
-   - Add --local flag, to only review packages from the virtual env, ignoring
-   	 globally installed packages
+   - Add ``--local`` flag, to only review packages from the virtual env,
+   	 ignoring globally installed packages
 
 0.3 (2013-03-20)
 ----------------
