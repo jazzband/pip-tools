@@ -82,24 +82,33 @@ def guess_pkg_name(pkg_name):
     logger.debug('Try to guess package {0} name on PyPI.'.format(pkg_name))
     req = urllib_request.Request(
         'http://pypi.python.org/simple/{0}/'.format(pkg_name))
-    handler = urllib_request.urlopen(req)
+    try:
+        handler = urllib_request.urlopen(req)
+    except urllib_request.HTTPError:
+        return None
+
     if handler.getcode() == 200:
         url_match = re.search(r'/pypi\.python\.org/simple/([^/]+)/',
                               handler.geturl())
         if url_match:
             return url_match.group(1)
+    return None
 
 
-def get_pkg_info(pkg_name):
-    info = load_pkg_info(pkg_name) or load_pkg_info(guess_pkg_name(pkg_name))
+def get_pkg_info(pkg_name, silent=False):
+    info = load_pkg_info(pkg_name)
     if info is None:
+        guessed_name = guess_pkg_name(pkg_name)
+        if guessed_name is not None:
+            info = load_pkg_info(guessed_name)
+    if info is None and not silent:
         raise ValueError('Package {0} not found on PyPI.'.format(pkg_name))
     return info
 
 
 def latest_version(pkg_name, silent=False):
     try:
-        info = get_pkg_info(pkg_name)
+        info = get_pkg_info(pkg_name, silent=silent)
     except ValueError:
         if silent:
             return None, None
