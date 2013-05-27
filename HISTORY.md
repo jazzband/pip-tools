@@ -1,6 +1,13 @@
 History
 =======
 
+0.3.2 (not yet released)
+------------------------
+   - Remove ``verlib`` dependency (it's officially unmaintained)
+     (Vladimir Rudnyh)
+   - Adds package name guessing using PyPI's ``/simple`` API endpoint
+     (Vladimir Rudnyh)
+
 0.3.1 (2013-03-20)
 ------------------
    - Add ``--local`` flag, to only review packages from the virtual env,
