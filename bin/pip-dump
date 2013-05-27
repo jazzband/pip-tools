@@ -85,11 +85,12 @@ def pip_partition(lines):
 
 
 def pip_info(filename):
-    cmd = 'pip freeze -lr {0}'.format(filename, )
+    if not os.path.exists(filename):
+        check_call('touch {0}'.format(filename))
+    cmd = 'pip freeze -lr {0}'.format(filename,)
     raw = check_output(cmd)
-    lines = raw.split('\n')
-    p = pip_partition(lines)
-    return p
+    lines = raw.decode('utf-8').split('\n')
+    return pip_partition(lines)
 
 
 def append_lines(lines, filename):
@@ -107,8 +108,13 @@ def rewrite(filename, lines):
 
 
 def dump_requirements(files):
+    if not files:
+        raise ValueError(u'Expected a list of at least one file name.')
+
     _, tmpfile = tempfile.mkstemp()
-    check_call('cat {0} | sort -fu > {1}'.format(' '.join(files), tmpfile))
+    existing_files = list(filter(os.path.exists, files))
+    if existing_files:
+        check_call('cat {0} | sort -fu > {1}'.format(' '.join(existing_files), tmpfile))
     _, new = pip_info(tmpfile)
     check_call('rm {0}'.format(tmpfile))
     append_lines(new, files[0])
@@ -126,15 +132,18 @@ def find_default_files():
         req_files.remove(DEFAULT_REQUIREMENTS_FILE)
     except ValueError:
         pass
+    else:
+        # Move the "default" requirements file to the front, so any new
+        # packages will be added there
+        req_files = [DEFAULT_REQUIREMENTS_FILE] + req_files
 
-    files = []
-    if os.path.exists(DEFAULT_REQUIREMENTS_FILE):
-        files.append(DEFAULT_REQUIREMENTS_FILE)
-    files += req_files
-    if os.path.exists(PIP_IGNORE_FILE):
-        files.append(PIP_IGNORE_FILE)
+    # In case of no found files, use the default file
+    if not req_files:
+        req_files = [DEFAULT_REQUIREMENTS_FILE]
 
-    return files
+    if os.path.exists(PIP_IGNORE_FILE) and not PIP_IGNORE_FILE in req_files:
+        req_files.append(PIP_IGNORE_FILE)
+    return req_files
 
 
 def main():
