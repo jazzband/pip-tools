@@ -100,16 +100,18 @@ def dump_requirements(files):
 
 def find_default_files():
     req_files = list(chain.from_iterable(glob.glob(pattern) for pattern in GLOB_PATTERNS))
-    files = list()
     try:
         req_files.remove(DEFAULT_REQUIREMENTS_FILE)
-        files += [DEFAULT_REQUIREMENTS_FILE]
     except ValueError:
         pass
 
+    files = []
+    if os.path.exists(DEFAULT_REQUIREMENTS_FILE):
+        files.append(DEFAULT_REQUIREMENTS_FILE)
     files += req_files
     if os.path.exists(PIP_IGNORE_FILE):
         files.append(PIP_IGNORE_FILE)
+
     return files
 
 
