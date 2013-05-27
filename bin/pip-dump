@@ -29,10 +29,10 @@ check_call = partial(_check_call, shell=True)
 check_output = partial(_check_output, shell=True)
 
 # Constants
-DEFAULT_REQUIREMENTS_FILE = 'requirements.txt'
-GLOB_PATTERNS = ('*requirements.txt', 'requirements[_-]*.txt', 'requirements/*.txt')
-PIP_IGNORE_FILE = '.pipignore'
-SPLIT_PATTERN = '## The following requirements were added by pip --freeze:'
+DEFAULT_REQUIREMENTS_FILE = u'requirements.txt'
+GLOB_PATTERNS = (u'*requirements.txt', u'requirements[_-]*.txt', u'requirements/*.txt')
+PIP_IGNORE_FILE = u'.pipignore'
+SPLIT_PATTERN = u'## The following requirements were added by pip --freeze:'
 
 
 class StdOutFilter(logging.Filter):
@@ -48,7 +48,7 @@ def setup_logging(verbose):
 
     format = '%(message)s'
 
-    logger = logging.getLogger('pip-dump')
+    logger = logging.getLogger(u'pip-dump')
 
     stdout_handler = logging.StreamHandler(sys.stdout)
     stdout_handler.addFilter(StdOutFilter())
@@ -101,7 +101,7 @@ def append_lines(lines, filename):
 
 def rewrite(filename, lines):
     with open(filename, 'w') as f:
-        for line in sorted(lines, key=str.lower):
+        for line in sorted(lines, key=lambda s: s.lower()):
             line = line.strip()
             if line:
                 f.write('{0}\n'.format(line))
@@ -114,9 +114,9 @@ def dump_requirements(files):
     _, tmpfile = tempfile.mkstemp()
     existing_files = list(filter(os.path.exists, files))
     if existing_files:
-        check_call('cat {0} | sort -fu > {1}'.format(' '.join(existing_files), tmpfile))
+        check_call(u'cat {0} | sort -fu > {1}'.format(' '.join(existing_files), tmpfile))
     _, new = pip_info(tmpfile)
-    check_call('rm {0}'.format(tmpfile))
+    check_call(u'rm {0}'.format(tmpfile))
     append_lines(new, files[0])
 
     for filename in files:
