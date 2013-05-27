@@ -14,7 +14,7 @@ def get_dependencies():
 
 setup(
     name='pip-tools',
-    version='0.3.2',
+    version='0.3.3',
     url='https://github.com/nvie/pip-tools/',
     license='BSD',
     author='Vincent Driessen',

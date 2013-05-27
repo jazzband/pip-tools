@@ -1,6 +1,11 @@
 History
 =======
 
+0.3.3 (2013-05-27)
+------------------
+   - Bugfixes related to non-existing requirements files
+   - Add unofficial Python3 compatibility
+
 0.3.2 (2013-05-27)
 ------------------
    - Improve logging semantics (John Mark Schofield)
