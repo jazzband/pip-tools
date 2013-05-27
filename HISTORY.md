@@ -1,8 +1,8 @@
 History
 =======
 
-0.3.2 (not yet released)
-------------------------
+0.3.2 (2013-05-27)
+------------------
    - Improve logging semantics (John Mark Schofield)
    - Remove ``verlib`` dependency (it's officially unmaintained)
      (Vladimir Rudnyh)
