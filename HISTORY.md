@@ -3,6 +3,7 @@ History
 
 0.3.2 (not yet released)
 ------------------------
+   - Improve logging semantics (John Mark Schofield)
    - Remove ``verlib`` dependency (it's officially unmaintained)
      (Vladimir Rudnyh)
    - Adds package name guessing using PyPI's ``/simple`` API endpoint
