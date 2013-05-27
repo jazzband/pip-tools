@@ -114,6 +114,8 @@ def latest_version(pkg_name, silent=False):
             return None, None
         else:
             raise
+    if not info:
+        return None, None
     version = info['info']['version']
     return parse_version(version), version
 
