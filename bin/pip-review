@@ -31,6 +31,11 @@ except ImportError:
 
 check_output = partial(_check_output, shell=True)
 
+try:
+    raw_input = input # Python 3.
+except NameError:
+    pass
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
