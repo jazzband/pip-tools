@@ -27,6 +27,7 @@ Next, let's see what pip-dump does:
 It should've updated requirements.txt with pinned versions of all requirements:
 
   $ cat requirements.txt | grep -v argparse
+  itsdangerous==* (glob)
   python-dateutil==* (glob)
   six==* (glob)
 
