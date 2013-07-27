@@ -374,7 +374,7 @@ class SpecSet(object):
             # keep the original source.
             used_sources = [spec.source for spec in self._byname[name]
                             if spec.source is not None]
-        source = ' and '.join(sorted(used_sources, key=lambda item: item.lower))
+        source = ' and '.join(sorted(used_sources, key=lambda item: item.lower()))
         return Spec(name, preds, source)
 
     def normalize(self):
