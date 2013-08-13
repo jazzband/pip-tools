@@ -22,7 +22,7 @@ import urlparse
 
 #from pip.backwardcompat import ConfigParser
 from pip.download import _download_url, _get_response_from_url
-from pip.index import Link, PackageFinder
+from pip.index import Link, PackageFinder, package_to_requirement
 #from pip.locations import default_config_file
 from pip.req import InstallRequirement
 from pip.util import splitext
@@ -92,7 +92,7 @@ class FakePackageManager(BasePackageManager):
 
     def parse_package_key(self, pkg_key):
         try:
-            return pkg_key.rsplit('-', 1)
+            return package_to_requirement(pkg_key).split('==')
         except ValueError:
             raise ValueError('Invalid package key: %s (required format: "name-version")' % (pkg_key,))
 
@@ -256,7 +256,7 @@ class PackageManager(BasePackageManager):
                 link = finder.find_requirement(requirement, False)
                 self._link_cache[specline] = link
                 source = 'PyPI'
-            _, version = splitext(link.filename)[0].rsplit('-', 1)
+            _, version = package_to_requirement(splitext(link.filename)[0]).split('==')
 
             # Take this moment to smartly insert the pinned variant of this
             # spec into the link_cache, too
@@ -403,7 +403,7 @@ class PackageManager(BasePackageManager):
         """Returns a list of dependencies for an unpacked package dir."""
         name = os.listdir(package_dir)[0]
         dist_dir = os.path.join(package_dir, name)
-        name, version = name.rsplit('-', 1)
+        name, version = package_to_requirement(name).split('==')
         if not self.has_egg_info(dist_dir):
             return []
 
