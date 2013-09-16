@@ -1,8 +1,11 @@
 import operator
+import re
 from functools import partial, wraps
 from collections import defaultdict
 from itertools import chain
+from pip.vcs import vcs
 from .version import NormalizedVersion
+
 
 
 class ConflictError(Exception):
@@ -52,6 +55,38 @@ def spec_cmp(spec1, spec2):
     return cmp(val1, val2)
 
 
+def _parse_vcs_url(line):
+    """Parses a requirement line and if it is a VCS url, then
+    returns a dict with following keys:
+
+    * name - name of the package, either from url or from #egg part.
+    * url - url without @branch-or-commit and #egg parts.
+    * branch - branch name or commit id (optional).
+    * editable - if the package should be installed as "editable" (optional).
+
+    If given line is not VCS url, this function returns None.
+    """
+    
+    regex_text = r"""
+^
+((?P<editable>-e)[ ]+)?      # checking if editable
+(?P<url>[a-z]+\+[a-z]+://.+?) # extracting main URL
+(?:@(?P<branch>[^#]+))?       # extracting branch if any
+(?:\#egg=(?P<name>.+))?        # extracting egg name
+$
+"""
+    match = re.match(regex_text, line, re.X)
+    if match is not None:
+        result = {key: value for key, value in match.groupdict().items() if value}
+        if 'name' not in result:
+            name = result['url'].rsplit('/', 1)[1]
+            name = name.rsplit('.', 1)[0]
+            result['name'] = name
+        if 'editable' in result:
+            result['editable'] = True
+        return result
+    
+
 class Spec(object):
     @classmethod
     def from_pinned(cls, name, version, source=None):
@@ -60,14 +95,36 @@ class Spec(object):
         """
         return cls(name, [('==', version)], source)
 
+    def pin(self, version):
+        """Creates a spec line for a pinned representation directly, no
+        parsing involved.  Takes an optional source.
+        """
+        return Spec(self.name, [('==', version)],
+                    source=self.source,
+                    url=self.url,
+                    editable=self.editable)
+
     @classmethod
     def from_line(cls, line, source=None):
         """Parses a spec line from a requirements file and returns a Spec."""
         from pkg_resources import Requirement
+
+        vcs_dict = _parse_vcs_url(line)
+        if vcs_dict:
+            backend_name = vcs_dict['url'].split('+', 1)[0]
+            
+            default_branches = dict(hg='default',
+                                    git='master')
+            return cls(vcs_dict['name'],
+                       [('==', vcs_dict.get('branch', default_branches[backend_name]))],
+                       source=source,
+                       url=vcs_dict['url'],
+                       editable=vcs_dict.get('editable', False))
+            
         req = Requirement.parse(line)
         return cls(req.project_name, req.specs, source)
 
-    def __init__(self, name, preds, source=None):
+    def __init__(self, name, preds, source=None, url=None, editable=None):
         """The Spec class represents a package version specification,
         typically given by a single line in a requirements.txt file.
 
@@ -78,12 +135,17 @@ class Spec(object):
         self._name = name
         self._preds = frozenset(preds if preds else [])
         self._source = source
+        self._url = url
+        self._editable = editable
 
     def add_source(self, source):
         """Creates a new, immutable, Spec which is a copy of the current Spec,
         but with the given source attached to it.
         """
-        return Spec(self.name, self.preds, source)
+        return Spec(self.name, self.preds,
+                    source=source,
+                    url=self.url,
+                    editable=self.editable)
 
 
     @property  # noqa
@@ -99,15 +161,45 @@ class Spec(object):
         return self._source
 
     @property
+    def url(self):
+        return self._url
+
+    @property
+    def vcs_url(self):
+        if self._url:
+            return self._url + '@' + first(self._preds)[1]
+
+    @property
+    def editable(self):
+        return self._editable
+
+    @property
     def is_pinned(self):
         return any([qual == '==' for qual, _ in self._preds])
 
+    @property
+    def version(self):
+        assert self.is_pinned, 'Only pinned specs have version'
+        return first(self._preds)[1]
+
     def description(self, with_source=True):  # noqa
-        qualifiers = ','.join(map(''.join, sorted(self.preds, cmp=spec_cmp)))
+        if self.url:
+            name = self.url
+            if self.editable:
+                name = '-e ' + name
+            if self.preds:
+                qualifiers = '@' + first(self.preds)[1]
+            else:
+                qualifiers = ''
+            qualifiers += '#egg=' + self.name
+        else:
+            name = self.name
+            qualifiers = ','.join(map(''.join, sorted(self.preds, cmp=spec_cmp)))
+            
         source = ''
         if with_source and self.source:
             source = ' (from %s)' % (self.source,)
-        return '%s%s%s' % (self.name, qualifiers, source)
+        return '%s%s%s' % (name, qualifiers, source)
 
     def __str__(self):
         return self.description(with_source=False)
@@ -121,12 +213,16 @@ class Spec(object):
     def __eq__(self, other):
         return (self.name == other.name and
                 self.preds == other.preds and
-                self.source == other.source)
+                self.source == other.source and
+                self.url == other.url and
+                self.editable == other.editable)
 
     def __hash__(self):
         return (hash(self.name) ^
                 hash(self.preds) ^
-                hash(self.source))
+                hash(self.source) ^
+                hash(self.url) ^
+                hash(self.editable))
 
 
 class SpecSet(object):
@@ -158,9 +254,12 @@ class SpecSet(object):
         a list of Specs with maximally one predicate.
         """
         specs = self._byname[name]
-        return [Spec(spec.name, [pred], spec.source)
-                for spec in specs
-                for pred in spec.preds]
+        for spec in specs:
+            for pred in spec.preds:
+                yield Spec(spec.name, [pred],
+                           source=spec.source,
+                           url=spec.url,
+                           editable=spec.editable)
 
     def normalize_specs_for_name(self, name):
         """Normalizes specs for the given package name.  Normalizing here
@@ -366,16 +465,23 @@ class SpecSet(object):
             else:
                 preds.append((qual, value))
 
-        # Lookup which sources were used to construct this normalized spec set
-        if preds:
-            used_sources = {source for pred in preds for source in sources[pred]} - {None}
+        vcs_specs = [spec for spec in self._byname[name] if spec.url]
+
+        if vcs_specs:
+            # If there is at least one spec with VCS url, prefer it
+            # over others
+            return vcs_specs[0]
         else:
-            # No predicates, un-pinned requirement. Needs special-casing to
-            # keep the original source.
-            used_sources = [spec.source for spec in self._byname[name]
-                            if spec.source is not None]
-        source = ' and '.join(sorted(used_sources, key=lambda item: item.lower()))
-        return Spec(name, preds, source)
+            # Lookup which sources were used to construct this normalized spec set
+            if preds:
+                used_sources = {source for pred in preds for source in sources[pred]} - {None}
+            else:
+                # No predicates, un-pinned requirement. Needs special-casing to
+                # keep the original source.
+                used_sources = [spec.source for spec in self._byname[name]
+                                if spec.source is not None]
+            source = ' and '.join(sorted(used_sources, key=lambda item: item.lower()))
+            return Spec(name, preds, source)
 
     def normalize(self):
         """Generates a new spec set that is more compact, but equivalent to
