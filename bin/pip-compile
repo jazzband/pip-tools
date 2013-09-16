@@ -54,8 +54,14 @@ def walk_specfile(filename):
         if not line or line.startswith('#'):
             continue
 
-        spec = Spec.from_line(line, source='{0}:{1}'.format(filename, lineno))
-        yield spec
+        if line.startswith('-r'):
+            requirement = line.split(None, 1)[1]
+            for spec in walk_specfile(requirement):
+                yield spec.add_source('{0}:{1} -> {2}'.format(filename, lineno, spec.source))
+
+        else:
+            spec = Spec.from_line(line, source='{0}:{1}'.format(filename, lineno))
+            yield spec
 
 
 def collect_source_specs(filenames):
