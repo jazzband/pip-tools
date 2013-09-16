@@ -3,3 +3,5 @@
 /.tox
 dist
 pip_tools.egg-info
+*.pyc
+/env
