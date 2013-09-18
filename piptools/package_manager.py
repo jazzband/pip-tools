@@ -198,8 +198,9 @@ class PersistentCache(object):
 
 class PackageManager(BasePackageManager):
     """The default package manager that goes to PyPI and caches locally."""
-    dep_cache_file = os.path.join(os.path.expanduser('~'), '.pip-tools', 'dependencies.pickle')
-    download_cache_root = os.path.join(os.path.expanduser('~'), '.pip-tools', 'cache')
+    piptools_root = os.path.expanduser(os.environ.get('PIPTOOLS_ROOT', '~/.pip-tools'))
+    dep_cache_file = os.path.join(piptools_root, 'dependencies.pickle')
+    download_cache_root = os.path.join(piptools_root, 'cache')
 
     def __init__(self):
         # TODO: provide options for pip, such as index URL or use-mirrors
