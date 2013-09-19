@@ -412,41 +412,35 @@ class PackageManager(BasePackageManager):
             finally:
                 archive.close()
 
-    def has_egg_info(self, dist_dir):
+    def get_egg_info_requires(self, dist_dir):
+        """Generates egg-info directory and it was successful, returns
+        path to requires.txt file."""
         logger.debug('- Running egg_info in %s' % (dist_dir,))
         logger.debug('  (This can take a while.)')
         with logger.indent():
             try:
-                subprocess.check_call([sys.executable, 'setup.py', 'egg_info'],
-                                    cwd=dist_dir, stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
+                process = subprocess.Popen([sys.executable, 'setup.py', 'egg_info'],
+                                           cwd=dist_dir, stdout=subprocess.PIPE,
+                                           stderr=subprocess.PIPE)
+                process.wait()
+                
+                for line in process.stdout.readlines():
+                    if 'egg-info/requires.txt' in line:
+                        return os.path.join(dist_dir, line.rsplit(None, 1)[1])
             except subprocess.CalledProcessError:
                 logger.debug("  egg_info failed for {0}".format(
                     dist_dir.rsplit('/', 1)[-1]
                 ))
-                return False
-            return True
 
     def read_package_requires_file(self, dist_dir):
         """Returns a list of dependencies for an unpacked package dir."""
-        if not self.has_egg_info(dist_dir):
-            return []
+        requirements = self.get_egg_info_requires(dist_dir)
 
-        files = os.listdir(dist_dir)
-        files = [f for f in files if f.endswith('egg-info')]
-        egg_info_dir = files[0]
-
-        for dirpath, dirnames, _ in os.walk(dist_dir):
-            if egg_info_dir in dirnames:
-                requires = os.path.join(dirpath, egg_info_dir,
-                                        'requires.txt')
-                if os.path.exists(requires):
-                    break
-        else:  # requires.txt not found
+        if not requirements:
             return []
 
         deps = []
-        with open(requires, 'r') as requirements:
+        with open(requirements, 'r') as requirements:
             for requirement in requirements.readlines():
                 dep = requirement.strip()
                 if dep == '[test]' or not dep:
