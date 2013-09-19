@@ -56,6 +56,9 @@ def walk_specfile(filename):
 
         if line.startswith('-r'):
             requirement = line.split(None, 1)[1]
+            # requirement file is relative to processed one
+            requirement = os.path.join(os.path.dirname(filename), requirement)
+
             for spec in walk_specfile(requirement):
                 yield spec.add_source('{0}:{1} -> {2}'.format(filename, lineno, spec.source))
 
