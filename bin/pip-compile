@@ -30,6 +30,8 @@ def setup_logging(verbose):
     logger.addHandler(handler)
     logger.setLevel(level)
 
+    from pip.log import logger as pip_logger
+    pip_logger.consumers.append((pip_logger.VERBOSE_DEBUG, lambda msg: logger.debug('PIP said: ' + msg)))
 
 def parse_args():
     parser = argparse.ArgumentParser(
