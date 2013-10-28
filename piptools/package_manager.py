@@ -463,6 +463,7 @@ class PackageManager(BasePackageManager):
                 unpack_dir = os.path.join(build_dir, 'build')
                 try:
                     self.unpack_archive(path, unpack_dir)
+
                     name = os.listdir(unpack_dir)[0]
                     dist_dir = os.path.join(unpack_dir, name)
 
