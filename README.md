@@ -108,6 +108,20 @@ $ tox
 The tests run quite slow, since they actually interact with PyPI, which
 involves downloading packages, etc.  So please be patient.
 
+For Windows Users
+=================
+
+After installation, go to `Python_install_directory/Scripts` directory, 
+rename `pip-review` and `pip-dump` with the `py` extension.
+
+Make sure you have `Python_install_directory/Scripts` in your system variable `Path`.
+
+Example:
+
+    C:\>pip-review.py
+    requests==0.13.4 available (you have 0.13.2)
+    redis==2.4.13 available (you have 2.4.9)
+    rq==0.3.2 available (you have 0.3.0)
 
 [![Flattr this][2]][1]
 
