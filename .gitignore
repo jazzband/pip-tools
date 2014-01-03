@@ -1,7 +1,8 @@
 # Ignore cram test output
 *.t.err
 /.tox
-dist
+/build
+/dist
 pip_tools.egg-info
 *.pyc
 /env
