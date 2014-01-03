@@ -5,13 +5,6 @@ import sys
 from setuptools import setup, find_packages
 
 
-def get_dependencies():
-    deps = []
-    if sys.version_info < (2, 7):
-        deps += ['argparse']
-    return deps
-
-
 setup(
     name='pip-tools',
     version='1.0',
@@ -25,7 +18,6 @@ setup(
     #include_package_data=True,
     zip_safe=False,
     platforms='any',
-    install_requires=get_dependencies(),
     classifiers=[
         # As from https://pypi.python.org/pypi?%3Aaction=list_classifiers
         #'Development Status :: 1 - Planning',
@@ -40,12 +32,12 @@ setup(
         #'Programming Language :: Python :: 2.3',
         #'Programming Language :: Python :: 2.4',
         #'Programming Language :: Python :: 2.5',
-        'Programming Language :: Python :: 2.6',
+        #'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         #'Programming Language :: Python :: 3.0',
-        'Programming Language :: Python :: 3.1',
-        'Programming Language :: Python :: 3.2',
+        #'Programming Language :: Python :: 3.1',
+        #'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
