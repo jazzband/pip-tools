@@ -32,8 +32,9 @@ except ImportError:
 check_output = partial(_check_output, shell=True)
 
 try:
-    raw_input = input # Python 3.
-except NameError:
+    import __builtin__
+    input = getattr(__builtin__, 'raw_input')  # Python2
+except (ImportError, AttributeError):
     pass
 
 
@@ -193,7 +194,7 @@ class InteractiveAsker(object):
 
         answer = ''
         while answer not in ['y', 'n', 'a', 'q']:
-            answer = raw_input(
+            answer = input(
                 '{0} [Y]es, [N]o, [A]ll, [Q]uit '.format(prompt))
             answer = answer.strip().lower()
 
@@ -213,7 +214,7 @@ def update_pkg(pkg, version):
 def confirm(question):
     answer = ''
     while not answer in ['y', 'n']:
-        answer = raw_input(question)
+        answer = input(question)
         answer = answer.strip().lower()
     return answer == 'y'
 
