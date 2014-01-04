@@ -71,7 +71,7 @@ def load_pkg_info(pkg_name):
     logger.debug('Checking for updates of {0}'.format(pkg_name))
 
     req = urllib_request.Request(
-        'http://pypi.python.org/pypi/{0}/json'.format(pkg_name))
+        'https://pypi.python.org/pypi/{0}/json'.format(pkg_name))
     try:
         handler = urllib_request.urlopen(req)
     except urllib_request.HTTPError:
@@ -86,7 +86,7 @@ def guess_pkg_name(pkg_name):
     logger = logging.getLogger(u'pip-review')
     logger.debug('Try to guess package {0} name on PyPI.'.format(pkg_name))
     req = urllib_request.Request(
-        'http://pypi.python.org/simple/{0}/'.format(pkg_name))
+        'https://pypi.python.org/simple/{0}/'.format(pkg_name))
     try:
         handler = urllib_request.urlopen(req)
     except urllib_request.HTTPError:

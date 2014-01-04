@@ -27,7 +27,7 @@ setup(
     platforms='any',
     install_requires=get_dependencies(),
     classifiers=[
-        # As from http://pypi.python.org/pypi?%3Aaction=list_classifiers
+        # As from https://pypi.python.org/pypi?%3Aaction=list_classifiers
         #'Development Status :: 1 - Planning',
         #'Development Status :: 2 - Pre-Alpha',
         #'Development Status :: 3 - Alpha',
