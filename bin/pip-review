@@ -143,7 +143,7 @@ def get_installed_pkgs(local=False, req_lines=None):
         if local:
             command += ' --local'
 
-        req_lines = check_output(command).decode('utf-8').splint('\n')
+        req_lines = check_output(command).decode('utf-8').split('\n')
 
     for line in req_lines:
         if not line or line.startswith('##'):
@@ -240,8 +240,11 @@ def main():
                        'time might lead to unintended upgrades.\n'
                        'Are you sure? [y/n] '):
             raise SystemExit('Quitting')
-    installed = list(get_installed_pkgs(local=args.local,
-                                        req_lines=args.req_file.readlines()))
+    if args.req_file:
+        installed = list(get_installed_pkgs(local=args.local,
+                                            req_lines=args.req_file.readlines()))
+    else:
+        installed = list(get_installed_pkgs(local=args.local))
     lookup_on_pypi = [name for name, _, _, editable in installed
                       if not editable or args.editables]
     latest_versions = dict(get_latest_versions(lookup_on_pypi))
