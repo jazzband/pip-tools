@@ -8,6 +8,8 @@ import logging
 import os
 import sys
 
+# required to load all vcs modules
+from pip.vcs import git, mercurial, subversion, bazaar  # noqa
 from piptools.datastructures import Spec, SpecSet, ConflictError
 from piptools.logging import logger
 from piptools.package_manager import PackageManager
@@ -30,6 +32,8 @@ def setup_logging(verbose):
     logger.addHandler(handler)
     logger.setLevel(level)
 
+    from pip.log import logger as pip_logger
+    pip_logger.consumers.append((pip_logger.VERBOSE_DEBUG, lambda msg: logger.debug('PIP said: ' + msg)))
 
 def parse_args():
     parser = argparse.ArgumentParser(

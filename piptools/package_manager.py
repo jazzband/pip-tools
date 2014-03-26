@@ -1,8 +1,10 @@
+import json
 import operator
 import os
 import shutil
 import subprocess
 import sys
+import re
 import tarfile
 import tempfile
 import zipfile
@@ -21,15 +23,26 @@ from functools import partial
 import urlparse
 
 #from pip.backwardcompat import ConfigParser
-from pip.download import _download_url, _get_response_from_url
+from pip.download import get_file_content, unpack_vcs_link
 from pip.index import Link, PackageFinder, package_to_requirement
 #from pip.locations import default_config_file
 from pip.req import InstallRequirement
 from pip.util import splitext
+from pip.vcs import vcs
+
 
 from .logging import logger
 from .datastructures import Spec, first
 from .version import NormalizedVersion  # PEP386 compatible version numbers
+
+
+def find_file(root_dir, filename):
+    """Searches given file in root_dir's subdirectories.
+    Returns path to first occurence or None if nothing found."""
+    tree = os.walk(root_dir)
+    for dir_name, subdirs, files in tree:
+        if filename in files:
+            return os.path.join(dir_name, filename)
 
 
 def url_without_fragment(link):
@@ -55,7 +68,7 @@ class BasePackageManager(object):
         """
         raise NotImplementedError('Implement this in a subclass.')
 
-    def get_dependencies(self, name, version):
+    def get_dependencies(self, pinned_spec):
         """Return a list of Spec instances, representing the dependencies of
         the specific package version indicated by the args.  This method only
         returns the direct (next-level) dependencies of the package.
@@ -136,8 +149,8 @@ class FakePackageManager(BasePackageManager):
             raise NoPackageMatch('No package found for %s' % (spec,))
         return self.pick_highest(versions)
 
-    def get_dependencies(self, name, version):
-        pkg_key = '%s-%s' % (name, version)
+    def get_dependencies(self, pinned_spec):
+        pkg_key = '%s-%s' % (pinned_spec.name, pinned_spec.version)
         specs = []
         for specline in self._contents[pkg_key]:
             specs.append(Spec.from_line(specline))
@@ -196,8 +209,9 @@ class PersistentCache(object):
 
 class PackageManager(BasePackageManager):
     """The default package manager that goes to PyPI and caches locally."""
-    dep_cache_file = os.path.join(os.path.expanduser('~'), '.pip-tools', 'dependencies.pickle')
-    download_cache_root = os.path.join(os.path.expanduser('~'), '.pip-tools', 'cache')
+    piptools_root = os.path.expanduser(os.environ.get('PIPTOOLS_ROOT', '~/.pip-tools'))
+    dep_cache_file = os.path.join(piptools_root, 'dependencies.pickle')
+    download_cache_root = os.path.join(piptools_root, 'cache')
 
     def __init__(self):
         # TODO: provide options for pip, such as index URL or use-mirrors
@@ -246,36 +260,68 @@ class PackageManager(BasePackageManager):
                 link = self._link_cache[specline]
                 source = 'link cache'
             else:
-                requirement = InstallRequirement.from_line(specline)
+                if spec.url:
+                    # TODO : remove
+                    requirement = InstallRequirement.from_editable(specline)
+                else:
+                    requirement = InstallRequirement.from_line(specline)
+                    
                 finder = PackageFinder(
                     find_links=[],
                     index_urls=['https://pypi.python.org/simple/'],
-                    use_mirrors=True,
-                    mirrors=[],
+                    allow_all_external=True,
+                    # this parameter down not supported anymore
+                    # all insecure package should be enumerated
+                    # allow_all_insecure=True,
                 )
                 link = finder.find_requirement(requirement, False)
                 self._link_cache[specline] = link
                 source = 'PyPI'
-            _, version = package_to_requirement(splitext(link.filename)[0]).split('==')
+                
+            filename, ext = splitext(link.filename)
+
+            if ext == '.whl':
+                # then remove implementation tags like language, abi and platform
+                # like described at:
+                # http://legacy.python.org/dev/peps/pep-0427/#file-name-convention
+                filename = re.sub(r'-(\w|\.)+-\w+-\w+$', '', filename)
+            _, version = package_to_requirement(filename).split('==')
 
             # Take this moment to smartly insert the pinned variant of this
             # spec into the link_cache, too
-            pinned_spec = Spec.from_pinned(spec.name, version)
+            pinned_spec = spec.pin(version)
             if pinned_spec not in self._link_cache:
                 self._link_cache[str(pinned_spec)] = link
             return version, source
 
         specline = str(spec)
-        if '==' not in specline or specline not in self._best_match_call_cache:
-            logger.debug('- Finding best package matching %s' % [specline])
-        with logger.indent():
-            version, source = _find_cached_match(spec)
-        if '==' not in specline or specline not in self._best_match_call_cache:
-            logger.debug('  Found best match: %s (from %s)' % (version, source))
+        if spec.url:
+            self._link_cache[specline] = Link(spec.vcs_url)
+            
+            path = self.get_or_download_package(spec)
+            version = self.get_vcs_revision(path)
+            pinned_spec = spec.pin(version)
+            self._link_cache[str(pinned_spec)] = Link(pinned_spec.vcs_url)
+        else:
+            if '==' not in specline or specline not in self._best_match_call_cache:
+                logger.debug('- Finding best package matching %s' % [specline])
+            with logger.indent():
+                version, source = _find_cached_match(spec)
+            if '==' not in specline or specline not in self._best_match_call_cache:
+                logger.debug('  Found best match: %s (from %s)' % (version, source))
+                
         self._best_match_call_cache[specline] = True
         return version
 
-    def get_dependencies(self, name, version):
+    def get_vcs_revision(self, path):
+        backend_cls = vcs.get_backend_from_location(path)
+        backend = backend_cls(path)
+        return backend.get_revision(path)
+    
+    def get_dependencies(self, pinned_spec):
+        name = pinned_spec.name
+        version = pinned_spec.version
+        
         key = '{0}-{1}'.format(name, version)
         if key not in self._dep_call_cache:
             logger.debug('- Getting dependencies for %s-%s' % (name, version))
@@ -284,8 +330,7 @@ class PackageManager(BasePackageManager):
             if deps is not None:
                 source = 'dependency cache'
             else:
-                spec = Spec.from_pinned(name, version)
-                path = self.get_or_download_package(str(spec))
+                path = self.get_or_download_package(pinned_spec)
                 deps = self.extract_dependencies(path)
                 self._dep_cache[(name, version)] = deps
                 source = 'package archive'
@@ -305,13 +350,13 @@ class PackageManager(BasePackageManager):
         fullpath = os.path.join(self.download_cache_root, cache_key)
         return fullpath
 
-    def get_or_download_package(self, specline):
+    def get_or_download_package(self, spec):
         """Returns the local path from the package cache, downloading as
         needed.
         """
-        logger.debug('- Getting package location for %s' % (specline,))
+        logger.debug('- Getting package location for %s' % (spec,))
         with logger.indent():
-            link = self._link_cache[str(specline)]
+            link = self._link_cache[str(spec)]
             fullpath = self.get_local_package_path(url_without_fragment(link))
 
             if os.path.exists(fullpath):
@@ -321,7 +366,13 @@ class PackageManager(BasePackageManager):
             logger.debug('  Archive cache miss, downloading {0}...'.format(
                 link.filename
             ))
-            return self.download_package(link)
+            if spec.url:
+                # get sources from vcs
+                unpack_vcs_link(link, fullpath, only_download=False)
+            else:
+                self.download_package(link, fullpath)
+
+            return fullpath
 
     # def get_pip_cache_root():
     #     """Returns pip's cache root, or None if no such cache root is
@@ -341,7 +392,7 @@ class PackageManager(BasePackageManager):
     #         download_cache = os.path.expanduser(download_cache)
     #     return download_cache
 
-    def download_package(self, link):
+    def download_package(self, link, destination):
         """Downloads the given package link contents to the local
         package cache. Overwrites anything that's in the cache already.
         """
@@ -357,10 +408,9 @@ class PackageManager(BasePackageManager):
         url = url_without_fragment(link)
         logger.debug('- Downloading package from %s' % (url,))
         with logger.indent():
-            fullpath = self.get_local_package_path(url)
-            response = _get_response_from_url(url, link)
-            _download_url(response, link, fullpath)
-            return fullpath
+            _, content = get_file_content(url, link)
+            with open(destination, 'w') as f:
+                f.write(content)
 
     def unpack_archive(self, path, target_directory):
         logger.debug('- Unpacking %s' % (path,))
@@ -371,7 +421,8 @@ class PackageManager(BasePackageManager):
                 path.endswith('.tgz')):
 
                 archive = tarfile.open(path)
-            elif path.endswith('.zip'):
+            elif (path.endswith('.zip') or
+                  path.endswith('.whl')):
                 archive = zipfile.ZipFile(path)
             else:
                 assert False, "Unsupported archive file: {}".format(path)
@@ -384,46 +435,56 @@ class PackageManager(BasePackageManager):
             finally:
                 archive.close()
 
-    def has_egg_info(self, dist_dir):
+    def get_egg_info_requires(self, dist_dir):
+        """Generates egg-info directory and it was successful, returns
+        path to requires.txt file."""
         logger.debug('- Running egg_info in %s' % (dist_dir,))
         logger.debug('  (This can take a while.)')
         with logger.indent():
             try:
-                subprocess.check_call([sys.executable, 'setup.py', 'egg_info'],
-                                    cwd=dist_dir, stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
+                process = subprocess.Popen([sys.executable, 'setup.py', 'egg_info'],
+                                           cwd=dist_dir, stdout=subprocess.PIPE,
+                                           stderr=subprocess.PIPE)
+                process.wait()
+                
+                for line in process.stdout.readlines():
+                    if 'egg-info/requires.txt' in line:
+                        return os.path.join(dist_dir, line.rsplit(None, 1)[1])
             except subprocess.CalledProcessError:
                 logger.debug("  egg_info failed for {0}".format(
                     dist_dir.rsplit('/', 1)[-1]
                 ))
-                return False
-            return True
 
-    def read_package_requires_file(self, package_dir):
+    def read_package_requires_file(self, setup_py_path):
         """Returns a list of dependencies for an unpacked package dir."""
-        name = os.listdir(package_dir)[0]
-        dist_dir = os.path.join(package_dir, name)
-        name, version = package_to_requirement(name).split('==')
-        if not self.has_egg_info(dist_dir):
-            return []
-
-        egg_info_dir = '{0}.egg-info'.format(name.replace('-', '_'))
-        for dirpath, dirnames, _ in os.walk(dist_dir):
-            if egg_info_dir in dirnames:
-                requires = os.path.join(dirpath, egg_info_dir,
-                                        'requires.txt')
-                if os.path.exists(requires):
-                    break
-        else:  # requires.txt not found
-            return []
-
+        dist_dir = os.path.dirname(setup_py_path)
         deps = []
-        with open(requires, 'r') as requirements:
+        requirements = self.get_egg_info_requires(dist_dir)
+
+        if not requirements:
+            return []
+
+        with open(requirements, 'r') as requirements:
             for requirement in requirements.readlines():
                 dep = requirement.strip()
                 if dep == '[test]' or not dep:
                     break
                 deps.append(dep)
+        return deps
+
+    def read_wheel_requires(self, pydist_json_path):
+        with open(pydist_json_path) as f:
+            data = json.load(f)
+
+        deps = []
+        for may_requirement in data.get('run_requires', []):
+            # here we ignore requirements with 'extra' and 'environment'
+            # because usually they are for specific environments like unittesting
+            if not 'extra' in may_requirement and \
+               not 'environment' in may_requirement:
+                for name in may_requirement['requires']:
+                    deps.append(re.sub(ur'[ ()]', u'', name).encode('utf-8'))
+                    
         return deps
 
     def extract_dependencies(self, path):
@@ -432,13 +493,26 @@ class PackageManager(BasePackageManager):
         """
         logger.debug('- Extracting dependencies for %s' % (path,))
         with logger.indent():
-            build_dir = tempfile.mkdtemp()
-            unpack_dir = os.path.join(build_dir, 'build')
-            try:
-                self.unpack_archive(path, unpack_dir)
-                deps = self.read_package_requires_file(unpack_dir)
-            finally:
-                shutil.rmtree(build_dir)
+            if os.path.isdir(path):
+                # this is a directory in case if path is pointing to
+                # VCS checkout
+                deps = self.read_package_requires_file(path)
+            else:
+                build_dir = tempfile.mkdtemp()
+                unpack_dir = os.path.join(build_dir, 'build')
+                try:
+                    self.unpack_archive(path, unpack_dir)
+
+                    # first, check if archive was a wheel
+                    name = find_file(unpack_dir, 'pydist.json')
+                    if name:
+                        deps = self.read_wheel_requires(name)
+                    else:
+                        name = find_file(unpack_dir, 'setup.py')
+                        deps = self.read_package_requires_file(name)
+                        
+                finally:
+                    shutil.rmtree(build_dir)
         logger.debug('Found: %s' % (deps,))
         return deps
 

@@ -2,9 +2,15 @@ Create a new playground first:
 
   $ virtualenv --python="$(which python)" FOO >/dev/null
   $ PATH=FOO/bin:$PATH
+  $ pip install 'pip<1.5' > /dev/null 2>&1
   $ pip install argparse >/dev/null 2>&1
   $ export PYTHONPATH=$PYTHONPATH:$TESTDIR/..
-  $ alias pip-compile="$TESTDIR/../bin/pip-compile"
+  $ function pip_compile() {
+  >   export PIPTOOLS_ROOT="${TESTDIR}/.pip-tools"
+  >   rm -fr "$PIPTOOLS_ROOT"
+  >   "$TESTDIR/../bin/pip-compile" $@
+  > }
+  $ alias pip-compile=pip_compile
 
 Let's create a couple of simple requirements.in files:
 

@@ -11,21 +11,20 @@ Create a new playground first:
 
 First, create our *.in files.
 
-  $ echo "python-dateutil" > base.in
-  $ echo "-r base.in" > develop.in
-  $ echo "times" >> develop.in
+  $ echo "python-dateutil" > requirements.in
+  $ echo "-e git+git://github.com/svetlyak40wt/nose-progressive.git@with-all-my-patches" >> requirements.in
 
 COMPILING & SYNCING
 ===================
 
 Run pip-compile to generate the requirements.txt file. Resulting
-file should contain python-dateutil from base.in and it's dependencies
-as well.
+file should contain same VCS urls as the original one.
 
-  $ pip-compile develop.in >/dev/null 2>&1
+  $ pip-compile >/dev/null 2>&1
 
-  $ cat develop.txt
+  $ cat requirements.txt
+  -e git+git://github.com/svetlyak40wt/nose-progressive.git@*#egg=nose-progressive (glob)
+  blessings==* (glob)
+  nose==* (glob)
   python-dateutil==* (glob)
-  pytz==* (glob)
   six==* (glob)
-  times==* (glob)
