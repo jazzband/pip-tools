@@ -260,6 +260,8 @@ class PackageManager(BasePackageManager):
                     index_urls=['https://pypi.python.org/simple/'],
                     use_mirrors=True,
                     mirrors=[],
+                    allow_all_external=True,
+                    allow_all_insecure=True,
                 )
                 link = finder.find_requirement(requirement, False)
                 self._link_cache[specline] = link
