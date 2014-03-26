@@ -1,8 +1,10 @@
+import json
 import operator
 import os
 import shutil
 import subprocess
 import sys
+import re
 import tarfile
 import tempfile
 import zipfile
@@ -21,7 +23,7 @@ from functools import partial
 import urlparse
 
 #from pip.backwardcompat import ConfigParser
-from pip.download import _download_url, _get_response_from_url, unpack_vcs_link
+from pip.download import get_file_content, unpack_vcs_link
 from pip.index import Link, PackageFinder, package_to_requirement
 #from pip.locations import default_config_file
 from pip.req import InstallRequirement
@@ -32,6 +34,15 @@ from pip.vcs import vcs
 from .logging import logger
 from .datastructures import Spec, first
 from .version import NormalizedVersion  # PEP386 compatible version numbers
+
+
+def find_file(root_dir, filename):
+    """Searches given file in root_dir's subdirectories.
+    Returns path to first occurence or None if nothing found."""
+    tree = os.walk(root_dir)
+    for dir_name, subdirs, files in tree:
+        if filename in files:
+            return os.path.join(dir_name, filename)
 
 
 def url_without_fragment(link):
@@ -258,15 +269,23 @@ class PackageManager(BasePackageManager):
                 finder = PackageFinder(
                     find_links=[],
                     index_urls=['https://pypi.python.org/simple/'],
-                    use_mirrors=True,
-                    mirrors=[],
                     allow_all_external=True,
-                    allow_all_insecure=True,
+                    # this parameter down not supported anymore
+                    # all insecure package should be enumerated
+                    # allow_all_insecure=True,
                 )
                 link = finder.find_requirement(requirement, False)
                 self._link_cache[specline] = link
                 source = 'PyPI'
-            _, version = package_to_requirement(splitext(link.filename)[0]).split('==')
+                
+            filename, ext = splitext(link.filename)
+
+            if ext == '.whl':
+                # then remove implementation tags like language, abi and platform
+                # like described at:
+                # http://legacy.python.org/dev/peps/pep-0427/#file-name-convention
+                filename = re.sub(r'-(\w|\.)+-\w+-\w+$', '', filename)
+            _, version = package_to_requirement(filename).split('==')
 
             # Take this moment to smartly insert the pinned variant of this
             # spec into the link_cache, too
@@ -389,8 +408,9 @@ class PackageManager(BasePackageManager):
         url = url_without_fragment(link)
         logger.debug('- Downloading package from %s' % (url,))
         with logger.indent():
-            response = _get_response_from_url(url, link)
-            _download_url(response, link, destination)
+            _, content = get_file_content(url, link)
+            with open(destination, 'w') as f:
+                f.write(content)
 
     def unpack_archive(self, path, target_directory):
         logger.debug('- Unpacking %s' % (path,))
@@ -401,7 +421,8 @@ class PackageManager(BasePackageManager):
                 path.endswith('.tgz')):
 
                 archive = tarfile.open(path)
-            elif path.endswith('.zip'):
+            elif (path.endswith('.zip') or
+                  path.endswith('.whl')):
                 archive = zipfile.ZipFile(path)
             else:
                 assert False, "Unsupported archive file: {}".format(path)
@@ -434,20 +455,36 @@ class PackageManager(BasePackageManager):
                     dist_dir.rsplit('/', 1)[-1]
                 ))
 
-    def read_package_requires_file(self, dist_dir):
+    def read_package_requires_file(self, setup_py_path):
         """Returns a list of dependencies for an unpacked package dir."""
+        dist_dir = os.path.dirname(setup_py_path)
+        deps = []
         requirements = self.get_egg_info_requires(dist_dir)
 
         if not requirements:
             return []
 
-        deps = []
         with open(requirements, 'r') as requirements:
             for requirement in requirements.readlines():
                 dep = requirement.strip()
                 if dep == '[test]' or not dep:
                     break
                 deps.append(dep)
+        return deps
+
+    def read_wheel_requires(self, pydist_json_path):
+        with open(pydist_json_path) as f:
+            data = json.load(f)
+
+        deps = []
+        for may_requirement in data.get('run_requires', []):
+            # here we ignore requirements with 'extra' and 'environment'
+            # because usually they are for specific environments like unittesting
+            if not 'extra' in may_requirement and \
+               not 'environment' in may_requirement:
+                for name in may_requirement['requires']:
+                    deps.append(re.sub(ur'[ ()]', u'', name).encode('utf-8'))
+                    
         return deps
 
     def extract_dependencies(self, path):
@@ -466,10 +503,14 @@ class PackageManager(BasePackageManager):
                 try:
                     self.unpack_archive(path, unpack_dir)
 
-                    name = os.listdir(unpack_dir)[0]
-                    dist_dir = os.path.join(unpack_dir, name)
-
-                    deps = self.read_package_requires_file(dist_dir)
+                    # first, check if archive was a wheel
+                    name = find_file(unpack_dir, 'pydist.json')
+                    if name:
+                        deps = self.read_wheel_requires(name)
+                    else:
+                        name = find_file(unpack_dir, 'setup.py')
+                        deps = self.read_package_requires_file(name)
+                        
                 finally:
                     shutil.rmtree(build_dir)
         logger.debug('Found: %s' % (deps,))
