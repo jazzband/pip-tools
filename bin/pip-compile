@@ -77,7 +77,8 @@ def walk_specfile(filename):
             if len(repo) > 1:
                 repo = repo[1]
                 logger.debug('Found a link to additional PyPi repo -> {0}'.format(repo))
-                extra_index_urls.append(repo)
+                if repo not in extra_index_urls:
+                    extra_index_urls.append(repo)
 
         else:
             spec = Spec.from_line(line, source='{0}:{1}'.format(filename, lineno))
