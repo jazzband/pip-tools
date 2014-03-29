@@ -20,6 +20,11 @@ To install, simply use pip:
 $ pip install pip-tools
 ```
 
+Or if you specifically want the features available from the future branch:
+```console
+$ pip install git+https://github.com/nvie/pip-tools.git@future
+```
+
 Decide for yourself whether you want to install the tools system-wide, or
 inside a virtual env.  Both are supported.
 

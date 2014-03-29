@@ -20,6 +20,10 @@ DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
 GLOB_PATTERN = '*requirements.in'
 
 
+# Track external PyPi repos referenced
+extra_index_urls = []
+
+
 def setup_logging(verbose):
     if verbose:
         level = logging.DEBUG
@@ -38,6 +42,8 @@ def setup_logging(verbose):
 def parse_args():
     parser = argparse.ArgumentParser(
             description='Compiles requirements.txt from requirements.in specs.')
+    parser.add_argument('--extra-index-url', action='store_true', default=None,
+            help="Add additional PyPi repo to search")
     parser.add_argument('--dry-run', action='store_true', default=False,
             help="Only show what would happen, don't change anything")
     parser.add_argument('--verbose', '-v', action='store_true', default=False,
@@ -66,6 +72,13 @@ def walk_specfile(filename):
             for spec in walk_specfile(requirement):
                 yield spec.add_source('{0}:{1} -> {2}'.format(filename, lineno, spec.source))
 
+        elif line.startswith('--extra-index-url'):
+            repo = line.split('=')
+            if len(repo) > 1:
+                repo = repo[1]
+                logger.debug('Found a link to additional PyPi repo -> {0}'.format(repo))
+                extra_index_urls.append(repo)
+
         else:
             spec = Spec.from_line(line, source='{0}:{1}'.format(filename, lineno))
             yield spec
@@ -93,7 +106,7 @@ def compile_specs(source_files, dry_run=False):
     spec_set = spec_set.normalize()
     logger.debug('%s' % (spec_set,))
 
-    package_manager = PackageManager()
+    package_manager = PackageManager(extra_index_urls)
 
     logger.debug('')
     logger.debug('===> Resolving full tree')
@@ -136,10 +149,19 @@ def compile_specs(source_files, dry_run=False):
                 f.write(line)
                 f.write('\n')
 
+            # Include external PyPi sources
+            if len(extra_index_urls):
+                for extra_index_url in extra_index_urls:
+                    f.write("--extra-index-url={0}\n".format(extra_index_url))
+
 
 def main():
     args = parse_args()
     setup_logging(args.verbose)
+
+    if args.extra_index_url:
+        urls = args.extra_index_url.split(',')
+        extra_index_urls.extend(urls)
 
     src_files = args.files or glob.glob(GLOB_PATTERN)
     compile_specs(src_files, dry_run=args.dry_run)
