@@ -7,6 +7,7 @@ import glob
 import logging
 import os
 import sys
+import re
 
 # required to load all vcs modules
 from pip.vcs import git, mercurial, subversion, bazaar  # noqa
@@ -73,7 +74,7 @@ def walk_specfile(filename):
                 yield spec.add_source('{0}:{1} -> {2}'.format(filename, lineno, spec.source))
 
         elif line.startswith('--extra-index-url'):
-            repo = line.split('=')
+            repo = re.split('=| ', line)
             if len(repo) > 1:
                 repo = repo[1]
                 logger.debug('Found a link to additional PyPi repo -> {0}'.format(repo))
@@ -153,7 +154,7 @@ def compile_specs(source_files, dry_run=False):
             # Include external PyPi sources
             if len(extra_index_urls):
                 for extra_index_url in extra_index_urls:
-                    f.write("--extra-index-url={0}\n".format(extra_index_url))
+                    f.write("--extra-index-url {0}\n".format(extra_index_url))
 
 
 def main():
