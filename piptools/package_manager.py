@@ -213,7 +213,7 @@ class PackageManager(BasePackageManager):
     dep_cache_file = os.path.join(piptools_root, 'dependencies.pickle')
     download_cache_root = os.path.join(piptools_root, 'cache')
 
-    def __init__(self):
+    def __init__(self, extra_index_urls=[]):
         # TODO: provide options for pip, such as index URL or use-mirrors
         if not os.path.exists(self.download_cache_root):
             os.makedirs(self.download_cache_root)
@@ -221,6 +221,9 @@ class PackageManager(BasePackageManager):
         self._dep_cache = PersistentCache(self.dep_cache_file)
         self._dep_call_cache = {}
         self._best_match_call_cache = {}
+        self._index_urls = ['https://pypi.python.org/simple/']
+        self._index_urls.extend(extra_index_urls)
+        self._extra_index_urls = extra_index_urls
 
     # BasePackageManager interface
     def find_best_match(self, spec):
@@ -265,10 +268,10 @@ class PackageManager(BasePackageManager):
                     requirement = InstallRequirement.from_editable(specline)
                 else:
                     requirement = InstallRequirement.from_line(specline)
-                    
+
                 finder = PackageFinder(
                     find_links=[],
-                    index_urls=['https://pypi.python.org/simple/'],
+                    index_urls=self._index_urls,
                     allow_all_external=True,
                     # this parameter down not supported anymore
                     # all insecure package should be enumerated
@@ -277,7 +280,7 @@ class PackageManager(BasePackageManager):
                 link = finder.find_requirement(requirement, False)
                 self._link_cache[specline] = link
                 source = 'PyPI'
-                
+
             filename, ext = splitext(link.filename)
 
             if ext == '.whl':
@@ -297,7 +300,7 @@ class PackageManager(BasePackageManager):
         specline = str(spec)
         if spec.url:
             self._link_cache[specline] = Link(spec.vcs_url)
-            
+
             path = self.get_or_download_package(spec)
             version = self.get_vcs_revision(path)
             pinned_spec = spec.pin(version)
@@ -309,7 +312,7 @@ class PackageManager(BasePackageManager):
                 version, source = _find_cached_match(spec)
             if '==' not in specline or specline not in self._best_match_call_cache:
                 logger.debug('  Found best match: %s (from %s)' % (version, source))
-                
+
         self._best_match_call_cache[specline] = True
         return version
 
@@ -317,11 +320,11 @@ class PackageManager(BasePackageManager):
         backend_cls = vcs.get_backend_from_location(path)
         backend = backend_cls(path)
         return backend.get_revision(path)
-    
+
     def get_dependencies(self, pinned_spec):
         name = pinned_spec.name
         version = pinned_spec.version
-        
+
         key = '{0}-{1}'.format(name, version)
         if key not in self._dep_call_cache:
             logger.debug('- Getting dependencies for %s-%s' % (name, version))
@@ -446,7 +449,7 @@ class PackageManager(BasePackageManager):
                                            cwd=dist_dir, stdout=subprocess.PIPE,
                                            stderr=subprocess.PIPE)
                 process.wait()
-                
+
                 for line in process.stdout.readlines():
                     if 'egg-info/requires.txt' in line:
                         return os.path.join(dist_dir, line.rsplit(None, 1)[1])
@@ -484,7 +487,7 @@ class PackageManager(BasePackageManager):
                not 'environment' in may_requirement:
                 for name in may_requirement['requires']:
                     deps.append(re.sub(ur'[ ()]', u'', name).encode('utf-8'))
-                    
+
         return deps
 
     def extract_dependencies(self, path):
@@ -510,7 +513,7 @@ class PackageManager(BasePackageManager):
                     else:
                         name = find_file(unpack_dir, 'setup.py')
                         deps = self.read_package_requires_file(name)
-                        
+
                 finally:
                     shutil.rmtree(build_dir)
         logger.debug('Found: %s' % (deps,))
