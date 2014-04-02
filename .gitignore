@@ -1,8 +1,17 @@
 # Ignore cram test output
 *.t.err
-/.tox
-/build
-/dist
-pip_tools.egg-info
+
+# Python cruft
 *.pyc
-/env
+
+# Virtualenvs
+.envrc
+.direnv
+
+# Testing
+.tox
+
+# Build output
+build
+dist
+*.egg-info
