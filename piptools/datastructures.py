@@ -3,9 +3,7 @@ import re
 from functools import partial, wraps
 from collections import defaultdict
 from itertools import chain
-from pip.vcs import vcs
 from .version import NormalizedVersion
-
 
 
 class ConflictError(Exception):
@@ -66,7 +64,7 @@ def _parse_vcs_url(line):
 
     If given line is not VCS url, this function returns None.
     """
-    
+
     regex_text = r"""
 ^
 ((?P<editable>-e)[ ]+)?      # checking if editable
@@ -85,7 +83,7 @@ $
         if 'editable' in result:
             result['editable'] = True
         return result
-    
+
 
 class Spec(object):
     @classmethod
@@ -112,7 +110,7 @@ class Spec(object):
         vcs_dict = _parse_vcs_url(line)
         if vcs_dict:
             backend_name = vcs_dict['url'].split('+', 1)[0]
-            
+
             default_branches = dict(hg='default',
                                     git='master')
             return cls(vcs_dict['name'],
@@ -120,7 +118,7 @@ class Spec(object):
                        source=source,
                        url=vcs_dict['url'],
                        editable=vcs_dict.get('editable', False))
-            
+
         req = Requirement.parse(line)
         return cls(req.project_name, req.specs, source)
 
@@ -147,8 +145,7 @@ class Spec(object):
                     url=self.url,
                     editable=self.editable)
 
-
-    @property  # noqa
+    @property
     def name(self):
         return self._name
 
@@ -195,7 +192,7 @@ class Spec(object):
         else:
             name = self.name
             qualifiers = ','.join(map(''.join, sorted(self.preds, cmp=spec_cmp)))
-            
+
         source = ''
         if with_source and self.source:
             source = ' (from %s)' % (self.source,)
