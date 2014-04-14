@@ -39,7 +39,7 @@ class Resolver(object):
             round += 1
             if round > max_rounds:
                 raise RuntimeError('Spec set was not resolved after %d rounds. '
-                        'This is likely a bug.' % max_rounds)
+                                   'This is likely a bug.' % max_rounds)
 
             if not self.resolve_one_round():
                 # Break as soon as nothing significant is added in this round

@@ -418,14 +418,9 @@ class PackageManager(BasePackageManager):
     def unpack_archive(self, path, target_directory):
         logger.debug('- Unpacking %s' % (path,))
         with logger.indent():
-            if (path.endswith('.tar.gz') or
-                path.endswith('.tar') or
-                path.endswith('.tar.bz2') or
-                path.endswith('.tgz')):
-
+            if any(path.endswith(ext) for ext in {'.tar.gz', '.tar', '.tar.bz2', '.tgz'}):
                 archive = tarfile.open(path)
-            elif (path.endswith('.zip') or
-                  path.endswith('.whl')):
+            elif any(path.endswith(ext) for ext in {'.zip', '.whl'}):
                 archive = zipfile.ZipFile(path)
             else:
                 assert False, "Unsupported archive file: {}".format(path)
@@ -483,8 +478,7 @@ class PackageManager(BasePackageManager):
         for may_requirement in data.get('run_requires', []):
             # here we ignore requirements with 'extra' and 'environment'
             # because usually they are for specific environments like unittesting
-            if not 'extra' in may_requirement and \
-               not 'environment' in may_requirement:
+            if 'extra' not in may_requirement and 'environment' not in may_requirement:
                 for name in may_requirement['requires']:
                     deps.append(re.sub(ur'[ ()]', u'', name).encode('utf-8'))
 
