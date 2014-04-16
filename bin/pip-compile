@@ -47,6 +47,8 @@ def parse_args():
             help="Add additional PyPi repo to search")
     parser.add_argument('--dry-run', action='store_true', default=False,
             help="Only show what would happen, don't change anything")
+    parser.add_argument('--include-sources', '-i', action='store_true', default=False,
+            help="Write comments to the output file, indicating how the compiled dependencies where calculated")
     parser.add_argument('--verbose', '-v', action='store_true', default=False,
             help='Show more output')
     parser.add_argument('files', nargs='*')
@@ -95,7 +97,7 @@ def collect_source_specs(filenames):
             yield spec
 
 
-def compile_specs(source_files, dry_run=False):
+def compile_specs(source_files, include_sources=False, dry_run=False):
     logger.debug('===> Collecting source requirements')
     top_level_specs = list(collect_source_specs(source_files))
 
@@ -147,8 +149,10 @@ def compile_specs(source_files, dry_run=False):
         assert source_file != compiled_file, "Can't overwrite %s" % source_file
         logger.debug('{0} -> {1}'.format(source_file, compiled_file))
         with open(compiled_file, 'w') as f:
-            for line in sorted(map(unicode, local_pinned)):
-                f.write(line)
+            for spec in sorted(local_pinned, key=unicode):
+                f.write(spec.name)
+                if include_sources:
+                    f.write('  # {}'.format(spec.source))
                 f.write('\n')
 
             # Include external PyPi sources
@@ -166,7 +170,7 @@ def main():
         extra_index_urls.extend(urls)
 
     src_files = args.files or glob.glob(GLOB_PATTERN)
-    compile_specs(src_files, dry_run=args.dry_run)
+    compile_specs(src_files, include_sources=args.include_sources, dry_run=args.dry_run)
 
     if args.dry_run:
         logger.info("Dry-run, so nothing updated.")
