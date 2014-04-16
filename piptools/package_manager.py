@@ -506,7 +506,8 @@ class PackageManager(BasePackageManager):
                         deps = self.read_wheel_requires(name)
                     else:
                         name = find_file(unpack_dir, 'setup.py')
-                        deps = self.read_package_requires_file(name)
+                        if name:
+                            deps = self.read_package_requires_file(name)
 
                 finally:
                     shutil.rmtree(build_dir)
