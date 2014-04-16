@@ -150,7 +150,7 @@ def compile_specs(source_files, include_sources=False, dry_run=False):
         logger.debug('{0} -> {1}'.format(source_file, compiled_file))
         with open(compiled_file, 'w') as f:
             for spec in sorted(local_pinned, key=unicode):
-                f.write(spec.name)
+                f.write(unicode(spec).encode('utf-8'))
                 if include_sources:
                     f.write('  # {}'.format(spec.source))
                 f.write('\n')
