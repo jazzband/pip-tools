@@ -488,6 +488,7 @@ class PackageManager(BasePackageManager):
         """Returns a list of string representations of dependencies for
         a given distribution.
         """
+        deps = []
         logger.debug('- Extracting dependencies for %s' % (path,))
         with logger.indent():
             if os.path.isdir(path):
