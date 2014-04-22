@@ -287,7 +287,7 @@ class PackageManager(BasePackageManager):
                 # then remove implementation tags like language, abi and platform
                 # like described at:
                 # http://legacy.python.org/dev/peps/pep-0427/#file-name-convention
-                filename = re.sub(r'-(\w|\.)+-\w+-\w+$', '', filename)
+                filename = re.sub(r'-[\w.]+-[\w.]+-[\w.]+$', '', filename)
             _, version = package_to_requirement(filename).split('==')
 
             # Take this moment to smartly insert the pinned variant of this
