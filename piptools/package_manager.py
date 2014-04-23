@@ -362,17 +362,18 @@ class PackageManager(BasePackageManager):
             link = self._link_cache[str(spec)]
             fullpath = self.get_local_package_path(url_without_fragment(link))
 
-            if os.path.exists(fullpath):
-                logger.debug('  Archive cache hit: {0}'.format(link.filename))
-                return fullpath
-
-            logger.debug('  Archive cache miss, downloading {0}...'.format(
-                link.filename
-            ))
-            if spec.url:
-                # get sources from vcs
+            if spec.vcs_url:
+                # we don't use cache for VCS urls because branch could be
+                # updated since previous pip-compile call
                 unpack_vcs_link(link, fullpath, only_download=False)
             else:
+                if os.path.exists(fullpath):
+                    logger.debug('  Archive cache hit: {0}'.format(link.filename))
+                    return fullpath
+
+                logger.debug('  Archive cache miss, downloading {0}...'.format(
+                    link.filename
+                ))
                 self.download_package(link, fullpath)
 
             return fullpath
