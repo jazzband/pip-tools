@@ -15,6 +15,7 @@ setup(
     description=__doc__,
     packages=find_packages(),
     scripts=['bin/pip-compile', 'bin/pip-sync', 'bin/pip-review'],
+    install_requires=['six'],
     #include_package_data=True,
     zip_safe=False,
     platforms='any',
