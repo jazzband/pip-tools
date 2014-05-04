@@ -57,12 +57,12 @@ class TestSpecSet(unittest.TestCase):
         specset.add_spec('Django<1.3.99')
 
         normalized = specset.normalize()
-        assert 'Django>=1.3.2,<1.3.99' in map(str, normalized)
+        assert 'django>=1.3.2,<1.3.99' in map(str, normalized)
 
         specset.add_spec('Django<=1.3.2')
         normalized = specset.normalize()
 
-        assert 'Django==1.3.2' in map(str, normalized)
+        assert 'django==1.3.2' in map(str, normalized)
 
     def test_normalizing_drops_obsoletes(self):
         """Normalizing combines predicates to a single Spec."""
@@ -72,16 +72,16 @@ class TestSpecSet(unittest.TestCase):
         specset.add_spec('Django<1.4')
 
         normalized = specset.normalize()
-        assert 'Django<1.4' in map(str, normalized)
-        assert 'Django' not in map(str, normalized)
+        assert 'django<1.4' in map(str, normalized)
+        assert 'django' not in map(str, normalized)
 
         specset = SpecSet()
         specset.add_spec('Django>=1.4.1')
         specset.add_spec('Django!=1.3.3')
 
         normalized = specset.normalize()
-        assert 'Django>=1.4.1' in map(str, normalized)
-        assert 'Django!=1.3.3' not in map(str, normalized)
+        assert 'django>=1.4.1' in map(str, normalized)
+        assert 'django!=1.3.3' not in map(str, normalized)
 
     def test_normalizing_multiple_notequal_ops(self):
         """Normalizing multiple not-equal ops."""
@@ -90,7 +90,7 @@ class TestSpecSet(unittest.TestCase):
         specset.add_spec('Django!=1.4')
 
         normalized = specset.normalize()
-        assert 'Django!=1.3,!=1.4' in map(str, normalized)
+        assert 'django!=1.3,!=1.4' in map(str, normalized)
 
     def test_normalizing_unequal_op(self):
         """Normalizing inequality and not-equal ops."""
@@ -99,21 +99,21 @@ class TestSpecSet(unittest.TestCase):
         specset.add_spec('Django!=1.4.1')
 
         normalized = specset.normalize()
-        assert 'Django>1.4.1' in map(str, normalized)
+        assert 'django>1.4.1' in map(str, normalized)
 
         specset = SpecSet()
         specset.add_spec('Django<=1.4.1')
         specset.add_spec('Django!=1.4.1')
 
         normalized = specset.normalize()
-        assert 'Django<1.4.1' in map(str, normalized)
+        assert 'django<1.4.1' in map(str, normalized)
 
         specset = SpecSet()
         specset.add_spec('Django>=1.4.1')
         specset.add_spec('Django!=1.4.2')
 
         normalized = specset.normalize()
-        assert 'Django>=1.4.1,!=1.4.2' in map(str, normalized)
+        assert 'django>=1.4.1,!=1.4.2' in map(str, normalized)
 
         specset = SpecSet()
         specset.add_spec('Django<=1.4.1')
