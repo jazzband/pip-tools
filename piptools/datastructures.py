@@ -232,7 +232,7 @@ class SpecSet(object):
     def __iter__(self):
         """Iterate over all specs in the set."""
         for key in sorted(self._byname.keys(), key=str.lower):
-            specs = self._byname[key]
+            specs = self._byname[key.lower()]
             for spec in sorted(specs):
                 yield spec
 
@@ -250,7 +250,7 @@ class SpecSet(object):
         """Explodes the list of all Specs for the given package name into
         a list of Specs with maximally one predicate.
         """
-        specs = self._byname[name]
+        specs = self._byname[name.lower()]
         for spec in specs:
             for pred in spec.preds:
                 yield Spec(spec.name, [pred],
@@ -462,7 +462,7 @@ class SpecSet(object):
             else:
                 preds.append((qual, value))
 
-        vcs_specs = [spec for spec in self._byname[name] if spec.url]
+        vcs_specs = [spec for spec in self._byname[name.lower()] if spec.url]
 
         if vcs_specs:
             # If there is at least one spec with VCS url, prefer it
@@ -475,7 +475,7 @@ class SpecSet(object):
             else:
                 # No predicates, un-pinned requirement. Needs special-casing to
                 # keep the original source.
-                used_sources = [spec.source for spec in self._byname[name]
+                used_sources = [spec.source for spec in self._byname[name.lower()]
                                 if spec.source is not None]
             source = ' and '.join(sorted(used_sources, key=lambda item: item.lower()))
             return Spec(name, preds, source)
