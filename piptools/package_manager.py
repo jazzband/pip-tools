@@ -224,7 +224,9 @@ class PackageManager(BasePackageManager):
         self._index_urls = ['https://pypi.python.org/simple/']
         self._index_urls.extend(extra_index_urls)
         self._extra_index_urls = extra_index_urls
-        self._vcs_unpacked_in_this_run = []
+
+        # In-memory (non-persistent) cache of unpacked VCS URLs
+        self._unpacked_vcs_urls = set()
 
     # BasePackageManager interface
     def find_best_match(self, spec):
@@ -366,9 +368,9 @@ class PackageManager(BasePackageManager):
             if spec.vcs_url:
                 # We don't use a persistent cache for VCS urls: the branch
                 # could have been updated since the previous pip-compile call.
-                if not link in self._vcs_unpacked_in_this_run:
+                if link not in self._unpacked_vcs_urls:
                     unpack_vcs_link(link, fullpath, only_download=False)
-                    self._vcs_unpacked_in_this_run.append(link)
+                    self._unpacked_vcs_urls.add(link)
             else:
                 if os.path.exists(fullpath):
                     logger.debug('  Archive cache hit: {0}'.format(link.filename))
