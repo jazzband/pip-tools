@@ -1,8 +1,18 @@
 import unittest
-from piptools.datastructures import SpecSet, Spec, ConflictError
+
+import six
+
+from piptools.datastructures import ConflictError, Spec, SpecSet
 
 
-class TestSpecSet(unittest.TestCase):
+class UnitTestPython3CompatMixin(object):
+    def assertCountEqual(self, first, second, msg=None):
+        if six.PY2:
+            return self.assertItemsEqual(first, second, msg)
+        return self.assertCountEqual(first, second, msg)
+
+
+class TestSpecSet(unittest.TestCase, UnitTestPython3CompatMixin):
     def test_adding_spec(self):
         """Adding a spec to a set."""
         specset = SpecSet()
@@ -10,7 +20,7 @@ class TestSpecSet(unittest.TestCase):
         specset.add_spec('foo')
         specset.add_spec('foo')
 
-        self.assertItemsEqual(list(specset),
+        self.assertCountEqual(list(specset),
                               [Spec.from_line('foo')])
 
         # If we now add a 'foo' spec from a specific source, they're not
@@ -18,7 +28,7 @@ class TestSpecSet(unittest.TestCase):
         spec = Spec.from_line('foo', source='bar==1.2.4')
         specset.add_spec(spec)
 
-        self.assertItemsEqual(list(specset),
+        self.assertCountEqual(list(specset),
                               [spec, Spec.from_line('foo')])
 
     def test_adding_multiple_specs(self):
@@ -29,10 +39,10 @@ class TestSpecSet(unittest.TestCase):
         assert 'Django>=1.3' in list(map(str, specset))
 
         specset.add_spec('django-pipeline')
-        self.assertItemsEqual(['Django>=1.3', 'django-pipeline'], list(map(str, specset)))
+        self.assertCountEqual(['Django>=1.3', 'django-pipeline'], list(map(str, specset)))
 
         specset.add_spec('Django<1.4')
-        self.assertItemsEqual(['Django>=1.3', 'django-pipeline', 'Django<1.4'], list(map(str, specset)))
+        self.assertCountEqual(['Django>=1.3', 'django-pipeline', 'Django<1.4'], list(map(str, specset)))
 
     def test_explode(self):
         """Exploding a spec list into specs of max one predicate."""
@@ -41,7 +51,7 @@ class TestSpecSet(unittest.TestCase):
         specset.add_spec('Django>=1.3,<1.4')
         specset.add_spec('Django>=1.3.2,<1.5')
 
-        self.assertItemsEqual(
+        self.assertCountEqual(
             ['Django>=1.3', 'Django>=1.3.2', 'Django<1.4', 'Django<1.5'],
             list(map(str, specset.explode('Django'))))
 
