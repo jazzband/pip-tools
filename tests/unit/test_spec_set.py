@@ -54,8 +54,8 @@ class TestSpecSet(unittest.TestCase):
         specset.add_spec('Django>=1.3.2')
         specset.add_spec('Django<1.3.99')
 
-        normalized = specset.normalize()
-        assert 'django>=1.3.2,<1.3.99' in list(map(str, normalized))
+        normalized = str(specset.normalize())
+        assert 'django<1.3.99,>=1.3.2' in normalized
 
         specset.add_spec('Django<=1.3.2')
         normalized = specset.normalize()
@@ -110,8 +110,8 @@ class TestSpecSet(unittest.TestCase):
         specset.add_spec('Django>=1.4.1')
         specset.add_spec('Django!=1.4.2')
 
-        normalized = specset.normalize()
-        assert 'django>=1.4.1,!=1.4.2' in list(map(str, normalized))
+        normalized = str(specset.normalize())
+        assert 'django!=1.4.2,>=1.4.1' in normalized
 
         specset = SpecSet()
         specset.add_spec('Django<=1.4.1')
