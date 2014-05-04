@@ -1,7 +1,7 @@
 import operator
 import re
-from functools import partial, wraps
 from collections import defaultdict
+from functools import cmp_to_key, partial, wraps
 from itertools import chain
 
 import six
@@ -47,13 +47,19 @@ def spec_cmp(spec1, spec2):
     """Compares two (qual, value) tuples."""
     qual1, val1 = spec1
     qual2, val2 = spec2
-    result = -cmp(qual1, qual2)  # sort qualifiers reversed alphabetically
-    if result != 0:
-        return result
+    if qual1 < qual2:
+        return -1
+    elif qual1 > qual2:
+        return 1
 
     val1 = NormalizedVersion(val1)
     val2 = NormalizedVersion(val2)
-    return cmp(val1, val2)
+    if val1 < val2:
+        return -1
+    elif val1 > val2:
+        return 1
+    else:
+        return 0
 
 
 def _parse_vcs_url(line):
@@ -194,7 +200,7 @@ class Spec(object):
             qualifiers += '#egg=' + self.name
         else:
             name = self.name
-            qualifiers = ','.join(map(''.join, sorted(self.preds, cmp=spec_cmp)))
+            qualifiers = ','.join(map(''.join, sorted(self.preds, key=cmp_to_key(spec_cmp))))
 
         source = ''
         if with_source and self.source:
