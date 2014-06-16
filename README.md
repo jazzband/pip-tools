@@ -8,7 +8,7 @@ fresh, even when you've pinned them.
 
 [You _do_ pin them, right?][0]
 
-![pip-tools overview](https://github.com/downloads/nvie/pip-tools/pip-tools.png)
+![pip-tools overview](http://cloud.github.com/downloads/nvie/pip-tools/pip-tools.png)
 
 
 pip-review
