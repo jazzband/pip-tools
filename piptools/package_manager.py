@@ -22,10 +22,10 @@ except ImportError:
 from functools import partial
 import urlparse
 
-#from pip.backwardcompat import ConfigParser
-from pip.download import get_file_content, unpack_vcs_link
+from pip.backwardcompat import ConfigParser
+from pip.download import unpack_http_url, unpack_vcs_link
 from pip.index import Link, PackageFinder, package_to_requirement
-#from pip.locations import default_config_file
+from pip.locations import default_config_file
 from pip.req import InstallRequirement
 from pip.util import splitext
 from pip.vcs import vcs
@@ -224,6 +224,7 @@ class PackageManager(BasePackageManager):
         self._index_urls = ['https://pypi.python.org/simple/']
         self._index_urls.extend(extra_index_urls)
         self._extra_index_urls = extra_index_urls
+        self._pip_download_cache = None
 
         # In-memory (non-persistent) cache of unpacked VCS URLs
         self._unpacked_vcs_urls = set()
@@ -383,61 +384,35 @@ class PackageManager(BasePackageManager):
 
             return fullpath
 
-    # def get_pip_cache_root():
-    #     """Returns pip's cache root, or None if no such cache root is
-    #     configured.
-    #     """
-    #     pip_config = ConfigParser.RawConfigParser()
-    #     pip_config.read([default_config_file])
-    #     download_cache = None
-    #     try:
-    #         for key, value in pip_config.items('global'):
-    #             if key == 'download-cache':
-    #                 download_cache = value
-    #                 break
-    #     except ConfigParser.NoSectionError:
-    #         pass
-    #     if download_cache is not None:
-    #         download_cache = os.path.expanduser(download_cache)
-    #     return download_cache
+    @property
+    def pip_download_cache(self):
+        """Returns pip's download cache, or False if no such cache root is
+        configured.
+        """
+        if self._pip_download_cache is None:
+            pip_config = ConfigParser.RawConfigParser()
+            pip_config.read([default_config_file])
+            download_cache = False
+            try:
+                for key, value in pip_config.items('global'):
+                    if key == 'download_cache':
+                        download_cache = value
+                        break
+            except ConfigParser.NoSectionError:
+                pass
+            if download_cache is not False:
+                download_cache = os.path.expanduser(download_cache)
+            self._pip_download_cache = download_cache
+        return self._pip_download_cache
 
     def download_package(self, link, destination):
         """Downloads the given package link contents to the local
         package cache. Overwrites anything that's in the cache already.
         """
-        # TODO integrate pip's download-cache
-        #pip_cache_root = self.get_pip_cache_root()
-        #if pip_cache_root:
-        #    cache_path = os.path.join(pip_cache_root, cache_key)
-        #    if os.path.exists(cache_path):
-        #        # pip has a cached version, copy it
-        #        shutil.copyfile(cache_path, fullpath)
-        #else:
-        #    actually download the requirement
         url = url_without_fragment(link)
         logger.debug('- Downloading package from %s' % (url,))
         with logger.indent():
-            _, content = get_file_content(url, link)
-            with open(destination, 'w') as f:
-                f.write(content)
-
-    def unpack_archive(self, path, target_directory):
-        logger.debug('- Unpacking %s' % (path,))
-        with logger.indent():
-            if any(path.endswith(ext) for ext in {'.tar.gz', '.tar', '.tar.bz2', '.tgz'}):
-                archive = tarfile.open(path)
-            elif any(path.endswith(ext) for ext in {'.zip', '.whl'}):
-                archive = zipfile.ZipFile(path)
-            else:
-                assert False, "Unsupported archive file: {}".format(path)
-
-            try:
-                archive.extractall(target_directory)
-            except IOError:
-                logger.error("Error extracting %s" % (path,))
-                raise
-            finally:
-                archive.close()
+            unpack_http_url(link, destination, download_cache=self.pip_download_cache)
 
     def get_egg_info_requires(self, dist_dir):
         """Generates egg-info directory and it was successful, returns
@@ -497,27 +472,21 @@ class PackageManager(BasePackageManager):
         deps = []
         logger.debug('- Extracting dependencies for %s' % (path,))
         with logger.indent():
-            if os.path.isdir(path):
-                # this is a directory in case if path is pointing to
-                # VCS checkout
-                deps = self.read_package_requires_file(path)
-            else:
-                build_dir = tempfile.mkdtemp()
-                unpack_dir = os.path.join(build_dir, 'build')
-                try:
-                    self.unpack_archive(path, unpack_dir)
+            # First check if archive was a wheel.
+            for wheel_metafile in ['pydist.json', 'metadata.json']:
+                # (metadata.json is used by raven / bdist_wheel 0.23.0).
+                name = find_file(path, wheel_metafile)
+                if name:
+                    deps = self.read_wheel_requires(name)
+                    break
 
-                    # first, check if archive was a wheel
-                    name = find_file(unpack_dir, 'pydist.json')
-                    if name:
-                        deps = self.read_wheel_requires(name)
-                    else:
-                        name = find_file(unpack_dir, 'setup.py')
-                        if name:
-                            deps = self.read_package_requires_file(name)
+            if not name:
+                name = find_file(path, 'setup.py')
+                if name:
+                    deps = self.read_package_requires_file(name)
+                else:
+                    logger.warn("Package has no dependency information: %s" % (path,))
 
-                finally:
-                    shutil.rmtree(build_dir)
         logger.debug('Found: %s' % (deps,))
         return deps
 
