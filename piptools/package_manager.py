@@ -23,7 +23,7 @@ from functools import partial
 import urlparse
 
 #from pip.backwardcompat import ConfigParser
-from pip.download import get_file_content, unpack_vcs_link
+from pip.download import get_file_content, unpack_vcs_link, PipSession
 from pip.index import Link, PackageFinder, package_to_requirement
 #from pip.locations import default_config_file
 from pip.req import InstallRequirement
@@ -224,6 +224,11 @@ class PackageManager(BasePackageManager):
         self._index_urls = ['https://pypi.python.org/simple/']
         self._index_urls.extend(extra_index_urls)
         self._extra_index_urls = extra_index_urls
+        try:
+            # Try to pass/set retries with pip 1.6 (default: 0).
+            self._session = PipSession(retries=3)
+        except TypeError:
+            self._session = PipSession()
 
         # In-memory (non-persistent) cache of unpacked VCS URLs
         self._unpacked_vcs_urls = set()
@@ -276,6 +281,7 @@ class PackageManager(BasePackageManager):
                     find_links=[],
                     index_urls=self._index_urls,
                     allow_all_external=True,
+                    session=self._session,
                     # this parameter down not supported anymore
                     # all insecure package should be enumerated
                     # allow_all_insecure=True,
@@ -417,7 +423,7 @@ class PackageManager(BasePackageManager):
         url = url_without_fragment(link)
         logger.debug('- Downloading package from %s' % (url,))
         with logger.indent():
-            _, content = get_file_content(url, link)
+            _, content = get_file_content(url, link, session=self._session)
             with open(destination, 'w') as f:
                 f.write(content)
 
