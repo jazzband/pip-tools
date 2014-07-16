@@ -43,7 +43,7 @@ def setup_logging(verbose):
 def parse_args():
     parser = argparse.ArgumentParser(
             description='Compiles requirements.txt from requirements.in specs.')
-    parser.add_argument('--extra-index-url', action='store_true', default=None,
+    parser.add_argument('--extra-index-url', action='store', default=None,
             help="Add additional PyPi repo to search")
     parser.add_argument('--dry-run', action='store_true', default=False,
             help="Only show what would happen, don't change anything")
