@@ -2,8 +2,9 @@ Create a new playground first:
 
   $ virtualenv --python="$(which python)" FOO >/dev/null
   $ PATH=FOO/bin:$PATH
-  $ pip install 'pip<1.5' > /dev/null 2>&1
+  $ pip install 'pip>=1.5' > /dev/null 2>&1
   $ pip install argparse >/dev/null 2>&1
+  $ pip install six >/dev/null 2>&1
   $ export PYTHONPATH=$PYTHONPATH:$TESTDIR/..
   $ alias pip-compile="$TESTDIR/../bin/pip-compile"
 
