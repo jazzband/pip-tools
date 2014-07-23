@@ -492,7 +492,7 @@ class PackageManager(BasePackageManager):
             # because usually they are for specific environments like unittesting
             if 'extra' not in may_requirement and 'environment' not in may_requirement:
                 for name in may_requirement['requires']:
-                    deps.append(re.sub(ur'[ ()]', u'', name).encode('utf-8'))
+                    deps.append(re.sub(u'[ ()]', u'', name).encode('utf-8'))
 
         return deps
 
