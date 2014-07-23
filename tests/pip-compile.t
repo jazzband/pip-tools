@@ -28,16 +28,15 @@ dependency is automatically inferred and added:
 
 Note that this did not touch our environment in any way:
 
-  $ pip freeze -l
+  $ pip freeze -l | grep -v six
   [1]
 
 That only happens when we run pip-sync:
 
   $ pip-sync >/dev/null 2>&1
 
-  $ pip freeze -l
+  $ pip freeze -l | grep -v six
   python-dateutil==* (glob)
-  six==* (glob)
 
 A better (more explicit) way is to pin the versions in requirements.in.  Note
 that we're replacing the python-dateutil package in it by an explicitly pinned
@@ -58,13 +57,12 @@ Now, when we sync the newly Recorded State to the Environment, note that this
 did unintall the python-dateutil and six packages that have been previously
 been installed:
 
-  $ pip freeze -l
+  $ pip freeze -l | grep -v six
   python-dateutil==* (glob)
-  six==* (glob)
 
   $ pip-sync >/dev/null 2>&1
 
-  $ pip freeze -l
+  $ pip freeze -l | grep -v six
   raven==1.9.3
   simplejson==2.4.0
 
