@@ -3,7 +3,6 @@ Create a new playground first:
   $ virtualenv --python="$(which python)" FOO >/dev/null
   $ PATH=FOO/bin:$PATH
   $ pip install 'pip>=1.5' > /dev/null 2>&1
-  $ pip install argparse >/dev/null 2>&1
   $ pip install six >/dev/null 2>&1
   $ export PYTHONPATH=$PYTHONPATH:$TESTDIR/..
   $ alias pip-compile="$TESTDIR/../bin/pip-compile"
@@ -29,14 +28,14 @@ dependency is automatically inferred and added:
 
 Note that this did not touch our environment in any way:
 
-  $ pip freeze -l | grep -v argparse
+  $ pip freeze -l
   [1]
 
 That only happens when we run pip-sync:
 
   $ pip-sync >/dev/null 2>&1
 
-  $ pip freeze -l | grep -v argparse
+  $ pip freeze -l
   python-dateutil==* (glob)
   six==* (glob)
 
