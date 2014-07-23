@@ -216,12 +216,17 @@ class Spec(object):
     def __repr__(self):
         return str(self)
 
+    def as_tup(self):
+        return (self.name, self.preds, self.source, self.url, self.editable)
+
     def __eq__(self, other):
-        return (self.name == other.name and
-                self.preds == other.preds and
-                self.source == other.source and
-                self.url == other.url and
-                self.editable == other.editable)
+        return self.as_tup() == other.as_tup()
+
+    def __lt__(self, other):
+        return self.as_tup() < other.as_tup()
+
+    def __gt__(self, other):
+        return self.as_tup() > other.as_tup()
 
     def __hash__(self):
         return (hash(self.name) ^
