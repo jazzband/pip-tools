@@ -33,7 +33,7 @@ Note that this did not touch our environment in any way:
 
 That only happens when we run pip-sync:
 
-  $ pip-sync >/dev/null 2>&1
+  $ pip-sync
 
   $ pip freeze -l | grep -v six
   python-dateutil==* (glob)
@@ -60,7 +60,7 @@ been installed:
   $ pip freeze -l | grep -v six
   python-dateutil==* (glob)
 
-  $ pip-sync >/dev/null 2>&1
+  $ pip-sync
 
   $ pip freeze -l | grep -v six
   raven==1.9.3
