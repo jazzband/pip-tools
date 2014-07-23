@@ -245,7 +245,7 @@ class SpecSet(object):
 
     def __iter__(self):
         """Iterate over all specs in the set."""
-        for key in sorted(self._byname.keys(), key=str.lower):
+        for key in sorted(self._byname.keys(), key=lambda s: s.lower()):
             specs = self._byname[key.lower()]
             for spec in sorted(specs):
                 yield spec
