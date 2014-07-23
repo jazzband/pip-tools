@@ -16,6 +16,5 @@ class TestDependencyResolving(unittest.TestCase):
 
         # ...let's see what this leads to
         resolver = Resolver(spec_set, pkgmgr)
-        self.assertItemsEqual(
-                ['foo==0.1', 'bar==1.2', 'qux==0.1', 'simplejson==2.4.0'],
-                map(str, resolver.resolve()))
+        deps = set(map(str, resolver.resolve()))
+        assert deps == {'foo==0.1', 'bar==1.2', 'qux==0.1', 'simplejson==2.4.0'}

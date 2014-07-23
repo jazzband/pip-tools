@@ -16,6 +16,8 @@ from piptools.logging import logger
 from piptools.package_manager import PackageManager
 from piptools.resolver import Resolver
 
+from six import text_type
+
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
 GLOB_PATTERN = '*requirements.in'
@@ -42,7 +44,7 @@ def setup_logging(verbose):
 
 def parse_args():
     parser = argparse.ArgumentParser(
-            description='Compiles requirements.txt from requirements.in specs.')
+            description="Compiles requirements.txt from requirements.in specs.")
     parser.add_argument('--extra-index-url', action='store', default=None,
             help="Add additional PyPi repo to search")
     parser.add_argument('--dry-run', action='store_true', default=False,
@@ -50,7 +52,7 @@ def parse_args():
     parser.add_argument('--include-sources', '-i', action='store_true', default=False,
             help="Write comments to the output file, indicating how the compiled dependencies where calculated")
     parser.add_argument('--verbose', '-v', action='store_true', default=False,
-            help='Show more output')
+            help="Show more output")
     parser.add_argument('files', nargs='*')
     return parser.parse_args()
 
@@ -59,11 +61,11 @@ def walk_specfile(filename):
     """Walks over the given file, and returns (req, filename, lineno)
     tuples for each entry.
     """
-    with open(filename, 'r') as f:
+    with open(filename, 'rb') as f:
         reqs = f.read()
 
     for lineno, line in enumerate(reqs.splitlines(), 1):
-        line = line.strip()
+        line = line.strip().decode('utf-8')
         if not line or line.startswith('#'):
             continue
 
@@ -119,7 +121,7 @@ def compile_specs(source_files, include_sources=False, dry_run=False):
     try:
         pinned_spec_set = resolver.resolve()
     except ConflictError as e:
-        logger.error("error: {0}".format(e))
+        logger.error('error: {0}'.format(e))
         sys.exit(1)
 
     logger.debug('')
@@ -140,7 +142,7 @@ def compile_specs(source_files, include_sources=False, dry_run=False):
     for spec in top_level_specs:
         split[spec.source.split(':')[0]].add_spec(spec)
 
-    for source_file, spec_set in split.iteritems():
+    for source_file, spec_set in split.items():
         resolver = Resolver(spec_set, package_manager=package_manager)
         with logger.silent():
             local_pinned = resolver.resolve()
@@ -148,17 +150,17 @@ def compile_specs(source_files, include_sources=False, dry_run=False):
         compiled_file = '{0}.txt'.format(name)
         assert source_file != compiled_file, "Can't overwrite %s" % source_file
         logger.debug('{0} -> {1}'.format(source_file, compiled_file))
-        with open(compiled_file, 'w') as f:
-            for spec in sorted(local_pinned, key=unicode):
-                f.write(unicode(spec).encode('utf-8'))
+        with open(compiled_file, 'wb') as f:
+            for spec in sorted(local_pinned, key=text_type):
+                f.write(text_type(spec).encode('utf-8'))
                 if include_sources:
-                    f.write('  # {}'.format(spec.source))
-                f.write('\n')
+                    f.write(b'  # {}'.format(spec.source))
+                f.write(b'\n')
 
             # Include external PyPi sources
             if len(extra_index_urls):
                 for extra_index_url in extra_index_urls:
-                    f.write("--extra-index-url {0}\n".format(extra_index_url))
+                    f.write(b'--extra-index-url {0}\n'.format(extra_index_url))
 
 
 def main():

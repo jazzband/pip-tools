@@ -217,7 +217,7 @@ class Spec(object):
         return str(self)
 
     def as_tup(self):
-        return (self.name, self.preds, self.source, self.url, self.editable)
+        return (self.name, self.preds, self.source or '', self.url, self.editable)
 
     def __eq__(self, other):
         return self.as_tup() == other.as_tup()
@@ -231,7 +231,7 @@ class Spec(object):
     def __hash__(self):
         return (hash(self.name) ^
                 hash(self.preds) ^
-                hash(self.source) ^
+                hash(self.source or '') ^
                 hash(self.url) ^
                 hash(self.editable))
 
@@ -399,7 +399,7 @@ class SpecSet(object):
             # fall in that range.  Otherwise, the unequality variant can be
             # removed from the pred set.
             pinned_version = by_qualifiers['==']
-            for qual, value in by_qualifiers.items():
+            for qual, value in list(by_qualifiers.items()):
                 if qual == '==':
                     continue
 

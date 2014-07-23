@@ -139,7 +139,7 @@ class FakePackageManager(BasePackageManager):
         versions = list(self.iter_versions(spec.name))
         for pred in spec.preds:
             is_version_match = partial(self.matches_pred, pred=pred)
-            versions = filter(is_version_match, versions)
+            versions = list(filter(is_version_match, versions))
         if len(versions) == 0:
             raise NoPackageMatch('No package found for %s' % (spec,))
         return self.pick_highest(versions)
@@ -172,7 +172,7 @@ class PersistentCache(object):
     def read_cache(self):
         """Reads the cached contents into memory."""
         if os.path.exists(self._cache_file):
-            with open(self._cache_file, 'r') as f:
+            with open(self._cache_file, 'rb') as f:
                 self._cache = pickle.load(f)
         else:
             # Create a new, empty cache otherwise (store a __format__ field
@@ -182,7 +182,7 @@ class PersistentCache(object):
 
     def write_cache(self):
         """Writes (pickles) the cache to disk."""
-        with open(self._cache_file, 'w') as f:
+        with open(self._cache_file, 'wb') as f:
             pickle.dump(self._cache, f)
 
     def __contains__(self, item):
