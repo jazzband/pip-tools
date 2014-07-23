@@ -173,9 +173,9 @@ def main():
     compile_specs(src_files, include_sources=args.include_sources, dry_run=args.dry_run)
 
     if args.dry_run:
-        logger.info("Dry-run, so nothing updated.")
+        logger.info('Dry-run, so nothing updated.')
     else:
-        logger.info("Dependencies updated.")
+        logger.info('Dependencies updated.')
 
 
 if __name__ == '__main__':
