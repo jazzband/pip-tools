@@ -67,57 +67,6 @@ been installed:
   simplejson==2.4.0
 
 
-UPDATING
-========
-
-Okay, to recap, we have:
-
-  $ cat requirements.in
-  raven==1.9.3
-
-  $ cat requirements.txt
-  raven==1.9.3
-  simplejson==2.4.0
-
-Now, show available updates for packages in requirements.in:
-
-  $ pip-review requirements.in
-  - raven==* (glob)
-
-Or show them for all Recorded State:
-
-  $ pip-review
-  requirements.in:
-  - raven==* (glob)
-
-@Bruno: Don't you think the above pip-review output should also report
-review secondary dependencies?  For example, when simplejson==2.6.2 is
-available, this should be suggested, right (given that 2.6.2 matches raven deps
-criteria)?
-
-
-Apply an update manually by modifying requirements.in:
-
-  $ echo "raven==2.0.6" > requirements.in
-
-  $ pip-compile >/dev/null 2>&1
-
-  $ grep -v "simplejson==2.4.0" requirements.txt
-  raven==2.0.6
-  simplejson==* (glob)
-
-
-Add a new requirement:
-
-  $ echo "requests==0.8.9" >> requirements.in
-  $ pip-compile >/dev/null 2>&1
-  $ cat requirements.txt
-  certifi==* (glob)
-  raven==2.0.6
-  requests==0.8.9
-  simplejson==* (glob)
-
-
 CONFLICT DETECTION
 ==================
 
