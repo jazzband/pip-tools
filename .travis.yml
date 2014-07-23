@@ -2,9 +2,6 @@ language: python
 python:
   - "2.7"
   - "3.4"
-branches:
-  except:
-    - future
 install:
   - "pip install cram pytest . --use-mirrors"
 script:
