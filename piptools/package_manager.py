@@ -10,17 +10,12 @@ import tempfile
 import zipfile
 
 try:
-    from urllib.parse import quote
-except ImportError:
-    from urllib import quote  # noqa
-
-try:
     import cPickle as pickle
 except ImportError:
     import pickle as pickle  # noqa
 
 from functools import partial
-import urlparse
+from six.moves.urllib.parse import urlsplit, urlunsplit, quote
 
 #from pip.backwardcompat import ConfigParser
 from pip.download import get_file_content, unpack_vcs_link, PipSession
@@ -53,8 +48,8 @@ def url_without_fragment(link):
     try:
         return link.url_without_fragment
     except AttributeError:
-        scheme, netloc, path, query, fragment = urlparse.urlsplit(link.url)
-        return urlparse.urlunsplit((scheme, netloc, path, query, None))
+        scheme, netloc, path, query, fragment = urlsplit(link.url)
+        return urlunsplit((scheme, netloc, path, query, None))
 
 
 class NoPackageMatch(Exception):
