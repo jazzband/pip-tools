@@ -4,7 +4,7 @@ from collections import defaultdict
 from functools import cmp_to_key, partial, wraps
 from itertools import chain
 
-import six
+from six import string_types
 
 from .version import NormalizedVersion
 
@@ -255,7 +255,7 @@ class SpecSet(object):
             self.add_spec(spec)
 
     def add_spec(self, spec):
-        if isinstance(spec, six.string_types):
+        if isinstance(spec, string_types):
             spec = Spec.from_line(spec)
 
         self._byname[spec.name.lower()].add(spec)
