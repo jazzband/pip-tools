@@ -24,6 +24,7 @@ GLOB_PATTERN = '*requirements.in'
 
 # Track external PyPi repos referenced
 extra_index_urls = []
+find_links = []
 
 
 def setup_logging(verbose):
@@ -61,7 +62,8 @@ def walk_specfile(filename):
 
             for spec in walk_specfile(requirement):
                 yield spec.add_source('{0}:{1} -> {2}'.format(filename, lineno, spec.source))
-
+        elif line.startswith('-f'):
+            find_links.append(line.split(None, 1)[1])
         elif line.startswith('--extra-index-url'):
             repo = re.split('=| ', line)
             if len(repo) > 1:
@@ -69,7 +71,6 @@ def walk_specfile(filename):
                 logger.debug('Found a link to additional PyPi repo -> {0}'.format(repo))
                 if repo not in extra_index_urls:
                     extra_index_urls.append(repo)
-
         else:
             spec = Spec.from_line(line, source='{0}:{1}'.format(filename, lineno))
             yield spec
@@ -97,7 +98,7 @@ def compile_specs(source_files, include_sources=False, dry_run=False):
     spec_set = spec_set.normalize()
     logger.debug('%s' % (spec_set,))
 
-    package_manager = PackageManager(extra_index_urls)
+    package_manager = PackageManager(extra_index_urls, find_links)
 
     logger.debug('')
     logger.debug('===> Resolving full tree')
@@ -153,6 +154,7 @@ def compile_specs(source_files, include_sources=False, dry_run=False):
 @click.option('--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
 @click.option('--include-sources', '-i', is_flag=True,
               help="Write comments to the output file, indicating how the compiled dependencies where calculated")
+@click.option('--find-links', '-f', help="Look for archives in this directory or on this HTML page")
 @click.option('--extra-index-url', default=None, help="Add additional PyPi repo to search")
 @click.argument('files', nargs=-1, type=click.Path(exists=True))
 def cli(verbose, dry_run, include_sources, extra_index_url, files):

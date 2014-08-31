@@ -208,7 +208,7 @@ class PackageManager(BasePackageManager):
     dep_cache_file = os.path.join(piptools_root, 'dependencies.pickle')
     download_cache_root = os.path.join(piptools_root, 'cache')
 
-    def __init__(self, extra_index_urls=[]):
+    def __init__(self, extra_index_urls=[], find_links=[]):
         # TODO: provide options for pip, such as index URL or use-mirrors
         if not os.path.exists(self.download_cache_root):
             os.makedirs(self.download_cache_root)
@@ -216,6 +216,7 @@ class PackageManager(BasePackageManager):
         self._dep_cache = PersistentCache(self.dep_cache_file)
         self._dep_call_cache = {}
         self._best_match_call_cache = {}
+        self._find_links = find_links[:]
         self._index_urls = ['https://pypi.python.org/simple/']
         self._index_urls.extend(extra_index_urls)
         self._extra_index_urls = extra_index_urls
@@ -273,7 +274,7 @@ class PackageManager(BasePackageManager):
                     requirement = InstallRequirement.from_line(specline)
 
                 finder = PackageFinder(
-                    find_links=[],
+                    find_links=self._find_links,
                     index_urls=self._index_urls,
                     allow_all_external=True,
                     session=self._session,
