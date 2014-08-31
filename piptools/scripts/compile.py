@@ -1,8 +1,7 @@
-#!/usr/bin/env python
 from __future__ import absolute_import
 from collections import defaultdict
 
-import argparse
+import click
 import glob
 import logging
 import os
@@ -41,20 +40,6 @@ def setup_logging(verbose):
 
     from pip.log import logger as pip_logger
     pip_logger.consumers.append((pip_logger.VERBOSE_DEBUG, lambda msg: logger.debug('PIP said: ' + msg)))
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-            description="Compiles requirements.txt from requirements.in specs.")
-    parser.add_argument('--extra-index-url', action='store', default=None,
-            help="Add additional PyPi repo to search")
-    parser.add_argument('--dry-run', action='store_true', default=False,
-            help="Only show what would happen, don't change anything")
-    parser.add_argument('--include-sources', '-i', action='store_true', default=False,
-            help="Write comments to the output file, indicating how the compiled dependencies where calculated")
-    parser.add_argument('--verbose', '-v', action='store_true', default=False,
-            help="Show more output")
-    parser.add_argument('files', nargs='*')
-    return parser.parse_args()
 
 
 def walk_specfile(filename):
@@ -163,22 +148,29 @@ def compile_specs(source_files, include_sources=False, dry_run=False):
                     f.write(b'--extra-index-url {0}\n'.format(extra_index_url))
 
 
-def main():
-    args = parse_args()
-    setup_logging(args.verbose)
+@click.command()
+@click.option('--verbose', '-v', is_flag=True, help="Show more output")
+@click.option('--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
+@click.option('--include-sources', '-i', is_flag=True,
+              help="Write comments to the output file, indicating how the compiled dependencies where calculated")
+@click.option('--extra-index-url', default=None, help="Add additional PyPi repo to search")
+@click.argument('files', nargs=-1, type=click.Path(exists=True))
+def cli(verbose, dry_run, include_sources, extra_index_url, files):
+    """Compiles requirements.txt from requirements.in specs."""
+    setup_logging(verbose)
 
-    if args.extra_index_url:
-        urls = args.extra_index_url.split(',')
+    if extra_index_url:
+        urls = extra_index_url.split(',')
         extra_index_urls.extend(urls)
 
-    src_files = args.files or glob.glob(GLOB_PATTERN)
-    compile_specs(src_files, include_sources=args.include_sources, dry_run=args.dry_run)
+    src_files = files or glob.glob(GLOB_PATTERN)
+    if not src_files:
+        click.echo('No input files to process.')
+        sys.exit(2)
 
-    if args.dry_run:
+    compile_specs(src_files, include_sources=include_sources, dry_run=dry_run)
+
+    if dry_run:
         logger.info('Dry-run, so nothing updated.')
     else:
         logger.info('Dependencies updated.')
-
-
-if __name__ == '__main__':
-    main()

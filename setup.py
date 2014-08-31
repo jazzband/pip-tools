@@ -1,8 +1,6 @@
 """
 pip-tools keeps your pinned dependencies fresh.
 """
-import sys
-
 from setuptools import find_packages, setup
 
 setup(
@@ -14,10 +12,16 @@ setup(
     author_email='vincent@3rdcloud.com',
     description=__doc__,
     packages=find_packages(),
-    scripts=['bin/pip-compile', 'bin/pip-sync', 'bin/pip-review'],
-    install_requires=['six'],
+    install_requires=['click', 'six'],
     #include_package_data=True,
     zip_safe=False,
+    entry_points={
+        'console_scripts': [
+            'pip-compile = piptools.scripts.compile:cli',
+            'pip-review = piptools.scripts.review:cli',
+            'pip-sync = piptools.scripts.sync:cli',
+        ],
+    },
     platforms='any',
     classifiers=[
         # As from https://pypi.python.org/pypi?%3Aaction=list_classifiers
