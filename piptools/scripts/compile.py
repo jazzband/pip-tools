@@ -8,8 +8,6 @@ import os
 import sys
 import re
 
-# required to load all vcs modules
-from pip.vcs import git, mercurial, subversion, bazaar  # noqa
 from piptools.datastructures import Spec, SpecSet, ConflictError
 from piptools.logging import logger
 from piptools.package_manager import PackageManager
