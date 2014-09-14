@@ -152,7 +152,7 @@ def compile_specs(source_files, include_sources=False, dry_run=False):
 @click.option('--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
 @click.option('--include-sources', '-i', is_flag=True,
               help="Write comments to the output file, indicating how the compiled dependencies where calculated")
-@click.option('--find-links', '-f', help="Look for archives in this directory or on this HTML page")
+@click.option('--find-links', '-f', help="Look for archives in this directory or on this HTML page", multiple=True)
 @click.option('--extra-index-url', default=None, help="Add additional PyPi repo to search")
 @click.argument('files', nargs=-1, type=click.Path(exists=True))
 def cli(verbose, dry_run, include_sources, find_links, extra_index_url, files):
