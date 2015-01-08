@@ -22,7 +22,10 @@ from pip.download import get_file_content, unpack_vcs_link, PipSession
 from pip.index import Link, PackageFinder
 #from pip.locations import default_config_file
 from pip.req import InstallRequirement
-from pip.util import splitext
+try:
+    from pip.utils import splitext
+except ImportError:
+    from pip.util import splitext
 from pip.vcs import vcs
 
 
