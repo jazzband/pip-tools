@@ -19,7 +19,7 @@ from six.moves.urllib.parse import urlsplit, urlunsplit, quote
 
 #from pip.backwardcompat import ConfigParser
 from pip.download import get_file_content, unpack_vcs_link, PipSession
-from pip.index import Link, PackageFinder, package_to_requirement
+from pip.index import Link, PackageFinder
 #from pip.locations import default_config_file
 from pip.req import InstallRequirement
 from pip.util import splitext
@@ -71,6 +71,24 @@ class BasePackageManager(object):
         """
         raise NotImplementedError('Implement this in a subclass.')
 
+    @staticmethod
+    def package_to_requirement(package_name):
+        """Translate a name like Foo-1.2 to Foo==1.3.
+        This is taken from pip, where it has been removed in
+        https://github.com/pypa/pip/pull/2055.
+        """
+        match = re.search(r'^(.*?)-(dev|\d.*)', package_name)
+        if match:
+            name = match.group(1)
+            version = match.group(2)
+        else:
+            name = package_name
+            version = ''
+        if version:
+            return '%s==%s' % (name, version)
+        else:
+            return name
+
 
 class FakePackageManager(BasePackageManager):
     def __init__(self, fake_contents):
@@ -100,7 +118,7 @@ class FakePackageManager(BasePackageManager):
 
     def parse_package_key(self, pkg_key):
         try:
-            return package_to_requirement(pkg_key).split('==')
+            return self.package_to_requirement(pkg_key).split('==')
         except ValueError:
             raise ValueError('Invalid package key: %s (required format: "name-version")' % (pkg_key,))
 
@@ -293,7 +311,7 @@ class PackageManager(BasePackageManager):
                 # like described at:
                 # http://legacy.python.org/dev/peps/pep-0427/#file-name-convention
                 filename = re.sub(r'-[\w.]+-[\w.]+-[\w.]+$', '', filename)
-            _, version = package_to_requirement(filename).split('==')
+            _, version = self.package_to_requirement(filename).split('==')
 
             # Take this moment to smartly insert the pinned variant of this
             # spec into the link_cache, too
