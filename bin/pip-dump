@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 import os.path
 import glob
+import re
 import argparse
 import logging
 import sys
@@ -32,7 +33,8 @@ check_output = partial(_check_output, shell=True)
 DEFAULT_REQUIREMENTS_FILE = u'requirements.txt'
 GLOB_PATTERNS = (u'*requirements.txt', u'requirements[_-]*.txt', u'requirements/*.txt')
 PIP_IGNORE_FILE = u'.pipignore'
-SPLIT_PATTERN = u'## The following requirements were added by pip --freeze:'
+SPLIT_REGEX = re.compile(r'## The following requirements were added by pip (--)?freeze:')
+
 
 
 class StdOutFilter(logging.Filter):
@@ -80,8 +82,8 @@ def parse_args():
 
 
 def pip_partition(lines):
-    no_split_match = lambda line: line != SPLIT_PATTERN
-    split_match = lambda line: line == SPLIT_PATTERN
+    no_split_match = lambda line: not SPLIT_REGEX.match(line)
+    split_match = lambda line: SPLIT_REGEX.match(line)
     first = takewhile(no_split_match, lines)
     second = dropwhile(split_match, dropwhile(no_split_match, lines))
     return list(first), list(second)
