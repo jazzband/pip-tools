@@ -31,8 +31,8 @@ We can also install these updates automatically:
 
   $ pip-review --auto >/dev/null 2>&1
   $ pip-review
-  Warning: cannot find svn location for cElementTree==1.0.2-20050302
-  Everything up-to-date
+  Warning: cannot find svn location for cElementTree==1.0.5-20051216
+  cElementTree==* is available (you have 1.0.5-20051216) (glob)
 
 Cleanup our playground:
 
