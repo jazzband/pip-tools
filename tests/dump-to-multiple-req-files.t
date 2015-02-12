@@ -29,6 +29,7 @@ It should've updated requirements.txt with pinned versions of all requirements:
   $ cat requirements.txt | grep -v argparse
   itsdangerous==* (glob)
   python-dateutil==* (glob)
+  requests==* (glob)
   six==* (glob)
 
   $ cat more-requirements.txt
