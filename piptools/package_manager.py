@@ -510,7 +510,8 @@ class PackageManager(BasePackageManager):
                     self.unpack_archive(path, unpack_dir)
 
                     # first, check if archive was a wheel
-                    name = find_file(unpack_dir, 'pydist.json')
+                    name = (find_file(unpack_dir, 'pydist.json') or
+                            find_file(unpack_dir, 'metadata.json'))
                     if name:
                         deps = self.read_wheel_requires(name)
                     else:
