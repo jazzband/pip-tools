@@ -37,8 +37,20 @@ def setup_logging(verbose):
     logger.addHandler(handler)
     logger.setLevel(level)
 
-    from pip.log import logger as pip_logger
-    pip_logger.consumers.append((pip_logger.VERBOSE_DEBUG, lambda msg: logger.debug('PIP said: ' + msg)))
+    try:
+        from pip import logger as pip_logger
+    except ImportError:
+        # Old method, removed in 767d11e (tags/6.0~104^2).
+        from pip.log import logger as pip_logger
+        pip_logger.consumers.append(
+            (pip_logger.VERBOSE_DEBUG,
+             lambda msg: logger.debug('PIP said: ' + msg)))
+    else:
+        pip_formatter = logging.Formatter('PIP said: %(message)s', None)
+        pip_handler = logging.StreamHandler()
+        pip_handler.setFormatter(pip_formatter)
+        pip_handler.setLevel(level)
+        pip_logger.addHandler(pip_handler)
 
 
 def walk_specfile(filename):
