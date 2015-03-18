@@ -234,6 +234,7 @@ class PackageManager(BasePackageManager):
         if not os.path.exists(self.download_cache_root):
             os.makedirs(self.download_cache_root)
         self._link_cache = {}
+        logger.debug('Using dependency cache from {0}.'.format(self.dep_cache_file))
         self._dep_cache = PersistentCache(self.dep_cache_file)
         self._dep_call_cache = {}
         self._best_match_call_cache = {}
