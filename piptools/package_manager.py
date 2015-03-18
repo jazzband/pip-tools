@@ -442,7 +442,8 @@ class PackageManager(BasePackageManager):
         with logger.indent():
             _, content = get_file_content(url, link, session=self._session)
             with open(destination, 'wb') as f:
-                f.write(content)
+                from io import BytesIO
+                f.write(BytesIO(content))
 
     def unpack_archive(self, path, target_directory):
         logger.debug('- Unpacking %s' % (path,))
