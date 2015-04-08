@@ -236,11 +236,13 @@ def cli(verbose, dry_run, include_sources, find_links, extra_index_url, files):
 @click.option('--extra-index-url', default=None,
               help="Add additional PyPi repo to search")
 @click.option('--pre', is_flag=True, help="Allow pre-releases")
+@click.option('--pin-file', required=True, multiple=True)
 @click.argument('files', nargs=-1, type=click.Path(exists=True))
 def cli_pinned(verbose, dry_run, include_sources, find_links, index_url,
-               extra_index_url, pre, files):
+               extra_index_url, pre, pin_file, files):
     """Compiles requirements.txt from requirements.in specs."""
     setup_logging(verbose)
+    pin_files = pin_file
 
     if find_links:
         extra_find_links.extend(find_links)
@@ -248,9 +250,6 @@ def cli_pinned(verbose, dry_run, include_sources, find_links, index_url,
     if extra_index_url:
         urls = extra_index_url.split(',')
         extra_index_urls.extend(urls)
-
-    pinned_file = files[0]
-    files = files[1:]
 
     src_files = files or glob.glob(GLOB_PATTERN)
     if not src_files:
@@ -260,8 +259,15 @@ def cli_pinned(verbose, dry_run, include_sources, find_links, index_url,
 
     # Walk through the pin list, also adding the addition --find links etc.
     # Note: req.version asserts that all versions are pinned
-    pinned_definition = {req.name: req.version
-                         for req in walk_specfile(pinned_file)}
+    pinned_specs = SpecSet()
+    pinned_specs.add_specs(collect_source_specs(pin_files))
+
+    try:
+        pinned_specs.normalize()
+    except ConflictError as e:
+        raise click.ClickException('Conflict with the pin-file: {}'.format(e))
+    pinned_definition = {req.name: req.version for req in pinned_specs}
+
 
     compile_specs_with_pinned_package_manager(pinned_definition, src_files,
                                               include_sources=include_sources,
