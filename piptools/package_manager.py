@@ -565,13 +565,12 @@ class PinnedPackageManager(BasePackageManager):
         # Let's make sure the pinned version can be found
         # This also caches the url for the package
         pinned_spec = spec.pin(pinned_version)
-        
+
         # Make sure that pin does not conflict with the original req.
         specs = SpecSet()
         specs.add_specs([spec, pinned_spec])
         # Raises exception on conflicts
-        # FIXME: unsupported versions crash (e.g. pytz 2011k)
-        #specs.normalize()
+        specs.normalize()
 
         return self.real_manager.find_best_match(pinned_spec)
 
