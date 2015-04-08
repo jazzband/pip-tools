@@ -234,20 +234,10 @@ def cli_pinned(verbose, dry_run, include_sources, find_links, index_url, extra_i
         sys.exit(2)
 
 
-    pinned_definition = {}
-    with open(pinned_file) as f:
-        for line in f:
-            if line.startswith('#') or line.startswith('-'):
-                continue
-            if not line.strip():
-                continue
-            assert '==' in line, line
-            pkg, _, ver  = line.partition('==')
-            pkg = pkg.strip()
-            ver = ver.strip()
-            pin_key = '-'.join([pkg, ver])
-            #pinned_definition[pin_key] = []
-            pinned_definition[pkg] = ver
+    # Walk through the pin list, also adding the addition --find links etc.
+    # Note: req.version asserts that all versions are pinned
+    pinned_definition = {req.name: req.version
+                         for req in walk_specfile(pinned_file)}
 
     compile_specs_with_pinned_package_manager(pinned_definition, src_files, include_sources=include_sources, dry_run=dry_run, index_url=index_url, allow_all_prereleases=pre)
 
