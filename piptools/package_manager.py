@@ -30,7 +30,7 @@ from pip.vcs import vcs
 
 
 from .logging import logger
-from .datastructures import Spec, first
+from .datastructures import Spec, SpecSet, first
 from .version import NormalizedVersion  # PEP386 compatible version numbers
 
 
@@ -550,6 +550,38 @@ class PackageManager(BasePackageManager):
                     shutil.rmtree(build_dir)
         logger.debug('Found: %s' % (deps,))
         return deps
+
+
+
+class PinnedPackageManager(BasePackageManager):
+
+    def __init__(self, pinned_contents, index_url=None, extra_index_urls=[], find_links=[], allow_all_prereleases=False):
+        self.real_manager = PackageManager(index_url, extra_index_urls=extra_index_urls, find_links=find_links, allow_all_prereleases=allow_all_prereleases)
+        #self.pin_manager = FakePackageManager(pinned_contents)
+        self.pins = pinned_contents
+
+    def find_best_match(self, spec):
+        #pinned_version = self.pin_manager.find_best_match(spec)
+        pinned_version = self.pins[spec.name]
+        # Let's make sure the pinned version can be found
+        # This also caches the url for the package
+        pinned_spec = spec.pin(pinned_version)
+        
+        # Make sure that pin does not conflict with the original req.
+        specs = SpecSet()
+        specs.add_specs([spec, pinned_spec])
+        # Raises exception on conflicts
+        # FIXME: unsupported versions crash (e.g. pytz 2011k)
+        #specs.normalize()
+
+        return self.real_manager.find_best_match(pinned_spec)
+
+    def get_dependencies(self, pinned_spec):
+        # find_best_match must be called before get_dependencies in the current implementation,
+        # the implementation assumes that we have the cached the url already..
+        return self.real_manager.get_dependencies(pinned_spec)
+
+
 
 
 if __name__ == '__main__':
