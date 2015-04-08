@@ -193,10 +193,14 @@ def compile_specs_with_pinned_package_manager(pinned_definition, source_files,
 @click.option('--find-links', '-f',
               help="Look for archives in this directory or on this HTML page",
               multiple=True)
+@click.option('--index-url', default='https://pypi.python.org/simple/',
+              help="Index to use")
+@click.option('--pre', is_flag=True, help="Allow pre-releases")
 @click.option('--extra-index-url', default=None,
               help="Add additional PyPi repo to search")
 @click.argument('files', nargs=-1, type=click.Path(exists=True))
-def cli(verbose, dry_run, include_sources, find_links, extra_index_url, files):
+def cli(verbose, dry_run, include_sources, find_links, index_url, pre,
+        extra_index_url, files):
     """Compiles requirements.txt from requirements.in specs."""
     setup_logging(verbose)
 
@@ -214,7 +218,9 @@ def cli(verbose, dry_run, include_sources, find_links, extra_index_url, files):
 
     compile_specs_with_default_package_manager(src_files,
                                                include_sources=include_sources,
-                                               dry_run=dry_run)
+                                               dry_run=dry_run,
+                                               index_url=index_url,
+                                               allow_all_prereleases=pre)
 
     if dry_run:
         logger.info('Dry-run, so nothing updated.')
@@ -232,7 +238,7 @@ def cli(verbose, dry_run, include_sources, find_links, extra_index_url, files):
               help="Look for archives in this directory or on this HTML page",
               multiple=True)
 @click.option('--index-url', default='https://pypi.python.org/simple/',
-              help="Add additional PyPi repo to search")
+              help="Index to use")
 @click.option('--extra-index-url', default=None,
               help="Add additional PyPi repo to search")
 @click.option('--pre', is_flag=True, help="Allow pre-releases")
