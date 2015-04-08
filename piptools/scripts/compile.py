@@ -42,6 +42,7 @@ def setup_logging(verbose):
     except ImportError:
         # Old method, removed in 767d11e (tags/6.0~104^2).
         from pip.log import logger as pip_logger
+
         pip_logger.consumers.append(
             (pip_logger.VERBOSE_DEBUG,
              lambda msg: logger.debug('PIP said: ' + msg)))
@@ -71,18 +72,21 @@ def walk_specfile(filename):
             requirement = os.path.join(os.path.dirname(filename), requirement)
 
             for spec in walk_specfile(requirement):
-                yield spec.add_source('{0}:{1} -> {2}'.format(filename, lineno, spec.source))
+                yield spec.add_source(
+                    '{0}:{1} -> {2}'.format(filename, lineno, spec.source))
         elif line.startswith('-f'):
             extra_find_links.append(line.split(None, 1)[1])
         elif line.startswith('--extra-index-url'):
             repo = re.split('=| ', line)
             if len(repo) > 1:
                 repo = repo[1]
-                logger.debug('Found a link to additional PyPi repo -> {0}'.format(repo))
+                logger.debug(
+                    'Found a link to additional PyPi repo -> {0}'.format(repo))
                 if repo not in extra_index_urls:
                     extra_index_urls.append(repo)
         else:
-            spec = Spec.from_line(line, source='{0}:{1}'.format(filename, lineno))
+            spec = Spec.from_line(line,
+                                  source='{0}:{1}'.format(filename, lineno))
             yield spec
 
 
@@ -95,7 +99,8 @@ def collect_source_specs(filenames):
             yield spec
 
 
-def compile_specs(package_manager, source_files, include_sources=False, dry_run=False):
+def compile_specs(package_manager, source_files, include_sources=False,
+                  dry_run=False):
     logger.debug('===> Collecting source requirements')
     top_level_specs = list(collect_source_specs(source_files))
 
@@ -157,27 +162,39 @@ def compile_specs(package_manager, source_files, include_sources=False, dry_run=
                     f.write(b'--extra-index-url {0}\n'.format(extra_index_url))
 
 
-
-def compile_specs_with_default_package_manager(source_files, include_sources=False, dry_run=False, index_url=None, allow_all_prereleases=False):
+def compile_specs_with_default_package_manager(source_files,
+                                               include_sources=False,
+                                               dry_run=False, index_url=None,
+                                               allow_all_prereleases=False):
     package_manager = PackageManager(extra_index_urls=extra_index_urls,
                                      find_links=extra_find_links,
                                      allow_all_prereleases=allow_all_prereleases)
-    compile_specs(package_manager, source_files, include_sources=include_sources, dry_run=dry_run)
+    compile_specs(package_manager, source_files,
+                  include_sources=include_sources, dry_run=dry_run)
 
-def compile_specs_with_pinned_package_manager(pinned_definition, source_files, include_sources=False, dry_run=False, index_url=None, allow_all_prereleases=False):
+
+def compile_specs_with_pinned_package_manager(pinned_definition, source_files,
+                                              include_sources=False,
+                                              dry_run=False, index_url=None,
+                                              allow_all_prereleases=False):
     package_manager = PinnedPackageManager(
         pinned_definition, index_url, extra_index_urls, extra_find_links,
         allow_all_prereleases=allow_all_prereleases)
-    compile_specs(package_manager, source_files, include_sources=include_sources, dry_run=dry_run)
+    compile_specs(package_manager, source_files,
+                  include_sources=include_sources, dry_run=dry_run)
 
 
 @click.command()
 @click.option('--verbose', '-v', is_flag=True, help="Show more output")
-@click.option('--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
+@click.option('--dry-run', is_flag=True,
+              help="Only show what would happen, don't change anything")
 @click.option('--include-sources', '-i', is_flag=True,
               help="Write comments to the output file, indicating how the compiled dependencies where calculated")
-@click.option('--find-links', '-f', help="Look for archives in this directory or on this HTML page", multiple=True)
-@click.option('--extra-index-url', default=None, help="Add additional PyPi repo to search")
+@click.option('--find-links', '-f',
+              help="Look for archives in this directory or on this HTML page",
+              multiple=True)
+@click.option('--extra-index-url', default=None,
+              help="Add additional PyPi repo to search")
 @click.argument('files', nargs=-1, type=click.Path(exists=True))
 def cli(verbose, dry_run, include_sources, find_links, extra_index_url, files):
     """Compiles requirements.txt from requirements.in specs."""
@@ -195,7 +212,9 @@ def cli(verbose, dry_run, include_sources, find_links, extra_index_url, files):
         click.echo('No input files to process.')
         sys.exit(2)
 
-    compile_specs_with_default_package_manager(src_files, include_sources=include_sources, dry_run=dry_run)
+    compile_specs_with_default_package_manager(src_files,
+                                               include_sources=include_sources,
+                                               dry_run=dry_run)
 
     if dry_run:
         logger.info('Dry-run, so nothing updated.')
@@ -203,18 +222,23 @@ def cli(verbose, dry_run, include_sources, find_links, extra_index_url, files):
         logger.info('Dependencies updated.')
 
 
-
 @click.command()
 @click.option('--verbose', '-v', is_flag=True, help="Show more output")
-@click.option('--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
+@click.option('--dry-run', is_flag=True,
+              help="Only show what would happen, don't change anything")
 @click.option('--include-sources', '-i', is_flag=True,
               help="Write comments to the output file, indicating how the compiled dependencies where calculated")
-@click.option('--find-links', '-f', help="Look for archives in this directory or on this HTML page", multiple=True)
-@click.option('--index-url', default='https://pypi.python.org/simple/', help="Add additional PyPi repo to search")
-@click.option('--extra-index-url', default=None, help="Add additional PyPi repo to search")
+@click.option('--find-links', '-f',
+              help="Look for archives in this directory or on this HTML page",
+              multiple=True)
+@click.option('--index-url', default='https://pypi.python.org/simple/',
+              help="Add additional PyPi repo to search")
+@click.option('--extra-index-url', default=None,
+              help="Add additional PyPi repo to search")
 @click.option('--pre', is_flag=True, help="Allow pre-releases")
 @click.argument('files', nargs=-1, type=click.Path(exists=True))
-def cli_pinned(verbose, dry_run, include_sources, find_links, index_url, extra_index_url, pre, files):
+def cli_pinned(verbose, dry_run, include_sources, find_links, index_url,
+               extra_index_url, pre, files):
     """Compiles requirements.txt from requirements.in specs."""
     setup_logging(verbose)
 
@@ -239,7 +263,11 @@ def cli_pinned(verbose, dry_run, include_sources, find_links, index_url, extra_i
     pinned_definition = {req.name: req.version
                          for req in walk_specfile(pinned_file)}
 
-    compile_specs_with_pinned_package_manager(pinned_definition, src_files, include_sources=include_sources, dry_run=dry_run, index_url=index_url, allow_all_prereleases=pre)
+    compile_specs_with_pinned_package_manager(pinned_definition, src_files,
+                                              include_sources=include_sources,
+                                              dry_run=dry_run,
+                                              index_url=index_url,
+                                              allow_all_prereleases=pre)
 
     if dry_run:
         logger.info('Dry-run, so nothing updated.')
