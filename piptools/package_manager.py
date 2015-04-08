@@ -31,8 +31,7 @@ from pip.vcs import vcs
 
 from .logging import logger
 from .datastructures import Spec, SpecSet, first
-from .version import NormalizedVersion  # PEP386 compatible version numbers
-
+from .version import NormalizedVersion
 
 def find_file(root_dir, filename):
     """Searches given file in root_dir's subdirectories.

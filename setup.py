@@ -12,7 +12,7 @@ setup(
     author_email='vincent@3rdcloud.com',
     description=__doc__,
     packages=find_packages(),
-    install_requires=['click', 'six'],
+    install_requires=['click', 'six', 'packaging'],
     #include_package_data=True,
     zip_safe=False,
     entry_points={
