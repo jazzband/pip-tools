@@ -229,8 +229,10 @@ class PackageManager(BasePackageManager):
     dep_cache_file = os.path.join(piptools_root, 'dependencies.pickle')
     download_cache_root = os.path.join(piptools_root, 'cache')
 
-    def __init__(self, extra_index_urls=[], find_links=[]):
+    def __init__(self, index_url=None, extra_index_urls=[], find_links=[], allow_all_prereleases=False):
         # TODO: provide options for pip, such as index URL or use-mirrors
+        if index_url is None:
+            index_url = 'https://pypi.python.org/simple/'
         if not os.path.exists(self.download_cache_root):
             os.makedirs(self.download_cache_root)
         self._link_cache = {}
@@ -238,7 +240,10 @@ class PackageManager(BasePackageManager):
         self._dep_call_cache = {}
         self._best_match_call_cache = {}
         self._find_links = find_links[:]
-        self._index_urls = ['https://pypi.python.org/simple/']
+        self._allow_all_prereleases = allow_all_prereleases
+        self._index_urls = []
+        if index_url:
+            self._index_urls.append(index_url)
         self._index_urls.extend(extra_index_urls)
         self._extra_index_urls = extra_index_urls
         try:
@@ -299,6 +304,7 @@ class PackageManager(BasePackageManager):
                     index_urls=self._index_urls,
                     allow_all_external=True,
                     session=self._session,
+                    allow_all_prereleases=self._allow_all_prereleases
                     # this parameter down not supported anymore
                     # all insecure package should be enumerated
                     # allow_all_insecure=True,

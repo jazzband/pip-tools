@@ -95,7 +95,7 @@ def collect_source_specs(filenames):
             yield spec
 
 
-def compile_specs(source_files, include_sources=False, dry_run=False):
+def compile_specs(package_manager, source_files, include_sources=False, dry_run=False):
     logger.debug('===> Collecting source requirements')
     top_level_specs = list(collect_source_specs(source_files))
 
@@ -107,8 +107,6 @@ def compile_specs(source_files, include_sources=False, dry_run=False):
     logger.debug('===> Normalizing source requirements')
     spec_set = spec_set.normalize()
     logger.debug('%s' % (spec_set,))
-
-    package_manager = PackageManager(extra_index_urls, extra_find_links)
 
     logger.debug('')
     logger.debug('===> Resolving full tree')
@@ -159,6 +157,12 @@ def compile_specs(source_files, include_sources=False, dry_run=False):
                     f.write(b'--extra-index-url {0}\n'.format(extra_index_url))
 
 
+
+def compile_specs_with_default_package_manager(source_files, include_sources=False, dry_run=False, index_url=None, allow_all_prereleases=False):
+    package_manager = PackageManager(extra_index_urls=extra_index_urls,
+                                     find_links=extra_find_links,
+                                     allow_all_prereleases=allow_all_prereleases)
+    compile_specs(package_manager, source_files, include_sources=include_sources, dry_run=dry_run)
 @click.command()
 @click.option('--verbose', '-v', is_flag=True, help="Show more output")
 @click.option('--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
@@ -183,7 +187,7 @@ def cli(verbose, dry_run, include_sources, find_links, extra_index_url, files):
         click.echo('No input files to process.')
         sys.exit(2)
 
-    compile_specs(src_files, include_sources=include_sources, dry_run=dry_run)
+    compile_specs_with_default_package_manager(src_files, include_sources=include_sources, dry_run=dry_run)
 
     if dry_run:
         logger.info('Dry-run, so nothing updated.')
