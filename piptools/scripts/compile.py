@@ -10,7 +10,7 @@ import re
 
 from piptools.datastructures import Spec, SpecSet, ConflictError
 from piptools.logging import logger
-from piptools.package_manager import PackageManager
+from piptools.package_manager import PackageManager, PinnedPackageManager
 from piptools.resolver import Resolver
 
 from six import text_type
@@ -163,6 +163,14 @@ def compile_specs_with_default_package_manager(source_files, include_sources=Fal
                                      find_links=extra_find_links,
                                      allow_all_prereleases=allow_all_prereleases)
     compile_specs(package_manager, source_files, include_sources=include_sources, dry_run=dry_run)
+
+def compile_specs_with_pinned_package_manager(pinned_definition, source_files, include_sources=False, dry_run=False, index_url=None, allow_all_prereleases=False):
+    package_manager = PinnedPackageManager(
+        pinned_definition, index_url, extra_index_urls, extra_find_links,
+        allow_all_prereleases=allow_all_prereleases)
+    compile_specs(package_manager, source_files, include_sources=include_sources, dry_run=dry_run)
+
+
 @click.command()
 @click.option('--verbose', '-v', is_flag=True, help="Show more output")
 @click.option('--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
@@ -193,3 +201,58 @@ def cli(verbose, dry_run, include_sources, find_links, extra_index_url, files):
         logger.info('Dry-run, so nothing updated.')
     else:
         logger.info('Dependencies updated.')
+
+
+
+@click.command()
+@click.option('--verbose', '-v', is_flag=True, help="Show more output")
+@click.option('--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
+@click.option('--include-sources', '-i', is_flag=True,
+              help="Write comments to the output file, indicating how the compiled dependencies where calculated")
+@click.option('--find-links', '-f', help="Look for archives in this directory or on this HTML page", multiple=True)
+@click.option('--index-url', default='https://pypi.python.org/simple/', help="Add additional PyPi repo to search")
+@click.option('--extra-index-url', default=None, help="Add additional PyPi repo to search")
+@click.option('--pre', is_flag=True, help="Allow pre-releases")
+@click.argument('files', nargs=-1, type=click.Path(exists=True))
+def cli_pinned(verbose, dry_run, include_sources, find_links, index_url, extra_index_url, pre, files):
+    """Compiles requirements.txt from requirements.in specs."""
+    setup_logging(verbose)
+
+    if find_links:
+        extra_find_links.extend(find_links)
+
+    if extra_index_url:
+        urls = extra_index_url.split(',')
+        extra_index_urls.extend(urls)
+
+    pinned_file = files[0]
+    files = files[1:]
+
+    src_files = files or glob.glob(GLOB_PATTERN)
+    if not src_files:
+        click.echo('No input files to process.')
+        sys.exit(2)
+
+
+    pinned_definition = {}
+    with open(pinned_file) as f:
+        for line in f:
+            if line.startswith('#') or line.startswith('-'):
+                continue
+            if not line.strip():
+                continue
+            assert '==' in line, line
+            pkg, _, ver  = line.partition('==')
+            pkg = pkg.strip()
+            ver = ver.strip()
+            pin_key = '-'.join([pkg, ver])
+            #pinned_definition[pin_key] = []
+            pinned_definition[pkg] = ver
+
+    compile_specs_with_pinned_package_manager(pinned_definition, src_files, include_sources=include_sources, dry_run=dry_run, index_url=index_url, allow_all_prereleases=pre)
+
+    if dry_run:
+        logger.info('Dry-run, so nothing updated.')
+    else:
+        logger.info('Dependencies updated.')
+

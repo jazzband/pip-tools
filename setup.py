@@ -18,6 +18,7 @@ setup(
     entry_points={
         'console_scripts': [
             'pip-compile = piptools.scripts.compile:cli',
+            'pip-compile-pinned = piptools.scripts.compile:cli_pinned',
             'pip-sync = piptools.scripts.sync:cli',
         ],
     },
