@@ -19,9 +19,9 @@ Setup:
 Check the output of 'pip freeze'
 
   $ pip freeze -lr requirements.txt | grep -v argparse
-  python-dateutil==2.4.0
+  python-dateutil==* (glob)
   ## The following requirements were added by pip --freeze:
-  six==1.9.0
+  six==* (glob)
 
 Next, let's see what pip-dump does:
 
