@@ -9,7 +9,6 @@ branches:
   except:
     - future
 install:
-  - "pip install -U pip --use-mirrors"
   - "pip install cram --use-mirrors"
   - "pip install . --use-mirrors"
 script:
