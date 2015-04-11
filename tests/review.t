@@ -2,6 +2,7 @@ Create a new playground first:
 
   $ virtualenv --python="$(which python)" FOO >/dev/null
   $ PATH=FOO/bin:$PATH
+  $ pip install --upgrade --force-reinstall 'pip' > /dev/null 2>&1
   $ pip install argparse >/dev/null 2>&1
   $ alias pip-review="$TESTDIR/../bin/pip-review"
 
@@ -16,14 +17,12 @@ Also install library, which caused warning message:
 Next, let's see what pip-review does:
 
   $ pip-review
-  Warning: cannot find svn location for cElementTree==1.0.5-20051216
-  cElementTree==1.0.2-20050302 is available (you have 1.0.5-20051216)
+  cElementTree==1.0.2-20050302 is available (you have 1.0.5.post20051216)
   python-dateutil==* is available (you have 1.5) (glob)
 
 Or in raw mode:
 
   $ pip-review --raw
-  Warning: cannot find svn location for cElementTree==1.0.5-20051216
   cElementTree==1.0.2-20050302
   python-dateutil==* (glob)
 
@@ -31,8 +30,7 @@ We can also install these updates automatically:
 
   $ pip-review --auto >/dev/null 2>&1
   $ pip-review
-  Warning: cannot find svn location for cElementTree==1.0.5-20051216
-  cElementTree==* is available (you have 1.0.5-20051216) (glob)
+  cElementTree==* is available (you have 1.0.5.post20051216) (glob)
 
 Cleanup our playground:
 

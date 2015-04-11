@@ -21,9 +21,9 @@ Check the output of 'pip freeze'
   $ pip freeze -lr requirements.txt | grep -v argparse
   You are using pip version 6.0.6, however version * is available. (glob)
   You should consider upgrading via the 'pip install --upgrade pip' command.
-  python-dateutil==2.4.0
+  python-dateutil==* (glob)
   ## The following requirements were added by pip freeze:
-  six==1.9.0
+  six==* (glob)
 
 Next, let's see what pip-dump does:
 

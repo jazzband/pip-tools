@@ -2,6 +2,7 @@ Create a new playground first:
 
   $ virtualenv --python="$(which python)" FOO >/dev/null
   $ PATH=FOO/bin:$PATH
+  $ pip install --upgrade --force-reinstall 'pip' > /dev/null 2>&1
   $ pip install argparse >/dev/null 2>&1
   $ alias pip-dump="$TESTDIR/../bin/pip-dump"
   $ mkdir requirements
@@ -27,6 +28,9 @@ Next, let's see what pip-dump does:
 It should've updated requirements.txt with pinned versions of all requirements:
 
   $ cat requirements.txt | grep -v argparse
+  blessings==* (glob)
+  curtsies==* (glob)
+  greenlet==* (glob)
   itsdangerous==* (glob)
   python-dateutil==* (glob)
   requests==* (glob)
