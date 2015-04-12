@@ -31,9 +31,12 @@ class PersistentCache(object):
             self._cache = {'__format__': 1}
 
     def write_cache(self):
-        """Writes (pickles) the cache to disk."""
+        """Writes (pickles) the cache to disk.
+
+        It uses pickle protocol 2 to be compatible with Python 2.
+        """
         with open(self._cache_file, 'wb') as f:
-            pickle.dump(self._cache, f)
+            pickle.dump(self._cache, f, protocol=2)
 
     def __contains__(self, item):
         return item in self.cache
