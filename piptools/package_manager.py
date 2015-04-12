@@ -9,7 +9,6 @@ import tarfile
 import tempfile
 import zipfile
 from functools import partial
-from io import BytesIO
 
 from pip.download import PipSession, get_file_content, unpack_vcs_link
 from pip.index import Link, PackageFinder
@@ -430,8 +429,8 @@ class PackageManager(BasePackageManager):
         logger.debug('- Downloading package from %s' % (url,))
         with logger.indent():
             _, content = get_file_content(url, link, session=self._session)
-            with open(destination, 'wb') as f:
-                f.write(BytesIO(content))
+            with open(destination, 'w') as f:
+                f.write(content)
 
     def unpack_archive(self, path, target_directory):
         logger.debug('- Unpacking %s' % (path,))
