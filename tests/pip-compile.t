@@ -13,7 +13,8 @@ COMPILING & SYNCING
 Run pip-compile to generate the requirements.txt file.  As shown, the six
 dependency is automatically inferred and added:
 
-  $ pip-compile >/dev/null 2>&1
+  $ pip-compile
+  Dependencies updated.
 
   $ cat requirements.txt
   python-dateutil==* (glob)
@@ -40,7 +41,8 @@ version of raven:
 That (old) version of raven required simplejson, which will be recorded when we
 run pip-compile now:
 
-  $ pip-compile >/dev/null 2>&1
+  $ pip-compile
+  Dependencies updated.
 
   $ cat requirements.txt
   raven==1.9.3

@@ -15,7 +15,8 @@ Run pip-compile to generate the requirements.txt file. Resulting
 file should contain python-dateutil from base.in and it's dependencies
 as well.
 
-  $ pip-compile develop.in >/dev/null 2>&1
+  $ pip-compile develop.in
+  Dependencies updated.
 
   $ cat develop.txt
   python-dateutil==* (glob)
