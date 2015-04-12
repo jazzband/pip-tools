@@ -1,7 +1,7 @@
 # Setup test environment.
 
 virtualenv --python="$(which python)" FOO >/dev/null
-PATH=FOO/bin:$PATH
+PATH=$PWD/FOO/bin:$PATH
 pip install 'pip>=6' > /dev/null 2>&1
 pip install six >/dev/null 2>&1
 export PYTHONPATH=$PYTHONPATH:$TESTDIR/..
