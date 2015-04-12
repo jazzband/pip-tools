@@ -1,7 +1,7 @@
 # Setup test environment.
 
-virtualenv --python="$(which python)" FOO >/dev/null
-PATH=$PWD/FOO/bin:$PATH
+virtualenv --python="$(which python)" VENV >/dev/null
+PATH=$PWD/VENV/bin:$PATH
 pip install 'pip>=6' > /dev/null 2>&1
 pip install six >/dev/null 2>&1
 export PYTHONPATH=$PYTHONPATH:$TESTDIR/..
@@ -17,10 +17,10 @@ export LANG=C.UTF-8
 
 # Use git without any user config.
 orig_git=$(command -v git)
-cat > FOO/bin/git <<EOF
+cat > VENV/bin/git <<EOF
 #!/bin/sh
 export GIT_CONFIG_NOSYSTEM=1
 export HOME=/dev/null
 $orig_git "\$@"
 EOF
-chmod +x FOO/bin/git
+chmod +x VENV/bin/git
