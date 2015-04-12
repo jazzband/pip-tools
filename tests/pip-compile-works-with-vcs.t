@@ -13,11 +13,10 @@ COMPILING & SYNCING
 Run pip-compile to generate the requirements.txt file. Resulting
 file should contain same VCS urls as the original one.
 
-  $ pip-compile >/dev/null 2>&1
+  $ pip-compile
+  Dependencies updated.
 
   $ cat requirements.txt
   -e git+git://github.com/svetlyak40wt/nose-progressive.git@*#egg=nose-progressive (glob)
-  blessings==* (glob)
-  nose==* (glob)
   python-dateutil==* (glob)
   six==* (glob)

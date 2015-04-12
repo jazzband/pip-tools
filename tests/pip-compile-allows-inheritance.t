@@ -19,7 +19,7 @@ as well.
   Dependencies updated.
 
   $ cat develop.txt
+  arrow==* (glob)
   python-dateutil==* (glob)
-  pytz==* (glob)
   six==* (glob)
   times==* (glob)
