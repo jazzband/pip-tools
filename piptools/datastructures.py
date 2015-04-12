@@ -43,25 +43,6 @@ def flatten(list_of_lists):
     return chain.from_iterable(list_of_lists)
 
 
-def spec_cmp(spec1, spec2):
-    """Compares two (qual, value) tuples."""
-    qual1, val1 = spec1
-    qual2, val2 = spec2
-    if qual1 < qual2:
-        return -1
-    elif qual1 > qual2:
-        return 1
-
-    val1 = NormalizedVersion(val1)
-    val2 = NormalizedVersion(val2)
-    if val1 < val2:
-        return -1
-    elif val1 > val2:
-        return 1
-    else:
-        return 0
-
-
 def _parse_vcs_url(line):
     """Parses a requirement line and if it is a VCS url, then
     returns a dict with following keys:
