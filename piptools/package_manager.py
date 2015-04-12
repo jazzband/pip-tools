@@ -1,37 +1,36 @@
 import json
 import operator
 import os
+import re
 import shutil
 import subprocess
 import sys
-import re
 import tarfile
 import tempfile
 import zipfile
+from functools import partial
+from io import BytesIO
+
+from pip.download import PipSession, get_file_content, unpack_vcs_link
+from pip.index import Link, PackageFinder
+from pip.req import InstallRequirement
+from pip.vcs import vcs
+
+from six.moves.urllib.parse import quote, urlsplit, urlunsplit
+
+from .datastructures import Spec, first
+from .logging import logger
+from .version import NormalizedVersion  # PEP386 compatible version numbers
 
 try:
     import cPickle as pickle
 except ImportError:
     import pickle as pickle  # noqa
 
-from functools import partial
-from six.moves.urllib.parse import urlsplit, urlunsplit, quote
-
-#from pip.backwardcompat import ConfigParser
-from pip.download import get_file_content, unpack_vcs_link, PipSession
-from pip.index import Link, PackageFinder
-#from pip.locations import default_config_file
-from pip.req import InstallRequirement
 try:
     from pip.utils import splitext
 except ImportError:
     from pip.util import splitext
-from pip.vcs import vcs
-
-
-from .logging import logger
-from .datastructures import Spec, first
-from .version import NormalizedVersion  # PEP386 compatible version numbers
 
 
 def find_file(root_dir, filename):
@@ -369,8 +368,6 @@ class PackageManager(BasePackageManager):
         self._dep_call_cache[key] = True
         return [Spec.from_line(dep) for dep in deps]
 
-
-    # Helper methods
     def get_local_package_path(self, url):  # noqa
         """Returns the full local path name for a given URL.  This
         does not require the package archive to exist locally.  In fact, this
@@ -429,21 +426,11 @@ class PackageManager(BasePackageManager):
         """Downloads the given package link contents to the local
         package cache. Overwrites anything that's in the cache already.
         """
-        # TODO integrate pip's download-cache
-        #pip_cache_root = self.get_pip_cache_root()
-        #if pip_cache_root:
-        #    cache_path = os.path.join(pip_cache_root, cache_key)
-        #    if os.path.exists(cache_path):
-        #        # pip has a cached version, copy it
-        #        shutil.copyfile(cache_path, fullpath)
-        #else:
-        #    actually download the requirement
         url = url_without_fragment(link)
         logger.debug('- Downloading package from %s' % (url,))
         with logger.indent():
             _, content = get_file_content(url, link, session=self._session)
             with open(destination, 'wb') as f:
-                from io import BytesIO
                 f.write(BytesIO(content))
 
     def unpack_archive(self, path, target_directory):
