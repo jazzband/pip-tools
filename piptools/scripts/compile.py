@@ -1,19 +1,26 @@
 from __future__ import absolute_import
-from collections import defaultdict
 
-import click
 import glob
 import logging
 import os
-import sys
 import re
+import sys
+from collections import defaultdict
 
-from piptools.datastructures import Spec, SpecSet, ConflictError
+import pip
+
+import click
+from piptools.datastructures import ConflictError, Spec, SpecSet
 from piptools.logging import logger
 from piptools.package_manager import PackageManager
 from piptools.resolver import Resolver
-
 from six import text_type
+
+# Make sure we're using a reasonably modern version of pip
+if not tuple(int(digit) for digit in pip.__version__.split('.')[:2]) >= (6, 1):
+    print('pip-compile requires at least version 6.1 of pip ({} found), '
+          'perhaps run `pip install --upgrade pip`?'.format(pip.__version__))
+    sys.exit(4)
 
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
