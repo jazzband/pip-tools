@@ -8,6 +8,9 @@ export PYTHONPATH=$PYTHONPATH:$TESTDIR/..
 alias pip="pip --isolated"
 pip install -e $TESTDIR/.. > /dev/null
 
+mkdir -p .pip-tools
+export PIPTOOLS_ROOT=$PWD/.pip-tools
+
 # Export utf8 locale for click on Python 3.
 export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
