@@ -1,13 +1,6 @@
 Create a new playground first:
 
-  $ virtualenv --python="$(which python)" FOO >/dev/null
-  $ PATH=FOO/bin:$PATH
-  $ pip install 'pip>=1.5' > /dev/null 2>&1
-  $ pip install six >/dev/null 2>&1
-  $ export PYTHONPATH=$PYTHONPATH:$TESTDIR/..
-  $ alias pip-compile="$TESTDIR/../bin/pip-compile"
-  $ alias pip-sync="$TESTDIR/../bin/pip-sync"
-  $ alias pip-review="$TESTDIR/../bin/pip-review"
+  $ . $TESTDIR/setup.sh
 
 First, create our *.in files.
 
@@ -20,11 +13,10 @@ COMPILING & SYNCING
 Run pip-compile to generate the requirements.txt file. Resulting
 file should contain same VCS urls as the original one.
 
-  $ pip-compile >/dev/null 2>&1
+  $ pip-compile
+  Dependencies updated.
 
   $ cat requirements.txt
   -e git+git://github.com/svetlyak40wt/nose-progressive.git@*#egg=nose-progressive (glob)
-  blessings==* (glob)
-  nose==* (glob)
   python-dateutil==* (glob)
   six==* (glob)

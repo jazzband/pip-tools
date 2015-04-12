@@ -1,11 +1,6 @@
 Create a new playground first:
 
-  $ virtualenv --python="$(which python)" FOO >/dev/null
-  $ PATH=FOO/bin:$PATH
-  $ pip install 'pip>=1.5' > /dev/null 2>&1
-  $ pip install six >/dev/null 2>&1
-  $ export PYTHONPATH=$PYTHONPATH:$TESTDIR/..
-  $ alias pip-compile="$TESTDIR/../bin/pip-compile"
+  $ . $TESTDIR/setup.sh
 
 Let's create a simple requirements.in file:
 
@@ -14,7 +9,8 @@ Let's create a simple requirements.in file:
 Compiling yields the obvious result: it will lookup the dependencies, pick the
 latest versions of them that yield no conflict, and pin them:
 
-  $ pip-compile >/dev/null 2>&1
+  $ pip-compile
+  Dependencies updated.
   $ cat requirements.txt
   raven==1.9.3
   simplejson==2.4.0
@@ -27,7 +23,8 @@ raven)?  Let's say we change the requirements.in file to reflect that:
 
 Now, recompiling should NOT change the file back to simplejson==2.4.0!
 
-  $ pip-compile >/dev/null 2>&1
+  $ pip-compile
+  Dependencies updated.
   $ cat requirements.txt
   raven==1.9.3
   simplejson==2.3.3

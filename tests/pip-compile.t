@@ -1,13 +1,6 @@
 Create a new playground first:
 
-  $ virtualenv --python="$(which python)" FOO >/dev/null
-  $ PATH=FOO/bin:$PATH
-  $ pip install 'pip>=1.5' > /dev/null 2>&1
-  $ pip install six >/dev/null 2>&1
-  $ export PYTHONPATH=$PYTHONPATH:$TESTDIR/..
-  $ alias pip-compile="$TESTDIR/../bin/pip-compile"
-  $ alias pip-sync="$TESTDIR/../bin/pip-sync"
-  $ alias pip-review="$TESTDIR/../bin/pip-review"
+  $ . $TESTDIR/setup.sh
 
 First, create our requirements.in file (manually).  We start by creating
 a non-pinned version of it:
@@ -20,7 +13,8 @@ COMPILING & SYNCING
 Run pip-compile to generate the requirements.txt file.  As shown, the six
 dependency is automatically inferred and added:
 
-  $ pip-compile >/dev/null 2>&1
+  $ pip-compile
+  Dependencies updated.
 
   $ cat requirements.txt
   python-dateutil==* (glob)
@@ -28,8 +22,10 @@ dependency is automatically inferred and added:
 
 Note that this did not touch our environment in any way:
 
-  $ pip freeze -l | grep -v six
-  [1]
+  $ pip freeze -l
+  click==* (glob)
+  -e git+git@github.com:nvie/pip-tools@*#egg=* (glob)
+  six==* (glob)
 
 That only happens when we run pip-sync:
 
@@ -47,7 +43,8 @@ version of raven:
 That (old) version of raven required simplejson, which will be recorded when we
 run pip-compile now:
 
-  $ pip-compile >/dev/null 2>&1
+  $ pip-compile
+  Dependencies updated.
 
   $ cat requirements.txt
   raven==1.9.3
@@ -85,4 +82,3 @@ When pip-compile ends in an error, requirements.txt should've been untouched:
   raven==2.0.6
   requests==0.8.9
   simplejson==* (glob)
-
