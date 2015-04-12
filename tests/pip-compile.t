@@ -22,8 +22,10 @@ dependency is automatically inferred and added:
 
 Note that this did not touch our environment in any way:
 
-  $ pip freeze -l | grep -v six
-  [1]
+  $ pip freeze -l
+  click==* (glob)
+  -e git+git@github.com:nvie/pip-tools@*#egg=* (glob)
+  six==* (glob)
 
 That only happens when we run pip-sync:
 
@@ -80,4 +82,3 @@ When pip-compile ends in an error, requirements.txt should've been untouched:
   raven==2.0.6
   requests==0.8.9
   simplejson==* (glob)
-
