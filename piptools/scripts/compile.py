@@ -3,18 +3,18 @@ from __future__ import absolute_import
 import glob
 import logging
 import os
-import re
 import sys
 from collections import defaultdict
 
-import pip
-
 import click
-from piptools.datastructures import ConflictError, Spec, SpecSet
+import pip
+from pip.req import parse_requirements
+from six import text_type
+
+from piptools.datastructures import ConflictError, SpecSet
 from piptools.logging import logger
 from piptools.package_manager import PackageManager
 from piptools.resolver import Resolver
-from six import text_type
 
 # Make sure we're using a reasonably modern version of pip
 if not tuple(int(digit) for digit in pip.__version__.split('.')[:2]) >= (6, 1):
@@ -59,54 +59,21 @@ def setup_logging(verbose):
              lambda msg: logger.debug('PIP said: ' + msg)))
 
 
-def walk_specfile(filename):
-    """Walks over the given file, and returns (req, filename, lineno)
-    tuples for each entry.
-    """
-    with open(filename, 'rb') as f:
-        reqs = f.read()
-
-    for lineno, line in enumerate(reqs.splitlines(), 1):
-        line = line.strip().decode('utf-8')
-        if not line or line.startswith('#'):
-            continue
-
-        if line.startswith('-r'):
-            requirement = line.split(None, 1)[1]
-            # requirement file is relative to processed one
-            requirement = os.path.join(os.path.dirname(filename), requirement)
-
-            for spec in walk_specfile(requirement):
-                yield spec.add_source('{0}:{1} -> {2}'.format(filename, lineno, spec.source))
-        elif line.startswith('-f'):
-            extra_find_links.append(line.split(None, 1)[1])
-        elif line.startswith('--extra-index-url'):
-            repo = re.split('=| ', line)
-            if len(repo) > 1:
-                repo = repo[1]
-                logger.debug('Found a link to additional PyPi repo -> {0}'.format(repo))
-                if repo not in extra_index_urls:
-                    extra_index_urls.append(repo)
-        else:
-            spec = Spec.from_line(line, source='{0}:{1}'.format(filename, lineno))
-            yield spec
-
-
 def collect_source_specs(filenames):
     """This function collects all of the (primary) source specs into
     a flattened list of specs.
     """
     for filename in filenames:
-        for spec in walk_specfile(filename):
-            yield spec
+        for ireq in parse_requirements(filename):
+            yield ireq
 
 
 def compile_specs(source_files, include_sources=False, dry_run=False):
     logger.debug('===> Collecting source requirements')
-    top_level_specs = list(collect_source_specs(source_files))
+    top_level_ireqs = list(collect_source_specs(source_files))
 
     spec_set = SpecSet()
-    spec_set.add_specs(top_level_specs)
+    spec_set.add_specs(top_level_ireqs)
     logger.debug('%s' % (spec_set,))
 
     logger.debug('')
@@ -141,7 +108,7 @@ def compile_specs(source_files, include_sources=False, dry_run=False):
     # through the resolver again (which will use its cache from the initial
     # run) to determine where to write each dependency.
     split = defaultdict(SpecSet)
-    for spec in top_level_specs:
+    for spec in top_level_ireqs:
         split[spec.source.split(':')[0]].add_spec(spec)
 
     for source_file, spec_set in split.items():

@@ -23,11 +23,6 @@ from .logging import logger
 from .version import NormalizedVersion  # PEP386 compatible version numbers
 
 try:
-    import cPickle as pickle
-except ImportError:
-    import pickle as pickle  # noqa
-
-try:
     from pip.utils import splitext
 except ImportError:
     from pip.util import splitext

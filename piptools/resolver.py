@@ -1,7 +1,8 @@
 import sys
 
+from pip.req import InstallRequirement, parse_requirements
+from piptools.datastructures import InstallRequirement, SpecSet
 from piptools.logging import logger
-from piptools.datastructures import SpecSet, Spec
 
 
 def print_specset(specset, round):
