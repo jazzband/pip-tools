@@ -1,71 +1,35 @@
-from __future__ import absolute_import
-from logging import Logger
+# coding: utf-8
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
+
+import sys
+
+import click
 
 
-class IndentationContext(object):
-    def __init__(self, logger):
-        self._logger = logger
+class LogContext(object):
+    def __init__(self, verbose=False):
+        self.verbose = verbose
 
-    def __enter__(self):
-        self._logger.do_indent()
+    def log(self, *args, **kwargs):
+        click.secho(*args, **kwargs)
 
-    def __exit__(self, type, value, traceback):
-        self._logger.do_unindent()
+    def debug(self, *args, **kwargs):
+        if self.verbose:
+            self.log(*args, **kwargs)
 
+    def info(self, *args, **kwargs):
+        self.log(*args, **kwargs)
 
-class IndentingLogger(Logger):
-    def __init__(self, *args, **kwargs):
-        Logger.__init__(self, *args, **kwargs)
-        self._indent_level = 0
+    def warning(self, *args, **kwargs):
+        kwargs.setdefault('fg', 'yellow')
+        kwargs.setdefault('file', sys.stderr)
+        self.log(*args, **kwargs)
 
-    def _log(self, level, msg, *args, **kwargs):
-        indentation = '    ' * self._indent_level
-        msg = '%s%s' % (indentation, msg)
-        Logger._log(self, level, msg, *args, **kwargs)
-
-    def do_indent(self):
-        self._indent_level += 1
-
-    def do_unindent(self):
-        self._indent_level -= 1
-
-    def indent(self):
-        return IndentationContext(self)
+    def error(self, *args, **kwargs):
+        kwargs.setdefault('fg', 'red')
+        kwargs.setdefault('file', sys.stderr)
+        self.log(*args, **kwargs)
 
 
-class QuietContext(object):
-    def __init__(self, logger):
-        self._logger = logger
-
-    def __enter__(self):
-        self._logger.do_silent()
-
-    def __exit__(self, type, value, traceback):
-        self._logger.do_unsilent()
-
-
-class QuietLogger(Logger):
-    def __init__(self, *args, **kwargs):
-        super(QuietLogger, self).__init__(*args, **kwargs)
-        self._quiet = False
-
-    def _log(self, level, msg, *args, **kwargs):
-        if self._quiet:
-            return
-        super(QuietLogger, self)._log(level, msg, *args, **kwargs)
-
-    def do_silent(self):
-        self._quiet = True
-
-    def do_unsilent(self):
-        self._quiet = False
-
-    def silent(self):
-        return QuietContext(self)
-
-
-class PipToolsLogger(QuietLogger, IndentingLogger):
-    pass
-
-
-logger = PipToolsLogger('piptools')
+log = LogContext()

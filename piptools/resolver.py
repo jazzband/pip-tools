@@ -1,93 +1,216 @@
-import sys
+# coding: utf-8
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
-from pip.req import InstallRequirement, parse_requirements
-from piptools.datastructures import InstallRequirement, SpecSet
-from piptools.logging import logger
+import os
+from functools import partial
+from itertools import chain, count
 
+import click
+from first import first
+from pip.req import InstallRequirement
 
-def print_specset(specset, round):
-    logger.debug('After round #%s:' % (round,))
-    for spec in sorted(specset, key=lambda s: s.description()):
-        logger.debug('  - %s' % (spec.description(),))
+from .cache import DependencyCache
+from .logging import log
+from .utils import (as_name_version_tuple, format_requirement,
+                    format_specifier, full_groupby, is_pinned_requirement)
+
+green = partial(click.style, fg='green')
+magenta = partial(click.style, fg='magenta')
 
 
 class Resolver(object):
-    def __init__(self, spec_set, package_manager):
-        """This class resolves a given SpecSet by querying the given
-        PackageManager.
+    def __init__(self, constraints, repository, prereleases=False, clear_caches=False):
         """
-        self.spec_set = spec_set
-        self.pkgmgr = package_manager
-
-    def resolve_one_round(self):
-        """Resolves one level of the current spec set, by finding best matches
-        for the current spec set in the package manager and returning all
-        (new) requirements for those packages.
-
-        Returns whether the spec set was changed significantly by this round.
+        This class resolves a given set of constraints (a collection of
+        InstallRequirement objects) by consulting the given Repository and the
+        DependencyCache.
         """
-        new_deps = self.find_new_dependencies()
-        self.spec_set.add_specs(new_deps)
-        return len(new_deps) > 0
+        self.our_constraints = set(constraints)
+        self.their_constraints = set()
+        self.repository = repository
+        self.dependency_cache = DependencyCache()
+        self.prereleases = prereleases
+        self.clear_caches = clear_caches
 
-    def resolve(self, max_rounds=12):
-        """Resolves the spec set one round at a time, until the set does not
-        change significantly anymore.  Protects against infinite loops by
-        breaking out after a max number rounds.
+    @property
+    def constraints(self):
+        return set(self._group_constraints(chain(self.our_constraints,
+                                                 self.their_constraints)))
+
+    def resolve(self, max_rounds=10):
         """
-        round = 0
-        while True:
-            round += 1
-            if round > max_rounds:
-                raise RuntimeError('Spec set was not resolved after %d rounds. '
+        Finds concrete package versions for all the given InstallRequirements
+        and their recursive dependencies.  The end result is a flat list of
+        (name, version) tuples.  (Or an editable package.)
+
+        Resolves constraints one round at a time, until they don't change
+        anymore.  Protects against infinite loops by breaking out after a max
+        number rounds.
+        """
+        if self.clear_caches:
+            self.dependency_cache.clear()
+            self.repository.clear_caches()
+
+        os.environ['PIP_EXISTS_ACTION'] = 'i'  # ignore existing packages
+        for current_round in count(start=1):
+            if current_round > max_rounds:
+                raise RuntimeError('No stable configuration of concrete packages '
+                                   'could be found for the given constraints after '
+                                   '%d rounds of resolving.\n'
                                    'This is likely a bug.' % max_rounds)
 
-            if not self.resolve_one_round():
-                # Break as soon as nothing significant is added in this round
+            log.debug('')
+            log.debug(magenta('{:^60}'.format('ROUND {}'.format(current_round))))
+            has_changed, best_matches = self._resolve_one_round()
+            log.debug('-' * 60)
+            log.debug('Result of round {}: {}'.format(current_round,
+                                                      'not stable' if has_changed else 'stable, done'))
+            if not has_changed:
                 break
 
-            print_specset(self.spec_set, round)
+        del os.environ['PIP_EXISTS_ACTION']
+        return best_matches
 
-        # Return the pinned spec set
-        return self.pin_spec_set()
-
-    def pin_spec_set(self):
-        """Pins all packages in given resolved spec set and returns a new spec
-        set.  Requires the input spec set to be resolved.
+    def _group_constraints(self, constraints):
         """
-        new_spec_set = SpecSet()
-        for spec in self.spec_set.normalize():
-            best_version = self.pkgmgr.find_best_match(spec)
-            pinned_spec = spec.pin(best_version)
-            new_spec_set.add_spec(pinned_spec)
-        return new_spec_set
+        Groups constraints (remember, InstallRequirements!) by their key name,
+        and combining their SpecifierSets into a single InstallRequirement per
+        package.  For example, given the following constraints:
 
-    def find_all_dependencies(self):
-        """Finds best matches for the current spec set in the package manager,
-        returning all requirements for those packages.
+            Django<1.9,>=1.4.2
+            django~=1.5
+            Flask~=0.7
+
+        This will be combined into a single entry per package:
+
+            django~=1.5,<1.9,>=1.4.2
+            flask~=0.7
+
         """
-        spec_set = self.spec_set
-        pkgmgr = self.pkgmgr
+        for _, ireqs in full_groupby(constraints, key=lambda ireq: ireq.req.key):
+            ireqs = list(ireqs)
+            editable_ireq = first(ireqs, key=lambda ireq: ireq.editable)
+            if editable_ireq:
+                yield editable_ireq  # ignore all the other specs: the editable one is the one that counts
+                continue
 
-        deps = set()
-        for spec in spec_set.normalize():
-            version = pkgmgr.find_best_match(spec)
-            pkg_deps = pkgmgr.get_dependencies(spec.pin(version))
+            ireqs = iter(ireqs)
+            combined_ireq = next(ireqs)
+            combined_ireq.comes_from = None
+            for ireq in ireqs:
+                # NOTE we may be losing some info on dropped reqs here
+                combined_ireq.req.specifier &= ireq.req.specifier
+            yield combined_ireq
 
-            # Append source information to the new specs
-            if spec.source:
-                source = '%s ~> %s==%s' % (spec.source, spec.name, version)
-            else:
-                source = '%s==%s' % (spec.name, version)
-
-            pkg_deps = {s.add_source(source) for s in pkg_deps}
-            deps.update(pkg_deps)
-
-        return deps
-
-    def find_new_dependencies(self):
-        """Finds all dependencies for the given spec set (in the package
-        manager), but only returns what specs are new to the set.
+    def _resolve_one_round(self):
         """
-        all_deps = self.find_all_dependencies()
-        return all_deps - set(self.spec_set)  # only return _new_ specs
+        Resolves one level of the current constraints, by finding the best
+        match for each package in the repository and adding all requirements
+        for those best package versions.  Some of these constraints may be new
+        or updated.
+
+        Returns whether new constraints appeared in this round.  If no
+        constraints were added or changed, this indicates a stable
+        configuration.
+        """
+        # Sort this list for readability of terminal output
+        constraints = sorted(self.constraints, key=lambda ireq: ireq.req.key)
+        log.debug('Current constraints:')
+        for constraint in constraints:
+            log.debug('  {}'.format(constraint))
+
+        log.debug('')
+        log.debug('Finding the best candidates:')
+        best_matches = set(self.get_best_match(ireq) for ireq in constraints)
+
+        # Find the new set of secondary dependencies
+        log.debug('')
+        log.debug('Finding secondary dependencies:')
+        theirs = set(dep
+                     for best_match in best_matches
+                     for dep in self._iter_dependencies(best_match))
+
+        # NOTE: We need to compare the underlying Requirement objects, since
+        # InstallRequirement does not define equality
+        diff = {t.req for t in theirs} - {t.req for t in self.their_constraints}
+        has_changed = len(diff) > 0
+        if has_changed:
+            log.debug('')
+            log.debug('New dependencies found in this round:')
+            for new_dependency in sorted(diff, key=lambda req: req.key):
+                log.debug('  adding {}'.format(new_dependency))
+
+        # Store the last round's results in the their_constraints set
+        # (overriding what was in there)
+        self.their_constraints = theirs
+        return has_changed, best_matches
+
+    def get_best_match(self, ireq):
+        """
+        Returns a (pinned or editable) InstallRequirement, indicating the best
+        match to use for the given InstallRequirement (in the form of an
+        InstallRequirement).
+
+        Example:
+        Given the constraint Flask>=0.10, may return Flask==0.10.1 at
+        a certain moment in time.
+
+        Pinned requirements will always return themselves, i.e.
+
+            Flask==0.10.1 => Flask==0.10.1
+
+        """
+        if ireq.editable:
+            # NOTE: it's much quicker to immediately return instead of
+            # hitting the index server
+            best_match = ireq
+        elif is_pinned_requirement(ireq):
+            # NOTE: it's much quicker to immediately return instead of
+            # hitting the index server
+            best_match = ireq
+        else:
+            best_match = self.repository.find_best_match(ireq, prereleases=self.prereleases)
+
+        # Format the best match
+        log.debug('  found candidate {} (constraint was {})'.format(format_requirement(best_match),
+                                                                    format_specifier(ireq)))
+        return best_match
+
+    def _iter_dependencies(self, ireq):
+        """
+        Given a pinned or editable InstallRequirement, collects all the
+        secondary dependencies for them, either by looking them up in a local
+        cache, or by reaching out to the repository.
+
+        Editable requirements will never be looked up, as they may have
+        changed at any time.
+        """
+        if ireq.editable:
+            for dependency in self.repository.get_dependencies(ireq):
+                yield dependency
+            return
+        elif not is_pinned_requirement(ireq):
+            raise TypeError('Expected pinned or editable requirement, got {}'.format(ireq))
+
+        # Now, either get the dependencies from the dependency cache (for
+        # speed), or reach out to the external repository to
+        # download and inspect the package version and get dependencies
+        # from there
+        name, version = as_name_version_tuple(ireq)
+
+        if (name, version) not in self.dependency_cache:
+            log.debug('  {} not in cache, need to check index'.format(format_requirement(ireq)), fg='yellow')
+            dependencies = self.repository.get_dependencies(ireq)
+            self.dependency_cache[name, version] = sorted(str(ireq.req) for ireq in dependencies)
+
+        # Example: ['Werkzeug>=0.9', 'Jinja2>=2.4']
+        dependency_strings = self.dependency_cache[name, version]
+        log.debug('  {:25} requires {}'.format(format_requirement(ireq),
+                                               ', '.join(sorted(dependency_strings, key=lambda s: s.lower())) or '-'))
+        for dependency_string in dependency_strings:
+            yield InstallRequirement.from_line(dependency_string)
+
+    def reverse_dependencies(self, ireqs):
+        tups = (as_name_version_tuple(ireq) for ireq in ireqs if not ireq.editable)
+        return self.dependency_cache.reverse_dependencies(tups)

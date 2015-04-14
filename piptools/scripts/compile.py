@@ -1,186 +1,143 @@
-from __future__ import absolute_import
+# coding: utf-8
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
-import glob
-import logging
 import sys
-from collections import defaultdict
-
-import click
 import pip
-from pip.download import PipSession
-from pip.index import PackageFinder
-from pip.req import parse_requirements
 
-from piptools.logging import logger
-
-# from piptools.datastructures import ConflictError
-# from collections import defaultdict
-# from six import text_type
-# from piptools.package_manager import PackageManager
-# from piptools.resolver import Resolver
-
-# Make sure we're using a reasonably modern version of pip
+# Make sure we're using a reasonably modern version of pip  # isort:skip
 if not tuple(int(digit) for digit in pip.__version__.split('.')[:2]) >= (6, 1):
     print('pip-compile requires at least version 6.1 of pip ({} found), '
           'perhaps run `pip install --upgrade pip`?'.format(pip.__version__))
     sys.exit(4)
 
+from itertools import chain, cycle
+from os.path import basename
+
+import click
+from pip.req import parse_requirements
+
+from ..exceptions import PipToolsError
+from ..logging import log
+from ..repositories import PyPIRepository
+from ..resolver import Resolver
+from ..utils import format_requirement
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
-GLOB_PATTERN = '*requirements.in'
-
-
-def setup_logging(verbose):
-    if verbose:
-        level = logging.DEBUG
-    else:
-        level = logging.INFO
-
-    handler = logging.StreamHandler()
-    formatter = logging.Formatter('%(message)s', None)
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    logger.setLevel(level)
-
-    from pip import logger as pip_logger
-    if hasattr(pip_logger, 'addHandler'):
-        # New method from pip 6 onwards.
-        pip_formatter = logging.Formatter('PIP said: %(message)s', None)
-        pip_handler = logging.StreamHandler()
-        pip_handler.setFormatter(pip_formatter)
-        pip_handler.setLevel(level)
-        pip_logger.addHandler(pip_handler)
-    else:
-        # Old method, removed in 767d11e (tags/6.0~104^2).
-        pip_logger.consumers.append(
-            (pip_logger.VERBOSE_DEBUG,
-             lambda msg: logger.debug('PIP said: ' + msg)))
-
-
-def collect_source_specs(filenames):
-    """This function collects all of the (primary) source specs into
-    a flattened list of specs.
-    """
-    for filename in filenames:
-        for ireq in parse_requirements(filename):
-            yield ireq
-
-
-# def compile_specs(source_files, include_sources=False, dry_run=False):
-#     logger.debug('===> Collecting source requirements')
-#     top_level_ireqs = list(collect_source_specs(source_files))
-
-#     spec_set = SpecSet()
-#     spec_set.add_specs(top_level_ireqs)
-#     logger.debug('%s' % (spec_set,))
-
-#     logger.debug('')
-#     logger.debug('===> Normalizing source requirements')
-#     spec_set = spec_set.normalize()
-#     logger.debug('%s' % (spec_set,))
-
-#     package_manager = PackageManager(extra_index_urls, extra_find_links)
-
-#     logger.debug('')
-#     logger.debug('===> Resolving full tree')
-
-#     resolver = Resolver(spec_set, package_manager=package_manager)
-#     try:
-#         pinned_spec_set = resolver.resolve()
-#     except ConflictError as e:
-#         logger.error('error: {0}'.format(e))
-#         sys.exit(1)
-
-#     logger.debug('')
-#     logger.debug('===> Pinned spec set resolved')
-#     for spec in pinned_spec_set:
-#         logger.debug('- %s' % (spec,))
-
-#     if dry_run:
-#         return
-
-#     logger.debug('')
-#     logger.debug('===> Writing compiled files')
-
-#     # The spec set is global for all files passed to pip-compile. Here we go
-#     # through the resolver again (which will use its cache from the initial
-#     # run) to determine where to write each dependency.
-#     split = defaultdict(SpecSet)
-#     for spec in top_level_ireqs:
-#         split[spec.source.split(':')[0]].add_spec(spec)
-
-#     for source_file, spec_set in split.items():
-#         resolver = Resolver(spec_set, package_manager=package_manager)
-#         with logger.silent():
-#             local_pinned = resolver.resolve()
-#         name, ext = os.path.splitext(source_file)
-#         compiled_file = '{0}.txt'.format(name)
-#         assert source_file != compiled_file, "Can't overwrite %s" % source_file
-#         logger.debug('{0} -> {1}'.format(source_file, compiled_file))
-#         with open(compiled_file, 'wb') as f:
-#             for spec in sorted(local_pinned, key=text_type):
-#                 f.write(text_type(spec).encode('utf-8'))
-#                 if include_sources:
-#                     f.write(b'  # {}'.format(spec.source))
-#                 f.write(b'\n')
-
-#             # Include external PyPi sources
-#             if len(extra_index_urls):
-#                 for extra_index_url in extra_index_urls:
-#                     f.write(b'--extra-index-url {0}\n'.format(extra_index_url))
-
 
 @click.command()
-@click.option('--verbose', '-v', is_flag=True, help="Show more output")
+@click.option('-v', '--verbose', is_flag=True, help="Show more output")
 @click.option('--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
-# @click.option('--comments', '-c', is_flag=True,
-#               help="Write comments to the output file, indicating how the compiled dependencies where calculated")
-# @click.option('--prereleases', '-p', is_flag=True,
-#               help="Allow prereleases (default is not)")
-@click.option('--find-links', '-f', multiple=True, help="Look for archives in this directory or on this HTML page")
-@click.option('--extra-index-url', multiple=True, help="Add additional PyPI repo to search")
-@click.argument('files', nargs=-1, type=click.Path(exists=True))
-def cli(verbose, dry_run, find_links, extra_index_url, files):
+@click.option('-p', '--pre', is_flag=True, help="Allow resolving to prereleases (default is not)")
+@click.option('-r', '--rebuild', is_flag=True, help="Clear any caches upfront, rebuild from scratch")
+@click.option('-f', '--find-links', multiple=True, help="Look for archives in this directory or on this HTML page")
+@click.option('-i', '--index-url', help="Change index URL (defaults to PyPI)")
+@click.option('--extra-index-url', multiple=True, help="Add additional index URL to search")
+@click.option('--no-header', is_flag=True, help="Disable the header comment in autogenerated file")
+@click.option('-a', '--annotate', is_flag=True,
+              help="Annotate results, indicating where dependencies come from")
+@click.argument('src_file', required=False, type=click.Path(exists=True), default=DEFAULT_REQUIREMENTS_FILE)
+def cli(verbose, dry_run, pre, rebuild, find_links, index_url,
+        extra_index_url, no_header, annotate, src_file):
     """Compiles requirements.txt from requirements.in specs."""
-    src_files = files or glob.glob(GLOB_PATTERN)
-    if not src_files:
-        click.echo('No input files to process.')
+    log.verbose = verbose
+
+    if not src_file:
+        log.warning('No input files to process.')
         sys.exit(2)
 
-    session = PipSession()
-    finder = PackageFinder(find_links=find_links, index_urls=[], session=session)
+    ###
+    # Setup
+    ###
+    repository = PyPIRepository()
 
-    raw_requirements = []
-    for src_file in src_files:
-        for line in parse_requirements(src_file, finder=finder, session=session):
-            raw_requirements.append(line)
+    # Configure the finder
+    if index_url:
+        repository.finder.index_urls = [index_url]
+    repository.finder.index_urls.extend(extra_index_url)
+    repository.finder.find_links.extend(find_links)
 
-    # Finder now contains these settings, populated by parse_requirements()
-    finder.index_urls.extend(extra_index_url)
+    log.debug('Using indexes:')
+    for index_url in repository.finder.index_urls:
+        log.debug('  {}'.format(index_url))
 
-    # Output
-    for link in finder.find_links:
-        click.echo(' '.join(('-f', link)))
-    for url in finder.index_urls:
-        click.echo(' '.join(('-i', url)))
+    if repository.finder.find_links:
+        log.debug('')
+        log.debug('Configuration:')
+        for find_link in repository.finder.find_links:
+            log.debug('  -f {}'.format(find_link))
 
-    reqlut = defaultdict(list)
-    for req in raw_requirements:
-        key = req.req.key
-        reqlut[key].append(req)
+    ###
+    # Parsing/collecting initial requirements
+    ###
+    constraints = []
+    for line in parse_requirements(src_file, finder=repository.finder, session=repository.session):
+        constraints.append(line)
 
-    for req_name, reqs in reqlut.items():
-        print(req_name)
-        for req in reqs:
-            if req.editable:
-                click.echo('    -e {0}  # {1}'.format(req.link, req.req.key))
-            else:
-                click.echo('    {}'.format(req.specifier))
-        click.echo()
+    try:
+        resolver = Resolver(constraints, repository, prereleases=pre, clear_caches=rebuild)
+        results = resolver.resolve()
+    except PipToolsError as e:
+        log.error(str(e))
+        sys.exit(2)
 
-    # compile_specs(src_files, include_sources=include_sources, dry_run=dry_run)
+    # Format the results for outputting
+    log.debug('')
+    formatted_results = sorted(results, key=lambda r: (not r.editable, str(r.req).lower()))
 
-    # if dry_run:
-    #     logger.info('Dry-run, so nothing updated.')
-    # else:
-    #     logger.info('Dependencies updated.')
+    # In verbose mode, we format the results in blue
+    blue = 'blue' if verbose else None
+
+    if not no_header:
+        log.info('#', fg=blue)
+        log.info('# This file is autogenerated by pip-compile', fg=blue)
+        log.info('# Make changes in {}, then run this to update:'.format(basename(src_file)), fg=blue)
+        log.info('#', fg=blue)
+        log.info('#    pip-compile {}'.format(basename(src_file)), fg=blue)
+        log.info('#', fg=blue)
+    for directive, index_url in zip(chain(['--index-url'], cycle(['--extra-index-url'])),
+                                    repository.finder.index_urls):
+        if index_url == repository.DEFAULT_INDEX_URL:
+            continue
+        log.info('{} {}'.format(directive, repository.finder.index_urls[0]), fg=blue)
+
+    if annotate:
+        # Compute reverse dependency annotations statically, from the
+        # dependency cache that the resolver has populated by now.
+        #
+        # TODO (1a): reverse deps for any editable package are lost
+        #            what SHOULD happen is that they are cached in memory, just
+        #            not persisted to disk!
+        #
+        # TODO (1b): perhaps it's easiest if the dependency cache has an API
+        #            that could take InstallRequirements directly, like:
+        #
+        #                cache.set(ireq, ...)
+        #
+        #            then, when ireq is editable, it would store in
+        #
+        #              editables[egg_name][link_without_fragment] = deps
+        #              editables['pip-tools']['git+...ols.git@future'] = {'click>=3.0', 'six'}
+        #
+        #            otherwise:
+        #
+        #              self[as_name_version_tuple(ireq)] = {'click>=3.0', 'six'}
+        #
+        # TODO (2): consider dropping annotations for top-level packages, e.g.
+        #           when both django and django-debug-toolbar are top-level
+        #           requirements, django gets this stupid annotation:
+        #
+        #             django-debug-toolbar==1.3.0
+        #             django==1.8    # via django-debug-toolbar
+        #
+        rev_deps = resolver.reverse_dependencies(results)
+    for result in formatted_results:
+        annotation = None
+        if annotate:
+            annotation = ', '.join(sorted(rev_deps.get(result.name, [])))
+            if annotation:
+                annotation = 'via ' + annotation
+        log.info(format_requirement(result, annotation=annotation), fg=blue)
+
+    if dry_run:
+        log.warning('Dry-run, so nothing updated.')
