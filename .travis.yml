@@ -1,8 +1,16 @@
 language: python
+
 python:
-  - "2.7"
-  - "3.4"
+  - 2.7
+  - 3.4
+
+env:
+  matrix:
+    - TOXENV=py27
+    - TOXENV=py34
+
 install:
-  - "pip install cram pytest . --use-mirrors"
+  - travis_retry pip install tox
+
 script:
-  - "./run-tests.sh"
+  - tox
