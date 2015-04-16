@@ -14,10 +14,10 @@ fresh, even when you've pinned them.
 Installation
 ============
 
-To install, simply use pip:
+To install, simply use [pipsi](https://github.com/mitsuhiko/pipsi):
 
 ```console
-$ pip install pip-tools
+$ pipsi install pip-tools
 ```
 
 Or if you specifically want the features available from the future branch:
@@ -31,12 +31,6 @@ inside a virtual env.  Both are supported.
 
 Testing
 =======
-
-To test with your active Python version:
-
-```console
-$ ./run-tests.sh
-```
 
 To test under all (supported) Python versions:
 
