@@ -27,7 +27,9 @@ def format_specifier(ireq):
     Generic formatter for pretty printing the specifier part of
     InstallRequirements to the terminal.
     """
-    return str(ireq.specifier) or '<any>'
+    # TODO: Ideally, this is carried over to the pip library itself
+    specs = sorted(ireq.specifier._specs, key=lambda x: x._spec[1])
+    return ','.join(str(s) for s in specs) or '<any>'
 
 
 def is_pinned_requirement(ireq):
