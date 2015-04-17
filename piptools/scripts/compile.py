@@ -25,6 +25,7 @@ from ..utils import format_requirement
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
 
+
 @click.command()
 @click.option('-v', '--verbose', is_flag=True, help="Show more output")
 @click.option('--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
