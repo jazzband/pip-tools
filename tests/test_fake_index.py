@@ -8,6 +8,12 @@ def test_find_best_match(from_line, repository):
     assert repository.find_best_match(ireq) == '1.7.7'
 
 
+def test_find_best_match_incl_prereleases(from_line, repository):
+    ireq = from_line('sqlalchemy')
+    assert repository.find_best_match(ireq, prereleases=False) == '0.9.9'
+    assert repository.find_best_match(ireq, prereleases=True) == '1.0.0b5'
+
+
 def test_find_best_match_for_editable(from_editable, repository):
     ireq = from_editable('git+git://whatev.org/blah.git#egg=flask')
     assert repository.find_best_match(ireq) == ireq

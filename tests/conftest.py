@@ -16,11 +16,11 @@ class FakeRepository(BaseRepository):
         with open('tests/fixtures/fake-editables.json', 'r') as f:
             self.editables = json.load(f)
 
-    def find_best_match(self, ireq):
+    def find_best_match(self, ireq, prereleases=False):
         if ireq.editable:
             return ireq
 
-        versions = ireq.specifier.filter(self.index[ireq.req.key])
+        versions = ireq.specifier.filter(self.index[ireq.req.key], prereleases=prereleases)
         return max(versions, key=Version)
 
     def get_dependencies(self, ireq):
