@@ -3,15 +3,15 @@ from pytest import raises
 
 def test_find_best_match(from_line, repository):
     ireq = from_line('django>1.5')
-    assert repository.find_best_match(ireq) == '1.8'
+    assert str(repository.find_best_match(ireq)) == 'django==1.8'
     ireq = from_line('django<1.8,~=1.6')
-    assert repository.find_best_match(ireq) == '1.7.7'
+    assert str(repository.find_best_match(ireq)) == 'django==1.7.7'
 
 
 def test_find_best_match_incl_prereleases(from_line, repository):
-    ireq = from_line('sqlalchemy')
-    assert repository.find_best_match(ireq, prereleases=False) == '0.9.9'
-    assert repository.find_best_match(ireq, prereleases=True) == '1.0.0b5'
+    ireq = from_line('SQLAlchemy')
+    assert str(repository.find_best_match(ireq, prereleases=False)) == 'sqlalchemy==0.9.9'
+    assert str(repository.find_best_match(ireq, prereleases=True)) == 'sqlalchemy==1.0.0b5'
 
 
 def test_find_best_match_for_editable(from_editable, repository):

@@ -21,7 +21,8 @@ class FakeRepository(BaseRepository):
             return ireq
 
         versions = ireq.specifier.filter(self.index[ireq.req.key], prereleases=prereleases)
-        return max(versions, key=Version)
+        best_version = max(versions, key=Version)
+        return InstallRequirement.from_line('{}=={}'.format(ireq.req.key, best_version))
 
     def get_dependencies(self, ireq):
         if ireq.editable:
