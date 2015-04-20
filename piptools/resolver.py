@@ -20,7 +20,7 @@ magenta = partial(click.style, fg='magenta')
 
 
 class Resolver(object):
-    def __init__(self, constraints, repository, prereleases=False, clear_caches=False):
+    def __init__(self, constraints, repository, cache=None, prereleases=False, clear_caches=False):
         """
         This class resolves a given set of constraints (a collection of
         InstallRequirement objects) by consulting the given Repository and the
@@ -29,7 +29,9 @@ class Resolver(object):
         self.our_constraints = set(constraints)
         self.their_constraints = set()
         self.repository = repository
-        self.dependency_cache = DependencyCache()
+        if cache is None:
+            cache = DependencyCache()
+        self.dependency_cache = cache
         self.prereleases = prereleases
         self.clear_caches = clear_caches
 

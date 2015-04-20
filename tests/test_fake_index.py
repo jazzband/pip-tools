@@ -24,7 +24,8 @@ def test_get_dependencies(from_line, repository):
     assert repository.get_dependencies(ireq) == []
 
     ireq = from_line('Flask==0.10.1')
-    assert (set(repository.get_dependencies(ireq)) ==
+    dependencies = repository.get_dependencies(ireq)
+    assert (set(str(req) for req in dependencies) ==
             {'Werkzeug>=0.7', 'Jinja2>=2.4', 'itsdangerous>=0.21'})
 
 

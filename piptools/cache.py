@@ -34,11 +34,13 @@ class DependencyCache(object):
 
     Where X.Y indicates the Python version.
     """
-    def __init__(self):
-        _cache_dir = os.path.expanduser('~/.pip-tools')
-        _py_version = '.'.join(str(digit) for digit in sys.version_info[:2])
-        _cache_filename = 'depcache-py{}.json'.format(_py_version)
-        self._cache_file = os.path.join(_cache_dir, _cache_filename)
+    def __init__(self, cache_dir=None):
+        if cache_dir is None:
+            cache_dir = os.path.expanduser('~/.pip-tools')
+        py_version = '.'.join(str(digit) for digit in sys.version_info[:2])
+        cache_filename = 'depcache-py{}.json'.format(py_version)
+
+        self._cache_file = os.path.join(cache_dir, cache_filename)
         self._cache = None
 
     @property

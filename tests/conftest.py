@@ -1,10 +1,13 @@
 import json
+from functools import partial
 
 from pip._vendor.packaging.version import Version
 from pip.req import InstallRequirement
 from pytest import fixture
 
+from piptools.cache import DependencyCache
 from piptools.repositories.base import BaseRepository
+from piptools.resolver import Resolver
 from piptools.utils import as_name_version_tuple
 
 
@@ -29,12 +32,23 @@ class FakeRepository(BaseRepository):
             return self.editables[str(ireq.link)]
 
         name, version = as_name_version_tuple(ireq)
-        return self.index[name][version]
+        dependencies = self.index[name][version]
+        return [InstallRequirement.from_line(dep) for dep in dependencies]
 
 
 @fixture
 def repository():
     return FakeRepository()
+
+
+@fixture
+def depcache(tmpdir):
+    return DependencyCache(str(tmpdir))
+
+
+@fixture
+def resolver(depcache, repository):
+    return partial(Resolver, repository=repository, cache=depcache)
 
 
 @fixture
