@@ -10,6 +10,7 @@
 
 # Testing
 .tox
+htmlcov
 
 # Build output
 build
