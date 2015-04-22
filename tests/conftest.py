@@ -48,6 +48,9 @@ def depcache(tmpdir):
 
 @fixture
 def resolver(depcache, repository):
+    # TODO: It'd be nicer if Resolver instance could be set up and then
+    #       use .resolve(...) on the specset, instead of passing it to
+    #       the constructor like this (it's not reusable)
     return partial(Resolver, repository=repository, cache=depcache)
 
 

@@ -54,6 +54,7 @@ class Resolver(object):
             self.dependency_cache.clear()
             self.repository.clear_caches()
 
+        # TODO: Is there a better way to do this?
         os.environ['PIP_EXISTS_ACTION'] = 'i'  # ignore existing packages
         for current_round in count(start=1):
             if current_round > max_rounds:
