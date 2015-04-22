@@ -132,13 +132,20 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url,
         #             django==1.8    # via django-debug-toolbar
         #
         rev_deps = resolver.reverse_dependencies(results)
+
+    EXCLUDE_PACKAGES = {'setuptools', 'distribute', 'pip'}
     for result in formatted_results:
         annotation = None
         if annotate:
             annotation = ', '.join(sorted(rev_deps.get(result.name, [])))
             if annotation:
                 annotation = 'via ' + annotation
-        log.info(format_requirement(result, annotation=annotation), fg=blue)
+        line = format_requirement(result, annotation=annotation)
+
+        if result.name in EXCLUDE_PACKAGES:
+            line = '# {}'.format(line)
+
+        log.info(line, fg=blue)
 
     if dry_run:
         log.warning('Dry-run, so nothing updated.')
