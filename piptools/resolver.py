@@ -72,6 +72,13 @@ class Resolver(object):
             if not has_changed:
                 break
 
+            # If a package version (foo==2.0) was built in a previous round,
+            # and in this round a different version of foo needs to be built
+            # (i.e. foo==1.0), the directory will exist already, which will
+            # cause a pip build failure.  The trick is to start with a new
+            # build cache dir for every round, so this can never happen.
+            self.repository.freshen_build_caches()
+
         del os.environ['PIP_EXISTS_ACTION']
         return best_matches
 

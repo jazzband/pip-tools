@@ -42,10 +42,17 @@ class PyPIRepository(BaseRepository):
         self._available_versions_cache = {}
 
         # Setup file paths
-        self._build_dir = TemporaryDirectory('build')
-        self._source_dir = TemporaryDirectory('source')
+        self.freshen_build_caches()
         self._download_dir = os.path.expanduser('~/.pip-tools/pkgs')
         self._wheel_download_dir = os.path.expanduser('~/.pip-tools/wheels')
+
+    def freshen_build_caches(self):
+        """
+        Start with fresh build/source caches.  Will remove any old build
+        caches from disk automatically.
+        """
+        self._build_dir = TemporaryDirectory('build')
+        self._source_dir = TemporaryDirectory('source')
 
     @property
     def build_dir(self):
