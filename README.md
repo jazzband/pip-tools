@@ -14,16 +14,12 @@ even when you've pinned them.  [You do pin them, right?][0]
 Installation
 ============
 
-To install, simply use [pipsi](https://github.com/mitsuhiko/pipsi):
-
 ```console
-$ pipsi install pip-tools
+$ pip install --upgrade pip  # pip-tools needs pip==6.1 or higher (!)
+$ pip install pip-tools
 ```
 
 Or if you specifically want the features available from the future branch:
 ```console
 $ pip install git+https://github.com/nvie/pip-tools.git@future
 ```
-
-Decide for yourself whether you want to install the tools system-wide, or
-inside a virtual env.  Both are supported.
