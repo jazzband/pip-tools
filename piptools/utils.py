@@ -4,22 +4,24 @@ from __future__ import (absolute_import, division, print_function,
 
 from itertools import groupby
 
+from click import style
 from first import first
 
 
-def format_requirement(ireq, annotation=False):
+def comment(text):
+    return style(text, fg='green')
+
+
+def format_requirement(ireq):
     """
     Generic formatter for pretty printing InstallRequirements to the terminal
     in a less verbose way than using its `__str__` method.
     """
     if ireq.editable:
-        result = '-e {}'.format(ireq.link)
+        line = '-e {}'.format(ireq.link)
     else:
-        result = str(ireq.req)
-
-    if annotation:
-        result = '{:24}  # {}'.format(result, annotation)
-    return result
+        line = str(ireq.req)
+    return line
 
 
 def format_specifier(ireq):
