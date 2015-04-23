@@ -88,8 +88,6 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url,
     ##
     # Output
     ##
-    base_name, _, _ = src_file.rpartition('.')
-    dst_file = base_name + '.txt'
 
     # Compute reverse dependency annotations statically, from the
     # dependency cache that the resolver has populated by now.
@@ -123,12 +121,11 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url,
     if annotate:
         reverse_dependencies = resolver.reverse_dependencies(results)
 
-    writer = OutputWriter(header=header, annotate=annotate)
-    writer.write(dst_file,
-                 src_file=src_file,
-                 default_index_url=repository.DEFAULT_INDEX_URL,
-                 index_urls=repository.finder.index_urls,
-                 results=results,
+    writer = OutputWriter(src_file, dry_run=dry_run, header=header,
+                          annotate=annotate,
+                          default_index_url=repository.DEFAULT_INDEX_URL,
+                          index_urls=repository.finder.index_urls)
+    writer.write(results=results,
                  reverse_dependencies=reverse_dependencies,
                  primary_packages={ireq.req.key for ireq in constraints})
 
