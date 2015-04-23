@@ -1,11 +1,11 @@
 import os
-from contextlib import nested
 from itertools import chain, cycle
 from os.path import basename
 
 from click import unstyle
 from first import first
 
+from ._compat import ExitStack
 from .io import AtomicSaver
 from .logging import log
 from .utils import comment, format_requirement
@@ -79,7 +79,8 @@ class OutputWriter(object):
         managers = []
         if not self.dry_run:
             managers.append(AtomicSaver(self.dst_file))
-        with nested(*managers) as files:
+        with ExitStack() as stack:
+            files = first(stack.enter_context(managers))
             f = first(files)
             for line in self._iter_lines(results, reverse_dependencies, primary_packages):
                 log.info(line)
