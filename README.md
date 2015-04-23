@@ -34,7 +34,7 @@ following line to a file:
     # requirements.in
     Flask
 
-Now, simply run `pip-compile`:
+Now, run `pip-compile requirements.in`:
 
 ```console
 $ pip-compile requirements.in
