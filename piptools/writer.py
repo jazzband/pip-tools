@@ -67,7 +67,7 @@ class OutputWriter(object):
 
         if unsafe_packages:
             yield ''
-            yield comment('# The following packages are commented out because they are ')
+            yield comment('# The following packages are commented out because they are')
             yield comment('# considered to be unsafe in a requirements file:')
 
             for ireq in unsafe_packages:
