@@ -83,8 +83,8 @@ class OutputWriter(object):
             for line in self._iter_lines(results, reverse_dependencies, primary_packages):
                 log.info(line)
                 if f:
-                    f.write(unstyle(line))
-                    f.write(os.linesep)
+                    f.write(unstyle(line).encode('utf-8'))
+                    f.write(os.linesep.encode('utf-8'))
 
     def _format_requirement(self, ireq, reverse_dependencies, primary_packages):
         line = format_requirement(ireq)
