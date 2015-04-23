@@ -3,7 +3,6 @@ from itertools import chain, cycle
 from os.path import basename
 
 from click import unstyle
-from first import first
 
 from ._compat import ExitStack
 from .io import AtomicSaver
@@ -76,12 +75,11 @@ class OutputWriter(object):
                 yield comment('# ' + line)
 
     def write(self, results, reverse_dependencies, primary_packages):
-        managers = []
-        if not self.dry_run:
-            managers.append(AtomicSaver(self.dst_file))
         with ExitStack() as stack:
-            files = first(stack.enter_context(managers))
-            f = first(files)
+            f = None
+            if not self.dry_run:
+                f = stack.enter_context(AtomicSaver(self.dst_file))
+
             for line in self._iter_lines(results, reverse_dependencies, primary_packages):
                 log.info(line)
                 if f:
