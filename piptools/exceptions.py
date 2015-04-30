@@ -14,3 +14,7 @@ class NoCandidateFound(PipToolsError):
             'Tried: {}'.format(', '.join(str(version) for version in sorted_versions) or '(no version found at all)')
         ]
         return '\n'.join(lines)
+
+
+class UnsupportedConstraint(PipToolsError):
+    pass

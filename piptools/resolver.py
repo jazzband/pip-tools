@@ -11,6 +11,7 @@ from first import first
 from pip.req import InstallRequirement
 
 from .cache import DependencyCache
+from .exceptions import UnsupportedConstraint
 from .logging import log
 from .utils import (as_name_version_tuple, format_requirement,
                     format_specifier, full_groupby, is_pinned_requirement)
@@ -54,6 +55,8 @@ class Resolver(object):
             self.dependency_cache.clear()
             self.repository.clear_caches()
 
+        self._check_constraints()
+
         # TODO: Is there a better way to do this?
         os.environ['PIP_EXISTS_ACTION'] = 'i'  # ignore existing packages
         for current_round in count(start=1):
@@ -81,6 +84,17 @@ class Resolver(object):
 
         del os.environ['PIP_EXISTS_ACTION']
         return best_matches
+
+    def _check_constraints(self):
+        for constraint in self.constraints:
+            if constraint.link is not None and not constraint.editable:
+                msg = ('pip-compile does not support URLs as packages, unless they are editable '
+                       '(perhaps add -e option?)')
+                raise UnsupportedConstraint(msg)
+            elif constraint.extras:
+                msg = ('pip-compile does not yet support packages with extras. '
+                       'Support for this is in the works, though.')
+                raise UnsupportedConstraint(msg)
 
     def _group_constraints(self, constraints):
         """
