@@ -110,13 +110,6 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url,
     #
     #              self[as_name_version_tuple(ireq)] = {'click>=3.0', 'six'}
     #
-    # TODO (2): consider dropping annotations for top-level packages, e.g.
-    #           when both django and django-debug-toolbar are top-level
-    #           requirements, django gets this stupid annotation:
-    #
-    #             django-debug-toolbar==1.3.0
-    #             django==1.8    # via django-debug-toolbar
-    #
     reverse_dependencies = None
     if annotate:
         reverse_dependencies = resolver.reverse_dependencies(results)
