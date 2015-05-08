@@ -86,7 +86,7 @@ class Resolver(object):
         return best_matches
 
     def _check_constraints(self):
-        for constraint in self.constraints:
+        for constraint in chain(self.our_constraints, self.their_constraints):
             if constraint.link is not None and not constraint.editable:
                 msg = ('pip-compile does not support URLs as packages, unless they are editable '
                        '(perhaps add -e option?)')
