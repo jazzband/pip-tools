@@ -41,6 +41,9 @@ class PyPIRepository(BaseRepository):
         # project
         self._available_versions_cache = {}
 
+        # Cache for get_dependencies.
+        self._get_dependencies_cache = {}
+
         # Setup file paths
         self.freshen_build_caches()
         self._download_dir = os.path.expanduser('~/.pip-tools/pkgs')
@@ -102,6 +105,9 @@ class PyPIRepository(BaseRepository):
         if not (ireq.editable or is_pinned_requirement(ireq)):
             raise TypeError('Expected pinned or editable InstallRequirement, got {}'.format(ireq))
 
+        if ireq in self._get_dependencies_cache:
+            return self._get_dependencies_cache[ireq]
+
         if not os.path.isdir(self._download_dir):
             os.makedirs(self._download_dir)
         if not os.path.isdir(self._wheel_download_dir):
@@ -113,4 +119,5 @@ class PyPIRepository(BaseRepository):
                                 wheel_download_dir=self._wheel_download_dir,
                                 session=self.session)
         dependencies = reqset._prepare_file(self.finder, ireq)
-        return set(dependencies)
+        self._get_dependencies_cache[ireq] = set(dependencies)
+        return self._get_dependencies_cache[ireq]
