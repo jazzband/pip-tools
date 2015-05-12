@@ -89,12 +89,15 @@ class Resolver(object):
         for constraint in chain(self.our_constraints, self.their_constraints):
             if constraint.link is not None and not constraint.editable:
                 msg = ('pip-compile does not support URLs as packages, unless they are editable '
-                       '(perhaps add -e option?)')
-                raise UnsupportedConstraint(msg)
+                       '(perhaps add -e option?).')
             elif constraint.extras:
                 msg = ('pip-compile does not yet support packages with extras. '
                        'Support for this is in the works, though.')
-                raise UnsupportedConstraint(msg)
+            else:
+                continue
+
+            msg += ' Constraint: {0}.'.format(str(constraint))
+            raise UnsupportedConstraint(msg)
 
     def _group_constraints(self, constraints):
         """
