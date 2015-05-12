@@ -41,6 +41,9 @@ class PyPIRepository(BaseRepository):
         # project
         self._available_versions_cache = {}
 
+        # Cache for get_dependencies.
+        self._get_dependencies_cache = {}
+
         # Setup file paths
         self.freshen_build_caches()
         self._download_dir = os.path.expanduser('~/.pip-tools/pkgs')
@@ -99,6 +102,10 @@ class PyPIRepository(BaseRepository):
         dependencies (also InstallRequirements, but not necessarily pinned).
         They indicate the secondary dependencies for the given requirement.
         """
+
+        if ireq in self._get_dependencies_cache:
+            return self._get_dependencies_cache[ireq]
+
         if not os.path.isdir(self._download_dir):
             os.makedirs(self._download_dir)
         if not os.path.isdir(self._wheel_download_dir):
@@ -116,4 +123,5 @@ class PyPIRepository(BaseRepository):
                                 ignore_installed=True,
                                 session=self.session)
         dependencies = reqset._prepare_file(self.finder, ireq)
-        return set(dependencies)
+        self._get_dependencies_cache[ireq] = set(dependencies)
+        return self._get_dependencies_cache[ireq]
