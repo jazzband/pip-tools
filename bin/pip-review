@@ -3,10 +3,12 @@ from __future__ import absolute_import
 import os
 import re
 import argparse
-from functools import partial
+from functools import partial, wraps
 import logging
 import sys
 import json
+import threading
+import multiprocessing.dummy as multiprocessing
 try:
     import urllib2 as urllib_request  # Python2
 except ImportError:
@@ -63,7 +65,40 @@ def parse_args():
              'globally-installed packages')
     return parser.parse_args()
 
+def notify_slow(timeout_after_seconds, on_slow_callback):
+    """Decorator that executes callback function if the wrapped function has
+    not finished after the specified interval.
+    
+    timeout_after_seconds: Duration in seconds after which the callback is 
+                           executed.
+    on_slow_callback: The function to call if the wrapped function has notify_slow
+                      finished yet. 
+                      Must take three arguments: (func, args, kwargs)
+    """
+    def notify_slow_decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # Start watchdog timer on new thread
+            timer = threading.Timer(timeout_after_seconds, 
+                                    on_slow_callback, 
+                                    args=(func, args, kwargs))
+            timer.start()
+            rv = func(*args, **kwargs)
+            # If the function has finished before the timeout, then the 
+            # callback must not be executed.
+            timer.cancel()
+            return rv
+        return wrapper
+    return notify_slow_decorator
 
+def print_slow_load_pkg_info(func, args, kwargs):
+    """Prints package name of slow package lookup to debug log.
+    """
+    pkg_name = args[0]
+    logger = logging.getLogger(u'pip-review')
+    logger.debug('Slow lookup of package {0}, please be patient...'.format(pkg_name))
+
+@notify_slow(5, print_slow_load_pkg_info)
 def load_pkg_info(pkg_name):
     if pkg_name is None:
         return
@@ -126,9 +161,16 @@ def latest_version(pkg_name, silent=False):
     return parse_version(version), version
 
 
-def get_latest_versions(pkg_names):
+def get_latest_versions(pkg_names, workers=4):
+    # Each worker will lookup a package entry
+    pool = multiprocessing.Pool(workers)
     get_latest = partial(latest_version, silent=True)
-    versions = map(get_latest, pkg_names)
+    # Perform parallel lookup
+    versions = pool.map(get_latest, pkg_names)
+    # Stop accepting jobs
+    pool.close()
+    # Wait until pool is finished with cleanup
+    pool.join()
     return zip(pkg_names, versions)
 
 
