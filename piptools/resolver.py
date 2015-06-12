@@ -56,9 +56,8 @@ class Resolver(object):
         """
         new_spec_set = SpecSet()
         for spec in self.spec_set.normalize():
-            best_version = self.pkgmgr.find_best_match(spec)
-            pinned_spec = spec.pin(best_version)
-            new_spec_set.add_spec(pinned_spec)
+            best_spec = self.pkgmgr.find_best_match(spec)
+            new_spec_set.add_spec(best_spec)
         return new_spec_set
 
     def find_all_dependencies(self):
@@ -70,14 +69,14 @@ class Resolver(object):
 
         deps = set()
         for spec in spec_set.normalize():
-            version = pkgmgr.find_best_match(spec)
-            pkg_deps = pkgmgr.get_dependencies(spec.pin(version))
+            best_spec = pkgmgr.find_best_match(spec)
+            pkg_deps = pkgmgr.get_dependencies(best_spec)
 
             # Append source information to the new specs
             if spec.source:
-                source = '%s ~> %s==%s' % (spec.source, spec.name, version)
+                source = '%s ~> %s==%s' % (spec.source, spec.name, best_spec.version)
             else:
-                source = '%s==%s' % (spec.name, version)
+                source = '%s==%s' % (spec.name, best_spec.version)
 
             pkg_deps = {s.add_source(source) for s in pkg_deps}
             deps.update(pkg_deps)

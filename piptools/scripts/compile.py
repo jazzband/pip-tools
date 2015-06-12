@@ -272,8 +272,7 @@ def cli_pinned(verbose, dry_run, include_sources, find_links, index_url,
         pinned_specs.normalize()
     except ConflictError as e:
         raise click.ClickException('Conflict with the pin-file: {}'.format(e))
-    pinned_definition = {req.name: req.version for req in pinned_specs}
-
+    pinned_definition = {req.name: req for req in pinned_specs}
 
     compile_specs_with_pinned_package_manager(pinned_definition, src_files,
                                               include_sources=include_sources,

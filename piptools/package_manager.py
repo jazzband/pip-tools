@@ -17,21 +17,23 @@ except ImportError:
 from functools import partial
 from six.moves.urllib.parse import urlsplit, urlunsplit, quote
 
-#from pip.backwardcompat import ConfigParser
-from pip.download import get_file_content, unpack_vcs_link, PipSession
+# from pip.backwardcompat import ConfigParser
+from pip.download import is_vcs_url, get_file_content, unpack_vcs_link, \
+    PipSession
 from pip.index import Link, PackageFinder
-#from pip.locations import default_config_file
+# from pip.locations import default_config_file
 from pip.req import InstallRequirement
+
 try:
     from pip.utils import splitext
 except ImportError:
     from pip.util import splitext
 from pip.vcs import vcs
 
-
 from .logging import logger
 from .datastructures import Spec, SpecSet, first
 from .version import NormalizedVersion
+
 
 def find_file(root_dir, filename):
     """Searches given file in root_dir's subdirectories.
@@ -46,7 +48,8 @@ def url_without_fragment(link):
     """Included here for compatibility reasons with pip<1.2, which does not
     have the Link.url_without_fragment() method.
     """
-    assert isinstance(link, Link), 'Argument should be a pip.index.Link instance.'
+    assert isinstance(link,
+                      Link), 'Argument should be a pip.index.Link instance.'
     try:
         return link.url_without_fragment
     except AttributeError:
@@ -122,7 +125,9 @@ class FakePackageManager(BasePackageManager):
         try:
             return self.package_to_requirement(pkg_key).split('==')
         except ValueError:
-            raise ValueError('Invalid package key: %s (required format: "name-version")' % (pkg_key,))
+            raise ValueError(
+                'Invalid package key: %s (required format: "name-version")' % (
+                pkg_key,))
 
     def iter_package_versions(self):
         """Iters over all package versions, returning key-value pairs."""
@@ -224,11 +229,13 @@ class PersistentCache(object):
 
 class PackageManager(BasePackageManager):
     """The default package manager that goes to PyPI and caches locally."""
-    piptools_root = os.path.expanduser(os.environ.get('PIPTOOLS_ROOT', '~/.pip-tools'))
+    piptools_root = os.path.expanduser(
+        os.environ.get('PIPTOOLS_ROOT', '~/.pip-tools'))
     dep_cache_file = os.path.join(piptools_root, 'dependencies.pickle')
     download_cache_root = os.path.join(piptools_root, 'cache')
 
-    def __init__(self, index_url=None, extra_index_urls=[], find_links=[], allow_all_prereleases=False):
+    def __init__(self, index_url=None, extra_index_urls=[], find_links=[],
+                 allow_all_prereleases=False):
         # TODO: provide options for pip, such as index URL or use-mirrors
         if index_url is None:
             index_url = 'https://pypi.python.org/simple/'
@@ -283,13 +290,13 @@ class PackageManager(BasePackageManager):
                 # this without every reaching out to PyPI and avoid the
                 # network overhead.
                 name, version = spec.name, first(spec.preds)[1]
-                if (name, version) in self._dep_cache:
+                if spec in self._dep_cache:
                     source = 'dependency cache'
-                    return version, source
+                    return spec
 
             # Try the link cache, and otherwise, try PyPI
-            if specline in self._link_cache:
-                link = self._link_cache[specline]
+            if spec in self._link_cache:
+                link = self._link_cache[spec]
                 source = 'link cache'
             else:
                 if spec.url:
@@ -309,7 +316,7 @@ class PackageManager(BasePackageManager):
                     # allow_all_insecure=True,
                 )
                 link = finder.find_requirement(requirement, False)
-                self._link_cache[specline] = link
+                self._link_cache[spec] = link
                 source = 'PyPI'
 
             filename, ext = splitext(link.filename)
@@ -325,27 +332,28 @@ class PackageManager(BasePackageManager):
             # spec into the link_cache, too
             pinned_spec = spec.pin(version)
             if pinned_spec not in self._link_cache:
-                self._link_cache[str(pinned_spec)] = link
-            return version, source
+                self._link_cache[pinned_spec] = link
+            return pinned_spec
 
         specline = str(spec)
         if spec.url:
-            self._link_cache[specline] = Link(spec.vcs_url)
-
+            self._link_cache[spec] = Link(spec.vcs_url)
             path = self.get_or_download_package(spec)
             version = self.get_vcs_revision(path)
             pinned_spec = spec.pin(version)
-            self._link_cache[str(pinned_spec)] = Link(pinned_spec.vcs_url)
+            self._link_cache[pinned_spec] = Link(pinned_spec.vcs_url)
+            best_spec = spec
         else:
-            if '==' not in specline or specline not in self._best_match_call_cache:
+            if '==' not in specline or spec not in self._best_match_call_cache:
                 logger.debug('- Finding best package matching %s' % [specline])
             with logger.indent():
-                version, source = _find_cached_match(spec)
-            if '==' not in specline or specline not in self._best_match_call_cache:
-                logger.debug('  Found best match: %s (from %s)' % (version, source))
+                best_spec = _find_cached_match(spec)
+            if '==' not in specline or spec not in self._best_match_call_cache:
+                logger.debug('  Found best match: %s (from %s)' % (
+                best_spec.version, best_spec.source))
 
-        self._best_match_call_cache[specline] = True
-        return version
+        self._best_match_call_cache[spec] = True
+        return best_spec
 
     def get_vcs_revision(self, path):
         backend_cls = vcs.get_backend_from_location(path)
@@ -356,23 +364,22 @@ class PackageManager(BasePackageManager):
         name = pinned_spec.name
         version = pinned_spec.version
 
-        key = '{0}-{1}'.format(name, version)
-        if key not in self._dep_call_cache:
-            logger.debug('- Getting dependencies for %s-%s' % (name, version))
+        if pinned_spec not in self._dep_call_cache:
+            logger.debug('- Getting dependencies for %s-%s' % (
+            pinned_spec.name, pinned_spec.version))
         with logger.indent():
-            deps = self._dep_cache.get((name, version))
+            deps = self._dep_cache.get(pinned_spec)
             if deps is not None:
                 source = 'dependency cache'
             else:
                 path = self.get_or_download_package(pinned_spec)
                 deps = self.extract_dependencies(path)
-                self._dep_cache[(name, version)] = deps
+                self._dep_cache[pinned_spec] = deps
                 source = 'package archive'
-        if key not in self._dep_call_cache:
+        if pinned_spec not in self._dep_call_cache:
             logger.debug('  Found: %s (from %s)' % (deps, source))
-        self._dep_call_cache[key] = True
+        self._dep_call_cache[pinned_spec] = True
         return [Spec.from_line(dep) for dep in deps]
-
 
     # Helper methods
     def get_local_package_path(self, url):  # noqa
@@ -388,20 +395,22 @@ class PackageManager(BasePackageManager):
         """Returns the local path from the package cache, downloading as
         needed.
         """
-        logger.debug('- Getting package location for %s' % (spec,))
+        logger.debug('- Getting package location for {}'.format(spec))
         with logger.indent():
-            link = self._link_cache[str(spec)]
+            link = self._link_cache[spec]
             fullpath = self.get_local_package_path(url_without_fragment(link))
 
-            if spec.vcs_url:
+            if spec.vcs_url or is_vcs_url(link):
                 # We don't use a persistent cache for VCS urls: the branch
                 # could have been updated since the previous pip-compile call.
                 if link not in self._unpacked_vcs_urls:
-                    unpack_vcs_link(link, fullpath, only_download=False)
+                    # unpack_vcs_link(link, fullpath, only_download=False)
+                    unpack_vcs_link(link, fullpath)
                     self._unpacked_vcs_urls.add(link)
             else:
                 if os.path.exists(fullpath):
-                    logger.debug('  Archive cache hit: {0}'.format(link.filename))
+                    logger.debug(
+                        '  Archive cache hit: {0}'.format(link.filename))
                     return fullpath
 
                 logger.debug('  Archive cache miss, downloading {0}...'.format(
@@ -434,13 +443,13 @@ class PackageManager(BasePackageManager):
         package cache. Overwrites anything that's in the cache already.
         """
         # TODO integrate pip's download-cache
-        #pip_cache_root = self.get_pip_cache_root()
-        #if pip_cache_root:
+        # pip_cache_root = self.get_pip_cache_root()
+        # if pip_cache_root:
         #    cache_path = os.path.join(pip_cache_root, cache_key)
         #    if os.path.exists(cache_path):
         #        # pip has a cached version, copy it
         #        shutil.copyfile(cache_path, fullpath)
-        #else:
+        # else:
         #    actually download the requirement
         url = url_without_fragment(link)
         logger.debug('- Downloading package from %s' % (url,))
@@ -452,7 +461,8 @@ class PackageManager(BasePackageManager):
     def unpack_archive(self, path, target_directory):
         logger.debug('- Unpacking %s' % (path,))
         with logger.indent():
-            if any(path.endswith(ext) for ext in {'.tar.gz', '.tar', '.tar.bz2', '.tgz'}):
+            if any(path.endswith(ext) for ext in
+                   {'.tar.gz', '.tar', '.tar.bz2', '.tgz'}):
                 archive = tarfile.open(path)
             elif any(path.endswith(ext) for ext in {'.zip', '.whl'}):
                 archive = zipfile.ZipFile(path)
@@ -474,13 +484,14 @@ class PackageManager(BasePackageManager):
         logger.debug('  (This can take a while.)')
         with logger.indent():
             try:
-                process = subprocess.Popen([sys.executable, 'setup.py', 'egg_info'],
-                                           cwd=dist_dir, stdout=subprocess.PIPE,
-                                           stderr=subprocess.PIPE)
+                process = subprocess.Popen(
+                    [sys.executable, 'setup.py', 'egg_info'],
+                    cwd=dist_dir, stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE)
                 process.wait()
 
                 for line in process.stdout.readlines():
-                    if 'egg-info/requires.txt' in line:
+                    if os.path.join('egg-info', 'requires.txt') in line:
                         return os.path.join(dist_dir, line.rsplit(None, 1)[1])
             except subprocess.CalledProcessError:
                 logger.debug("  egg_info failed for {0}".format(
@@ -528,7 +539,8 @@ class PackageManager(BasePackageManager):
             if os.path.isdir(path):
                 # this is a directory in case if path is pointing to
                 # VCS checkout
-                deps = self.read_package_requires_file(path)
+                deps = self.read_package_requires_file(
+                    find_file(path, 'setup.py'))
             else:
                 build_dir = tempfile.mkdtemp()
                 unpack_dir = os.path.join(build_dir, 'build')
@@ -551,20 +563,23 @@ class PackageManager(BasePackageManager):
         return deps
 
 
-
 class PinnedPackageManager(BasePackageManager):
-
-    def __init__(self, pinned_contents, index_url=None, extra_index_urls=[], find_links=[], allow_all_prereleases=False):
-        self.real_manager = PackageManager(index_url, extra_index_urls=extra_index_urls, find_links=find_links, allow_all_prereleases=allow_all_prereleases)
-        #self.pin_manager = FakePackageManager(pinned_contents)
+    def __init__(self, pinned_contents, index_url=None, extra_index_urls=[],
+                 find_links=[], allow_all_prereleases=False):
+        self.real_manager = PackageManager(index_url,
+                                           extra_index_urls=extra_index_urls,
+                                           find_links=find_links,
+                                           allow_all_prereleases=allow_all_prereleases)
+        # self.pin_manager = FakePackageManager(pinned_contents)
         self.pins = pinned_contents
 
     def find_best_match(self, spec):
-        #pinned_version = self.pin_manager.find_best_match(spec)
-        pinned_version = self.pins[spec.name]
+        # pinned_version = self.pin_manager.find_best_match(spec)
+        ###pinned_version = self.pins[spec.name]
         # Let's make sure the pinned version can be found
         # This also caches the url for the package
-        pinned_spec = spec.pin(pinned_version)
+        ###pinned_spec = spec.pin(pinned_version)
+        pinned_spec = self.pins[spec.name]
 
         # Make sure that pin does not conflict with the original req.
         specs = SpecSet()
@@ -577,9 +592,8 @@ class PinnedPackageManager(BasePackageManager):
     def get_dependencies(self, pinned_spec):
         # find_best_match must be called before get_dependencies in the current implementation,
         # the implementation assumes that we have the cached the url already..
-        return self.real_manager.get_dependencies(pinned_spec)
-
-
+        deps = self.real_manager.get_dependencies(pinned_spec)
+        return deps
 
 
 if __name__ == '__main__':
