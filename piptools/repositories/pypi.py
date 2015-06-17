@@ -11,7 +11,7 @@ from pip.req import InstallRequirement
 from pip.req.req_set import RequirementSet
 
 from ..exceptions import NoCandidateFound
-from ..utils import is_pinned_requirement, lookup_table
+from ..utils import lookup_table
 from .base import BaseRepository
 
 try:
@@ -76,7 +76,7 @@ class PyPIRepository(BaseRepository):
         Returns a Version object that indicates the best match for the given
         InstallRequirement according to the external repository.
         """
-        if ireq.editable:
+        if ireq.editable or ireq.link:
             return ireq  # return itself as the best match
 
         all_candidates = self.find_all_versions(ireq.name)
@@ -99,9 +99,6 @@ class PyPIRepository(BaseRepository):
         dependencies (also InstallRequirements, but not necessarily pinned).
         They indicate the secondary dependencies for the given requirement.
         """
-        if not (ireq.editable or is_pinned_requirement(ireq)):
-            raise TypeError('Expected pinned or editable InstallRequirement, got {}'.format(ireq))
-
         if not os.path.isdir(self._download_dir):
             os.makedirs(self._download_dir)
         if not os.path.isdir(self._wheel_download_dir):
@@ -109,8 +106,14 @@ class PyPIRepository(BaseRepository):
 
         reqset = RequirementSet(self.build_dir,
                                 self.source_dir,
-                                download_dir=self._download_dir,
+                                # Pass no download_dir for editables, otherwise
+                                # pip uses "export" instead of "obtain"
+                                # (dropping the VCS revision info).
+                                download_dir=None if ireq.editable else self._download_dir,
                                 wheel_download_dir=self._wheel_download_dir,
+                                # Ignore installed packages: This is required
+                                # for the source_dir of VCS URLs to be created.
+                                ignore_installed=True,
                                 session=self.session)
         dependencies = reqset._prepare_file(self.finder, ireq)
         return set(dependencies)
