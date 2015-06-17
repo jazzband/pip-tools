@@ -49,11 +49,21 @@ class PyPIRepository(BaseRepository):
         self._download_dir = os.path.expanduser('~/.pip-tools/pkgs')
         self._wheel_download_dir = os.path.expanduser('~/.pip-tools/wheels')
 
+        # References to old build dirs (to prevent too early pruning).
+        self._old_build_dirs = []
+
     def freshen_build_caches(self):
         """
         Start with fresh build/source caches.  Will remove any old build
         caches from disk automatically.
         """
+        # Keep old build dirs around: they are required by
+        # format_requirement/get_src_requirement.
+        if hasattr(self, '_build_dir'):
+            self._old_build_dirs.append(self._build_dir)
+        if hasattr(self, '_source_dir'):
+            self._old_build_dirs.append(self._source_dir)
+
         self._build_dir = TemporaryDirectory('build')
         self._source_dir = TemporaryDirectory('source')
 
