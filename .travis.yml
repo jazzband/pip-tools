@@ -7,8 +7,10 @@ python: 3.4
 
 env:
   matrix:
-    - TOXENV=py27
-    - TOXENV=py34
+    - TOXENV=py27-piplatest
+    - TOXENV=py34-piplatest
+    - TOXENV=py27-pip6
+    - TOXENV=py34-pip6
 
 install:
   - travis_retry pip install tox
