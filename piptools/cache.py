@@ -11,6 +11,10 @@ from pkg_resources import Requirement
 from .exceptions import PipToolsError
 from .utils import lookup_table
 
+CACHE_DIR = os.path.join(
+    os.path.expanduser(os.environ.get("XDG_CACHE_HOME", "~/.cache")),
+    'pip-tools')
+
 
 class CorruptCacheError(PipToolsError):
     def __init__(self, path):
@@ -30,13 +34,13 @@ class DependencyCache(object):
     Creates a new persistent dependency cache for the current Python version.
     The cache file is written to disk at:
 
-        ~/.pip-tools/depcache-pyX.Y.json
+        ~/.cache/pip-tools/depcache-pyX.Y.json  (according to XDG_CACHE_HOME)
 
     Where X.Y indicates the Python version.
     """
     def __init__(self, cache_dir=None):
         if cache_dir is None:
-            cache_dir = os.path.expanduser('~/.pip-tools')
+            cache_dir = CACHE_DIR
         py_version = '.'.join(str(digit) for digit in sys.version_info[:2])
         cache_filename = 'depcache-py{}.json'.format(py_version)
 
