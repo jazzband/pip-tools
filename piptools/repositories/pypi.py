@@ -71,7 +71,7 @@ class PyPIRepository(BaseRepository):
             self._available_versions_cache[req_name] = self.finder._find_all_versions(req_name)
         return self._available_versions_cache[req_name]
 
-    def find_best_match(self, ireq, prereleases=False):
+    def find_best_match(self, ireq, prereleases=None):
         """
         Returns a Version object that indicates the best match for the given
         InstallRequirement according to the external repository.

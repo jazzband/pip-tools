@@ -26,7 +26,7 @@ DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
 @click.command()
 @click.option('-v', '--verbose', is_flag=True, help="Show more output")
 @click.option('--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
-@click.option('-p', '--pre', is_flag=True, help="Allow resolving to prereleases (default is not)")
+@click.option('-p', '--pre', is_flag=True, default=None, help="Allow resolving to prereleases (default is not)")
 @click.option('-r', '--rebuild', is_flag=True, help="Clear any caches upfront, rebuild from scratch")
 @click.option('-f', '--find-links', multiple=True, help="Look for archives in this directory or on this HTML page")
 @click.option('-i', '--index-url', help="Change index URL (defaults to PyPI)")
