@@ -30,7 +30,8 @@ def format_specifier(ireq):
     InstallRequirements to the terminal.
     """
     # TODO: Ideally, this is carried over to the pip library itself
-    specs = sorted(ireq.specifier._specs, key=lambda x: x._spec[1])
+    specs = ireq.specifier._specs if ireq.req is not None else []
+    specs = sorted(specs, key=lambda x: x._spec[1])
     return ','.join(str(s) for s in specs) or '<any>'
 
 
