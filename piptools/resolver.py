@@ -165,9 +165,8 @@ class Resolver(object):
             for new_dependency in sorted(diff, key=lambda req: req.key):
                 log.debug('  adding {}'.format(new_dependency))
 
-        # Store the last round's results in the their_constraints set
-        # (overriding what was in there)
-        self.their_constraints = theirs
+        # Store the last round's results in the their_constraints
+        self.their_constraints |= theirs
         return has_changed, best_matches
 
     def get_best_match(self, ireq):
