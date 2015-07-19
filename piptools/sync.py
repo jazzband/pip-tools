@@ -43,8 +43,7 @@ def sync(to_be_installed, to_be_uninstalled, verbose=False):
         flags.append('-q')
 
     if to_be_uninstalled:
-        flags.append('-y')
-        pip.main(["uninstall"] + flags + [str(req) for req in to_be_uninstalled])
+        pip.main(["uninstall", '-y'] + flags + [str(req) for req in to_be_uninstalled])
 
     if to_be_installed:
         pip.main(["install"] + flags + [str(req) for req in to_be_installed])
