@@ -22,7 +22,7 @@ def diff(requirements, installed):
             pass
         elif key not in requirements:
             to_be_uninstalled.add(module.as_requirement())
-        elif module.version in requirements[key].specifier:
+        elif requirements[key].specifier.contains(module.version):
             satisfied.add(key)
 
     for key, requirement in requirements.items():
