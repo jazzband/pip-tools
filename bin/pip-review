@@ -143,6 +143,7 @@ def get_installed_pkgs(local=False):
     for line in output.split('\n'):
         if not line or line.startswith('##'):
             continue
+        line = line.rstrip('\r')
 
         if line.startswith('-e'):
             name = line.split('#egg=', 1)[1]
