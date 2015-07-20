@@ -1,7 +1,7 @@
 [![Build status](https://secure.travis-ci.org/nvie/pip-tools.png?branch=future)](https://secure.travis-ci.org/nvie/pip-tools)
 
-pip-tools = pip-compile + pip-sync + pip-review
-===============================================
+pip-tools = pip-compile + pip-sync
+==================================
 
 A set of command line tools to help you keep your `pip`-based packages fresh,
 even when you've pinned them.  [You do pin them, right?][0]
