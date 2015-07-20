@@ -21,7 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'pip-compile = piptools.scripts.compile:cli',
-            # 'pip-sync = piptools.scripts.sync:cli',  # TODO
+            'pip-sync = piptools.scripts.sync:cli',
         ],
     },
     platforms='any',
