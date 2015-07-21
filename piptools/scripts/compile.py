@@ -44,10 +44,6 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url,
         log.warning('No input files to process')
         sys.exit(2)
 
-    if not src_file.endswith('.in'):
-        log.warning('File {} has no *.in extension'.format(src_file))
-        sys.exit(3)
-
     ###
     # Setup
     ###
