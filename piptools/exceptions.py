@@ -17,4 +17,10 @@ class NoCandidateFound(PipToolsError):
 
 
 class UnsupportedConstraint(PipToolsError):
-    pass
+    def __init__(self, message, constraint):
+        super(UnsupportedConstraint, self).__init__(message)
+        self.constraint = constraint
+
+    def __str__(self):
+        message = super(UnsupportedConstraint, self).__str__()
+        return '{} (constraint was: {})'.format(message, str(self.constraint))
