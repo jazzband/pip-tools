@@ -1,4 +1,3 @@
-sudo: false
 language: python
 
 # Run tox with python 3.4, but let _it_ build the envs for the various Python
@@ -9,6 +8,12 @@ env:
   matrix:
     - TOXENV=py27-piplatest
     - TOXENV=py34-piplatest
+    - TOXENV=py27-pip7
+    - TOXENV=py34-pip7
+    - TOXENV=py27-pip71
+    - TOXENV=py34-pip71
+    - TOXENV=py27-pip70
+    - TOXENV=py34-pip70
     - TOXENV=py27-pip6
     - TOXENV=py34-pip6
 
