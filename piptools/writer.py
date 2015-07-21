@@ -1,5 +1,4 @@
 import os
-from itertools import chain, cycle
 from os.path import basename
 
 from click import unstyle
@@ -39,11 +38,11 @@ class OutputWriter(object):
 
     def write_index_options(self):
         emitted = False
-        option_values = chain(['--index-url'], cycle(['--extra-index-url']))
-        for option, index_url in zip(option_values, self.index_urls):
+        for index, index_url in enumerate(self.index_urls):
             if index_url == self.default_index_url:
                 continue
-            yield '{} {}'.format(option, self.index_urls[0])
+            flag = '--index-url' if index == 0 else '--extra-index-url'
+            yield '{} {}'.format(flag, index_url)
             emitted = True
         if emitted:
             yield ''  # extra line of whitespace

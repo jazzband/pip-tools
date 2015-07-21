@@ -5,7 +5,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='pip-tools',
-    version='1.0dev1',
+    version='1.0.1',
     url='https://github.com/nvie/pip-tools/',
     license='BSD',
     author='Vincent Driessen',
@@ -21,7 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'pip-compile = piptools.scripts.compile:cli',
-            # 'pip-sync = piptools.scripts.sync:cli',  # TODO
+            'pip-sync = piptools.scripts.sync:cli',
         ],
     },
     platforms='any',

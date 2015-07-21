@@ -20,6 +20,13 @@ green = partial(click.style, fg='green')
 magenta = partial(click.style, fg='magenta')
 
 
+def _dep_key(ireq):
+    if ireq.req is None and ireq.link is not None:
+        return str(ireq.link)
+    else:
+        return ireq.req.key
+
+
 class Resolver(object):
     def __init__(self, constraints, repository, cache=None, prereleases=False, clear_caches=False):
         """
@@ -88,13 +95,13 @@ class Resolver(object):
     def _check_constraints(self):
         for constraint in chain(self.our_constraints, self.their_constraints):
             if constraint.link is not None and not constraint.editable:
-                msg = ('pip-compile does not support URLs as packages, unless they are editable '
-                       '(perhaps add -e option?)')
-                raise UnsupportedConstraint(msg)
+                msg = ('pip-compile does not support URLs as packages, unless they are editable. '
+                       'Perhaps add -e option?')
+                raise UnsupportedConstraint(msg, constraint)
             elif constraint.extras:
                 msg = ('pip-compile does not yet support packages with extras. '
                        'Support for this is in the works, though.')
-                raise UnsupportedConstraint(msg)
+                raise UnsupportedConstraint(msg, constraint)
 
     def _group_constraints(self, constraints):
         """
@@ -112,7 +119,7 @@ class Resolver(object):
             flask~=0.7
 
         """
-        for _, ireqs in full_groupby(constraints, key=lambda ireq: ireq.req.key):
+        for _, ireqs in full_groupby(constraints, key=_dep_key):
             ireqs = list(ireqs)
             editable_ireq = first(ireqs, key=lambda ireq: ireq.editable)
             if editable_ireq:
@@ -139,7 +146,7 @@ class Resolver(object):
         configuration.
         """
         # Sort this list for readability of terminal output
-        constraints = sorted(self.constraints, key=lambda ireq: ireq.req.key)
+        constraints = sorted(self.constraints, key=_dep_key)
         log.debug('Current constraints:')
         for constraint in constraints:
             log.debug('  {}'.format(constraint))
@@ -165,9 +172,8 @@ class Resolver(object):
             for new_dependency in sorted(diff, key=lambda req: req.key):
                 log.debug('  adding {}'.format(new_dependency))
 
-        # Store the last round's results in the their_constraints set
-        # (overriding what was in there)
-        self.their_constraints = theirs
+        # Store the last round's results in the their_constraints
+        self.their_constraints |= theirs
         return has_changed, best_matches
 
     def get_best_match(self, ireq):
