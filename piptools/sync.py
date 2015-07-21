@@ -1,6 +1,12 @@
 import pip
 
-exceptions = ['pip', 'setuptools', 'wheel']
+EXCEPTIONS = [
+    'pip',
+    'pip-tools',
+    'setuptools',
+    'wheel',
+]
+
 
 def diff(requirements, installed):
     """
@@ -8,7 +14,7 @@ def diff(requirements, installed):
     given a set of requirements and a list of installed modules.
     """
 
-    requirements = { r.req.key: r for r in requirements }
+    requirements = {r.req.key: r for r in requirements}
 
     to_be_installed = set()
     to_be_uninstalled = set()
@@ -18,7 +24,7 @@ def diff(requirements, installed):
     for module in installed:
         key = module.key
 
-        if key in exceptions:
+        if key in EXCEPTIONS:
             pass
         elif key not in requirements:
             to_be_uninstalled.add(module.as_requirement())
