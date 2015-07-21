@@ -13,6 +13,9 @@ class BaseRepository(object):
     def clear_caches(self):
         """Should clear any caches used by the implementation."""
 
+    def freshen_build_caches(self):
+        """Should start with fresh build/source caches."""
+
     @abstractmethod
     def find_best_match(self, ireq):
         """

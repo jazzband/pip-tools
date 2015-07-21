@@ -8,18 +8,10 @@ def test_format_requirement(from_line):
     ireq = from_line('test==1.2')
     assert format_requirement(ireq) == 'test==1.2'
 
-    # Annotations are printed as comments at a fixed column
-    assert (format_requirement(ireq, annotation='xyz') ==
-            'test==1.2                 # xyz')
-
 
 def test_format_requirement_editable(from_editable):
     ireq = from_editable('git+git://fake.org/x/y.git#egg=y')
     assert format_requirement(ireq) == '-e git+git://fake.org/x/y.git#egg=y'
-
-    # Annotations are printed as comments at a fixed column
-    assert (format_requirement(ireq, annotation='xyz') ==
-            '-e git+git://fake.org/x/y.git#egg=y  # xyz')
 
 
 def test_format_specifier(from_line):
