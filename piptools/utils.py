@@ -2,7 +2,11 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import os
 from itertools import groupby
+
+from pip.index import Link
+from pip.vcs import get_src_requirement, vcs
 
 from click import style
 from first import first
@@ -17,10 +21,33 @@ def format_requirement(ireq):
     Generic formatter for pretty printing InstallRequirements to the terminal
     in a less verbose way than using its `__str__` method.
     """
-    if ireq.editable:
-        line = '-e {}'.format(ireq.link)
+    if ireq.link and ireq.link.scheme in vcs.all_schemes:
+        # NOTE: might be called for debug logging, where the source_dir does
+        # not exist yet!
+        if ireq.source_dir and os.path.exists(ireq.source_dir):
+            line = get_src_requirement(dist=ireq.get_dist(),
+                                       location=ireq.source_dir,
+                                       find_tags=False)
+            line_link = Link(line)
+
+            # Prepend 'vcs+' which gets left out for 'git://', 'hg://' and
+            # 'bzr://' URLs.  Ref: https://github.com/pypa/pip/pull/2913.
+            if not '+' in line_link.scheme:
+                line = '{}+{}'.format(line_link.scheme, line)
+
+            # Keep original egg fragment.
+            if ireq.link.egg_fragment:
+                line = '{}#egg={}'.format(Link(line).url_without_fragment,
+                                          ireq.link.egg_fragment)
+
+        else:
+            line = str(ireq.link)
     else:
         line = str(ireq.req)
+
+    if ireq.editable:
+        line = '-e {}'.format(line)
+
     return line
 
 
