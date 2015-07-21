@@ -6,7 +6,7 @@ pip-tools = pip-compile + pip-sync
 A set of command line tools to help you keep your `pip`-based packages fresh,
 even when you've pinned them.  [You do pin them, right?][0]
 
-![pip-tools overview for phase II](https://cloud.github.com/downloads/nvie/pip-tools/pip-tools-phase-II-overview.png)
+![pip-tools overview for phase II](./img/pip-tools-overview.png)
 
 [0]: http://nvie.com/posts/pin-your-packages/
 
