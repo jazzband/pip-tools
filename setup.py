@@ -11,7 +11,7 @@ setup(
     author='Vincent Driessen',
     author_email='me@nvie.com',
     description=__doc__,
-    packages=find_packages(exclude='tests'),
+    packages=find_packages(exclude=['tests']),
     install_requires=[
         'click',
         'first',
