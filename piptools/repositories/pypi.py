@@ -10,6 +10,7 @@ from pip.index import PackageFinder
 from pip.req import InstallRequirement
 from pip.req.req_set import RequirementSet
 
+from ..cache import CACHE_DIR
 from ..exceptions import NoCandidateFound
 from ..utils import is_pinned_requirement, lookup_table
 from .base import BaseRepository
@@ -43,8 +44,8 @@ class PyPIRepository(BaseRepository):
 
         # Setup file paths
         self.freshen_build_caches()
-        self._download_dir = os.path.expanduser('~/.pip-tools/pkgs')
-        self._wheel_download_dir = os.path.expanduser('~/.pip-tools/wheels')
+        self._download_dir = os.path.join(CACHE_DIR, 'pkgs')
+        self._wheel_download_dir = os.path.join(CACHE_DIR, 'wheels')
 
     def freshen_build_caches(self):
         """
