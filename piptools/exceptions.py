@@ -24,3 +24,12 @@ class UnsupportedConstraint(PipToolsError):
     def __str__(self):
         message = super(UnsupportedConstraint, self).__str__()
         return '{} (constraint was: {})'.format(message, str(self.constraint))
+
+class IncompatibleRequirements(PipToolsError):
+    def __init__(self, ireq_a, ireq_b):
+        self.ireq_a = ireq_a
+        self.ireq_b = ireq_b
+
+    def __str__(self):
+        message = "Incompatible requirements found: {} and {}"
+        return message.format(self.ireq_a, self.ireq_b)

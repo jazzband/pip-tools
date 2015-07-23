@@ -14,14 +14,28 @@ if not tuple(int(digit) for digit in pip.__version__.split('.')[:2]) >= (6, 1):
     sys.exit(4)
 
 from .. import sync
+from ..exceptions import PipToolsError
+from ..logging import log
+from ..utils import flat_map
 
 DEFAULT_REQUIREMENTS_FILE='requirements.txt'
 
 @click.command()
 @click.option('--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
-@click.argument('src_file', required=False, type=click.Path(exists=True), default=DEFAULT_REQUIREMENTS_FILE)
-def cli(dry_run, src_file):
-    requirements = pip.req.parse_requirements(src_file, session=True)
+@click.option('--force', is_flag=True, help="Proceed even if conflicts are found")
+@click.argument('src_files', required=False, type=click.Path(exists=True), default=DEFAULT_REQUIREMENTS_FILE, nargs=-1)
+def cli(dry_run, force, src_files):
+
+    requirements = flat_map(
+            lambda src: pip.req.parse_requirements(src, session=True),
+            src_files)
+
+    try:
+        requirements = sync.merge(requirements, ignore_conflicts=force)
+    except PipToolsError as e:
+        log.error(str(e))
+        sys.exit(2)
+
     installed = pip.get_installed_distributions()
 
     to_be_installed, to_be_uninstalled = sync.diff(requirements, installed)

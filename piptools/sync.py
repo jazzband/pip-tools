@@ -1,6 +1,7 @@
 import pip
 import collections
 from .utils import flat_map
+from .exceptions import IncompatibleRequirements
 
 EXCEPTIONS = [
     'pip',
@@ -45,6 +46,25 @@ def exceptions_with_dependencies(installed):
     installed = {r.key: r for r in installed}
 
     return list(flat_map(lambda req: dependency_tree(installed, req), EXCEPTIONS))
+
+
+def compatible(ireq_a, ireq_b):
+    return ireq_a.specifier == ireq_b.specifier
+
+def merge(requirements, ignore_conflicts):
+    by_key = {}
+
+    for ireq in requirements:
+        key = ireq.req.key
+
+        if not ignore_conflicts:
+            if key in by_key:
+                if not compatible(ireq, by_key[key]):
+                    raise IncompatibleRequirements(ireq, by_key[key])
+
+        by_key[key] = ireq
+
+    return by_key.values()
 
 
 def diff(requirements, installed):
