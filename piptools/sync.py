@@ -5,6 +5,13 @@ EXCEPTIONS = [
     'pip-tools',
     'setuptools',
     'wheel',
+
+    # TODO:
+    # The following are secondary dependencies of pip-tools.  Iff pip-tools is
+    # installed locally, these should be ignored, too.
+    # 'click',
+    # 'first',
+    # 'six',
 ]
 
 
