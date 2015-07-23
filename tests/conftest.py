@@ -2,6 +2,7 @@ import json
 from functools import partial
 
 from pip._vendor.packaging.version import Version
+from pip._vendor.pkg_resources import Requirement
 from pip.req import InstallRequirement
 from pytest import fixture
 
@@ -35,6 +36,24 @@ class FakeRepository(BaseRepository):
         dependencies = self.index[name][version]
         return [InstallRequirement.from_line(dep) for dep in dependencies]
 
+
+class FakeInstalledDistribution(object):
+    def __init__(self, line, deps):
+        self.deps = [Requirement.parse(d) for d in deps]
+
+        self.req = Requirement.parse(line)
+
+        self.key = self.req.key
+        self.specifier = self.req.specifier
+
+        self.version = line.split("==")[1]
+
+    def requires(self):
+        return self.deps
+
+@fixture
+def installed_distribution():
+    return FakeInstalledDistribution
 
 @fixture
 def repository():

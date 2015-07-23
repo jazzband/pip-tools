@@ -2,7 +2,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from itertools import groupby
+from itertools import groupby, chain
 
 from click import style
 from first import first
@@ -78,6 +78,10 @@ def as_name_version_tuple(ireq):
 def full_groupby(iterable, key=None):
     """Like groupby(), but sorts the input on the group key first."""
     return groupby(sorted(iterable, key=key), key=key)
+
+def flat_map(fn, collection):
+    """Map a function over a collection and flatten the result by one-level"""
+    return chain.from_iterable(map(fn, collection))
 
 
 def lookup_table(values, key=None, keyval=None, unique=False, use_lists=False):

@@ -1,18 +1,50 @@
 import pip
+import collections
+from .utils import flat_map
 
 EXCEPTIONS = [
     'pip',
     'pip-tools',
     'setuptools',
     'wheel',
-
-    # TODO:
-    # The following are secondary dependencies of pip-tools.  Iff pip-tools is
-    # installed locally, these should be ignored, too.
-    # 'click',
-    # 'first',
-    # 'six',
 ]
+
+def dependency_tree(installed, root_name):
+    """
+    Calculate the dependency tree based on module 'root'
+    and return a collection of all its dependencies.
+    Uses a DFS traversal algorithm.
+    """
+    dependencies = set()
+    queue = collections.deque()
+
+    if root_name in installed:
+        dep = installed[root_name]
+        queue.append(dep)
+
+    while queue:
+        v = queue.popleft()
+
+        if v.key in dependencies:
+            continue
+
+        dependencies.add(v.key)
+
+        for dep_specifier in v.requires():
+            dep_name = dep_specifier.key
+            if dep_name in installed:
+                dep = installed[dep_name]
+
+                if dep_specifier.specifier.contains(dep.version):
+                    queue.append(dep)
+
+    return dependencies
+
+
+def exceptions_with_dependencies(installed):
+    installed = {r.key: r for r in installed}
+
+    return list(flat_map(lambda req: dependency_tree(installed, req), EXCEPTIONS))
 
 
 def diff(requirements, installed):
@@ -28,10 +60,12 @@ def diff(requirements, installed):
 
     satisfied = set()
 
+    full_exceptions = exceptions_with_dependencies(installed)
+
     for module in installed:
         key = module.key
 
-        if key in EXCEPTIONS:
+        if key in full_exceptions:
             pass
         elif key not in requirements:
             to_be_uninstalled.add(module.as_requirement())

@@ -1,7 +1,7 @@
 from pytest import raises
 
 from piptools.utils import (as_name_version_tuple, format_requirement,
-                            format_specifier)
+                            format_specifier, flat_map)
 
 
 def test_format_requirement(from_line):
@@ -43,3 +43,6 @@ def test_as_name_version_tuple(from_line):
         ireq = from_line(spec)
         with raises(TypeError):
             as_name_version_tuple(ireq)
+
+def test_flat_map():
+    assert [1,2,4,1,3,9] == list(flat_map(lambda x: [1,x,x*x], [2,3]))
