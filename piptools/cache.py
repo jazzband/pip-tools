@@ -9,11 +9,8 @@ import sys
 from pkg_resources import Requirement
 
 from .exceptions import PipToolsError
+from .locations import CACHE_DIR
 from .utils import lookup_table
-
-CACHE_DIR = os.path.join(
-    os.path.expanduser(os.environ.get("XDG_CACHE_HOME", "~/.cache")),
-    'pip-tools')
 
 
 class CorruptCacheError(PipToolsError):
@@ -32,9 +29,10 @@ class CorruptCacheError(PipToolsError):
 class DependencyCache(object):
     """
     Creates a new persistent dependency cache for the current Python version.
-    The cache file is written to disk at:
+    The cache file is written to the appropriate user cache dir for the
+    current platform, i.e.
 
-        ~/.cache/pip-tools/depcache-pyX.Y.json  (according to XDG_CACHE_HOME)
+        ~/.cache/pip-tools/depcache-pyX.Y.json
 
     Where X.Y indicates the Python version.
     """
