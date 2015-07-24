@@ -32,12 +32,15 @@ DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
 @click.option('-f', '--find-links', multiple=True, help="Look for archives in this directory or on this HTML page", envvar='PIP_FIND_LINKS')  # noqa
 @click.option('-i', '--index-url', help="Change index URL (defaults to PyPI)", envvar='PIP_INDEX_URL')
 @click.option('--extra-index-url', multiple=True, help="Add additional index URL to search", envvar='PIP_EXTRA_INDEX_URL')  # noqa
+@click.option('--trusted-host', multiple=True, envvar='PIP_TRUSTED_HOST',
+              help="Mark this host as trusted, even though it does not have "
+                   "valid or any HTTPS.")
 @click.option('--header/--no-header', is_flag=True, default=True, help="Add header to generated file")
 @click.option('--annotate/--no-annotate', is_flag=True, default=True,
               help="Annotate results, indicating where dependencies come from")
 @click.argument('src_file', required=False, type=click.Path(exists=True), default=DEFAULT_REQUIREMENTS_FILE)
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url,
-        extra_index_url, header, annotate, src_file):
+        extra_index_url, trusted_host, header, annotate, src_file):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
 
@@ -55,6 +58,8 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url,
         repository.finder.index_urls = [index_url]
     repository.finder.index_urls.extend(extra_index_url)
     repository.finder.find_links.extend(find_links)
+    repository.finder.secure_origins.extend(
+        ("*", host, "*") for host in trusted_host)
 
     log.debug('Using indexes:')
     for index_url in repository.finder.index_urls:
