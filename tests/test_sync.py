@@ -103,3 +103,49 @@ def test_diff_should_update(fake_dist, from_line):
     to_install, to_uninstall = diff(reqs, installed)
     assert to_install == {'django==1.8'}
     assert to_uninstall == set()
+
+
+def test_diff_leave_packaging_packages_alone(fake_dist, from_line):
+    # Suppose an env contains Django, and pip itself
+    installed = [
+        fake_dist('django==1.7'),
+        fake_dist('first==2.0.1'),
+        fake_dist('pip==7.1.0'),
+    ]
+
+    # Then this Django-only requirement should keep pip around (i.e. NOT
+    # uninstall it), but uninstall first
+    reqs = [
+        from_line('django==1.7'),
+    ]
+
+    to_install, to_uninstall = diff(reqs, installed)
+    assert to_install == set()
+    assert to_uninstall == {'first'}
+
+
+def test_diff_leave_piptools_alone(fake_dist, from_line):
+    # Suppose an env contains Django, and pip-tools itself (including all of
+    # its dependencies)
+    installed = [
+        fake_dist('django==1.7'),
+        fake_dist('first==2.0.1'),
+        fake_dist('pip-tools==1.1.1', [
+            'click>=4',
+            'first',
+            'six',
+        ]),
+        fake_dist('six==1.9.0'),
+        fake_dist('click==4.1'),
+        fake_dist('foobar==0.3.6'),
+    ]
+
+    # Then this Django-only requirement should keep pip around (i.e. NOT
+    # uninstall it), but uninstall first
+    reqs = [
+        from_line('django==1.7'),
+    ]
+
+    to_install, to_uninstall = diff(reqs, installed)
+    assert to_install == set()
+    assert to_uninstall == {'foobar'}

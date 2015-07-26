@@ -1,7 +1,10 @@
-import pip
 import collections
-from .utils import flat_map
+
+import click
+import pip
+
 from .exceptions import IncompatibleRequirements
+from .utils import flat_map
 
 PACKAGES_TO_IGNORE = [
     'pip',
@@ -89,12 +92,9 @@ def diff(compiled_requirements, installed_dists):
     to_install = set()  # holds keys-and-versions
     to_uninstall = set()  # holds keys
 
-    dists_to_ignore = get_dists_to_ignore(installed_dists)
+    pkgs_to_ignore = get_dists_to_ignore(installed_dists)
     for dist in installed_dists:
         key = dist.key
-        if key in dists_to_ignore:
-            continue
-
         if key not in requirements_lut:
             to_uninstall.add(dist.key)
         elif requirements_lut[key].specifier.contains(dist.version):
@@ -104,20 +104,35 @@ def diff(compiled_requirements, installed_dists):
         if key not in satisfied:
             to_install.add(str(requirement.req))
 
+    # Make sure to not uninstall any packages that should be ignored
+    to_uninstall -= set(pkgs_to_ignore)
+
     return (to_install, to_uninstall)
 
 
-def sync(to_install, to_uninstall, verbose=False):
+def sync(to_install, to_uninstall, verbose=False, dry_run=False):
     """
     Install and uninstalls the given sets of modules.
     """
-    flags = []
+    if not to_uninstall and not to_install:
+        click.echo("Everything up-to-date")
 
+    pip_flags = []
     if not verbose:
-        flags.append('-q')
+        pip_flags.append('-q')
 
     if to_uninstall:
-        pip.main(["uninstall", '-y'] + flags + [pkg for pkg in to_uninstall])
+        if dry_run:
+            click.echo("Would uninstall:")
+            for pkg in to_uninstall:
+                click.echo("  {}".format(pkg))
+        else:
+            pip.main(["uninstall", '-y'] + pip_flags + [pkg for pkg in to_uninstall])
 
     if to_install:
-        pip.main(["install"] + flags + [pkg for pkg in to_install])
+        if dry_run:
+            click.echo("Would install:")
+            for pkg in to_install:
+                click.echo("  {}".format(pkg))
+        else:
+            pip.main(["install"] + pip_flags + [pkg for pkg in to_install])
