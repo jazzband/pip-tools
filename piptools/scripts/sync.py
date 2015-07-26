@@ -13,24 +13,24 @@ if not tuple(int(digit) for digit in pip.__version__.split('.')[:2]) >= (6, 1):
           'perhaps run `pip install --upgrade pip`?'.format(pip.__version__))
     sys.exit(4)
 
-from .. import sync
-from ..exceptions import PipToolsError
-from ..logging import log
-from ..utils import flat_map
+from .. import sync  # noqa
+from ..exceptions import PipToolsError  # noqa
+from ..logging import log  # noqa
+from ..utils import flat_map  # noqa
 
-DEFAULT_REQUIREMENTS_FILE='requirements.txt'
+DEFAULT_REQUIREMENTS_FILE = 'requirements.txt'
+
 
 @click.command()
 @click.option('--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
 @click.option('--force', is_flag=True, help="Proceed even if conflicts are found")
-@click.argument('src_files', required=False, type=click.Path(exists=True), default=(DEFAULT_REQUIREMENTS_FILE,), nargs=-1)
+@click.argument('src_files', required=False, type=click.Path(exists=True), default=(DEFAULT_REQUIREMENTS_FILE,), nargs=-1)  # noqa
 def cli(dry_run, force, src_files):
     if not src_files:
         src_files = (DEFAULT_REQUIREMENTS_FILE,)
 
-    requirements = flat_map(
-            lambda src: pip.req.parse_requirements(src, session=True),
-            src_files)
+    requirements = flat_map(lambda src: pip.req.parse_requirements(src, session=True),
+                            src_files)
 
     try:
         requirements = sync.merge(requirements, ignore_conflicts=force)

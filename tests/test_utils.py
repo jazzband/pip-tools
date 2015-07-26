@@ -44,5 +44,6 @@ def test_as_name_version_tuple(from_line):
         with raises(TypeError):
             as_name_version_tuple(ireq)
 
+
 def test_flat_map():
-    assert [1,2,4,1,3,9] == list(flat_map(lambda x: [1,x,x*x], [2,3]))
+    assert [1, 2, 4, 1, 3, 9] == list(flat_map(lambda x: [1, x, x * x], [2, 3]))

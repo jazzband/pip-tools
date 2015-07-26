@@ -10,6 +10,7 @@ EXCEPTIONS = [
     'wheel',
 ]
 
+
 def dependency_tree(installed, root_name):
     """
     Calculate the dependency tree based on module 'root'
@@ -50,6 +51,7 @@ def exceptions_with_dependencies(installed):
 
 def compatible(ireq_a, ireq_b):
     return ireq_a.specifier == ireq_b.specifier
+
 
 def merge(requirements, ignore_conflicts):
     by_key = {}

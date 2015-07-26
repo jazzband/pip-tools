@@ -79,6 +79,7 @@ def full_groupby(iterable, key=None):
     """Like groupby(), but sorts the input on the group key first."""
     return groupby(sorted(iterable, key=key), key=key)
 
+
 def flat_map(fn, collection):
     """Map a function over a collection and flatten the result by one-level"""
     return chain.from_iterable(map(fn, collection))

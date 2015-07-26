@@ -51,9 +51,11 @@ class FakeInstalledDistribution(object):
     def requires(self):
         return self.deps
 
+
 @fixture
 def installed_distribution():
     return FakeInstalledDistribution
+
 
 @fixture
 def repository():

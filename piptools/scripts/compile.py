@@ -1,24 +1,25 @@
 # coding: utf-8
+# isort:skip_file
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import sys
 import pip
 
-# Make sure we're using a reasonably modern version of pip  # isort:skip
+# Make sure we're using a reasonably modern version of pip
 if not tuple(int(digit) for digit in pip.__version__.split('.')[:2]) >= (6, 1):
     print('pip-compile requires at least version 6.1 of pip ({} found), '
           'perhaps run `pip install --upgrade pip`?'.format(pip.__version__))
     sys.exit(4)
 
-import click
-from pip.req import parse_requirements
+import click  # noqa
+from pip.req import parse_requirements  # noqa
 
-from ..exceptions import PipToolsError
-from ..logging import log
-from ..repositories import PyPIRepository
-from ..resolver import Resolver
-from ..writer import OutputWriter
+from ..exceptions import PipToolsError  # noqa
+from ..logging import log  # noqa
+from ..repositories import PyPIRepository  # noqa
+from ..resolver import Resolver  # noqa
+from ..writer import OutputWriter  # noqa
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
 
@@ -28,9 +29,9 @@ DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
 @click.option('--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
 @click.option('-p', '--pre', is_flag=True, default=None, help="Allow resolving to prereleases (default is not)")
 @click.option('-r', '--rebuild', is_flag=True, help="Clear any caches upfront, rebuild from scratch")
-@click.option('-f', '--find-links', multiple=True, help="Look for archives in this directory or on this HTML page", envvar='PIP_FIND_LINKS')
+@click.option('-f', '--find-links', multiple=True, help="Look for archives in this directory or on this HTML page", envvar='PIP_FIND_LINKS')  # noqa
 @click.option('-i', '--index-url', help="Change index URL (defaults to PyPI)", envvar='PIP_INDEX_URL')
-@click.option('--extra-index-url', multiple=True, help="Add additional index URL to search", envvar='PIP_EXTRA_INDEX_URL')
+@click.option('--extra-index-url', multiple=True, help="Add additional index URL to search", envvar='PIP_EXTRA_INDEX_URL')  # noqa
 @click.option('--header/--no-header', is_flag=True, default=True, help="Add header to generated file")
 @click.option('--annotate/--no-annotate', is_flag=True, default=True,
               help="Annotate results, indicating where dependencies come from")
