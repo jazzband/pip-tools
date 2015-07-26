@@ -4,7 +4,6 @@ from __future__ import (absolute_import, division, print_function,
 
 import sys
 
-import click
 import pip
 
 # Make sure we're using a reasonably modern version of pip
@@ -13,6 +12,7 @@ if not tuple(int(digit) for digit in pip.__version__.split('.')[:2]) >= (6, 1):
           'perhaps run `pip install --upgrade pip`?'.format(pip.__version__))
     sys.exit(4)
 
+import click  # noqa
 from .. import sync  # noqa
 from ..exceptions import PipToolsError  # noqa
 from ..logging import log  # noqa
@@ -50,14 +50,14 @@ def cli(dry_run, force, src_files):
 
 def show_dry_run(to_be_installed, to_be_uninstalled):
     if not to_be_uninstalled and not to_be_installed:
-        print("Everything up-to-date")
+        click.echo("Everything up-to-date")
 
     if to_be_uninstalled:
-        print("Would uninstall:")
+        click.echo("Would uninstall:")
         for module in to_be_uninstalled:
-            print("  {}".format(module))
+            click.echo("  {}".format(module))
 
     if to_be_installed:
-        print("Would install:")
+        click.echo("Would install:")
         for module in to_be_installed:
-            print("  {}".format(module))
+            click.echo("  {}".format(module))
