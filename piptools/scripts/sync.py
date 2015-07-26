@@ -54,25 +54,24 @@ def cli(dry_run, force, src_files):
         sys.exit(2)
 
     installed = pip.get_installed_distributions()
-
-    to_be_installed, to_be_uninstalled = sync.diff(requirements, installed)
+    to_install, to_uninstall = sync.diff(requirements, installed)
 
     if not dry_run:
-        sync.sync(to_be_installed, to_be_uninstalled, verbose=True)
+        sync.sync(to_install, to_uninstall, verbose=True)
     else:
-        show_dry_run(to_be_installed, to_be_uninstalled)
+        show_dry_run(to_install, to_uninstall)
 
 
-def show_dry_run(to_be_installed, to_be_uninstalled):
-    if not to_be_uninstalled and not to_be_installed:
+def show_dry_run(to_install, to_uninstall):
+    if not to_uninstall and not to_install:
         click.echo("Everything up-to-date")
 
-    if to_be_uninstalled:
+    if to_uninstall:
         click.echo("Would uninstall:")
-        for module in to_be_uninstalled:
-            click.echo("  {}".format(module))
+        for pkg in to_uninstall:
+            click.echo("  {}".format(pkg))
 
-    if to_be_installed:
+    if to_install:
         click.echo("Would install:")
-        for module in to_be_installed:
-            click.echo("  {}".format(module))
+        for pkg in to_install:
+            click.echo("  {}".format(pkg))

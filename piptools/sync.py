@@ -78,48 +78,46 @@ def merge(requirements, ignore_conflicts):
     return by_key.values()
 
 
-def diff(requirements, installed):
+def diff(compiled_requirements, installed_dists):
     """
-    Calculate which modules should be installed or uninstalled,
-    given a set of requirements and a list of installed modules.
+    Calculate which packages should be installed or uninstalled, given a set
+    of compiled requirements and a list of currently installed modules.
     """
-    requirements = {r.req.key: r for r in requirements}
+    requirements_lut = {r.req.key: r for r in compiled_requirements}
 
-    to_be_installed = set()
-    to_be_uninstalled = set()
+    satisfied = set()  # holds keys
+    to_install = set()  # holds keys-and-versions
+    to_uninstall = set()  # holds keys
 
-    satisfied = set()
-
-    dists_to_ignore = get_dists_to_ignore(installed)
-    for dist in installed:
+    dists_to_ignore = get_dists_to_ignore(installed_dists)
+    for dist in installed_dists:
         key = dist.key
         if key in dists_to_ignore:
             continue
 
-        if key not in requirements:
-            to_be_uninstalled.add(dist.as_requirement())
-        elif requirements[key].specifier.contains(dist.version):
+        if key not in requirements_lut:
+            to_uninstall.add(dist.key)
+        elif requirements_lut[key].specifier.contains(dist.version):
             satisfied.add(key)
 
-    for key, requirement in requirements.items():
+    for key, requirement in requirements_lut.items():
         if key not in satisfied:
-            to_be_installed.add(requirement.req)
+            to_install.add(str(requirement.req))
 
-    return (to_be_installed, to_be_uninstalled)
+    return (to_install, to_uninstall)
 
 
-def sync(to_be_installed, to_be_uninstalled, verbose=False):
+def sync(to_install, to_uninstall, verbose=False):
     """
     Install and uninstalls the given sets of modules.
     """
-
     flags = []
 
     if not verbose:
         flags.append('-q')
 
-    if to_be_uninstalled:
-        pip.main(["uninstall", '-y'] + flags + [str(req) for req in to_be_uninstalled])
+    if to_uninstall:
+        pip.main(["uninstall", '-y'] + flags + [pkg for pkg in to_uninstall])
 
-    if to_be_installed:
-        pip.main(["install"] + flags + [str(req) for req in to_be_installed])
+    if to_install:
+        pip.main(["install"] + flags + [pkg for pkg in to_install])

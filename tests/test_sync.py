@@ -1,7 +1,5 @@
 from collections import Counter
 
-from pip._vendor.pkg_resources import Requirement
-
 import pytest
 from piptools.exceptions import IncompatibleRequirements
 from piptools.sync import dependency_tree, diff, merge
@@ -85,7 +83,7 @@ def test_diff_should_install(from_line):
     reqs = [from_line('django==1.8')]
 
     to_install, to_uninstall = diff(reqs, installed)
-    assert to_install == {Requirement.parse('django==1.8')}
+    assert to_install == {'django==1.8'}
     assert to_uninstall == set()
 
 
@@ -95,7 +93,7 @@ def test_diff_should_uninstall(fake_dist):
 
     to_install, to_uninstall = diff(reqs, installed)
     assert to_install == set()
-    assert to_uninstall == {Requirement.parse('django==1.8')}
+    assert to_uninstall == {'django'}  # no version spec when uninstalling
 
 
 def test_diff_should_update(fake_dist, from_line):
@@ -103,5 +101,5 @@ def test_diff_should_update(fake_dist, from_line):
     reqs = [from_line('django==1.8')]
 
     to_install, to_uninstall = diff(reqs, installed)
-    assert to_install == {Requirement.parse('django==1.8')}
+    assert to_install == {'django==1.8'}
     assert to_uninstall == set()
