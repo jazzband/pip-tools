@@ -3,7 +3,7 @@ import collections
 from .utils import flat_map
 from .exceptions import IncompatibleRequirements
 
-EXCEPTIONS = [
+PACKAGES_TO_IGNORE = [
     'pip',
     'pip-tools',
     'setuptools',
@@ -11,22 +11,24 @@ EXCEPTIONS = [
 ]
 
 
-def dependency_tree(installed, root_name):
+def dependency_tree(installed_keys, root_key):
     """
-    Calculate the dependency tree based on module 'root'
-    and return a collection of all its dependencies.
-    Uses a DFS traversal algorithm.
+    Calculate the dependency tree for the package `root_key` and return
+    a collection of all its dependencies.  Uses a DFS traversal algorithm.
+
+    `installed_keys` should be a {key: requirement} mapping, e.g.
+        {'django': from_line('django==1.8')}
+    `root_key` should be the key to return the dependency tree for.
     """
     dependencies = set()
     queue = collections.deque()
 
-    if root_name in installed:
-        dep = installed[root_name]
+    if root_key in installed_keys:
+        dep = installed_keys[root_key]
         queue.append(dep)
 
     while queue:
         v = queue.popleft()
-
         if v.key in dependencies:
             continue
 
@@ -34,8 +36,8 @@ def dependency_tree(installed, root_name):
 
         for dep_specifier in v.requires():
             dep_name = dep_specifier.key
-            if dep_name in installed:
-                dep = installed[dep_name]
+            if dep_name in installed_keys:
+                dep = installed_keys[dep_name]
 
                 if dep_specifier.specifier.contains(dep.version):
                     queue.append(dep)
@@ -43,14 +45,17 @@ def dependency_tree(installed, root_name):
     return dependencies
 
 
-def exceptions_with_dependencies(installed):
-    installed = {r.key: r for r in installed}
-
-    return list(flat_map(lambda req: dependency_tree(installed, req), EXCEPTIONS))
-
-
-def compatible(ireq_a, ireq_b):
-    return ireq_a.specifier == ireq_b.specifier
+def get_dists_to_ignore(installed):
+    """
+    Returns a collection of package names to ignore when performing pip-sync,
+    based on the currently installed environment.  For example, when pip-tools
+    is installed in the local environment, it should be ignored, including all
+    of its dependencies (e.g. click).  When pip-tools is not installed
+    locally, click should also be installed/uninstalled depending on the given
+    requirements.
+    """
+    installed_keys = {r.key: r for r in installed}
+    return list(flat_map(lambda req: dependency_tree(installed_keys, req), PACKAGES_TO_IGNORE))
 
 
 def merge(requirements, ignore_conflicts):
@@ -60,10 +65,14 @@ def merge(requirements, ignore_conflicts):
         key = ireq.req.key
 
         if not ignore_conflicts:
-            if key in by_key:
-                if not compatible(ireq, by_key[key]):
-                    raise IncompatibleRequirements(ireq, by_key[key])
+            existing_ireq = by_key.get(key)
+            if existing_ireq:
+                # NOTE: We check equality here since we can assume that the
+                # requirements are all pinned
+                if ireq.specifier != existing_ireq.specifier:
+                    raise IncompatibleRequirements(ireq, existing_ireq)
 
+        # TODO: Always pick the largest specifier in case of a conflict
         by_key[key] = ireq
 
     return by_key.values()
@@ -74,7 +83,6 @@ def diff(requirements, installed):
     Calculate which modules should be installed or uninstalled,
     given a set of requirements and a list of installed modules.
     """
-
     requirements = {r.req.key: r for r in requirements}
 
     to_be_installed = set()
@@ -82,16 +90,15 @@ def diff(requirements, installed):
 
     satisfied = set()
 
-    full_exceptions = exceptions_with_dependencies(installed)
+    dists_to_ignore = get_dists_to_ignore(installed)
+    for dist in installed:
+        key = dist.key
+        if key in dists_to_ignore:
+            continue
 
-    for module in installed:
-        key = module.key
-
-        if key in full_exceptions:
-            pass
-        elif key not in requirements:
-            to_be_uninstalled.add(module.as_requirement())
-        elif requirements[key].specifier.contains(module.version):
+        if key not in requirements:
+            to_be_uninstalled.add(dist.as_requirement())
+        elif requirements[key].specifier.contains(dist.version):
             satisfied.add(key)
 
     for key, requirement in requirements.items():
