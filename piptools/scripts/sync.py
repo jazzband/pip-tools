@@ -12,6 +12,7 @@ if not tuple(int(digit) for digit in pip.__version__.split('.')[:2]) >= (6, 1):
           'perhaps run `pip install --upgrade pip`?'.format(pip.__version__))
     sys.exit(4)
 
+import os  # noqa
 import click  # noqa
 from .. import sync  # noqa
 from ..exceptions import PipToolsError  # noqa
@@ -24,10 +25,24 @@ DEFAULT_REQUIREMENTS_FILE = 'requirements.txt'
 @click.command()
 @click.option('--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
 @click.option('--force', is_flag=True, help="Proceed even if conflicts are found")
-@click.argument('src_files', required=False, type=click.Path(exists=True), default=(DEFAULT_REQUIREMENTS_FILE,), nargs=-1)  # noqa
+@click.argument('src_files', required=False, type=click.Path(exists=True), nargs=-1)
 def cli(dry_run, force, src_files):
     if not src_files:
-        src_files = (DEFAULT_REQUIREMENTS_FILE,)
+        if os.path.exists(DEFAULT_REQUIREMENTS_FILE):
+            src_files = (DEFAULT_REQUIREMENTS_FILE,)
+        else:
+            msg = 'No requirement files given and no {} found in the current directory'
+            log.error(msg.format(DEFAULT_REQUIREMENTS_FILE))
+            sys.exit(2)
+
+    if any(src_file.endswith('.in') for src_file in src_files):
+        msg = ('Some input files have the .in extension, which is most likely an error and can '
+               'cause weird behaviour.  You probably meant to use the corresponding *.txt file?')
+        if force:
+            log.warning('WARNING: ' + msg)
+        else:
+            log.error('ERROR: ' + msg)
+            sys.exit(2)
 
     requirements = flat_map(lambda src: pip.req.parse_requirements(src, session=True),
                             src_files)
