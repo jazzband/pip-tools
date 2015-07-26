@@ -1,5 +1,7 @@
 from collections import Counter
 
+from pip._vendor.pkg_resources import Requirement
+
 import pytest
 from piptools.exceptions import IncompatibleRequirements
 from piptools.sync import dependency_tree, diff, merge
@@ -67,3 +69,39 @@ def test_merge(from_line):
                     from_line('django==2')]
 
     assert Counter(requirements[1:3]) == Counter(merge(requirements, ignore_conflicts=True))
+
+
+def test_diff_should_do_nothing():
+    installed = []  # empty env
+    reqs = []  # no requirements
+
+    to_install, to_uninstall = diff(reqs, installed)
+    assert to_install == set()
+    assert to_uninstall == set()
+
+
+def test_diff_should_install(from_line):
+    installed = []  # empty env
+    reqs = [from_line('django==1.8')]
+
+    to_install, to_uninstall = diff(reqs, installed)
+    assert to_install == {Requirement.parse('django==1.8')}
+    assert to_uninstall == set()
+
+
+def test_diff_should_uninstall(fake_dist):
+    installed = [fake_dist('django==1.8')]
+    reqs = []
+
+    to_install, to_uninstall = diff(reqs, installed)
+    assert to_install == set()
+    assert to_uninstall == {Requirement.parse('django==1.8')}
+
+
+def test_diff_should_update(fake_dist, from_line):
+    installed = [fake_dist('django==1.7')]
+    reqs = [from_line('django==1.8')]
+
+    to_install, to_uninstall = diff(reqs, installed)
+    assert to_install == {Requirement.parse('django==1.8')}
+    assert to_uninstall == set()

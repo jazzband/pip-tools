@@ -38,7 +38,9 @@ class FakeRepository(BaseRepository):
 
 
 class FakeInstalledDistribution(object):
-    def __init__(self, line, deps):
+    def __init__(self, line, deps=None):
+        if deps is None:
+            deps = []
         self.deps = [Requirement.parse(d) for d in deps]
 
         self.req = Requirement.parse(line)
@@ -50,6 +52,9 @@ class FakeInstalledDistribution(object):
 
     def requires(self):
         return self.deps
+
+    def as_requirement(self):
+        return self.req
 
 
 @fixture
