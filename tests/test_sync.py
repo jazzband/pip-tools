@@ -1,8 +1,8 @@
-import pytest
-
-from piptools.sync import (dependency_tree, merge)
-from piptools.exceptions import IncompatibleRequirements
 from collections import Counter
+
+import pytest
+from piptools.exceptions import IncompatibleRequirements
+from piptools.sync import dependency_tree, diff, merge
 
 
 @pytest.mark.parametrize(
@@ -39,12 +39,10 @@ from collections import Counter
             'root', ['root', 'child']),
     ]
 )
-def test_dependency_tree(installed_distribution, installed, root, expected):
-    installed = {
-            distribution.key: distribution
-            for distribution in (
-                installed_distribution(name, deps)
-                for name, deps in installed ) }
+def test_dependency_tree(fake_dist, installed, root, expected):
+    installed = {distribution.key: distribution
+                 for distribution in
+                 (fake_dist(name, deps) for name, deps in installed)}
 
     actual = dependency_tree(installed, root)
     assert actual == set(expected)
@@ -64,9 +62,8 @@ def test_merge_ignore_conflicts(from_line):
 
 
 def test_merge(from_line):
-    requirements = [
-            from_line('flask==1'),
-            from_line('flask==1'),
-            from_line('django==2')]
+    requirements = [from_line('flask==1'),
+                    from_line('flask==1'),
+                    from_line('django==2')]
 
     assert Counter(requirements[1:3]) == Counter(merge(requirements, ignore_conflicts=True))

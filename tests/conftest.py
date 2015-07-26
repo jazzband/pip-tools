@@ -53,7 +53,7 @@ class FakeInstalledDistribution(object):
 
 
 @fixture
-def installed_distribution():
+def fake_dist():
     return FakeInstalledDistribution
 
 
