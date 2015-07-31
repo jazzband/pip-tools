@@ -23,11 +23,9 @@ class AtomicSaver(object):
     exceptions are raised before it is closed. It returns a standard
     Python :class:`file` object which can be closed explicitly or used
     as a context manager (i.e., via the :keyword:`with` statement).
-
     Args:
         dest_path (str): The path where the completed file will be
             written.
-
         overwrite (bool): Whether to overwrite the destination file if
             it exists at completion time. Defaults to ``True``.
         part_file (str): Name of the temporary *part_file*. Defaults
@@ -70,12 +68,10 @@ class AtomicSaver(object):
         """Called on context manager entry (the :keyword:`with` statement),
         the ``setup()`` method creates the temporary file in the same
         directory as the destination file.
-
         ``setup()`` tests for a writable directory with rename permissions
         early, as the part file may not be written to immediately (not
         using :func:`os.access` because of the potential issues of
         effective vs. real privileges).
-
         If the caller is not using the :class:`AtomicSaver` as a
         context manager, this method should be called explicitly
         before writing.
@@ -85,8 +81,9 @@ class AtomicSaver(object):
                 raise OSError(errno.EEXIST,
                               'Overwrite disabled and file already exists',
                               self.dest_path)
-        _, tmp_part_path = tempfile.mkstemp(dir=self.dest_dir,
-                                            text=self.text_mode)
+        tmp_fd, tmp_part_path = tempfile.mkstemp(dir=self.dest_dir,
+                                                 text=self.text_mode)
+        os.close(tmp_fd)
         try:
             _atomic_rename(tmp_part_path, self.part_path,
                            overwrite=self.overwrite_part)
@@ -102,6 +99,7 @@ class AtomicSaver(object):
         return self.part_file
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.part_file.close()
         if exc_type:
             if self.rm_part_on_exc:
                 try:
