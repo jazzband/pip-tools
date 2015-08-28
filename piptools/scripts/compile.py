@@ -12,7 +12,7 @@ if not tuple(int(digit) for digit in pip.__version__.split('.')[:2]) >= (6, 1):
           'perhaps run `pip install --upgrade pip`?'.format(pip.__version__))
     sys.exit(4)
 
-import click  # noqa
+from .. import click  # noqa
 from pip.req import parse_requirements  # noqa
 
 from ..exceptions import PipToolsError  # noqa

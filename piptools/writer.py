@@ -1,7 +1,7 @@
 import os
 from os.path import basename
 
-from click import unstyle
+from .click import unstyle
 
 from ._compat import ExitStack
 from .io import AtomicSaver

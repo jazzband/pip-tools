@@ -6,7 +6,7 @@ import os
 from functools import partial
 from itertools import chain, count
 
-import click
+from . import click
 from first import first
 from pip.req import InstallRequirement
 

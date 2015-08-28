@@ -4,7 +4,7 @@ from __future__ import (absolute_import, division, print_function,
 
 from itertools import groupby, chain
 
-from click import style
+from .click import style
 from first import first
 
 

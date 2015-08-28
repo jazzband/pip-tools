@@ -1,6 +1,6 @@
 import collections
 
-import click
+from . import click
 import pip
 
 from .exceptions import IncompatibleRequirements

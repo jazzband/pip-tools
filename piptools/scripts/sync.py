@@ -13,7 +13,7 @@ if not tuple(int(digit) for digit in pip.__version__.split('.')[:2]) >= (6, 1):
     sys.exit(4)
 
 import os  # noqa
-import click  # noqa
+from .. import click  # noqa
 from .. import sync  # noqa
 from ..exceptions import PipToolsError  # noqa
 from ..logging import log  # noqa
