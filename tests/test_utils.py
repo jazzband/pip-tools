@@ -1,7 +1,6 @@
 from pytest import raises
 
-from piptools.utils import (as_name_version_tuple, format_requirement,
-                            format_specifier, flat_map)
+from piptools.utils import as_tuple, format_requirement, format_specifier, flat_map
 
 
 def test_format_requirement(from_line):
@@ -27,11 +26,18 @@ def test_format_specifier(from_line):
     assert format_specifier(ireq) == '~=1.1,>1.2,<1.5'
 
 
-def test_as_name_version_tuple(from_line):
+def test_as_tuple(from_line):
     ireq = from_line('foo==1.1')
-    name, version = as_name_version_tuple(ireq)
+    name, version, extras = as_tuple(ireq)
     assert name == 'foo'
     assert version == '1.1'
+    assert extras == ()
+
+    ireq = from_line('foo[extra1,extra2]==1.1')
+    name, version, extras = as_tuple(ireq)
+    assert name == 'foo'
+    assert version == '1.1'
+    assert extras == ("extra1", "extra2")
 
     # Non-pinned versions aren't accepted
     should_be_rejected = [
@@ -42,7 +48,7 @@ def test_as_name_version_tuple(from_line):
     for spec in should_be_rejected:
         ireq = from_line(spec)
         with raises(TypeError):
-            as_name_version_tuple(ireq)
+            as_tuple(ireq)
 
 
 def test_flat_map():
