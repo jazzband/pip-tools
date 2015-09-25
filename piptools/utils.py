@@ -4,6 +4,8 @@ from __future__ import (absolute_import, division, print_function,
 
 from itertools import groupby, chain
 
+from pip.download import is_vcs_url, _get_used_vcs_backend
+
 from .click import style
 from first import first
 
@@ -17,10 +19,15 @@ def format_requirement(ireq):
     Generic formatter for pretty printing InstallRequirements to the terminal
     in a less verbose way than using its `__str__` method.
     """
-    if ireq.editable:
-        line = '-e {}'.format(ireq.link)
-    elif ireq.link:
-        line = str(ireq.link)
+    if ireq.link:
+        line = ''
+        if ireq.editable:
+            line = '-e '
+        line += str(ireq.link)
+        if is_vcs_url(ireq.link):
+            vcs_backend = _get_used_vcs_backend(ireq.link)
+            rev = vcs_backend.get_revision(ireq.source_dir)
+            line += '@{}'.format(rev)
     else:
         line = str(ireq.req)
     return line
