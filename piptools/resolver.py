@@ -158,6 +158,15 @@ class Resolver(object):
                      for best_match in best_matches
                      for dep in self._iter_dependencies(best_match))
 
+        for ireq in best_matches:
+            if ireq.prepared:
+                version = ireq.pkg_info()['version']
+                if version not in ireq.req:
+                    raise RuntimeError(
+                        'Version {} does not match {} for package {}'.format(
+                            version, ireq.req.specifier, ireq.name)
+                    )
+
         # NOTE: We need to compare the underlying Requirement objects, since
         # InstallRequirement does not define equality
         diff = {t.req for t in theirs} - {t.req for t in self.their_constraints}
@@ -187,7 +196,7 @@ class Resolver(object):
             Flask==0.10.1 => Flask==0.10.1
 
         """
-        if ireq.editable or ireq.req is None:
+        if ireq.link:
             # NOTE: it's much quicker to immediately return instead of
             # hitting the index server
             best_match = ireq
@@ -212,7 +221,7 @@ class Resolver(object):
         Editable requirements will never be looked up, as they may have
         changed at any time.
         """
-        if ireq.editable or ireq.req is None:
+        if ireq.link:
             for dependency in self.repository.get_dependencies(ireq):
                 yield dependency
             return
@@ -238,5 +247,5 @@ class Resolver(object):
             yield InstallRequirement.from_line(dependency_string)
 
     def reverse_dependencies(self, ireqs):
-        tups = (as_name_version_tuple(ireq) for ireq in ireqs if not ireq.editable)
+        tups = (as_name_version_tuple(ireq) for ireq in ireqs if is_pinned_requirement(ireq))
         return self.dependency_cache.reverse_dependencies(tups)

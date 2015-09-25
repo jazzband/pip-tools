@@ -100,7 +100,7 @@ class PyPIRepository(BaseRepository):
         dependencies (also InstallRequirements, but not necessarily pinned).
         They indicate the secondary dependencies for the given requirement.
         """
-        if not (ireq.editable or ireq.req is None or is_pinned_requirement(ireq)):
+        if not (ireq.link or is_pinned_requirement(ireq)):
             raise TypeError('Expected pinned or editable InstallRequirement, got {}'.format(ireq))
 
         if not os.path.isdir(self._download_dir):
