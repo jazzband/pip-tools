@@ -94,11 +94,7 @@ class Resolver(object):
 
     def _check_constraints(self):
         for constraint in chain(self.our_constraints, self.their_constraints):
-            if constraint.link is not None and not constraint.editable:
-                msg = ('pip-compile does not support URLs as packages, unless they are editable. '
-                       'Perhaps add -e option?')
-                raise UnsupportedConstraint(msg, constraint)
-            elif constraint.extras:
+            if constraint.extras:
                 msg = ('pip-compile does not yet support packages with extras. '
                        'Support for this is in the works, though.')
                 raise UnsupportedConstraint(msg, constraint)
@@ -121,7 +117,7 @@ class Resolver(object):
         """
         for _, ireqs in full_groupby(constraints, key=_dep_key):
             ireqs = list(ireqs)
-            editable_ireq = first(ireqs, key=lambda ireq: ireq.editable)
+            editable_ireq = first(ireqs, key=lambda ireq: ireq.editable or ireq.req is None)
             if editable_ireq:
                 yield editable_ireq  # ignore all the other specs: the editable one is the one that counts
                 continue
@@ -191,7 +187,7 @@ class Resolver(object):
             Flask==0.10.1 => Flask==0.10.1
 
         """
-        if ireq.editable:
+        if ireq.editable or ireq.req is None:
             # NOTE: it's much quicker to immediately return instead of
             # hitting the index server
             best_match = ireq
@@ -216,7 +212,7 @@ class Resolver(object):
         Editable requirements will never be looked up, as they may have
         changed at any time.
         """
-        if ireq.editable:
+        if ireq.editable or ireq.req is None:
             for dependency in self.repository.get_dependencies(ireq):
                 yield dependency
             return

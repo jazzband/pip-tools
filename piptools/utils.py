@@ -19,6 +19,8 @@ def format_requirement(ireq):
     """
     if ireq.editable:
         line = '-e {}'.format(ireq.link)
+    elif ireq.link:
+        line = str(ireq.link)
     else:
         line = str(ireq.req)
     return line
@@ -53,6 +55,9 @@ def is_pinned_requirement(ireq):
         django==1.*   # NOT pinned
     """
     if ireq.editable:
+        return False
+
+    if ireq.req is None:
         return False
 
     if len(ireq.specifier._specs) != 1:
