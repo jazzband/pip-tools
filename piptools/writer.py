@@ -6,7 +6,7 @@ from .click import unstyle
 from ._compat import ExitStack
 from .io import AtomicSaver
 from .logging import log
-from .utils import comment, format_requirement
+from .utils import comment, format_requirement, is_link_requirement
 
 
 class OutputWriter(object):
@@ -99,7 +99,7 @@ class OutputWriter(object):
                 line = line.ljust(24)
                 annotations.append('via ' + ', '.join(sorted(required_by)))
 
-        if ireq.link and ireq.req:
+        if is_link_requirement(ireq) and ireq.req:
             annotations.append('got {}'.format(ireq.req))
 
         if annotations:

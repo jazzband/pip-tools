@@ -14,7 +14,8 @@ from .cache import DependencyCache
 from .exceptions import UnsupportedConstraint
 from .logging import log
 from .utils import (as_name_version_tuple, format_requirement,
-                    format_specifier, full_groupby, is_pinned_requirement)
+                    format_specifier, full_groupby, is_pinned_requirement,
+                    is_link_requirement)
 
 green = partial(click.style, fg='green')
 magenta = partial(click.style, fg='magenta')
@@ -22,7 +23,7 @@ magenta = partial(click.style, fg='magenta')
 
 def _dep_key(ireq):
     if ireq.req is None and ireq.link is not None:
-        return str(ireq.link)
+        return ireq.link.url
     else:
         return ireq.req.key
 
@@ -117,7 +118,7 @@ class Resolver(object):
         """
         for _, ireqs in full_groupby(constraints, key=_dep_key):
             ireqs = list(ireqs)
-            editable_ireq = first(ireqs, key=lambda ireq: ireq.link)
+            editable_ireq = first(ireqs, key=is_link_requirement)
             if editable_ireq:
                 yield editable_ireq  # ignore all the other specs: the editable one is the one that counts
                 continue
@@ -196,7 +197,7 @@ class Resolver(object):
             Flask==0.10.1 => Flask==0.10.1
 
         """
-        if ireq.link:
+        if is_link_requirement(ireq):
             # NOTE: it's much quicker to immediately return instead of
             # hitting the index server
             best_match = ireq
@@ -221,7 +222,7 @@ class Resolver(object):
         Editable requirements will never be looked up, as they may have
         changed at any time.
         """
-        if ireq.link:
+        if is_link_requirement(ireq):
             for dependency in self.repository.get_dependencies(ireq):
                 yield dependency
             return
