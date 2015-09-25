@@ -117,7 +117,7 @@ class Resolver(object):
         """
         for _, ireqs in full_groupby(constraints, key=_dep_key):
             ireqs = list(ireqs)
-            editable_ireq = first(ireqs, key=lambda ireq: ireq.editable or ireq.req is None)
+            editable_ireq = first(ireqs, key=lambda ireq: ireq.link)
             if editable_ireq:
                 yield editable_ireq  # ignore all the other specs: the editable one is the one that counts
                 continue
