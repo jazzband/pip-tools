@@ -159,14 +159,14 @@ class Resolver(object):
                      for best_match in best_matches
                      for dep in self._iter_dependencies(best_match))
 
-        for ireq in best_matches:
-            if ireq.prepared:
-                version = ireq.pkg_info()['version']
-                if version not in ireq.req:
-                    raise RuntimeError(
-                        'Version {} does not match {} for package {}'.format(
-                            version, ireq.req.specifier, ireq.name)
-                    )
+        # for ireq in best_matches:
+        #     if ireq.prepared:
+        #         version = ireq.pkg_info()['version']
+        #         if version not in ireq.req:
+        #             raise RuntimeError(
+        #                 'Version {} does not match {} for package {}'.format(
+        #                     version, ireq.req.specifier, ireq.name)
+        #             )
 
         # NOTE: We need to compare the underlying Requirement objects, since
         # InstallRequirement does not define equality
