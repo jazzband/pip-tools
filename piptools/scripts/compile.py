@@ -3,6 +3,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import optparse
 import sys
 import pip
 
@@ -22,6 +23,10 @@ from ..resolver import Resolver  # noqa
 from ..writer import OutputWriter  # noqa
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
+
+# emulate pip's option parsing with a stub command
+class PipCommand(pip.basecommand.Command):
+    name = 'PipCommand'
 
 
 @click.command()
@@ -48,13 +53,31 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url,
     ###
     # Setup
     ###
-    repository = PyPIRepository()
 
-    # Configure the finder
+    # use pip's parser for pip.conf management and defaults
+    # general options (find_links, index_url, extra_index_url abd pre) are defered to pip.
+    pip_options = PipCommand()
+    index_opts = pip.cmdoptions.make_option_group(
+        pip.cmdoptions.index_group,
+        pip_options.parser,
+    )
+    pip_options.parser.insert_option_group(0, index_opts)
+    #support pip pre
+    pip_options.parser.add_option(optparse.Option('--pre', action='store_true', default=False))
+
+    pip_args = []
+    if find_links:
+        pip_args.extend(['-f', find_links])
     if index_url:
-        repository.finder.index_urls = [index_url]
-    repository.finder.index_urls.extend(extra_index_url)
-    repository.finder.find_links.extend(find_links)
+        pip_args.extend(['-i', index_url])
+    if extra_index_url:
+        pip_args.extend(['--extra-index-url', extra_index_url])
+    if pre:
+        pip_args.extend(['--pre'])
+
+    pip_options, _ = pip_options.parse_args(pip_args)
+
+    repository = PyPIRepository(pip_options)
 
     log.debug('Using indexes:')
     for index_url in repository.finder.index_urls:
@@ -70,7 +93,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url,
     # Parsing/collecting initial requirements
     ###
     constraints = []
-    for line in parse_requirements(src_file, finder=repository.finder, session=repository.session):
+    for line in parse_requirements(src_file, finder=repository.finder, session=repository.session, options=pip_options):
         constraints.append(line)
 
     try:
