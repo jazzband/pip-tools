@@ -19,12 +19,14 @@ Next, let's see what pip-review does:
   $ pip-review
   cElementTree==1.0.2-20050302 is available (you have 1.0.5.post20051216)
   python-dateutil==* is available (you have 1.5) (glob)
+  wheel==* is available (you have 0.24.0) (glob)
 
 Or in raw mode:
 
   $ pip-review --raw
   cElementTree==1.0.2-20050302
   python-dateutil==* (glob)
+  wheel==* (glob)
 
 We can also install these updates automatically:
 
