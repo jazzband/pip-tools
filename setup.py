@@ -1,5 +1,5 @@
 """
-pip-tools keeps your pinned dependencies fresh.
+pip-review lets you smoothly manage all available PyPI updates.
 """
 import sys
 from setuptools import setup
@@ -13,12 +13,12 @@ def get_dependencies():
 
 
 setup(
-    name='pip-tools',
+    name='pip-review',
     version='0.3.6',
-    url='https://github.com/nvie/pip-tools/',
+    url='https://github.com/jgonggrijp/pip-review',
     license='BSD',
-    author='Vincent Driessen',
-    author_email='vincent@3rdcloud.com',
+    author='Vincent Driessen, Julian Gonggrijp',
+    author_email='j.gonggrijp@gmail.com',
     description=__doc__.strip('\n'),
     #packages=[],
     scripts=['bin/pip-review', 'bin/pip-dump'],
