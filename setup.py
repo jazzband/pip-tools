@@ -21,7 +21,7 @@ setup(
     author_email='j.gonggrijp@gmail.com',
     description=__doc__.strip('\n'),
     #packages=[],
-    scripts=['bin/pip-review', 'bin/pip-dump'],
+    scripts=['bin/pip-review'],
     #include_package_data=True,
     zip_safe=False,
     platforms='any',
