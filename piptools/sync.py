@@ -9,6 +9,7 @@ from .utils import flat_map
 PACKAGES_TO_IGNORE = [
     'pip',
     'pip-tools',
+    'pip-review',
     'setuptools',
     'wheel',
 ]
