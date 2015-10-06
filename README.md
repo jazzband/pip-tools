@@ -1,16 +1,3 @@
-[![Build status](https://secure.travis-ci.org/nvie/pip-tools.png?branch=master)](https://secure.travis-ci.org/nvie/pip-tools)
-
-pip-tools = pip-review + pip-dump
-=================================
-
-A set of two command line tools to help you keep your `pip`-based packages
-fresh, even when you've pinned them.
-
-[You _do_ pin them, right?][0]
-
-![pip-tools overview](http://cloud.github.com/downloads/nvie/pip-tools/pip-tools.png)
-
-
 pip-review
 ==========
 
@@ -49,44 +36,16 @@ Upgrade now? [Y]es, [N]o, [A]ll, [Q]uit y
 ```
 
 
-pip-dump
-========
-
-`pip-dump` dumps the exact versions of installed packages in your active
-environment to your `requirements.txt` file.  If you have more than one file
-matching the `*requirements.txt` pattern (for example `dev-requirements.txt`),
-it will update each of them smartly.
-
-Example:
-
-```console
-$ cat requirements.txt
-Flask
-$ cat dev-requirements.txt
-ipython
-$ pip-dump
-$ cat requirements.txt
-Flask==0.9
-Jinja2==2.6
-Werkzeug==0.8.3
-$ cat dev-requirements.txt
-ipython==0.13
-```
-
-Packages that you don't want to dump but want to have installed
-locally nonetheless can be put in an optional file called `.pipignore`.
-
-
 Installation
 ============
 
 To install, simply use pip:
 
 ```console
-$ pip install pip-tools
+$ pip install pip-review
 ```
 
-Decide for yourself whether you want to install the tools system-wide, or
+Decide for yourself whether you want to install the tool system-wide, or
 inside a virtual env.  Both are supported.
 
 
@@ -109,9 +68,16 @@ The tests run quite slow, since they actually interact with PyPI, which
 involves downloading packages, etc.  So please be patient.
 
 
-[![Flattr this][2]][1]
+Origins
+=======
 
-[0]: http://nvie.com/posts/pin-your-packages/
-[1]: https://flattr.com/thing/882478/Pin-Your-Packages
-[2]: http://api.flattr.com/button/button-static-50x60.png
+`pip-review` was originally part of [pip-tools][0] but 
+[has been discontinued][1] as such. See [Pin Your Packages][2] by Vincent
+Driessen for the original introduction. Since there are still use cases, the
+tool now lives on as a separate package.
+
+
+[0]: https://github.com/nvie/pip-tools/
+[1]: https://github.com/nvie/pip-tools/issues/185
+[2]: http://nvie.com/posts/pin-your-packages/
 [3]: https://bitheap.org/cram/
