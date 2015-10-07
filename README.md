@@ -1,4 +1,4 @@
-[![Build status](https://secure.travis-ci.org/nvie/pip-tools.png?branch=future)](https://secure.travis-ci.org/nvie/pip-tools)
+[![Build status](https://secure.travis-ci.org/nvie/pip-tools.png?branch=master)](https://secure.travis-ci.org/nvie/pip-tools)
 
 pip-tools = pip-compile + pip-sync
 ==================================

@@ -1,6 +1,5 @@
 # coding: utf-8
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import (absolute_import, division, print_function)
 
 import os
 from functools import partial
@@ -94,7 +93,7 @@ class Resolver(object):
 
     def _check_constraints(self):
         for constraint in chain(self.our_constraints, self.their_constraints):
-            if constraint.link is not None and not constraint.editable:
+            if constraint.link is not None and not constraint.editable and not constraint.link.is_wheel:
                 msg = ('pip-compile does not support URLs as packages, unless they are editable. '
                        'Perhaps add -e option?')
                 raise UnsupportedConstraint(msg, constraint)

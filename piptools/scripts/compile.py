@@ -47,7 +47,7 @@ class PipCommand(pip.basecommand.Command):
 @click.argument('src_file', required=False, type=click.Path(exists=True), default=DEFAULT_REQUIREMENTS_FILE)
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url,
         extra_index_url, trusted_host, header, annotate, src_file):
-    """Compiles requirements.txt from requirements.in specs."""
+    """Compiles requirements.txt from requirements.in specs or wheel file."""
     log.verbose = verbose
 
     if not src_file:
@@ -100,8 +100,13 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url,
     # Parsing/collecting initial requirements
     ###
     constraints = []
-    for line in parse_requirements(src_file, finder=repository.finder, session=repository.session, options=pip_options):
-        constraints.append(line)
+    # use wheel file as source of requirements
+    if src_file.endswith('.whl'):
+        constraints.extend(list(pip.req.req_file.process_line(src_file, src_file, line_number=1,
+            finder=repository.finder, session=repository.session, options=pip_options)))
+    else:
+        for line in parse_requirements(src_file, finder=repository.finder, session=repository.session, options=pip_options):
+            constraints.append(line)
 
     try:
         resolver = Resolver(constraints, repository, prereleases=pre, clear_caches=rebuild)
