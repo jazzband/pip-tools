@@ -1,20 +1,21 @@
 Create a new playground first:
 
+  $ pip install virtualenv
   $ which virtualenv
   $ virtualenv --version
-  $ virtualenv --python="$(which python)" FOO
+  $ virtualenv --python="$(which python)" FOO >/dev/null
   $ PATH=FOO/bin:$PATH
-  $ pip install --upgrade --force-reinstall 'pip'
-  $ pip install argparse
+  $ pip install --upgrade --force-reinstall 'pip' > /dev/null 2>&1
+  $ pip install argparse >/dev/null 2>&1
   $ alias pip-review="$TESTDIR/../bin/pip-review"
 
 Setup. Let's pretend we have some outdated package versions installed:
 
-  $ pip install python-dateutil==1.5
+  $ pip install python-dateutil==1.5 >/dev/null 2>&1
 
 Also install library, which caused warning message:
 
-  $ pip install http://www.effbot.org/media/downloads/cElementTree-1.0.5-20051216.tar.gz
+  $ pip install http://www.effbot.org/media/downloads/cElementTree-1.0.5-20051216.tar.gz >/dev/null 2>&1
 
 Next, let's see what pip-review does:
 
