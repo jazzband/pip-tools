@@ -16,3 +16,4 @@ htmlcov
 build
 dist
 *.egg-info
+.cache/
