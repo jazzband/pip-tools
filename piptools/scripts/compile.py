@@ -24,6 +24,7 @@ from ..writer import OutputWriter  # noqa
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
 
+
 # emulate pip's option parsing with a stub command
 class PipCommand(pip.basecommand.Command):
     name = 'PipCommand'
@@ -37,12 +38,15 @@ class PipCommand(pip.basecommand.Command):
 @click.option('-f', '--find-links', multiple=True, help="Look for archives in this directory or on this HTML page", envvar='PIP_FIND_LINKS')  # noqa
 @click.option('-i', '--index-url', help="Change index URL (defaults to PyPI)", envvar='PIP_INDEX_URL')
 @click.option('--extra-index-url', multiple=True, help="Add additional index URL to search", envvar='PIP_EXTRA_INDEX_URL')  # noqa
+@click.option('--trusted-host', multiple=True, envvar='PIP_TRUSTED_HOST',
+              help="Mark this host as trusted, even though it does not have "
+                   "valid or any HTTPS.")
 @click.option('--header/--no-header', is_flag=True, default=True, help="Add header to generated file")
 @click.option('--annotate/--no-annotate', is_flag=True, default=True,
               help="Annotate results, indicating where dependencies come from")
 @click.argument('src_file', required=False, type=click.Path(exists=True), default=DEFAULT_REQUIREMENTS_FILE)
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url,
-        extra_index_url, header, annotate, src_file):
+        extra_index_url, trusted_host, header, annotate, src_file):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
 
@@ -54,15 +58,15 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url,
     # Setup
     ###
 
-    # use pip's parser for pip.conf management and defaults
-    # general options (find_links, index_url, extra_index_url abd pre) are defered to pip.
+    # Use pip's parser for pip.conf management and defaults.
+    # General options (find_links, index_url, extra_index_url, trusted_host,
+    # and pre) are defered to pip.
     pip_options = PipCommand()
     index_opts = pip.cmdoptions.make_option_group(
         pip.cmdoptions.index_group,
         pip_options.parser,
     )
     pip_options.parser.insert_option_group(0, index_opts)
-    #support pip pre
     pip_options.parser.add_option(optparse.Option('--pre', action='store_true', default=False))
 
     pip_args = []
@@ -74,6 +78,9 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url,
         pip_args.extend(['--extra-index-url', extra_index_url])
     if pre:
         pip_args.extend(['--pre'])
+    if trusted_host:
+        for host in trusted_host:
+            pip_args.extend(['--trusted-host', host])
 
     pip_options, _ = pip_options.parse_args(pip_args)
 
