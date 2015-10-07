@@ -14,7 +14,7 @@ if not tuple(int(digit) for digit in pip.__version__.split('.')[:2]) >= (6, 1):
     sys.exit(4)
 
 from .. import click  # noqa
-from pip.req import parse_requirements  # noqa
+from pip.req import parse_requirements, InstallRequirement  # noqa
 
 from ..exceptions import PipToolsError  # noqa
 from ..logging import log  # noqa
@@ -102,8 +102,19 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url,
     constraints = []
     # use wheel file as source of requirements
     if src_file.endswith('.whl'):
-        constraints.extend(list(pip.req.req_file.process_line(src_file, src_file, line_number=1,
-            finder=repository.finder, session=repository.session, options=pip_options)))
+        constraints_from_wheel = []
+        try:
+            constraints_from_wheel = list(pip.req.req_file.process_line(src_file, src_file, line_number=1,
+                finder=repository.finder, session=repository.session, options=pip_options))
+        except AttributeError:
+            # support pip 6.x
+            constraints_from_wheel = [InstallRequirement.from_line(
+                    src_file,
+                    src_file,
+                    isolated=pip_options.isolated_mode,
+            )]
+
+        constraints.extend(constraints_from_wheel)
     else:
         for line in parse_requirements(src_file, finder=repository.finder, session=repository.session, options=pip_options):
             constraints.append(line)
