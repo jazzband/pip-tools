@@ -23,7 +23,7 @@ except ImportError:
 
 class PyPIRepository(BaseRepository):
     DEFAULT_INDEX_URL = 'https://pypi.python.org/simple/'
-    
+
     """
     The PyPIRepository will use the provided Finder instance to lookup
     packages.  Typically, it looks up packages on PyPI (the default implicit
@@ -32,6 +32,8 @@ class PyPIRepository(BaseRepository):
     """
     def __init__(self, pip_options):
         self.session = PipSession()
+        if pip_options.client_cert:
+            self.session.cert = pip_options.client_cert
 
         index_urls = [pip_options.index_url] + pip_options.extra_index_urls
         if pip_options.no_index:
@@ -46,7 +48,7 @@ class PyPIRepository(BaseRepository):
             process_dependency_links=pip_options.process_dependency_links,
             session=self.session,
         )
-        
+
         # Caches
         # stores project_name => InstallationCandidate mappings for all
         # versions reported by PyPI, so we only have to ask once for each
