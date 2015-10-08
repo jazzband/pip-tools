@@ -1,30 +1,36 @@
 import os
-import sys
-
-import pytest
+from textwrap import dedent
 
 from click.testing import CliRunner
+
+import pytest
 from piptools.scripts.compile import cli
 
-@pytest.fixture
-def pip_conf(request):
-    test_conf = """
-[global]
-index-url = http://example.com
-trusted-host = example.com
-    """
-    #write pip.conf (pip.ini) at root of virtualenv
-    pip_conf_file = 'pip.conf' if os.name != 'nt' else 'pip.ini'
-    pip_conf_file = os.path.join(sys.prefix, pip_conf_file)
-    with open(pip_conf_file, 'w') as pip_conf:
-        pip_conf.write(test_conf)
-    
-    def tear_down():
-        os.remove(pip_conf_file)
 
-    request.addfinalizer(tear_down)
-    
-    return pip_conf_file
+@pytest.yield_fixture
+def pip_conf(tmpdir):
+    test_conf = dedent("""\
+        [global]
+        index-url = http://example.com
+        trusted-host = example.com
+    """)
+
+    pip_conf_file = 'pip.conf' if os.name != 'nt' else 'pip.ini'
+    path = (tmpdir / pip_conf_file).strpath
+
+    with open(path, 'w') as f:
+        f.write(test_conf)
+
+    old_value = os.environ.get('PIP_CONFIG_FILE')
+    try:
+        os.environ['PIP_CONFIG_FILE'] = path
+        yield path
+    finally:
+        if old_value is not None:
+            os.environ['PIP_CONFIG_FILE'] = old_value
+        else:
+            del os.environ['PIP_CONFIG_FILE']
+        os.remove(path)
 
 
 def test_default_pip_conf_read(pip_conf):
