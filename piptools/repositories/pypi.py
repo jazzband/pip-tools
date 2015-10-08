@@ -37,7 +37,6 @@ class PyPIRepository(BaseRepository):
 
         index_urls = [pip_options.index_url] + pip_options.extra_index_urls
         if pip_options.no_index:
-            logger.info('Ignoring indexes: %s', ','.join(index_urls))
             index_urls = []
 
         self.finder = PackageFinder(
