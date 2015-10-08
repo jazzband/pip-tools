@@ -3,8 +3,8 @@ python:
   - "2.6"
   - "2.7"
   #- "3.1"  # cram does not support Python <3.2.4 anymore
-  - "3.2"
-  - "3.3"   # but now it does support Python 3.3, according to release note 0.6
+  #- "3.2"
+  #- "3.3"   # but now it does support Python 3.3, according to release note 0.6
 branches:
   except:
     - piptools-ignore-patch

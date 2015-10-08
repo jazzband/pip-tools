@@ -1,3 +1,5 @@
+[![Build status](https://secure.travis-ci.org/jgonggrijp/pip-review.png)](https://secure.travis-ci.org/jgonggrijp/pip-review)
+
 pip-review
 ==========
 
