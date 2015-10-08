@@ -38,6 +38,7 @@ class PipCommand(pip.basecommand.Command):
 @click.option('-f', '--find-links', multiple=True, help="Look for archives in this directory or on this HTML page", envvar='PIP_FIND_LINKS')  # noqa
 @click.option('-i', '--index-url', help="Change index URL (defaults to PyPI)", envvar='PIP_INDEX_URL')
 @click.option('--extra-index-url', multiple=True, help="Add additional index URL to search", envvar='PIP_EXTRA_INDEX_URL')  # noqa
+@click.option('--client-cert', help="Path to SSL client certificate, a single file containing the private key and the certificate in PEM format.")  # noqa
 @click.option('--trusted-host', multiple=True, envvar='PIP_TRUSTED_HOST',
               help="Mark this host as trusted, even though it does not have "
                    "valid or any HTTPS.")
@@ -45,8 +46,8 @@ class PipCommand(pip.basecommand.Command):
 @click.option('--annotate/--no-annotate', is_flag=True, default=True,
               help="Annotate results, indicating where dependencies come from")
 @click.argument('src_file', required=False, type=click.Path(exists=True), default=DEFAULT_REQUIREMENTS_FILE)
-def cli(verbose, dry_run, pre, rebuild, find_links, index_url,
-        extra_index_url, trusted_host, header, annotate, src_file):
+def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
+        client_cert, trusted_host, header, annotate, src_file):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
 
@@ -76,6 +77,8 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url,
         pip_args.extend(['-i', index_url])
     if extra_index_url:
         pip_args.extend(['--extra-index-url', extra_index_url])
+    if client_cert:
+        pip_args.extend(['--client-cert', client_cert])
     if pre:
         pip_args.extend(['--pre'])
     if trusted_host:
