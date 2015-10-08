@@ -1,12 +1,11 @@
 Create a new playground first:
 
-  $ pip install virtualenv
-  $ which virtualenv
-  $ virtualenv --version
+  $ pip install virtualenv &>/dev/null
   $ virtualenv --python="$(which python)" FOO >/dev/null
   $ PATH=FOO/bin:$PATH
   $ pip install --upgrade --force-reinstall 'pip' > /dev/null 2>&1
   $ pip install argparse >/dev/null 2>&1
+  $ pip install -U argparse &>/dev/null
   $ alias pip-review="$TESTDIR/../bin/pip-review"
 
 Setup. Let's pretend we have some outdated package versions installed:
