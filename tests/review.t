@@ -1,9 +1,12 @@
 Create a new playground first:
 
-  $ virtualenv --python="$(which python)" FOO >/dev/null
+  $ pip install virtualenv >/dev/null 2>&1
+  $ virtualenv --python="$(which python)" FOO >/dev/null 2>&1
   $ PATH=FOO/bin:$PATH
   $ pip install --upgrade --force-reinstall 'pip' > /dev/null 2>&1
   $ pip install argparse >/dev/null 2>&1
+  $ pip install -U --force-reinstall argparse >/dev/null 2>&1
+  $ pip install -U --force-reinstall wheel >/dev/null 2>&1
   $ alias pip-review="$TESTDIR/../bin/pip-review"
 
 Setup. Let's pretend we have some outdated package versions installed:
@@ -19,14 +22,12 @@ Next, let's see what pip-review does:
   $ pip-review
   cElementTree==1.0.2-20050302 is available (you have 1.0.5.post20051216)
   python-dateutil==* is available (you have 1.5) (glob)
-  wheel==* is available (you have 0.24.0) (glob)
 
 Or in raw mode:
 
   $ pip-review --raw
   cElementTree==1.0.2-20050302
   python-dateutil==* (glob)
-  wheel==* (glob)
 
 We can also install these updates automatically:
 
