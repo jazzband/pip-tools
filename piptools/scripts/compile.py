@@ -3,6 +3,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import optparse
 import sys
 import pip
 
@@ -24,6 +25,11 @@ from ..writer import OutputWriter  # noqa
 DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
 
 
+# emulate pip's option parsing with a stub command
+class PipCommand(pip.basecommand.Command):
+    name = 'PipCommand'
+
+
 @click.command()
 @click.option('-v', '--verbose', is_flag=True, help="Show more output")
 @click.option('--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
@@ -32,12 +38,16 @@ DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
 @click.option('-f', '--find-links', multiple=True, help="Look for archives in this directory or on this HTML page", envvar='PIP_FIND_LINKS')  # noqa
 @click.option('-i', '--index-url', help="Change index URL (defaults to PyPI)", envvar='PIP_INDEX_URL')
 @click.option('--extra-index-url', multiple=True, help="Add additional index URL to search", envvar='PIP_EXTRA_INDEX_URL')  # noqa
+@click.option('--client-cert', help="Path to SSL client certificate, a single file containing the private key and the certificate in PEM format.")  # noqa
+@click.option('--trusted-host', multiple=True, envvar='PIP_TRUSTED_HOST',
+              help="Mark this host as trusted, even though it does not have "
+                   "valid or any HTTPS.")
 @click.option('--header/--no-header', is_flag=True, default=True, help="Add header to generated file")
 @click.option('--annotate/--no-annotate', is_flag=True, default=True,
               help="Annotate results, indicating where dependencies come from")
 @click.argument('src_file', required=False, type=click.Path(exists=True), default=DEFAULT_REQUIREMENTS_FILE)
-def cli(verbose, dry_run, pre, rebuild, find_links, index_url,
-        extra_index_url, header, annotate, src_file):
+def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
+        client_cert, trusted_host, header, annotate, src_file):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
 
@@ -48,13 +58,36 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url,
     ###
     # Setup
     ###
-    repository = PyPIRepository()
 
-    # Configure the finder
+    # Use pip's parser for pip.conf management and defaults.
+    # General options (find_links, index_url, extra_index_url, trusted_host,
+    # and pre) are defered to pip.
+    pip_options = PipCommand()
+    index_opts = pip.cmdoptions.make_option_group(
+        pip.cmdoptions.index_group,
+        pip_options.parser,
+    )
+    pip_options.parser.insert_option_group(0, index_opts)
+    pip_options.parser.add_option(optparse.Option('--pre', action='store_true', default=False))
+
+    pip_args = []
+    if find_links:
+        pip_args.extend(['-f', find_links])
     if index_url:
-        repository.finder.index_urls = [index_url]
-    repository.finder.index_urls.extend(extra_index_url)
-    repository.finder.find_links.extend(find_links)
+        pip_args.extend(['-i', index_url])
+    if extra_index_url:
+        pip_args.extend(['--extra-index-url', extra_index_url])
+    if client_cert:
+        pip_args.extend(['--client-cert', client_cert])
+    if pre:
+        pip_args.extend(['--pre'])
+    if trusted_host:
+        for host in trusted_host:
+            pip_args.extend(['--trusted-host', host])
+
+    pip_options, _ = pip_options.parse_args(pip_args)
+
+    repository = PyPIRepository(pip_options)
 
     log.debug('Using indexes:')
     for index_url in repository.finder.index_urls:
@@ -70,7 +103,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url,
     # Parsing/collecting initial requirements
     ###
     constraints = []
-    for line in parse_requirements(src_file, finder=repository.finder, session=repository.session):
+    for line in parse_requirements(src_file, finder=repository.finder, session=repository.session, options=pip_options):
         constraints.append(line)
 
     try:

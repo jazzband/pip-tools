@@ -1,9 +1,8 @@
 import os
 from os.path import basename
 
-from .click import unstyle
-
 from ._compat import ExitStack
+from .click import unstyle
 from .io import AtomicSaver
 from .logging import log
 from .utils import comment, format_requirement, is_link_requirement
@@ -39,7 +38,7 @@ class OutputWriter(object):
     def write_index_options(self):
         emitted = False
         for index, index_url in enumerate(self.index_urls):
-            if index_url == self.default_index_url:
+            if index_url.rstrip('/') == self.default_index_url:
                 continue
             flag = '--index-url' if index == 0 else '--extra-index-url'
             yield '{} {}'.format(flag, index_url)

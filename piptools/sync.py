@@ -3,12 +3,13 @@ import collections
 from . import click
 import pip
 
-from .exceptions import IncompatibleRequirements
+from .exceptions import IncompatibleRequirements, UnsupportedConstraint
 from .utils import flat_map
 
 PACKAGES_TO_IGNORE = [
     'pip',
     'pip-tools',
+    'pip-review',
     'setuptools',
     'wheel',
 ]
@@ -65,6 +66,11 @@ def merge(requirements, ignore_conflicts):
     by_key = {}
 
     for ireq in requirements:
+        if ireq.link is not None and not ireq.editable:
+            msg = ('pip-compile does not support URLs as packages, unless they are editable. '
+                   'Perhaps add -e option?')
+            raise UnsupportedConstraint(msg, ireq)
+
         key = ireq.req.key
 
         if not ignore_conflicts:

@@ -22,7 +22,7 @@ except ImportError:
 
 
 class PyPIRepository(BaseRepository):
-    DEFAULT_INDEX_URL = 'https://pypi.python.org/simple/'
+    DEFAULT_INDEX_URL = 'https://pypi.python.org/simple'
 
     """
     The PyPIRepository will use the provided Finder instance to lookup
@@ -30,11 +30,23 @@ class PyPIRepository(BaseRepository):
     config), but any other PyPI mirror can be used if index_urls is
     changed/configured on the Finder.
     """
-    def __init__(self):
+    def __init__(self, pip_options):
         self.session = PipSession()
-        self.finder = PackageFinder(find_links=[],
-                                    index_urls=[self.DEFAULT_INDEX_URL],
-                                    session=self.session)
+        if pip_options.client_cert:
+            self.session.cert = pip_options.client_cert
+
+        index_urls = [pip_options.index_url] + pip_options.extra_index_urls
+        if pip_options.no_index:
+            index_urls = []
+
+        self.finder = PackageFinder(
+            find_links=pip_options.find_links,
+            index_urls=index_urls,
+            trusted_hosts=pip_options.trusted_hosts,
+            allow_all_prereleases=pip_options.pre,
+            process_dependency_links=pip_options.process_dependency_links,
+            session=self.session,
+        )
 
         # Caches
         # stores project_name => InstallationCandidate mappings for all
