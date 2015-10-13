@@ -6,7 +6,7 @@ from .click import unstyle
 from ._compat import ExitStack
 from .io import AtomicSaver
 from .logging import log
-from .utils import comment, format_requirement
+from .utils import comment, format_requirement, is_link_requirement
 
 
 class OutputWriter(object):
@@ -87,13 +87,23 @@ class OutputWriter(object):
 
     def _format_requirement(self, ireq, reverse_dependencies, primary_packages):
         line = format_requirement(ireq)
-        if not self.annotate or ireq.name in primary_packages:
+        if not self.annotate:
             return line
 
+        annotations = []
+
         # Annotate what packages this package is required by
-        required_by = reverse_dependencies.get(ireq.name, [])
-        if required_by:
-            line = line.ljust(24)
-            annotation = ', '.join(sorted(required_by))
-            line += comment('  # via ' + annotation)
+        if ireq.name not in primary_packages:
+            required_by = reverse_dependencies.get(ireq.name, [])
+            if required_by:
+                line = line.ljust(24)
+                annotations.append('via ' + ', '.join(sorted(required_by)))
+
+        if is_link_requirement(ireq) and ireq.req:
+            annotations.append('got {}'.format(ireq.req))
+
+        if annotations:
+            msg = '   # ' + ','.join(annotations)
+            line += comment(msg)
+
         return line
