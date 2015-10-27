@@ -60,3 +60,32 @@ def test_command_line_overrides_pip_conf(pip_conf):
 
         # check that we have our index-url as specified in pip.conf
         assert 'Using indexes:\n  http://override.com' in out.output
+
+
+def test_find_links_option(pip_conf):
+
+    assert os.path.exists(pip_conf)
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        open('requirements.in', 'w').close()
+        out = runner.invoke(cli, ['-v', '-f', './libs1', '-f', './libs2'])
+
+        # Check that find-links has been passed to pip
+        assert 'Configuration:\n  -f ./libs1\n  -f ./libs2' in out.output
+
+
+def test_extra_index_option(pip_conf):
+
+    assert os.path.exists(pip_conf)
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        open('requirements.in', 'w').close()
+        out = runner.invoke(cli, ['-v',
+                                  '--extra-index-url', 'http://extraindex1.com',
+                                  '--extra-index-url', 'http://extraindex2.com'])
+        assert ('Using indexes:\n'
+                '  http://example.com\n'
+                '  http://extraindex1.com\n'
+                '  http://extraindex2.com' in out.output)

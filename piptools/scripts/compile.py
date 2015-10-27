@@ -72,11 +72,13 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
 
     pip_args = []
     if find_links:
-        pip_args.extend(['-f', find_links])
+        for link in find_links:
+            pip_args.extend(['-f', link])
     if index_url:
         pip_args.extend(['-i', index_url])
     if extra_index_url:
-        pip_args.extend(['--extra-index-url', extra_index_url])
+        for extra_index in extra_index_url:
+            pip_args.extend(['--extra-index-url', extra_index])
     if client_cert:
         pip_args.extend(['--client-cert', client_cert])
     if pre:
