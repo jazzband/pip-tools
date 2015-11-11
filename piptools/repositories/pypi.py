@@ -12,7 +12,7 @@ from pip.req.req_set import RequirementSet
 
 from ..cache import CACHE_DIR
 from ..exceptions import NoCandidateFound
-from ..utils import is_pinned_requirement, lookup_table
+from ..utils import is_pinned_requirement, is_link_requirement, lookup_table
 from .base import BaseRepository
 
 try:
@@ -30,8 +30,9 @@ class PyPIRepository(BaseRepository):
     config), but any other PyPI mirror can be used if index_urls is
     changed/configured on the Finder.
     """
-    def __init__(self, pip_options):
-        self.session = PipSession()
+    def __init__(self, pip_options, session=None):
+        self.session = session or PipSession()
+
         if pip_options.client_cert:
             self.session.cert = pip_options.client_cert
 
@@ -112,7 +113,7 @@ class PyPIRepository(BaseRepository):
         dependencies (also InstallRequirements, but not necessarily pinned).
         They indicate the secondary dependencies for the given requirement.
         """
-        if not (ireq.editable or is_pinned_requirement(ireq)):
+        if not (is_link_requirement(ireq) or is_pinned_requirement(ireq)):
             raise TypeError('Expected pinned or editable InstallRequirement, got {}'.format(ireq))
 
         if not os.path.isdir(self._download_dir):

@@ -6,6 +6,7 @@ from __future__ import (absolute_import, division, print_function,
 import optparse
 import sys
 import pip
+import logging
 
 # Make sure we're using a reasonably modern version of pip
 if not tuple(int(digit) for digit in pip.__version__.split('.')[:2]) >= (6, 1):
@@ -32,6 +33,7 @@ class PipCommand(pip.basecommand.Command):
 
 @click.command()
 @click.option('-v', '--verbose', is_flag=True, help="Show more output")
+@click.option('-d', '--debug', is_flag=True, help="Show debug logging output")
 @click.option('--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
 @click.option('-p', '--pre', is_flag=True, default=None, help="Allow resolving to prereleases (default is not)")
 @click.option('-r', '--rebuild', is_flag=True, help="Clear any caches upfront, rebuild from scratch")
@@ -47,8 +49,18 @@ class PipCommand(pip.basecommand.Command):
               help="Annotate results, indicating where dependencies come from")
 @click.argument('src_file', required=False, type=click.Path(exists=True), default=DEFAULT_REQUIREMENTS_FILE)
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
-        client_cert, trusted_host, header, annotate, src_file):
+        client_cert, trusted_host, header, annotate, src_file, debug):
     """Compiles requirements.txt from requirements.in specs."""
+    if debug:
+        root = logging.getLogger()
+        root.setLevel(logging.DEBUG)
+        ch = logging.StreamHandler(sys.stdout)
+        ch.setLevel(logging.DEBUG)
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        ch.setFormatter(formatter)
+        root.addHandler(ch)
+
     log.verbose = verbose
 
     if not src_file:
@@ -62,13 +74,14 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     # Use pip's parser for pip.conf management and defaults.
     # General options (find_links, index_url, extra_index_url, trusted_host,
     # and pre) are defered to pip.
-    pip_options = PipCommand()
+    pip_cmd = PipCommand()
     index_opts = pip.cmdoptions.make_option_group(
         pip.cmdoptions.index_group,
-        pip_options.parser,
+        pip_cmd.parser,
     )
-    pip_options.parser.insert_option_group(0, index_opts)
-    pip_options.parser.add_option(optparse.Option('--pre', action='store_true', default=False))
+    pip_cmd.parser.insert_option_group(0, index_opts)
+    pip_cmd.parser.add_option(
+        optparse.Option('--pre', action='store_true', default=False))
 
     pip_args = []
     if find_links:
@@ -76,7 +89,8 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     if index_url:
         pip_args.extend(['-i', index_url])
     if extra_index_url:
-        pip_args.extend(['--extra-index-url', extra_index_url])
+        for url in extra_index_url:
+            pip_args.extend(['--extra-index-url', url])
     if client_cert:
         pip_args.extend(['--client-cert', client_cert])
     if pre:
@@ -85,9 +99,10 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         for host in trusted_host:
             pip_args.extend(['--trusted-host', host])
 
-    pip_options, _ = pip_options.parse_args(pip_args)
+    pip_options, _ = pip_cmd.parse_args(pip_args)
 
-    repository = PyPIRepository(pip_options)
+    session = pip_cmd._build_session(pip_options)
+    repository = PyPIRepository(pip_options, session)
 
     log.debug('Using indexes:')
     for index_url in repository.finder.index_urls:
@@ -154,3 +169,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
 
     if dry_run:
         log.warning('Dry-run, so nothing updated.')
+
+
+if __name__ == '__main__':
+    cli()

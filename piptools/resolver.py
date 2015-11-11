@@ -14,7 +14,8 @@ from .cache import DependencyCache
 from .exceptions import UnsupportedConstraint
 from .logging import log
 from .utils import (as_name_version_tuple, format_requirement,
-                    format_specifier, full_groupby, is_pinned_requirement)
+                    format_specifier, full_groupby, is_pinned_requirement,
+                    is_link_requirement)
 
 green = partial(click.style, fg='green')
 magenta = partial(click.style, fg='magenta')
@@ -22,7 +23,7 @@ magenta = partial(click.style, fg='magenta')
 
 def _dep_key(ireq):
     if ireq.req is None and ireq.link is not None:
-        return str(ireq.link)
+        return ireq.link.url
     else:
         return ireq.req.key
 
@@ -94,11 +95,7 @@ class Resolver(object):
 
     def _check_constraints(self):
         for constraint in chain(self.our_constraints, self.their_constraints):
-            if constraint.link is not None and not constraint.editable:
-                msg = ('pip-compile does not support URLs as packages, unless they are editable. '
-                       'Perhaps add -e option?')
-                raise UnsupportedConstraint(msg, constraint)
-            elif constraint.extras:
+            if constraint.extras:
                 msg = ('pip-compile does not yet support packages with extras. '
                        'Support for this is in the works, though.')
                 raise UnsupportedConstraint(msg, constraint)
@@ -121,7 +118,7 @@ class Resolver(object):
         """
         for _, ireqs in full_groupby(constraints, key=_dep_key):
             ireqs = list(ireqs)
-            editable_ireq = first(ireqs, key=lambda ireq: ireq.editable)
+            editable_ireq = first(ireqs, key=is_link_requirement)
             if editable_ireq:
                 yield editable_ireq  # ignore all the other specs: the editable one is the one that counts
                 continue
@@ -146,9 +143,11 @@ class Resolver(object):
         configuration.
         """
         # Sort this list for readability of terminal output
+        upstream = {}
         constraints = sorted(self.constraints, key=_dep_key)
         log.debug('Current constraints:')
         for constraint in constraints:
+            upstream.setdefault(constraint.req, []).append('requirements.in')
             log.debug('  {}'.format(constraint))
 
         log.debug('')
@@ -158,9 +157,22 @@ class Resolver(object):
         # Find the new set of secondary dependencies
         log.debug('')
         log.debug('Finding secondary dependencies:')
-        theirs = set(dep
-                     for best_match in best_matches
-                     for dep in self._iter_dependencies(best_match))
+        theirs = set()
+
+        for best_match in best_matches:
+            for dep in self._iter_dependencies(best_match):
+                theirs.add(dep)
+                comes_from = dep.comes_from if dep.comes_from else best_match
+                upstream.setdefault(dep.req, []).append(comes_from.req)
+
+        # for ireq in best_matches:
+        #     if ireq.prepared:
+        #         version = ireq.pkg_info()['version']
+        #         if version not in ireq.req:
+        #             raise RuntimeError(
+        #                 'Version {} does not match {} for package {}'.format(
+        #                     version, ireq.req.specifier, ireq.name)
+        #             )
 
         # NOTE: We need to compare the underlying Requirement objects, since
         # InstallRequirement does not define equality
@@ -170,7 +182,16 @@ class Resolver(object):
             log.debug('')
             log.debug('New dependencies found in this round:')
             for new_dependency in sorted(diff, key=lambda req: req.key):
-                log.debug('  adding {}'.format(new_dependency))
+                comes_from = sorted(
+                    upstream[new_dependency], key=lambda req: req.key)
+                comes_from_formatted = [
+                    click.style(str(u), fg='yellow')
+                    for u in comes_from
+                ]
+                log.debug('  adding {}\n    from {}'.format(
+                    click.style(str(new_dependency), fg='green'),
+                    '\n         '.join(comes_from_formatted),
+                ))
 
         # Store the last round's results in the their_constraints
         self.their_constraints |= theirs
@@ -191,7 +212,7 @@ class Resolver(object):
             Flask==0.10.1 => Flask==0.10.1
 
         """
-        if ireq.editable:
+        if is_link_requirement(ireq):
             # NOTE: it's much quicker to immediately return instead of
             # hitting the index server
             best_match = ireq
@@ -216,7 +237,7 @@ class Resolver(object):
         Editable requirements will never be looked up, as they may have
         changed at any time.
         """
-        if ireq.editable:
+        if is_link_requirement(ireq):
             for dependency in self.repository.get_dependencies(ireq):
                 yield dependency
             return
@@ -242,5 +263,5 @@ class Resolver(object):
             yield InstallRequirement.from_line(dependency_string)
 
     def reverse_dependencies(self, ireqs):
-        tups = (as_name_version_tuple(ireq) for ireq in ireqs if not ireq.editable)
+        tups = (as_name_version_tuple(ireq) for ireq in ireqs if is_pinned_requirement(ireq))
         return self.dependency_cache.reverse_dependencies(tups)

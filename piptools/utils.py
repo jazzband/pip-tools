@@ -4,6 +4,8 @@ from __future__ import (absolute_import, division, print_function,
 
 from itertools import groupby, chain
 
+from pip.download import is_vcs_url, _get_used_vcs_backend
+
 from .click import style
 from first import first
 
@@ -17,8 +19,15 @@ def format_requirement(ireq):
     Generic formatter for pretty printing InstallRequirements to the terminal
     in a less verbose way than using its `__str__` method.
     """
-    if ireq.editable:
-        line = '-e {}'.format(ireq.link)
+    if is_link_requirement(ireq):
+        line = ''
+        if ireq.editable:
+            line = '-e '
+        line += ireq.link.url
+        if False and is_vcs_url(ireq.link):
+            vcs_backend = _get_used_vcs_backend(ireq.link)
+            rev = vcs_backend.get_revision(ireq.source_dir)
+            line += '@{}'.format(rev)
     else:
         line = str(ireq.req)
     return line
@@ -33,6 +42,10 @@ def format_specifier(ireq):
     specs = ireq.specifier._specs if ireq.req is not None else []
     specs = sorted(specs, key=lambda x: x._spec[1])
     return ','.join(str(s) for s in specs) or '<any>'
+
+
+def is_link_requirement(ireq):
+    return ireq.link and ireq.link.comes_from is None
 
 
 def is_pinned_requirement(ireq):
@@ -52,7 +65,7 @@ def is_pinned_requirement(ireq):
         django~=1.8   # NOT pinned
         django==1.*   # NOT pinned
     """
-    if ireq.editable:
+    if is_link_requirement(ireq):
         return False
 
     if len(ireq.specifier._specs) != 1:

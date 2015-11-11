@@ -22,6 +22,7 @@ setup(
         'console_scripts': [
             'pip-compile = piptools.scripts.compile:cli',
             'pip-sync = piptools.scripts.sync:cli',
+            'pip-urls = piptools.scripts.urls:cli',
         ],
     },
     platforms='any',
