@@ -143,9 +143,11 @@ class Resolver(object):
         configuration.
         """
         # Sort this list for readability of terminal output
+        upstream = {}
         constraints = sorted(self.constraints, key=_dep_key)
         log.debug('Current constraints:')
         for constraint in constraints:
+            upstream.setdefault(constraint.req, []).append('requirements.in')
             log.debug('  {}'.format(constraint))
 
         log.debug('')
@@ -155,9 +157,13 @@ class Resolver(object):
         # Find the new set of secondary dependencies
         log.debug('')
         log.debug('Finding secondary dependencies:')
-        theirs = set(dep
-                     for best_match in best_matches
-                     for dep in self._iter_dependencies(best_match))
+        theirs = set()
+
+        for best_match in best_matches:
+            for dep in self._iter_dependencies(best_match):
+                theirs.add(dep)
+                comes_from = dep.comes_from if dep.comes_from else best_match
+                upstream.setdefault(dep.req, []).append(comes_from.req)
 
         # for ireq in best_matches:
         #     if ireq.prepared:
@@ -176,7 +182,16 @@ class Resolver(object):
             log.debug('')
             log.debug('New dependencies found in this round:')
             for new_dependency in sorted(diff, key=lambda req: req.key):
-                log.debug('  adding {}'.format(new_dependency))
+                comes_from = sorted(
+                    upstream[new_dependency], key=lambda req: req.key)
+                comes_from_formatted = [
+                    click.style(str(u), fg='yellow')
+                    for u in comes_from
+                ]
+                log.debug('  adding {}\n    from {}'.format(
+                    click.style(str(new_dependency), fg='green'),
+                    '\n         '.join(comes_from_formatted),
+                ))
 
         # Store the last round's results in the their_constraints
         self.their_constraints |= theirs
