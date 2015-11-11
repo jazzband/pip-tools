@@ -6,6 +6,7 @@ from __future__ import (absolute_import, division, print_function,
 import optparse
 import sys
 import pip
+import logging
 
 # Make sure we're using a reasonably modern version of pip
 if not tuple(int(digit) for digit in pip.__version__.split('.')[:2]) >= (6, 1):
@@ -32,6 +33,7 @@ class PipCommand(pip.basecommand.Command):
 
 @click.command()
 @click.option('-v', '--verbose', is_flag=True, help="Show more output")
+@click.option('-d', '--debug', is_flag=True, help="Show debug logging output")
 @click.option('--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
 @click.option('-p', '--pre', is_flag=True, default=None, help="Allow resolving to prereleases (default is not)")
 @click.option('-r', '--rebuild', is_flag=True, help="Clear any caches upfront, rebuild from scratch")
@@ -47,8 +49,18 @@ class PipCommand(pip.basecommand.Command):
               help="Annotate results, indicating where dependencies come from")
 @click.argument('src_file', required=False, type=click.Path(exists=True), default=DEFAULT_REQUIREMENTS_FILE)
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
-        client_cert, trusted_host, header, annotate, src_file):
+        client_cert, trusted_host, header, annotate, src_file, debug):
     """Compiles requirements.txt from requirements.in specs."""
+    if debug:
+        root = logging.getLogger()
+        root.setLevel(logging.DEBUG)
+        ch = logging.StreamHandler(sys.stdout)
+        ch.setLevel(logging.DEBUG)
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        ch.setFormatter(formatter)
+        root.addHandler(ch)
+
     log.verbose = verbose
 
     if not src_file:
