@@ -30,8 +30,9 @@ class PyPIRepository(BaseRepository):
     config), but any other PyPI mirror can be used if index_urls is
     changed/configured on the Finder.
     """
-    def __init__(self, pip_options):
-        self.session = PipSession()
+    def __init__(self, pip_options, session=None):
+        self.session = session or PipSession()
+
         if pip_options.client_cert:
             self.session.cert = pip_options.client_cert
 

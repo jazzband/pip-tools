@@ -62,13 +62,14 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     # Use pip's parser for pip.conf management and defaults.
     # General options (find_links, index_url, extra_index_url, trusted_host,
     # and pre) are defered to pip.
-    pip_options = PipCommand()
+    pip_cmd = PipCommand()
     index_opts = pip.cmdoptions.make_option_group(
         pip.cmdoptions.index_group,
-        pip_options.parser,
+        pip_cmd.parser,
     )
-    pip_options.parser.insert_option_group(0, index_opts)
-    pip_options.parser.add_option(optparse.Option('--pre', action='store_true', default=False))
+    pip_cmd.parser.insert_option_group(0, index_opts)
+    pip_cmd.parser.add_option(
+        optparse.Option('--pre', action='store_true', default=False))
 
     pip_args = []
     if find_links:
@@ -86,9 +87,10 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         for host in trusted_host:
             pip_args.extend(['--trusted-host', host])
 
-    pip_options, _ = pip_options.parse_args(pip_args)
+    pip_options, _ = pip_cmd.parse_args(pip_args)
 
-    repository = PyPIRepository(pip_options)
+    session = pip_cmd._build_session(pip_options)
+    repository = PyPIRepository(pip_options, session)
 
     log.debug('Using indexes:')
     for index_url in repository.finder.index_urls:
