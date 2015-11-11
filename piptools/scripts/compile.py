@@ -169,3 +169,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
 
     if dry_run:
         log.warning('Dry-run, so nothing updated.')
+
+
+if __name__ == '__main__':
+    cli()
