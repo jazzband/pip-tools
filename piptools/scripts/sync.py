@@ -56,4 +56,4 @@ def cli(dry_run, force, src_files):
     installed_dists = pip.get_installed_distributions()
     to_install, to_uninstall = sync.diff(requirements, installed_dists)
 
-    sync.sync(to_install, to_uninstall, verbose=True, dry_run=dry_run)
+    sys.exit(sync.sync(to_install, to_uninstall, verbose=True, dry_run=dry_run))
