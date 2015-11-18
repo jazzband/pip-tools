@@ -141,4 +141,5 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False):
             for pkg in to_install:
                 click.echo("  {}".format(pkg))
         else:
-            pip.main(["install"] + pip_flags + [pkg for pkg in to_install])
+            return pip.main(["install"] + pip_flags + [pkg for pkg in to_install])
+    return 0
