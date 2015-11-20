@@ -37,6 +37,8 @@ try:
 except (ImportError, AttributeError):
     pass
 
+from pip._vendor.packaging import version as packaging_version
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -61,6 +63,9 @@ def parse_args():
         '--local', '-l', action='store_true', default=False,
         help='If in a virtualenv that has global access, do not output '
              'globally-installed packages')
+    parser.add_argument(
+        '--pre', '-p', action='store_true', default=False,
+        help='Include pre-release and development versions')
     return parser.parse_args()
 
 
@@ -112,7 +117,7 @@ def get_pkg_info(pkg_name, silent=False):
     return info
 
 
-def latest_version(pkg_name, silent=False):
+def latest_version(pkg_name, prerelease=False, silent=False):
     try:
         info = get_pkg_info(pkg_name, silent=silent)
     except ValueError:
@@ -122,12 +127,26 @@ def latest_version(pkg_name, silent=False):
             raise
     if not info:
         return None, None
-    version = info['info']['version']
+
+    try:
+        versions = [
+            v for v in sorted(
+                list(info['releases']),
+                key=packaging_version.parse
+            )
+        ]
+        if not prerelease:
+            versions = [v for v in versions
+                        if not packaging_version.parse(v).is_prerelease]
+        version = versions[-1]
+    except IndexError:
+        return None, None
+
     return parse_version(version), version
 
 
-def get_latest_versions(pkg_names):
-    get_latest = partial(latest_version, silent=True)
+def get_latest_versions(pkg_names, prerelease=False):
+    get_latest = partial(latest_version, prerelease=prerelease, silent=True)
     versions = map(get_latest, pkg_names)
     return zip(pkg_names, versions)
 
@@ -235,7 +254,7 @@ def main():
     installed = list(get_installed_pkgs(local=args.local))
     lookup_on_pypi = [name for name, _, _, editable in installed
                       if not editable or args.editables]
-    latest_versions = dict(get_latest_versions(lookup_on_pypi))
+    latest_versions = dict(get_latest_versions(lookup_on_pypi, args.pre))
 
     all_ok = True
     for pkg, installed_raw_version, installed_version, editable in installed:
