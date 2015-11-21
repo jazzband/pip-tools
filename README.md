@@ -1,4 +1,4 @@
-[![Build status](https://travis-ci.org/jgonggrijp/pip-review.svg?branch=develop)](https://secure.travis-ci.org/jgonggrijp/pip-review)
+[![Build status](https://travis-ci.org/jgonggrijp/pip-review.svg?branch=master)](https://secure.travis-ci.org/jgonggrijp/pip-review)
 
 pip-review
 ==========
@@ -36,6 +36,11 @@ rq==0.3.2 available (you have 0.3.0)
 Upgrade now? [Y]es, [N]o, [A]ll, [Q]uit y
 ...
 ```
+
+Up until version 0.3.7, `pip-review` would show and install any available
+update including pre-release versions. As of version 0.4, it will only show and
+install release versions by default. To restore the original behaviour, use the
+`--pre` flag.
 
 
 Installation
