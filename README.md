@@ -1,4 +1,4 @@
-[![Build status](https://travis-ci.org/jgonggrijp/pip-review.svg?branch=develop)](https://secure.travis-ci.org/jgonggrijp/pip-review)
+[![Build status](https://travis-ci.org/jgonggrijp/pip-review.svg?branch=master)](https://secure.travis-ci.org/jgonggrijp/pip-review)
 
 pip-review
 ==========
