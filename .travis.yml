@@ -16,6 +16,7 @@ env:
     - TOXENV=py34-pip70
     - TOXENV=py27-pip6
     - TOXENV=py34-pip6
+    - TOXENV=flake8
 
 install:
   - travis_retry pip install tox
