@@ -6,10 +6,21 @@ from itertools import groupby, chain
 
 from .click import style
 from first import first
+from pip.req import InstallRequirement
 
 
 def comment(text):
     return style(text, fg='green')
+
+
+def make_install_requirement(name, version, extras):
+    # If no extras are specified, the extras string is blank
+    extras_string = ""
+    if extras:
+        # Sort extras for stability
+        extras_string = "[{}]".format(",".join(sorted(extras)))
+
+    return InstallRequirement.from_line('{}{}=={}'.format(name, extras_string, str(version)))
 
 
 def format_requirement(ireq):
@@ -62,17 +73,17 @@ def is_pinned_requirement(ireq):
     return (op == '==' or op == '===') and not version.endswith('.*')
 
 
-def as_name_version_tuple(ireq):
+def as_tuple(ireq):
     """
-    Pulls out the (name: str, version:str) tuple from the pinned
-    InstallRequirement.
+    Pulls out the (name: str, version:str, extras:(str)) tuple from the pinned InstallRequirement.
     """
     if not is_pinned_requirement(ireq):
         raise TypeError('Expected a pinned InstallRequirement, got {}'.format(ireq))
 
     name = ireq.req.key
     version = first(ireq.specifier._specs)._spec[1]
-    return name, version
+    extras = ireq.extras
+    return name, version, extras
 
 
 def full_groupby(iterable, key=None):

@@ -9,7 +9,7 @@ from pytest import fixture
 from piptools.cache import DependencyCache
 from piptools.repositories.base import BaseRepository
 from piptools.resolver import Resolver
-from piptools.utils import as_name_version_tuple
+from piptools.utils import as_tuple, make_install_requirement
 
 
 class FakeRepository(BaseRepository):
@@ -26,14 +26,16 @@ class FakeRepository(BaseRepository):
 
         versions = ireq.specifier.filter(self.index[ireq.req.key], prereleases=prereleases)
         best_version = max(versions, key=Version)
-        return InstallRequirement.from_line('{}=={}'.format(ireq.req.key, best_version))
+        return make_install_requirement(ireq.req.key, best_version, ireq.extras)
 
     def get_dependencies(self, ireq):
         if ireq.editable:
             return self.editables[str(ireq.link)]
 
-        name, version = as_name_version_tuple(ireq)
-        dependencies = self.index[name][version]
+        name, version, extras = as_tuple(ireq)
+        # Store non-extra dependencies under the empty string
+        extras = ireq.extras + ("",)
+        dependencies = [dep for extra in extras for dep in self.index[name][version][extra]]
         return [InstallRequirement.from_line(dep) for dep in dependencies]
 
 

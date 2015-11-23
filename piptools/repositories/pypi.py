@@ -7,12 +7,11 @@ from shutil import rmtree
 
 from pip.download import PipSession
 from pip.index import PackageFinder
-from pip.req import InstallRequirement
 from pip.req.req_set import RequirementSet
 
 from ..cache import CACHE_DIR
 from ..exceptions import NoCandidateFound
-from ..utils import is_pinned_requirement, lookup_table
+from ..utils import is_pinned_requirement, lookup_table, make_install_requirement
 from .base import BaseRepository
 
 try:
@@ -104,7 +103,9 @@ class PyPIRepository(BaseRepository):
         best_candidate = max(matching_candidates, key=self.finder._candidate_sort_key)
 
         # Turn the candidate into a pinned InstallRequirement
-        return InstallRequirement.from_line('{}=={}'.format(best_candidate.project, str(best_candidate.version)))
+        return make_install_requirement(
+            best_candidate.project, best_candidate.version, ireq.extras
+        )
 
     def get_dependencies(self, ireq):
         """

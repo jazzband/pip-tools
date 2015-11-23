@@ -13,8 +13,7 @@ from pip.req import InstallRequirement
 from .cache import DependencyCache
 from .exceptions import UnsupportedConstraint
 from .logging import log
-from .utils import (as_name_version_tuple, format_requirement,
-                    format_specifier, full_groupby, is_pinned_requirement)
+from .utils import format_requirement, format_specifier, full_groupby, is_pinned_requirement
 
 green = partial(click.style, fg='green')
 magenta = partial(click.style, fg='magenta')
@@ -98,10 +97,6 @@ class Resolver(object):
                 msg = ('pip-compile does not support URLs as packages, unless they are editable. '
                        'Perhaps add -e option?')
                 raise UnsupportedConstraint(msg, constraint)
-            elif constraint.extras:
-                msg = ('pip-compile does not yet support packages with extras. '
-                       'Support for this is in the works, though.')
-                raise UnsupportedConstraint(msg, constraint)
 
     def _group_constraints(self, constraints):
         """
@@ -132,6 +127,8 @@ class Resolver(object):
             for ireq in ireqs:
                 # NOTE we may be losing some info on dropped reqs here
                 combined_ireq.req.specifier &= ireq.req.specifier
+                # Return a sorted, de-duped tuple of extras
+                combined_ireq.extras = tuple(sorted(set(combined_ireq.extras + ireq.extras)))
             yield combined_ireq
 
     def _resolve_one_round(self):
@@ -227,20 +224,18 @@ class Resolver(object):
         # speed), or reach out to the external repository to
         # download and inspect the package version and get dependencies
         # from there
-        name, version = as_name_version_tuple(ireq)
-
-        if (name, version) not in self.dependency_cache:
+        if ireq not in self.dependency_cache:
             log.debug('  {} not in cache, need to check index'.format(format_requirement(ireq)), fg='yellow')
             dependencies = self.repository.get_dependencies(ireq)
-            self.dependency_cache[name, version] = sorted(str(ireq.req) for ireq in dependencies)
+            self.dependency_cache[ireq] = sorted(str(ireq.req) for ireq in dependencies)
 
         # Example: ['Werkzeug>=0.9', 'Jinja2>=2.4']
-        dependency_strings = self.dependency_cache[name, version]
+        dependency_strings = self.dependency_cache[ireq]
         log.debug('  {:25} requires {}'.format(format_requirement(ireq),
                                                ', '.join(sorted(dependency_strings, key=lambda s: s.lower())) or '-'))
         for dependency_string in dependency_strings:
             yield InstallRequirement.from_line(dependency_string)
 
     def reverse_dependencies(self, ireqs):
-        tups = (as_name_version_tuple(ireq) for ireq in ireqs if not ireq.editable)
-        return self.dependency_cache.reverse_dependencies(tups)
+        non_editable = [ireq for ireq in ireqs if not ireq.editable]
+        return self.dependency_cache.reverse_dependencies(non_editable)
