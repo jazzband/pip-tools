@@ -108,7 +108,7 @@ def diff(compiled_requirements, installed_dists):
 
     for key, requirement in requirements_lut.items():
         if key not in satisfied:
-            to_install.add(str(requirement.req))
+            to_install.add(str(requirement.link or requirement.req))
 
     # Make sure to not uninstall any packages that should be ignored
     to_uninstall -= set(pkgs_to_ignore)
