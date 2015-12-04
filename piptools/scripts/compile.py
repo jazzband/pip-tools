@@ -48,7 +48,9 @@ class PipCommand(pip.basecommand.Command):
 @click.option('--header/--no-header', is_flag=True, default=True, help="Add header to generated file")
 @click.option('--annotate/--no-annotate', is_flag=True, default=True,
               help="Annotate results, indicating where dependencies come from")
-@click.option('-o', '--output-file', nargs=1, type=str, default=None, help="Where should pip-compile's output be stored? If unspecified and there is one input file, will be determined from the input file's name. Else, must be specified.")
+@click.option('-o', '--output-file', nargs=1, type=str, default=None,
+              help=("Where should pip-compile's output be stored? If unspecified and there is one input file, "
+                    "will be determined from the input file's name. Else, must be specified."))
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         client_cert, trusted_host, header, annotate, output_file, src_files):
@@ -57,7 +59,8 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
 
     if len(src_files) == 0:
         if not os.path.exists(DEFAULT_REQUIREMENTS_FILE):
-            raise click.BadParameter("If you do not specify an input file, the default is {}".format(DEFAULT_REQUIREMENTS_FILE))
+            raise click.BadParameter(("If you do not specify an input file, "
+                                      "the default is {}").format(DEFAULT_REQUIREMENTS_FILE))
         src_files = (DEFAULT_REQUIREMENTS_FILE,)
 
     if len(src_files) == 1 and src_files[0] == '-':
@@ -126,13 +129,11 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
             with tempfile.NamedTemporaryFile() as tmpfile:
                 tmpfile.write(sys.stdin.read())
                 tmpfile.flush()
-                constraints.extend(parse_requirements(tmpfile.name,
-                    finder=repository.finder, session=repository.session,
-                    options=pip_options))
+                constraints.extend(parse_requirements(
+                    tmpfile.name, finder=repository.finder, session=repository.session, options=pip_options))
         else:
-            constraints.extend(parse_requirements(src_file,
-                finder=repository.finder, session=repository.session,
-                options=pip_options))
+            constraints.extend(parse_requirements(
+                src_file, finder=repository.finder, session=repository.session, options=pip_options))
 
     try:
         resolver = Resolver(constraints, repository, prereleases=pre,
