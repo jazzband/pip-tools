@@ -10,8 +10,9 @@ from .utils import comment, format_requirement
 
 class OutputWriter(object):
     def __init__(self, src_file, dry_run, header, annotate, default_index_url,
-                 index_urls):
+                 index_urls, output_file=None):
         self.src_file = src_file
+        self.output_file = output_file
         self.dry_run = dry_run
         self.header = header
         self.annotate = annotate
@@ -20,6 +21,8 @@ class OutputWriter(object):
 
     @property
     def dst_file(self):
+        if self.output_file:
+            return self.output_file
         base_name, _, _ = self.src_file.rpartition('.')
         return base_name + '.txt'
 
