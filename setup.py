@@ -13,7 +13,7 @@ setup(
     description=__doc__,
     packages=find_packages(exclude=['tests']),
     install_requires=[
-        'click',
+        'click>=6',
         'first',
         'six',
     ],
