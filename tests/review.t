@@ -35,6 +35,12 @@ We can also install these updates automatically:
   $ pip-review
   cElementTree==* is available (you have 1.0.5.post20051216) (glob)
 
+Next, let's test for regressions with older versions of pip:
+
+  $ pip install --force-reinstall --upgrade pip\<6.0 >/dev/null 2>&1
+  $ pip-review
+  cElementTree==* is available (you have 1.0.5.post20051216) (glob)
+
 Cleanup our playground:
 
   $ rm -rf FOO
