@@ -49,8 +49,8 @@ class PipCommand(pip.basecommand.Command):
 @click.option('--annotate/--no-annotate', is_flag=True, default=True,
               help="Annotate results, indicating where dependencies come from")
 @click.option('-o', '--output-file', nargs=1, type=str, default=None,
-              help=("Where should pip-compile's output be stored? If unspecified and there is one input file, "
-                    "will be determined from the input file's name. Else, must be specified."))
+              help=('Output file name. Required if more than one input file is given. '
+                    'Will be derived from input file otherwise.'))
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         client_cert, trusted_host, header, annotate, output_file, src_files):
@@ -65,10 +65,10 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
 
     if len(src_files) == 1 and src_files[0] == '-':
         if not output_file:
-            raise click.BadParameter("If you specify '-' as your input file, then you must specify an output file")
+            raise click.BadParameter('--output-file is required if input is from stdin')
 
     if len(src_files) > 1 and not output_file:
-        raise click.BadParameter("If you specify more than one input file, then you must specify an output file")
+        raise click.BadParameter('--output-file is required if two or more input files are given.')
 
     ###
     # Setup
