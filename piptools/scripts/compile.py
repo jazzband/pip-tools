@@ -4,7 +4,10 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import optparse
+import os
 import sys
+import tempfile
+
 import pip
 
 # Make sure we're using a reasonably modern version of pip
@@ -45,15 +48,27 @@ class PipCommand(pip.basecommand.Command):
 @click.option('--header/--no-header', is_flag=True, default=True, help="Add header to generated file")
 @click.option('--annotate/--no-annotate', is_flag=True, default=True,
               help="Annotate results, indicating where dependencies come from")
-@click.argument('src_file', required=False, type=click.Path(exists=True), default=DEFAULT_REQUIREMENTS_FILE)
+@click.option('-o', '--output-file', nargs=1, type=str, default=None,
+              help=('Output file name. Required if more than one input file is given. '
+                    'Will be derived from input file otherwise.'))
+@click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
-        client_cert, trusted_host, header, annotate, src_file):
+        client_cert, trusted_host, header, annotate, output_file, src_files):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
 
-    if not src_file:
-        log.warning('No input files to process')
-        sys.exit(2)
+    if len(src_files) == 0:
+        if not os.path.exists(DEFAULT_REQUIREMENTS_FILE):
+            raise click.BadParameter(("If you do not specify an input file, "
+                                      "the default is {}").format(DEFAULT_REQUIREMENTS_FILE))
+        src_files = (DEFAULT_REQUIREMENTS_FILE,)
+
+    if len(src_files) == 1 and src_files[0] == '-':
+        if not output_file:
+            raise click.BadParameter('--output-file is required if input is from stdin')
+
+    if len(src_files) > 1 and not output_file:
+        raise click.BadParameter('--output-file is required if two or more input files are given.')
 
     ###
     # Setup
@@ -104,12 +119,25 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     ###
     # Parsing/collecting initial requirements
     ###
+
     constraints = []
-    for line in parse_requirements(src_file, finder=repository.finder, session=repository.session, options=pip_options):
-        constraints.append(line)
+    for src_file in src_files:
+        if src_file == '-':
+            # pip requires filenames and not files. Since we want to support
+            # piping from stdin, we need to briefly save the input from stdin
+            # to a temporary file and have pip read that.
+            with tempfile.NamedTemporaryFile() as tmpfile:
+                tmpfile.write(sys.stdin.read())
+                tmpfile.flush()
+                constraints.extend(parse_requirements(
+                    tmpfile.name, finder=repository.finder, session=repository.session, options=pip_options))
+        else:
+            constraints.extend(parse_requirements(
+                src_file, finder=repository.finder, session=repository.session, options=pip_options))
 
     try:
-        resolver = Resolver(constraints, repository, prereleases=pre, clear_caches=rebuild)
+        resolver = Resolver(constraints, repository, prereleases=pre,
+                            clear_caches=rebuild)
         results = resolver.resolve()
     except PipToolsError as e:
         log.error(str(e))
@@ -146,7 +174,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     if annotate:
         reverse_dependencies = resolver.reverse_dependencies(results)
 
-    writer = OutputWriter(src_file, dry_run=dry_run, header=header,
+    writer = OutputWriter(src_file, output_file=output_file, dry_run=dry_run, header=header,
                           annotate=annotate,
                           default_index_url=repository.DEFAULT_INDEX_URL,
                           index_urls=repository.finder.index_urls)
