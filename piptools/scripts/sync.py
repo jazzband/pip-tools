@@ -25,8 +25,10 @@ DEFAULT_REQUIREMENTS_FILE = 'requirements.txt'
 @click.command()
 @click.option('--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
 @click.option('--force', is_flag=True, help="Proceed even if conflicts are found")
+@click.option('-f', '--find-links', multiple=True, help="Look for archives in this directory or on this HTML page", envvar='PIP_FIND_LINKS')  # noqa
+@click.option('--no-index', is_flag=True, help="Ignore package index (only looking at --find-links URLs instead)")
 @click.argument('src_files', required=False, type=click.Path(exists=True), nargs=-1)
-def cli(dry_run, force, src_files):
+def cli(dry_run, force, find_links, no_index, src_files):
     if not src_files:
         if os.path.exists(DEFAULT_REQUIREMENTS_FILE):
             src_files = (DEFAULT_REQUIREMENTS_FILE,)
@@ -56,4 +58,11 @@ def cli(dry_run, force, src_files):
     installed_dists = pip.get_installed_distributions()
     to_install, to_uninstall = sync.diff(requirements, installed_dists)
 
-    sys.exit(sync.sync(to_install, to_uninstall, verbose=True, dry_run=dry_run))
+    pip_flags = []
+    for link in find_links or []:
+        pip_flags.extend(['-f', link])
+    if no_index:
+        pip_flags.append('--no-index')
+
+    sys.exit(sync.sync(to_install, to_uninstall, verbose=True, dry_run=dry_run,
+                       pip_flags=pip_flags))
