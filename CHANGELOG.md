@@ -1,3 +1,10 @@
+# 1.3.0
+
+- Support multiple requirement files to pip-compile
+- Support requirements from stdin for pip-compile
+- Support --output-file option on pip-compile, to redirect output to a file (or stdout)
+
+
 # 1.2.0
 
 - Add CHANGELOG :)
