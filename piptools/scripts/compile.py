@@ -35,7 +35,7 @@ class PipCommand(pip.basecommand.Command):
 
 @click.command()
 @click.option('-v', '--verbose', is_flag=True, help="Show more output")
-@click.option('--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
+@click.option('-n', '--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
 @click.option('-p', '--pre', is_flag=True, default=None, help="Allow resolving to prereleases (default is not)")
 @click.option('-r', '--rebuild', is_flag=True, help="Clear any caches upfront, rebuild from scratch")
 @click.option('-f', '--find-links', multiple=True, help="Look for archives in this directory or on this HTML page", envvar='PIP_FIND_LINKS')  # noqa

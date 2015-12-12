@@ -23,7 +23,7 @@ DEFAULT_REQUIREMENTS_FILE = 'requirements.txt'
 
 
 @click.command()
-@click.option('--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
+@click.option('-n', '--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
 @click.option('--force', is_flag=True, help="Proceed even if conflicts are found")
 @click.option('-f', '--find-links', multiple=True, help="Look for archives in this directory or on this HTML page", envvar='PIP_FIND_LINKS')  # noqa
 @click.option('--no-index', is_flag=True, help="Ignore package index (only looking at --find-links URLs instead)")
