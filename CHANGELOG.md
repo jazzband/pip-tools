@@ -1,3 +1,9 @@
+# 1.4.1
+
+- Fix bug where successive invocations of pip-sync with editables kept
+  uninstalling/installing them (fixes #270)
+
+
 # 1.4.0
 
 - Add command line option -f / --find-links
