@@ -1,3 +1,11 @@
+# 1.4.0
+
+- Add command line option -f / --find-links
+- Add command line option --no-index
+- Add command line alias -n (for --dry-run)
+- Fix a unicode issue
+
+
 # 1.3.0
 
 - Support multiple requirement files to pip-compile
