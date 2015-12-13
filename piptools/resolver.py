@@ -6,14 +6,15 @@ import os
 from functools import partial
 from itertools import chain, count
 
-from . import click
 from first import first
 from pip.req import InstallRequirement
 
+from . import click
 from .cache import DependencyCache
 from .exceptions import UnsupportedConstraint
 from .logging import log
-from .utils import format_requirement, format_specifier, full_groupby, is_pinned_requirement
+from .utils import (format_requirement, format_specifier, full_groupby,
+                    is_pinned_requirement)
 
 green = partial(click.style, fg='green')
 magenta = partial(click.style, fg='magenta')
@@ -63,8 +64,8 @@ class Resolver(object):
 
         self._check_constraints()
 
-        # TODO: Is there a better way to do this?
-        os.environ['PIP_EXISTS_ACTION'] = 'i'  # ignore existing packages
+        # Ignore existing packages
+        os.environ[str('PIP_EXISTS_ACTION')] = str('i')  # NOTE: str() wrapping necessary for Python 2/3 compat
         for current_round in count(start=1):
             if current_round > max_rounds:
                 raise RuntimeError('No stable configuration of concrete packages '
