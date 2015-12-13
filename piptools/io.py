@@ -84,6 +84,9 @@ class AtomicSaver(object):
         tmp_fd, tmp_part_path = tempfile.mkstemp(dir=self.dest_dir,
                                                  text=self.text_mode)
         os.close(tmp_fd)
+        umask = os.umask(0)
+        os.umask(umask)
+        os.chmod(tmp_part_path, 0o0666 ^ umask)
         try:
             _atomic_rename(tmp_part_path, self.part_path,
                            overwrite=self.overwrite_part)
