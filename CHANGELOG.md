@@ -1,3 +1,8 @@
+# 1.4.2
+
+- Fix bug where umask was ignored when writing requirement files (#268)
+
+
 # 1.4.1
 
 - Fix bug where successive invocations of pip-sync with editables kept
