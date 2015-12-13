@@ -1,8 +1,7 @@
 import collections
+from subprocess import check_call
 
 from . import click
-import pip
-
 from .exceptions import IncompatibleRequirements, UnsupportedConstraint
 from .utils import flat_map
 
@@ -135,7 +134,7 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None)
             for pkg in to_uninstall:
                 click.echo("  {}".format(pkg))
         else:
-            pip.main(["uninstall", '-y'] + pip_flags + [pkg for pkg in to_uninstall])
+            check_call(['pip', 'uninstall', '-y'] + pip_flags + sorted(to_uninstall))
 
     if to_install:
         if dry_run:
@@ -143,5 +142,5 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None)
             for pkg in to_install:
                 click.echo("  {}".format(pkg))
         else:
-            return pip.main(["install"] + pip_flags + [pkg for pkg in to_install])
+            check_call(['pip', 'install'] + pip_flags + sorted(to_install))
     return 0
