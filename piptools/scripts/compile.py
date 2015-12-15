@@ -49,8 +49,7 @@ class PipCommand(pip.basecommand.Command):
 @click.option('--annotate/--no-annotate', is_flag=True, default=True,
               help="Annotate results, indicating where dependencies come from")
 @click.option('-o', '--output-file', nargs=1, type=str, default=None,
-              help=('Output file name. Required if more than one input file is given. '
-                    'Will be derived from input file otherwise.'))
+              help=('Output file name. Can be used to combine multiple inputs into a single output'))
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         client_cert, trusted_host, header, annotate, output_file, src_files):
@@ -66,9 +65,6 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     if len(src_files) == 1 and src_files[0] == '-':
         if not output_file:
             raise click.BadParameter('--output-file is required if input is from stdin')
-
-    if len(src_files) > 1 and not output_file:
-        raise click.BadParameter('--output-file is required if two or more input files are given.')
 
     ###
     # Setup
@@ -120,8 +116,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     # Parsing/collecting initial requirements
     ###
 
-    constraints = []
-    for src_file in src_files:
+    def _get_contraints(src_file):
         if src_file == '-':
             # pip requires filenames and not files. Since we want to support
             # piping from stdin, we need to briefly save the input from stdin
@@ -129,58 +124,84 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
             with tempfile.NamedTemporaryFile() as tmpfile:
                 tmpfile.write(sys.stdin.read())
                 tmpfile.flush()
-                constraints.extend(parse_requirements(
-                    tmpfile.name, finder=repository.finder, session=repository.session, options=pip_options))
+                return parse_requirements(tmpfile.name,
+                                          finder=repository.finder,
+                                          session=repository.session,
+                                          options=pip_options,
+                                          )
         else:
-            constraints.extend(parse_requirements(
-                src_file, finder=repository.finder, session=repository.session, options=pip_options))
+            return parse_requirements(src_file,
+                                      finder=repository.finder,
+                                      session=repository.session,
+                                      options=pip_options,
+                                      )
 
-    try:
-        resolver = Resolver(constraints, repository, prereleases=pre,
-                            clear_caches=rebuild)
-        results = resolver.resolve()
-    except PipToolsError as e:
-        log.error(str(e))
-        sys.exit(2)
+    constraints = []
 
-    log.debug('')
+    if output_file:
+        all_constraints = []
+        for src_file in src_files:
+            all_constraints.extend(_get_contraints(src_file))
+        constraints.append(all_constraints)
+        src_files = (src_file,)
+    else:
+        constraints = [_get_contraints(src_file) for src_file in src_files]
 
-    ##
-    # Output
-    ##
+    dependency_cache = None
+    for src_file, file_constraints in zip(src_files, constraints):
+        try:
+            resolver = Resolver(file_constraints,
+                                repository,
+                                cache=dependency_cache,
+                                prereleases=pre,
+                                clear_caches=rebuild,
+                                )
+            results = resolver.resolve()
+        except PipToolsError as e:
+            log.error(str(e))
+            sys.exit(2)
 
-    # Compute reverse dependency annotations statically, from the
-    # dependency cache that the resolver has populated by now.
-    #
-    # TODO (1a): reverse deps for any editable package are lost
-    #            what SHOULD happen is that they are cached in memory, just
-    #            not persisted to disk!
-    #
-    # TODO (1b): perhaps it's easiest if the dependency cache has an API
-    #            that could take InstallRequirements directly, like:
-    #
-    #                cache.set(ireq, ...)
-    #
-    #            then, when ireq is editable, it would store in
-    #
-    #              editables[egg_name][link_without_fragment] = deps
-    #              editables['pip-tools']['git+...ols.git@future'] = {'click>=3.0', 'six'}
-    #
-    #            otherwise:
-    #
-    #              self[as_name_version_tuple(ireq)] = {'click>=3.0', 'six'}
-    #
-    reverse_dependencies = None
-    if annotate:
-        reverse_dependencies = resolver.reverse_dependencies(results)
+        # set cache for next file
+        dependency_cache = resolver.dependency_cache
 
-    writer = OutputWriter(src_file, output_file=output_file, dry_run=dry_run, header=header,
-                          annotate=annotate,
-                          default_index_url=repository.DEFAULT_INDEX_URL,
-                          index_urls=repository.finder.index_urls)
-    writer.write(results=results,
-                 reverse_dependencies=reverse_dependencies,
-                 primary_packages={ireq.req.key for ireq in constraints})
+        log.debug('')
+
+        ##
+        # Output
+        ##
+
+        # Compute reverse dependency annotations statically, from the
+        # dependency cache that the resolver has populated by now.
+        #
+        # TODO (1a): reverse deps for any editable package are lost
+        #            what SHOULD happen is that they are cached in memory, just
+        #            not persisted to disk!
+        #
+        # TODO (1b): perhaps it's easiest if the dependency cache has an API
+        #            that could take InstallRequirements directly, like:
+        #
+        #                cache.set(ireq, ...)
+        #
+        #            then, when ireq is editable, it would store in
+        #
+        #              editables[egg_name][link_without_fragment] = deps
+        #              editables['pip-tools']['git+...ols.git@future'] = {'click>=3.0', 'six'}
+        #
+        #            otherwise:
+        #
+        #              self[as_name_version_tuple(ireq)] = {'click>=3.0', 'six'}
+        #
+        reverse_dependencies = None
+        if annotate:
+            reverse_dependencies = resolver.reverse_dependencies(results)
+
+        writer = OutputWriter(src_file, output_file=output_file, dry_run=dry_run, header=header,
+                              annotate=annotate,
+                              default_index_url=repository.DEFAULT_INDEX_URL,
+                              index_urls=repository.finder.index_urls)
+        writer.write(results=results,
+                     reverse_dependencies=reverse_dependencies,
+                     primary_packages={ireq.req.key for ireq in file_constraints})
 
     if dry_run:
         log.warning('Dry-run, so nothing updated.')
