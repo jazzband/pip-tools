@@ -51,9 +51,11 @@ class PipCommand(pip.basecommand.Command):
 @click.option('-o', '--output-file', nargs=1, type=str, default=None,
               help=('Output file name. Required if more than one input file is given. '
                     'Will be derived from input file otherwise.'))
+@click.option('--force-range', is_flag=True, help="Force range dependencies")
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
-        client_cert, trusted_host, header, annotate, output_file, src_files):
+        client_cert, trusted_host, header, annotate, output_file, force_range,
+        src_files):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
 
@@ -134,10 +136,9 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         else:
             constraints.extend(parse_requirements(
                 src_file, finder=repository.finder, session=repository.session, options=pip_options))
-
     try:
         resolver = Resolver(constraints, repository, prereleases=pre,
-                            clear_caches=rebuild)
+                            clear_caches=rebuild, force_range=force_range)
         results = resolver.resolve()
     except PipToolsError as e:
         log.error(str(e))

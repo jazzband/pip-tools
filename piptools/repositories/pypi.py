@@ -11,7 +11,8 @@ from pip.req.req_set import RequirementSet
 
 from ..cache import CACHE_DIR
 from ..exceptions import NoCandidateFound
-from ..utils import is_pinned_requirement, lookup_table, make_install_requirement
+from ..utils import (is_pinned_requirement, lookup_table,
+                     make_install_requirement, is_range_pinned_requirement)
 from .base import BaseRepository
 
 try:
@@ -109,12 +110,18 @@ class PyPIRepository(BaseRepository):
 
     def get_dependencies(self, ireq):
         """
-        Given a pinned or an editable InstallRequirement, returns a set of
-        dependencies (also InstallRequirements, but not necessarily pinned).
-        They indicate the secondary dependencies for the given requirement.
+        Given a pinned (including range pinned) or an editable InstallRequirement,
+        returns a set of  dependencies (also InstallRequirements, but not
+        necessarily pinned). They indicate the secondary dependencies for the given
+        requirement.
         """
-        if not (ireq.editable or is_pinned_requirement(ireq)):
-            raise TypeError('Expected pinned or editable InstallRequirement, got {}'.format(ireq))
+        if not (ireq.editable or
+                is_pinned_requirement(ireq)
+                or is_range_pinned_requirement(ireq)
+        ):
+            raise TypeError(
+                'Expected pinned, range pinned or editable InstallRequirement, got {}'.format(ireq)
+            )
 
         if not os.path.isdir(self._download_dir):
             os.makedirs(self._download_dir)

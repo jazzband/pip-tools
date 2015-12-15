@@ -73,3 +73,18 @@ def test_resolver(resolver, from_line, input, expected, prereleases):
     output = resolver(input, prereleases=prereleases).resolve()
     output = {str(line) for line in output}
     assert output == {str(line) for line in expected}
+
+def test_resolver_force_range_pinned(resolver, from_line):
+    input = [from_line('django<1.9,>=1.8')]
+
+    # Force range pinned
+    output = resolver(input, prereleases=False, force_range=True).resolve()
+    output = {str(line) for line in output}
+    expected = input
+    assert output == {str(line) for line in expected}
+
+    # Do not force range pinned
+    expected = {'django==1.8'}
+    output = resolver(input, prereleases=False).resolve()
+    output = {str(line) for line in output}
+    assert output == expected
