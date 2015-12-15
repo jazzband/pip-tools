@@ -14,7 +14,7 @@ from .cache import DependencyCache
 from .exceptions import UnsupportedConstraint
 from .logging import log
 from .utils import (format_requirement, format_specifier, full_groupby,
-                    is_pinned_requirement)
+                    is_pinned_requirement, is_range_pinned_requirement)
 
 green = partial(click.style, fg='green')
 magenta = partial(click.style, fg='magenta')
@@ -28,7 +28,8 @@ def _dep_key(ireq):
 
 
 class Resolver(object):
-    def __init__(self, constraints, repository, cache=None, prereleases=False, clear_caches=False):
+    def __init__(self, constraints, repository, cache=None, prereleases=False,
+                 clear_caches=False, force_range=False):
         """
         This class resolves a given set of constraints (a collection of
         InstallRequirement objects) by consulting the given Repository and the
@@ -42,6 +43,7 @@ class Resolver(object):
         self.dependency_cache = cache
         self.prereleases = prereleases
         self.clear_caches = clear_caches
+        self.force_range = force_range
 
     @property
     def constraints(self):
@@ -197,6 +199,9 @@ class Resolver(object):
             # NOTE: it's much quicker to immediately return instead of
             # hitting the index server
             best_match = ireq
+        elif is_range_pinned_requirement(ireq) and self.force_range:
+            # We want to force the range constraint
+            best_match = ireq
         else:
             best_match = self.repository.find_best_match(ireq, prereleases=self.prereleases)
 
@@ -218,8 +223,12 @@ class Resolver(object):
             for dependency in self.repository.get_dependencies(ireq):
                 yield dependency
             return
-        elif not is_pinned_requirement(ireq):
-            raise TypeError('Expected pinned or editable requirement, got {}'.format(ireq))
+        elif (not is_pinned_requirement(ireq)
+              and not is_range_pinned_requirement(ireq)
+        ):
+            raise TypeError(
+                'Expected pinned, range pinned or editable requirement, got {}'.format(ireq)
+            )
 
         # Now, either get the dependencies from the dependency cache (for
         # speed), or reach out to the external repository to

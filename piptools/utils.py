@@ -46,6 +46,32 @@ def format_specifier(ireq):
     return ','.join(str(s) for s in specs) or '<any>'
 
 
+def is_range_pinned_requirement(ireq):
+    """
+    Returns whether an InstallRequirement is a "range pinned" requirement.
+
+    An InstallRequirement is considered "range pinned" if:
+
+    - It is not editable
+    - It has exactly two specifiers
+    - The version does not contain a wildcard
+
+    Examples:
+        django>=1.8,<=1.9   # range pinned
+    """
+
+    if ireq.editable:
+        return False
+
+    if len(ireq.specifier._specs) != 2:
+        return False
+
+    for spec in ireq.specifier._specs:
+        op, version = spec._spec
+        if version.endswith('.*'):
+            return False
+    return True
+
 def is_pinned_requirement(ireq):
     """
     Returns whether an InstallRequirement is a "pinned" requirement.
@@ -77,8 +103,11 @@ def as_tuple(ireq):
     """
     Pulls out the (name: str, version:str, extras:(str)) tuple from the pinned InstallRequirement.
     """
-    if not is_pinned_requirement(ireq):
-        raise TypeError('Expected a pinned InstallRequirement, got {}'.format(ireq))
+    if (not is_pinned_requirement(ireq)
+        and not is_range_pinned_requirement(ireq)):
+        raise TypeError(
+            'Expected a pinned or range pinned InstallRequirement, got {}'.format(ireq)
+        )
 
     name = ireq.req.key
     version = first(ireq.specifier._specs)._spec[1]
