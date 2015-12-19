@@ -291,4 +291,8 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.stdout.write('\nAborted\n')
+        sys.exit(0)
