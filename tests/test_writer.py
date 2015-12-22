@@ -40,3 +40,30 @@ def test_format_requirement_not_for_primary(from_line, writer):
                                        reverse_dependencies,
                                        primary_packages=['test']) ==
             'test==1.2')
+
+
+def test_footer_output(from_line, writer):
+    """Test that footer output is not suppressed by default."""
+    ireq = from_line('setuptools')
+    reverse_dependencies = {'test': ['setuptools']}
+    lines = list(writer._iter_lines([ireq],
+                                    reverse_dependencies,
+                                    primary_packages=[]))
+    # In this case, the commented requirement is expected to be in the
+    # last line of the output.
+    assert '# setuptools' in lines[-1]
+
+
+def test_footer_output_suppression(from_line, writer):
+    """Test that footer output is suppressed when it should be."""
+    # Set the writer to omit the footer in this case.
+    writer.footer = False
+    ireq = from_line('setuptools')
+    reverse_dependencies = {'test': ['setuptools']}
+    lines = list(writer._iter_lines([ireq],
+                                    reverse_dependencies,
+                                    primary_packages=[]))
+    # The commented requirement would normally be expected to be in the
+    # last line of the output. Because the footer is disabled, we assert
+    # that this line is not present.
+    assert '# setuptools' not in lines[-1]
