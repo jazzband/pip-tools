@@ -48,12 +48,13 @@ class PipCommand(pip.basecommand.Command):
 @click.option('--header/--no-header', is_flag=True, default=True, help="Add header to generated file")
 @click.option('--annotate/--no-annotate', is_flag=True, default=True,
               help="Annotate results, indicating where dependencies come from")
+@click.option('--no-upgrade', is_flag=True, default=False, help="Don't upgrade existing dependencies unless strictly required by new dependencies.")
 @click.option('-o', '--output-file', nargs=1, type=str, default=None,
               help=('Output file name. Required if more than one input file is given. '
                     'Will be derived from input file otherwise.'))
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
-        client_cert, trusted_host, header, annotate, output_file, src_files):
+        client_cert, trusted_host, header, annotate, no_upgrade, output_file, src_files):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
 
@@ -135,9 +136,23 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
             constraints.extend(parse_requirements(
                 src_file, finder=repository.finder, session=repository.session, options=pip_options))
 
+    if no_upgrade:
+        # TODO - Consolidate with destination file calculation in writer.py
+        if output_file:
+            dst_file = output_file
+        else:
+            base_name, _, _ = src_file.rpartition('.')
+            dst_file = base_name + '.txt'
+        if os.path.exists(dst_file):
+            preexisting_constraints = dict()
+            for requirement in parse_requirements(dst_file, finder=repository.finder, session=repository.session, options=pip_options):
+                preexisting_constraints[requirement.req.project_name.lower()] = requirement
+    else:
+        preexisting_constraints = None
+
     try:
         resolver = Resolver(constraints, repository, prereleases=pre,
-                            clear_caches=rebuild)
+                            clear_caches=rebuild, no_upgrade=no_upgrade, preexisting_constraints=preexisting_constraints)
         results = resolver.resolve()
     except PipToolsError as e:
         log.error(str(e))

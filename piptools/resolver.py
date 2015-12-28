@@ -28,7 +28,7 @@ def _dep_key(ireq):
 
 
 class Resolver(object):
-    def __init__(self, constraints, repository, cache=None, prereleases=False, clear_caches=False):
+    def __init__(self, constraints, repository, cache=None, prereleases=False, clear_caches=False, no_upgrade=False, preexisting_constraints=None):
         """
         This class resolves a given set of constraints (a collection of
         InstallRequirement objects) by consulting the given Repository and the
@@ -36,12 +36,14 @@ class Resolver(object):
         """
         self.our_constraints = set(constraints)
         self.their_constraints = set()
+        self.preexisting_constraints = preexisting_constraints or dict()
         self.repository = repository
         if cache is None:
             cache = DependencyCache()  # pragma: no cover
         self.dependency_cache = cache
         self.prereleases = prereleases
         self.clear_caches = clear_caches
+        self.no_upgrade = no_upgrade
 
     @property
     def constraints(self):
@@ -198,6 +200,11 @@ class Resolver(object):
             # hitting the index server
             best_match = ireq
         else:
+            if self.no_upgrade:
+                preexisting_constraint = self.preexisting_constraints.get(ireq.req.project_name.lower())
+                if preexisting_constraint and preexisting_constraint.req.specs[0][1] in ireq.req:
+                    return preexisting_constraint
+
             best_match = self.repository.find_best_match(ireq, prereleases=self.prereleases)
 
         # Format the best match

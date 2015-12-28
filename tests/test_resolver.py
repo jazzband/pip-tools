@@ -2,9 +2,9 @@ import pytest
 
 
 @pytest.mark.parametrize(
-    ('input', 'expected', 'prereleases'),
+    ('input', 'expected', 'prereleases', 'no_upgrade', 'preexisting_constraints'),
 
-    ((tup + (False,))[:3] for tup in [
+    ((tup + (False, False, None))[:5] for tup in [
 
         (['Django'], ['django==1.8']),
 
@@ -66,10 +66,27 @@ import pytest
              'pygments==1.5',
              'sphinx==0.3']
          ),
+
+        (['frobnicator'],
+         [
+            "frobnicator==1.0.0",
+            "widgetizer==2.0.0",
+            "flux-capacitor==1.0.0"],
+         False,
+         True,
+         [
+            "widgetizer==1.0.0",
+            "flux-capacitor==1.0.0"]
+        )
     ])
 )
-def test_resolver(resolver, from_line, input, expected, prereleases):
+def test_resolver(resolver, from_line, input, expected, prereleases, no_upgrade, preexisting_constraints):
     input = [from_line(line) for line in input]
-    output = resolver(input, prereleases=prereleases).resolve()
+    constraint_dict = {}
+    if preexisting_constraints:
+        for line in preexisting_constraints:
+            requirement = from_line(line)
+            constraint_dict[requirement.req.project_name] = requirement
+    output = resolver(input, prereleases=prereleases, no_upgrade=no_upgrade, preexisting_constraints=constraint_dict).resolve()
     output = {str(line) for line in output}
     assert output == {str(line) for line in expected}
