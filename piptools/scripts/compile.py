@@ -143,15 +143,15 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
                 src_file, finder=repository.finder, session=repository.session, options=pip_options))
 
     if no_upgrade and os.path.exists(dst_file):
-        preexisting_constraints = dict()
-        for requirement in parse_requirements(dst_file, finder=repository.finder, session=repository.session, options=pip_options):
-            preexisting_constraints[requirement.req.project_name.lower()] = requirement
+        existing_dependencies = dict()
+        for ireq in parse_requirements(dst_file, finder=repository.finder, session=repository.session, options=pip_options):
+            existing_dependencies[ireq.req.project_name.lower()] = ireq
     else:
-        preexisting_constraints = None
+        existing_dependencies = None
 
     try:
         resolver = Resolver(constraints, repository, prereleases=pre,
-                            clear_caches=rebuild, no_upgrade=no_upgrade, preexisting_constraints=preexisting_constraints)
+                            clear_caches=rebuild, no_upgrade=no_upgrade, existing_dependencies=existing_dependencies)
         results = resolver.resolve()
     except PipToolsError as e:
         log.error(str(e))

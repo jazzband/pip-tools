@@ -2,7 +2,7 @@ import pytest
 
 
 @pytest.mark.parametrize(
-    ('input', 'expected', 'prereleases', 'no_upgrade', 'preexisting_constraints'),
+    ('input', 'expected', 'prereleases', 'no_upgrade', 'existing_dependencies'),
 
     ((tup + (False, False, None))[:5] for tup in [
 
@@ -80,13 +80,13 @@ import pytest
         )
     ])
 )
-def test_resolver(resolver, from_line, input, expected, prereleases, no_upgrade, preexisting_constraints):
+def test_resolver(resolver, from_line, input, expected, prereleases, no_upgrade, existing_dependencies):
     input = [from_line(line) for line in input]
-    constraint_dict = {}
-    if preexisting_constraints:
-        for line in preexisting_constraints:
-            requirement = from_line(line)
-            constraint_dict[requirement.req.project_name] = requirement
-    output = resolver(input, prereleases=prereleases, no_upgrade=no_upgrade, preexisting_constraints=constraint_dict).resolve()
+    dependency_dict = {}
+    if existing_dependencies:
+        for line in existing_dependencies:
+            ireq = from_line(line)
+            dependency_dict[ireq.req.project_name] = ireq
+    output = resolver(input, prereleases=prereleases, no_upgrade=no_upgrade, existing_dependencies=dependency_dict).resolve()
     output = {str(line) for line in output}
     assert output == {str(line) for line in expected}
