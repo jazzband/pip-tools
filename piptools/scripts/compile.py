@@ -23,7 +23,7 @@ from ..exceptions import PipToolsError  # noqa
 from ..logging import log  # noqa
 from ..repositories import PyPIRepository  # noqa
 from ..resolver import Resolver  # noqa
-from ..utils import is_pinned_requirement # noqa
+from ..utils import is_pinned_requirement  # noqa
 from ..writer import OutputWriter  # noqa
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
@@ -49,7 +49,8 @@ class PipCommand(pip.basecommand.Command):
 @click.option('--header/--no-header', is_flag=True, default=True, help="Add header to generated file")
 @click.option('--annotate/--no-annotate', is_flag=True, default=True,
               help="Annotate results, indicating where dependencies come from")
-@click.option('--no-upgrade', is_flag=True, default=False, help="Don't upgrade existing dependencies unless strictly required by new dependencies.")
+@click.option('--no-upgrade', is_flag=True, default=False,
+              help="Don't upgrade existing dependencies unless strictly required by new dependencies.")
 @click.option('-o', '--output-file', nargs=1, type=str, default=None,
               help=('Output file name. Required if more than one input file is given. '
                     'Will be derived from input file otherwise.'))
@@ -145,7 +146,8 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
 
     if no_upgrade and os.path.exists(dst_file):
         existing_dependencies = dict()
-        for ireq in parse_requirements(dst_file, finder=repository.finder, session=repository.session, options=pip_options):
+        ireqs = parse_requirements(dst_file, finder=repository.finder, session=repository.session, options=pip_options)
+        for ireq in ireqs:
             if is_pinned_requirement(ireq):
                 existing_dependencies[ireq.req.project_name.lower()] = ireq
     else:

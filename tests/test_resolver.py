@@ -77,7 +77,7 @@ import pytest
          [
             "widgetizer==1.0.0",
             "flux-capacitor==1.0.0"]
-        )
+         )
     ])
 )
 def test_resolver(resolver, from_line, input, expected, prereleases, no_upgrade, existing_dependencies):
@@ -87,6 +87,7 @@ def test_resolver(resolver, from_line, input, expected, prereleases, no_upgrade,
         for line in existing_dependencies:
             ireq = from_line(line)
             dependency_dict[ireq.req.project_name] = ireq
-    output = resolver(input, prereleases=prereleases, no_upgrade=no_upgrade, existing_dependencies=dependency_dict).resolve()
+    output = resolver(input, prereleases=prereleases, no_upgrade=no_upgrade,
+                      existing_dependencies=dependency_dict).resolve()
     output = {str(line) for line in output}
     assert output == {str(line) for line in expected}

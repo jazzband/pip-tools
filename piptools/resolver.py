@@ -28,7 +28,8 @@ def _dep_key(ireq):
 
 
 class Resolver(object):
-    def __init__(self, constraints, repository, cache=None, prereleases=False, clear_caches=False, no_upgrade=False, existing_dependencies=None):
+    def __init__(self, constraints, repository, cache=None, prereleases=False, clear_caches=False,
+                 no_upgrade=False, existing_dependencies=None):
         """
         This class resolves a given set of constraints (a collection of
         InstallRequirement objects) by consulting the given Repository and the
