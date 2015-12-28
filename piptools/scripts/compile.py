@@ -23,6 +23,7 @@ from ..exceptions import PipToolsError  # noqa
 from ..logging import log  # noqa
 from ..repositories import PyPIRepository  # noqa
 from ..resolver import Resolver  # noqa
+from ..utils import is_pinned_requirement # noqa
 from ..writer import OutputWriter  # noqa
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
@@ -145,7 +146,8 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     if no_upgrade and os.path.exists(dst_file):
         existing_dependencies = dict()
         for ireq in parse_requirements(dst_file, finder=repository.finder, session=repository.session, options=pip_options):
-            existing_dependencies[ireq.req.project_name.lower()] = ireq
+            if is_pinned_requirement(ireq):
+                existing_dependencies[ireq.req.project_name.lower()] = ireq
     else:
         existing_dependencies = None
 
