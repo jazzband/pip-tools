@@ -71,6 +71,12 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     if len(src_files) > 1 and not output_file:
         raise click.BadParameter('--output-file is required if two or more input files are given.')
 
+    if output_file:
+        dst_file = output_file
+    else:
+        base_name, _, _ = src_files[0].rpartition('.')
+        dst_file = base_name + '.txt'
+
     ###
     # Setup
     ###
@@ -136,17 +142,10 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
             constraints.extend(parse_requirements(
                 src_file, finder=repository.finder, session=repository.session, options=pip_options))
 
-    if no_upgrade:
-        # TODO - Consolidate with destination file calculation in writer.py
-        if output_file:
-            dst_file = output_file
-        else:
-            base_name, _, _ = src_file.rpartition('.')
-            dst_file = base_name + '.txt'
-        if os.path.exists(dst_file):
-            preexisting_constraints = dict()
-            for requirement in parse_requirements(dst_file, finder=repository.finder, session=repository.session, options=pip_options):
-                preexisting_constraints[requirement.req.project_name.lower()] = requirement
+    if no_upgrade and os.path.exists(dst_file):
+        preexisting_constraints = dict()
+        for requirement in parse_requirements(dst_file, finder=repository.finder, session=repository.session, options=pip_options):
+            preexisting_constraints[requirement.req.project_name.lower()] = requirement
     else:
         preexisting_constraints = None
 
@@ -189,7 +188,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     if annotate:
         reverse_dependencies = resolver.reverse_dependencies(results)
 
-    writer = OutputWriter(src_file, output_file=output_file, dry_run=dry_run, header=header,
+    writer = OutputWriter(src_file, dst_file, dry_run=dry_run, header=header,
                           annotate=annotate,
                           default_index_url=repository.DEFAULT_INDEX_URL,
                           index_urls=repository.finder.index_urls)
