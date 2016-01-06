@@ -1,3 +1,9 @@
+# 1.4.3
+
+- Fix: add `--index-url` and `--extra-index-url` options to `pip-sync`
+- Fix: always install using `--upgrade` flag when running `pip-sync`
+
+
 # 1.4.2
 
 - Fix bug where umask was ignored when writing requirement files (#268)
