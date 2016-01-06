@@ -142,5 +142,5 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None)
             for pkg in to_install:
                 click.echo("  {}".format(pkg))
         else:
-            check_call(['pip', 'install'] + pip_flags + sorted(to_install))
+            check_call(['pip', 'install', '--upgrade'] + pip_flags + sorted(to_install))
     return 0
