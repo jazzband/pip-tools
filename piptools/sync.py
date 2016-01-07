@@ -1,4 +1,5 @@
 import collections
+import os
 from subprocess import check_call
 
 from . import click
@@ -134,7 +135,8 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None)
             for pkg in to_uninstall:
                 click.echo("  {}".format(pkg))
         else:
-            check_call(['pip', 'uninstall', '-y'] + pip_flags + sorted(to_uninstall))
+            check_call(['pip', 'uninstall', '-y'] + pip_flags + sorted(to_uninstall),
+                       env=os.environ.copy())
 
     if to_install:
         if dry_run:
@@ -142,5 +144,6 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None)
             for pkg in to_install:
                 click.echo("  {}".format(pkg))
         else:
-            check_call(['pip', 'install', '--upgrade'] + pip_flags + sorted(to_install))
+            check_call(['pip', 'install', '--upgrade'] + pip_flags + sorted(to_install),
+                       env=os.environ.copy())
     return 0
