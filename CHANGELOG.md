@@ -1,3 +1,9 @@
+# 1.4.5
+
+- Fix: ignore stdlib backport packages, like `argparse`, when listing which
+  packages will be installed/uninstalled (#286)
+
+
 # 1.4.4
 
 - Fix: unintended change in behaviour where packages installed by `pip-sync`
