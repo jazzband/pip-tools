@@ -57,7 +57,7 @@ def cli(dry_run, force, find_links, index_url, extra_index_url, no_index, src_fi
         log.error(str(e))
         sys.exit(2)
 
-    installed_dists = pip.get_installed_distributions()
+    installed_dists = pip.get_installed_distributions(skip=[])
     to_install, to_uninstall = sync.diff(requirements, installed_dists)
 
     pip_flags = []
