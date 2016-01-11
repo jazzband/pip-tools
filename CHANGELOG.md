@@ -1,3 +1,10 @@
+# 1.4.4
+
+- Fix: unintended change in behaviour where packages installed by `pip-sync`
+  could accidentally get upgraded under certain conditions, even though the
+  requirements.txt would dictate otherwise (see #290)
+
+
 # 1.4.3
 
 - Fix: add `--index-url` and `--extra-index-url` options to `pip-sync`
