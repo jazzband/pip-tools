@@ -10,7 +10,7 @@ from .utils import comment, format_requirement
 
 class OutputWriter(object):
     def __init__(self, src_file, dry_run, header, annotate, default_index_url,
-                 index_urls, output_file=None):
+                 index_urls, output_file=None, footer=True):
         self.src_file = src_file
         self.output_file = output_file
         self.dry_run = dry_run
@@ -18,6 +18,7 @@ class OutputWriter(object):
         self.annotate = annotate
         self.default_index_url = default_index_url
         self.index_urls = index_urls
+        self.footer = footer
 
     @property
     def dst_file(self):
@@ -66,7 +67,7 @@ class OutputWriter(object):
             line = self._format_requirement(ireq, reverse_dependencies, primary_packages)
             yield line
 
-        if unsafe_packages:
+        if unsafe_packages and self.footer:
             yield ''
             yield comment('# The following packages are commented out because they are')
             yield comment('# considered to be unsafe in a requirements file:')
