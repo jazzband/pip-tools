@@ -7,7 +7,8 @@ from piptools.writer import OutputWriter
 @fixture
 def writer():
     return OutputWriter(src_file="src_file", dry_run=True, header=True,
-                        annotate=True, default_index_url=None, index_urls=[])
+                        index=True, annotate=True, default_index_url=None,
+                        index_urls=[])
 
 
 def test_format_requirement_annotation_editable(from_editable, writer):

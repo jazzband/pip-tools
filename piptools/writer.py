@@ -9,12 +9,13 @@ from .utils import comment, format_requirement
 
 
 class OutputWriter(object):
-    def __init__(self, src_file, dry_run, header, annotate, default_index_url,
-                 index_urls, output_file=None):
+    def __init__(self, src_file, dry_run, header, index, annotate,
+                 default_index_url, index_urls, output_file=None):
         self.src_file = src_file
         self.output_file = output_file
         self.dry_run = dry_run
         self.header = header
+        self.index = index
         self.annotate = annotate
         self.default_index_url = default_index_url
         self.index_urls = index_urls
@@ -39,15 +40,16 @@ class OutputWriter(object):
             yield comment('#')
 
     def write_index_options(self):
-        emitted = False
-        for index, index_url in enumerate(self.index_urls):
-            if index_url.rstrip('/') == self.default_index_url:
-                continue
-            flag = '--index-url' if index == 0 else '--extra-index-url'
-            yield '{} {}'.format(flag, index_url)
-            emitted = True
-        if emitted:
-            yield ''  # extra line of whitespace
+        if self.index:
+            emitted = False
+            for index, index_url in enumerate(self.index_urls):
+                if index_url.rstrip('/') == self.default_index_url:
+                    continue
+                flag = '--index-url' if index == 0 else '--extra-index-url'
+                yield '{} {}'.format(flag, index_url)
+                emitted = True
+            if emitted:
+                yield ''  # extra line of whitespace
 
     def _iter_lines(self, results, reverse_dependencies, primary_packages):
         for line in self.write_header():

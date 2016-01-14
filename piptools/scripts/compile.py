@@ -45,7 +45,10 @@ class PipCommand(pip.basecommand.Command):
 @click.option('--trusted-host', multiple=True, envvar='PIP_TRUSTED_HOST',
               help="Mark this host as trusted, even though it does not have "
                    "valid or any HTTPS.")
-@click.option('--header/--no-header', is_flag=True, default=True, help="Add header to generated file")
+@click.option('--header/--no-header', is_flag=True, default=True,
+              help="Add header to generated file")
+@click.option('--index/--no-index', is_flag=True, default=True,
+              help="Add index URL to generated file")
 @click.option('--annotate/--no-annotate', is_flag=True, default=True,
               help="Annotate results, indicating where dependencies come from")
 @click.option('-o', '--output-file', nargs=1, type=str, default=None,
@@ -53,7 +56,8 @@ class PipCommand(pip.basecommand.Command):
                     'Will be derived from input file otherwise.'))
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
-        client_cert, trusted_host, header, annotate, output_file, src_files):
+        client_cert, trusted_host, header, index, annotate, output_file,
+        src_files):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
 
@@ -174,8 +178,8 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     if annotate:
         reverse_dependencies = resolver.reverse_dependencies(results)
 
-    writer = OutputWriter(src_file, output_file=output_file, dry_run=dry_run, header=header,
-                          annotate=annotate,
+    writer = OutputWriter(src_file, output_file=output_file, dry_run=dry_run,
+                          header=header, index=index, annotate=annotate,
                           default_index_url=repository.DEFAULT_INDEX_URL,
                           index_urls=repository.finder.index_urls)
     writer.write(results=results,
