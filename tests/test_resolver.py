@@ -67,16 +67,24 @@ import pytest
              'sphinx==0.3']
          ),
 
-        (['frobnicator'],
+        # Add Flask to an existing requirements.in, using --no-upgrade
+        (['flask', 'jinja2', 'werkzeug'],
          [
-            "frobnicator==1.0.0",
-            "widgetizer==2.0.0",
-            "flux-capacitor==1.0.0"],
-         False,
-         True,
+            # Add flask and upgrade werkzeug from incompatible 0.6
+            'flask==0.10.1',
+            'itsdangerous==0.24',
+            'werkzeug==0.10.4',
+            # Other requirements are unchanged from the original requirements.txt
+            'jinja2==2.7.3',
+            'markupsafe==0.23'
+            ],
+         False,  # no prereleases
+         True,  # --no-upgrade flag set
          [
-            "widgetizer==1.0.0",
-            "flux-capacitor==1.0.0"]
+            # The requirements.txt from a previous round
+            'jinja2==2.7.3',
+            'markupsafe==0.23',
+            'werkzeug==0.6']
          )
     ])
 )
