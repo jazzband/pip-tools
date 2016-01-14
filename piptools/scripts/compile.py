@@ -179,7 +179,8 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         reverse_dependencies = resolver.reverse_dependencies(results)
 
     writer = OutputWriter(src_file, output_file=output_file, dry_run=dry_run,
-                          header=header, index=index, annotate=annotate,
+                          emit_header=header, emit_index=index,
+                          annotate=annotate,
                           default_index_url=repository.DEFAULT_INDEX_URL,
                           index_urls=repository.finder.index_urls)
     writer.write(results=results,

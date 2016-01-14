@@ -9,13 +9,13 @@ from .utils import comment, format_requirement
 
 
 class OutputWriter(object):
-    def __init__(self, src_file, dry_run, header, index, annotate,
+    def __init__(self, src_file, dry_run, emit_header, emit_index, annotate,
                  default_index_url, index_urls, output_file=None):
         self.src_file = src_file
         self.output_file = output_file
         self.dry_run = dry_run
-        self.header = header
-        self.index = index
+        self.emit_header = emit_header
+        self.emit_index = emit_index
         self.annotate = annotate
         self.default_index_url = default_index_url
         self.index_urls = index_urls
@@ -37,7 +37,7 @@ class OutputWriter(object):
             yield comment('# Make changes in {}, then run this to update:'.format(basename(self.src_file)))
             yield comment('#')
             args = ''
-            if not self.index:
+            if not self.emit_index:
                 args += '--no-index '
             if not self.annotate:
                 args += '--no-annotate '
@@ -47,7 +47,7 @@ class OutputWriter(object):
             yield comment('#')
 
     def write_index_options(self):
-        if self.index:
+        if self.emit_index:
             emitted = False
             for index, index_url in enumerate(self.index_urls):
                 if index_url.rstrip('/') == self.default_index_url:
