@@ -1,5 +1,8 @@
-# 1.4.5
+# 1.4.5 (dev)
 
+- Add `--no-index` flag to `pip-compile` to avoid emitting `--index-url` into
+  the output (useful if you have configured a different index in your global
+  ~/.pip/pip.conf, for example)
 - Fix: ignore stdlib backport packages, like `argparse`, when listing which
   packages will be installed/uninstalled (#286)
 
