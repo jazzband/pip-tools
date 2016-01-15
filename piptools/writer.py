@@ -81,7 +81,7 @@ class OutputWriter(object):
             yield comment('# considered to be unsafe in a requirements file:')
 
             for ireq in unsafe_packages:
-                line = self._format_requirement(ireq, reverse_dependencies, primary_packages)
+                line = self._format_requirement(ireq, reverse_dependencies, primary_packages, include_specifier=False)
                 yield comment('# ' + line)
 
     def write(self, results, reverse_dependencies, primary_packages):
@@ -96,8 +96,8 @@ class OutputWriter(object):
                     f.write(unstyle(line).encode('utf-8'))
                     f.write(os.linesep.encode('utf-8'))
 
-    def _format_requirement(self, ireq, reverse_dependencies, primary_packages):
-        line = format_requirement(ireq)
+    def _format_requirement(self, ireq, reverse_dependencies, primary_packages, include_specifier=True):
+        line = format_requirement(ireq, include_specifier=include_specifier)
         if not self.annotate or ireq.name in primary_packages:
             return line
 
