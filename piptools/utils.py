@@ -23,15 +23,17 @@ def make_install_requirement(name, version, extras):
     return InstallRequirement.from_line('{}{}=={}'.format(name, extras_string, str(version)))
 
 
-def format_requirement(ireq):
+def format_requirement(ireq, include_specifier=True):
     """
     Generic formatter for pretty printing InstallRequirements to the terminal
     in a less verbose way than using its `__str__` method.
     """
     if ireq.editable:
         line = '-e {}'.format(ireq.link)
-    else:
+    elif include_specifier:
         line = str(ireq.req)
+    else:
+        line = ireq.req.project_name
     return line
 
 

@@ -6,6 +6,7 @@ from piptools.utils import as_tuple, format_requirement, format_specifier, flat_
 def test_format_requirement(from_line):
     ireq = from_line('test==1.2')
     assert format_requirement(ireq) == 'test==1.2'
+    assert format_requirement(ireq, include_specifier=False) == 'test'
 
 
 def test_format_requirement_editable(from_editable):
