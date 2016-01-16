@@ -115,7 +115,7 @@ def diff(compiled_requirements, installed_dists):
     return (to_install, to_uninstall)
 
 
-def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None):
+def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None, install_flags=None):
     """
     Install and uninstalls the given sets of modules.
     """
@@ -137,10 +137,12 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None)
             check_call(['pip', 'uninstall', '-y'] + pip_flags + sorted(to_uninstall))
 
     if to_install:
+        if install_flags is None:
+            install_flags = []
         if dry_run:
             click.echo("Would install:")
             for pkg in to_install:
                 click.echo("  {}".format(pkg))
         else:
-            check_call(['pip', 'install'] + pip_flags + sorted(to_install))
+            check_call(['pip', 'install'] + pip_flags + install_flags + sorted(to_install))
     return 0
