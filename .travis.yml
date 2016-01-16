@@ -1,3 +1,4 @@
+sudo: false
 language: python
 
 # Run tox with python 3.4, but let _it_ build the envs for the various Python
@@ -20,6 +21,8 @@ env:
 
 install:
   - travis_retry pip install tox
+
+cache: pip
 
 script:
   - tox
