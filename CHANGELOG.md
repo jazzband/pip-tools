@@ -5,6 +5,7 @@
   ~/.pip/pip.conf, for example)
 - Fix: ignore stdlib backport packages, like `argparse`, when listing which
   packages will be installed/uninstalled (#286)
+- Fix pip-sync failed uninstalling packages when using `--find-links` (#298)
 
 
 # 1.4.4
