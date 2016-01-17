@@ -9,23 +9,16 @@ from .utils import comment, format_requirement
 
 
 class OutputWriter(object):
-    def __init__(self, src_file, dry_run, emit_header, emit_index, annotate,
-                 default_index_url, index_urls, output_file=None):
+    def __init__(self, src_file, dst_file, dry_run, emit_header, emit_index,
+                 annotate, default_index_url, index_urls, output_file=None):
         self.src_file = src_file
-        self.output_file = output_file
+        self.dst_file = dst_file
         self.dry_run = dry_run
         self.emit_header = emit_header
         self.emit_index = emit_index
         self.annotate = annotate
         self.default_index_url = default_index_url
         self.index_urls = index_urls
-
-    @property
-    def dst_file(self):
-        if self.output_file:
-            return self.output_file
-        base_name, _, _ = self.src_file.rpartition('.')
-        return base_name + '.txt'
 
     def _sort_key(self, ireq):
         return (not ireq.editable, str(ireq.req).lower())

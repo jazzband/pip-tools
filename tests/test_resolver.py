@@ -2,9 +2,9 @@ import pytest
 
 
 @pytest.mark.parametrize(
-    ('input', 'expected', 'prereleases'),
+    ('input', 'expected', 'prereleases', 'no_upgrade', 'existing_dependencies'),
 
-    ((tup + (False,))[:3] for tup in [
+    ((tup + (False, False, None))[:5] for tup in [
 
         (['Django'], ['django==1.8']),
 
@@ -66,10 +66,36 @@ import pytest
              'pygments==1.5',
              'sphinx==0.3']
          ),
+
+        # Add Flask to an existing requirements.in, using --no-upgrade
+        (['flask', 'jinja2', 'werkzeug'],
+         [
+            # Add flask and upgrade werkzeug from incompatible 0.6
+            'flask==0.10.1',
+            'itsdangerous==0.24',
+            'werkzeug==0.10.4',
+            # Other requirements are unchanged from the original requirements.txt
+            'jinja2==2.7.3',
+            'markupsafe==0.23'
+            ],
+         False,  # no prereleases
+         True,  # --no-upgrade flag set
+         [
+            # The requirements.txt from a previous round
+            'jinja2==2.7.3',
+            'markupsafe==0.23',
+            'werkzeug==0.6']
+         )
     ])
 )
-def test_resolver(resolver, from_line, input, expected, prereleases):
+def test_resolver(resolver, from_line, input, expected, prereleases, no_upgrade, existing_dependencies):
     input = [from_line(line) for line in input]
-    output = resolver(input, prereleases=prereleases).resolve()
+    dependency_dict = {}
+    if existing_dependencies:
+        for line in existing_dependencies:
+            ireq = from_line(line)
+            dependency_dict[ireq.req.project_name] = ireq
+    output = resolver(input, prereleases=prereleases, no_upgrade=no_upgrade,
+                      existing_dependencies=dependency_dict).resolve()
     output = {str(line) for line in output}
     assert output == {str(line) for line in expected}

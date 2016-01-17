@@ -23,6 +23,7 @@ from ..exceptions import PipToolsError  # noqa
 from ..logging import log  # noqa
 from ..repositories import PyPIRepository  # noqa
 from ..resolver import Resolver  # noqa
+from ..utils import is_pinned_requirement  # noqa
 from ..writer import OutputWriter  # noqa
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
@@ -51,12 +52,14 @@ class PipCommand(pip.basecommand.Command):
               help="Add index URL to generated file")
 @click.option('--annotate/--no-annotate', is_flag=True, default=True,
               help="Annotate results, indicating where dependencies come from")
+@click.option('--no-upgrade', is_flag=True, default=False,
+              help="Don't upgrade existing dependencies unless strictly required by new dependencies.")
 @click.option('-o', '--output-file', nargs=1, type=str, default=None,
               help=('Output file name. Required if more than one input file is given. '
                     'Will be derived from input file otherwise.'))
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
-        client_cert, trusted_host, header, index, annotate, output_file,
+        client_cert, trusted_host, header, index, annotate, no_upgrade, output_file,
         src_files):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
@@ -73,6 +76,12 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
 
     if len(src_files) > 1 and not output_file:
         raise click.BadParameter('--output-file is required if two or more input files are given.')
+
+    if output_file:
+        dst_file = output_file
+    else:
+        base_name, _, _ = src_files[0].rpartition('.')
+        dst_file = base_name + '.txt'
 
     ###
     # Setup
@@ -139,9 +148,18 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
             constraints.extend(parse_requirements(
                 src_file, finder=repository.finder, session=repository.session, options=pip_options))
 
+    if no_upgrade and os.path.exists(dst_file):
+        existing_dependencies = dict()
+        ireqs = parse_requirements(dst_file, finder=repository.finder, session=repository.session, options=pip_options)
+        for ireq in ireqs:
+            if is_pinned_requirement(ireq):
+                existing_dependencies[ireq.req.project_name.lower()] = ireq
+    else:
+        existing_dependencies = None
+
     try:
         resolver = Resolver(constraints, repository, prereleases=pre,
-                            clear_caches=rebuild)
+                            clear_caches=rebuild, no_upgrade=no_upgrade, existing_dependencies=existing_dependencies)
         results = resolver.resolve()
     except PipToolsError as e:
         log.error(str(e))
@@ -178,7 +196,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     if annotate:
         reverse_dependencies = resolver.reverse_dependencies(results)
 
-    writer = OutputWriter(src_file, output_file=output_file, dry_run=dry_run,
+    writer = OutputWriter(src_file, dst_file, dry_run=dry_run,
                           emit_header=header, emit_index=index,
                           annotate=annotate,
                           default_index_url=repository.DEFAULT_INDEX_URL,
