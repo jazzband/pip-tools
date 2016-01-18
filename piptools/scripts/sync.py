@@ -60,17 +60,16 @@ def cli(dry_run, force, find_links, index_url, extra_index_url, no_index, src_fi
     installed_dists = pip.get_installed_distributions(skip=[])
     to_install, to_uninstall = sync.diff(requirements, installed_dists)
 
-    pip_flags = []
     install_flags = []
     for link in find_links or []:
         install_flags.extend(['-f', link])
     if no_index:
-        pip_flags.append('--no-index')
+        install_flags.append('--no-index')
     if index_url:
-        pip_flags.extend(['-i', index_url])
+        install_flags.extend(['-i', index_url])
     if extra_index_url:
         for extra_index in extra_index_url:
-            pip_flags.extend(['--extra-index-url', extra_index])
+            install_flags.extend(['--extra-index-url', extra_index])
 
     sys.exit(sync.sync(to_install, to_uninstall, verbose=True, dry_run=dry_run,
-                       pip_flags=pip_flags, install_flags=install_flags))
+                       install_flags=install_flags))
