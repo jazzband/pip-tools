@@ -74,6 +74,12 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     if len(src_files) > 1 and not output_file:
         raise click.BadParameter('--output-file is required if two or more input files are given.')
 
+    if output_file:
+        dst_file = output_file
+    else:
+        base_name, _, _ = src_files[0].rpartition('.')
+        dst_file = base_name + '.txt'
+
     ###
     # Setup
     ###
@@ -178,7 +184,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     if annotate:
         reverse_dependencies = resolver.reverse_dependencies(results)
 
-    writer = OutputWriter(src_file, output_file=output_file, dry_run=dry_run,
+    writer = OutputWriter(src_file, dst_file, dry_run=dry_run,
                           emit_header=header, emit_index=index,
                           annotate=annotate,
                           default_index_url=repository.DEFAULT_INDEX_URL,
