@@ -83,6 +83,11 @@ def resolver(depcache, repository):
 
 
 @fixture
+def minimal_resolver(depcache):
+    return partial(Resolver, cache=depcache)
+
+
+@fixture
 def from_line():
     return InstallRequirement.from_line
 
