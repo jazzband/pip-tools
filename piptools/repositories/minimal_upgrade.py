@@ -16,6 +16,18 @@ class MinimalUpgradeRepository(BaseRepository):
         self.repository = proxied_repository
         self.existing_pins = existing_pins
 
+    @property
+    def finder(self):
+        return self.repository.finder
+
+    @property
+    def session(self):
+        return self.repository.session
+
+    @property
+    def DEFAULT_INDEX_URL(self):
+        return self.repository.DEFAULT_INDEX_URL
+
     def clear_caches(self):
         self.repository.clear_caches()
 
