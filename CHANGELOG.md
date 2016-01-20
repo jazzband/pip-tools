@@ -6,6 +6,7 @@
 - Fix: ignore stdlib backport packages, like `argparse`, when listing which
   packages will be installed/uninstalled (#286)
 - Fix pip-sync failed uninstalling packages when using `--find-links` (#298)
+- Explicitly error when pip-tools is used with pip 8.0+ (for now)
 
 
 # 1.4.4
