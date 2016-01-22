@@ -1,4 +1,10 @@
-# 1.4.5 (dev)
+# 1.4.6 (dev)
+
+- Fix bug where `pip-sync` fails to uninstall packages if you're using the
+  `--no-index` (or other) flags
+
+
+# 1.4.5
 
 - Add `--no-index` flag to `pip-compile` to avoid emitting `--index-url` into
   the output (useful if you have configured a different index in your global
