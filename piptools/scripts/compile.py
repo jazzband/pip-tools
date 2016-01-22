@@ -17,7 +17,7 @@ if not pip_version_info >= (6, 1):
           'perhaps run `pip install --upgrade pip`?'.format(pip.__version__))
     sys.exit(4)
 if not pip_version_info < (8, 0):
-    print('pip-compile currently does not work with pip version 8.0+ yet ({} found), '.format(pip.__version__))
+    print('pip-tools does not work with pip version 8.0+ yet ({} found)'.format(pip.__version__))
     sys.exit(4)
 
 from .. import click  # noqa
