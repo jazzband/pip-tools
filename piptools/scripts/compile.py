@@ -47,6 +47,8 @@ class PipCommand(pip.basecommand.Command):
                    "valid or any HTTPS.")
 @click.option('--header/--no-header', is_flag=True, default=True,
               help="Add header to generated file")
+@click.option('--date/--no-date', is_flag=True, default=False,
+              help="Add date and time of compile to header. No effect if --no-header flag present")
 @click.option('--index/--no-index', is_flag=True, default=True,
               help="Add index URL to generated file")
 @click.option('--annotate/--no-annotate', is_flag=True, default=True,
@@ -58,7 +60,7 @@ class PipCommand(pip.basecommand.Command):
                     'Will be derived from input file otherwise.'))
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
-        client_cert, trusted_host, header, index, annotate, upgrade,
+        client_cert, trusted_host, header, date, index, annotate, upgrade,
         output_file, src_files):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
@@ -200,7 +202,8 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
                           emit_header=header, emit_index=index,
                           annotate=annotate,
                           default_index_url=repository.DEFAULT_INDEX_URL,
-                          index_urls=repository.finder.index_urls)
+                          index_urls=repository.finder.index_urls,
+                          write_date=date)
     writer.write(results=results,
                  reverse_dependencies=reverse_dependencies,
                  primary_packages={ireq.req.key for ireq in constraints})
