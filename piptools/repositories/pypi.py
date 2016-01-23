@@ -11,7 +11,8 @@ from pip.req.req_set import RequirementSet
 
 from ..cache import CACHE_DIR
 from ..exceptions import NoCandidateFound
-from ..utils import is_pinned_requirement, lookup_table, make_install_requirement
+from ..utils import (is_pinned_requirement, lookup_table,
+                     make_install_requirement, pip_version_info)
 from .base import BaseRepository
 
 try:
@@ -80,7 +81,12 @@ class PyPIRepository(BaseRepository):
 
     def find_all_candidates(self, req_name):
         if req_name not in self._available_candidates_cache:
-            self._available_candidates_cache[req_name] = self.finder.find_all_candidates(req_name)
+            # pip 8 changed the internal API, making this a public method
+            if pip_version_info >= (8, 0):
+                candidates = self.finder.find_all_candidates(req_name)
+            else:
+                candidates = self.finder._find_all_versions(req_name)
+            self._available_candidates_cache[req_name] = candidates
         return self._available_candidates_cache[req_name]
 
     def find_best_match(self, ireq, prereleases=None):
