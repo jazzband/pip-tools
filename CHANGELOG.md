@@ -1,5 +1,7 @@
-# 1.4.6 (dev)
+# 1.5
 
+- Add support for pip>=8
+- Drop support for pip<7
 - Fix bug where `pip-sync` fails to uninstall packages if you're using the
   `--no-index` (or other) flags
 
