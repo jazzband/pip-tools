@@ -91,7 +91,7 @@ def test_reverse_dependencies(from_line, tmpdir):
     assert reversed_extra == {
         'middle': {'top'},
         'bottom': {'middle', 'top'},
-        'bonus':  {'top'}
+        'bonus': {'top'}
     }
 
     # Clean up our temp directory
