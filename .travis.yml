@@ -9,14 +9,14 @@ env:
   matrix:
     - TOXENV=py27-piplatest
     - TOXENV=py34-piplatest
+    - TOXENV=py27-pip8
+    - TOXENV=py34-pip8
     - TOXENV=py27-pip7
     - TOXENV=py34-pip7
     - TOXENV=py27-pip71
     - TOXENV=py34-pip71
     - TOXENV=py27-pip70
     - TOXENV=py34-pip70
-    - TOXENV=py27-pip6
-    - TOXENV=py34-pip6
     - TOXENV=flake8
 
 install:
