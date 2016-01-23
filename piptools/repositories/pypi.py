@@ -51,7 +51,7 @@ class PyPIRepository(BaseRepository):
         # stores project_name => InstallationCandidate mappings for all
         # versions reported by PyPI, so we only have to ask once for each
         # project
-        self._available_versions_cache = {}
+        self._available_candidates_cache = {}
 
         # Setup file paths
         self.freshen_build_caches()
@@ -78,10 +78,10 @@ class PyPIRepository(BaseRepository):
         rmtree(self._download_dir, ignore_errors=True)
         rmtree(self._wheel_download_dir, ignore_errors=True)
 
-    def find_all_versions(self, req_name):
-        if req_name not in self._available_versions_cache:
-            self._available_versions_cache[req_name] = self.finder._find_all_versions(req_name)
-        return self._available_versions_cache[req_name]
+    def find_all_candidates(self, req_name):
+        if req_name not in self._available_candidates_cache:
+            self._available_candidates_cache[req_name] = self.finder.find_all_candidates(req_name)
+        return self._available_candidates_cache[req_name]
 
     def find_best_match(self, ireq, prereleases=None):
         """
@@ -91,7 +91,7 @@ class PyPIRepository(BaseRepository):
         if ireq.editable:
             return ireq  # return itself as the best match
 
-        all_candidates = self.find_all_versions(ireq.name)
+        all_candidates = self.find_all_candidates(ireq.name)
         candidates_by_version = lookup_table(all_candidates, key=lambda c: c.version, unique=True)
         matching_versions = ireq.specifier.filter((candidate.version for candidate in all_candidates),
                                                   prereleases=prereleases)
