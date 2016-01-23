@@ -35,6 +35,7 @@ class PipCommand(pip.basecommand.Command):
 
 
 @click.command()
+@click.version_option()
 @click.option('-v', '--verbose', is_flag=True, help="Show more output")
 @click.option('-n', '--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
 @click.option('-p', '--pre', is_flag=True, default=None, help="Allow resolving to prereleases (default is not)")

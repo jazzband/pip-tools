@@ -24,6 +24,7 @@ DEFAULT_REQUIREMENTS_FILE = 'requirements.txt'
 
 
 @click.command()
+@click.version_option()
 @click.option('-n', '--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
 @click.option('--force', is_flag=True, help="Proceed even if conflicts are found")
 @click.option('-f', '--find-links', multiple=True, help="Look for archives in this directory or on this HTML page", envvar='PIP_FIND_LINKS')  # noqa
