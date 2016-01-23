@@ -2,23 +2,21 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import os
 import sys
 
 import pip
 
+from .. import click, sync
+from ..exceptions import PipToolsError
+from ..logging import log
+from ..utils import flat_map, pip_version_info
+
 # Make sure we're using a reasonably modern version of pip
-pip_version_info = tuple(int(digit) for digit in pip.__version__.split('.')[:2])
 if not pip_version_info >= (7, 0):
     print('pip-compile requires at least version 7.0 of pip ({} found), '
           'perhaps run `pip install --upgrade pip`?'.format(pip.__version__))
     sys.exit(4)
-
-import os  # noqa
-from .. import click  # noqa
-from .. import sync  # noqa
-from ..exceptions import PipToolsError  # noqa
-from ..logging import log  # noqa
-from ..utils import flat_map  # noqa
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.txt'
 
