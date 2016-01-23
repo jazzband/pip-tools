@@ -1,5 +1,4 @@
 # coding: utf-8
-# isort:skip_file
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
@@ -9,27 +8,23 @@ import sys
 import tempfile
 
 import pip
+from pip.req import parse_requirements
 
-# Make sure we're using a reasonably modern version of pip
-pip_version_info = tuple(int(digit) for digit in pip.__version__.split('.')[:2])
-if not pip_version_info >= (6, 1):
-    print('pip-compile requires at least version 6.1 of pip ({} found), '
-          'perhaps run `pip install --upgrade pip`?'.format(pip.__version__))
-    sys.exit(4)
-if not pip_version_info < (8, 0):
-    print('pip-tools does not work with pip version 8.0+ yet ({} found)'.format(pip.__version__))
-    sys.exit(4)
-
-from .. import click  # noqa
-from pip.req import parse_requirements  # noqa
-
-from ..exceptions import PipToolsError  # noqa
-from ..logging import log  # noqa
-from ..repositories import PyPIRepository  # noqa
-from ..resolver import Resolver  # noqa
-from ..writer import OutputWriter  # noqa
+from .. import click
+from ..exceptions import PipToolsError
+from ..logging import log
+from ..repositories import PyPIRepository
+from ..resolver import Resolver
+from ..utils import pip_version_info
+from ..writer import OutputWriter
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
+
+# Make sure we're using a reasonably modern version of pip
+if not pip_version_info >= (7, 0):
+    print('pip-compile requires at least version 7.0 of pip ({} found), '
+          'perhaps run `pip install --upgrade pip`?'.format(pip.__version__))
+    sys.exit(4)
 
 
 # emulate pip's option parsing with a stub command
@@ -38,6 +33,7 @@ class PipCommand(pip.basecommand.Command):
 
 
 @click.command()
+@click.version_option()
 @click.option('-v', '--verbose', is_flag=True, help="Show more output")
 @click.option('-n', '--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
 @click.option('-p', '--pre', is_flag=True, default=None, help="Allow resolving to prereleases (default is not)")

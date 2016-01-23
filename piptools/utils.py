@@ -2,11 +2,15 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from itertools import groupby, chain
+from itertools import chain, groupby
 
-from .click import style
+import pip
 from first import first
 from pip.req import InstallRequirement
+
+from .click import style
+
+pip_version_info = tuple(int(digit) for digit in pip.__version__.split('.')[:2])
 
 
 def comment(text):

@@ -2,31 +2,27 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import os
 import sys
 
 import pip
 
+from .. import click, sync
+from ..exceptions import PipToolsError
+from ..logging import log
+from ..utils import flat_map, pip_version_info
+
 # Make sure we're using a reasonably modern version of pip
-pip_version_info = tuple(int(digit) for digit in pip.__version__.split('.')[:2])
-if not pip_version_info >= (6, 1):
-    print('pip-compile requires at least version 6.1 of pip ({} found), '
+if not pip_version_info >= (7, 0):
+    print('pip-compile requires at least version 7.0 of pip ({} found), '
           'perhaps run `pip install --upgrade pip`?'.format(pip.__version__))
     sys.exit(4)
-if not pip_version_info < (8, 0):
-    print('pip-tools does not work with pip version 8.0+ yet ({} found)'.format(pip.__version__))
-    sys.exit(4)
-
-import os  # noqa
-from .. import click  # noqa
-from .. import sync  # noqa
-from ..exceptions import PipToolsError  # noqa
-from ..logging import log  # noqa
-from ..utils import flat_map  # noqa
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.txt'
 
 
 @click.command()
+@click.version_option()
 @click.option('-n', '--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
 @click.option('--force', is_flag=True, help="Proceed even if conflicts are found")
 @click.option('-f', '--find-links', multiple=True, help="Look for archives in this directory or on this HTML page", envvar='PIP_FIND_LINKS')  # noqa
