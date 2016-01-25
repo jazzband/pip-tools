@@ -51,14 +51,14 @@ class PipCommand(pip.basecommand.Command):
               help="Add index URL to generated file")
 @click.option('--annotate/--no-annotate', is_flag=True, default=True,
               help="Annotate results, indicating where dependencies come from")
-@click.option('--minimal-upgrade', is_flag=True, default=False,
-              help="Don't upgrade existing dependencies unless strictly required by new dependencies.")
+@click.option('--upgrade', is_flag=True, default=False,
+              help='Try to upgrade all dependencies to their latest versions')
 @click.option('-o', '--output-file', nargs=1, type=str, default=None,
               help=('Output file name. Required if more than one input file is given. '
                     'Will be derived from input file otherwise.'))
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
-        client_cert, trusted_host, header, index, annotate, minimal_upgrade,
+        client_cert, trusted_host, header, index, annotate, upgrade,
         output_file, src_files):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
@@ -118,8 +118,9 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
 
     repository = PyPIRepository(pip_options)
 
-    # Proxy with a LocalRequirementsRepository if --minimal-upgrade is set
-    if minimal_upgrade and os.path.exists(dst_file):
+    # Proxy with a LocalRequirementsRepository if --upgrade is not specified
+    # (= default invocation)
+    if not upgrade and os.path.exists(dst_file):
         existing_pins = dict()
         ireqs = parse_requirements(dst_file, finder=repository.finder, session=repository.session, options=pip_options)
         for ireq in ireqs:
