@@ -83,7 +83,7 @@ def resolver(depcache, repository):
 
 
 @fixture
-def minimal_resolver(depcache):
+def base_resolver(depcache):
     return partial(Resolver, cache=depcache)
 
 
