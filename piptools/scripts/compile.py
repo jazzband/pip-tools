@@ -13,9 +13,9 @@ from pip.req import parse_requirements
 from .. import click
 from ..exceptions import PipToolsError
 from ..logging import log
-from ..repositories import PyPIRepository
+from ..repositories import MinimalUpgradeRepository, PyPIRepository
 from ..resolver import Resolver
-from ..utils import pip_version_info
+from ..utils import is_pinned_requirement, pip_version_info
 from ..writer import OutputWriter
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
@@ -51,13 +51,15 @@ class PipCommand(pip.basecommand.Command):
               help="Add index URL to generated file")
 @click.option('--annotate/--no-annotate', is_flag=True, default=True,
               help="Annotate results, indicating where dependencies come from")
+@click.option('--minimal-upgrade', is_flag=True, default=False,
+              help="Don't upgrade existing dependencies unless strictly required by new dependencies.")
 @click.option('-o', '--output-file', nargs=1, type=str, default=None,
               help=('Output file name. Required if more than one input file is given. '
                     'Will be derived from input file otherwise.'))
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
-        client_cert, trusted_host, header, index, annotate, output_file,
-        src_files):
+        client_cert, trusted_host, header, index, annotate, minimal_upgrade,
+        output_file, src_files):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
 
@@ -73,6 +75,12 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
 
     if len(src_files) > 1 and not output_file:
         raise click.BadParameter('--output-file is required if two or more input files are given.')
+
+    if output_file:
+        dst_file = output_file
+    else:
+        base_name, _, _ = src_files[0].rpartition('.')
+        dst_file = base_name + '.txt'
 
     ###
     # Setup
@@ -109,6 +117,15 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     pip_options, _ = pip_options.parse_args(pip_args)
 
     repository = PyPIRepository(pip_options)
+
+    # Proxy with a MinimalUpgradeRepository if --minimal-upgrade is set
+    if minimal_upgrade and os.path.exists(dst_file):
+        existing_pins = dict()
+        ireqs = parse_requirements(dst_file, finder=repository.finder, session=repository.session, options=pip_options)
+        for ireq in ireqs:
+            if is_pinned_requirement(ireq):
+                existing_pins[ireq.req.project_name.lower()] = ireq
+        repository = MinimalUpgradeRepository(existing_pins, repository)
 
     log.debug('Using indexes:')
     for index_url in repository.finder.index_urls:
@@ -178,7 +195,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     if annotate:
         reverse_dependencies = resolver.reverse_dependencies(results)
 
-    writer = OutputWriter(src_file, output_file=output_file, dry_run=dry_run,
+    writer = OutputWriter(src_file, dst_file, dry_run=dry_run,
                           emit_header=header, emit_index=index,
                           annotate=annotate,
                           default_index_url=repository.DEFAULT_INDEX_URL,
