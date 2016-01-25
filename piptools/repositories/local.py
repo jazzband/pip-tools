@@ -5,12 +5,15 @@ from __future__ import (absolute_import, division, print_function,
 from .base import BaseRepository
 
 
-class MinimalUpgradeRepository(BaseRepository):
+class LocalRequirementsRepository(BaseRepository):
     """
-    The MinimalUpgradeRepository uses a provided requirements file as a proxy
-    in front of a repository.  If a requirement can be satisfied with
-    a version pinned in the requirements file, we use that version as the best
-    match.  In all other cases, the proxied repository is used instead.
+    The LocalRequirementsRepository proxied the _real_ repository by first
+    checking if a requirement can be satisfied by existing pins (i.e. the
+    result of a previous compile step).
+
+    In effect, if a requirement can be satisfied with a version pinned in the
+    requirements file, we prefer that version over the best match found in
+    PyPI.  This keeps updates to the requirements.txt down to a minimum.
     """
     def __init__(self, existing_pins, proxied_repository):
         self.repository = proxied_repository

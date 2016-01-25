@@ -13,7 +13,7 @@ from pip.req import parse_requirements
 from .. import click
 from ..exceptions import PipToolsError
 from ..logging import log
-from ..repositories import MinimalUpgradeRepository, PyPIRepository
+from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
 from ..utils import is_pinned_requirement, pip_version_info
 from ..writer import OutputWriter
@@ -118,14 +118,14 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
 
     repository = PyPIRepository(pip_options)
 
-    # Proxy with a MinimalUpgradeRepository if --minimal-upgrade is set
+    # Proxy with a LocalRequirementsRepository if --minimal-upgrade is set
     if minimal_upgrade and os.path.exists(dst_file):
         existing_pins = dict()
         ireqs = parse_requirements(dst_file, finder=repository.finder, session=repository.session, options=pip_options)
         for ireq in ireqs:
             if is_pinned_requirement(ireq):
                 existing_pins[ireq.req.project_name.lower()] = ireq
-        repository = MinimalUpgradeRepository(existing_pins, repository)
+        repository = LocalRequirementsRepository(existing_pins, repository)
 
     log.debug('Using indexes:')
     for index_url in repository.finder.index_urls:

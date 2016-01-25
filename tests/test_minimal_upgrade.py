@@ -1,6 +1,5 @@
 import pytest
-
-from piptools.repositories import MinimalUpgradeRepository
+from piptools.repositories import LocalRequirementsRepository
 
 
 @pytest.mark.parametrize(
@@ -32,7 +31,7 @@ def test_minimal_upgrade(minimal_resolver, repository, from_line, input, pins, e
     for line in pins:
         ireq = from_line(line)
         existing_pins[ireq.req.project_name] = ireq
-    minimal_repository = MinimalUpgradeRepository(existing_pins, repository)
-    output = minimal_resolver(input, prereleases=False, repository=minimal_repository).resolve()
+    local_repository = LocalRequirementsRepository(existing_pins, repository)
+    output = minimal_resolver(input, prereleases=False, repository=local_repository).resolve()
     output = {str(line) for line in output}
     assert output == {str(line) for line in expected}
