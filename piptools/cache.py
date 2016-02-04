@@ -51,6 +51,8 @@ class DependencyCache(object):
     def __init__(self, cache_dir=None):
         if cache_dir is None:
             cache_dir = CACHE_DIR
+        if not os.path.isdir(cache_dir):
+            os.makedirs(cache_dir)
         py_version = '.'.join(str(digit) for digit in sys.version_info[:2])
         cache_filename = 'depcache-py{}.json'.format(py_version)
 
