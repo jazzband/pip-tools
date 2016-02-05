@@ -1,3 +1,17 @@
+# 1.6
+
+Major change:
+- pip-compile will by default try to fulfill package specs by looking at
+  a previously compiled output file first, before checking PyPI.  This means
+  pip-compile will only update the requirements.txt when it absolutely has to.
+  To get the old behaviour (picking the latest version of all packages from
+  PyPI), use the new `--upgrade` option.
+
+Minor changes:
+- Bugfix where pip-compile would lose "via" info when on pip 8 (see #313)
+- Ensure cache dir exists (see #315)
+
+
 # 1.5
 
 - Add support for pip>=8
