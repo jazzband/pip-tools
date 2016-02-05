@@ -32,6 +32,16 @@ def test_format_requirement_annotation(from_line, writer):
             'test==1.2               ' + comment('  # via xyz'))
 
 
+def test_format_requirement_annotation_case_sensitive(from_line, writer):
+    ireq = from_line('Test==1.2')
+    reverse_dependencies = {'test': ['xyz']}
+
+    assert (writer._format_requirement(ireq,
+                                       reverse_dependencies,
+                                       primary_packages=[]) ==
+            'Test==1.2               ' + comment('  # via xyz'))
+
+
 def test_format_requirement_not_for_primary(from_line, writer):
     "Primary packages should not get annotated."
     ireq = from_line('test==1.2')

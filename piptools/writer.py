@@ -95,7 +95,7 @@ class OutputWriter(object):
             return line
 
         # Annotate what packages this package is required by
-        required_by = reverse_dependencies.get(ireq.name, [])
+        required_by = reverse_dependencies.get(ireq.name.lower(), [])
         if required_by:
             line = line.ljust(24)
             annotation = ', '.join(sorted(required_by))
