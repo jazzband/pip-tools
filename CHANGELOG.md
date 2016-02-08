@@ -1,3 +1,9 @@
+# 1.6.1
+
+- pip-sync now support being invoked from within and outside an activated
+  virtualenv (see 317)
+
+
 # 1.6
 
 Major change:
