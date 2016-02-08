@@ -1,4 +1,6 @@
 import collections
+import os
+import sys
 from subprocess import check_call
 
 from . import click
@@ -128,13 +130,20 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None,
     if not verbose:
         pip_flags += ['-q']
 
+    if os.environ.get('VIRTUAL_ENV'):
+        # find pip via PATH
+        pip = 'pip'
+    else:
+        # find pip in same directory as pip-sync entry-point script
+        pip = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'pip')
+
     if to_uninstall:
         if dry_run:
             click.echo("Would uninstall:")
             for pkg in to_uninstall:
                 click.echo("  {}".format(pkg))
         else:
-            check_call(['pip', 'uninstall', '-y'] + pip_flags + sorted(to_uninstall))
+            check_call([pip, 'uninstall', '-y'] + pip_flags + sorted(to_uninstall))
 
     if to_install:
         if install_flags is None:
@@ -144,5 +153,5 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None,
             for pkg in to_install:
                 click.echo("  {}".format(pkg))
         else:
-            check_call(['pip', 'install'] + pip_flags + install_flags + sorted(to_install))
+            check_call([pip, 'install'] + pip_flags + install_flags + sorted(to_install))
     return 0
