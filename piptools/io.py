@@ -44,9 +44,20 @@ else:
         return
 
 
+# rename operation fails on Windows when destination exists
+# see http://stackoverflow.com/questions/8107352/force-overwrite-in-os-rename
+if os.name == 'nt':
+    def _rename(old_path, new_path):
+        if os.path.exists(new_path):
+            os.remove(new_path)
+        os.rename(old_path, new_path)
+else:
+    _rename = os.rename
+
+
 def _atomic_rename(path, new_path, overwrite=False):
     if overwrite:
-        os.rename(path, new_path)
+        _rename(path, new_path)
     else:
         os.link(path, new_path)
         os.unlink(path)
