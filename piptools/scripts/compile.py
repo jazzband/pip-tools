@@ -15,7 +15,7 @@ from ..exceptions import PipToolsError
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
-from ..sync import get_dists_to_ignore
+from ..sync import make_snapshot
 from ..utils import is_pinned_requirement, pip_version_info
 from ..writer import OutputWriter
 
@@ -67,15 +67,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     log.verbose = verbose
 
     if no_input:
-        tmp_file = DEFAULT_REQUIREMENTS_FILE
-        src_files = (tmp_file,)
-        installed_reqs = pip.get_installed_distributions(local_only=True)
-        pkgs_to_ignore = get_dists_to_ignore(installed_reqs)
-        with open(tmp_file, 'w') as tmp:
-            for req in installed_reqs:
-                if req.key not in pkgs_to_ignore:
-                    tmp.write(req.key + '==' + req.version + '\n')
-        dst_file = 'requirements.txt'
+        src_files, dst_file = make_snapshot(DEFAULT_REQUIREMENTS_FILE)
 
     else:
         if len(src_files) == 0:
