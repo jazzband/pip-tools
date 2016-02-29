@@ -163,6 +163,9 @@ def make_snapshot(tmp_file=None, multiple=True):
     """
     Make a snapshot of the actual env
     """
+
+    # TODO: Integrate an efficient system to handle multiple snapshot
+
     extras = ''
     if not tmp_file:
         if multiple:
