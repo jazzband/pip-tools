@@ -1,4 +1,5 @@
 import collections
+from datetime import datetime
 import os
 import sys
 from subprocess import check_call
@@ -158,10 +159,15 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None,
             check_call([pip, 'install'] + pip_flags + install_flags + sorted(to_install))
     return 0
 
-def make_snapshot(tmp_file):
+def make_snapshot(tmp_file=None, multiple=True):
     """
     Make a snapshot of the actual env
     """
+    extras = ''
+    if not tmp_file:
+        if multiple:
+            extras = '-' + datetime.today().strftime('%d-%m-%Y_%H:%M:%S')
+        tmp_file = 'requirements{0}.in'.format(extras)
     src_files = (tmp_file,)
     installed_reqs = pip.get_installed_distributions(local_only=True)
     pkgs_to_ignore = get_dists_to_ignore(installed_reqs)
@@ -169,5 +175,5 @@ def make_snapshot(tmp_file):
         for req in installed_reqs:
             if req.key not in pkgs_to_ignore:
                 tmp.write(req.key + '==' + req.version + '\n')
-    dst_file = 'requirements.txt'
+    dst_file = 'requirements{0}.txt'.format(extras)
     return src_files, dst_file
