@@ -159,6 +159,9 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None,
     return 0
 
 def make_snapshot(tmp_file):
+    """
+    Make a snapshot of the actual env
+    """
     src_files = (tmp_file,)
     installed_reqs = pip.get_installed_distributions(local_only=True)
     pkgs_to_ignore = get_dists_to_ignore(installed_reqs)
