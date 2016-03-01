@@ -29,8 +29,9 @@ DEFAULT_REQUIREMENTS_FILE = 'requirements.txt'
 @click.option('-i', '--index-url', help="Change index URL (defaults to PyPI)", envvar='PIP_INDEX_URL')
 @click.option('--extra-index-url', multiple=True, help="Add additional index URL to search", envvar='PIP_EXTRA_INDEX_URL')  # noqa
 @click.option('--no-index', is_flag=True, help="Ignore package index (only looking at --find-links URLs instead)")
+@click.option('--no-use-wheel', is_flag=True, help="No use wheel")
 @click.argument('src_files', required=False, type=click.Path(exists=True), nargs=-1)
-def cli(dry_run, force, find_links, index_url, extra_index_url, no_index, src_files):
+def cli(dry_run, force, find_links, index_url, extra_index_url, no_index, no_use_wheel, src_files):
     if not src_files:
         if os.path.exists(DEFAULT_REQUIREMENTS_FILE):
             src_files = (DEFAULT_REQUIREMENTS_FILE,)
@@ -65,6 +66,8 @@ def cli(dry_run, force, find_links, index_url, extra_index_url, no_index, src_fi
         install_flags.extend(['-f', link])
     if no_index:
         install_flags.append('--no-index')
+    if no_use_wheel:
+        install_flags.append('--no-use-wheel')
     if index_url:
         install_flags.extend(['-i', index_url])
     if extra_index_url:
