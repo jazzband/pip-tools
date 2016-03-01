@@ -178,5 +178,4 @@ def make_snapshot(tmp_file=None, multiple=True):
         for req in installed_reqs:
             if req.key not in pkgs_to_ignore:
                 tmp.write(req.key + '==' + req.version + '\n')
-    dst_file = 'requirements{0}.txt'.format(extras)
-    return src_files, dst_file
+    return src_files

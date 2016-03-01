@@ -67,7 +67,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     log.verbose = verbose
 
     if no_input:
-        src_files, dst_file = make_snapshot(DEFAULT_REQUIREMENTS_FILE)
+        src_files = make_snapshot(DEFAULT_REQUIREMENTS_FILE)
 
     else:
         if len(src_files) == 0:
@@ -83,11 +83,11 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         if len(src_files) > 1 and not output_file:
             raise click.BadParameter('--output-file is required if two or more input files are given.')
 
-        if output_file:
-            dst_file = output_file
-        else:
-            base_name, _, _ = src_files[0].rpartition('.')
-            dst_file = base_name + '.txt'
+    if output_file:
+        dst_file = output_file
+    else:
+        base_name, _, _ = src_files[0].rpartition('.')
+        dst_file = base_name + '.txt'
 
     ###
     # Setup
