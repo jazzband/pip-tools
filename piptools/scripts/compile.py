@@ -56,10 +56,11 @@ class PipCommand(pip.basecommand.Command):
 @click.option('-o', '--output-file', nargs=1, type=str, default=None,
               help=('Output file name. Required if more than one input file is given. '
                     'Will be derived from input file otherwise.'))
+@click.option('--unsafe', is_flag=True, default=False, help='Allow inclusion of "unsafe" packages in requirements.txt')
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         client_cert, trusted_host, header, index, annotate, upgrade,
-        output_file, src_files):
+        output_file, unsafe, src_files):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
 
@@ -196,7 +197,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     if annotate:
         reverse_dependencies = resolver.reverse_dependencies(results)
 
-    writer = OutputWriter(src_file, dst_file, dry_run=dry_run,
+    writer = OutputWriter(src_file, dst_file, unsafe, dry_run=dry_run,
                           emit_header=header, emit_index=index,
                           annotate=annotate,
                           default_index_url=repository.DEFAULT_INDEX_URL,

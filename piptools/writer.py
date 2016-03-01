@@ -9,7 +9,7 @@ from .utils import comment, format_requirement
 
 
 class OutputWriter(object):
-    def __init__(self, src_file, dst_file, dry_run, emit_header, emit_index, annotate,
+    def __init__(self, src_file, dst_file, unsafe, dry_run, emit_header, emit_index, annotate,
                  default_index_url, index_urls):
         self.src_file = src_file
         self.dst_file = dst_file
@@ -19,6 +19,7 @@ class OutputWriter(object):
         self.annotate = annotate
         self.default_index_url = default_index_url
         self.index_urls = index_urls
+        self.unsafe = unsafe
 
     def _sort_key(self, ireq):
         return (not ireq.editable, str(ireq.req).lower())
@@ -69,13 +70,22 @@ class OutputWriter(object):
             yield line
 
         if unsafe_packages:
-            yield ''
-            yield comment('# The following packages are commented out because they are')
-            yield comment('# considered to be unsafe in a requirements file:')
+            if self.unsafe:
+                yield ''
+                yield comment('# The following packages are included because pip-tools was invoked with --unsafe')
+                yield comment('# However, they may be considered unsafe in a requirements file:')
 
-            for ireq in unsafe_packages:
-                line = self._format_requirement(ireq, reverse_dependencies, primary_packages, include_specifier=False)
-                yield comment('# ' + line)
+                for ireq in unsafe_packages:
+                    line = self._format_requirement(ireq, reverse_dependencies, primary_packages)
+                    yield line
+            else:
+                yield ''
+                yield comment('# The following packages are commented out because they are')
+                yield comment('# considered to be unsafe in a requirements file:')
+
+                for ireq in unsafe_packages:
+                    line = self._format_requirement(ireq, reverse_dependencies, primary_packages, include_specifier=False)
+                    yield comment('# ' + line)
 
     def write(self, results, reverse_dependencies, primary_packages):
         with ExitStack() as stack:
