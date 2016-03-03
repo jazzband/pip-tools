@@ -60,7 +60,14 @@ class OutputWriter(object):
 
         UNSAFE_PACKAGES = {'setuptools', 'distribute', 'pip'}
         unsafe_packages = {r for r in results if r.name in UNSAFE_PACKAGES}
-        packages = {r for r in results if r.name not in UNSAFE_PACKAGES}
+
+        if self.unsafe:
+            unsafe_packages = set()
+
+        if self.unsafe:
+            packages = results
+        else:
+            packages = {r for r in results if r.name not in UNSAFE_PACKAGES}
 
         packages = sorted(packages, key=self._sort_key)
         unsafe_packages = sorted(unsafe_packages, key=self._sort_key)
@@ -70,22 +77,13 @@ class OutputWriter(object):
             yield line
 
         if unsafe_packages:
-            if self.unsafe:
-                yield ''
-                yield comment('# The following packages are included because pip-tools was invoked with --unsafe')
-                yield comment('# However, they may be considered unsafe in a requirements file:')
+            yield ''
+            yield comment('# The following packages are commented out because they are')
+            yield comment('# considered to be unsafe in a requirements file:')
 
-                for ireq in unsafe_packages:
-                    line = self._format_requirement(ireq, reverse_dependencies, primary_packages)
-                    yield line
-            else:
-                yield ''
-                yield comment('# The following packages are commented out because they are')
-                yield comment('# considered to be unsafe in a requirements file:')
-
-                for ireq in unsafe_packages:
-                    line = self._format_requirement(ireq, reverse_dependencies, primary_packages, include_specifier=False)
-                    yield comment('# ' + line)
+            for ireq in unsafe_packages:
+                line = self._format_requirement(ireq, reverse_dependencies, primary_packages, include_specifier=False)
+                yield comment('# ' + line)
 
     def write(self, results, reverse_dependencies, primary_packages):
         with ExitStack() as stack:
