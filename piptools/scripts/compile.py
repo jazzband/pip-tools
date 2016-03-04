@@ -51,7 +51,7 @@ class PipCommand(pip.basecommand.Command):
               help="Add index URL to generated file")
 @click.option('--annotate/--no-annotate', is_flag=True, default=True,
               help="Annotate results, indicating where dependencies come from")
-@click.option('--upgrade', is_flag=True, default=False,
+@click.option('-U', '--upgrade', is_flag=True, default=False,
               help='Try to upgrade all dependencies to their latest versions')
 @click.option('-o', '--output-file', nargs=1, type=str, default=None,
               help=('Output file name. Required if more than one input file is given. '
