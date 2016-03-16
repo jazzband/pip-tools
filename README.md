@@ -71,3 +71,9 @@ Collecting click==4.1
       Successfully uninstalled click-4.0
 Successfully installed click-4.1
 ```
+
+To sync multiple `*.txt` dependency lists, just pass them in via command line arguments e.g.:
+```shell
+$ pip-sync dev-requirements.txt requirements.txt
+```
+Passing in empty arguments would cause it to default to `requirements.txt`.
