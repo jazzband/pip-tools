@@ -10,7 +10,7 @@ from .utils import comment, format_requirement
 
 class OutputWriter(object):
     def __init__(self, src_file, dst_file, dry_run, emit_header, emit_index, annotate,
-                 default_index_url, index_urls):
+                 default_index_url, index_urls, format_control):
         self.src_file = src_file
         self.dst_file = dst_file
         self.dry_run = dry_run
@@ -19,6 +19,7 @@ class OutputWriter(object):
         self.annotate = annotate
         self.default_index_url = default_index_url
         self.index_urls = index_urls
+        self.format_control = format_control
 
     def _sort_key(self, ireq):
         return (not ireq.editable, str(ireq.req).lower())
@@ -51,10 +52,19 @@ class OutputWriter(object):
             if emitted:
                 yield ''  # extra line of whitespace
 
+    def write_format_controls(self):
+        for nb in self.format_control.no_binary:
+            yield '--no-binary {}'.format(nb)
+        for ob in self.format_control.only_binary:
+            yield '--only-binary {}'.format(ob)
+        yield ''
+
     def _iter_lines(self, results, reverse_dependencies, primary_packages):
         for line in self.write_header():
             yield line
         for line in self.write_index_options():
+            yield line
+        for line in self.write_format_controls():
             yield line
 
         UNSAFE_PACKAGES = {'setuptools', 'distribute', 'pip'}

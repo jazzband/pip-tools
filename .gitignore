@@ -18,3 +18,7 @@ dist
 *.egg-info
 .coverage
 .cache
+
+# IDE
+.idea
+venv/
