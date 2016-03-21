@@ -89,3 +89,16 @@ def test_extra_index_option(pip_conf):
                 '  http://example.com\n'
                 '  http://extraindex1.com\n'
                 '  http://extraindex2.com' in out.output)
+
+
+# def test_unsafe_option(pip_conf):
+#
+#   assert os.path.exists(pip_conf)
+#
+#   runner = CliRunner()
+#   with runner.isolated_filesystem():
+#       with open('requirements.in', 'w') as req_file:
+#           req_file.write("setuptools\n")
+#       out = runner.invoke(cli, ['-v', '--unsafe', '-i', 'http://pypi.python.org/simple'])
+#       assert ('setuptools==' in out.output)
+

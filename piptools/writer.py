@@ -9,7 +9,7 @@ from .utils import comment, format_requirement
 
 
 class OutputWriter(object):
-    def __init__(self, src_file, dst_file, dry_run, emit_header, emit_index, annotate,
+    def __init__(self, src_file, dst_file, unsafe, dry_run, emit_header, emit_index, annotate,
                  default_index_url, index_urls):
         self.src_file = src_file
         self.dst_file = dst_file
@@ -19,6 +19,7 @@ class OutputWriter(object):
         self.annotate = annotate
         self.default_index_url = default_index_url
         self.index_urls = index_urls
+        self.unsafe = unsafe
 
     def _sort_key(self, ireq):
         return (not ireq.editable, str(ireq.req).lower())
@@ -59,7 +60,14 @@ class OutputWriter(object):
 
         UNSAFE_PACKAGES = {'setuptools', 'distribute', 'pip'}
         unsafe_packages = {r for r in results if r.name in UNSAFE_PACKAGES}
-        packages = {r for r in results if r.name not in UNSAFE_PACKAGES}
+
+        if self.unsafe:
+            unsafe_packages = set()
+
+        if self.unsafe:
+            packages = results
+        else:
+            packages = {r for r in results if r.name not in UNSAFE_PACKAGES}
 
         packages = sorted(packages, key=self._sort_key)
         unsafe_packages = sorted(unsafe_packages, key=self._sort_key)
