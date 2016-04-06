@@ -1,7 +1,13 @@
 # 1.6.1
 
-- pip-sync now support being invoked from within and outside an activated
-  virtualenv (see 317)
+Minor changes:
+- pip-sync now supports being invoked from within and outside an activated
+  virtualenv (see #317)
+- pip-compile: support -U as a shorthand for --upgrade
+- pip-compile: support pip's --no-binary and --binary-only flags
+
+Fixes:
+- Change header format of output files to mention all input files
 
 
 # 1.6
