@@ -15,6 +15,7 @@ from ..exceptions import PipToolsError
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
+from ..sync import make_snapshot
 from ..utils import is_pinned_requirement, pip_version_info
 from ..writer import OutputWriter
 
@@ -56,25 +57,31 @@ class PipCommand(pip.basecommand.Command):
 @click.option('-o', '--output-file', nargs=1, type=str, default=None,
               help=('Output file name. Required if more than one input file is given. '
                     'Will be derived from input file otherwise.'))
+@click.option('--no-input', is_flag=True, default=False,
+              help=('Instead of using an input file make a pip freeze.'))
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         client_cert, trusted_host, header, index, annotate, upgrade,
-        output_file, src_files):
+        output_file, no_input, src_files):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
 
-    if len(src_files) == 0:
-        if not os.path.exists(DEFAULT_REQUIREMENTS_FILE):
-            raise click.BadParameter(("If you do not specify an input file, "
-                                      "the default is {}").format(DEFAULT_REQUIREMENTS_FILE))
-        src_files = (DEFAULT_REQUIREMENTS_FILE,)
+    if no_input:
+        src_files = make_snapshot(DEFAULT_REQUIREMENTS_FILE)
 
-    if len(src_files) == 1 and src_files[0] == '-':
-        if not output_file:
-            raise click.BadParameter('--output-file is required if input is from stdin')
+    else:
+        if len(src_files) == 0:
+            if not os.path.exists(DEFAULT_REQUIREMENTS_FILE):
+                raise click.BadParameter(("If you do not specify an input file, "
+                                          "the default is {}").format(DEFAULT_REQUIREMENTS_FILE))
+            src_files = (DEFAULT_REQUIREMENTS_FILE,)
 
-    if len(src_files) > 1 and not output_file:
-        raise click.BadParameter('--output-file is required if two or more input files are given.')
+        if len(src_files) == 1 and src_files[0] == '-':
+            if not output_file:
+                raise click.BadParameter('--output-file is required if input is from stdin')
+
+        if len(src_files) > 1 and not output_file:
+            raise click.BadParameter('--output-file is required if two or more input files are given.')
 
     if output_file:
         dst_file = output_file

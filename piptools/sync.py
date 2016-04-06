@@ -1,7 +1,10 @@
 import collections
+from datetime import datetime
 import os
 import sys
 from subprocess import check_call
+
+import pip
 
 from . import click
 from .exceptions import IncompatibleRequirements, UnsupportedConstraint
@@ -155,3 +158,24 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None,
         else:
             check_call([pip, 'install'] + pip_flags + install_flags + sorted(to_install))
     return 0
+
+def make_snapshot(tmp_file=None, multiple=True):
+    """
+    Make a snapshot of the actual env
+    """
+
+    # TODO: Integrate an efficient system to handle multiple snapshot
+
+    extras = ''
+    if not tmp_file:
+        if multiple:
+            extras = '-' + datetime.today().strftime('%d-%m-%Y_%H:%M:%S')
+        tmp_file = 'requirements{0}.in'.format(extras)
+    src_files = (tmp_file,)
+    installed_reqs = pip.get_installed_distributions(local_only=True)
+    pkgs_to_ignore = get_dists_to_ignore(installed_reqs)
+    with open(tmp_file, 'w') as tmp:
+        for req in installed_reqs:
+            if req.key not in pkgs_to_ignore:
+                tmp.write(req.key + '==' + req.version + '\n')
+    return src_files
