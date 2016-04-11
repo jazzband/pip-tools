@@ -5,7 +5,6 @@ from __future__ import (absolute_import, division, print_function,
 import os
 from shutil import rmtree
 
-from pip.download import PipSession
 from pip.index import PackageFinder
 from pip.req.req_set import RequirementSet
 
@@ -30,10 +29,8 @@ class PyPIRepository(BaseRepository):
     config), but any other PyPI mirror can be used if index_urls is
     changed/configured on the Finder.
     """
-    def __init__(self, pip_options):
-        self.session = PipSession()
-        if pip_options.client_cert:
-            self.session.cert = pip_options.client_cert
+    def __init__(self, pip_options, session):
+        self.session = session
 
         index_urls = [pip_options.index_url] + pip_options.extra_index_urls
         if pip_options.no_index:
