@@ -1,3 +1,8 @@
+# 1.6.2
+
+- Respect pip configuration from pip.{ini,conf}
+
+
 # 1.6.1
 
 Minor changes:
