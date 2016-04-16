@@ -48,7 +48,8 @@ werkzeug==0.10.4          # via flask
 
 And it will produce your `requirements.txt`, with all the Flask dependencies
 (and all underlying dependencies) pinned.  Put this file under version control
-as well and periodically re-run `pip-compile` to update the packages.
+as well.  To update your packages to the latest versions available on PyPI
+, run `pip-compile --upgrade`.
 
 
 Example usage for `pip-sync`
