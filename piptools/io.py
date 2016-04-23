@@ -8,6 +8,10 @@ import errno
 import os
 import stat
 
+if os.name == 'nt':
+    from ctypes import windll
+
+
 RW_PERMS = 438
 
 _TEXT_OPENFLAGS = os.O_RDWR | os.O_CREAT | os.O_EXCL
@@ -46,7 +50,12 @@ else:
 
 def _atomic_rename(path, new_path, overwrite=False):
     if overwrite:
-        os.rename(path, new_path)
+        if os.name == 'nt':
+            # atomic renaming on python build on msvc
+            # ReplaceFile enalbe you to file renaming atomically.
+            windll.kernel32.ReplaceFile(path, new_path)
+        else:
+            os.rename(path, new_path)
     else:
         os.link(path, new_path)
         os.unlink(path)
