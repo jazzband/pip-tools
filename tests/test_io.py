@@ -15,10 +15,6 @@ def test__atomic_rename_can_overwrite():
 
         ppt_io._atomic_rename(path, new_path, overwrite=True)
     finally:
-        try:
+        if os.path.isfile(path):
             os.remove(path)
-        except:
-            # If move file0 to file1,
-            # there is no file on file0's path.
-            pass
         os.remove(new_path)
