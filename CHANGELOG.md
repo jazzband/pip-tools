@@ -1,3 +1,8 @@
+# 1.6.3
+
+- PyPI won't let me upload 1.6.2
+
+
 # 1.6.2
 
 - Respect pip configuration from pip.{ini,conf}
