@@ -1,6 +1,7 @@
-# 1.6.2dev0
+# 1.6.2
 
 - Respect pip configuration from pip.{ini,conf}
+- Fixes for atomic-saving of output files on Windows (see #351)
 
 
 # 1.6.1
