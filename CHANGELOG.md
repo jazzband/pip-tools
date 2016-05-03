@@ -1,3 +1,9 @@
+# 1.6.4
+
+- Incorporate fix for atomic file saving behaviour on the Windows platform
+  (see #351)
+
+
 # 1.6.3
 
 - PyPI won't let me upload 1.6.2
