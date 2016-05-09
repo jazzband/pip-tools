@@ -128,6 +128,7 @@ class PyPIRepository(BaseRepository):
                                 self.source_dir,
                                 download_dir=self._download_dir,
                                 wheel_download_dir=self._wheel_download_dir,
+                                ignore_installed=True,
                                 session=self.session)
         dependencies = reqset._prepare_file(self.finder, ireq)
         return set(dependencies)
