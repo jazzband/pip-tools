@@ -1,3 +1,8 @@
+# 1.6.5
+
+- Add warning that pip >= 8.1.2 is not supported until 1.7.x is out
+
+
 # 1.6.4
 
 - Incorporate fix for atomic file saving behaviour on the Windows platform
