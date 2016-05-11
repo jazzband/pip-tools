@@ -2,15 +2,42 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import sys
 from itertools import chain, groupby
 
 import pip
-from first import first
 from pip.req import InstallRequirement
+
+from first import first
 
 from .click import style
 
-pip_version_info = tuple(int(digit) for digit in pip.__version__.split('.')[:2])
+
+def safeint(s):
+    try:
+        return int(s)
+    except ValueError:
+        return 0
+
+pip_version_info = tuple(safeint(digit) for digit in pip.__version__.split('.'))
+
+
+def assert_compatible_pip_version():
+    # Make sure we're using a reasonably modern version of pip
+    if not pip_version_info >= (7, 0):
+        print('pip-compile requires at least version 7.0 of pip ({} found), '
+              'perhaps run `pip install --upgrade pip`?'.format(pip.__version__))
+        sys.exit(4)
+
+    if pip_version_info >= (8, 1, 2):
+        print('ERROR:')
+        print('You are using pip>=8.1.2, which changed some internal data structures pip-tools')
+        print('depends on.  Support for this is scheduled for pip-tools>=1.7.  Until then,')
+        print('consider downgrading your pip:')
+        print('')
+        print('    $ pip install --upgrade pip==8.1.1')
+        print('')
+        sys.exit(4)
 
 
 def comment(text):

@@ -10,13 +10,10 @@ import pip
 from .. import click, sync
 from ..exceptions import PipToolsError
 from ..logging import log
-from ..utils import flat_map, pip_version_info
+from ..utils import assert_compatible_pip_version, flat_map
 
-# Make sure we're using a reasonably modern version of pip
-if not pip_version_info >= (7, 0):
-    print('pip-compile requires at least version 7.0 of pip ({} found), '
-          'perhaps run `pip install --upgrade pip`?'.format(pip.__version__))
-    sys.exit(4)
+# Make sure we're using a compatible version of pip
+assert_compatible_pip_version()
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.txt'
 
