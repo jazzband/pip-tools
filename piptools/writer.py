@@ -52,11 +52,12 @@ class OutputWriter(object):
                 yield ''  # extra line of whitespace
 
     def write_format_controls(self):
-        for nb in self.format_control.no_binary:
-            yield '--no-binary {}'.format(nb)
-        for ob in self.format_control.only_binary:
-            yield '--only-binary {}'.format(ob)
-        yield ''
+        if self.format_control.no_binary or self.format_control.only_binary:
+            for nb in self.format_control.no_binary:
+                yield '--no-binary {}'.format(nb)
+            for ob in self.format_control.only_binary:
+                yield '--only-binary {}'.format(ob)
+            yield ''
 
     def _iter_lines(self, results, reverse_dependencies, primary_packages):
         for line in self.write_header():
