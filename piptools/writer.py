@@ -93,7 +93,6 @@ class OutputWriter(object):
                 f = stack.enter_context(AtomicSaver(self.dst_file))
 
             for line in self._iter_lines(results, reverse_dependencies, primary_packages):
-                log.info(line)
                 if f:
                     f.write(unstyle(line).encode('utf-8'))
                     f.write(os.linesep.encode('utf-8'))
