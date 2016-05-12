@@ -89,13 +89,15 @@ class OutputWriter(object):
     def write(self, results, reverse_dependencies, primary_packages):
         with ExitStack() as stack:
             f = None
-            if not self.dry_run:
+            if not self.dry_run and self.dst_file != '-':
                 f = stack.enter_context(AtomicSaver(self.dst_file))
 
             for line in self._iter_lines(results, reverse_dependencies, primary_packages):
                 if f:
                     f.write(unstyle(line).encode('utf-8'))
                     f.write(os.linesep.encode('utf-8'))
+                else:
+                    print(line)
 
     def _format_requirement(self, ireq, reverse_dependencies, primary_packages, include_specifier=True):
         line = format_requirement(ireq, include_specifier=include_specifier)
