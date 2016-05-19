@@ -32,6 +32,8 @@ class PyPIRepository(BaseRepository):
     """
     def __init__(self, pip_options):
         self.session = PipSession()
+        if pip_options.cert:
+            self.session.verify = pip_options.cert
         if pip_options.client_cert:
             self.session.cert = pip_options.client_cert
 
