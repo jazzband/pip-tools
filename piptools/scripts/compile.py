@@ -197,7 +197,9 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
                           emit_header=header, emit_index=index,
                           annotate=annotate,
                           default_index_url=repository.DEFAULT_INDEX_URL,
-                          index_urls=repository.finder.index_urls, format_control=repository.finder.format_control)
+                          index_urls=repository.finder.index_urls,
+                          trusted_hosts=pip_options.trusted_hosts,
+                          format_control=repository.finder.format_control)
     writer.write(results=results,
                  reverse_dependencies=reverse_dependencies,
                  primary_packages={ireq.req.key for ireq in constraints})

@@ -9,7 +9,9 @@ from piptools.writer import OutputWriter
 def writer():
     return OutputWriter(src_files=["src_file", "src_file2"], dst_file="dst_file", dry_run=True,
                         emit_header=True, emit_index=True, annotate=True,
-                        default_index_url=None, index_urls=[], format_control=FormatControl(set(), set()))
+                        default_index_url=None, index_urls=[],
+                        trusted_hosts=[],
+                        format_control=FormatControl(set(), set()))
 
 
 def test_format_requirement_annotation_editable(from_editable, writer):
