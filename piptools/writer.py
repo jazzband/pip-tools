@@ -9,7 +9,7 @@ from .utils import comment, format_requirement
 
 class OutputWriter(object):
     def __init__(self, src_files, dst_file, dry_run, emit_header, emit_index, annotate,
-                 default_index_url, index_urls, format_control):
+                 default_index_url, index_urls, trusted_hosts, format_control):
         self.src_files = src_files
         self.dst_file = dst_file
         self.dry_run = dry_run
@@ -18,6 +18,7 @@ class OutputWriter(object):
         self.annotate = annotate
         self.default_index_url = default_index_url
         self.index_urls = index_urls
+        self.trusted_hosts = trusted_hosts
         self.format_control = format_control
 
     def _sort_key(self, ireq):
@@ -51,6 +52,11 @@ class OutputWriter(object):
             if emitted:
                 yield ''  # extra line of whitespace
 
+    def write_trusted_hosts(self):
+        for trusted_host in self.trusted_hosts:
+            yield '--trusted-host {}'.format(trusted_host)
+        yield ''
+
     def write_format_controls(self):
         for nb in self.format_control.no_binary:
             yield '--no-binary {}'.format(nb)
@@ -62,6 +68,8 @@ class OutputWriter(object):
         for line in self.write_header():
             yield line
         for line in self.write_index_options():
+            yield line
+        for line in self.write_trusted_hosts():
             yield line
         for line in self.write_format_controls():
             yield line
