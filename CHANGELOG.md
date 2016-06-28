@@ -1,13 +1,14 @@
-# 1.7.1
+# 1.7.0+nimbis.1
+
+- Bug fix to work with Debian mkvirtualenv (this has been submitted
+  upstream here: https://github.com/nvie/pip-tools/pull/368 )
 
 - Add `--allow-unsafe` option (#377)
-
 
 # 1.7.0
 
 - Add compatibility with pip >= 8.1.2 (#374)
   Thanks so much, @jmbowman!
-
 
 # 1.6.5
 
