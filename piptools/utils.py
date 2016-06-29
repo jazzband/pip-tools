@@ -69,8 +69,8 @@ def format_requirement(ireq, include_specifier=True):
     Generic formatter for pretty printing InstallRequirements to the terminal
     in a less verbose way than using its `__str__` method.
     """
-    if ireq.editable:
-        line = '-e {}'.format(ireq.link)
+    if ireq.editable or (ireq.link and not ireq.link.is_artifact):
+        line = '{}{}'.format('-e ' if ireq.editable else '', ireq.link)
     elif include_specifier:
         line = str(ireq.req)
     else:

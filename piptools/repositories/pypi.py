@@ -91,7 +91,7 @@ class PyPIRepository(BaseRepository):
         Returns a Version object that indicates the best match for the given
         InstallRequirement according to the external repository.
         """
-        if ireq.editable:
+        if ireq.editable or (ireq.link and not ireq.link.is_artifact):
             return ireq  # return itself as the best match
 
         all_candidates = self.find_all_candidates(ireq.name)
