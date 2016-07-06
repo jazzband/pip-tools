@@ -14,7 +14,7 @@ from .cache import DependencyCache
 from .exceptions import UnsupportedConstraint
 from .logging import log
 from .utils import (format_requirement, format_specifier, full_groupby,
-                    is_pinned_requirement)
+                    is_pinned_requirement, key_from_req)
 
 green = partial(click.style, fg='green')
 magenta = partial(click.style, fg='magenta')
@@ -24,7 +24,32 @@ def _dep_key(ireq):
     if ireq.req is None and ireq.link is not None:
         return str(ireq.link)
     else:
-        return ireq.req.key
+        return key_from_req(ireq.req)
+
+
+class RequirementSummary(object):
+    """
+    Summary of a requirement's properties for comparison purposes.
+    """
+    def __init__(self, req):
+        self.req = req
+        self.key = key_from_req(req)
+        self.extras = str(sorted(req.extras))
+        if hasattr(req, 'specs'):
+            # pip < 8.1.2
+            self.specifier = str(req.specs)
+        else:
+            # pip >= 8.1.2
+            self.specifier = str(req.specifier)
+
+    def __eq__(self, other):
+        return str(self) == str(other)
+
+    def __hash__(self):
+        return hash(str(self))
+
+    def __str__(self):
+        return repr([self.key, self.specifier, self.extras])
 
 
 class Resolver(object):
@@ -129,7 +154,7 @@ class Resolver(object):
                 # NOTE we may be losing some info on dropped reqs here
                 combined_ireq.req.specifier &= ireq.req.specifier
                 # Return a sorted, de-duped tuple of extras
-                combined_ireq.extras = tuple(sorted(set(combined_ireq.extras + ireq.extras)))
+                combined_ireq.extras = tuple(sorted(set(tuple(combined_ireq.extras) + tuple(ireq.extras))))
             yield combined_ireq
 
     def _resolve_one_round(self):
@@ -160,14 +185,14 @@ class Resolver(object):
                      for best_match in best_matches
                      for dep in self._iter_dependencies(best_match))
 
-        # NOTE: We need to compare the underlying Requirement objects, since
+        # NOTE: We need to compare RequirementSummary objects, since
         # InstallRequirement does not define equality
-        diff = {t.req for t in theirs} - {t.req for t in self.their_constraints}
+        diff = {RequirementSummary(t.req) for t in theirs} - {RequirementSummary(t.req) for t in self.their_constraints}
         has_changed = len(diff) > 0
         if has_changed:
             log.debug('')
             log.debug('New dependencies found in this round:')
-            for new_dependency in sorted(diff, key=lambda req: req.key):
+            for new_dependency in sorted(diff, key=lambda req: key_from_req(req.req)):
                 log.debug('  adding {}'.format(new_dependency))
 
         # Store the last round's results in the their_constraints

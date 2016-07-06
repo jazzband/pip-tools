@@ -90,6 +90,7 @@ def test_extra_index_option(pip_conf):
                 '  http://extraindex1.com\n'
                 '  http://extraindex2.com' in out.output)
 
+
 def test_trusted_host(pip_conf):
 
     assert os.path.exists(pip_conf)
