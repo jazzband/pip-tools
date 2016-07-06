@@ -15,7 +15,8 @@ from ..exceptions import PipToolsError
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
-from ..utils import assert_compatible_pip_version, is_pinned_requirement
+from ..utils import (assert_compatible_pip_version, is_pinned_requirement,
+                     key_from_req, name_from_req)
 from ..writer import OutputWriter
 
 # Make sure we're using a compatible version of pip
@@ -122,7 +123,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         ireqs = parse_requirements(dst_file, finder=repository.finder, session=repository.session, options=pip_options)
         for ireq in ireqs:
             if is_pinned_requirement(ireq):
-                existing_pins[ireq.req.project_name.lower()] = ireq
+                existing_pins[name_from_req(ireq.req).lower()] = ireq
         repository = LocalRequirementsRepository(existing_pins, repository)
 
     log.debug('Using indexes:')
@@ -202,7 +203,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
                           format_control=repository.finder.format_control)
     writer.write(results=results,
                  reverse_dependencies=reverse_dependencies,
-                 primary_packages={ireq.req.key for ireq in constraints})
+                 primary_packages={key_from_req(ireq.req) for ireq in constraints})
 
     if dry_run:
         log.warning('Dry-run, so nothing updated.')
