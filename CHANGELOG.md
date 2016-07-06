@@ -1,3 +1,9 @@
+# 1.7.0
+
+- Add compatibility with pip >= 8.1.2 (#374)
+  Thanks so much, @jmbowman!
+
+
 # 1.6.5
 
 - Add warning that pip >= 8.1.2 is not supported until 1.7.x is out
