@@ -1,4 +1,5 @@
 import os
+from itertools import chain
 
 from ._compat import ExitStack
 from .click import unstyle
@@ -42,36 +43,36 @@ class OutputWriter(object):
 
     def write_index_options(self):
         if self.emit_index:
-            emitted = False
             for index, index_url in enumerate(self.index_urls):
                 if index_url.rstrip('/') == self.default_index_url:
                     continue
                 flag = '--index-url' if index == 0 else '--extra-index-url'
                 yield '{} {}'.format(flag, index_url)
-                emitted = True
-            if emitted:
-                yield ''  # extra line of whitespace
 
     def write_trusted_hosts(self):
         for trusted_host in self.trusted_hosts:
             yield '--trusted-host {}'.format(trusted_host)
-        yield ''
 
     def write_format_controls(self):
         for nb in self.format_control.no_binary:
             yield '--no-binary {}'.format(nb)
         for ob in self.format_control.only_binary:
             yield '--only-binary {}'.format(ob)
-        yield ''
+
+    def write_flags(self):
+        emitted = False
+        for line in chain(self.write_index_options(),
+                          self.write_trusted_hosts(),
+                          self.write_format_controls()):
+            emitted = True
+            yield line
+        if emitted:
+            yield ''
 
     def _iter_lines(self, results, reverse_dependencies, primary_packages):
         for line in self.write_header():
             yield line
-        for line in self.write_index_options():
-            yield line
-        for line in self.write_trusted_hosts():
-            yield line
-        for line in self.write_format_controls():
+        for line in self.write_flags():
             yield line
 
         UNSAFE_PACKAGES = {'setuptools', 'distribute', 'pip'}
