@@ -29,15 +29,25 @@ def assert_compatible_pip_version():
               'perhaps run `pip install --upgrade pip`?'.format(pip.__version__))
         sys.exit(4)
 
-    if pip_version_info >= (8, 1, 2):
-        print('ERROR:')
-        print('You are using pip>=8.1.2, which changed some internal data structures pip-tools')
-        print('depends on.  Support for this is scheduled for pip-tools>=1.7.  Until then,')
-        print('consider downgrading your pip:')
-        print('')
-        print('    $ pip install --upgrade pip==8.1.1')
-        print('')
-        sys.exit(4)
+
+def key_from_req(req):
+    """Get an all-lowercase version of the requirement's name."""
+    if hasattr(req, 'key'):
+        # pip 8.1.1 or below, using pkg_resources
+        return req.key
+    else:
+        # pip 8.1.2 or above, using packaging
+        return req.name.lower()
+
+
+def name_from_req(req):
+    """Get the name of the requirement"""
+    if hasattr(req, 'project_name'):
+        # pip 8.1.1 or below, using pkg_resources
+        return req.project_name
+    else:
+        # pip 8.1.2 or above, using packaging
+        return req.name
 
 
 def comment(text):
@@ -64,7 +74,7 @@ def format_requirement(ireq, include_specifier=True):
     elif include_specifier:
         line = str(ireq.req)
     else:
-        line = ireq.req.project_name
+        line = name_from_req(ireq.req)
     return line
 
 
@@ -113,9 +123,9 @@ def as_tuple(ireq):
     if not is_pinned_requirement(ireq):
         raise TypeError('Expected a pinned InstallRequirement, got {}'.format(ireq))
 
-    name = ireq.req.key
+    name = key_from_req(ireq.req)
     version = first(ireq.specifier._specs)._spec[1]
-    extras = ireq.extras
+    extras = tuple(sorted(ireq.extras))
     return name, version, extras
 
 

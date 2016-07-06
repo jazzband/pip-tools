@@ -1,5 +1,6 @@
 import pytest
 from piptools.repositories import LocalRequirementsRepository
+from piptools.utils import name_from_req
 
 
 @pytest.mark.parametrize(
@@ -30,7 +31,7 @@ def test_no_upgrades(base_resolver, repository, from_line, input, pins, expected
     existing_pins = dict()
     for line in pins:
         ireq = from_line(line)
-        existing_pins[ireq.req.project_name] = ireq
+        existing_pins[name_from_req(ireq.req)] = ireq
     local_repository = LocalRequirementsRepository(existing_pins, repository)
     output = base_resolver(input, prereleases=False, repository=local_repository).resolve()
     output = {str(line) for line in output}
