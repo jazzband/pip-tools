@@ -187,7 +187,8 @@ class Resolver(object):
 
         # NOTE: We need to compare RequirementSummary objects, since
         # InstallRequirement does not define equality
-        diff = {RequirementSummary(t.req) for t in theirs} - {RequirementSummary(t.req) for t in self.their_constraints}
+        diff = {RequirementSummary(t.req) for t in theirs} - \
+            {RequirementSummary(t.req) for t in self.their_constraints}
         has_changed = len(diff) > 0
         if has_changed:
             log.debug('')
