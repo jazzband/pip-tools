@@ -53,7 +53,7 @@ class PipCommand(pip.basecommand.Command):
 @click.option('-o', '--output-file', nargs=1, type=str, default=None,
               help=('Output file name. Required if more than one input file is given. '
                     'Will be derived from input file otherwise.'))
-@click.option('-u', '--unsafe', is_flag=True, default=False,
+@click.option('-u', '--pin-unsafe', is_flag=True, default=False,
               help="Pin packages considered unsafe: pip, setuptools & distribute")
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
