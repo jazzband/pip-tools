@@ -9,8 +9,9 @@ from .utils import comment, format_requirement
 
 
 class OutputWriter(object):
-    def __init__(self, src_files, dst_file, dry_run, emit_header, emit_index, annotate,
-                 default_index_url, index_urls, trusted_hosts, format_control, pin_unsafe=False):
+    def __init__(self, src_files, dst_file, dry_run, emit_header, emit_index,
+                 annotate, default_index_url, index_urls, trusted_hosts,
+                 format_control, pin_unsafe=False):
         self.src_files = src_files
         self.dst_file = dst_file
         self.dry_run = dry_run
