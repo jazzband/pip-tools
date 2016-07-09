@@ -9,8 +9,9 @@ from .utils import comment, format_requirement
 
 
 class OutputWriter(object):
-    def __init__(self, src_files, dst_file, dry_run, emit_header, emit_index, annotate,
-                 default_index_url, index_urls, trusted_hosts, format_control):
+    def __init__(self, src_files, dst_file, dry_run, emit_header, emit_index,
+                 annotate, default_index_url, index_urls, trusted_hosts,
+                 format_control, allow_unsafe=False):
         self.src_files = src_files
         self.dst_file = dst_file
         self.dry_run = dry_run
@@ -21,6 +22,7 @@ class OutputWriter(object):
         self.index_urls = index_urls
         self.trusted_hosts = trusted_hosts
         self.format_control = format_control
+        self.allow_unsafe = allow_unsafe
 
     def _sort_key(self, ireq):
         return (not ireq.editable, str(ireq.req).lower())
@@ -88,12 +90,16 @@ class OutputWriter(object):
 
         if unsafe_packages:
             yield ''
-            yield comment('# The following packages are commented out because they are')
-            yield comment('# considered to be unsafe in a requirements file:')
+            yield comment('# The following packages are considered to be unsafe in a requirements file:')
 
             for ireq in unsafe_packages:
-                line = self._format_requirement(ireq, reverse_dependencies, primary_packages, include_specifier=False)
-                yield comment('# ' + line)
+                line = self._format_requirement(
+                    ireq, reverse_dependencies, primary_packages,
+                    include_specifier=self.allow_unsafe)
+                if self.allow_unsafe:
+                    yield line
+                else:
+                    yield comment('# ' + line)
 
     def write(self, results, reverse_dependencies, primary_packages):
         with ExitStack() as stack:
