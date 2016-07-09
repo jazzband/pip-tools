@@ -1,3 +1,8 @@
+# 1.7.1
+
+- Add `--allow-unsafe` option (#377)
+
+
 # 1.7.0
 
 - Add compatibility with pip >= 8.1.2 (#374)
