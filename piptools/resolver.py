@@ -14,7 +14,7 @@ from .cache import DependencyCache
 from .exceptions import UnsupportedConstraint
 from .logging import log
 from .utils import (format_requirement, format_specifier, full_groupby,
-                    is_pinned_requirement, key_from_req)
+                    is_pinned_requirement, key_from_req, is_vcs_link)
 
 green = partial(click.style, fg='green')
 magenta = partial(click.style, fg='magenta')
@@ -119,8 +119,8 @@ class Resolver(object):
 
     def _check_constraints(self):
         for constraint in chain(self.our_constraints, self.their_constraints):
-            if ((constraint.link and not constraint.editable
-                 and not constraint.link.is_artifact and not is_pinned_requirement(constraint))):
+            if ((is_vcs_link(constraint) and not constraint.editable and
+                 not is_pinned_requirement(constraint))):
                 msg = 'pip-compile does not support non-editable vcs URLs that are not pinned to one version.'
                 raise UnsupportedConstraint(msg, constraint)
 
@@ -142,7 +142,7 @@ class Resolver(object):
         """
         for _, ireqs in full_groupby(constraints, key=_dep_key):
             ireqs = list(ireqs)
-            exception_ireq = first(ireqs, key=lambda ireq: ireq.editable or (ireq.link and not ireq.link.is_artifact))
+            exception_ireq = first(ireqs, key=lambda ireq: ireq.editable or is_vcs_link(ireq))
             if exception_ireq:
                 yield exception_ireq  # ignore all the other specs: the editable/vcs one is the one that counts
                 continue
@@ -215,7 +215,7 @@ class Resolver(object):
             Flask==0.10.1 => Flask==0.10.1
 
         """
-        if ireq.editable or (ireq.link and not ireq.link.is_artifact):
+        if ireq.editable or is_vcs_link(ireq):
             # NOTE: it's much quicker to immediately return instead of
             # hitting the index server
             best_match = ireq

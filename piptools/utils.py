@@ -69,7 +69,7 @@ def format_requirement(ireq, include_specifier=True):
     Generic formatter for pretty printing InstallRequirements to the terminal
     in a less verbose way than using its `__str__` method.
     """
-    if ireq.editable or (ireq.link and not ireq.link.is_artifact):
+    if ireq.editable or is_vcs_link(ireq):
         line = '{}{}'.format('-e ' if ireq.editable else '', ireq.link)
     elif include_specifier:
         line = str(ireq.req)
@@ -114,6 +114,14 @@ def is_pinned_requirement(ireq):
 
     op, version = first(ireq.specifier._specs)._spec
     return (op == '==' or op == '===') and not version.endswith('.*')
+
+
+def is_vcs_link(ireq):
+    """
+    Returns whether an InstallRequirement is a version control link.
+    """
+
+    return ireq.link is not None and not ireq.link.is_artifact
 
 
 def as_tuple(ireq):

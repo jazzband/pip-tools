@@ -5,7 +5,7 @@ from subprocess import check_call
 
 from . import click
 from .exceptions import IncompatibleRequirements, UnsupportedConstraint
-from .utils import flat_map, key_from_req, is_pinned_requirement
+from .utils import flat_map, key_from_req, is_pinned_requirement, is_vcs_link
 
 PACKAGES_TO_IGNORE = [
     'pip',
@@ -68,8 +68,7 @@ def merge(requirements, ignore_conflicts):
     by_key = {}
 
     for ireq in requirements:
-        if ((ireq.link and not ireq.editable
-             and not ireq.link.is_artifact and not is_pinned_requirement(ireq))):
+        if ((is_vcs_link(ireq) and not ireq.editable and not is_pinned_requirement(ireq))):
             msg = 'pip-compile does not support non-editable vcs URLs that are not pinned to one version.'
             raise UnsupportedConstraint(msg, ireq)
 
