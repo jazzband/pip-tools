@@ -66,6 +66,19 @@ import pytest
              'pygments==1.5',
              'sphinx==0.3']
          ),
+
+        # We must remove child dependencies from result if parent is removed (e.g. vine from amqp>=2.0)
+        # See: GH-370
+        (['celery', 'librabbitmq'],
+         [
+             'amqp==1.4.9',
+             'anyjson==0.3.3',
+             'billiard==3.3.0.23',
+             'celery==3.1.23',
+             'kombu==3.0.35',
+             'librabbitmq==1.6.1',
+             'pytz==2016.4']
+         ),
     ])
 )
 def test_resolver(resolver, from_line, input, expected, prereleases):
