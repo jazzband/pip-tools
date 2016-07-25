@@ -149,7 +149,11 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
             # piping from stdin, we need to briefly save the input from stdin
             # to a temporary file and have pip read that.
             with tempfile.NamedTemporaryFile() as tmpfile:
-                tmpfile.write(sys.stdin.read())
+                if sys.stdin.buffer:  # Python 3.
+                    stdin = sys.stdin.buffer.read()
+                else:
+                    stdin = sys.stdin.read()
+                tmpfile.write(stdin)
                 tmpfile.flush()
                 constraints.extend(parse_requirements(
                     tmpfile.name, finder=repository.finder, session=repository.session, options=pip_options))
