@@ -73,6 +73,12 @@ class Resolver(object):
         return set(self._group_constraints(chain(self.our_constraints,
                                                  self.their_constraints)))
 
+    def resolve_hashes(self, ireqs):
+        """
+        Finds acceptable hashes for all of the given InstallRequirements.
+        """
+        return {ireq: self.repository.get_hashes(ireq) for ireq in ireqs}
+
     def resolve(self, max_rounds=10):
         """
         Finds concrete package versions for all the given InstallRequirements

@@ -30,3 +30,11 @@ class BaseRepository(object):
         dependencies (also InstallRequirements, but not necessarily pinned).
         They indicate the secondary dependencies for the given requirement.
         """
+
+    @abstractmethod
+    def get_hashes(self, ireq):
+        """
+        Given a pinned InstallRequire, returns a set of hashes that represent
+        all of the files for a given requirement. It is not acceptable for an
+        editable or unpinned requirement to be passed to this function.
+        """

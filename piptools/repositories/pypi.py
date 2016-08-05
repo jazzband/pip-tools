@@ -2,11 +2,14 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import hashlib
 import os
 from shutil import rmtree
 
+from pip.download import unpack_url
 from pip.index import PackageFinder
 from pip.req.req_set import RequirementSet
+from pip.utils.hashes import FAVORITE_HASH
 
 from ..cache import CACHE_DIR
 from ..exceptions import NoCandidateFound
@@ -131,3 +134,44 @@ class PyPIRepository(BaseRepository):
                                 session=self.session)
         dependencies = reqset._prepare_file(self.finder, ireq)
         return set(dependencies)
+
+    def get_hashes(self, ireq):
+        """
+        Given a pinned InstallRequire, returns a set of hashes that represent
+        all of the files for a given requirement. It is not acceptable for an
+        editable or unpinned requirement to be passed to this function.
+        """
+        if ireq.editable or not is_pinned_requirement(ireq):
+            raise TypeError(
+                "Expected pinned requirement, not unpinned or editable, got {}".format(ireq))
+
+        # We need to get all of the candidates that match our current version
+        # pin, these will represent all of the files that could possibly
+        # satisify this constraint.
+        all_candidates = self.find_all_candidates(ireq.name)
+        candidates_by_version = lookup_table(all_candidates, key=lambda c: c.version)
+        matching_versions = list(
+            ireq.specifier.filter((candidate.version for candidate in all_candidates)))
+        matching_candidates = candidates_by_version[matching_versions[0]]
+
+        return {
+            self._get_file_hash(candidate.location)
+            for candidate in matching_candidates
+        }
+
+    def _get_file_hash(self, location):
+        with TemporaryDirectory() as tmpdir:
+            unpack_url(
+                location, self.build_dir,
+                download_dir=tmpdir, only_download=True, session=self.session
+            )
+            files = os.listdir(tmpdir)
+            assert len(files) == 1
+            filename = os.path.abspath(os.path.join(tmpdir, files[0]))
+
+            h = hashlib.new(FAVORITE_HASH)
+            with open(filename, "rb") as fp:
+                for chunk in iter(lambda: fp.read(8096), b""):
+                    h.update(chunk)
+
+        return ":".join([FAVORITE_HASH, h.hexdigest()])

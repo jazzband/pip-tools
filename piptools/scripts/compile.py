@@ -55,10 +55,12 @@ class PipCommand(pip.basecommand.Command):
                     'Will be derived from input file otherwise.'))
 @click.option('--allow-unsafe', is_flag=True, default=False,
               help="Pin packages considered unsafe: pip, setuptools & distribute")
+@click.option('--generate-hashes', is_flag=True, default=False,
+              help="Generate pip 8 style hashes in the resulting requirements file.")
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         client_cert, trusted_host, header, index, annotate, upgrade,
-        output_file, allow_unsafe, src_files):
+        output_file, allow_unsafe, generate_hashes, src_files):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
 
@@ -161,6 +163,10 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         resolver = Resolver(constraints, repository, prereleases=pre,
                             clear_caches=rebuild)
         results = resolver.resolve()
+        if generate_hashes:
+            hashes = resolver.resolve_hashes(results)
+        else:
+            hashes = None
     except PipToolsError as e:
         log.error(str(e))
         sys.exit(2)
@@ -199,6 +205,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     writer = OutputWriter(src_files, dst_file, dry_run=dry_run,
                           emit_header=header, emit_index=index,
                           annotate=annotate,
+                          generate_hashes=generate_hashes,
                           default_index_url=repository.DEFAULT_INDEX_URL,
                           index_urls=repository.finder.index_urls,
                           trusted_hosts=pip_options.trusted_hosts,
@@ -206,7 +213,8 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
                           allow_unsafe=allow_unsafe)
     writer.write(results=results,
                  reverse_dependencies=reverse_dependencies,
-                 primary_packages={key_from_req(ireq.req) for ireq in constraints})
+                 primary_packages={key_from_req(ireq.req) for ireq in constraints},
+                 hashes=hashes)
 
     if dry_run:
         log.warning('Dry-run, so nothing updated.')

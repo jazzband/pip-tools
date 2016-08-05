@@ -63,3 +63,6 @@ class LocalRequirementsRepository(BaseRepository):
 
     def get_dependencies(self, ireq):
         return self.repository.get_dependencies(ireq)
+
+    def get_hashes(self, ireq):
+        return self.repository.get_hashes(ireq)
