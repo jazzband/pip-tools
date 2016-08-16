@@ -119,14 +119,20 @@ class PyPIRepository(BaseRepository):
         if not (ireq.editable or is_pinned_requirement(ireq)):
             raise TypeError('Expected pinned or editable InstallRequirement, got {}'.format(ireq))
 
-        if not os.path.isdir(self._download_dir):
-            os.makedirs(self._download_dir)
+        if ireq.link and not ireq.link.is_artifact:
+            # No download_dir for VCS sources.  This also works around pip
+            # using git-checkout-index, which gets rid of the .git dir.
+            download_dir = None
+        else:
+            download_dir = self._download_dir
+            if not os.path.isdir(download_dir):
+                os.makedirs(download_dir)
         if not os.path.isdir(self._wheel_download_dir):
             os.makedirs(self._wheel_download_dir)
 
         reqset = RequirementSet(self.build_dir,
                                 self.source_dir,
-                                download_dir=self._download_dir,
+                                download_dir=download_dir,
                                 wheel_download_dir=self._wheel_download_dir,
                                 session=self.session)
         dependencies = reqset._prepare_file(self.finder, ireq)
