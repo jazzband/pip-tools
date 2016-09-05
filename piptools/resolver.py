@@ -53,7 +53,8 @@ class RequirementSummary(object):
 
 
 class Resolver(object):
-    def __init__(self, constraints, repository, cache=None, prereleases=False, clear_caches=False):
+    def __init__(self, constraints, repository, cache=None,
+                 exclude=None, prereleases=False, clear_caches=False):
         """
         This class resolves a given set of constraints (a collection of
         InstallRequirement objects) by consulting the given Repository and the
@@ -67,6 +68,7 @@ class Resolver(object):
         self.dependency_cache = cache
         self.prereleases = prereleases
         self.clear_caches = clear_caches
+        self.exclude = exclude
 
     @property
     def constraints(self):
@@ -259,6 +261,14 @@ class Resolver(object):
         dependency_strings = self.dependency_cache[ireq]
         log.debug('  {:25} requires {}'.format(format_requirement(ireq),
                                                ', '.join(sorted(dependency_strings, key=lambda s: s.lower())) or '-'))
+
+        if self.exclude:
+            dep_set, exclude_set = set(dependency_strings), set(self.exclude)
+            log.debug('Excluding following dependencies:')
+            for exclude in (dep_set & exclude_set):
+                log.debug('  {}'.format(exclude))
+            dependency_strings = dep_set - exclude_set
+
         for dependency_string in dependency_strings:
             yield InstallRequirement.from_line(dependency_string)
 
