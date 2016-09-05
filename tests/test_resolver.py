@@ -142,3 +142,10 @@ def test_resolver__allows_unsafe_deps(resolver, from_line, input, expected, prer
     output = resolver(input, prereleases=prereleases, allow_unsafe=True).resolve()
     output = {str(line) for line in output}
     assert output == {str(line) for line in expected}
+
+
+def test_resolver_with_exclude(resolver, from_line):
+    input, expected = [from_line('ipython')], ['ipython==2.1.0']
+    output = resolver(input, exclude=['gnureadline']).resolve()
+    output = {str(line) for line in output}
+    assert output == {str(line) for line in expected}

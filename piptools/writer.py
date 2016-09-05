@@ -11,7 +11,8 @@ from .utils import comment, dedup, format_requirement, key_from_req, UNSAFE_PACK
 class OutputWriter(object):
     def __init__(self, src_files, dst_file, dry_run, emit_header, emit_index,
                  emit_trusted_host, annotate, generate_hashes,
-                 default_index_url, index_urls, trusted_hosts, format_control):
+                 default_index_url, index_urls, trusted_hosts, format_control,
+                 exclude):
         self.src_files = src_files
         self.dst_file = dst_file
         self.dry_run = dry_run
@@ -24,6 +25,7 @@ class OutputWriter(object):
         self.index_urls = index_urls
         self.trusted_hosts = trusted_hosts
         self.format_control = format_control
+        self.exclude = exclude
 
     def _sort_key(self, ireq):
         return (not ireq.editable, str(ireq.req).lower())
@@ -47,6 +49,9 @@ class OutputWriter(object):
                     params += ['--no-annotate']
                 if self.generate_hashes:
                     params += ["--generate-hashes"]
+                if self.exclude:
+                    for name in self.exclude:
+                        params += ["--exclude={}".format(name)]
                 params += ['--output-file', self.dst_file]
                 params += self.src_files
                 yield comment('#    pip-compile {}'.format(' '.join(params)))
