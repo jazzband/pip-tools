@@ -7,6 +7,7 @@ from shutil import rmtree
 
 from pip.index import PackageFinder
 from pip.req.req_set import RequirementSet
+from six.moves import http_client
 
 from ..cache import CACHE_DIR
 from ..exceptions import NoCandidateFound
@@ -22,6 +23,7 @@ except ImportError:
 
 class PyPIRepository(BaseRepository):
     DEFAULT_INDEX_URL = 'https://pypi.python.org/simple'
+    ALIAS_CHECK_URL = 'https://pypi.python.org/pypi'
 
     """
     The PyPIRepository will use the provided Finder instance to lookup
@@ -94,7 +96,17 @@ class PyPIRepository(BaseRepository):
         if ireq.editable:
             return ireq  # return itself as the best match
 
-        all_candidates = self.find_all_candidates(ireq.name)
+        # Check for aliases
+        url = '{}/{}'.format(self.ALIAS_CHECK_URL, ireq.name)
+        resp = self.session.get(url, allow_redirects=False)
+        resp.raise_for_status()
+        if resp.status_code == http_client.MOVED_PERMANENTLY:
+            location = resp.headers['Location']  # TODO Handle missing header
+            alias = location.split('/')[-1]  # TODO Handle unexpected value
+            all_candidates = self.find_all_candidates(alias)
+        else:
+            all_candidates = self.find_all_candidates(ireq.name)
+
         candidates_by_version = lookup_table(all_candidates, key=lambda c: c.version, unique=True)
         matching_versions = ireq.specifier.filter((candidate.version for candidate in all_candidates),
                                                   prereleases=prereleases)
