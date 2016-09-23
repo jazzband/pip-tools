@@ -20,7 +20,7 @@ class FakeRepository(BaseRepository):
         with open('tests/fixtures/fake-editables.json', 'r') as f:
             self.editables = json.load(f)
 
-    def find_best_match(self, ireq, prereleases=False):
+    def find_best_match(self, ireq, prereleases=False, backup_versions=None):
         if ireq.editable:
             return ireq
 

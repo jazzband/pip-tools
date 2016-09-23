@@ -53,7 +53,8 @@ class RequirementSummary(object):
 
 
 class Resolver(object):
-    def __init__(self, constraints, repository, cache=None, prereleases=False, clear_caches=False):
+    def __init__(self, constraints, repository, cache=None, backup_versions=None,
+                 prereleases=False, clear_caches=False):
         """
         This class resolves a given set of constraints (a collection of
         InstallRequirement objects) by consulting the given Repository and the
@@ -67,6 +68,7 @@ class Resolver(object):
         self.dependency_cache = cache
         self.prereleases = prereleases
         self.clear_caches = clear_caches
+        self.backup_versions = backup_versions
 
     @property
     def constraints(self):
@@ -223,7 +225,11 @@ class Resolver(object):
             # hitting the index server
             best_match = ireq
         else:
-            best_match = self.repository.find_best_match(ireq, prereleases=self.prereleases)
+            best_match = self.repository.find_best_match(
+                ireq,
+                prereleases=self.prereleases,
+                backup_versions=self.backup_versions
+            )
 
         # Format the best match
         log.debug('  found candidate {} (constraint was {})'.format(format_requirement(best_match),
@@ -259,6 +265,7 @@ class Resolver(object):
         dependency_strings = self.dependency_cache[ireq]
         log.debug('  {:25} requires {}'.format(format_requirement(ireq),
                                                ', '.join(sorted(dependency_strings, key=lambda s: s.lower())) or '-'))
+
         for dependency_string in dependency_strings:
             yield InstallRequirement.from_line(dependency_string)
 
