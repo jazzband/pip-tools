@@ -107,10 +107,17 @@ class OutputWriter(object):
             if not self.dry_run:
                 f = stack.enter_context(AtomicSaver(self.dst_file))
 
+            check_dups = []
             for line in self._iter_lines(results, reverse_dependencies, primary_packages):
                 log.info(line)
                 if f:
-                    f.write(unstyle(line).encode('utf-8'))
+                    formatted_line = unstyle(line)
+                    package_name = formatted_line.split('==')[0]
+                    # fix for https://github.com/nvie/pip-tools/issues/376
+                    if '==' in formatted_line and package_name in check_dups:
+                        continue
+                    f.write(formatted_line.encode('utf-8'))
+                    check_dups.append(package_name)
                     f.write(os.linesep.encode('utf-8'))
 
     def _format_requirement(self, ireq, reverse_dependencies, primary_packages, include_specifier=True):
