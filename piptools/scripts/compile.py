@@ -9,6 +9,7 @@ import tempfile
 
 import pip
 from pip.req import parse_requirements
+import simplejson as json
 
 from .. import click
 from ..exceptions import PipToolsError
@@ -55,13 +56,17 @@ class PipCommand(pip.basecommand.Command):
                     'Will be derived from input file otherwise.'))
 @click.option('--allow-unsafe', is_flag=True, default=False,
               help="Pin packages considered unsafe: pip, setuptools & distribute")
+@click.option('--backup-versions', help="Path to a file containing Json data of 1:1 mapping of library and its backup version",   # noqa
+              nargs=1, type=(click.File('rb')), default=None)
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         client_cert, trusted_host, header, index, annotate, upgrade,
-        output_file, allow_unsafe, src_files):
+        output_file, allow_unsafe, backup_versions, src_files):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
 
+    if backup_versions:
+        backup_versions = json.load(backup_versions)
     if len(src_files) == 0:
         if not os.path.exists(DEFAULT_REQUIREMENTS_FILE):
             raise click.BadParameter(("If you do not specify an input file, "
@@ -159,7 +164,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
 
     try:
         resolver = Resolver(constraints, repository, prereleases=pre,
-                            clear_caches=rebuild)
+                            clear_caches=rebuild, backup_versions=backup_versions)
         results = resolver.resolve()
     except PipToolsError as e:
         log.error(str(e))

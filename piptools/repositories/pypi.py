@@ -1,8 +1,8 @@
 # coding: utf-8
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
-
 import os
+from collections import namedtuple
 from shutil import rmtree
 
 from pip.index import PackageFinder
@@ -86,7 +86,32 @@ class PyPIRepository(BaseRepository):
             self._available_candidates_cache[req_name] = candidates
         return self._available_candidates_cache[req_name]
 
-    def find_best_match(self, ireq, prereleases=None):
+    def _get_manual_version(self, candidates, backup_versions=None):
+        if not candidates.matching_candidates:
+            if backup_versions and backup_versions.get(candidates.ireq.name):
+                return backup_versions.get(candidates.ireq.name)
+            raise NoCandidateFound(candidates.ireq, candidates.all_candidates)
+
+    def _get_best_candidate(self, candidates, backup_versions=None):
+        """
+        Get the best candidates also keeping in mind, if there is
+        no candidate found for a particular dependency due to dependency resolution
+        conflict and if a backup version file is specified, we try to get the backup version
+        from it.
+        """
+        manual_version = self._get_manual_version(candidates, backup_versions=backup_versions)
+        if manual_version:
+            project = candidates.ireq.name
+            version = manual_version
+        else:
+            best_candidate = max(candidates.matching_candidates, key=self.finder._candidate_sort_key)
+            project = best_candidate.project
+            version = best_candidate.version
+
+        best_candidate = namedtuple('best_candidate', ['project', 'version', 'ireq'])
+        return best_candidate(project=project, version=version, ireq=candidates.ireq)
+
+    def find_best_match(self, ireq, prereleases=None, backup_versions=None):
         """
         Returns a Version object that indicates the best match for the given
         InstallRequirement according to the external repository.
@@ -101,13 +126,17 @@ class PyPIRepository(BaseRepository):
 
         # Reuses pip's internal candidate sort key to sort
         matching_candidates = [candidates_by_version[ver] for ver in matching_versions]
-        if not matching_candidates:
-            raise NoCandidateFound(ireq, all_candidates)
-        best_candidate = max(matching_candidates, key=self.finder._candidate_sort_key)
+        candidates = namedtuple('candidates', ['matching_candidates', 'all_candidates', 'ireq'])
 
+        best_candidate = self._get_best_candidate(
+            candidates(matching_candidates, all_candidates, ireq),
+            backup_versions=backup_versions
+        )
         # Turn the candidate into a pinned InstallRequirement
         return make_install_requirement(
-            best_candidate.project, best_candidate.version, ireq.extras
+            best_candidate.project,
+            best_candidate.version,
+            best_candidate.ireq.extras
         )
 
     def get_dependencies(self, ireq):

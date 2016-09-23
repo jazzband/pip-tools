@@ -16,6 +16,7 @@ setup(
         'click>=6',
         'first',
         'six',
+        'simplejson'
     ],
     zip_safe=False,
     entry_points={
