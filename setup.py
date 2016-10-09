@@ -20,8 +20,14 @@ setup(
     author='Vincent Driessen, Julian Gonggrijp',
     author_email='j.gonggrijp@gmail.com',
     description=__doc__.strip('\n'),
-    #packages=[],
-    scripts=['bin/pip-review'],
+    packages=[
+        'pip_review',
+    ],
+    entry_points={
+        'console_scripts': [
+            'pip-review = pip_review:main',
+        ],
+    },
     #include_package_data=True,
     zip_safe=False,
     platforms='any',
