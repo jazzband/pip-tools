@@ -1,6 +1,14 @@
 History
 =======
 
+0.5 (2016-10-10)
+----------------
+   - Should work under Windows from now on
+   - Now also invokable as `python -m pip_review`
+   - Should be compatible with older version of pip
+   - Should be compatible with systems that don't include pip
+   - Lists Python 3 as supported on the Python Package Index
+
 0.4 (2015-11-21)
 ----------------
    - Show and install only release updates by default (Rick Vause)
