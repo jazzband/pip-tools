@@ -25,7 +25,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'pip-review = pip_review:main',
+            'pip-review = pip_review.__main__:main',
         ],
     },
     #include_package_data=True,
