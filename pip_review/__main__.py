@@ -37,7 +37,7 @@ try:
 except (ImportError, AttributeError):
     pass
 
-from pip._vendor.packaging import version as packaging_version
+from packaging import version as packaging_version
 
 
 def parse_args():

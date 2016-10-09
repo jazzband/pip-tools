@@ -5,6 +5,7 @@ Create a new playground first:
   $ PATH=FOO/bin:$PATH
   $ pip install --upgrade --force-reinstall 'pip' > /dev/null 2>&1
   $ pip install argparse >/dev/null 2>&1
+  $ pip install packaging >/dev/null 2>&1
   $ pip install -U --force-reinstall argparse >/dev/null 2>&1
   $ pip install -U --force-reinstall wheel >/dev/null 2>&1
   $ alias pip-review="$TESTDIR/../pip_review/__main__.py"
@@ -32,6 +33,12 @@ Or in raw mode:
 We can also install these updates automatically:
 
   $ pip-review --auto >/dev/null 2>&1
+  $ pip-review
+  cElementTree==* is available (you have 1.0.5.post20051216) (glob)
+
+Next, let's test for regressions with older versions of pip:
+
+  $ pip install --force-reinstall --upgrade pip\<6.0 >/dev/null 2>&1
   $ pip-review
   cElementTree==* is available (you have 1.0.5.post20051216) (glob)
 
