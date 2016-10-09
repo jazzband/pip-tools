@@ -14,7 +14,7 @@ def get_dependencies():
 
 setup(
     name='pip-review',
-    version='0.4',
+    version='0.5',
     url='https://github.com/jgonggrijp/pip-review',
     license='BSD',
     author='Vincent Driessen, Julian Gonggrijp',
