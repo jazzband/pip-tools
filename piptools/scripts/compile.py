@@ -148,7 +148,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
             # pip requires filenames and not files. Since we want to support
             # piping from stdin, we need to briefly save the input from stdin
             # to a temporary file and have pip read that.
-            with tempfile.NamedTemporaryFile() as tmpfile:
+            with tempfile.NamedTemporaryFile(mode='wt') as tmpfile:
                 tmpfile.write(sys.stdin.read())
                 tmpfile.flush()
                 constraints.extend(parse_requirements(
