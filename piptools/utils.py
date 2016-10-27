@@ -71,6 +71,8 @@ def format_requirement(ireq, include_specifier=True):
     """
     if ireq.editable:
         line = '-e {}'.format(ireq.link)
+    elif hasattr(ireq, 'original_link') and ireq.original_link:
+        line = str(ireq.original_link)
     elif include_specifier:
         line = str(ireq.req)
     else:
@@ -119,12 +121,17 @@ def is_pinned_requirement(ireq):
 def as_tuple(ireq):
     """
     Pulls out the (name: str, version:str, extras:(str)) tuple from the pinned InstallRequirement.
+
+    If ireq has a link, treat the whole link as the version.
     """
     if not is_pinned_requirement(ireq):
         raise TypeError('Expected a pinned InstallRequirement, got {}'.format(ireq))
 
     name = key_from_req(ireq.req)
-    version = first(ireq.specifier._specs)._spec[1]
+    if ireq.link:
+        version = ireq.link
+    else:
+        version = first(ireq.specifier._specs)._spec[1]
     extras = tuple(sorted(ireq.extras))
     return name, version, extras
 

@@ -11,7 +11,7 @@ from pip.req import InstallRequirement
 
 from . import click
 from .cache import DependencyCache
-from .exceptions import UnsupportedConstraint
+from .exceptions import UnsupportedConstraint, IncompatibleRequirements
 from .logging import log
 from .utils import (format_requirement, format_specifier, full_groupby,
                     is_pinned_requirement, key_from_req)
@@ -120,9 +120,18 @@ class Resolver(object):
     def _check_constraints(self):
         for constraint in chain(self.our_constraints, self.their_constraints):
             if constraint.link is not None and not constraint.editable:
-                msg = ('pip-compile does not support URLs as packages, unless they are editable. '
-                       'Perhaps add -e option?')
-                raise UnsupportedConstraint(msg, constraint)
+                if not hasattr(constraint, 'original_link'):
+                    raise UnsupportedConstraint(
+                        'pip-compile does not support URLs unless you have pip >= 8.0.0 installed',
+                        constraint
+                    )
+
+                try:
+                    constraint.specifier
+                except:
+                    msg = ('pip-compile does not support URLs without specifiers, '
+                           'add #egg= with a specifier at the end of the url.')
+                    raise UnsupportedConstraint(msg, constraint)
 
     def _group_constraints(self, constraints):
         """
@@ -139,23 +148,41 @@ class Resolver(object):
             django~=1.5,<1.9,>=1.4.2
             flask~=0.7
 
+        If any of the constraints are a link to be installed, that constraint will
+        be returned, as long as it satisifies all the other constraints on the
+        same package. If it doesn't, or if there are multiple linked constraints
+        that are different, then this will rais an error.
+
         """
-        for _, ireqs in full_groupby(constraints, key=_dep_key):
+        for name, ireqs in full_groupby(constraints, key=_dep_key):
             ireqs = list(ireqs)
             editable_ireq = first(ireqs, key=lambda ireq: ireq.editable)
             if editable_ireq:
                 yield editable_ireq  # ignore all the other specs: the editable one is the one that counts
                 continue
 
-            ireqs = iter(ireqs)
-            combined_ireq = next(ireqs)
-            combined_ireq.comes_from = None
-            for ireq in ireqs:
-                # NOTE we may be losing some info on dropped reqs here
-                combined_ireq.req.specifier &= ireq.req.specifier
-                # Return a sorted, de-duped tuple of extras
-                combined_ireq.extras = tuple(sorted(set(tuple(combined_ireq.extras) + tuple(ireq.extras))))
-            yield combined_ireq
+            links = set(ireq.link for ireq in ireqs if ireq.link is not None)
+            if len(links) > 1:
+                raise IncompatibleRequirements(
+                    first(ireqs, key=lambda ireq: ireq.link == links.pop()),
+                    first(ireqs, key=lambda ireq: ireq.link == links.pop()),
+                )
+
+            if links:
+                link_ireq = first(ireqs, lambda ireq: ireq.link == links.pop())
+                for ireq in ireqs:
+                    # links have to be pinned, so we can take a single specifier
+                    if first(link_ireq.specifier._specs).version not in ireq.specifier:
+                        raise IncompatibleRequirements(link_ireq, ireq)
+                yield link_ireq
+            else:
+                combined_ireq = ireqs[0]
+                for ireq in ireqs:
+                    # NOTE we may be losing some info on dropped reqs here
+                    combined_ireq.req.specifier &= ireq.req.specifier
+                    # Return a sorted, de-duped tuple of extras
+                    combined_ireq.extras = tuple(sorted(set(tuple(combined_ireq.extras) + tuple(ireq.extras))))
+                yield combined_ireq
 
     def _resolve_one_round(self):
         """

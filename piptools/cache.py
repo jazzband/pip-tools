@@ -80,6 +80,9 @@ class DependencyCache(object):
         like so:
 
         ("ipython", "2.1.0[nbconvert,notebook]")
+
+        For a requirement with a link (either editable or not), the link will be
+        used as the second elemnt of the tuple.
         """
         name, version, extras = as_tuple(ireq)
         if not extras:

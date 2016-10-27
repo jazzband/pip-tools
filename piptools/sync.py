@@ -69,9 +69,17 @@ def merge(requirements, ignore_conflicts):
 
     for ireq in requirements:
         if ireq.link is not None and not ireq.editable:
-            msg = ('pip-compile does not support URLs as packages, unless they are editable. '
-                   'Perhaps add -e option?')
-            raise UnsupportedConstraint(msg, ireq)
+            if not hasattr(ireq, 'original_link'):
+                raise UnsupportedConstraint(
+                    'pip-compile does not support URLs unless you have pip >= 8.0.0 installed',
+                    ireq
+                )
+            try:
+                ireq.specifier
+            except:
+                msg = ('pip-compile does not support URLs without specifiers, '
+                       'add #egg= with a specifier at the end of the url.')
+                raise UnsupportedConstraint(msg, ireq)
 
         key = ireq.link or key_from_req(ireq.req)
 

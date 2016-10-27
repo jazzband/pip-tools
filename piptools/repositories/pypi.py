@@ -9,7 +9,7 @@ from pip.index import PackageFinder
 from pip.req.req_set import RequirementSet
 
 from ..cache import CACHE_DIR
-from ..exceptions import NoCandidateFound
+from ..exceptions import NoCandidateFound, UnsupportedConstraint
 from ..utils import (is_pinned_requirement, lookup_table,
                      make_install_requirement, pip_version_info)
 from .base import BaseRepository
@@ -116,6 +116,7 @@ class PyPIRepository(BaseRepository):
         dependencies (also InstallRequirements, but not necessarily pinned).
         They indicate the secondary dependencies for the given requirement.
         """
+
         if not (ireq.editable or is_pinned_requirement(ireq)):
             raise TypeError('Expected pinned or editable InstallRequirement, got {}'.format(ireq))
 
@@ -129,5 +130,18 @@ class PyPIRepository(BaseRepository):
                                 download_dir=self._download_dir,
                                 wheel_download_dir=self._wheel_download_dir,
                                 session=self.session)
+
+        original_name = ireq.name
         dependencies = reqset._prepare_file(self.finder, ireq)
+
+        if not ireq.editable and ireq.name != original_name:
+            raise UnsupportedConstraint(
+                "pip-compile does not support URL constraints with incorrect egg "
+                "specifiers. Please change {!r} to {!r}".format(
+                    original_name,
+                    ireq.name,
+                ),
+                ireq
+            )
+
         return set(dependencies)
