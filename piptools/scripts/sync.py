@@ -45,6 +45,8 @@ def cli(dry_run, force, find_links, index_url, extra_index_url, no_index, src_fi
             log.error('ERROR: ' + msg)
             sys.exit(2)
 
+    # N.B. Using 'session=True' is safe because this is always installing from a local file,
+    # rather than a url.
     requirements = flat_map(lambda src: pip.req.parse_requirements(src, session=True),
                             src_files)
 
