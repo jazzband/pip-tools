@@ -27,6 +27,19 @@ def _dep_key(ireq):
         return key_from_req(ireq.req)
 
 
+def _merge_comes_from(ireqs):
+    comes_froms = []
+    for ireq in sorted(ireqs, key=_dep_key):
+        if not ireq.comes_from:
+            continue
+
+        if isinstance(ireq.comes_from, basestring):
+            comes_froms.append(ireq.comes_from)
+        else:
+            comes_froms.append(ireq.comes_from.from_path())
+    return ", ".join(comes_froms)
+
+
 class RequirementSummary(object):
     """
     Summary of a requirement's properties for comparison purposes.
@@ -177,6 +190,7 @@ class Resolver(object):
                 yield link_ireq
             else:
                 combined_ireq = ireqs[0]
+                combined_ireq.comes_from = _merge_comes_from(ireqs)
                 for ireq in ireqs:
                     # NOTE we may be losing some info on dropped reqs here
                     combined_ireq.req.specifier &= ireq.req.specifier
@@ -209,7 +223,7 @@ class Resolver(object):
         log.debug('')
         log.debug('Finding secondary dependencies:')
         theirs = set(dep
-                     for best_match in best_matches
+                     for best_match in sorted(best_matches, key=_dep_key)
                      for dep in self._iter_dependencies(best_match))
 
         # NOTE: We need to compare RequirementSummary objects, since
@@ -219,7 +233,7 @@ class Resolver(object):
         if has_changed:
             log.debug('')
             log.debug('New dependencies found in this round:')
-            for new_dependency in sorted(diff, key=lambda req: key_from_req(req.req)):
+            for new_dependency in sorted(diff, key=lambda req: str(req)):
                 log.debug('  adding {}'.format(new_dependency))
 
         # Store the last round's results in the their_constraints

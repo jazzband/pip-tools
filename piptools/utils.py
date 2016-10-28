@@ -54,14 +54,17 @@ def comment(text):
     return style(text, fg='green')
 
 
-def make_install_requirement(name, version, extras):
+def make_install_requirement(name, version, extras, comes_from=None):
     # If no extras are specified, the extras string is blank
     extras_string = ""
     if extras:
         # Sort extras for stability
         extras_string = "[{}]".format(",".join(sorted(extras)))
 
-    return InstallRequirement.from_line('{}{}=={}'.format(name, extras_string, str(version)))
+    return InstallRequirement.from_line(
+        '{}{}=={}'.format(name, extras_string, str(version)),
+        comes_from=comes_from
+    )
 
 
 def format_requirement(ireq, include_specifier=True):

@@ -7,10 +7,10 @@ from piptools.writer import OutputWriter
 
 @fixture
 def writer():
-    return OutputWriter(src_files=["src_file", "src_file2"], dst_file="dst_file", dry_run=True,
+    return OutputWriter(src_files=["src_file", "src_file2"], dst_files=["dst_file"], dry_run=True,
                         emit_header=True, emit_index=True, annotate=True,
                         default_index_url=None, index_urls=[],
-                        trusted_hosts=[],
+                        trusted_hosts=[], phased=False,
                         format_control=FormatControl(set(), set()))
 
 
@@ -21,7 +21,7 @@ def test_format_requirement_annotation_editable(from_editable, writer):
 
     assert (writer._format_requirement(ireq,
                                        reverse_dependencies,
-                                       primary_packages=[]) ==
+                                       primary_packages={'xyz'}) ==
             '-e git+git://fake.org/x/y.git#egg=y' + comment('  # via xyz'))
 
 
@@ -31,7 +31,7 @@ def test_format_requirement_annotation(from_line, writer):
 
     assert (writer._format_requirement(ireq,
                                        reverse_dependencies,
-                                       primary_packages=[]) ==
+                                       primary_packages={'xyz'}) ==
             'test==1.2               ' + comment('  # via xyz'))
 
 
@@ -41,7 +41,7 @@ def test_format_requirement_annotation_case_sensitive(from_line, writer):
 
     assert (writer._format_requirement(ireq,
                                        reverse_dependencies,
-                                       primary_packages=[]) ==
+                                       primary_packages={'xyz'}) ==
             'Test==1.2               ' + comment('  # via xyz'))
 
 
@@ -52,5 +52,5 @@ def test_format_requirement_not_for_primary(from_line, writer):
 
     assert (writer._format_requirement(ireq,
                                        reverse_dependencies,
-                                       primary_packages=['test']) ==
+                                       primary_packages={'test', 'xyz'}) ==
             'test==1.2')

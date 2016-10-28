@@ -2,6 +2,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+from collections import defaultdict
 import optparse
 import os
 import sys
@@ -55,10 +56,11 @@ class PipCommand(pip.basecommand.Command):
                     'Will be derived from input file otherwise.'))
 @click.option('--allow-unsafe', is_flag=True, default=False,
               help="Pin packages considered unsafe: pip, setuptools & distribute")
+@click.option('--phased', is_flag=True, help="Compile each provided file as a separate output file (but maintain consistent pinned versions). This complements the --phased argument for pip-compile.")  # noqa
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         client_cert, trusted_host, header, index, annotate, upgrade,
-        output_file, allow_unsafe, src_files):
+        output_file, allow_unsafe, phased, src_files):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
 
@@ -72,14 +74,19 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         if not output_file:
             raise click.BadParameter('--output-file is required if input is from stdin')
 
-    if len(src_files) > 1 and not output_file:
-        raise click.BadParameter('--output-file is required if two or more input files are given.')
+    if len(src_files) > 1 and not (output_file or phased):
+        raise click.BadParameter('--output-file or --phased is required if two or more input files are given.')
+
+    if output_file and phased:
+        raise click.BadParameter('--output-file and --phased are mutually incompatible')
 
     if output_file:
-        dst_file = output_file
+        dst_files = [output_file]
     else:
-        base_name, _, _ = src_files[0].rpartition('.')
-        dst_file = base_name + '.txt'
+        dst_files = [
+            src_file.rpartition('.')[0] + '.txt'
+            for src_file in src_files
+        ]
 
     ###
     # Setup
@@ -120,12 +127,16 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
 
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified
     # (= default invocation)
-    if not upgrade and os.path.exists(dst_file):
+    if not upgrade:
         existing_pins = dict()
-        ireqs = parse_requirements(dst_file, finder=repository.finder, session=repository.session, options=pip_options)
-        for ireq in ireqs:
-            if is_pinned_requirement(ireq):
-                existing_pins[name_from_req(ireq.req).lower()] = ireq
+        for dst_file in dst_files:
+            if not os.path.exists(dst_file):
+                continue
+
+            ireqs = parse_requirements(dst_file, finder=repository.finder, session=repository.session, options=pip_options)
+            for ireq in ireqs:
+                if is_pinned_requirement(ireq):
+                    existing_pins[name_from_req(ireq.req).lower()] = ireq
         repository = LocalRequirementsRepository(existing_pins, repository)
 
     log.debug('Using indexes:')
@@ -142,7 +153,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     # Parsing/collecting initial requirements
     ###
 
-    constraints = []
+    constraints = defaultdict(list)
     for src_file in src_files:
         if src_file == '-':
             # pip requires filenames and not files. Since we want to support
@@ -151,14 +162,14 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
             with tempfile.NamedTemporaryFile(mode='wt') as tmpfile:
                 tmpfile.write(sys.stdin.read())
                 tmpfile.flush()
-                constraints.extend(parse_requirements(
+                constraints[src_file].extend(parse_requirements(
                     tmpfile.name, finder=repository.finder, session=repository.session, options=pip_options))
         else:
-            constraints.extend(parse_requirements(
+            constraints[src_file].extend(parse_requirements(
                 src_file, finder=repository.finder, session=repository.session, options=pip_options))
 
     try:
-        resolver = Resolver(constraints, repository, prereleases=pre,
+        resolver = Resolver(sum(constraints.values(), []), repository, prereleases=pre,
                             clear_caches=rebuild)
         results = resolver.resolve()
     except PipToolsError as e:
@@ -196,17 +207,35 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     if annotate:
         reverse_dependencies = resolver.reverse_dependencies(results)
 
-    writer = OutputWriter(src_files, dst_file, dry_run=dry_run,
+    writer = OutputWriter(src_files, dst_files, dry_run=dry_run,
                           emit_header=header, emit_index=index,
                           annotate=annotate,
                           default_index_url=repository.DEFAULT_INDEX_URL,
                           index_urls=repository.finder.index_urls,
                           trusted_hosts=pip_options.trusted_hosts,
                           format_control=repository.finder.format_control,
+                          phased=phased,
                           allow_unsafe=allow_unsafe)
-    writer.write(results=results,
-                 reverse_dependencies=reverse_dependencies,
-                 primary_packages={key_from_req(ireq.req) for ireq in constraints})
+
+    if phased:
+        for (src_file, dst_file) in zip(src_files, dst_files):
+            writer.write(
+                dst_file=dst_file,
+                from_srcs=[src_file],
+                results=results,
+                reverse_dependencies=reverse_dependencies,
+                primary_packages={key_from_req(ireq.req) for ireq in constraints[src_file]},
+            )
+    else:
+        writer.write(
+            dst_file=dst_file,
+            from_srcs=src_files,
+            results=results,
+            reverse_dependencies=reverse_dependencies,
+            primary_packages={
+                key_from_req(ireq.req) for ireq in sum(constraints.values(), [])
+            },
+        )
 
     if dry_run:
         log.warning('Dry-run, so nothing updated.')
