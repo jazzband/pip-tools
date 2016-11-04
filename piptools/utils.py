@@ -2,6 +2,8 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import os
+import os.path
 import sys
 from itertools import chain, groupby
 
@@ -67,13 +69,31 @@ def make_install_requirement(name, version, extras, comes_from=None):
     )
 
 
+def relative_sub_path(path):
+    """
+    Given an absolute path, return a relative path, if the target path
+    is contained inside the current working directory.
+
+    Otherwise, return None.
+    """
+    cwd = os.getcwd()
+    if os.path.commonprefix([path, cwd]) == cwd:
+        return os.path.relpath(path, cwd)
+    else:
+        return None
+
+
 def format_requirement(ireq, include_specifier=True):
     """
     Generic formatter for pretty printing InstallRequirements to the terminal
     in a less verbose way than using its `__str__` method.
     """
     if ireq.editable:
-        line = '-e {}'.format(ireq.link)
+        link = ireq.link
+        subpath = relative_sub_path(ireq.link.path)
+        if subpath:
+            link = subpath
+        line = '-e {}'.format(link)
     elif hasattr(ireq, 'original_link') and ireq.original_link:
         line = str(ireq.original_link)
     elif include_specifier:
