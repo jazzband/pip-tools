@@ -7,6 +7,7 @@ from functools import partial
 import logging
 import sys
 import json
+import pip
 try:
     import urllib2 as urllib_request  # Python2
 except ImportError:
@@ -153,7 +154,9 @@ def get_latest_versions(pkg_names, prerelease=False):
 
 def get_installed_pkgs(local=False):
     logger = logging.getLogger(u'pip-review')
-    command = 'pip freeze --all'
+    command = 'pip freeze'
+    if packaging_version.parse(pip.__version__) >= packaging_version.parse('8.0.3'):
+        command += ' --all'
     if local:
         command += ' --local'
 
@@ -229,7 +232,7 @@ ask_to_install = partial(InteractiveAsker().ask, prompt='Upgrade now?')
 def update_pkg(pkg, version):
     command = 'pip install {0}=={1}'.format(pkg, version)
     if pkg=='pip':
-        command = 'python -m {}'.format(command)
+        command = 'python -m ' + command
     os.system(command)
 
 
