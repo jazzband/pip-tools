@@ -162,7 +162,7 @@ def get_installed_pkgs(local=False):
 
     output = check_output(command).decode('utf-8')
 
-    for line in output.split('\n'):
+    for line in output.splitlines():
         if not line or line.startswith('##'):
             continue
 
