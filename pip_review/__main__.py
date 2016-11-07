@@ -153,7 +153,7 @@ def get_latest_versions(pkg_names, prerelease=False):
 
 def get_installed_pkgs(local=False):
     logger = logging.getLogger(u'pip-review')
-    command = 'pip freeze'
+    command = 'pip freeze --all'
     if local:
         command += ' --local'
 
@@ -227,7 +227,10 @@ ask_to_install = partial(InteractiveAsker().ask, prompt='Upgrade now?')
 
 
 def update_pkg(pkg, version):
-    os.system('pip install {0}=={1}'.format(pkg, version))
+    command = 'pip install {0}=={1}'.format(pkg, version)
+    if pkg=='pip':
+        command = 'python -m {}'.format(command)
+    os.system(command)
 
 
 def confirm(question):
