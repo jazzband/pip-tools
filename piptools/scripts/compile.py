@@ -50,6 +50,7 @@ class PipCommand(pip.basecommand.Command):
               help="Annotate results, indicating where dependencies come from")
 @click.option('-U', '--upgrade', is_flag=True, default=False,
               help='Try to upgrade all dependencies to their latest versions')
+@click.option('-P', '--upgrade-package', nargs=1, multiple=True, help="Specify particular packages to upgrade.")
 @click.option('-o', '--output-file', nargs=1, type=str, default=None,
               help=('Output file name. Required if more than one input file is given. '
                     'Will be derived from input file otherwise.'))
@@ -57,7 +58,7 @@ class PipCommand(pip.basecommand.Command):
               help="Pin packages considered unsafe: pip, setuptools & distribute")
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
-        client_cert, trusted_host, header, index, annotate, upgrade,
+        client_cert, trusted_host, header, index, annotate, upgrade, upgrade_package,
         output_file, allow_unsafe, src_files):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
@@ -71,9 +72,14 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     if len(src_files) == 1 and src_files[0] == '-':
         if not output_file:
             raise click.BadParameter('--output-file is required if input is from stdin')
+        if upgrade_package:
+            raise click.BadParameter('upgrade_package does not support input from stdin.')
 
     if len(src_files) > 1 and not output_file:
         raise click.BadParameter('--output-file is required if two or more input files are given.')
+
+    if upgrade and upgrade_package:
+        raise click.BadParameter('Only one of --upgrade or --upgrade_package can be provided as an argument.')
 
     if output_file:
         dst_file = output_file
@@ -116,7 +122,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     pip_options, _ = pip_command.parse_args(pip_args)
 
     session = pip_command._build_session(pip_options)
-    repository = PyPIRepository(pip_options, session)
+    repository = live_repository = PyPIRepository(pip_options, session)
 
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified
     # (= default invocation)
@@ -126,7 +132,14 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         for ireq in ireqs:
             if is_pinned_requirement(ireq):
                 existing_pins[name_from_req(ireq.req).lower()] = ireq
-        repository = LocalRequirementsRepository(existing_pins, repository)
+
+        if upgrade_package:
+            for package in upgrade_package:
+                if package not in existing_pins:
+                    log.error("Asked to upgrade %s but it's not already pinned. Quitting..." % package)
+                    sys.exit(2)
+
+        repository = local_repository = LocalRequirementsRepository(existing_pins, repository)
 
     log.debug('Using indexes:')
     for index_url in repository.finder.index_urls:
@@ -143,6 +156,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     ###
 
     constraints = []
+    repository = live_repository if upgrade else local_repository
     for src_file in src_files:
         if src_file == '-':
             # pip requires filenames and not files. Since we want to support
@@ -157,15 +171,51 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
             constraints.extend(parse_requirements(
                 src_file, finder=repository.finder, session=repository.session, options=pip_options))
 
+    if upgrade_package:
+        existing_constraints = {c.req.key: c for c in constraints}
+        existing_requirements = existing_pins
+        upgraded_requirements = {}
+
+        # pip requires filenames, not files.
+        with tempfile.NamedTemporaryFile() as tmpfile:
+            tmpfile.write(str.encode('\n'.join(upgrade_package)))
+            tmpfile.flush()
+
+            upgrade_candidates = list(
+                parse_requirements(
+                    tmpfile.name, finder=live_repository.finder, session=live_repository.session, options=pip_options))
+
+            for candidate in upgrade_candidates:
+                if candidate.req.key not in existing_constraints:
+                    log.error("Asked to upgrade {} but it's not in the source file. Quitting..."
+                              .format(candidate.req.key))
+                    sys.exit(2)
+
+                # we only want to process upgrades if the requirement is not pinned in the source file
+                constraint_candidate = existing_constraints[candidate.req.key]
+                if not constraint_candidate.req.specifier:
+                    upgraded_requirements[candidate.req.key] = constraint_candidate
+
+        existing_requirements.update(upgraded_requirements)
+        constraints = existing_requirements.values()
+
     try:
-        resolver = Resolver(constraints, repository, prereleases=pre,
-                            clear_caches=rebuild)
+        repository = live_repository if upgrade or upgrade_package else local_repository
+        resolver = Resolver(constraints, repository, prereleases=pre, clear_caches=rebuild)
         results = resolver.resolve()
     except PipToolsError as e:
         log.error(str(e))
         sys.exit(2)
 
     log.debug('')
+
+    if upgrade_package and upgraded_requirements:
+        results_map = {c.req.key: c for c in results}
+        log.debug('Upgraded packages: ')
+        for upgraded_req in upgraded_requirements.values():
+            key = upgraded_req.req.key
+            log.debug('  {}'.format(results_map[key].req))
+        log.debug('')
 
     ##
     # Output
