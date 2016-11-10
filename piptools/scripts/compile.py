@@ -55,10 +55,11 @@ class PipCommand(pip.basecommand.Command):
                     'Will be derived from input file otherwise.'))
 @click.option('--allow-unsafe', is_flag=True, default=False,
               help="Pin packages considered unsafe: pip, setuptools & distribute")
+@click.option('--exclude', multiple=True, help="Exclude a package", type=str)
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         client_cert, trusted_host, header, index, annotate, upgrade,
-        output_file, allow_unsafe, src_files):
+        output_file, allow_unsafe, src_files, exclude):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
 
@@ -159,7 +160,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
 
     try:
         resolver = Resolver(constraints, repository, prereleases=pre,
-                            clear_caches=rebuild)
+                            clear_caches=rebuild, exclude=exclude)
         results = resolver.resolve()
     except PipToolsError as e:
         log.error(str(e))

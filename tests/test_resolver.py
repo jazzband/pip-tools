@@ -73,3 +73,10 @@ def test_resolver(resolver, from_line, input, expected, prereleases):
     output = resolver(input, prereleases=prereleases).resolve()
     output = {str(line) for line in output}
     assert output == {str(line) for line in expected}
+
+
+def test_resolver_with_exclude(resolver, from_line):
+    input, expected = [from_line('ipython')], ['ipython==2.1.0']
+    output = resolver(input, exclude=['gnureadline']).resolve()
+    output = {str(line) for line in output}
+    assert output == {str(line) for line in expected}

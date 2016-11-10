@@ -1,3 +1,7 @@
+# 1.7.2
+
+- Add `--exclude` option (#333)
+
 # 1.7.1
 
 - Add `--allow-unsafe` option (#377)
