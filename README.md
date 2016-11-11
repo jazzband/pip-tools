@@ -48,8 +48,17 @@ werkzeug==0.10.4          # via flask
 
 And it will produce your `requirements.txt`, with all the Flask dependencies
 (and all underlying dependencies) pinned.  Put this file under version control
-as well and periodically re-run `pip-compile --upgrade` to update the packages.
+as well.
 
+To update all packages, periodically re-run `pip-compile --upgrade`.
+
+To update a specific package to the latest or a specific version use the `--upgrade-package` or `-P` flag:
+
+```console
+$ pip-compile --upgrade-package flask  # only update the flask package
+$ pip-compile --upgrade-package flask --upgrade-package requests  # update both the flask and requests packages
+$ pip-compile -P flask -P requests==2.0.0  # update the flask package to the latest, and requests to v2.0.0
+```
 
 Example usage for `pip-sync`
 ============================
