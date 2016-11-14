@@ -2,7 +2,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from piptools.utils import key_from_req
+from piptools.utils import as_tuple, key_from_req, make_install_requirement
 from .base import BaseRepository
 
 
@@ -57,7 +57,10 @@ class LocalRequirementsRepository(BaseRepository):
         key = key_from_req(ireq.req)
         existing_pin = self.existing_pins.get(key)
         if existing_pin and ireq_satisfied_by_existing_pin(ireq, existing_pin):
-            return existing_pin
+            project, version, _ = as_tuple(existing_pin)
+            return make_install_requirement(
+                project, version, ireq.extras
+            )
         else:
             return self.repository.find_best_match(ireq, prereleases)
 
