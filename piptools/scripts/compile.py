@@ -8,7 +8,7 @@ import sys
 import tempfile
 
 import pip
-from pip.req import parse_requirements
+from pip.req import InstallRequirement, parse_requirements
 
 from .. import click
 from ..exceptions import PipToolsError
@@ -16,7 +16,7 @@ from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
 from ..utils import (assert_compatible_pip_version, is_pinned_requirement,
-                     key_from_req, name_from_req)
+                     key_from_req)
 from ..writer import OutputWriter
 
 # Make sure we're using a compatible version of pip
@@ -50,7 +50,7 @@ class PipCommand(pip.basecommand.Command):
               help="Annotate results, indicating where dependencies come from")
 @click.option('-U', '--upgrade', is_flag=True, default=False,
               help='Try to upgrade all dependencies to their latest versions')
-@click.option('-P', '--upgrade-package', nargs=1, multiple=True,
+@click.option('-P', '--upgrade-package', 'upgrade_packages', nargs=1, multiple=True,
               help="Specify particular packages to upgrade.")
 @click.option('-o', '--output-file', nargs=1, type=str, default=None,
               help=('Output file name. Required if more than one input file is given. '
@@ -59,7 +59,7 @@ class PipCommand(pip.basecommand.Command):
               help="Pin packages considered unsafe: pip, setuptools & distribute")
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
-        client_cert, trusted_host, header, index, annotate, upgrade, upgrade_package,
+        client_cert, trusted_host, header, index, annotate, upgrade, upgrade_packages,
         output_file, allow_unsafe, src_files):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
@@ -83,14 +83,8 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         base_name, _, _ = src_files[0].rpartition('.')
         dst_file = base_name + '.txt'
 
-    if upgrade and upgrade_package:
+    if upgrade and upgrade_packages:
         raise click.BadParameter('Only one of --upgrade or --upgrade-package can be provided as an argument.')
-
-    # Process the arguments to upgrade-package into name and version pairs.
-    upgrade_package_reqs = [
-        package.split('==') if '==' in package else (package, None)
-        for package in upgrade_package
-    ]
 
     ###
     # Setup
@@ -127,26 +121,32 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     pip_options, _ = pip_command.parse_args(pip_args)
 
     session = pip_command._build_session(pip_options)
+    repository = PyPIRepository(pip_options, session)
 
-    repository = live_repository = PyPIRepository(pip_options, session)
-    local_repository = None
-    use_local_repo = not upgrade and os.path.exists(dst_file)
+    # Pre-parse the inline package upgrade specs: they should take precedence
+    # over the stuff in the requirements files
+    upgrade_packages = [InstallRequirement.from_line(pkg)
+                        for pkg in upgrade_packages]
+    upgrade_pkgs_by_key = {key_from_req(ireq.req): ireq
+                           for ireq in upgrade_packages}
 
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified
     # (= default invocation)
-    if use_local_repo:
-        existing_pins = dict()
+    if not (upgrade or upgrade_packages) and os.path.exists(dst_file):
+        existing_pins = {}
         ireqs = parse_requirements(dst_file, finder=repository.finder, session=repository.session, options=pip_options)
         for ireq in ireqs:
+            key = key_from_req(ireq.req)
+
+            # Packages explicitly listed on the command line should not remain
+            # pinned by whatever is in the dst_file (the command line argument
+            # overwrites the current pins)
+            if key in upgrade_pkgs_by_key:
+                ireq = upgrade_pkgs_by_key[key]
+
             if is_pinned_requirement(ireq):
-                existing_pins[name_from_req(ireq.req).lower()] = ireq
-
-        for package, _ in upgrade_package_reqs:
-            if package not in existing_pins:
-                log.error("Asked to upgrade %s but it's not present in existing requirements. Quitting..." % package)
-                sys.exit(2)
-
-        repository = local_repository = LocalRequirementsRepository(existing_pins, repository)
+                existing_pins[key] = ireq
+        repository = LocalRequirementsRepository(existing_pins, repository)
 
     log.debug('Using indexes:')
     for index_url in repository.finder.index_urls:
@@ -163,7 +163,6 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     ###
 
     constraints = []
-    repository = local_repository if use_local_repo else live_repository
     for src_file in src_files:
         if src_file == '-':
             # pip requires filenames and not files. Since we want to support
@@ -178,56 +177,15 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
             constraints.extend(parse_requirements(
                 src_file, finder=repository.finder, session=repository.session, options=pip_options))
 
-    if upgrade_package:
-        existing_constraints = {c.req.key: c for c in constraints}
-        existing_requirements = existing_pins
-        upgraded_requirements = {}
-
-        # pip requires filenames, not files.
-        with tempfile.NamedTemporaryFile(mode='wt') as tmpfile:
-            for package, version in upgrade_package_reqs:
-                line = '{}\n'.format(package) if not version else '{}=={}\n'.format(package, version)
-                tmpfile.write(line)
-            tmpfile.flush()
-
-            upgrade_candidates = list(
-                parse_requirements(
-                    tmpfile.name, finder=live_repository.finder, session=live_repository.session, options=pip_options))
-
-            for candidate in upgrade_candidates:
-                if candidate.req.key not in existing_constraints:
-                    log.error("Asked to upgrade {} but it's not in the source file. Quitting..."
-                              .format(candidate.req.key))
-                    sys.exit(2)
-
-                constraint_candidate = existing_constraints[candidate.req.key]
-                if constraint_candidate.req.specifier:
-                    log.error("Asked to upgrade {} but it's pinned to a version in the source file. Quitting..."
-                              .format(candidate.req.key))
-                    sys.exit(2)
-                else:
-                    upgraded_requirements[candidate.req.key] = candidate
-
-        existing_requirements.update(upgraded_requirements)
-        constraints = existing_requirements.values()
-
     try:
-        repository = local_repository if use_local_repo and not upgrade_package else live_repository
-        resolver = Resolver(constraints, repository, prereleases=pre, clear_caches=rebuild)
+        resolver = Resolver(constraints, repository, prereleases=pre,
+                            clear_caches=rebuild)
         results = resolver.resolve()
     except PipToolsError as e:
         log.error(str(e))
         sys.exit(2)
 
     log.debug('')
-
-    if upgrade_package and upgraded_requirements:
-        results_map = {c.req.key: c for c in results}
-        log.debug('Upgraded packages: ')
-        for upgraded_req in upgraded_requirements.values():
-            key = upgraded_req.req.key
-            log.debug('  {}'.format(results_map[key].req))
-        log.debug('')
 
     ##
     # Output
