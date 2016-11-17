@@ -4,6 +4,10 @@
   `--upgrade-package`.  To upgrade a _specific_ package to the latest or
   a specific version use `--upgrade-package <pkg>`.  To upgrade all packages,
   you can still use `pip-compile --upgrade`.  (#409)
+- Adds support for pinning dependencies even further by including the hashes
+  found on PyPI at compilation time, which will be re-checked when dependencies
+  are installed at installation time.  This adds protection against packages
+  that are tampered with.  (#383)
 - Improve support for extras, like `hypothesis[django]`
 
 
