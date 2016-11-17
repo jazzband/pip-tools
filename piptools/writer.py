@@ -117,7 +117,7 @@ class OutputWriter(object):
                     f.write(unstyle(line).encode('utf-8'))
                     f.write(os.linesep.encode('utf-8'))
 
-    def _format_requirement(self, ireq, reverse_dependencies, primary_packages, hashes, include_specifier=True):
+    def _format_requirement(self, ireq, reverse_dependencies, primary_packages, include_specifier=True, hashes=None):
         line = format_requirement(ireq, include_specifier=include_specifier)
 
         ireq_hashes = (hashes if hashes is not None else {}).get(ireq)
