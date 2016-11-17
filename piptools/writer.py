@@ -88,7 +88,7 @@ class OutputWriter(object):
         unsafe_packages = sorted(unsafe_packages, key=self._sort_key)
 
         for ireq in packages:
-            line = self._format_requirement(ireq, reverse_dependencies, primary_packages, hashes)
+            line = self._format_requirement(ireq, reverse_dependencies, primary_packages, hashes=hashes)
             yield line
 
         if unsafe_packages:
@@ -98,7 +98,7 @@ class OutputWriter(object):
             for ireq in unsafe_packages:
                 line = self._format_requirement(
                     ireq, reverse_dependencies, primary_packages,
-                    hashes if self.allow_unsafe else None,
+                    hashes=hashes if self.allow_unsafe else None,
                     include_specifier=self.allow_unsafe)
                 if self.allow_unsafe:
                     yield line
