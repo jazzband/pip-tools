@@ -1,3 +1,12 @@
+# 1.8.0
+
+- Adds support for upgrading individual packages with a new option
+  `--upgrade-package`.  To upgrade a _specific_ package to the latest or
+  a specific version use `--upgrade-package <pkg>`.  To upgrade all packages,
+  you can still use `pip-compile --upgrade`.  (#409)
+- Improve support for extras, like `hypothesis[django]`
+
+
 # 1.7.1
 
 - Add `--allow-unsafe` option (#377)
