@@ -19,6 +19,7 @@ def safeint(s):
     except ValueError:
         return 0
 
+
 pip_version_info = tuple(safeint(digit) for digit in pip.__version__.split('.'))
 
 
