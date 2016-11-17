@@ -25,8 +25,8 @@ pip_version_info = tuple(safeint(digit) for digit in pip.__version__.split('.'))
 
 def assert_compatible_pip_version():
     # Make sure we're using a reasonably modern version of pip
-    if not pip_version_info >= (7, 0):
-        print('pip-compile requires at least version 7.0 of pip ({} found), '
+    if not pip_version_info >= (8, 0):
+        print('pip-compile requires at least version 8.0 of pip ({} found), '
               'perhaps run `pip install --upgrade pip`?'.format(pip.__version__))
         sys.exit(4)
 

@@ -9,6 +9,7 @@
   are installed at installation time.  This adds protection against packages
   that are tampered with.  (#383)
 - Improve support for extras, like `hypothesis[django]`
+- Drop support for pip < 8
 
 
 # 1.7.1
