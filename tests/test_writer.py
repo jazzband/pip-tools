@@ -23,7 +23,7 @@ def test_format_requirement_annotation_editable(from_editable, writer):
     assert (writer._format_requirement(ireq,
                                        reverse_dependencies,
                                        primary_packages=[]) ==
-            '-e git+git://fake.org/x/y.git#egg=y' + comment('  # via xyz'))
+            '-e git+git://fake.org/x/y.git#egg=y  ' + comment('# via xyz'))
 
 
 def test_format_requirement_annotation(from_line, writer):
@@ -33,7 +33,7 @@ def test_format_requirement_annotation(from_line, writer):
     assert (writer._format_requirement(ireq,
                                        reverse_dependencies,
                                        primary_packages=[]) ==
-            'test==1.2               ' + comment('  # via xyz'))
+            'test==1.2                 ' + comment('# via xyz'))
 
 
 def test_format_requirement_annotation_case_sensitive(from_line, writer):
@@ -43,7 +43,7 @@ def test_format_requirement_annotation_case_sensitive(from_line, writer):
     assert (writer._format_requirement(ireq,
                                        reverse_dependencies,
                                        primary_packages=[]) ==
-            'Test==1.2               ' + comment('  # via xyz'))
+            'Test==1.2                 ' + comment('# via xyz'))
 
 
 def test_format_requirement_not_for_primary(from_line, writer):
