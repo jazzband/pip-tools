@@ -1,3 +1,8 @@
+# 1.8.1
+
+- Recalculate secondary dependencies between rounds (#378)
+
+
 # 1.8.0
 
 - Adds support for upgrading individual packages with a new option
