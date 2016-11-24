@@ -131,7 +131,9 @@ class OutputWriter(object):
         # Annotate what packages this package is required by
         required_by = reverse_dependencies.get(ireq.name.lower(), [])
         if required_by:
-            line = line.ljust(24)
-            annotation = ', '.join(sorted(required_by))
-            line += comment('  # via ' + annotation)
+            annotation = ", ".join(sorted(required_by))
+            line = "{:24}{}{}".format(
+                line,
+                " \\\n    " if ireq_hashes else "  ",
+                comment("# via " + annotation))
         return line
