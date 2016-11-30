@@ -49,7 +49,7 @@ werkzeug==0.10.4          # via flask
 Without setup.py
 ----------------
 
-If you don't use `setup.py` ([you should][1]), you can write the following line to a file:
+If you don't use `setup.py` ([it's easy to write one][1]), you can instead write the following line to a file:
 
     # requirements.in
     Flask
@@ -74,6 +74,8 @@ werkzeug==0.10.4          # via flask
 And it will produce your `requirements.txt`, with all the Flask dependencies
 (and all underlying dependencies) pinned.  Don't forget to put this file under version control as well.
 
+[1]: https://packaging.python.org/distributing/#configuring-your-project
+
 Updating requirements
 ---------------------
 
@@ -86,8 +88,6 @@ $ pip-compile --upgrade-package flask  # only update the flask package
 $ pip-compile --upgrade-package flask --upgrade-package requests  # update both the flask and requests packages
 $ pip-compile -P flask -P requests==2.0.0  # update the flask package to the latest, and requests to v2.0.0
 ```
-
-[1]: https://packaging.python.org/distributing/#setup-py
 
 Example usage for `pip-sync`
 ============================
