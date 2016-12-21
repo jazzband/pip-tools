@@ -8,6 +8,11 @@ import sys
 import tempfile
 
 import pip
+
+# Make sure we're using a compatible version of pip
+from ..utils import assert_compatible_pip_version
+assert_compatible_pip_version()
+
 from pip.req import InstallRequirement, parse_requirements
 
 from .. import click
@@ -15,12 +20,8 @@ from ..exceptions import PipToolsError
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
-from ..utils import (assert_compatible_pip_version, is_pinned_requirement,
-                     key_from_req)
+from ..utils import is_pinned_requirement, key_from_req
 from ..writer import OutputWriter
-
-# Make sure we're using a compatible version of pip
-assert_compatible_pip_version()
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
 

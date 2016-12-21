@@ -7,13 +7,14 @@ import sys
 
 import pip
 
+# Make sure we're using a compatible version of pip
+from ..utils import assert_compatible_pip_version
+assert_compatible_pip_version()
+
 from .. import click, sync
 from ..exceptions import PipToolsError
 from ..logging import log
-from ..utils import assert_compatible_pip_version, flat_map
-
-# Make sure we're using a compatible version of pip
-assert_compatible_pip_version()
+from ..utils import flat_map
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.txt'
 
