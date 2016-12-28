@@ -25,9 +25,10 @@ DEFAULT_REQUIREMENTS_FILE = 'requirements.txt'
 @click.option('-f', '--find-links', multiple=True, help="Look for archives in this directory or on this HTML page", envvar='PIP_FIND_LINKS')  # noqa
 @click.option('-i', '--index-url', help="Change index URL (defaults to PyPI)", envvar='PIP_INDEX_URL')
 @click.option('--extra-index-url', multiple=True, help="Add additional index URL to search", envvar='PIP_EXTRA_INDEX_URL')  # noqa
+@click.option('--trusted-host', multiple=True, help="Add trusted host", envvar='PIP_TRUSTED_HOST')
 @click.option('--no-index', is_flag=True, help="Ignore package index (only looking at --find-links URLs instead)")
 @click.argument('src_files', required=False, type=click.Path(exists=True), nargs=-1)
-def cli(dry_run, force, find_links, index_url, extra_index_url, no_index, src_files):
+def cli(dry_run, force, find_links, index_url, extra_index_url, trusted_host, no_index, src_files):
     if not src_files:
         if os.path.exists(DEFAULT_REQUIREMENTS_FILE):
             src_files = (DEFAULT_REQUIREMENTS_FILE,)
@@ -67,6 +68,9 @@ def cli(dry_run, force, find_links, index_url, extra_index_url, no_index, src_fi
     if extra_index_url:
         for extra_index in extra_index_url:
             install_flags.extend(['--extra-index-url', extra_index])
+    if trusted_host:
+        for host in trusted_host:
+            install_flags.extend(['--trusted-host', host])
 
     sys.exit(sync.sync(to_install, to_uninstall, verbose=True, dry_run=dry_run,
                        install_flags=install_flags))

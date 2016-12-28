@@ -86,3 +86,9 @@ To sync multiple `*.txt` dependency lists, just pass them in via command line ar
 $ pip-sync dev-requirements.txt requirements.txt
 ```
 Passing in empty arguments would cause it to default to `requirements.txt`.
+
+Pip-sync accepts the usual pip options:
+```shell
+$ pip-sync dev-requirements.txt --extra-index-url https://my.local.index.com
+```
+
