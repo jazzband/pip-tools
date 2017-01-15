@@ -273,7 +273,7 @@ def main():
         if raw_version is None:
             logger.warning('No update information found for {0}'.format(pkg))
             all_ok = False
-        elif raw_version != installed_raw_version:
+        elif parse_version(str(raw_version)) > parse_version(str(installed_raw_version)):
             if args.raw:
                 logger.info('{0}=={1}'.format(pkg, latest_version))
             else:
