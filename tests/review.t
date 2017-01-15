@@ -21,26 +21,24 @@ Also install library, which caused warning message:
 Next, let's see what pip-review does:
 
   $ pip-review
-  cElementTree==1.0.2-20050302 is available (you have 1.0.5.post20051216)
   python-dateutil==* is available (you have 1.5) (glob)
 
 Or in raw mode:
 
   $ pip-review --raw
-  cElementTree==1.0.2-20050302
   python-dateutil==* (glob)
 
 We can also install these updates automatically:
 
   $ pip-review --auto >/dev/null 2>&1
   $ pip-review
-  cElementTree==* is available (you have 1.0.5.post20051216) (glob)
+  Everything up-to-date
 
 Next, let's test for regressions with older versions of pip:
 
   $ pip install --force-reinstall --upgrade pip\<6.0 >/dev/null 2>&1
   $ pip-review
-  cElementTree==* is available (you have 1.0.5.post20051216) (glob)
+  Everything up-to-date
 
 Cleanup our playground:
 
