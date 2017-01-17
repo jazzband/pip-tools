@@ -13,6 +13,7 @@ PACKAGES_TO_IGNORE = [
     'pip-review',
     'setuptools',
     'wheel',
+    'pkg-resources',
 ]
 
 
