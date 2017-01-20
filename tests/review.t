@@ -37,8 +37,12 @@ We can also install these updates automatically:
 Next, let's test for regressions with older versions of pip:
 
   $ pip install --force-reinstall --upgrade pip\<6.0 >/dev/null 2>&1
-  $ pip-review
-  Everything up-to-date
+  $ if python -c 'import sys; sys.exit(0 if sys.version_info < (3, 6) else 1)'; then
+  >   pip-review
+  > else
+  >   echo Skipped
+  > fi
+  (Everything up-to-date|Skipped) (re)
 
 Cleanup our playground:
 
