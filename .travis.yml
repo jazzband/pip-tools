@@ -9,7 +9,7 @@ branches:
   except:
     - piptools-ignore-patch
 install:
-  - "pip install cram --use-mirrors"
-  - "pip install . --use-mirrors"
+  - "pip install cram"
+  - "pip install ."
 script:
   - "cram tests/*.t"
