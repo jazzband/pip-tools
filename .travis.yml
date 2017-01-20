@@ -12,4 +12,4 @@ install:
   - "pip install cram --use-mirrors"
   - "pip install . --use-mirrors"
 script:
-  - "cram tests/*.t"
+  - "cram --shell=/bin/bash tests/*.t"

@@ -1,2 +1,2 @@
 #!/bin/sh
-cram tests/*.t
+cram --shell=/bin/bash tests/*.t
