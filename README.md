@@ -5,7 +5,7 @@ pip-review
 
 `pip-review` checks PyPI and reports available updates.  It uses the list of
 currently installed packages to check for updates, it does not use any
-requirements.txt
+`requirements.txt`.
 
 Example, report-only:
 
