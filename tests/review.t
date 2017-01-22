@@ -18,17 +18,17 @@ Also install library, which caused warning message:
 
   $ pip install http://www.effbot.org/media/downloads/cElementTree-1.0.5-20051216.tar.gz >/dev/null 2>&1
 
+Define a filter to strip the deprecation notice for Python 2.6:
+
+  $ function strip_deprecation_notice {
+  >     grep -v 'DEPRECATION: Python 2.6 is no longer supported' || true
+  > }
+
 Before our next test, let's just check that the Bash option pipefail works:
 
   $ set -o pipefail
   $ false | true
   [1]
-
-Define a filter to strip the deprecation notice for Python 2.6:
-
-  > function strip_deprecation_notice {
-  >     grep -v 'DEPRECATION: Python 2.6 is no longer supported' || true
-  > }
 
 Next, let's see what pip-review does:
 
