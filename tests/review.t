@@ -18,20 +18,32 @@ Also install library, which caused warning message:
 
   $ pip install http://www.effbot.org/media/downloads/cElementTree-1.0.5-20051216.tar.gz >/dev/null 2>&1
 
+Define a filter to strip the deprecation notice for Python 2.6:
+
+  $ function strip_deprecation_notice {
+  >     grep -v 'DEPRECATION: Python 2.6 is no longer supported' || true
+  > }
+
+Before our next test, let's just check that the Bash option pipefail works:
+
+  $ set -o pipefail
+  $ false | true
+  [1]
+
 Next, let's see what pip-review does:
 
-  $ pip-review
+  $ pip-review 2>&1 | strip_deprecation_notice
   python-dateutil==* is available (you have 1.5) (glob)
 
 Or in raw mode:
 
-  $ pip-review --raw
+  $ pip-review --raw 2>&1 | strip_deprecation_notice
   python-dateutil==* (glob)
 
 We can also install these updates automatically:
 
   $ pip-review --auto >/dev/null 2>&1
-  $ pip-review
+  $ pip-review 2>&1 | strip_deprecation_notice
   Everything up-to-date
 
 Next, let's test for regressions with older versions of pip:
