@@ -15,4 +15,4 @@ Any kind of contribution is welcome; nothing is "off limits". However, for those
 
 This repo ([jgonggrijp/pip-review](https://github.com/jgonggrijp/pip-review)) uses [gitflow](https://github.com/nvie/gitflow). Please submit pull requests to the `develop` branch.
 
-The Python files (currently only `pip_review.py`) use 4-space soft tabs. The other files use 2-space soft tabs.
+The Python files use 4-space soft tabs. The other files use 2-space soft tabs.
