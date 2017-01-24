@@ -80,7 +80,7 @@ class OutputWriter(object):
         for line in self.write_flags():
             yield line
 
-        UNSAFE_PACKAGES = {'setuptools', 'distribute', 'pip'}
+        UNSAFE_PACKAGES = {'setuptools', 'distribute', 'pip', 'appnope'}
         unsafe_packages = {r for r in results if r.name in UNSAFE_PACKAGES}
         packages = {r for r in results if r.name not in UNSAFE_PACKAGES}
 
