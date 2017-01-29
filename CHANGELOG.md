@@ -1,3 +1,8 @@
+# Unreleased
+
+- Added a `--max-rounds` argument to the pip-compile command to allow for solving large requirement sets (#472)
+
+
 # 1.8.1
 
 - Recalculate secondary dependencies between rounds (#378)
