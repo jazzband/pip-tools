@@ -129,8 +129,6 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     # over the stuff in the requirements files
     upgrade_packages = [InstallRequirement.from_line(pkg)
                         for pkg in upgrade_packages]
-    upgrade_pkgs_by_key = {key_from_req(ireq.req): ireq
-                           for ireq in upgrade_packages}
 
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified
     # (= default invocation)
@@ -139,12 +137,6 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         ireqs = parse_requirements(dst_file, finder=repository.finder, session=repository.session, options=pip_options)
         for ireq in ireqs:
             key = key_from_req(ireq.req)
-
-            # Packages explicitly listed on the command line should not remain
-            # pinned by whatever is in the dst_file (the command line argument
-            # overwrites the current pins)
-            if key in upgrade_pkgs_by_key:
-                ireq = upgrade_pkgs_by_key[key]
 
             if is_pinned_requirement(ireq):
                 existing_pins[key] = ireq
