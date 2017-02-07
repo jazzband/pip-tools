@@ -5,7 +5,7 @@ from ._compat import ExitStack
 from .click import unstyle
 from .io import AtomicSaver
 from .logging import log
-from .utils import comment, format_requirement, UNSAFE_PACKAGES
+from .utils import comment, format_requirement, dedup, UNSAFE_PACKAGES
 
 
 class OutputWriter(object):
@@ -47,20 +47,20 @@ class OutputWriter(object):
 
     def write_index_options(self):
         if self.emit_index:
-            for index, index_url in enumerate(self.index_urls):
+            for index, index_url in enumerate(dedup(self.index_urls)):
                 if index_url.rstrip('/') == self.default_index_url:
                     continue
                 flag = '--index-url' if index == 0 else '--extra-index-url'
                 yield '{} {}'.format(flag, index_url)
 
     def write_trusted_hosts(self):
-        for trusted_host in self.trusted_hosts:
+        for trusted_host in dedup(self.trusted_hosts):
             yield '--trusted-host {}'.format(trusted_host)
 
     def write_format_controls(self):
-        for nb in self.format_control.no_binary:
+        for nb in dedup(self.format_control.no_binary):
             yield '--no-binary {}'.format(nb)
-        for ob in self.format_control.only_binary:
+        for ob in dedup(self.format_control.only_binary):
             yield '--only-binary {}'.format(ob)
 
     def write_flags(self):

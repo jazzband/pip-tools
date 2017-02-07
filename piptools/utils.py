@@ -200,3 +200,14 @@ def lookup_table(values, key=None, keyval=None, unique=False, use_lists=False):
         else:
             s.add(v)
     return dict(lut)
+
+
+def dedup(iterable):
+    """Deduplicate an iterable object like iter(set(iterable)) but
+    order-reserved.
+    """
+    emitted = set()
+    for x in iterable:
+        if x not in emitted:
+            yield x
+            emitted.add(x)

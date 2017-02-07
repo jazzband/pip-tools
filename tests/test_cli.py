@@ -107,6 +107,9 @@ def test_extra_index_option(pip_conf):
                 '  http://example.com\n'
                 '  http://extraindex1.com\n'
                 '  http://extraindex2.com' in out.output)
+        assert ('--index-url http://example.com\n'
+                '--extra-index-url http://extraindex1.com\n'
+                '--extra-index-url http://extraindex2.com' in out.output)
 
 
 def test_trusted_host(pip_conf):
@@ -117,6 +120,7 @@ def test_trusted_host(pip_conf):
     with runner.isolated_filesystem():
         open('requirements.in', 'w').close()
         out = runner.invoke(cli, ['-v',
+                                  '--trusted-host', 'example.com',
                                   '--trusted-host', 'example2.com'])
         print(out.output)
         assert ('--trusted-host example.com\n'
