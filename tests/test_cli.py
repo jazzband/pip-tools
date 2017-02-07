@@ -113,7 +113,6 @@ def test_extra_index_option(pip_conf):
 
 
 def test_trusted_host(pip_conf):
-
     assert os.path.exists(pip_conf)
 
     runner = CliRunner()
@@ -125,6 +124,20 @@ def test_trusted_host(pip_conf):
         print(out.output)
         assert ('--trusted-host example.com\n'
                 '--trusted-host example2.com\n' in out.output)
+
+
+def test_trusted_host_no_emit(pip_conf):
+    assert os.path.exists(pip_conf)
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        open('requirements.in', 'w').close()
+        out = runner.invoke(cli, ['-v',
+                                  '--trusted-host', 'example.com',
+                                  '--no-trusted-host'])
+        print(out.output)
+        assert '--trusted-host example.com' not in out.output
+        assert '--no-trusted-host' in out.output
 
 
 def test_realistic_complex_sub_dependencies(tmpdir):
