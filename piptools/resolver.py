@@ -3,6 +3,7 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import os
+import copy
 from functools import partial
 from itertools import chain, count
 
@@ -154,7 +155,8 @@ class Resolver(object):
                 continue
 
             ireqs = iter(ireqs)
-            combined_ireq = next(ireqs)
+            # deepcopy the accumulator so as to not modify the self.our_constraints invariant
+            combined_ireq = copy.deepcopy(next(ireqs))
             combined_ireq.comes_from = None
             for ireq in ireqs:
                 # NOTE we may be losing some info on dropped reqs here

@@ -69,15 +69,31 @@ import pytest
 
         # We must remove child dependencies from result if parent is removed (e.g. vine from amqp>=2.0)
         # See: GH-370
-        (['celery', 'librabbitmq'],
+        # because of upated dependencies in the test index, we need to pin celery
+        # in order to reproduce vine removal (because it was readded in later releases)
+        (['celery<=3.1.23', 'librabbitmq'],
          [
-             'amqp==1.4.9',
-             'anyjson==0.3.3',
-             'billiard==3.3.0.23',
-             'celery==3.1.23',
-             'kombu==3.0.35',
-             'librabbitmq==1.6.1',
-             'pytz==2016.4']
+            'amqp==1.4.9',
+            'anyjson==0.3.3',
+            'billiard==3.5.0.2',
+            'celery==3.1.23',
+            'kombu==3.0.35',
+            'librabbitmq==1.6.1',
+            'pytz==2016.4']
+         ),
+
+        # Support specifying loose top-level requirements that could also appear as
+        # pinned subdependencies.
+        (['billiard', 'celery',
+          'fake-piptools-test-with-pinned-deps'],
+         [
+            'amqp==1.4.9',
+            'anyjson==0.3.3',
+            'billiard==3.3.0.23',
+            'celery==3.1.18',  # this is pinned from test subdependency
+            'fake-piptools-test-with-pinned-deps==0.1',
+            'kombu==3.0.35',
+            'pytz==2016.4']
          ),
     ])
 )
