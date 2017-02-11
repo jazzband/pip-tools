@@ -14,6 +14,7 @@ def writer():
                         generate_hashes=False,
                         default_index_url=None, index_urls=[],
                         trusted_hosts=[],
+                        find_links=[],
                         format_control=FormatControl(set(), set()))
 
 

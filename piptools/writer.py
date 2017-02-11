@@ -11,7 +11,8 @@ from .utils import comment, dedup, format_requirement, key_from_req, UNSAFE_PACK
 class OutputWriter(object):
     def __init__(self, src_files, dst_file, dry_run, emit_header, emit_index,
                  emit_trusted_host, annotate, generate_hashes,
-                 default_index_url, index_urls, trusted_hosts, format_control):
+                 default_index_url, index_urls, trusted_hosts,
+                 find_links, format_control):
         self.src_files = src_files
         self.dst_file = dst_file
         self.dry_run = dry_run
@@ -23,6 +24,7 @@ class OutputWriter(object):
         self.default_index_url = default_index_url
         self.index_urls = index_urls
         self.trusted_hosts = trusted_hosts
+        self.find_links = find_links
         self.format_control = format_control
 
     def _sort_key(self, ireq):
@@ -65,6 +67,18 @@ class OutputWriter(object):
             for trusted_host in dedup(self.trusted_hosts):
                 yield '--trusted-host {}'.format(trusted_host)
 
+    def write_find_links(self):
+        yielded = set()
+        dst_dir = os.path.dirname(self.dst_file)
+        for abs_link in self.find_links:
+            rel_link = os.path.relpath(abs_link, start=dst_dir)
+            if not rel_link.startswith(os.path.pardir + os.path.sep):
+                # Only yield links which are relative to dst_file, since
+                # absolute paths shouldn't be stored to requirements.txt
+                if rel_link not in yielded:
+                    yield '--find-links {}'.format(rel_link)
+                    yielded.add(rel_link)
+
     def write_format_controls(self):
         for nb in dedup(self.format_control.no_binary):
             yield '--no-binary {}'.format(nb)
@@ -75,6 +89,7 @@ class OutputWriter(object):
         emitted = False
         for line in chain(self.write_index_options(),
                           self.write_trusted_hosts(),
+                          self.write_find_links(),
                           self.write_format_controls()):
             emitted = True
             yield line
