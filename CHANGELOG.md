@@ -1,6 +1,8 @@
 # 1.8.1
 
 - Recalculate secondary dependencies between rounds (#378)
+- Calculated dependencies could be left with wrong candidates when 
+  toplevel requirements happen to be also pinned in sub-dependencies (#450)
 
 
 # 1.8.0
