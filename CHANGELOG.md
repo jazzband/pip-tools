@@ -3,6 +3,7 @@
 - Recalculate secondary dependencies between rounds (#378)
 - Calculated dependencies could be left with wrong candidates when 
   toplevel requirements happen to be also pinned in sub-dependencies (#450)
+- Fix duplicate entries that could happen in generated requirements.txt (#427)
 
 
 # 1.8.0
