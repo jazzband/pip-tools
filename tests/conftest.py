@@ -10,6 +10,7 @@ from piptools.cache import DependencyCache
 from piptools.repositories.base import BaseRepository
 from piptools.resolver import Resolver
 from piptools.utils import as_tuple, key_from_req, make_install_requirement
+from piptools.exceptions import NoCandidateFound
 
 
 class FakeRepository(BaseRepository):
@@ -31,7 +32,10 @@ class FakeRepository(BaseRepository):
         if ireq.editable:
             return ireq
 
-        versions = ireq.specifier.filter(self.index[key_from_req(ireq.req)], prereleases=prereleases)
+        versions = list(ireq.specifier.filter(self.index[key_from_req(ireq.req)],
+                                              prereleases=prereleases))
+        if not versions:
+            raise NoCandidateFound(ireq, self.index[key_from_req(ireq.req)])
         best_version = max(versions, key=Version)
         return make_install_requirement(key_from_req(ireq.req), best_version, ireq.extras)
 
