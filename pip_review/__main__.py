@@ -7,6 +7,7 @@ import logging
 import sys
 import json
 import pip
+import subprocess
 try:
     import urllib2 as urllib_request  # Python2
 except ImportError:
@@ -229,10 +230,10 @@ ask_to_install = partial(InteractiveAsker().ask, prompt='Upgrade now?')
 
 
 def update_pkg(pkg, version):
-    command = 'pip install {0}=={1}'.format(pkg, version)
-    if pkg=='pip':
-        command = 'python -m ' + command
-    os.system(command)
+    subprocess.call(
+        [sys.executable, '-m', 'pip', 'install', '{0}=={1}'.format(pkg, version)]
+        stdout=sys.stdout,
+        stderr=sys.stderr)
 
 
 def confirm(question):
