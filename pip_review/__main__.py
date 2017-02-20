@@ -231,7 +231,7 @@ ask_to_install = partial(InteractiveAsker().ask, prompt='Upgrade now?')
 
 def update_pkg(pkg, version):
     subprocess.call(
-        [sys.executable, '-m', 'pip', 'install', '{0}=={1}'.format(pkg, version)]
+        [sys.executable, '-m', 'pip', 'install', '{0}=={1}'.format(pkg, version)],
         stdout=sys.stdout,
         stderr=sys.stderr)
 
