@@ -4,6 +4,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import sys
 from itertools import chain, groupby
+import re
 
 import pip
 from pip.req import InstallRequirement
@@ -38,8 +39,9 @@ def key_from_req(req):
         key = req.key
     else:
         # pip 8.1.2 or above, using packaging
-        key = req.name.lower()
-    key = key.replace('_', '-')
+        key = req.name
+    # https://www.python.org/dev/peps/pep-0503/#normalized-names
+    key = re.sub(r'[-_.]+', '-', key).lower()
     return key
 
 
