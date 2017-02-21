@@ -1,5 +1,4 @@
-[![Build status](https://secure.travis-ci.org/jazzband/pip-tools.png?branch=master)](https://secure.travis-ci.org/jazzband/pip-tools)
-
+[![Build Status](https://travis-ci.org/jazzband/pip-tools.svg?branch=master)](https://travis-ci.org/jazzband/pip-tools)
 [![Jazzband](https://jazzband.co/static/img/badge.svg)](https://jazzband.co/)
 
 pip-tools = pip-compile + pip-sync
