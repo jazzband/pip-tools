@@ -46,7 +46,7 @@ setup(
         #'Programming Language :: Python :: 2.3',
         #'Programming Language :: Python :: 2.4',
         #'Programming Language :: Python :: 2.5',
-        'Programming Language :: Python :: 2.6',
+        #'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         #'Programming Language :: Python :: 3.0',
