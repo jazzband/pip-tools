@@ -17,6 +17,7 @@ Installation
 
 ```console
 $ pip install --upgrade pip  # pip-tools needs pip==6.1 or higher (!)
+$ pip install --upgrade setuptools  # some packages need this upgrade, to run pip-compile without error (like ipython)
 $ pip install pip-tools
 ```
 
