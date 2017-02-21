@@ -16,7 +16,7 @@ Installation
 ============
 
 ```console
-$ pip install --upgrade pip  # pip-tools needs pip==6.1 or higher (!)
+$ pip install --upgrade pip  # pip-tools needs pip==8 or higher (!)
 $ pip install pip-tools
 ```
 
