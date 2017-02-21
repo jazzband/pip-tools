@@ -8,3 +8,13 @@ install:
 - travis_retry pip install tox-travis
 cache: pip
 script: tox --travis-after
+deploy:
+  provider: pypi
+  user: jazzband
+  distributions: sdist bdist_wheel
+  password:
+    secure: EswzTeyLEtslHlgrDwAz8sBdDJMzTPr761p7UoDW4jaL2RYyR4018oaGKeYESveKq5IMS1AxGXvXZVeln0YcXAwVOWp2S5SE9pkT0d/OdUcq5KHhFkS6UL/WVzG5L+eLQdwS5D3mVBcQGyShLs/uY1vjyQU1j6wfQrSsHOHHTEI=
+  on:
+    tags: true
+    repo: jazzband/pip-tools
+    python: 2.7
