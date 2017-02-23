@@ -36,7 +36,7 @@ def test_format_requirement_annotation(from_line, writer):
             'test==1.2                 ' + comment('# via xyz'))
 
 
-def test_format_requirement_annotation_case_sensitive(from_line, writer):
+def test_format_requirement_annotation_lower_case(from_line, writer):
     ireq = from_line('Test==1.2')
     reverse_dependencies = {'test': ['xyz']}
 
