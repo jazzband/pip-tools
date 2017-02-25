@@ -47,8 +47,8 @@ class PipCommand(pip.basecommand.Command):
               help="Add header to generated file")
 @click.option('--index/--no-index', is_flag=True, default=True,
               help="Add index URL to generated file")
-@click.option('--emit-trusted-host/--no-trusted-host', is_flag=True, default=True,
-              help="Add trusted host option to generated file")
+@click.option('--emit-trusted-host/--no-emit-trusted-host', is_flag=True,
+              default=True, help="Add trusted host option to generated file")
 @click.option('--annotate/--no-annotate', is_flag=True, default=True,
               help="Annotate results, indicating where dependencies come from")
 @click.option('-U', '--upgrade', is_flag=True, default=False,

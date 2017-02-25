@@ -38,7 +38,7 @@ class OutputWriter(object):
             if not self.emit_index:
                 params += ['--no-index']
             if not self.emit_trusted_host:
-                params += ['--no-trusted-host']
+                params += ['--no-emit-trusted-host']
             if not self.annotate:
                 params += ['--no-annotate']
             if self.generate_hashes:
