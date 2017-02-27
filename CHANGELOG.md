@@ -1,10 +1,10 @@
-# 1.8.1
+# 1.8.1 (unreleased)
 
 - Recalculate secondary dependencies between rounds (#378)
 - Calculated dependencies could be left with wrong candidates when 
   toplevel requirements happen to be also pinned in sub-dependencies (#450)
 - Fix duplicate entries that could happen in generated requirements.txt (#427)
-
+- Gracefully report invalid pip version (#457)
 
 # 1.8.0
 
