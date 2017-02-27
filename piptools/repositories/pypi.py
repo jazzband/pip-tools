@@ -9,7 +9,10 @@ from shutil import rmtree
 from pip.download import unpack_url
 from pip.index import PackageFinder
 from pip.req.req_set import RequirementSet
-from pip.utils.hashes import FAVORITE_HASH
+try:
+    from pip.utils.hashes import FAVORITE_HASH
+except ImportError:
+    FAVORITE_HASH = 'sha256'
 
 from ..cache import CACHE_DIR
 from ..exceptions import NoCandidateFound
