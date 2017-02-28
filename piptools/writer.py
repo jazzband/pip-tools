@@ -74,7 +74,7 @@ class OutputWriter(object):
         if emitted:
             yield ''
 
-    def _iter_lines(self, results, reverse_dependencies, primary_packages, hashes):
+    def _iter_lines(self, results, reverse_dependencies, primary_packages, markers, hashes):
         for line in self.write_header():
             yield line
         for line in self.write_flags():
@@ -88,7 +88,7 @@ class OutputWriter(object):
         unsafe_packages = sorted(unsafe_packages, key=self._sort_key)
 
         for ireq in packages:
-            line = self._format_requirement(ireq, reverse_dependencies, primary_packages, hashes=hashes)
+            line = self._format_requirement(ireq, reverse_dependencies, primary_packages, markers.get(ireq.req.name), hashes=hashes)
             yield line
 
         if unsafe_packages:
@@ -97,7 +97,7 @@ class OutputWriter(object):
 
             for ireq in unsafe_packages:
                 line = self._format_requirement(
-                    ireq, reverse_dependencies, primary_packages,
+                    ireq, reverse_dependencies, primary_packages, markers.get(ireq.req.name),
                     hashes=hashes if self.allow_unsafe else None,
                     include_specifier=self.allow_unsafe)
                 if self.allow_unsafe:
@@ -105,20 +105,20 @@ class OutputWriter(object):
                 else:
                     yield comment('# ' + line)
 
-    def write(self, results, reverse_dependencies, primary_packages, hashes):
+    def write(self, results, reverse_dependencies, primary_packages, markers, hashes):
         with ExitStack() as stack:
             f = None
             if not self.dry_run:
                 f = stack.enter_context(AtomicSaver(self.dst_file))
 
-            for line in self._iter_lines(results, reverse_dependencies, primary_packages, hashes):
+            for line in self._iter_lines(results, reverse_dependencies, primary_packages, markers, hashes):
                 log.info(line)
                 if f:
                     f.write(unstyle(line).encode('utf-8'))
                     f.write(os.linesep.encode('utf-8'))
 
-    def _format_requirement(self, ireq, reverse_dependencies, primary_packages, include_specifier=True, hashes=None):
-        line = format_requirement(ireq, include_specifier=include_specifier)
+    def _format_requirement(self, ireq, reverse_dependencies, primary_packages, marker, include_specifier=True, hashes=None):
+        line = format_requirement(ireq, include_specifier=include_specifier, marker=marker)
 
         ireq_hashes = (hashes if hashes is not None else {}).get(ireq)
         if ireq_hashes:

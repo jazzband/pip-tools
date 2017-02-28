@@ -68,7 +68,7 @@ def make_install_requirement(name, version, extras):
     return InstallRequirement.from_line('{}{}=={}'.format(name, extras_string, str(version)))
 
 
-def format_requirement(ireq, include_specifier=True):
+def format_requirement(ireq, include_specifier=True, marker=None):
     """
     Generic formatter for pretty printing InstallRequirements to the terminal
     in a less verbose way than using its `__str__` method.
@@ -79,6 +79,8 @@ def format_requirement(ireq, include_specifier=True):
         line = str(ireq.req)
     else:
         line = name_from_req(ireq.req)
+    if marker:
+        line = '{} ; {}'.format(line, str(marker))
     return line
 
 
