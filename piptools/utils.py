@@ -76,9 +76,9 @@ def format_requirement(ireq, include_specifier=True, marker=None):
     if ireq.editable:
         line = '-e {}'.format(ireq.link)
     elif include_specifier:
-        line = str(ireq.req)
+        line = str(ireq.req).lower()
     else:
-        line = name_from_req(ireq.req)
+        line = name_from_req(ireq.req).lower()
     if marker:
         line = '{} ; {}'.format(line, str(marker))
     return line
