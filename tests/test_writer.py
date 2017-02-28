@@ -55,3 +55,15 @@ def test_format_requirement_not_for_primary(from_line, writer):
                                        reverse_dependencies,
                                        primary_packages=['test']) ==
             'test==1.2')
+
+
+def test_format_requirement_environment_marker(from_line, writer):
+    "Primary packages should not get annotated."
+    ireq = from_line("test ; python_version=='2.7' and platform_python_implementation == 'CPython'")
+    reverse_dependencies = set()
+
+    assert (writer._format_requirement(ireq,
+                                       reverse_dependencies,
+                                       primary_packages=['test'],
+                                       marker=ireq.markers) ==
+            "test ; python_version=='2.7' and platform_python_implementation == 'CPython'")
