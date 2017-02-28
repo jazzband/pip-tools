@@ -5,6 +5,7 @@
   toplevel requirements happen to be also pinned in sub-dependencies (#450)
 - Fix duplicate entries that could happen in generated requirements.txt (#427)
 - Gracefully report invalid pip version (#457)
+- Fix capitalization in the generated requirements.txt, packages will always be lowercased (#452)
 
 # 1.8.0
 
