@@ -88,7 +88,9 @@ class OutputWriter(object):
         unsafe_packages = sorted(unsafe_packages, key=self._sort_key)
 
         for ireq in packages:
-            line = self._format_requirement(ireq, reverse_dependencies, primary_packages, markers.get(ireq.req.name), hashes=hashes)
+            line = self._format_requirement(
+                ireq, reverse_dependencies, primary_packages,
+                markers.get(ireq.req.name), hashes=hashes)
             yield line
 
         if unsafe_packages:
@@ -111,13 +113,15 @@ class OutputWriter(object):
             if not self.dry_run:
                 f = stack.enter_context(AtomicSaver(self.dst_file))
 
-            for line in self._iter_lines(results, reverse_dependencies, primary_packages, markers, hashes):
+            for line in self._iter_lines(results, reverse_dependencies,
+                                         primary_packages, markers, hashes):
                 log.info(line)
                 if f:
                     f.write(unstyle(line).encode('utf-8'))
                     f.write(os.linesep.encode('utf-8'))
 
-    def _format_requirement(self, ireq, reverse_dependencies, primary_packages, marker=None, include_specifier=True, hashes=None):
+    def _format_requirement(self, ireq, reverse_dependencies, primary_packages,
+                            marker=None, include_specifier=True, hashes=None):
         line = format_requirement(ireq, include_specifier=include_specifier, marker=marker)
 
         ireq_hashes = (hashes if hashes is not None else {}).get(ireq)
