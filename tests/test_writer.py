@@ -62,10 +62,9 @@ def test_format_requirement_environment_marker(from_line, writer):
     ireq = from_line("test ; python_version == '2.7' and platform_python_implementation == 'CPython'")
     reverse_dependencies = set()
 
-    result = writer._format_requirement(ireq,
-                                       reverse_dependencies,
-                                       primary_packages=['test'],
-                                       marker=ireq.markers)
+    result = writer._format_requirement(
+        ireq, reverse_dependencies, primary_packages=['test'],
+        marker=ireq.markers)
     result = result.replace('\"', '\'')
     assert (result ==
             "test ; python_version == '2.7' and platform_python_implementation == 'CPython'")
