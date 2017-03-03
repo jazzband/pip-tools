@@ -36,12 +36,7 @@ class RequirementSummary(object):
         self.req = req
         self.key = key_from_req(req)
         self.extras = str(sorted(req.extras))
-        if hasattr(req, 'specs'):
-            # pip < 8.1.2
-            self.specifier = str(req.specs)
-        else:
-            # pip >= 8.1.2
-            self.specifier = str(req.specifier)
+        self.specifier = str(req.specifier)
 
     def __eq__(self, other):
         return str(self) == str(other)
