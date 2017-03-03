@@ -61,6 +61,10 @@ $ pip-compile --upgrade-package flask --upgrade-package requests  # update both 
 $ pip-compile -P flask -P requests==2.0.0  # update the flask package to the latest, and requests to v2.0.0
 ```
 
+If you use multiple Python versions, you can run ``pip-compile`` as ``py -X.Y
+-m piptools compile ...`` on Windows and ``pythonX.Y -m piptools compile ...``
+on other systems.
+
 Example usage for `pip-sync`
 ============================
 
@@ -87,3 +91,7 @@ To sync multiple `*.txt` dependency lists, just pass them in via command line ar
 $ pip-sync dev-requirements.txt requirements.txt
 ```
 Passing in empty arguments would cause it to default to `requirements.txt`.
+
+If you use multiple Python versions, you can run ``pip-sync`` as ``py -X.Y -m
+piptools sync ...`` on Windows and ``pythonX.Y -m piptools sync ...`` on other
+systems.
