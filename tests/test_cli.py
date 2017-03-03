@@ -1,5 +1,6 @@
 import os
 from textwrap import dedent
+import subprocess
 
 from click.testing import CliRunner
 
@@ -103,3 +104,24 @@ def test_trusted_host(pip_conf):
         print(out.output)
         assert ('--trusted-host example.com\n'
                 '--trusted-host example2.com\n' in out.output)
+
+
+def test_realistic_complex_sub_dependencies(tmpdir):
+
+    # make a temporary wheel of a fake package
+    subprocess.check_output(['pip', 'wheel',
+                             '--no-deps',
+                             '-w', str(tmpdir),
+                             os.path.join('.', 'tests', 'fixtures', 'fake_package', '.')])
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements.in', 'w') as req_in:
+            req_in.write('fake_with_deps')  # require fake package
+
+        out = runner.invoke(cli, ['-v',
+                                  '-n', '--rebuild',
+                                  '-f', str(tmpdir)])
+
+        print(out.output)
+        assert out.exit_code == 0
