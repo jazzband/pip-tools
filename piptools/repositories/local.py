@@ -11,14 +11,8 @@ def ireq_satisfied_by_existing_pin(ireq, existing_pin):
     Return True if the given InstallationRequirement is satisfied by the
     previously encountered version pin.
     """
-    if hasattr(existing_pin.req, 'specs'):
-        # pip < 8.1.2
-        version = existing_pin.req.specs[0][1]
-        return version in ireq.req
-    else:
-        # pip >= 8.1.2
-        version = next(iter(existing_pin.req.specifier)).version
-        return version in ireq.req.specifier
+    version = next(iter(existing_pin.req.specifier)).version
+    return version in ireq.req.specifier
 
 
 class LocalRequirementsRepository(BaseRepository):
