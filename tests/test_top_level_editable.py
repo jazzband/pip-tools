@@ -2,7 +2,7 @@ import os
 import pytest
 
 from piptools.repositories import PyPIRepository
-from piptools.scripts.compile import get_pip_command
+from piptools.scripts._repo import get_pip_command
 
 
 class MockedPyPIRepository(PyPIRepository):

@@ -11,6 +11,7 @@ from .. import click, sync
 from ..exceptions import PipToolsError
 from ..logging import log
 from ..utils import assert_compatible_pip_version, flat_map
+from ._repo import get_pip_options_and_pypi_repository
 
 # Make sure we're using a compatible version of pip
 assert_compatible_pip_version()
@@ -47,8 +48,15 @@ def cli(dry_run, force, find_links, index_url, extra_index_url, no_index, quiet,
             log.error('ERROR: ' + msg)
             sys.exit(2)
 
-    requirements = flat_map(lambda src: pip.req.parse_requirements(src, session=True),
-                            src_files)
+    (pip_options, repository) = get_pip_options_and_pypi_repository(
+        index_url=index_url, extra_index_url=extra_index_url,
+        no_index=no_index, find_links=find_links)
+
+    def parse_req_file(filename):
+        return pip.req.parse_requirements(
+            filename, session=True, finder=repository.finder)
+
+    requirements = flat_map(parse_req_file, src_files)
 
     try:
         requirements = sync.merge(requirements, ignore_conflicts=force)
@@ -60,15 +68,15 @@ def cli(dry_run, force, find_links, index_url, extra_index_url, no_index, quiet,
     to_install, to_uninstall = sync.diff(requirements, installed_dists)
 
     install_flags = []
-    for link in find_links or []:
+    for link in repository.finder.find_links or []:
         install_flags.extend(['-f', link])
-    if no_index:
+    if not repository.finder.index_urls:
         install_flags.append('--no-index')
-    if index_url:
-        install_flags.extend(['-i', index_url])
-    if extra_index_url:
-        for extra_index in extra_index_url:
-            install_flags.extend(['--extra-index-url', extra_index])
+    for (i, index_url) in enumerate(repository.finder.index_urls):
+        if i == 0:
+            install_flags.extend(['-i', index_url])
+        else:
+            install_flags.extend(['--extra-index-url', index_url])
 
     sys.exit(sync.sync(to_install, to_uninstall, verbose=(not quiet), dry_run=dry_run,
                        install_flags=install_flags))

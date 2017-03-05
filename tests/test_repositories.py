@@ -3,7 +3,7 @@ from pip.index import PackageFinder
 from pip.req import InstallRequirement
 
 from piptools.repositories.pypi import PyPIRepository
-from piptools.scripts.compile import get_pip_command
+from piptools.scripts._repo import get_pip_command
 
 
 def test_pypirepo_build_dir_is_str():
