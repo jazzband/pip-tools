@@ -144,7 +144,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
 
     log.debug('Using indexes:')
     # remove duplicate index urls before processing
-    repository.finder.index_urls = set(repository.finder.index_urls)
+    repository.finder.index_urls = sorted(set(repository.finder.index_urls))
     for index_url in repository.finder.index_urls:
         log.debug('  {}'.format(index_url))
 
