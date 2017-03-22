@@ -176,6 +176,12 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
             constraints.extend(parse_requirements(
                 src_file, finder=repository.finder, session=repository.session, options=pip_options))
 
+    # Check the given base set of constraints first
+    Resolver.check_constraints(constraints)
+
+    # The requirement objects are modified in-place so we need to save off the list of primary packages first
+    primary_packages = {key_from_req(ireq.req) for ireq in constraints if not ireq.constraint}
+
     try:
         resolver = Resolver(constraints, repository, prereleases=pre,
                             clear_caches=rebuild, allow_unsafe=allow_unsafe)
@@ -230,7 +236,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
                           format_control=repository.finder.format_control)
     writer.write(results=results,
                  reverse_dependencies=reverse_dependencies,
-                 primary_packages={key_from_req(ireq.req) for ireq in constraints},
+                 primary_packages=primary_packages,
                  markers={key_from_req(ireq.req): ireq.markers
                           for ireq in constraints if ireq.markers},
                  hashes=hashes)
