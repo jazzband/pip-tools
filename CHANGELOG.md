@@ -1,4 +1,4 @@
-# 1.8.1 (unreleased)
+# 1.8.1
 
 - Recalculate secondary dependencies between rounds (#378)
 - Calculated dependencies could be left with wrong candidates when 
