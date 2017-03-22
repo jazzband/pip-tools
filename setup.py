@@ -5,13 +5,14 @@ from setuptools import find_packages, setup
 
 setup(
     name='pip-tools',
-    version='1.8.1rc3',
+    use_scm_version=True,
     url='https://github.com/jazzband/pip-tools/',
     license='BSD',
     author='Vincent Driessen',
     author_email='me@nvie.com',
     description=__doc__,
     packages=find_packages(exclude=['tests']),
+    setup_requires=['setuptools_scm'],
     install_requires=[
         'click>=6',
         'first',
