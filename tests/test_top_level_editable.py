@@ -42,6 +42,5 @@ def test_editable_top_level_deps_preserved(base_resolver, repository, from_edita
     # sanity check that we're expecting something
     assert output != set()
 
-    # confirm incorrect behavior; note the "not in"
     for package_name in expected:
-        assert package_name not in output
+        assert package_name in output
