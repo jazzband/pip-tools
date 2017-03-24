@@ -6,6 +6,7 @@ import optparse
 import os
 import sys
 import tempfile
+from collections import OrderedDict
 
 import pip
 from pip.req import InstallRequirement, parse_requirements
@@ -143,6 +144,8 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         repository = LocalRequirementsRepository(existing_pins, repository)
 
     log.debug('Using indexes:')
+    # remove duplicate index urls before processing
+    repository.finder.index_urls = list(OrderedDict.fromkeys(repository.finder.index_urls))
     for index_url in repository.finder.index_urls:
         log.debug('  {}'.format(index_url))
 
