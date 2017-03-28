@@ -93,16 +93,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     # Setup
     ###
 
-    # Use pip's parser for pip.conf management and defaults.
-    # General options (find_links, index_url, extra_index_url, trusted_host,
-    # and pre) are defered to pip.
-    pip_command = PipCommand()
-    index_opts = pip.cmdoptions.make_option_group(
-        pip.cmdoptions.index_group,
-        pip_command.parser,
-    )
-    pip_command.parser.insert_option_group(0, index_opts)
-    pip_command.parser.add_option(optparse.Option('--pre', action='store_true', default=False))
+    pip_command = get_pip_command()
 
     pip_args = []
     if find_links:
@@ -233,3 +224,18 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
 
     if dry_run:
         log.warning('Dry-run, so nothing updated.')
+
+
+def get_pip_command():
+    # Use pip's parser for pip.conf management and defaults.
+    # General options (find_links, index_url, extra_index_url, trusted_host,
+    # and pre) are defered to pip.
+    pip_command = PipCommand()
+    index_opts = pip.cmdoptions.make_option_group(
+        pip.cmdoptions.index_group,
+        pip_command.parser,
+    )
+    pip_command.parser.insert_option_group(0, index_opts)
+    pip_command.parser.add_option(optparse.Option('--pre', action='store_true', default=False))
+
+    return pip_command
