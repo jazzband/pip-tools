@@ -70,6 +70,13 @@ def parse_args():
     return parser.parse_args()
 
 
+def pip_cmd():
+    if sys.version_info[0] > 2 or sys.version_info[1] > 6:
+        return [sys.executable, '-m', 'pip']
+    else:
+        return ['pip']
+
+
 def load_pkg_info(pkg_name):
     if pkg_name is None:
         return
@@ -154,7 +161,7 @@ def get_latest_versions(pkg_names, prerelease=False):
 
 def get_installed_pkgs(local=False):
     logger = logging.getLogger(u'pip-review')
-    command = 'pip freeze'
+    command = ' '.join(pip_cmd()) + ' freeze'
     if packaging_version.parse(pip.__version__) >= packaging_version.parse('8.0.3'):
         command += ' --all'
     if local:
@@ -230,9 +237,7 @@ ask_to_install = partial(InteractiveAsker().ask, prompt='Upgrade now?')
 
 
 def update_pkg(pkg, version):
-    command = ['pip', 'install', '{0}=={1}'.format(pkg, version)]
-    if sys.version_info[0] > 2 or sys.version_info[1] > 6:
-        command[0:0] = [sys.executable, '-m']
+    command = pip_cmd() + ['install', '{0}=={1}'.format(pkg, version)]
     subprocess.call(command, stdout=sys.stdout, stderr=sys.stderr)
 
 
