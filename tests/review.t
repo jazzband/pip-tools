@@ -9,7 +9,7 @@ Create a new playground first:
   $ pip install packaging >/dev/null 2>&1
   $ pip install -U --force-reinstall argparse >/dev/null 2>&1
   $ pip install -U --force-reinstall wheel >/dev/null 2>&1
-  $ function pip-review { python -m pip_review $* ; }
+  $ function pip-review { python -m pip_review.__main__ $* ; }
 
 Setup. Let's pretend we have some outdated package versions installed:
 
