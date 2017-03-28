@@ -169,16 +169,16 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
             # piping from stdin, we need to briefly save the input from stdin
             # to a temporary file and have pip read that.  also used for
             # reading requirements from install_requires in setup.py.
-            with tempfile.NamedTemporaryFile(mode='wt') as tmpfile:
-                if is_setup_file:
-                    from distutils.core import run_setup
-                    dist = run_setup(src_file)
-                    tmpfile.write('\n'.join(dist.install_requires))
-                else:
-                    tmpfile.write(sys.stdin.read())
-                tmpfile.flush()
-                constraints.extend(parse_requirements(
-                    tmpfile.name, finder=repository.finder, session=repository.session, options=pip_options))
+            tmpfile = tempfile.NamedTemporaryFile(mode='wt', delete=False)
+            if is_setup_file:
+                from distutils.core import run_setup
+                dist = run_setup(src_file)
+                tmpfile.write('\n'.join(dist.install_requires))
+            else:
+                tmpfile.write(sys.stdin.read())
+            tmpfile.flush()
+            constraints.extend(parse_requirements(
+                tmpfile.name, finder=repository.finder, session=repository.session, options=pip_options))
         else:
             constraints.extend(parse_requirements(
                 src_file, finder=repository.finder, session=repository.session, options=pip_options))
