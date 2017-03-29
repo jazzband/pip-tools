@@ -1,3 +1,10 @@
+# 1.8.2
+
+- Regression fix: editable reqs were loosing their dependencies after first round ([#476](https://github.com/jazzband/pip-tools/pull/476))
+  Thanks @mattlong
+- Remove duplicate index urls in generated requirements.txt ([#468](https://github.com/jazzband/pip-tools/pull/468))
+  Thanks @majuscule
+
 # 1.8.1
 
 - Recalculate secondary dependencies between rounds (#378)
