@@ -28,6 +28,7 @@ DEFAULT_REQUIREMENTS_FILE = 'requirements.txt'
 @click.option('--no-index', is_flag=True, help="Ignore package index (only looking at --find-links URLs instead)")
 @click.argument('src_files', required=False, type=click.Path(exists=True), nargs=-1)
 def cli(dry_run, force, find_links, index_url, extra_index_url, no_index, src_files):
+    """Synchronize virtual environment with requirements.txt."""
     if not src_files:
         if os.path.exists(DEFAULT_REQUIREMENTS_FILE):
             src_files = (DEFAULT_REQUIREMENTS_FILE,)
