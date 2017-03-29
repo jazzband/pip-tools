@@ -1,6 +1,7 @@
 import os
 from textwrap import dedent
 import subprocess
+import sys
 
 from click.testing import CliRunner
 
@@ -141,3 +142,46 @@ def test_realistic_complex_sub_dependencies(tmpdir):
 
         print(out.output)
         assert out.exit_code == 0
+
+
+def invoke(command):
+    """Invoke sub-process."""
+    try:
+        output = subprocess.check_output(
+            command,
+            stderr=subprocess.STDOUT,
+        )
+        status = 0
+    except subprocess.CalledProcessError as error:
+        output = error.output
+        status = error.returncode
+
+    return status, output
+
+
+def test_run_as_module_compile(tmpdir):
+    """piptools can be run as ``python -m piptools ...``."""
+
+    status, output = invoke([
+        sys.executable, '-m', 'piptools', 'compile', '--help',
+    ])
+
+    # Should have run pip-compile successfully.
+    output = output.decode('utf-8')
+    assert output.startswith('Usage:')
+    assert 'Compiles requirements.txt from requirements.in specs.' in output
+    assert status == 0
+
+
+def test_run_as_module_sync():
+    """piptools can be run as ``python -m piptools ...``."""
+
+    status, output = invoke([
+        sys.executable, '-m', 'piptools', 'sync', '--help',
+    ])
+
+    # Should have run pip-compile successfully.
+    output = output.decode('utf-8')
+    assert output.startswith('Usage:')
+    assert 'Synchronize virtual environment with requirements.txt.' in output
+    assert status == 0
