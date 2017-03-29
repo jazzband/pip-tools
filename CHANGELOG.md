@@ -1,3 +1,7 @@
+# 1.9.0 (Unreleased)
+
+- Added a `--max-rounds` argument to the pip-compile command to allow for solving large requirement sets ([#472](https://github.com/jazzband/pip-tools/pull/472))
+
 # 1.8.2
 
 - Regression fix: editable reqs were loosing their dependencies after first round ([#476](https://github.com/jazzband/pip-tools/pull/476))
