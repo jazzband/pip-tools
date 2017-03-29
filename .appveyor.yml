@@ -1,0 +1,23 @@
+environment:
+
+    matrix:
+        - TOXENV: py27-pip8
+        - TOXENV: py27-pip9
+        - TOXENV: py27-piplatest
+        - TOXENV: py34-pip8
+        - TOXENV: py34-pip9
+        - TOXENV: py34-piplatest
+        - TOXENV: py35-pip9
+        - TOXENV: py35-pip8
+        - TOXENV: py35-piplatest
+        - TOXENV: py36-pip9
+        - TOXENV: py36-pip8
+        - TOXENV: py36-piplatest
+
+install:
+    - C:\Python36\python -m pip install tox
+
+build: false
+
+test_script:
+    - C:\Python36\Scripts\tox

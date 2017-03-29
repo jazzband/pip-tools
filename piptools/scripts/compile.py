@@ -6,6 +6,7 @@ import optparse
 import os
 import sys
 import tempfile
+from collections import OrderedDict
 
 import pip
 from pip.req import InstallRequirement, parse_requirements
@@ -69,10 +70,15 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     log.verbose = verbose
 
     if len(src_files) == 0:
-        if not os.path.exists(DEFAULT_REQUIREMENTS_FILE):
+        if os.path.exists(DEFAULT_REQUIREMENTS_FILE):
+            src_files = (DEFAULT_REQUIREMENTS_FILE,)
+        elif os.path.exists('setup.py'):
+            src_files = ('setup.py',)
+            if not output_file:
+                output_file = 'requirements.txt'
+        else:
             raise click.BadParameter(("If you do not specify an input file, "
-                                      "the default is {}").format(DEFAULT_REQUIREMENTS_FILE))
-        src_files = (DEFAULT_REQUIREMENTS_FILE,)
+                                      "the default is {} or setup.py").format(DEFAULT_REQUIREMENTS_FILE))
 
     if len(src_files) == 1 and src_files[0] == '-':
         if not output_file:
@@ -94,16 +100,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     # Setup
     ###
 
-    # Use pip's parser for pip.conf management and defaults.
-    # General options (find_links, index_url, extra_index_url, trusted_host,
-    # and pre) are defered to pip.
-    pip_command = PipCommand()
-    index_opts = pip.cmdoptions.make_option_group(
-        pip.cmdoptions.index_group,
-        pip_command.parser,
-    )
-    pip_command.parser.insert_option_group(0, index_opts)
-    pip_command.parser.add_option(optparse.Option('--pre', action='store_true', default=False))
+    pip_command = get_pip_command()
 
     pip_args = []
     if find_links:
@@ -145,6 +142,8 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         repository = LocalRequirementsRepository(existing_pins, repository)
 
     log.debug('Using indexes:')
+    # remove duplicate index urls before processing
+    repository.finder.index_urls = list(OrderedDict.fromkeys(repository.finder.index_urls))
     for index_url in repository.finder.index_urls:
         log.debug('  {}'.format(index_url))
 
@@ -160,15 +159,22 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
 
     constraints = []
     for src_file in src_files:
-        if src_file == '-':
+        is_setup_file = os.path.basename(src_file) == 'setup.py'
+        if is_setup_file or src_file == '-':
             # pip requires filenames and not files. Since we want to support
             # piping from stdin, we need to briefly save the input from stdin
-            # to a temporary file and have pip read that.
-            with tempfile.NamedTemporaryFile(mode='wt') as tmpfile:
+            # to a temporary file and have pip read that.  also used for
+            # reading requirements from install_requires in setup.py.
+            tmpfile = tempfile.NamedTemporaryFile(mode='wt', delete=False)
+            if is_setup_file:
+                from distutils.core import run_setup
+                dist = run_setup(src_file)
+                tmpfile.write('\n'.join(dist.install_requires))
+            else:
                 tmpfile.write(sys.stdin.read())
-                tmpfile.flush()
-                constraints.extend(parse_requirements(
-                    tmpfile.name, finder=repository.finder, session=repository.session, options=pip_options))
+            tmpfile.flush()
+            constraints.extend(parse_requirements(
+                tmpfile.name, finder=repository.finder, session=repository.session, options=pip_options))
         else:
             constraints.extend(parse_requirements(
                 src_file, finder=repository.finder, session=repository.session, options=pip_options))
@@ -232,3 +238,18 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
 
     if dry_run:
         log.warning('Dry-run, so nothing updated.')
+
+
+def get_pip_command():
+    # Use pip's parser for pip.conf management and defaults.
+    # General options (find_links, index_url, extra_index_url, trusted_host,
+    # and pre) are defered to pip.
+    pip_command = PipCommand()
+    index_opts = pip.cmdoptions.make_option_group(
+        pip.cmdoptions.index_group,
+        pip_command.parser,
+    )
+    pip_command.parser.insert_option_group(0, index_opts)
+    pip_command.parser.add_option(optparse.Option('--pre', action='store_true', default=False))
+
+    return pip_command

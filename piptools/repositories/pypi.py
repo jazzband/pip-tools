@@ -57,6 +57,11 @@ class PyPIRepository(BaseRepository):
         # project
         self._available_candidates_cache = {}
 
+        # stores InstallRequirement => list(InstallRequirement) mappings
+        # of all secondary dependencies for the given requirement, so we
+        # only have to go to disk once for each requirement
+        self._dependencies_cache = {}
+
         # Setup file paths
         self.freshen_build_caches()
         self._download_dir = os.path.join(CACHE_DIR, 'pkgs')
@@ -125,18 +130,20 @@ class PyPIRepository(BaseRepository):
         if not (ireq.editable or is_pinned_requirement(ireq)):
             raise TypeError('Expected pinned or editable InstallRequirement, got {}'.format(ireq))
 
-        if not os.path.isdir(self._download_dir):
-            os.makedirs(self._download_dir)
-        if not os.path.isdir(self._wheel_download_dir):
-            os.makedirs(self._wheel_download_dir)
+        if ireq not in self._dependencies_cache:
 
-        reqset = RequirementSet(self.build_dir,
-                                self.source_dir,
-                                download_dir=self._download_dir,
-                                wheel_download_dir=self._wheel_download_dir,
-                                session=self.session)
-        dependencies = reqset._prepare_file(self.finder, ireq)
-        return set(dependencies)
+            if not os.path.isdir(self._download_dir):
+                os.makedirs(self._download_dir)
+            if not os.path.isdir(self._wheel_download_dir):
+                os.makedirs(self._wheel_download_dir)
+
+            reqset = RequirementSet(self.build_dir,
+                                    self.source_dir,
+                                    download_dir=self._download_dir,
+                                    wheel_download_dir=self._wheel_download_dir,
+                                    session=self.session)
+            self._dependencies_cache[ireq] = reqset._prepare_file(self.finder, ireq)
+        return set(self._dependencies_cache[ireq])
 
     def get_hashes(self, ireq):
         """
