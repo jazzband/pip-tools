@@ -68,10 +68,15 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     log.verbose = verbose
 
     if len(src_files) == 0:
-        if not os.path.exists(DEFAULT_REQUIREMENTS_FILE):
+        if os.path.exists(DEFAULT_REQUIREMENTS_FILE):
+            src_files = (DEFAULT_REQUIREMENTS_FILE,)
+        elif os.path.exists('setup.py'):
+            src_files = ('setup.py',)
+            if not output_file:
+                output_file = 'requirements.txt'
+        else:
             raise click.BadParameter(("If you do not specify an input file, "
-                                      "the default is {}").format(DEFAULT_REQUIREMENTS_FILE))
-        src_files = (DEFAULT_REQUIREMENTS_FILE,)
+                                      "the default is {} or setup.py").format(DEFAULT_REQUIREMENTS_FILE))
 
     if len(src_files) == 1 and src_files[0] == '-':
         if not output_file:
@@ -152,12 +157,19 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
 
     constraints = []
     for src_file in src_files:
-        if src_file == '-':
+        is_setup_file = os.path.basename(src_file) == 'setup.py'
+        if is_setup_file or src_file == '-':
             # pip requires filenames and not files. Since we want to support
             # piping from stdin, we need to briefly save the input from stdin
-            # to a temporary file and have pip read that.
+            # to a temporary file and have pip read that.  also used for
+            # reading requirements from install_requires in setup.py.
             with tempfile.NamedTemporaryFile(mode='wt') as tmpfile:
-                tmpfile.write(sys.stdin.read())
+                if is_setup_file:
+                    from distutils.core import run_setup
+                    dist = run_setup(src_file)
+                    tmpfile.write('\n'.join(dist.install_requires))
+                else:
+                    tmpfile.write(sys.stdin.read())
                 tmpfile.flush()
                 constraints.extend(parse_requirements(
                     tmpfile.name, finder=repository.finder, session=repository.session, options=pip_options))
