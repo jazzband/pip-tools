@@ -234,6 +234,8 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     writer.write(results=results,
                  reverse_dependencies=reverse_dependencies,
                  primary_packages={key_from_req(ireq.req) for ireq in constraints},
+                 markers={key_from_req(ireq.req): ireq.markers
+                          for ireq in constraints if ireq.markers},
                  hashes=hashes)
 
     if dry_run:
