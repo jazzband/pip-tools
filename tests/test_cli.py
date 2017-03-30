@@ -169,7 +169,7 @@ def test_run_as_module_compile(tmpdir):
     # Should have run pip-compile successfully.
     output = output.decode('utf-8')
     assert output.startswith('Usage:')
-    assert 'Compiles requirements.txt from requirements.in specs.' in output
+    assert 'Compiles requirements.txt from requirements.in' in output
     assert status == 0
 
 
@@ -183,5 +183,5 @@ def test_run_as_module_sync():
     # Should have run pip-compile successfully.
     output = output.decode('utf-8')
     assert output.startswith('Usage:')
-    assert 'Synchronize virtual environment with requirements.txt.' in output
+    assert 'Synchronize virtual environment with' in output
     assert status == 0
