@@ -131,7 +131,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
 
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified
     # (= default invocation)
-    if not (upgrade or upgrade_packages) and os.path.exists(dst_file):
+    if upgrade_packages and os.path.exists(dst_file):
         existing_pins = {}
         ireqs = parse_requirements(dst_file, finder=repository.finder, session=repository.session, options=pip_options)
         for ireq in ireqs:
