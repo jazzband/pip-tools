@@ -132,13 +132,8 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified
     # (= default invocation)
     if not (upgrade or upgrade_packages) and os.path.exists(dst_file):
-        existing_pins = {}
         ireqs = parse_requirements(dst_file, finder=repository.finder, session=repository.session, options=pip_options)
-        for ireq in ireqs:
-            key = key_from_req(ireq.req)
-
-            if is_pinned_requirement(ireq):
-                existing_pins[key] = ireq
+        existing_pins = {key_from_req(ireq.req): ireq for ireq in ireqs if is_pinned_requirement(ireq)}
         repository = LocalRequirementsRepository(existing_pins, repository)
 
     log.debug('Using indexes:')
