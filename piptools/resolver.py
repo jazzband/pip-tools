@@ -15,7 +15,7 @@ from .cache import DependencyCache
 from .exceptions import UnsupportedConstraint
 from .logging import log
 from .utils import (format_requirement, format_specifier, full_groupby,
-                    is_pinned_requirement, key_from_req)
+                    is_pinned_requirement, key_from_req, UNSAFE_PACKAGES)
 
 green = partial(click.style, fg='green')
 magenta = partial(click.style, fg='magenta')
@@ -49,7 +49,7 @@ class RequirementSummary(object):
 
 
 class Resolver(object):
-    def __init__(self, constraints, repository, cache=None, prereleases=False, clear_caches=False):
+    def __init__(self, constraints, repository, cache=None, prereleases=False, clear_caches=False, allow_unsafe=False):
         """
         This class resolves a given set of constraints (a collection of
         InstallRequirement objects) by consulting the given Repository and the
@@ -63,6 +63,7 @@ class Resolver(object):
         self.dependency_cache = cache
         self.prereleases = prereleases
         self.clear_caches = clear_caches
+        self.allow_unsafe = allow_unsafe
 
     @property
     def constraints(self):
@@ -184,10 +185,14 @@ class Resolver(object):
         # Find the new set of secondary dependencies
         log.debug('')
         log.debug('Finding secondary dependencies:')
+
+        ungrouped = []
+        for best_match in best_matches:
+            for dep in self._iter_dependencies(best_match):
+                if self.allow_unsafe or dep.name not in UNSAFE_PACKAGES:
+                    ungrouped.append(dep)
         # Grouping constraints to make clean diff between rounds
-        theirs = set(self._group_constraints(dep
-                     for best_match in best_matches
-                     for dep in self._iter_dependencies(best_match)))
+        theirs = set(self._group_constraints(ungrouped))
 
         # NOTE: We need to compare RequirementSummary objects, since
         # InstallRequirement does not define equality
