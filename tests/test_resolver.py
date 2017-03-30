@@ -95,6 +95,9 @@ import pytest
             'kombu==3.0.35',
             'pytz==2016.4']
          ),
+
+        # Exclude package dependcy of setuptools as it is unsafe.
+        (['html5lib'], ['html5lib==0.999999999']),
     ])
 )
 def test_resolver(resolver, from_line, input, expected, prereleases):

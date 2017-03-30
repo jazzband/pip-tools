@@ -5,13 +5,13 @@ from ._compat import ExitStack
 from .click import unstyle
 from .io import AtomicSaver
 from .logging import log
-from .utils import comment, format_requirement
+from .utils import comment, format_requirement, UNSAFE_PACKAGES
 
 
 class OutputWriter(object):
     def __init__(self, src_files, dst_file, dry_run, emit_header, emit_index,
                  annotate, generate_hashes, default_index_url, index_urls,
-                 trusted_hosts, format_control, allow_unsafe=False):
+                 trusted_hosts, format_control):
         self.src_files = src_files
         self.dst_file = dst_file
         self.dry_run = dry_run
@@ -23,7 +23,6 @@ class OutputWriter(object):
         self.index_urls = index_urls
         self.trusted_hosts = trusted_hosts
         self.format_control = format_control
-        self.allow_unsafe = allow_unsafe
 
     def _sort_key(self, ireq):
         return (not ireq.editable, str(ireq.req).lower())
@@ -80,7 +79,6 @@ class OutputWriter(object):
         for line in self.write_flags():
             yield line
 
-        UNSAFE_PACKAGES = {'setuptools', 'distribute', 'pip'}
         unsafe_packages = {r for r in results if r.name in UNSAFE_PACKAGES}
         packages = {r for r in results if r.name not in UNSAFE_PACKAGES}
 
@@ -98,14 +96,12 @@ class OutputWriter(object):
             yield comment('# The following packages are considered to be unsafe in a requirements file:')
 
             for ireq in unsafe_packages:
-                line = self._format_requirement(
-                    ireq, reverse_dependencies, primary_packages, markers.get(ireq.req.name),
-                    hashes=hashes if self.allow_unsafe else None,
-                    include_specifier=self.allow_unsafe)
-                if self.allow_unsafe:
-                    yield line
-                else:
-                    yield comment('# ' + line)
+
+                yield self._format_requirement(ireq,
+                                               reverse_dependencies,
+                                               primary_packages,
+                                               marker=markers.get(ireq.req.name),
+                                               hashes=hashes)
 
     def write(self, results, reverse_dependencies, primary_packages, markers, hashes):
         with ExitStack() as stack:
@@ -120,9 +116,8 @@ class OutputWriter(object):
                     f.write(unstyle(line).encode('utf-8'))
                     f.write(os.linesep.encode('utf-8'))
 
-    def _format_requirement(self, ireq, reverse_dependencies, primary_packages,
-                            marker=None, include_specifier=True, hashes=None):
-        line = format_requirement(ireq, include_specifier=include_specifier, marker=marker)
+    def _format_requirement(self, ireq, reverse_dependencies, primary_packages, marker=None, hashes=None):
+        line = format_requirement(ireq, marker=marker)
 
         ireq_hashes = (hashes if hashes is not None else {}).get(ireq)
         if ireq_hashes:
