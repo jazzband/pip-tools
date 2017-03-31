@@ -90,7 +90,8 @@ class Resolver(object):
             self.dependency_cache.clear()
             self.repository.clear_caches()
 
-        self._check_constraints()
+        self.check_constraints(chain(self.our_constraints,
+                                     self.their_constraints))
 
         # Ignore existing packages
         os.environ[str('PIP_EXISTS_ACTION')] = str('i')  # NOTE: str() wrapping necessary for Python 2/3 compat
@@ -118,10 +119,12 @@ class Resolver(object):
             self.repository.freshen_build_caches()
 
         del os.environ['PIP_EXISTS_ACTION']
-        return best_matches
+        # Only include hard requirements and not pip constraints
+        return {req for req in best_matches if not req.constraint}
 
-    def _check_constraints(self):
-        for constraint in chain(self.our_constraints, self.their_constraints):
+    @staticmethod
+    def check_constraints(constraints):
+        for constraint in constraints:
             if constraint.link is not None and not constraint.editable:
                 msg = ('pip-compile does not support URLs as packages, unless they are editable. '
                        'Perhaps add -e option?')
@@ -157,6 +160,7 @@ class Resolver(object):
             for ireq in ireqs:
                 # NOTE we may be losing some info on dropped reqs here
                 combined_ireq.req.specifier &= ireq.req.specifier
+                combined_ireq.constraint &= ireq.constraint
                 # Return a sorted, de-duped tuple of extras
                 combined_ireq.extras = tuple(sorted(set(tuple(combined_ireq.extras) + tuple(ireq.extras))))
             yield combined_ireq
@@ -275,7 +279,7 @@ class Resolver(object):
         log.debug('  {:25} requires {}'.format(format_requirement(ireq),
                                                ', '.join(sorted(dependency_strings, key=lambda s: s.lower())) or '-'))
         for dependency_string in dependency_strings:
-            yield InstallRequirement.from_line(dependency_string)
+            yield InstallRequirement.from_line(dependency_string, constraint=ireq.constraint)
 
     def reverse_dependencies(self, ireqs):
         non_editable = [ireq for ireq in ireqs if not ireq.editable]
