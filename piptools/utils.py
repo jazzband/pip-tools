@@ -4,6 +4,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import sys
 from itertools import chain, groupby
+from collections import OrderedDict
 
 import pip
 from pip.req import InstallRequirement
@@ -206,8 +207,4 @@ def dedup(iterable):
     """Deduplicate an iterable object like iter(set(iterable)) but
     order-reserved.
     """
-    emitted = set()
-    for x in iterable:
-        if x not in emitted:
-            yield x
-            emitted.add(x)
+    return iter(OrderedDict.fromkeys(iterable))
