@@ -37,7 +37,7 @@ class FakeRepository(BaseRepository):
         if not versions:
             raise NoCandidateFound(ireq, self.index[key_from_req(ireq.req)])
         best_version = max(versions, key=Version)
-        return make_install_requirement(key_from_req(ireq.req), best_version, ireq.extras)
+        return make_install_requirement(key_from_req(ireq.req), best_version, ireq.extras, constraint=ireq.constraint)
 
     def get_dependencies(self, ireq):
         if ireq.editable:
@@ -47,7 +47,7 @@ class FakeRepository(BaseRepository):
         # Store non-extra dependencies under the empty string
         extras += ("",)
         dependencies = [dep for extra in extras for dep in self.index[name][version][extra]]
-        return [InstallRequirement.from_line(dep) for dep in dependencies]
+        return [InstallRequirement.from_line(dep, constraint=ireq.constraint) for dep in dependencies]
 
 
 class FakeInstalledDistribution(object):
