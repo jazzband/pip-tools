@@ -6,7 +6,6 @@ import optparse
 import os
 import sys
 import tempfile
-from collections import OrderedDict
 
 import pip
 from pip.req import InstallRequirement, parse_requirements
@@ -17,7 +16,7 @@ from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
 from ..utils import (assert_compatible_pip_version, is_pinned_requirement,
-                     key_from_req)
+                     key_from_req, dedup)
 from ..writer import OutputWriter
 
 # Make sure we're using a compatible version of pip
@@ -47,6 +46,8 @@ class PipCommand(pip.basecommand.Command):
               help="Add header to generated file")
 @click.option('--index/--no-index', is_flag=True, default=True,
               help="Add index URL to generated file")
+@click.option('--emit-trusted-host/--no-emit-trusted-host', is_flag=True,
+              default=True, help="Add trusted host option to generated file")
 @click.option('--annotate/--no-annotate', is_flag=True, default=True,
               help="Annotate results, indicating where dependencies come from")
 @click.option('-U', '--upgrade', is_flag=True, default=False,
@@ -64,8 +65,9 @@ class PipCommand(pip.basecommand.Command):
               help="Maximum number of rounds before resolving the requirements aborts.")
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
-        client_cert, trusted_host, header, index, annotate, upgrade, upgrade_packages,
-        output_file, allow_unsafe, generate_hashes, src_files, max_rounds):
+        client_cert, trusted_host, header, index, emit_trusted_host, annotate,
+        upgrade, upgrade_packages, output_file, allow_unsafe, generate_hashes,
+        src_files, max_rounds):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
 
@@ -138,7 +140,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
 
     log.debug('Using indexes:')
     # remove duplicate index urls before processing
-    repository.finder.index_urls = list(OrderedDict.fromkeys(repository.finder.index_urls))
+    repository.finder.index_urls = list(dedup(repository.finder.index_urls))
     for index_url in repository.finder.index_urls:
         log.debug('  {}'.format(index_url))
 
@@ -219,6 +221,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
 
     writer = OutputWriter(src_files, dst_file, dry_run=dry_run,
                           emit_header=header, emit_index=index,
+                          emit_trusted_host=emit_trusted_host,
                           annotate=annotate,
                           generate_hashes=generate_hashes,
                           default_index_url=repository.DEFAULT_INDEX_URL,

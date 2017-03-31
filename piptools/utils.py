@@ -4,6 +4,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import sys
 from itertools import chain, groupby
+from collections import OrderedDict
 
 import pip
 from pip.req import InstallRequirement
@@ -200,3 +201,10 @@ def lookup_table(values, key=None, keyval=None, unique=False, use_lists=False):
         else:
             s.add(v)
     return dict(lut)
+
+
+def dedup(iterable):
+    """Deduplicate an iterable object like iter(set(iterable)) but
+    order-reserved.
+    """
+    return iter(OrderedDict.fromkeys(iterable))
