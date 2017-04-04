@@ -161,7 +161,7 @@ def test_realistic_complex_sub_dependencies(tmpdir):
         assert out.exit_code == 0
 
 
-def invoke(command):
+def _invoke(command):
     """Invoke sub-process."""
     try:
         output = subprocess.check_output(
@@ -179,7 +179,7 @@ def invoke(command):
 def test_run_as_module_compile(tmpdir):
     """piptools can be run as ``python -m piptools ...``."""
 
-    status, output = invoke([
+    status, output = _invoke([
         sys.executable, '-m', 'piptools', 'compile', '--help',
     ])
 
@@ -193,7 +193,7 @@ def test_run_as_module_compile(tmpdir):
 def test_run_as_module_sync():
     """piptools can be run as ``python -m piptools ...``."""
 
-    status, output = invoke([
+    status, output = _invoke([
         sys.executable, '-m', 'piptools', 'sync', '--help',
     ])
 
@@ -202,3 +202,20 @@ def test_run_as_module_sync():
     assert output.startswith('Usage:')
     assert 'Synchronize virtual environment with' in output
     assert status == 0
+
+
+def test_editable_package(tmpdir):
+    """ piptools can compile an editable """
+    fake_package_dir = os.path.join(os.path.split(__file__)[0], 'fixtures', 'small_fake_package')
+    fake_package_dir = fake_package_dir.replace('\\', '/')
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements.in', 'w') as req_in:
+            req_in.write('-e ' + fake_package_dir)  # require editable fake package
+
+        out = runner.invoke(cli, ['-n'])
+
+        print(out.output)
+        assert out.exit_code == 0
+        assert fake_package_dir in out.output
+        assert 'six==1.10.0' in out.output
