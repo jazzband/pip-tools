@@ -49,6 +49,10 @@ class PyPIRepository(BaseRepository):
             allow_all_prereleases=pip_options.pre,
             process_dependency_links=pip_options.process_dependency_links,
             session=self.session,
+            platform=pip_options.platform,
+            versions=pip_options.python_version,
+            implementation=pip_options.implementation,
+            abi=pip_options.abi,
         )
 
         # Caches

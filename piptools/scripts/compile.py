@@ -9,6 +9,7 @@ import tempfile
 
 import pip
 from pip.req import InstallRequirement, parse_requirements
+from pip.commands.download import DownloadCommand
 
 from .. import click
 from ..exceptions import PipToolsError
@@ -25,7 +26,7 @@ assert_compatible_pip_version()
 DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
 
 
-class PipCommand(pip.basecommand.Command):
+class PipCommand(DownloadCommand):
     name = 'PipCommand'
 
 
@@ -63,11 +64,33 @@ class PipCommand(pip.basecommand.Command):
               help="Generate pip 8 style hashes in the resulting requirements file.")
 @click.option('--max-rounds', default=10,
               help="Maximum number of rounds before resolving the requirements aborts.")
+@click.option('--platform', default=None, type=str, nargs=1,
+              help=('only download wheels compatible with <platform>.'
+                    'defaults to the platform of the running system.'))
+@click.option('--python-version', default=None, type=str, nargs=1,
+              help=("Only download wheels compatible with Python "
+                    "interpreter version <version>. If not specified, then "
+                    "the current system interpreter minor version is used. "
+                    "A major version (e.g. '2') can be specified to match "
+                    "all minor revs of that major version.\n"
+                    "A minor version (e.g. '34') can also be specified."))
+@click.option('--implementation', default=None, type=str, nargs=1,
+              help=("Only download wheels compatible with Python "
+                    "implementation <implementation>, e.g. "
+                    "'pp', 'jy', 'cp',  or 'ip'. If not specified, then the "
+                    "current interpreter implementation is used.  "
+                    "Use 'py' to force implementation-agnostic wheels."))
+@click.option('--abi', default=None, type=str, nargs=1,
+              help=("Only download wheels compatible with Python abi <abi>, "
+                    "e.g. 'pypy_41'.  If not specified, then the current "
+                    "interpreter abi tag is used.  Generally you will need "
+                    "to specify --implementation, --platform, and "
+                    "--python-version when using this option."))
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         client_cert, trusted_host, header, index, emit_trusted_host, annotate,
         upgrade, upgrade_packages, output_file, allow_unsafe, generate_hashes,
-        src_files, max_rounds):
+        src_files, max_rounds, platform, python_version, implementation, abi):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
 
@@ -120,6 +143,14 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     if trusted_host:
         for host in trusted_host:
             pip_args.extend(['--trusted-host', host])
+    if platform:
+        pip_args.extend(['--platform', platform])
+    if python_version:
+        pip_args.extend(['--python-version', python_version])
+    if implementation:
+        pip_args.extend(['--implementation', implementation])
+    if abi:
+        pip_args.extend(['--abi', abi])
 
     pip_options, _ = pip_command.parse_args(pip_args)
 
@@ -242,16 +273,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         log.warning('Dry-run, so nothing updated.')
 
 
-def get_pip_command():
-    # Use pip's parser for pip.conf management and defaults.
-    # General options (find_links, index_url, extra_index_url, trusted_host,
-    # and pre) are defered to pip.
-    pip_command = PipCommand()
-    index_opts = pip.cmdoptions.make_option_group(
-        pip.cmdoptions.index_group,
-        pip_command.parser,
-    )
-    pip_command.parser.insert_option_group(0, index_opts)
-    pip_command.parser.add_option(optparse.Option('--pre', action='store_true', default=False))
-
-    return pip_command
+# Use pip's parser for pip.conf management and defaults.
+# General options (find_links, index_url, extra_index_url, trusted_host,
+# and pre) are defered to pip.
+get_pip_command = PipCommand
