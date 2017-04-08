@@ -219,3 +219,21 @@ def test_editable_package(tmpdir):
         assert out.exit_code == 0
         assert fake_package_dir in out.output
         assert 'six==1.10.0' in out.output
+
+
+def test_input_file_without_extension(tmpdir):
+    """
+    piptools can compile a file without an extension,
+    and add .txt as the defaut output file extension.
+    """
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements', 'w') as req_in:
+            req_in.write('six==1.10.0')
+
+        out = runner.invoke(cli, ['-n', 'requirements'])
+
+        print(out.output)
+        assert out.exit_code == 0
+        assert '--output-file requirements.txt' in out.output
+        assert 'six==1.10.0' in out.output
