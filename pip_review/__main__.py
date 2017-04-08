@@ -40,11 +40,27 @@ except (ImportError, AttributeError):
 
 from packaging import version as packaging_version
 
+DEPRECATED_NOTICE = '''
+Support for Python 2.6 and Python 3.2 has been deprecated. From
+version 1.0 onwards, pip-review will only support Python==2.7 and
+Python>=3.3.
+'''
+
+
+def version_epilog():
+    """Version-specific information to be add to the help page."""
+    if sys.version_info < (2, 7) or (3, 0) <= sys.version_info < (3, 3):
+        return DEPRECATED_NOTICE
+    else:
+        return None
+
 
 def parse_args():
+    description = 'Keeps your Python package dependencies pinned, but fresh.'
     parser = argparse.ArgumentParser(
-        description='Keeps your Python package dependencies pinned, '
-                    'but fresh.')
+        description=description,
+        epilog=version_epilog(),
+    )
     parser.add_argument(
         '--verbose', '-v', action='store_true', default=False,
         help='Show more output')
