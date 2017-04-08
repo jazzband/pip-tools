@@ -5,13 +5,6 @@ import sys
 from setuptools import setup
 
 
-def get_dependencies():
-    deps = ['packaging', 'pip']
-    if sys.version_info < (2, 7):
-        deps += ['argparse']
-    return deps
-
-
 setup(
     name='pip-review',
     version='0.5.3',
@@ -31,7 +24,11 @@ setup(
     #include_package_data=True,
     zip_safe=False,
     platforms='any',
-    install_requires=get_dependencies(),
+    install_requires=[
+        'packaging',
+        'pip',
+        'argparse;python_version<"2.7"',
+    ],
     python_requires='>=2.6, !=3.0, !=3.1',
     classifiers=[
         # As from https://pypi.python.org/pypi?%3Aaction=list_classifiers
