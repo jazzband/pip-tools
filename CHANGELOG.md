@@ -1,5 +1,6 @@
 # 1.9.0 (Unreleased)
 
+- Fixed the default output file name when the source file has no extension ([#470](https://github.com/jazzband/pip-tools/issues/470))
 - Added a `--max-rounds` argument to the pip-compile command to allow for solving large requirement sets ([#472](https://github.com/jazzband/pip-tools/pull/472))
 - Exclude unsafe packages' dependencies when `--allow-unsafe` is not in use (#445)
 - Exclude irrelevant pip constraints ([#471](https://github.com/jazzband/pip-tools/pull/471))
