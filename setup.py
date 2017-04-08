@@ -32,6 +32,7 @@ setup(
     zip_safe=False,
     platforms='any',
     install_requires=get_dependencies(),
+    python_requires='>=2.6, !=3.0, !=3.1',
     classifiers=[
         # As from https://pypi.python.org/pypi?%3Aaction=list_classifiers
         #'Development Status :: 1 - Planning',
