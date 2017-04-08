@@ -5,16 +5,9 @@ import sys
 from setuptools import setup
 
 
-def get_dependencies():
-    deps = ['packaging', 'pip']
-    if sys.version_info < (2, 7):
-        deps += ['argparse']
-    return deps
-
-
 setup(
     name='pip-review',
-    version='0.5.2',
+    version='0.5.3',
     url='https://github.com/jgonggrijp/pip-review',
     license='BSD',
     author='Vincent Driessen, Julian Gonggrijp',
@@ -31,7 +24,12 @@ setup(
     #include_package_data=True,
     zip_safe=False,
     platforms='any',
-    install_requires=get_dependencies(),
+    install_requires=[
+        'packaging',
+        'pip',
+        'argparse;python_version<"2.7"',
+    ],
+    python_requires='>=2.6, !=3.0, !=3.1',
     classifiers=[
         # As from https://pypi.python.org/pypi?%3Aaction=list_classifiers
         #'Development Status :: 1 - Planning',
@@ -46,12 +44,12 @@ setup(
         #'Programming Language :: Python :: 2.3',
         #'Programming Language :: Python :: 2.4',
         #'Programming Language :: Python :: 2.5',
-        'Programming Language :: Python :: 2.6',
+        #'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         #'Programming Language :: Python :: 3.0',
         #'Programming Language :: Python :: 3.1',
-        'Programming Language :: Python :: 3.2',
+        #'Programming Language :: Python :: 3.2',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
