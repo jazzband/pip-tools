@@ -56,7 +56,7 @@ def version_epilog():
 
 
 def parse_args():
-    description = 'Keeps your Python package dependencies pinned, but fresh.'
+    description = 'Keeps your Python packages fresh.'
     parser = argparse.ArgumentParser(
         description=description,
         epilog=version_epilog(),
