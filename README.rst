@@ -44,6 +44,8 @@ update including pre-release versions. As of version 0.4, it will only show and
 install release versions by default. To restore the original behaviour, use the
 ``--pre`` flag.
 
+Since version 0.5, you can also invoke pip-review as ``python -m pip_review``. **This is the only way to invoke pip-review that enables it to update itself.**
+
 
 Installation
 ============
