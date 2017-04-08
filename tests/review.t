@@ -1,5 +1,6 @@
 Create a new playground first:
 
+  $ cd $TESTDIR/..
   $ pip install virtualenv >/dev/null 2>&1
   $ virtualenv --python="$(which python)" FOO >/dev/null 2>&1
   $ PATH=FOO/bin:$PATH
@@ -8,7 +9,7 @@ Create a new playground first:
   $ pip install packaging >/dev/null 2>&1
   $ pip install -U --force-reinstall argparse >/dev/null 2>&1
   $ pip install -U --force-reinstall wheel >/dev/null 2>&1
-  $ alias pip-review="$TESTDIR/../pip_review/__main__.py"
+  $ function pip-review { python -m pip_review.__main__ $* ; }
 
 Setup. Let's pretend we have some outdated package versions installed:
 
@@ -50,6 +51,7 @@ Next, let's test for regressions with older versions of pip:
 
   $ pip install --force-reinstall --upgrade pip\<6.0 >/dev/null 2>&1
   $ if python -c 'import sys; sys.exit(0 if sys.version_info < (3, 6) else 1)'; then
+  >   rm -rf pip_review.egg-info  # prevents spurious editable in pip freeze
   >   pip-review
   > else
   >   echo Skipped
