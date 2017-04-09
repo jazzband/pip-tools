@@ -4,6 +4,7 @@
 - Added a `--max-rounds` argument to the pip-compile command to allow for solving large requirement sets ([#472](https://github.com/jazzband/pip-tools/pull/472))
 - Exclude unsafe packages' dependencies when `--allow-unsafe` is not in use (#445)
 - Exclude irrelevant pip constraints ([#471](https://github.com/jazzband/pip-tools/pull/471))
+- Added ability to read requirements from `setup.py` instead of just `requirements.in` (#418).
 
 # 1.8.2
 
@@ -96,8 +97,8 @@ Minor changes:
 
 # 1.5
 
-- Add support for pip>=8
-- Drop support for pip<7
+- Add support for pip >= 8
+- Drop support for pip < 7
 - Fix bug where `pip-sync` fails to uninstall packages if you're using the
   `--no-index` (or other) flags
 
