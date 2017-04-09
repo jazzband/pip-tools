@@ -92,7 +92,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     if output_file:
         dst_file = output_file
     else:
-        base_name, _, _ = src_files[0].rpartition('.')
+        base_name = src_files[0].rsplit('.', 1)[0]
         dst_file = base_name + '.txt'
 
     if upgrade and upgrade_packages:
