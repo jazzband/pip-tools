@@ -241,7 +241,7 @@ def test_input_file_without_extension(tmpdir):
 
 def test_upgrade_packages_option(tmpdir):
     """
-    piptools respects --upgrade-packages/-P inline list.
+    piptools respects --upgrade-package/-P inline list.
     """
     fake_package_dir = os.path.join(os.path.split(__file__)[0], 'fixtures', 'minimal_wheels')
     runner = CliRunner()

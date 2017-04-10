@@ -130,7 +130,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     # (= default invocation)
     if not upgrade and os.path.exists(dst_file):
         ireqs = parse_requirements(dst_file, finder=repository.finder, session=repository.session, options=pip_options)
-        # Exclude packages from --upgrade-packages/-P from the existing pins: We want to upgrade.
+        # Exclude packages from --upgrade-package/-P from the existing pins: We want to upgrade.
         upgrade_pkgs_key = {key_from_req(InstallRequirement.from_line(pkg).req) for pkg in upgrade_packages}
         existing_pins = {key_from_req(ireq.req): ireq
                          for ireq in ireqs
