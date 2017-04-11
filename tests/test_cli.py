@@ -237,3 +237,26 @@ def test_input_file_without_extension(tmpdir):
         assert out.exit_code == 0
         assert '--output-file requirements.txt' in out.output
         assert 'six==1.10.0' in out.output
+
+
+def test_upgrade_packages_option(tmpdir):
+    """
+    piptools respects --upgrade-package/-P inline list.
+    """
+    fake_package_dir = os.path.join(os.path.split(__file__)[0], 'fixtures', 'minimal_wheels')
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements.in', 'w') as req_in:
+            req_in.write('small-fake-a\nsmall-fake-b')
+        with open('requirements.txt', 'w') as req_in:
+            req_in.write('small-fake-a==0.1\nsmall-fake-b==0.1')
+
+        out = runner.invoke(cli, [
+            '-P', 'small_fake_b',
+            '-f', fake_package_dir,
+        ])
+
+        print(out.output)
+        assert out.exit_code == 0
+        assert 'small-fake-a==0.1' in out.output
+        assert 'small-fake-b==0.2' in out.output
