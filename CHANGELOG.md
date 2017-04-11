@@ -10,6 +10,7 @@ Features:
 - Preserve environment markers in generated requirements.txt. ([#460](https://github.com/jazzband/pip-tools/pull/460)). Thanks @barrywhart.
 
 Bug Fixes:
+- Fixed the --upgrade-package option to respect the given package list to update ([#491](https://github.com/jazzband/pip-tools/pull/491)).
 - Fixed the default output file name when the source file has no extension ([#488](https://github.com/jazzband/pip-tools/pull/488)). Thanks @vphilippon
 - Fixed crash on editable requirements introduced in 1.8.2.
 - Fixed duplicated --trusted-host, --extra-index-url and --index-url in the generated requirements.

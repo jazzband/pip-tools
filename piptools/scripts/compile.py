@@ -126,16 +126,15 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     session = pip_command._build_session(pip_options)
     repository = PyPIRepository(pip_options, session)
 
-    # Pre-parse the inline package upgrade specs: they should take precedence
-    # over the stuff in the requirements files
-    upgrade_packages = [InstallRequirement.from_line(pkg)
-                        for pkg in upgrade_packages]
-
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified
     # (= default invocation)
-    if not (upgrade or upgrade_packages) and os.path.exists(dst_file):
+    if not upgrade and os.path.exists(dst_file):
         ireqs = parse_requirements(dst_file, finder=repository.finder, session=repository.session, options=pip_options)
-        existing_pins = {key_from_req(ireq.req): ireq for ireq in ireqs if is_pinned_requirement(ireq)}
+        # Exclude packages from --upgrade-package/-P from the existing pins: We want to upgrade.
+        upgrade_pkgs_key = {key_from_req(InstallRequirement.from_line(pkg).req) for pkg in upgrade_packages}
+        existing_pins = {key_from_req(ireq.req): ireq
+                         for ireq in ireqs
+                         if is_pinned_requirement(ireq) and key_from_req(ireq.req) not in upgrade_pkgs_key}
         repository = LocalRequirementsRepository(existing_pins, repository)
 
     log.debug('Using indexes:')
