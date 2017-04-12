@@ -165,7 +165,15 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
             if is_setup_file:
                 from distutils.core import run_setup
                 dist = run_setup(src_file)
-                tmpfile.write('\n'.join(dist.install_requires))
+                reqs = (
+                  (dist.setup_requires or [])
+                  + (dist.install_requires or [])
+                  + (dist.tests_require or [])
+                )
+                if reqs:
+                    tmpfile.write('\n'.join(reqs))
+                else:
+                    raise PipToolsError('No requirements specified')
             else:
                 tmpfile.write(sys.stdin.read())
             tmpfile.flush()
