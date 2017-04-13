@@ -1,4 +1,4 @@
-# 1.9.0rc1
+# 1.9.0
 
 Features:
 - Added ability to read requirements from `setup.py` instead of just `requirements.in` ([#418](https://github.com/jazzband/pip-tools/pull/418)). Thanks to @tysonclugg and @majuscule.
