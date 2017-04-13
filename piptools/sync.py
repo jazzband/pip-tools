@@ -1,7 +1,7 @@
 import collections
 import os
 import sys
-from subprocess import check_call
+from subprocess import check_call, CalledProcessError
 
 from . import click
 from .exceptions import IncompatibleRequirements, UnsupportedConstraint
@@ -13,6 +13,7 @@ PACKAGES_TO_IGNORE = [
     'pip-review',
     'setuptools',
     'wheel',
+    'pkg-resources',
 ]
 
 
@@ -144,7 +145,10 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None,
             for pkg in to_uninstall:
                 click.echo("  {}".format(pkg))
         else:
-            check_call([pip, 'uninstall', '-y'] + pip_flags + sorted(to_uninstall))
+            try:
+                check_call([pip, 'uninstall', '-y'] + pip_flags + sorted(to_uninstall))
+            except CalledProcessError:
+                return 1
 
     if to_install:
         if install_flags is None:
@@ -154,5 +158,8 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None,
             for pkg in to_install:
                 click.echo("  {}".format(pkg))
         else:
-            check_call([pip, 'install'] + pip_flags + install_flags + sorted(to_install))
+            try:
+                check_call([pip, 'install'] + pip_flags + install_flags + sorted(to_install))
+            except CalledProcessError:
+                return 1
     return 0
