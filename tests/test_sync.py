@@ -83,7 +83,7 @@ def test_diff_should_install(from_line):
     reqs = [from_line('django==1.8')]
 
     to_install, to_uninstall = diff(reqs, installed)
-    assert to_install == {'django==1.8'}
+    assert {str(x.req) for x in to_install} == {'django==1.8'}
     assert to_uninstall == set()
 
 
@@ -101,7 +101,7 @@ def test_diff_should_update(fake_dist, from_line):
     reqs = [from_line('django==1.8')]
 
     to_install, to_uninstall = diff(reqs, installed)
-    assert to_install == {'django==1.8'}
+    assert {str(x.req) for x in to_install} == {'django==1.8'}
     assert to_uninstall == set()
 
 
