@@ -1,8 +1,11 @@
 from collections import Counter
+import os
 
+import mock
 import pytest
+
 from piptools.exceptions import IncompatibleRequirements
-from piptools.sync import dependency_tree, diff, merge
+from piptools.sync import dependency_tree, diff, merge, sync
 
 
 @pytest.mark.parametrize(
@@ -149,3 +152,33 @@ def test_diff_leave_piptools_alone(fake_dist, from_line):
     to_install, to_uninstall = diff(reqs, installed)
     assert to_install == set()
     assert to_uninstall == {'foobar'}
+
+
+def test_diff_with_editable(fake_dist, from_editable):
+    installed = [
+        fake_dist('small-fake-with-deps==0.0.1'),
+        fake_dist('six==1.10.0'),
+    ]
+    path_to_package = os.path.join(os.path.dirname(__file__), 'fixtures', 'small_fake_package')
+    reqs = [
+        from_editable(path_to_package),
+    ]
+    to_install, to_uninstall = diff(reqs, installed)
+
+    # FIXME: The editable package is uninstalled and reinstalled, including all its dependencies,
+    # even if the version numbers match.
+    assert to_uninstall == {'six', 'small-fake-with-deps'}
+
+    assert len(to_install) == 1
+    package = list(to_install)[0]
+    assert package.editable
+    assert str(package.link) == 'file://%s' % path_to_package
+
+
+def test_sync_with_editable(from_editable):
+    with mock.patch('piptools.sync.check_call') as check_call:
+        path_to_package = os.path.join(os.path.dirname(__file__), 'fixtures', 'small_fake_package')
+        to_install = {from_editable(path_to_package)}
+
+        sync(to_install, set())
+        check_call.assert_called_once_with(['pip', 'install', '-q', '-e', 'file://%s' % path_to_package])
