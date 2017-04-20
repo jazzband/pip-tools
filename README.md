@@ -124,3 +124,9 @@ Passing in empty arguments would cause it to default to `requirements.txt`.
 If you use multiple Python versions, you can run ``pip-sync`` as ``py -X.Y -m
 piptools sync ...`` on Windows and ``pythonX.Y -m piptools sync ...`` on other
 systems.
+
+Reqwire: an enhanced user experience on top of pip-tools
+========================================================
+
+To keep your environments isolated and manage your dependencies more easily,
+you can give a try to [reqwire](https://reqwire.readthedocs.io/en/stable/).
