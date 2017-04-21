@@ -1,5 +1,6 @@
 from collections import Counter
 import os
+import platform
 
 import mock
 import pytest
@@ -154,6 +155,12 @@ def test_diff_leave_piptools_alone(fake_dist, from_line):
     assert to_uninstall == {'foobar'}
 
 
+def _get_file_url(local_path):
+    if platform.system() == 'Windows':
+        local_path = '/%s' % local_path.replace('\\', '/')
+    return 'file://%s' % local_path
+
+
 def test_diff_with_editable(fake_dist, from_editable):
     installed = [
         fake_dist('small-fake-with-deps==0.0.1'),
@@ -172,7 +179,7 @@ def test_diff_with_editable(fake_dist, from_editable):
     assert len(to_install) == 1
     package = list(to_install)[0]
     assert package.editable
-    assert str(package.link) == 'file://%s' % path_to_package
+    assert str(package.link) == _get_file_url(path_to_package)
 
 
 def test_sync_with_editable(from_editable):
@@ -181,4 +188,4 @@ def test_sync_with_editable(from_editable):
         to_install = {from_editable(path_to_package)}
 
         sync(to_install, set())
-        check_call.assert_called_once_with(['pip', 'install', '-q', '-e', 'file://%s' % path_to_package])
+        check_call.assert_called_once_with(['pip', 'install', '-q', '-e', _get_file_url(path_to_package)])
