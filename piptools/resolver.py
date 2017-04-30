@@ -184,7 +184,7 @@ class Resolver(object):
 
         log.debug('')
         log.debug('Finding the best candidates:')
-        best_matches = set(self.get_best_match(ireq) for ireq in constraints)
+        best_matches = {self.get_best_match(ireq) for ireq in constraints}
 
         # Find the new set of secondary dependencies
         log.debug('')
