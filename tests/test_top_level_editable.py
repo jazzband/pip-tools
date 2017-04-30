@@ -37,7 +37,7 @@ def test_editable_top_level_deps_preserved(base_resolver, repository, from_edita
     repository = _get_repository()
     output = base_resolver(input, prereleases=False, repository=repository).resolve()
 
-    output = set([p.name for p in output])
+    output = {p.name for p in output}
 
     # sanity check that we're expecting something
     assert output != set()
