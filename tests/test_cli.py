@@ -1,5 +1,6 @@
 import os
 from textwrap import dedent
+from six.moves.urllib.request import pathname2url
 import subprocess
 import sys
 
@@ -207,7 +208,7 @@ def test_run_as_module_sync():
 def test_editable_package(tmpdir):
     """ piptools can compile an editable """
     fake_package_dir = os.path.join(os.path.split(__file__)[0], 'fixtures', 'small_fake_package')
-    fake_package_dir = fake_package_dir.replace('\\', '/')
+    fake_package_dir = 'file:' + pathname2url(fake_package_dir)
     runner = CliRunner()
     with runner.isolated_filesystem():
         with open('requirements.in', 'w') as req_in:
