@@ -1,3 +1,8 @@
+# Master
+
+Features:
+- Made local, editable, and relative requirements resolve to relative paths instead of absolute ones ([#507](https://github.com/jazzband/pip-tools/pull/507). Thanks to @orf)
+
 # 1.9.0
 
 Features:
