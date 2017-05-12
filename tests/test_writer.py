@@ -17,6 +17,11 @@ def writer():
                         format_control=FormatControl(set(), set()))
 
 
+def test_format_requirements_relative_path(from_editable, writer):
+    ireq = from_editable('file:fixtures/fake_package#egg=fake_package')
+    assert writer._format_requirement(ireq, {}, primary_packages=['fake_package']) == '-e file:./fixtures/fake_package'
+
+
 def test_format_requirement_annotation_editable(from_editable, writer):
     # Annotations are printed as comments at a fixed column
     ireq = from_editable('git+git://fake.org/x/y.git#egg=y')

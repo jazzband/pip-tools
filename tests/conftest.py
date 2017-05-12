@@ -1,4 +1,5 @@
 import json
+import os
 from functools import partial
 
 from pip._vendor.packaging.version import Version
@@ -106,3 +107,18 @@ def from_line():
 @fixture
 def from_editable():
     return InstallRequirement.from_editable
+
+
+@fixture
+def fake_package_dir():
+    return os.path.join(os.path.split(__file__)[0], 'fixtures', 'fake_package')
+
+
+@fixture
+def small_fake_package_dir():
+    return os.path.join(os.path.split(__file__)[0], 'fixtures', 'small_fake_package')
+
+
+@fixture
+def minimal_wheels_dir():
+    return os.path.join(os.path.split(__file__)[0], 'fixtures', 'minimal_wheels')

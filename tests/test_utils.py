@@ -1,7 +1,20 @@
+import os
+import shutil
+
 from pytest import raises
 
 from piptools.utils import (
-    as_tuple, format_requirement, format_specifier, flat_map, dedup)
+    as_tuple, format_requirement, format_specifier, flat_map, dedup, is_subdirectory)
+
+
+def test_is_subdirectory():
+    cwd = os.getcwd()
+    test_dir = os.path.join(cwd, 'test')
+    assert is_subdirectory(cwd, test_dir)
+    assert is_subdirectory(os.path.join(test_dir, '..'), test_dir)
+    assert is_subdirectory(cwd, cwd)
+
+    assert not is_subdirectory(test_dir, cwd)
 
 
 def test_format_requirement(from_line):
@@ -12,6 +25,18 @@ def test_format_requirement(from_line):
 def test_format_requirement_editable(from_editable):
     ireq = from_editable('git+git://fake.org/x/y.git#egg=y')
     assert format_requirement(ireq) == '-e git+git://fake.org/x/y.git#egg=y'
+
+
+def test_format_requirement_non_relative_editable(from_editable, small_fake_package_dir, tmpdir):
+    tmp_package_dir = os.path.join(str(tmpdir), 'small_fake_package')
+    shutil.copytree(small_fake_package_dir, tmp_package_dir)
+    ireq = from_editable(tmp_package_dir)
+    assert format_requirement(ireq) == '-e file://' + tmp_package_dir
+
+
+def test_format_requirement_relative_editable(from_editable, small_fake_package_dir):
+    ireq = from_editable(small_fake_package_dir)
+    assert format_requirement(ireq) == '-e file:./tests/fixtures/small_fake_package'
 
 
 def test_format_specifier(from_line):
