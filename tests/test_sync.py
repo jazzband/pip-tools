@@ -1,5 +1,4 @@
 from collections import Counter
-import os
 import platform
 
 import mock
