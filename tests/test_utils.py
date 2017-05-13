@@ -1,12 +1,31 @@
 from pytest import raises
 
 from piptools.utils import (
-    as_tuple, format_requirement, format_specifier, flat_map, dedup)
+    _name_from_req,
+    as_tuple,
+    dedup,
+    flat_map,
+    format_requirement,
+    format_specifier
+)
+
+
+def test_name_from_req__missing_project_name(from_line):
+    ireq = from_line('test==1.2')
+    delattr(ireq, 'project_name')
+    assert _name_from_req(ireq) == ireq.name
+
+
+def test_name_from_req__missing_project_name(from_line):
+    ireq = from_line('test==1.2')
+    setattr(ireq, 'project_name', 'foobar')
+    assert _name_from_req(ireq) == 'foobar'
 
 
 def test_format_requirement(from_line):
     ireq = from_line('test==1.2')
     assert format_requirement(ireq) == 'test==1.2'
+    assert format_requirement(ireq, include_specifier=False) == 'test'
 
 
 def test_format_requirement_editable(from_editable):
