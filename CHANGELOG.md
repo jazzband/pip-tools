@@ -4,7 +4,7 @@ Features:
 
 Bug Fixes:
 - Fixed bug where unsafe packages would get pinned in generated requirements files
-when `--allow-unsafe` was set. ([#508](https://github.com/jazzband/pip-tools/pull/508)).
+when `--allow-unsafe` was not set. ([#508](https://github.com/jazzband/pip-tools/pull/508)).
 
 # 1.9.0
 
