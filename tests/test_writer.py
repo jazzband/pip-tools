@@ -91,7 +91,7 @@ def test_iter_lines__do_not_allow_unsafe_packages(mocker, from_line, writer):
     comment = mocker.patch(
         'piptools.writer.comment', side_effect=['foobar', '# {}'.format(unsafe_package)])
 
-    expected_results = ['header', 'flags', '', 'foobar', '# pip']
+    expected_results = ['header', 'flags', '', 'foobar', '# {}'.format(unsafe_package)]
     result = w._iter_lines([ireq], False, [], {unsafe_package: 'marker'}, 'hashes')
     for line in result:
         assert line in expected_results
@@ -99,7 +99,7 @@ def test_iter_lines__do_not_allow_unsafe_packages(mocker, from_line, writer):
     format_requirement.assert_called_once_with(
         ireq, False, [], include_specifier=False, marker='marker', hashes=None)
     comment.assert_any_call('# The following packages are considered to be unsafe in a requirements file:')
-    comment.assert_any_call('# pip')
+    comment.assert_any_call('# {}'.format(unsafe_package))
     assert comment.call_count == 2
 
 
@@ -117,7 +117,7 @@ def test_iter_lines__allow_unsafe_packages(mocker, from_line, writer):
     comment = mocker.patch('piptools.writer.comment', return_value='foobar')
 
     result = w._iter_lines([ireq], False, [], {unsafe_package: 'marker'}, 'hashes')
-    expected_results = ['header', 'flags', '', 'foobar', 'pip==1.2']
+    expected_results = ['header', 'flags', '', 'foobar', unsafe_dep]
     for line in result:
         assert line in expected_results
 
