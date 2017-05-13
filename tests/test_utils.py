@@ -12,11 +12,12 @@ from piptools.utils import (
 
 def test_name_from_req__missing_project_name(from_line):
     ireq = from_line('test==1.2')
-    delattr(ireq, 'project_name')
+    if hasattr(ireq, 'project_name'):
+        delattr(ireq, 'project_name')
     assert _name_from_req(ireq) == ireq.name
 
 
-def test_name_from_req__missing_project_name(from_line):
+def test_name_from_req__project_name(from_line):
     ireq = from_line('test==1.2')
     setattr(ireq, 'project_name', 'foobar')
     assert _name_from_req(ireq) == 'foobar'

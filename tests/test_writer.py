@@ -1,4 +1,4 @@
-from pytest import fixture, yield_fixture
+from pytest import yield_fixture
 
 from pip.index import FormatControl
 from piptools.utils import comment, UNSAFE_PACKAGES
@@ -29,8 +29,8 @@ def test_format_requirement_annotation_editable(from_editable, writer):
     reverse_dependencies = {'y': ['xyz']}
 
     assert (writer()._format_requirement(ireq,
-                                       reverse_dependencies,
-                                       primary_packages=[]) ==
+                                         reverse_dependencies,
+                                         primary_packages=[]) ==
             '-e git+git://fake.org/x/y.git#egg=y  ' + comment('# via xyz'))
 
 
@@ -39,8 +39,8 @@ def test_format_requirement_annotation(from_line, writer):
     reverse_dependencies = {'test': ['xyz']}
 
     assert (writer()._format_requirement(ireq,
-                                       reverse_dependencies,
-                                       primary_packages=[]) ==
+                                         reverse_dependencies,
+                                         primary_packages=[]) ==
             'test==1.2                 ' + comment('# via xyz'))
 
 
@@ -49,8 +49,8 @@ def test_format_requirement_annotation_lower_case(from_line, writer):
     reverse_dependencies = {'test': ['xyz']}
 
     assert (writer()._format_requirement(ireq,
-                                       reverse_dependencies,
-                                       primary_packages=[]) ==
+                                         reverse_dependencies,
+                                         primary_packages=[]) ==
             'test==1.2                 ' + comment('# via xyz'))
 
 
@@ -60,8 +60,8 @@ def test_format_requirement_not_for_primary(from_line, writer):
     reverse_dependencies = {'test': ['xyz']}
 
     assert (writer()._format_requirement(ireq,
-                                       reverse_dependencies,
-                                       primary_packages=['test']) ==
+                                         reverse_dependencies,
+                                         primary_packages=['test']) ==
             'test==1.2')
 
 
@@ -120,7 +120,6 @@ def test_iter_lines__allow_unsafe_packages(mocker, from_line, writer):
     expected_results = ['header', 'flags', '', 'foobar', unsafe_dep]
     for line in result:
         assert line in expected_results
-
 
     format_requirement.assert_called_once_with(
         ireq, False, [], include_specifier=True, marker='marker', hashes='hashes')

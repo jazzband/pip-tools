@@ -106,12 +106,14 @@ class OutputWriter(object):
             yield comment('# The following packages are considered to be unsafe in a requirements file:')
 
             for ireq in unsafe_packages:
-                line = self._format_requirement(ireq,
-                                               reverse_dependencies,
-                                               primary_packages,
-                                               include_specifier=self.allow_unsafe,
-                                               marker=markers.get(ireq.req.name),
-                                               hashes=hashes if self.allow_unsafe else None)
+                line = self._format_requirement(
+                    ireq,
+                    reverse_dependencies,
+                    primary_packages,
+                    include_specifier=self.allow_unsafe,
+                    marker=markers.get(ireq.req.name),
+                    hashes=hashes if self.allow_unsafe else None
+                )
                 if not self.allow_unsafe:
                     yield comment('# {}'.format(line))
                 else:
