@@ -217,7 +217,6 @@ def test_sync_quiet(tmpdir):
 
         with mock.patch('piptools.sync.check_call') as check_call:
             out = runner.invoke(sync_cli, ['--quiet'])
-
             assert out.output == ''
             assert out.exit_code == 0
             # for every call to pip ensure the `-q` flag is set
