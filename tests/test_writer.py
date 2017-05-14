@@ -1,4 +1,4 @@
-from pytest import yield_fixture
+from pytest import fixture
 
 from pip.index import FormatControl
 from piptools.utils import comment, UNSAFE_PACKAGES
@@ -18,7 +18,7 @@ class Writer(object):
                             **kwargs)
 
 
-@yield_fixture
+@fixture
 def writer():
     yield Writer()
 
