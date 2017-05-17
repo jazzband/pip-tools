@@ -182,11 +182,11 @@ def get_latest_versions(pkg_names, prerelease=False):
 
 def get_installed_pkgs(local=False):
     logger = logging.getLogger(u'pip-review')
-    command = ' '.join(pip_cmd()) + ' freeze'
+    command = pip_cmd() + ['freeze']
     if packaging_version.parse(pip.__version__) >= packaging_version.parse('8.0.3'):
-        command += ' --all'
+        command += ['--all']
     if local:
-        command += ' --local'
+        command += ['--local']
 
     output = check_output(command).decode('utf-8')
 
