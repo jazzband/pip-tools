@@ -1,7 +1,4 @@
-# 1.10.0rc1
-Features:
--
-
+# 1.9.1
 Bug Fixes:
 - Fixed bug where unsafe packages would get pinned in generated requirements files
 when `--allow-unsafe` was not set. ([#508](https://github.com/jazzband/pip-tools/pull/508)).
