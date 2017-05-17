@@ -9,7 +9,7 @@ branches:
   except:
     - piptools-ignore-patch
 install:
-  - "pip install setuptools"
+  - "pip install -U pip setuptools wheel"
   - "pip install cram"
   - "pip install ."
 script:
