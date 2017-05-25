@@ -2,6 +2,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import logging
 import optparse
 import os
 import sys
@@ -12,7 +13,7 @@ from pip.req import InstallRequirement, parse_requirements
 
 from .. import click
 from ..exceptions import PipToolsError
-from ..logging import log
+from ..logging import configure_logging
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
 from ..utils import (assert_compatible_pip_version, is_pinned_requirement,
@@ -23,6 +24,7 @@ from ..writer import OutputWriter
 assert_compatible_pip_version()
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
+logger = logging.getLogger(__name__)
 
 
 class PipCommand(pip.basecommand.Command):
@@ -69,7 +71,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         upgrade, upgrade_packages, output_file, allow_unsafe, generate_hashes,
         src_files, max_rounds):
     """Compiles requirements.txt from requirements.in specs."""
-    log.verbose = verbose
+    configure_logging(verbose)
 
     if len(src_files) == 0:
         if os.path.exists(DEFAULT_REQUIREMENTS_FILE):
@@ -137,17 +139,17 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
                          if is_pinned_requirement(ireq) and key_from_req(ireq.req) not in upgrade_pkgs_key}
         repository = LocalRequirementsRepository(existing_pins, repository)
 
-    log.debug('Using indexes:')
+    logger.debug('Using indexes:')
     # remove duplicate index urls before processing
     repository.finder.index_urls = list(dedup(repository.finder.index_urls))
     for index_url in repository.finder.index_urls:
-        log.debug('  {}'.format(index_url))
+        logger.debug('  %s', index_url)
 
     if repository.finder.find_links:
-        log.debug('')
-        log.debug('Configuration:')
+        logger.debug('')
+        logger.debug('Configuration:')
         for find_link in repository.finder.find_links:
-            log.debug('  -f {}'.format(find_link))
+            logger.debug('  -f %s', find_link)
 
     ###
     # Parsing/collecting initial requirements
@@ -187,10 +189,10 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         else:
             hashes = None
     except PipToolsError as e:
-        log.error(str(e))
+        logger.exception(str(e))
         sys.exit(2)
 
-    log.debug('')
+    logger.debug('')
 
     ##
     # Output
@@ -238,7 +240,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
                  hashes=hashes)
 
     if dry_run:
-        log.warning('Dry-run, so nothing updated.')
+        logger.warning('Dry-run, so nothing updated.')
 
 
 def get_pip_command():

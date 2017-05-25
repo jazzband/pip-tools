@@ -1,10 +1,10 @@
+import click
 import os
 from itertools import chain
 
 from ._compat import ExitStack
 from .click import unstyle
 from .io import AtomicSaver
-from .logging import log
 from .utils import comment, format_requirement, dedup, UNSAFE_PACKAGES
 
 
@@ -119,7 +119,7 @@ class OutputWriter(object):
 
             for line in self._iter_lines(results, reverse_dependencies,
                                          primary_packages, markers, hashes):
-                log.info(line)
+                click.echo(line)
                 if f:
                     f.write(unstyle(line).encode('utf-8'))
                     f.write(os.linesep.encode('utf-8'))

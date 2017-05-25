@@ -2,34 +2,20 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import sys
+import logging
 
-from . import click
-
-
-class LogContext(object):
-    def __init__(self, verbose=False):
-        self.verbose = verbose
-
-    def log(self, *args, **kwargs):
-        click.secho(*args, **kwargs)
-
-    def debug(self, *args, **kwargs):
-        if self.verbose:
-            self.log(*args, **kwargs)
-
-    def info(self, *args, **kwargs):
-        self.log(*args, **kwargs)
-
-    def warning(self, *args, **kwargs):
-        kwargs.setdefault('fg', 'yellow')
-        kwargs.setdefault('file', sys.stderr)
-        self.log(*args, **kwargs)
-
-    def error(self, *args, **kwargs):
-        kwargs.setdefault('fg', 'red')
-        kwargs.setdefault('file', sys.stderr)
-        self.log(*args, **kwargs)
+import coloredlogs
 
 
-log = LogContext()
+def configure_logging(verbose=False):
+    """Setup a colored logger to write to the console."""
+    logger = logging.getLogger('piptools')
+    if verbose:
+        level = logging.DEBUG
+    else:
+        level = logging.INFO
+    level_styles = dict(coloredlogs.DEFAULT_LEVEL_STYLES)
+    level_styles.update(debug={})   # reset debug to be the default style
+    fmt = '%(message)s'
+    coloredlogs.install(level=level, logger=logger, level_styles=level_styles,
+                        fmt=fmt)

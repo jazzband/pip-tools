@@ -15,6 +15,7 @@ setup(
     setup_requires=['setuptools_scm'],
     install_requires=[
         'click>=6',
+        'coloredlogs',
         'first',
         'six',
         'setuptools'

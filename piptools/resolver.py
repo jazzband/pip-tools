@@ -2,6 +2,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import logging
 import os
 import copy
 from functools import partial
@@ -13,12 +14,12 @@ from pip.req import InstallRequirement
 from . import click
 from .cache import DependencyCache
 from .exceptions import UnsupportedConstraint
-from .logging import log
 from .utils import (format_requirement, format_specifier, full_groupby,
                     is_pinned_requirement, key_from_req, UNSAFE_PACKAGES)
 
 green = partial(click.style, fg='green')
 magenta = partial(click.style, fg='magenta')
+logger = logging.getLogger(__name__)
 
 
 def _dep_key(ireq):
@@ -102,12 +103,12 @@ class Resolver(object):
                                    '%d rounds of resolving.\n'
                                    'This is likely a bug.' % max_rounds)
 
-            log.debug('')
-            log.debug(magenta('{:^60}'.format('ROUND {}'.format(current_round))))
+            logger.debug('')
+            logger.debug(magenta('{:^60}'.format('ROUND {}'.format(current_round))))
             has_changed, best_matches = self._resolve_one_round()
-            log.debug('-' * 60)
-            log.debug('Result of round {}: {}'.format(current_round,
-                                                      'not stable' if has_changed else 'stable, done'))
+            logger.debug('-' * 60)
+            logger.debug('Result of round %s: %s', current_round,
+                         'not stable' if has_changed else 'stable, done')
             if not has_changed:
                 break
 
@@ -178,17 +179,17 @@ class Resolver(object):
         """
         # Sort this list for readability of terminal output
         constraints = sorted(self.constraints, key=_dep_key)
-        log.debug('Current constraints:')
+        logger.debug('Current constraints:')
         for constraint in constraints:
-            log.debug('  {}'.format(constraint))
+            logger.debug('  %s', constraint)
 
-        log.debug('')
-        log.debug('Finding the best candidates:')
+        logger.debug('')
+        logger.debug('Finding the best candidates:')
         best_matches = {self.get_best_match(ireq) for ireq in constraints}
 
         # Find the new set of secondary dependencies
-        log.debug('')
-        log.debug('Finding secondary dependencies:')
+        logger.debug('')
+        logger.debug('Finding secondary dependencies:')
 
         ungrouped = []
         for best_match in best_matches:
@@ -206,13 +207,13 @@ class Resolver(object):
 
         has_changed = len(diff) > 0 or len(removed) > 0
         if has_changed:
-            log.debug('')
-            log.debug('New dependencies found in this round:')
+            logger.debug('')
+            logger.debug('New dependencies found in this round:')
             for new_dependency in sorted(diff, key=lambda req: key_from_req(req.req)):
-                log.debug('  adding {}'.format(new_dependency))
-            log.debug('Removed dependencies in this round:')
+                logger.debug('  adding %s', new_dependency)
+            logger.debug('Removed dependencies in this round:')
             for removed_dependency in sorted(removed, key=lambda req: key_from_req(req.req)):
-                log.debug('  removing {}'.format(removed_dependency))
+                logger.debug('  removing %s', removed_dependency)
 
         # Store the last round's results in the their_constraints
         self.their_constraints = theirs
@@ -245,8 +246,8 @@ class Resolver(object):
             best_match = self.repository.find_best_match(ireq, prereleases=self.prereleases)
 
         # Format the best match
-        log.debug('  found candidate {} (constraint was {})'.format(format_requirement(best_match),
-                                                                    format_specifier(ireq)))
+        logger.debug('  found candidate %s (constraint was %s)',
+                     format_requirement(best_match), format_specifier(ireq))
         return best_match
 
     def _iter_dependencies(self, ireq):
@@ -270,14 +271,19 @@ class Resolver(object):
         # download and inspect the package version and get dependencies
         # from there
         if ireq not in self.dependency_cache:
-            log.debug('  {} not in cache, need to check index'.format(format_requirement(ireq)), fg='yellow')
+            logger.warning('  %s not in cache, need to check index',
+                           format_requirement(ireq))
             dependencies = self.repository.get_dependencies(ireq)
             self.dependency_cache[ireq] = sorted(str(ireq.req) for ireq in dependencies)
 
         # Example: ['Werkzeug>=0.9', 'Jinja2>=2.4']
         dependency_strings = self.dependency_cache[ireq]
-        log.debug('  {:25} requires {}'.format(format_requirement(ireq),
-                                               ', '.join(sorted(dependency_strings, key=lambda s: s.lower())) or '-'))
+        logger.debug(
+            '  %-25s requires %s',
+            format_requirement(ireq),
+            ', '.join(sorted(dependency_strings, key=lambda s: s.lower()))
+            or '-'
+        )
         for dependency_string in dependency_strings:
             yield InstallRequirement.from_line(dependency_string, constraint=ireq.constraint)
 

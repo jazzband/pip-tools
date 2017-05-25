@@ -2,6 +2,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import logging
 import os
 import sys
 
@@ -9,13 +10,14 @@ import pip
 
 from .. import click, sync
 from ..exceptions import PipToolsError
-from ..logging import log
+from ..logging import configure_logging
 from ..utils import assert_compatible_pip_version, flat_map
 
 # Make sure we're using a compatible version of pip
 assert_compatible_pip_version()
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.txt'
+logger = logging.getLogger(__name__)
 
 
 @click.command()
@@ -29,21 +31,23 @@ DEFAULT_REQUIREMENTS_FILE = 'requirements.txt'
 @click.argument('src_files', required=False, type=click.Path(exists=True), nargs=-1)
 def cli(dry_run, force, find_links, index_url, extra_index_url, no_index, src_files):
     """Synchronize virtual environment with requirements.txt."""
+    configure_logging()
     if not src_files:
         if os.path.exists(DEFAULT_REQUIREMENTS_FILE):
             src_files = (DEFAULT_REQUIREMENTS_FILE,)
         else:
-            msg = 'No requirement files given and no {} found in the current directory'
-            log.error(msg.format(DEFAULT_REQUIREMENTS_FILE))
+            logger.error(
+                'No requirement files given and no %s found in the current directory',
+                DEFAULT_REQUIREMENTS_FILE)
             sys.exit(2)
 
     if any(src_file.endswith('.in') for src_file in src_files):
         msg = ('Some input files have the .in extension, which is most likely an error and can '
                'cause weird behaviour.  You probably meant to use the corresponding *.txt file?')
         if force:
-            log.warning('WARNING: ' + msg)
+            logger.warning(msg)
         else:
-            log.error('ERROR: ' + msg)
+            logger.error(msg)
             sys.exit(2)
 
     requirements = flat_map(lambda src: pip.req.parse_requirements(src, session=True),
@@ -52,7 +56,7 @@ def cli(dry_run, force, find_links, index_url, extra_index_url, no_index, src_fi
     try:
         requirements = sync.merge(requirements, ignore_conflicts=force)
     except PipToolsError as e:
-        log.error(str(e))
+        logger.exception(str(e))
         sys.exit(2)
 
     installed_dists = pip.get_installed_distributions(skip=[])
