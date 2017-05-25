@@ -1,3 +1,8 @@
+# Master
+
+Bug Fixes:
+- Logs are now emitted to stderr instead of stdout.
+
 # 1.9.0
 
 Features:
