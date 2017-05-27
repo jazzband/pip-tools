@@ -9,9 +9,10 @@ from tempfile import mkdtemp
 
 
 class TemporaryDirectory(object):
-    """Create and return a temporary directory.  This has the same
-    behavior as mkdtemp but can be used as a context manager.  For
-    example:
+    """Create and return a temporary directory.
+
+    This has the same behavior as mkdtemp but can be used as a context manager.
+    For example:
 
         with TemporaryDirectory() as tmpdir:
             ...
@@ -20,13 +21,13 @@ class TemporaryDirectory(object):
     in it are removed.
     """
 
-    def __init__(self, suffix="", prefix="tmp", dir=None):
+    def __init__(self, suffix='', prefix='tmp', dir=None):
         self._closed = False
         self.name = None  # Handle mkdtemp raising an exception
         self.name = mkdtemp(suffix, prefix, dir)
 
     def __repr__(self):
-        return "<{} {!r}>".format(self.__class__.__name__, self.name)
+        return '<{} {!r}>'.format(self.__class__.__name__, self.name)
 
     def __enter__(self):
         return self.name
@@ -39,9 +40,9 @@ class TemporaryDirectory(object):
                 # Issue #10188: Emit a warning on stderr
                 # if the directory could not be cleaned
                 # up due to missing globals
-                if "None" not in str(ex):
+                if 'None' not in str(ex):
                     raise
-                print("ERROR: {!r} while cleaning up {!r}".format(ex, self,),
+                print('ERROR: {!r} while cleaning up {!r}'.format(ex, self,),
                       file=_sys.stderr)
                 return
             self._closed = True

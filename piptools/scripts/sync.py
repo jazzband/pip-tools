@@ -20,12 +20,12 @@ DEFAULT_REQUIREMENTS_FILE = 'requirements.txt'
 
 @click.command()
 @click.version_option()
-@click.option('-n', '--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
-@click.option('--force', is_flag=True, help="Proceed even if conflicts are found")
-@click.option('-f', '--find-links', multiple=True, help="Look for archives in this directory or on this HTML page", envvar='PIP_FIND_LINKS')  # noqa
-@click.option('-i', '--index-url', help="Change index URL (defaults to PyPI)", envvar='PIP_INDEX_URL')
-@click.option('--extra-index-url', multiple=True, help="Add additional index URL to search", envvar='PIP_EXTRA_INDEX_URL')  # noqa
-@click.option('--no-index', is_flag=True, help="Ignore package index (only looking at --find-links URLs instead)")
+@click.option('-n', '--dry-run', is_flag=True, help='Only show what would happen, don\'t change anything')
+@click.option('--force', is_flag=True, help='Proceed even if conflicts are found')
+@click.option('-f', '--find-links', multiple=True, help='Look for archives in this directory or on this HTML page', envvar='PIP_FIND_LINKS')  # noqa
+@click.option('-i', '--index-url', help='Change index URL (defaults to PyPI)', envvar='PIP_INDEX_URL')
+@click.option('--extra-index-url', multiple=True, help='Add additional index URL to search', envvar='PIP_EXTRA_INDEX_URL')  # noqa
+@click.option('--no-index', is_flag=True, help='Ignore package index (only looking at --find-links URLs instead)')
 @click.argument('src_files', required=False, type=click.Path(exists=True), nargs=-1)
 def cli(dry_run, force, find_links, index_url, extra_index_url, no_index, src_files):
     """Synchronize virtual environment with requirements.txt."""

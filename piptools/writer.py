@@ -46,7 +46,7 @@ class OutputWriter(object):
                 if not self.annotate:
                     params += ['--no-annotate']
                 if self.generate_hashes:
-                    params += ["--generate-hashes"]
+                    params += ['--generate-hashes']
                 params += ['--output-file', self.dst_file]
                 params += self.src_files
                 yield comment('#    pip-compile {}'.format(' '.join(params)))
@@ -130,7 +130,7 @@ class OutputWriter(object):
         ireq_hashes = (hashes if hashes is not None else {}).get(ireq)
         if ireq_hashes:
             for hash_ in sorted(ireq_hashes):
-                line += " \\\n    --hash={}".format(hash_)
+                line += ' \\\n    --hash={}'.format(hash_)
 
         if not self.annotate or ireq.name in primary_packages:
             return line
@@ -138,9 +138,9 @@ class OutputWriter(object):
         # Annotate what packages this package is required by
         required_by = reverse_dependencies.get(ireq.name.lower(), [])
         if required_by:
-            annotation = ", ".join(sorted(required_by))
-            line = "{:24}{}{}".format(
+            annotation = ', '.join(sorted(required_by))
+            line = '{:24}{}{}'.format(
                 line,
-                " \\\n    " if ireq_hashes else "  ",
-                comment("# via " + annotation))
+                ' \\\n    ' if ireq_hashes else '  ',
+                comment('# via ' + annotation))
         return line

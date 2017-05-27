@@ -29,9 +29,7 @@ def _dep_key(ireq):
 
 
 class RequirementSummary(object):
-    """
-    Summary of a requirement's properties for comparison purposes.
-    """
+    """Summary of a requirement's properties for comparison purposes."""
     def __init__(self, req):
         self.req = req
         self.key = key_from_req(req)
@@ -49,12 +47,13 @@ class RequirementSummary(object):
 
 
 class Resolver(object):
+    """Resolves a given set of constraints.
+
+    Constraints are a collection of InstallRequirement objects.
+    Resolutions are determined by consulting the given Repository and the
+    DependencyCache.
+    """
     def __init__(self, constraints, repository, cache=None, prereleases=False, clear_caches=False, allow_unsafe=False):
-        """
-        This class resolves a given set of constraints (a collection of
-        InstallRequirement objects) by consulting the given Repository and the
-        DependencyCache.
-        """
         self.our_constraints = set(constraints)
         self.their_constraints = set()
         self.repository = repository
@@ -71,16 +70,14 @@ class Resolver(object):
                                                  self.their_constraints)))
 
     def resolve_hashes(self, ireqs):
-        """
-        Finds acceptable hashes for all of the given InstallRequirements.
-        """
+        """Finds acceptable hashes for all of the given InstallRequirements."""
         return {ireq: self.repository.get_hashes(ireq) for ireq in ireqs}
 
     def resolve(self, max_rounds=10):
-        """
-        Finds concrete package versions for all the given InstallRequirements
-        and their recursive dependencies.  The end result is a flat list of
-        (name, version) tuples.  (Or an editable package.)
+        """Find concrete package versions for all InstallRequirements and their recursive dependencies.
+
+        The end result is a flat list of (name, version) tuples.
+        (Or an editable package.)
 
         Resolves constraints one round at a time, until they don't change
         anymore.  Protects against infinite loops by breaking out after a max
@@ -131,10 +128,11 @@ class Resolver(object):
                 raise UnsupportedConstraint(msg, constraint)
 
     def _group_constraints(self, constraints):
-        """
-        Groups constraints (remember, InstallRequirements!) by their key name,
-        and combining their SpecifierSets into a single InstallRequirement per
-        package.  For example, given the following constraints:
+        """Groups contraints by their key name.
+
+        Combines the constraints SpecifierSets into a single InstallRequirement per
+        package.
+        For example, given the following constraints:
 
             Django<1.9,>=1.4.2
             django~=1.5
@@ -145,6 +143,8 @@ class Resolver(object):
             django~=1.5,<1.9,>=1.4.2
             flask~=0.7
 
+        Args:
+            constraints: a set of InstallRequirements
         """
         for _, ireqs in full_groupby(constraints, key=_dep_key):
             ireqs = list(ireqs)
@@ -166,11 +166,11 @@ class Resolver(object):
             yield combined_ireq
 
     def _resolve_one_round(self):
-        """
-        Resolves one level of the current constraints, by finding the best
-        match for each package in the repository and adding all requirements
-        for those best package versions.  Some of these constraints may be new
-        or updated.
+        """Resolves one level of the current constraints.
+
+        This is accomplished by finding the best match for each package in the
+        repository and adding all requirements for those best package versions.
+        Some of these constraints may be new or updated.
 
         Returns whether new constraints appeared in this round.  If no
         constraints were added or changed, this indicates a stable
@@ -219,10 +219,9 @@ class Resolver(object):
         return has_changed, best_matches
 
     def get_best_match(self, ireq):
-        """
-        Returns a (pinned or editable) InstallRequirement, indicating the best
-        match to use for the given InstallRequirement (in the form of an
-        InstallRequirement).
+        """Returns the best match to use for a InstallRequirement.
+
+        The returned match is either a pinned or editable InstallRequirement.
 
         Example:
         Given the constraint Flask>=0.10, may return Flask==0.10.1 at
@@ -231,7 +230,6 @@ class Resolver(object):
         Pinned requirements will always return themselves, i.e.
 
             Flask==0.10.1 => Flask==0.10.1
-
         """
         if ireq.editable:
             # NOTE: it's much quicker to immediately return instead of
@@ -250,13 +248,16 @@ class Resolver(object):
         return best_match
 
     def _iter_dependencies(self, ireq):
-        """
-        Given a pinned or editable InstallRequirement, collects all the
-        secondary dependencies for them, either by looking them up in a local
+        """Collects all the secondary dependencies for a InstallRequirement.
+
+        Lookup is done by either looking dependencies up in a local
         cache, or by reaching out to the repository.
 
         Editable requirements will never be looked up, as they may have
         changed at any time.
+
+        Args:
+            ireq: a pinned or editable InstallRequirement
         """
         if ireq.editable:
             for dependency in self.repository.get_dependencies(ireq):

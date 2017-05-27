@@ -8,7 +8,7 @@ from collections import deque
 
 # Inspired by discussions on http://bugs.python.org/issue13585
 class ExitStack(object):
-    """Context manager for dynamic management of a stack of exit callbacks
+    """Context manager for dynamic management of a stack of exit callbacks.
 
     For example:
 
@@ -23,21 +23,21 @@ class ExitStack(object):
         self._exit_callbacks = deque()
 
     def pop_all(self):
-        """Preserve the context stack by transferring it to a new instance"""
+        """Preserve the context stack by transferring it to a new instance."""
         new_stack = type(self)()
         new_stack._exit_callbacks = self._exit_callbacks
         self._exit_callbacks = deque()
         return new_stack
 
     def _push_cm_exit(self, cm, cm_exit):
-        """Helper to correctly register callbacks to __exit__ methods"""
+        """Helper to correctly register callbacks to __exit__ methods."""
         def _exit_wrapper(*exc_details):
             return cm_exit(cm, *exc_details)
         _exit_wrapper.__self__ = cm
         self.push(_exit_wrapper)
 
     def push(self, exit):
-        """Registers a callback with the standard __exit__ method signature
+        """Registers a callback with the standard __exit__ method signature.
 
         Can suppress exceptions the same way __exit__ methods can.
 
@@ -70,7 +70,7 @@ class ExitStack(object):
         return callback  # Allow use as a decorator
 
     def enter_context(self, cm):
-        """Enters the supplied context manager
+        """Enters the supplied context manager.
 
         If successful, also pushes its __exit__ method as a callback and
         returns the result of the __enter__ method.
@@ -84,7 +84,7 @@ class ExitStack(object):
         return result
 
     def close(self):
-        """Immediately unwind the context stack"""
+        """Immediately unwind the context stack."""
         self.__exit__(None, None, None)
 
     def __enter__(self):

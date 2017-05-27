@@ -7,7 +7,7 @@ from piptools.scripts.compile import get_pip_command
 
 class MockedPyPIRepository(PyPIRepository):
     def get_dependencies(self, ireq):
-        # "mock" everything but editable reqs to avoid disk and network I/O
+        # 'mock' everything but editable reqs to avoid disk and network I/O
         # when possible
         if not ireq.editable:
             return set()

@@ -7,7 +7,7 @@ from piptools.writer import OutputWriter
 
 @fixture
 def writer():
-    return OutputWriter(src_files=["src_file", "src_file2"], dst_file="dst_file",
+    return OutputWriter(src_files=['src_file', 'src_file2'], dst_file='dst_file',
                         dry_run=True,
                         emit_header=True, emit_index=True, emit_trusted_host=True,
                         annotate=True,
@@ -49,7 +49,7 @@ def test_format_requirement_annotation_lower_case(from_line, writer):
 
 
 def test_format_requirement_not_for_primary(from_line, writer):
-    "Primary packages should not get annotated."
+    """Primary packages should not get annotated."""
     ireq = from_line('test==1.2')
     reverse_dependencies = {'test': ['xyz']}
 
@@ -60,7 +60,7 @@ def test_format_requirement_not_for_primary(from_line, writer):
 
 
 def test_format_requirement_environment_marker(from_line, writer):
-    "Environment markers should get passed through to output."
+    """Environment markers should get passed through to output."""
     ireq = from_line('test ; python_version == "2.7" and platform_python_implementation == "CPython"')
     reverse_dependencies = set()
 

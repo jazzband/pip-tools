@@ -35,11 +35,11 @@ except NameError:
 
 
 def mkdir_p(path):
-    """Creates a directory and any parent directories that may need to
-    be created along the way, without raising errors for any existing
-    directories. This function mimics the behavior of the ``mkdir -p``
-    command available in Linux/BSD environments, but also works on
-    Windows.
+    """Creates a directory and any parent directories.
+
+    This does not raise errors for any existing directories. This function
+    mimics the behavior of the ``mkdir -p`` command available in
+    Linux/BSD environments, but also works on Windows.
     """
     try:
         os.makedirs(path)
@@ -51,8 +51,7 @@ def mkdir_p(path):
 
 
 class FilePerms(object):
-    """The :class:`FilePerms` type is used to represent standard POSIX
-    filesystem permissions:
+    """Represents standard POSIX filesystem permissions.
 
       * Read
       * Write
@@ -159,11 +158,10 @@ class FilePerms(object):
 
     @classmethod
     def from_path(cls, path):
-        """Make a new :class:`FilePerms` object based on the permissions
-        assigned to the file or directory at *path*.
+        """Make a new :class:`FilePerms` object using permissions of object at a path.
 
         Args:
-            path (str): Filesystem path of the target file.
+            path (str): filesystem path of the target file.
 
         >>> from os.path import expanduser
         >>> 'r' in FilePerms.from_path(expanduser('~')).user  # probably
@@ -177,11 +175,11 @@ class FilePerms(object):
 
     # Sphinx tip: attribute docstrings come after the attribute
     user = _FilePermProperty('_user', 2)
-    "Stores the ``rwx``-formatted *user* permission."
+    'Stores the ``rwx``-formatted *user* permission.'
     group = _FilePermProperty('_group', 1)
-    "Stores the ``rwx``-formatted *group* permission."
+    'Stores the ``rwx``-formatted *group* permission.'
     other = _FilePermProperty('_other', 0)
-    "Stores the ``rwx``-formatted *other* permission."
+    'Stores the ``rwx``-formatted *other* permission.'
 
     def __repr__(self):
         cn = self.__class__.__name__
@@ -205,12 +203,13 @@ try:
     import fcntl as fcntl
 except ImportError:
     def set_cloexec(fd):
-        "Dummy set_cloexec for platforms without fcntl support"
+        """Dummy set_cloexec for platforms without fcntl support."""
         pass
 else:
     def set_cloexec(fd):
-        """Does a best-effort :func:`fcntl.fcntl` call to set a fd to be
-        automatically closed by any future child processes.
+        """Sets a fd to be automatically closed by future child processes.
+
+        This is a best-effort :func:`fcntl.fcntl` call.
 
         Implementation from the :mod:`tempfile` module.
         """
@@ -226,8 +225,9 @@ else:
 
 
 def atomic_save(dest_path, **kwargs):
-    """A convenient interface to the :class:`AtomicSaver` type. See the
-    :class:`AtomicSaver` documentation for details.
+    """A convenient interface to the :class:`AtomicSaver` type.
+
+    See the :class:`AtomicSaver` documentation for details.
     """
     return AtomicSaver(dest_path, **kwargs)
 
@@ -270,7 +270,7 @@ if os.name == 'nt':
         return
 
     def atomic_rename(src, dst, overwrite=False):
-        "Rename *src* to *dst*, replacing *dst* if *overwrite is True"
+        """Rename *src* to *dst*, replacing *dst* if *overwrite is True"""
         if overwrite:
             replace(src, dst)
         else:
@@ -283,7 +283,7 @@ else:
         return os.rename(src, dst)
 
     def atomic_rename(src, dst, overwrite=False):
-        "Rename *src* to *dst*, replacing *dst* if *overwrite is True"
+        """Rename *src* to *dst*, replacing *dst* if *overwrite is True."""
         if overwrite:
             os.rename(src, dst)
         else:
@@ -304,10 +304,11 @@ possible atomicity on a range of filesystems.
 
 
 class AtomicSaver(object):
-    """``AtomicSaver`` is a configurable `context manager`_ that provides
-    a writable :class:`file` which will be moved into place as long as
+    """A configurable context manager.
+
+    Provides a writable :class:`file` which will be moved into place as long as
     no exceptions are raised within the context manager's block. These
-    "part files" are created in the same directory as the destination
+    'part files' are created in the same directory as the destination
     path to ensure atomic move operations (i.e., no cross-filesystem
     moves occur).
 
@@ -405,9 +406,9 @@ class AtomicSaver(object):
         return
 
     def setup(self):
-        """Called on context manager entry (the :keyword:`with` statement),
-        the ``setup()`` method creates the temporary file in the same
-        directory as the destination file.
+        """Creates a temporary file in the same directory as a destination file.
+
+        Called on context manager entry (the :keyword:`with` statement).
 
         ``setup()`` tests for a writable directory with rename permissions
         early, as the part file may not be written to immediately (not
@@ -458,9 +459,10 @@ _CUR_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def iter_find_files(directory, patterns, ignored=None):
-    """Returns a generator that yields file paths under a *directory*,
-    matching *patterns* using `glob`_ syntax (e.g., ``*.txt``). Also
-    supports *ignored* patterns.
+    """Returns a generator that yields file paths under a directory.
+
+    It achieves this by  matching *patterns* using `glob`_ syntax
+    (e.g., ``*.txt``). It also supports *ignored* patterns.
 
     Args:
         directory (str): Path that serves as the root of the
@@ -481,7 +483,6 @@ def iter_find_files(directory, patterns, ignored=None):
     >>> filenames = iter_find_files(_CUR_DIR, '*.py', ignored='.#*')
 
     .. _glob: https://en.wikipedia.org/wiki/Glob_%28programming%29
-
     """
     if isinstance(patterns, basestring):
         patterns = [patterns]
@@ -503,10 +504,10 @@ def iter_find_files(directory, patterns, ignored=None):
 
 
 def copy_tree(src, dst, symlinks=False, ignore=None):
-    """The ``copy_tree`` function is an exact copy of the built-in
-    :func:`shutil.copytree`, with one key difference: it will not
-    raise an exception if part of the tree already exists. It achieves
-    this by using :func:`mkdir_p`.
+    """A copy of the built-in :func:`shutil.copytree`.
+
+    This will not raise an exception if part of the tree already exists. It
+    achieves this by using :func:`mkdir_p`.
 
     Args:
         src (str): Path of the source directory to copy.
@@ -518,7 +519,6 @@ def copy_tree(src, dst, symlinks=False, ignore=None):
 
     For more details, check out :func:`shutil.copytree` and
     :func:`shutil.copy2`.
-
     """
     names = os.listdir(src)
     if ignore is not None:

@@ -32,5 +32,5 @@ class IncompatibleRequirements(PipToolsError):
         self.ireq_b = ireq_b
 
     def __str__(self):
-        message = "Incompatible requirements found: {} and {}"
+        message = 'Incompatible requirements found: {} and {}'
         return message.format(self.ireq_a, self.ireq_b)

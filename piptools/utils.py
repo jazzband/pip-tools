@@ -53,18 +53,18 @@ def comment(text):
 
 def make_install_requirement(name, version, extras, constraint=False):
     # If no extras are specified, the extras string is blank
-    extras_string = ""
+    extras_string = ''
     if extras:
         # Sort extras for stability
-        extras_string = "[{}]".format(",".join(sorted(extras)))
+        extras_string = '[{}]'.format(','.join(sorted(extras)))
 
     return InstallRequirement.from_line('{}{}=={}'.format(name, extras_string, str(version)), constraint=constraint)
 
 
 def format_requirement(ireq, marker=None):
-    """
-    Generic formatter for pretty printing InstallRequirements to the terminal
-    in a less verbose way than using its `__str__` method.
+    """Generic formatter for pretty printing InstallRequirements.
+
+    Prints to the terminal in a less verbose way than using its `__str__` method.
     """
     if ireq.editable:
         line = '-e {}'.format(ireq.link)
@@ -78,9 +78,9 @@ def format_requirement(ireq, marker=None):
 
 
 def format_specifier(ireq):
-    """
-    Generic formatter for pretty printing the specifier part of
-    InstallRequirements to the terminal.
+    """Generic formatter for pretty printing the specifier part of InstallRequirements.
+
+    Prints to the terminal.
     """
     # TODO: Ideally, this is carried over to the pip library itself
     specs = ireq.specifier._specs if ireq.req is not None else []
@@ -89,14 +89,13 @@ def format_specifier(ireq):
 
 
 def is_pinned_requirement(ireq):
-    """
-    Returns whether an InstallRequirement is a "pinned" requirement.
+    """Returns whether an InstallRequirement is a 'pinned' requirement.
 
     An InstallRequirement is considered pinned if:
 
     - Is not editable
     - It has exactly one specifier
-    - That specifier is "=="
+    - That specifier is '=='
     - The version does not contain a wildcard
 
     Examples:
@@ -116,8 +115,9 @@ def is_pinned_requirement(ireq):
 
 
 def as_tuple(ireq):
-    """
-    Pulls out the (name: str, version:str, extras:(str)) tuple from the pinned InstallRequirement.
+    """Extract name, version, and extras from a pinned InstallRequirement.
+
+    Returns a tuple in the format (name: str, version:str, extras:(str)).
     """
     if not is_pinned_requirement(ireq):
         raise TypeError('Expected a pinned InstallRequirement, got {}'.format(ireq))
@@ -134,13 +134,12 @@ def full_groupby(iterable, key=None):
 
 
 def flat_map(fn, collection):
-    """Map a function over a collection and flatten the result by one-level"""
+    """Map a function over a collection and flatten the result by one-level."""
     return chain.from_iterable(map(fn, collection))
 
 
 def lookup_table(values, key=None, keyval=None, unique=False, use_lists=False):
-    """
-    Builds a dict-based lookup table (index) elegantly.
+    """Builds a dict-based lookup table (index) elegantly.
 
     Supports building normal and unique lookup tables.  For example:
 
@@ -175,7 +174,6 @@ def lookup_table(values, key=None, keyval=None, unique=False, use_lists=False):
         'f': {'oo'},
         'q': {'uux', 'ux'}
     }
-
     """
     if keyval is None:
         if key is None:
@@ -204,7 +202,5 @@ def lookup_table(values, key=None, keyval=None, unique=False, use_lists=False):
 
 
 def dedup(iterable):
-    """Deduplicate an iterable object like iter(set(iterable)) but
-    order-reserved.
-    """
+    """Deduplicate an iterable object like iter(set(iterable)) but order-reserved."""
     return iter(OrderedDict.fromkeys(iterable))

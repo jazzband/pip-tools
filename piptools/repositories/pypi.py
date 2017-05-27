@@ -1,6 +1,5 @@
 # coding: utf-8
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import hashlib
 import os
@@ -29,7 +28,8 @@ except ImportError:
 class PyPIRepository(BaseRepository):
     DEFAULT_INDEX_URL = 'https://pypi.python.org/simple'
 
-    """
+    """Create and return a PyPI repository.
+
     The PyPIRepository will use the provided Finder instance to lookup
     packages.  Typically, it looks up packages on PyPI (the default implicit
     config), but any other PyPI mirror can be used if index_urls is
@@ -68,9 +68,9 @@ class PyPIRepository(BaseRepository):
         self._wheel_download_dir = os.path.join(CACHE_DIR, 'wheels')
 
     def freshen_build_caches(self):
-        """
-        Start with fresh build/source caches.  Will remove any old build
-        caches from disk automatically.
+        """Start with fresh build/source caches.
+
+        Will remove any old build caches from disk automatically.
         """
         self._build_dir = TemporaryDirectory('build')
         self._source_dir = TemporaryDirectory('source')
@@ -98,7 +98,8 @@ class PyPIRepository(BaseRepository):
         return self._available_candidates_cache[req_name]
 
     def find_best_match(self, ireq, prereleases=None):
-        """
+        """Finds the best match for a InstallRequirement.
+
         Returns a Version object that indicates the best match for the given
         InstallRequirement according to the external repository.
         """
@@ -122,10 +123,12 @@ class PyPIRepository(BaseRepository):
         )
 
     def get_dependencies(self, ireq):
-        """
-        Given a pinned or an editable InstallRequirement, returns a set of
-        dependencies (also InstallRequirements, but not necessarily pinned).
-        They indicate the secondary dependencies for the given requirement.
+        """Returns dependencies that indicate the secondary dependencies for a requirement.
+
+        The returned dependencies are InstallRequirements, but are not necessarily pinned.
+
+        Args:
+            ireq: a pinned or an editable InstallRequirement
         """
         if not (ireq.editable or is_pinned_requirement(ireq)):
             raise TypeError('Expected pinned or editable InstallRequirement, got {}'.format(ireq))
@@ -146,14 +149,17 @@ class PyPIRepository(BaseRepository):
         return set(self._dependencies_cache[ireq])
 
     def get_hashes(self, ireq):
-        """
-        Given a pinned InstallRequire, returns a set of hashes that represent
-        all of the files for a given requirement. It is not acceptable for an
-        editable or unpinned requirement to be passed to this function.
+        """Returns a set of hashes for all of the files for a given requirement.
+
+        It is not acceptable for an editable or unpinned requirement to be passed
+        to this function.
+
+        Args:
+            ireq: a pinned InstallRequirement
         """
         if ireq.editable or not is_pinned_requirement(ireq):
             raise TypeError(
-                "Expected pinned requirement, not unpinned or editable, got {}".format(ireq))
+                'Expected pinned requirement, not unpinned or editable, got {}'.format(ireq))
 
         # We need to get all of the candidates that match our current version
         # pin, these will represent all of the files that could possibly
@@ -180,8 +186,8 @@ class PyPIRepository(BaseRepository):
             filename = os.path.abspath(os.path.join(tmpdir, files[0]))
 
             h = hashlib.new(FAVORITE_HASH)
-            with open(filename, "rb") as fp:
-                for chunk in iter(lambda: fp.read(8096), b""):
+            with open(filename, 'rb') as fp:
+                for chunk in iter(lambda: fp.read(8096), b''):
                     h.update(chunk)
 
-        return ":".join([FAVORITE_HASH, h.hexdigest()])
+        return ':'.join([FAVORITE_HASH, h.hexdigest()])

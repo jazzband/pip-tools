@@ -38,7 +38,7 @@ def test_as_tuple(from_line):
     name, version, extras = as_tuple(ireq)
     assert name == 'foo'
     assert version == '1.1'
-    assert extras == ("extra1", "extra2")
+    assert extras == ('extra1', 'extra2')
 
     # Non-pinned versions aren't accepted
     should_be_rejected = [
