@@ -61,15 +61,27 @@ def make_install_requirement(name, version, extras, constraint=False):
     return InstallRequirement.from_line('{}{}=={}'.format(name, extras_string, str(version)), constraint=constraint)
 
 
-def format_requirement(ireq, marker=None):
+def _name_from_req(req):
+    """Get the name of the requirement."""
+    if hasattr(req, 'project_name'):
+        # pip 8.1.1 or below, using pkg_resources
+        return req.project_name
+    else:
+        # pip 8.1.2 or above, using packaging
+        return req.name
+
+
+def format_requirement(ireq, include_specifier=True, marker=None):
     """
     Generic formatter for pretty printing InstallRequirements to the terminal
     in a less verbose way than using its `__str__` method.
     """
     if ireq.editable:
         line = '-e {}'.format(ireq.link)
-    else:
+    elif include_specifier:
         line = str(ireq.req).lower()
+    else:
+        line = _name_from_req(ireq).lower()
 
     if marker:
         line = '{} ; {}'.format(line, marker)

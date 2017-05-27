@@ -11,7 +11,8 @@ from .utils import comment, format_requirement, dedup, UNSAFE_PACKAGES
 class OutputWriter(object):
     def __init__(self, src_files, dst_file, dry_run, emit_header, emit_index,
                  emit_trusted_host, annotate, generate_hashes,
-                 default_index_url, index_urls, trusted_hosts, format_control):
+                 default_index_url, index_urls, trusted_hosts, format_control,
+                 allow_unsafe=False):
         self.src_files = src_files
         self.dst_file = dst_file
         self.dry_run = dry_run
@@ -24,6 +25,7 @@ class OutputWriter(object):
         self.index_urls = index_urls
         self.trusted_hosts = trusted_hosts
         self.format_control = format_control
+        self.allow_unsafe = allow_unsafe
 
     def _sort_key(self, ireq):
         return (not ireq.editable, str(ireq.req).lower())
@@ -96,7 +98,7 @@ class OutputWriter(object):
         for ireq in packages:
             line = self._format_requirement(
                 ireq, reverse_dependencies, primary_packages,
-                markers.get(ireq.req.name), hashes=hashes)
+                marker=markers.get(ireq.req.name), hashes=hashes)
             yield line
 
         if unsafe_packages:
@@ -104,12 +106,18 @@ class OutputWriter(object):
             yield comment('# The following packages are considered to be unsafe in a requirements file:')
 
             for ireq in unsafe_packages:
-
-                yield self._format_requirement(ireq,
-                                               reverse_dependencies,
-                                               primary_packages,
-                                               marker=markers.get(ireq.req.name),
-                                               hashes=hashes)
+                line = self._format_requirement(
+                    ireq,
+                    reverse_dependencies,
+                    primary_packages,
+                    include_specifier=self.allow_unsafe,
+                    marker=markers.get(ireq.req.name),
+                    hashes=hashes if self.allow_unsafe else None
+                )
+                if not self.allow_unsafe:
+                    yield comment('# {}'.format(line))
+                else:
+                    yield line
 
     def write(self, results, reverse_dependencies, primary_packages, markers, hashes):
         with ExitStack() as stack:
@@ -124,9 +132,12 @@ class OutputWriter(object):
                     f.write(unstyle(line).encode('utf-8'))
                     f.write(os.linesep.encode('utf-8'))
 
-    def _format_requirement(self, ireq, reverse_dependencies, primary_packages, marker=None, hashes=None):
-        line = format_requirement(ireq, marker=marker)
+    def _format_requirement(self, ireq, reverse_dependencies, primary_packages, **kwargs):
+        include_specifier = kwargs.get('include_specifier', True)
+        marker = kwargs.get('marker')
+        line = format_requirement(ireq, include_specifier=include_specifier, marker=marker)
 
+        hashes = kwargs.get('hashes')
         ireq_hashes = (hashes if hashes is not None else {}).get(ireq)
         if ireq_hashes:
             for hash_ in sorted(ireq_hashes):

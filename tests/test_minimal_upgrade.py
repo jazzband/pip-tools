@@ -1,15 +1,7 @@
 import pytest
+
 from piptools.repositories import LocalRequirementsRepository
-
-
-def name_from_req(req):
-    """Get the name of the requirement"""
-    if hasattr(req, 'project_name'):
-        # pip 8.1.1 or below, using pkg_resources
-        return req.project_name
-    else:
-        # pip 8.1.2 or above, using packaging
-        return req.name
+from piptools.utils import _name_from_req
 
 
 @pytest.mark.parametrize(
@@ -40,7 +32,7 @@ def test_no_upgrades(base_resolver, repository, from_line, input, pins, expected
     existing_pins = dict()
     for line in pins:
         ireq = from_line(line)
-        existing_pins[name_from_req(ireq.req)] = ireq
+        existing_pins[_name_from_req(ireq.req)] = ireq
     local_repository = LocalRequirementsRepository(existing_pins, repository)
     output = base_resolver(input, prereleases=False, repository=local_repository).resolve()
     output = {str(line) for line in output}
