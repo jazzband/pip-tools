@@ -231,6 +231,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
                           trusted_hosts=pip_options.trusted_hosts,
                           format_control=repository.finder.format_control)
     writer.write(results=results,
+                 unsafe_requirements=resolver.unsafe_constraints,
                  reverse_dependencies=reverse_dependencies,
                  primary_packages={key_from_req(ireq.req) for ireq in constraints if not ireq.constraint},
                  markers={key_from_req(ireq.req): ireq.markers
