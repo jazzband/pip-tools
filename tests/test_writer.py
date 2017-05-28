@@ -69,3 +69,22 @@ def test_format_requirement_environment_marker(from_line, writer):
         marker=ireq.markers)
     assert (result ==
             'test ; python_version == "2.7" and platform_python_implementation == "CPython"')
+
+
+def test_iter_lines__unsafe_dependencies(from_line, writer):
+    ireq = [from_line('test==1.2')]
+    unsafe_req = [from_line('setuptools')]
+    reverse_dependencies = {'test': ['xyz']}
+
+    lines = writer._iter_lines(ireq,
+                               unsafe_req,
+                               reverse_dependencies,
+                               ['test'],
+                               {},
+                               None)
+    str_lines = []
+    for line in lines:
+        str_lines.append(line)
+    assert comment('# The following packages are considered to be unsafe in a requirements file:') in str_lines
+    assert comment('# setuptools') in str_lines
+    assert 'test==1.2' in str_lines
