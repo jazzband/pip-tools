@@ -236,7 +236,8 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
                  primary_packages={key_from_req(ireq.req) for ireq in constraints if not ireq.constraint},
                  markers={key_from_req(ireq.req): ireq.markers
                           for ireq in constraints if ireq.markers},
-                 hashes=hashes)
+                 hashes=hashes,
+                 allow_unsafe=allow_unsafe)
 
     if dry_run:
         log.warning('Dry-run, so nothing updated.')

@@ -81,7 +81,8 @@ class OutputWriter(object):
         if emitted:
             yield ''
 
-    def _iter_lines(self, results, unsafe_requirements, reverse_dependencies, primary_packages, markers, hashes):
+    def _iter_lines(self, results, unsafe_requirements, reverse_dependencies,
+                    primary_packages, markers, hashes, allow_unsafe=False):
         for line in self.write_header():
             yield line
         for line in self.write_flags():
@@ -109,16 +110,20 @@ class OutputWriter(object):
                                                primary_packages,
                                                marker=markers.get(ireq.req.name),
                                                hashes=hashes)
-                yield comment('# {}'.format(req))
+                if not allow_unsafe:
+                    yield comment('# {}'.format(req))
+                else:
+                    yield req
 
-    def write(self, results, unsafe_requirements, reverse_dependencies, primary_packages, markers, hashes):
+    def write(self, results, unsafe_requirements, reverse_dependencies,
+              primary_packages, markers, hashes, allow_unsafe=False):
         with ExitStack() as stack:
             f = None
             if not self.dry_run:
                 f = stack.enter_context(AtomicSaver(self.dst_file))
 
             for line in self._iter_lines(results, unsafe_requirements, reverse_dependencies,
-                                         primary_packages, markers, hashes):
+                                         primary_packages, markers, hashes, allow_unsafe=allow_unsafe):
                 log.info(line)
                 if f:
                     f.write(unstyle(line).encode('utf-8'))
