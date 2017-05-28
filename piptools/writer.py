@@ -81,17 +81,16 @@ class OutputWriter(object):
         if emitted:
             yield ''
 
-    def _iter_lines(self, results, reverse_dependencies, primary_packages, markers, hashes):
+    def _iter_lines(self, results, unsafe_requirements, reverse_dependencies, primary_packages, markers, hashes):
         for line in self.write_header():
             yield line
         for line in self.write_flags():
             yield line
 
-        unsafe_packages = {r for r in results if r.name in UNSAFE_PACKAGES}
+        unsafe_requirements = {r for r in results if r.name in UNSAFE_PACKAGES} if not unsafe_requirements else unsafe_requirements  # noqa
         packages = {r for r in results if r.name not in UNSAFE_PACKAGES}
 
         packages = sorted(packages, key=self._sort_key)
-        unsafe_packages = sorted(unsafe_packages, key=self._sort_key)
 
         for ireq in packages:
             line = self._format_requirement(
@@ -99,25 +98,26 @@ class OutputWriter(object):
                 markers.get(ireq.req.name), hashes=hashes)
             yield line
 
-        if unsafe_packages:
+        if unsafe_requirements:
+            unsafe_requirements = sorted(unsafe_requirements, key=self._sort_key)
             yield ''
             yield comment('# The following packages are considered to be unsafe in a requirements file:')
 
-            for ireq in unsafe_packages:
-
-                yield self._format_requirement(ireq,
+            for ireq in unsafe_requirements:
+                req = self._format_requirement(ireq,
                                                reverse_dependencies,
                                                primary_packages,
                                                marker=markers.get(ireq.req.name),
                                                hashes=hashes)
+                yield comment('# {}'.format(req))
 
-    def write(self, results, reverse_dependencies, primary_packages, markers, hashes):
+    def write(self, results, unsafe_requirements, reverse_dependencies, primary_packages, markers, hashes):
         with ExitStack() as stack:
             f = None
             if not self.dry_run:
                 f = stack.enter_context(AtomicSaver(self.dst_file))
 
-            for line in self._iter_lines(results, reverse_dependencies,
+            for line in self._iter_lines(results, unsafe_requirements, reverse_dependencies,
                                          primary_packages, markers, hashes):
                 log.info(line)
                 if f:
