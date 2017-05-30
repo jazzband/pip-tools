@@ -39,8 +39,8 @@ def read_cache_file(cache_file_path):
 
 
 class DependencyCache(object):
-    """
-    Creates a new persistent dependency cache for the current Python version.
+    """Creates a new persistent dependency cache for the current Python version.
+
     The cache file is written to the appropriate user cache dir for the
     current platform, i.e.
 
@@ -61,32 +61,33 @@ class DependencyCache(object):
 
     @property
     def cache(self):
-        """
-        The dictionary that is the actual in-memory cache.  This property
-        lazily loads the cache from disk.
+        """The dictionary that is the actual in-memory cache.
+
+        This property lazily loads the cache from disk.
         """
         if self._cache is None:
             self.read_cache()
         return self._cache
 
     def as_cache_key(self, ireq):
-        """
-        Given a requirement, return its cache key. This behavior is a little weird in order to allow backwards
+        """Given a requirement, return its cache key.
+
+        This behavior is a little weird in order to allow backwards
         compatibility with cache files. For a requirement without extras, this will return, for example:
 
-        ("ipython", "2.1.0")
+        ('ipython', '2.1.0')
 
         For a requirement with extras, the extras will be comma-separated and appended to the version, inside brackets,
         like so:
 
-        ("ipython", "2.1.0[nbconvert,notebook]")
+        ('ipython', '2.1.0[nbconvert,notebook]')
         """
         name, version, extras = as_tuple(ireq)
         if not extras:
-            extras_string = ""
+            extras_string = ''
         else:
-            extras_string = "[{}]".format(",".join(extras))
-        return name, "{}{}".format(version, extras_string)
+            extras_string = '[{}]'.format(','.join(extras))
+        return name, '{}{}'.format(version, extras_string)
 
     def read_cache(self):
         """Reads the cached contents into memory."""
@@ -127,8 +128,7 @@ class DependencyCache(object):
         return self.cache.get(pkgname, {}).get(pkgversion_and_extras, default)
 
     def reverse_dependencies(self, ireqs):
-        """
-        Returns a lookup table of reverse dependencies for all the given ireqs.
+        """Returns a lookup table of reverse dependencies for all the given ireqs.
 
         Since this is all static, it only works if the dependency cache
         contains the complete data, otherwise you end up with a partial view.
@@ -139,8 +139,7 @@ class DependencyCache(object):
         return self._reverse_dependencies(ireqs_as_cache_values)
 
     def _reverse_dependencies(self, cache_keys):
-        """
-        Returns a lookup table of reverse dependencies for all the given cache keys.
+        """Returns a lookup table of reverse dependencies for all the given cache keys.
 
         Example input:
 
@@ -155,7 +154,6 @@ class DependencyCache(object):
              'flake8': [],
              'mccabe': ['flake8'],
              'pyflakes': ['flake8']}
-
         """
         # First, collect all the dependencies into a sequence of (parent, child) tuples, like [('flake8', 'pep8'),
         # ('flake8', 'mccabe'), ...]

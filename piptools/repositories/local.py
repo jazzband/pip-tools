@@ -7,16 +7,14 @@ from .base import BaseRepository
 
 
 def ireq_satisfied_by_existing_pin(ireq, existing_pin):
-    """
-    Return True if the given InstallationRequirement is satisfied by the
-    previously encountered version pin.
-    """
+    """Determine if a previously encountered version pin satisfies a InstallationRequirement."""
     version = next(iter(existing_pin.req.specifier)).version
     return version in ireq.req.specifier
 
 
 class LocalRequirementsRepository(BaseRepository):
-    """
+    """Create and return a local requirements repository.
+
     The LocalRequirementsRepository proxied the _real_ repository by first
     checking if a requirement can be satisfied by existing pins (i.e. the
     result of a previous compile step).

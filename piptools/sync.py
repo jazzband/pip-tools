@@ -17,13 +17,14 @@ PACKAGES_TO_IGNORE = [
 
 
 def dependency_tree(installed_keys, root_key):
-    """
-    Calculate the dependency tree for the package `root_key` and return
-    a collection of all its dependencies.  Uses a DFS traversal algorithm.
+    """Calculate the dependency tree for a package.
 
-    `installed_keys` should be a {key: requirement} mapping, e.g.
-        {'django': from_line('django==1.8')}
-    `root_key` should be the key to return the dependency tree for.
+    Args:
+        installed_keys: should be a {key: requirement} mapping, e.g.
+            {'django': from_line('django==1.8')}
+        root_key: the package to calculate a dependency tree of
+
+    Uses a DFS traversal algorithm.
     """
     dependencies = set()
     queue = collections.deque()
@@ -52,13 +53,15 @@ def dependency_tree(installed_keys, root_key):
 
 
 def get_dists_to_ignore(installed):
-    """
-    Returns a collection of package names to ignore when performing pip-sync,
-    based on the currently installed environment.  For example, when pip-tools
-    is installed in the local environment, it should be ignored, including all
-    of its dependencies (e.g. click).  When pip-tools is not installed
-    locally, click should also be installed/uninstalled depending on the given
-    requirements.
+    """Calculate the package names to ignore when performing pip-sync.
+
+    Uses the currently installed environment to determine a collection of
+    package names to ignore.
+
+    For example, when pip-tools is installed in the local environment,
+    it should be ignored, including all of its dependencies (e.g. click).
+    When pip-tools is not installed locally, click should also be
+    installed/uninstalled depending on the given requirements.
     """
     installed_keys = {key_from_req(r): r for r in installed}
     return list(flat_map(lambda req: dependency_tree(installed_keys, req), PACKAGES_TO_IGNORE))
@@ -90,9 +93,11 @@ def merge(requirements, ignore_conflicts):
 
 
 def diff(compiled_requirements, installed_dists):
-    """
-    Calculate which packages should be installed or uninstalled, given a set
-    of compiled requirements and a list of currently installed modules.
+    """Calculate which packages should be installed or uninstalled.
+
+    Args:
+        compiled_requirements: a set of compiled requirements
+        installed_dists: a list of currently installed modules
     """
     requirements_lut = {r.link or key_from_req(r.req): r for r in compiled_requirements}
 
@@ -119,11 +124,9 @@ def diff(compiled_requirements, installed_dists):
 
 
 def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None, install_flags=None):
-    """
-    Install and uninstalls the given sets of modules.
-    """
+    """Install and uninstalls the given sets of modules."""
     if not to_uninstall and not to_install:
-        click.echo("Everything up-to-date")
+        click.echo('Everything up-to-date')
 
     if pip_flags is None:
         pip_flags = []
@@ -140,9 +143,9 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None,
 
     if to_uninstall:
         if dry_run:
-            click.echo("Would uninstall:")
+            click.echo('Would uninstall:')
             for pkg in to_uninstall:
-                click.echo("  {}".format(pkg))
+                click.echo('  {}'.format(pkg))
         else:
             check_call([pip, 'uninstall', '-y'] + pip_flags + sorted(to_uninstall))
 
@@ -150,9 +153,9 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None,
         if install_flags is None:
             install_flags = []
         if dry_run:
-            click.echo("Would install:")
+            click.echo('Would install:')
             for ireq in to_install:
-                click.echo("  {}".format(format_requirement(ireq)))
+                click.echo('  {}'.format(format_requirement(ireq)))
         else:
             package_args = []
             for ireq in sorted(to_install):

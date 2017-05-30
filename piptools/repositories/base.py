@@ -18,23 +18,30 @@ class BaseRepository(object):
 
     @abstractmethod
     def find_best_match(self, ireq):
-        """
-        Return a Version object that indicates the best match for the given
+        """Return a Version object.
+
+        This object indicates the best match for the given
         InstallRequirement according to the repository.
         """
 
     @abstractmethod
     def get_dependencies(self, ireq):
-        """
-        Given a pinned or an editable InstallRequirement, returns a set of
-        dependencies (also InstallRequirements, but not necessarily pinned).
+        """Returns a set of dependencies.
+
+        The returned dependencies are InstallRequirements, but are not necessarily pinned.
         They indicate the secondary dependencies for the given requirement.
+
+        Args:
+            ireq: a pinned or editable InstallRequirement
         """
 
     @abstractmethod
     def get_hashes(self, ireq):
-        """
-        Given a pinned InstallRequire, returns a set of hashes that represent
-        all of the files for a given requirement. It is not acceptable for an
-        editable or unpinned requirement to be passed to this function.
+        """Returns a set of hashses that represent all of the files for a requirement.
+
+        It is not acceptable for an editable or unpinned requirement to be passed
+        to this function.
+
+        Args:
+            ireq: a pinned InstallRequirement
         """

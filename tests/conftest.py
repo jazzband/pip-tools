@@ -45,7 +45,7 @@ class FakeRepository(BaseRepository):
 
         name, version, extras = as_tuple(ireq)
         # Store non-extra dependencies under the empty string
-        extras += ("",)
+        extras += ('',)
         dependencies = [dep for extra in extras for dep in self.index[name][version][extra]]
         return [InstallRequirement.from_line(dep, constraint=ireq.constraint) for dep in dependencies]
 
@@ -61,7 +61,7 @@ class FakeInstalledDistribution(object):
         self.key = key_from_req(self.req)
         self.specifier = self.req.specifier
 
-        self.version = line.split("==")[1]
+        self.version = line.split('==')[1]
 
     def requires(self):
         return self.deps

@@ -31,38 +31,37 @@ class PipCommand(pip.basecommand.Command):
 
 @click.command()
 @click.version_option()
-@click.option('-v', '--verbose', is_flag=True, help="Show more output")
-@click.option('-n', '--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
-@click.option('-p', '--pre', is_flag=True, default=None, help="Allow resolving to prereleases (default is not)")
-@click.option('-r', '--rebuild', is_flag=True, help="Clear any caches upfront, rebuild from scratch")
-@click.option('-f', '--find-links', multiple=True, help="Look for archives in this directory or on this HTML page", envvar='PIP_FIND_LINKS')  # noqa
-@click.option('-i', '--index-url', help="Change index URL (defaults to PyPI)", envvar='PIP_INDEX_URL')
-@click.option('--extra-index-url', multiple=True, help="Add additional index URL to search", envvar='PIP_EXTRA_INDEX_URL')  # noqa
-@click.option('--client-cert', help="Path to SSL client certificate, a single file containing the private key and the certificate in PEM format.")  # noqa
+@click.option('-v', '--verbose', is_flag=True, help='Show more output')
+@click.option('-n', '--dry-run', is_flag=True, help='Only show what would happen, don\'t change anything')
+@click.option('-p', '--pre', is_flag=True, default=None, help='Allow resolving to prereleases (default is not)')
+@click.option('-r', '--rebuild', is_flag=True, help='Clear any caches upfront, rebuild from scratch')
+@click.option('-f', '--find-links', multiple=True, help='Look for archives in this directory or on this HTML page', envvar='PIP_FIND_LINKS')  # noqa
+@click.option('-i', '--index-url', help='Change index URL (defaults to PyPI)', envvar='PIP_INDEX_URL')
+@click.option('--extra-index-url', multiple=True, help='Add additional index URL to search', envvar='PIP_EXTRA_INDEX_URL')  # noqa
+@click.option('--client-cert', help='Path to SSL client certificate, a single file containing the private key and the certificate in PEM format.')  # noqa
 @click.option('--trusted-host', multiple=True, envvar='PIP_TRUSTED_HOST',
-              help="Mark this host as trusted, even though it does not have "
-                   "valid or any HTTPS.")
+              help='Mark this host as trusted, even though it does not have valid or any HTTPS.')
 @click.option('--header/--no-header', is_flag=True, default=True,
-              help="Add header to generated file")
+              help='Add header to generated file')
 @click.option('--index/--no-index', is_flag=True, default=True,
-              help="Add index URL to generated file")
+              help='Add index URL to generated file')
 @click.option('--emit-trusted-host/--no-emit-trusted-host', is_flag=True,
-              default=True, help="Add trusted host option to generated file")
+              default=True, help='Add trusted host option to generated file')
 @click.option('--annotate/--no-annotate', is_flag=True, default=True,
-              help="Annotate results, indicating where dependencies come from")
+              help='Annotate results, indicating where dependencies come from')
 @click.option('-U', '--upgrade', is_flag=True, default=False,
               help='Try to upgrade all dependencies to their latest versions')
 @click.option('-P', '--upgrade-package', 'upgrade_packages', nargs=1, multiple=True,
-              help="Specify particular packages to upgrade.")
+              help='Specify particular packages to upgrade.')
 @click.option('-o', '--output-file', nargs=1, type=str, default=None,
               help=('Output file name. Required if more than one input file is given. '
                     'Will be derived from input file otherwise.'))
 @click.option('--allow-unsafe', is_flag=True, default=False,
-              help="Pin packages considered unsafe: pip, setuptools & distribute")
+              help='Pin packages considered unsafe: pip, setuptools & distribute')
 @click.option('--generate-hashes', is_flag=True, default=False,
-              help="Generate pip 8 style hashes in the resulting requirements file.")
+              help='Generate pip 8 style hashes in the resulting requirements file.')
 @click.option('--max-rounds', default=10,
-              help="Maximum number of rounds before resolving the requirements aborts.")
+              help='Maximum number of rounds before resolving the requirements aborts.')
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         client_cert, trusted_host, header, index, emit_trusted_host, annotate,
@@ -79,8 +78,8 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
             if not output_file:
                 output_file = 'requirements.txt'
         else:
-            raise click.BadParameter(("If you do not specify an input file, "
-                                      "the default is {} or setup.py").format(DEFAULT_REQUIREMENTS_FILE))
+            raise click.BadParameter(('If you do not specify an input file, '
+                                      'the default is {} or setup.py').format(DEFAULT_REQUIREMENTS_FILE))
 
     if len(src_files) == 1 and src_files[0] == '-':
         if not output_file:
