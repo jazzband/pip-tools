@@ -9,6 +9,7 @@ from shutil import rmtree
 from pip.download import unpack_url
 from pip.index import PackageFinder
 from pip.req.req_set import RequirementSet
+from pip.wheel import Wheel
 try:
     from pip.utils.hashes import FAVORITE_HASH
 except ImportError:
@@ -24,6 +25,24 @@ try:
     from tempfile import TemporaryDirectory  # added in 3.2
 except ImportError:
     from .._compat import TemporaryDirectory
+
+
+# Monkey patch pip's Wheel class to support all platform tags. This allows
+# pip-tools to generate hashes for all available distributions, not only the
+# one for the current platform.
+
+def _wheel_supported(self, tags=None):
+    # Ignore current platform. Support everything.
+    return True
+
+
+def _wheel_support_index_min(self, tags=None):
+    # All wheels are equal priority for sorting.
+    return 0
+
+
+Wheel.supported = _wheel_supported
+Wheel.support_index_min = _wheel_support_index_min
 
 
 class PyPIRepository(BaseRepository):
