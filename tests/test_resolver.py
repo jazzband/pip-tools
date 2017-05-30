@@ -105,11 +105,40 @@ import pytest
          ['flask==0.10.1', 'itsdangerous==0.24', 'markupsafe==0.23',
           'jinja2==2.7.3', 'werkzeug==0.10.4']
          ),
+
+        # Unsafe dependencies should be filtered
+        (['setuptools==35.0.0', 'anyjson==0.3.3'], ['anyjson==0.3.3']),
+
+        (['fake-piptools-test-with-unsafe-deps==0.1'],
+         ['fake-piptools-test-with-unsafe-deps==0.1']
+         ),
     ])
 )
 def test_resolver(resolver, from_line, input, expected, prereleases):
     input = [line if isinstance(line, tuple) else (line, False) for line in input]
     input = [from_line(req[0], constraint=req[1]) for req in input]
     output = resolver(input, prereleases=prereleases).resolve()
+    output = {str(line) for line in output}
+    assert output == {str(line) for line in expected}
+
+
+@pytest.mark.parametrize(
+    ('input', 'expected', 'prereleases'),
+
+    ((tup + (False,))[:3] for tup in [
+        (['setuptools==34.0.0'], ['appdirs==1.4.9', 'setuptools==34.0.0', 'packaging==16.8']),
+
+        (['fake-piptools-test-with-unsafe-deps==0.1'],
+         ['appdirs==1.4.9',
+          'setuptools==34.0.0',
+          'packaging==16.8',
+          'fake-piptools-test-with-unsafe-deps==0.1'
+          ]),
+    ])
+)
+def test_resolver__allows_unsafe_deps(resolver, from_line, input, expected, prereleases):
+    input = [line if isinstance(line, tuple) else (line, False) for line in input]
+    input = [from_line(req[0], constraint=req[1]) for req in input]
+    output = resolver(input, prereleases=prereleases, allow_unsafe=True).resolve()
     output = {str(line) for line in output}
     assert output == {str(line) for line in expected}
