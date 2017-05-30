@@ -58,7 +58,7 @@ class PipCommand(pip.basecommand.Command):
               help=('Output file name. Required if more than one input file is given. '
                     'Will be derived from input file otherwise.'))
 @click.option('--allow-unsafe', is_flag=True, default=False,
-              help="Pin packages considered unsafe: {}".format(list(UNSAFE_PACKAGES)))
+              help="Pin packages considered unsafe: {}".format(', '.join(sorted(UNSAFE_PACKAGES))))
 @click.option('--generate-hashes', is_flag=True, default=False,
               help="Generate pip 8 style hashes in the resulting requirements file.")
 @click.option('--max-rounds', default=10,
