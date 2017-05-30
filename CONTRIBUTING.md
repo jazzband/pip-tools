@@ -4,9 +4,9 @@ This is a [Jazzband](https://jazzband.co/) project. By contributing you agree
 to abide by the [Contributor Code of Conduct](https://jazzband.co/about/conduct)
 and follow the [guidelines](https://jazzband.co/about/guidelines).
 
-Also, here are a few additionnal or emphasized guidelines to follow:
+Also, here are a few additional or emphasized guidelines to follow:
 - Always provide tests for your changes.
-- Add your changes to the changelog.
+- Add your changes to the [CHANGELOG](CHANGELOG.md).
 - Wait for the review of at least one other contributor before merging (even if you're a Jazzband member).
 
 The only exception to those guidelines is for trivial changes, such as

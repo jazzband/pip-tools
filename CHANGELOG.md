@@ -1,3 +1,8 @@
+# 1.10.0 (UNRELEASED)
+
+Features:
+- `--generate-hashes` now generates hashes for all wheels, not only wheels for the currently running platform ([#414](https://github.com/jazzband/pip-tools/issues/414))
+
 # 1.9.1
 
 Bug Fixes:
