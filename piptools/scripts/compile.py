@@ -7,10 +7,10 @@ import os
 import sys
 import tempfile
 
+import click
 import pip
 from pip.req import InstallRequirement, parse_requirements
 
-from .. import click
 from ..exceptions import PipToolsError
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository

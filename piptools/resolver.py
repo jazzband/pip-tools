@@ -7,10 +7,10 @@ from functools import partial
 from itertools import chain, count
 import os
 
+import click
 from first import first
 from pip.req import InstallRequirement
 
-from . import click
 from .cache import DependencyCache
 from .exceptions import UnsupportedConstraint
 from .logging import log

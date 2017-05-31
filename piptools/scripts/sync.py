@@ -5,9 +5,10 @@ from __future__ import (absolute_import, division, print_function,
 import os
 import sys
 
+import click
 import pip
 
-from .. import click, sync
+from .. import sync
 from ..exceptions import PipToolsError
 from ..logging import log
 from ..utils import assert_compatible_pip_version, flat_map

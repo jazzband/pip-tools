@@ -1,8 +1,9 @@
 import os
 from itertools import chain
 
+from click import unstyle
+
 from ._compat import ExitStack
-from .click import unstyle
 from .io import AtomicSaver
 from .logging import log
 from .utils import comment, format_requirement, dedup, UNSAFE_PACKAGES
