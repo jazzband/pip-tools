@@ -15,8 +15,8 @@ from ..exceptions import PipToolsError
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
-from ..utils import (assert_compatible_pip_version, is_pinned_requirement,
-                     key_from_req, dedup)
+from ..utils import (assert_compatible_pip_version, dedup, is_pinned_requirement,
+                     key_from_req, UNSAFE_PACKAGES)
 from ..writer import OutputWriter
 
 # Make sure we're using a compatible version of pip
@@ -58,7 +58,7 @@ class PipCommand(pip.basecommand.Command):
               help=('Output file name. Required if more than one input file is given. '
                     'Will be derived from input file otherwise.'))
 @click.option('--allow-unsafe', is_flag=True, default=False,
-              help="Pin packages considered unsafe: pip, setuptools & distribute")
+              help="Pin packages considered unsafe: {}".format(', '.join(sorted(UNSAFE_PACKAGES))))
 @click.option('--generate-hashes', is_flag=True, default=False,
               help="Generate pip 8 style hashes in the resulting requirements file.")
 @click.option('--max-rounds', default=10,
