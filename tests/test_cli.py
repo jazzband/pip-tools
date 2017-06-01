@@ -122,7 +122,6 @@ def test_trusted_host(pip_conf):
         out = runner.invoke(cli, ['-v',
                                   '--trusted-host', 'example.com',
                                   '--trusted-host', 'example2.com'])
-        print(out.output)
         assert ('--trusted-host example.com\n'
                 '--trusted-host example2.com\n' in out.output)
 
@@ -136,7 +135,6 @@ def test_trusted_host_no_emit(pip_conf):
         out = runner.invoke(cli, ['-v',
                                   '--trusted-host', 'example.com',
                                   '--no-emit-trusted-host'])
-        print(out.output)
         assert '--trusted-host example.com' not in out.output
         assert '--no-emit-trusted-host' in out.output
 
@@ -158,7 +156,6 @@ def test_realistic_complex_sub_dependencies(tmpdir):
                                   '-n', '--rebuild',
                                   '-f', str(tmpdir)])
 
-        print(out.output)
         assert out.exit_code == 0
 
 
@@ -216,7 +213,6 @@ def test_editable_package(tmpdir):
 
         out = runner.invoke(cli, ['-n'])
 
-        print(out.output)
         assert out.exit_code == 0
         assert fake_package_dir in out.output
         assert 'six==1.10.0' in out.output
@@ -234,7 +230,6 @@ def test_input_file_without_extension(tmpdir):
 
         out = runner.invoke(cli, ['-n', 'requirements'])
 
-        print(out.output)
         assert out.exit_code == 0
         assert '--output-file requirements.txt' in out.output
         assert 'six==1.10.0' in out.output
@@ -257,7 +252,6 @@ def test_upgrade_packages_option(tmpdir):
             '-f', fake_package_dir,
         ])
 
-        print(out.output)
         assert out.exit_code == 0
         assert 'small-fake-a==0.1' in out.output
         assert 'small-fake-b==0.2' in out.output
