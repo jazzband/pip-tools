@@ -159,13 +159,16 @@ class PyPIRepository(BaseRepository):
 
     def get_hashes(self, ireq):
         """
-        Given a pinned InstallRequire, returns a set of hashes that represent
-        all of the files for a given requirement. It is not acceptable for an
-        editable or unpinned requirement to be passed to this function.
+        Given an InstallRequirement, return a set of hashes that represent all
+        of the files for a given requirement. Editable requirements return an
+        empty set. Unpinned requirements raise a TypeError.
         """
+        if ireq.editable:
+            return set()
+
         if not is_pinned_requirement(ireq):
             raise TypeError(
-                "Expected pinned requirement, not unpinned or editable, got {}".format(ireq))
+                "Expected pinned requirement, got {}".format(ireq))
 
         # We need to get all of the candidates that match our current version
         # pin, these will represent all of the files that could possibly
