@@ -170,7 +170,7 @@ class PyPIRepository(BaseRepository):
         all of the files for a given requirement. It is not acceptable for an
         editable or unpinned requirement to be passed to this function.
         """
-        if ireq.editable or not is_pinned_requirement(ireq):
+        if not is_pinned_requirement(ireq):
             raise TypeError(
                 "Expected pinned requirement, not unpinned or editable, got {}".format(ireq))
 
