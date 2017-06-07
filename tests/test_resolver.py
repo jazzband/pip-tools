@@ -142,3 +142,14 @@ def test_resolver__allows_unsafe_deps(resolver, from_line, input, expected, prer
     output = resolver(input, prereleases=prereleases, allow_unsafe=True).resolve()
     output = {str(line) for line in output}
     assert output == {str(line) for line in expected}
+
+
+def test_resolver__resolve_hashes_ignores_editable_hashes(resolver, from_editable, from_line):
+    resolver = resolver([])
+
+    non_editable = from_line('appdirs==1.4.9')
+    editable = from_editable('git+git://fake.org/x/y.git#egg=y')
+
+    resolved = resolver.resolve_hashes((non_editable, editable))
+    assert non_editable in resolved
+    assert editable not in resolved
