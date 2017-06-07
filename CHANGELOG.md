@@ -2,6 +2,8 @@
 
 Features:
 - `--generate-hashes` now generates hashes for all wheels, not only wheels for the currently running platform ([#414](https://github.com/jazzband/pip-tools/issues/414))
+- `--generate-hashes` now does not error if an editable dependency is present ([#424](https://github.com/jazzband/pip-tools/pull/424))
+
 
 # 1.9.1
 
