@@ -75,7 +75,17 @@ class Resolver(object):
         """
         Finds acceptable hashes for all of the given InstallRequirements.
         """
-        return {ireq: self.repository.get_hashes(ireq) for ireq in ireqs}
+        hashes = {}
+        for ireq in ireqs:
+            try:
+                ireq_hash = self.repository.get_hashes(ireq)
+            except TypeError:
+                continue
+            else:
+                if ireq_hash is not None:
+                    hashes[ireq] = ireq_hash
+
+        return hashes
 
     def resolve(self, max_rounds=10):
         """

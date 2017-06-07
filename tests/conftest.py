@@ -22,6 +22,9 @@ class FakeRepository(BaseRepository):
             self.editables = json.load(f)
 
     def get_hashes(self, ireq):
+        if ireq.editable:
+            raise TypeError('{0} is an editable requirement'.format(ireq))
+
         # Some fake hashes
         return {
             'test:123',

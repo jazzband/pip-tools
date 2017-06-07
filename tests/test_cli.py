@@ -222,6 +222,28 @@ def test_editable_package(tmpdir):
         assert 'six==1.10.0' in out.output
 
 
+def test_editable_package_with_hash(tmpdir):
+    """
+    piptools can use --generate-hashes with editable and non-editable dependencies
+    """
+    fake_package_dir = os.path.join(os.path.split(__file__)[0], 'fixtures', 'small_fake_package')
+    fake_package_dir = 'file:' + pathname2url(fake_package_dir)
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements', 'w') as req_in:
+            req_in.write('six==1.10.0\n')
+            req_in.write('-e ' + fake_package_dir)  # require editable fake package
+
+        out = runner.invoke(cli, ['-n', 'requirements', '--generate-hashes'])
+
+        print(out.output)
+        assert out.exit_code == 0
+        assert '--output-file requirements.txt' in out.output
+        assert 'six==1.10.0' in out.output
+        assert '-e ' + fake_package_dir + '\n' in out.output
+
+
 def test_input_file_without_extension(tmpdir):
     """
     piptools can compile a file without an extension,
