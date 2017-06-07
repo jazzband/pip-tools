@@ -1,13 +1,12 @@
 # 1.10.0 (UNRELEASED)
 
 Features:
-- `--generate-hashes` now generates hashes for all wheels, not only wheels for the currently running platform ([#414](https://github.com/jazzband/pip-tools/issues/414))
-
-# 1.9.1
+- `--generate-hashes` now generates hashes for all wheels,
+not only wheels for the currently running platform ([#520](https://github.com/jazzband/pip-tools/pull/520)). Thanks @jdufresne
 
 Bug Fixes:
 - Fixed bug where unsafe packages would get pinned in generated requirements files
-when `--allow-unsafe` was not set. ([#517](https://github.com/jazzband/pip-tools/pull/517)).
+when `--allow-unsafe` was not set. ([#517](https://github.com/jazzband/pip-tools/pull/517)). Thanks @dschaller
 
 # 1.9.0
 
