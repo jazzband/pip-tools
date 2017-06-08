@@ -9,9 +9,8 @@ from collections import OrderedDict
 import pip
 from pip.req import InstallRequirement
 
+from click import style
 from first import first
-
-from .click import style
 
 
 def safeint(s):

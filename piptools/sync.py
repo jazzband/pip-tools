@@ -3,7 +3,8 @@ import os
 import sys
 from subprocess import check_call
 
-from . import click
+import click
+
 from .exceptions import IncompatibleRequirements, UnsupportedConstraint
 from .utils import flat_map, format_requirement, key_from_req
 
