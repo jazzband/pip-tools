@@ -216,17 +216,10 @@ def test_sync_quiet(tmpdir):
             req_in.write('six==1.10.0')
 
         with mock.patch('piptools.sync.check_call') as check_call:
-            out = runner.invoke(sync_cli, ['--quiet'])
-            assert out.output == ''
-            assert out.exit_code == 0
-            # for every call to pip ensure the `-q` flag is set
-            for call in check_call.call_args_list:
-                assert '-q' in call[0][0]
-
-        with mock.patch('piptools.sync.check_call') as check_call:
             out = runner.invoke(sync_cli, ['-q'])
             assert out.output == ''
             assert out.exit_code == 0
+            # for every call to pip ensure the `-q` flag is set
             for call in check_call.call_args_list:
                 assert '-q' in call[0][0]
 
