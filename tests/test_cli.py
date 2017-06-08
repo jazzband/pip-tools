@@ -153,7 +153,7 @@ def test_realistic_complex_sub_dependencies(tmpdir):
     subprocess.check_output(['pip', 'wheel',
                              '--no-deps',
                              '-w', str(tmpdir),
-                             os.path.join('.', 'tests', 'fixtures', 'fake_package', '.')])
+                             os.path.join('.', 'tests', 'test_data', 'fake_package', '.')])
 
     runner = CliRunner()
     with runner.isolated_filesystem():
@@ -229,7 +229,7 @@ def test_sync_quiet(tmpdir):
 
 def test_editable_package(tmpdir):
     """ piptools can compile an editable """
-    fake_package_dir = os.path.join(os.path.split(__file__)[0], 'fixtures', 'small_fake_package')
+    fake_package_dir = os.path.join(os.path.split(__file__)[0], 'test_data', 'small_fake_package')
     fake_package_dir = 'file:' + pathname2url(fake_package_dir)
     runner = CliRunner()
     with runner.isolated_filesystem():
@@ -265,7 +265,7 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(tmpdir)
     """ piptools will not create an archive for a locally available editable requirement """
     cache_dir = tmpdir.mkdir('cache_dir')
 
-    fake_package_dir = os.path.join(os.path.split(__file__)[0], 'fixtures', 'small_fake_package')
+    fake_package_dir = os.path.join(os.path.split(__file__)[0], 'test_data', 'small_fake_package')
     fake_package_dir = 'file:' + pathname2url(fake_package_dir)
 
     with mock.patch('piptools.repositories.pypi.CACHE_DIR', new=str(cache_dir)):
@@ -305,7 +305,7 @@ def test_upgrade_packages_option(tmpdir):
     """
     piptools respects --upgrade-package/-P inline list.
     """
-    fake_package_dir = os.path.join(os.path.split(__file__)[0], 'fixtures', 'minimal_wheels')
+    fake_package_dir = os.path.join(os.path.split(__file__)[0], 'test_data', 'minimal_wheels')
     runner = CliRunner()
     with runner.isolated_filesystem():
         with open('requirements.in', 'w') as req_in:
@@ -325,7 +325,7 @@ def test_upgrade_packages_option(tmpdir):
 
 def test_generate_hashes_with_editable():
     small_fake_package_dir = os.path.join(
-        os.path.split(__file__)[0], 'fixtures', 'small_fake_package')
+        os.path.split(__file__)[0], 'test_data', 'small_fake_package')
     small_fake_package_url = 'file:' + pathname2url(small_fake_package_dir)
     runner = CliRunner()
     with runner.isolated_filesystem():
