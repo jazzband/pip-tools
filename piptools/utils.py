@@ -4,6 +4,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import sys
 from itertools import chain, groupby
+from collections import OrderedDict
 
 import pip
 from pip.req import InstallRequirement
@@ -19,13 +20,16 @@ def safeint(s):
     except ValueError:
         return 0
 
+
 pip_version_info = tuple(safeint(digit) for digit in pip.__version__.split('.'))
+
+UNSAFE_PACKAGES = {'setuptools', 'distribute', 'pip'}
 
 
 def assert_compatible_pip_version():
     # Make sure we're using a reasonably modern version of pip
-    if not pip_version_info >= (7, 0):
-        print('pip-compile requires at least version 7.0 of pip ({} found), '
+    if not pip_version_info >= (8, 0):
+        print('pip-compile requires at least version 8.0 of pip ({} found), '
               'perhaps run `pip install --upgrade pip`?'.format(pip.__version__))
         sys.exit(4)
 
@@ -34,47 +38,42 @@ def key_from_req(req):
     """Get an all-lowercase version of the requirement's name."""
     if hasattr(req, 'key'):
         # pip 8.1.1 or below, using pkg_resources
-        return req.key
+        key = req.key
     else:
         # pip 8.1.2 or above, using packaging
-        return req.name.lower()
+        key = req.name
 
-
-def name_from_req(req):
-    """Get the name of the requirement"""
-    if hasattr(req, 'project_name'):
-        # pip 8.1.1 or below, using pkg_resources
-        return req.project_name
-    else:
-        # pip 8.1.2 or above, using packaging
-        return req.name
+    key = key.replace('_', '-').lower()
+    return key
 
 
 def comment(text):
     return style(text, fg='green')
 
 
-def make_install_requirement(name, version, extras):
+def make_install_requirement(name, version, extras, constraint=False):
     # If no extras are specified, the extras string is blank
     extras_string = ""
     if extras:
         # Sort extras for stability
         extras_string = "[{}]".format(",".join(sorted(extras)))
 
-    return InstallRequirement.from_line('{}{}=={}'.format(name, extras_string, str(version)))
+    return InstallRequirement.from_line('{}{}=={}'.format(name, extras_string, str(version)), constraint=constraint)
 
 
-def format_requirement(ireq, include_specifier=True):
+def format_requirement(ireq, marker=None):
     """
     Generic formatter for pretty printing InstallRequirements to the terminal
     in a less verbose way than using its `__str__` method.
     """
     if ireq.editable:
         line = '-e {}'.format(ireq.link)
-    elif include_specifier:
-        line = str(ireq.req)
     else:
-        line = name_from_req(ireq.req)
+        line = str(ireq.req).lower()
+
+    if marker:
+        line = '{} ; {}'.format(line, marker)
+
     return line
 
 
@@ -202,3 +201,10 @@ def lookup_table(values, key=None, keyval=None, unique=False, use_lists=False):
         else:
             s.add(v)
     return dict(lut)
+
+
+def dedup(iterable):
+    """Deduplicate an iterable object like iter(set(iterable)) but
+    order-reserved.
+    """
+    return iter(OrderedDict.fromkeys(iterable))
