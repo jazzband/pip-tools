@@ -222,6 +222,19 @@ def test_editable_package(tmpdir):
         assert 'six==1.10.0' in out.output
 
 
+def test_editable_package_vcs(tmpdir):
+    vcs_package = 'git+git://github.com/pytest-dev/pytest-django#egg=pytest-django'
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements.in', 'w') as req_in:
+            req_in.write('-e ' + vcs_package)
+        out = runner.invoke(cli, ['-n',
+                                  '--rebuild'])
+        print(out.output)
+        assert out.exit_code == 0
+        assert vcs_package in out.output
+
+
 def test_input_file_without_extension(tmpdir):
     """
     piptools can compile a file without an extension,
