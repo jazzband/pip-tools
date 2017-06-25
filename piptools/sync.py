@@ -5,7 +5,7 @@ from subprocess import check_call
 
 from . import click
 from .exceptions import IncompatibleRequirements, UnsupportedConstraint
-from .utils import flat_map, key_from_req
+from .utils import flat_map, format_requirement, key_from_req
 
 PACKAGES_TO_IGNORE = [
     'pip',
@@ -97,7 +97,7 @@ def diff(compiled_requirements, installed_dists):
     requirements_lut = {r.link or key_from_req(r.req): r for r in compiled_requirements}
 
     satisfied = set()  # holds keys
-    to_install = set()  # holds keys-and-versions
+    to_install = set()  # holds InstallRequirement objects
     to_uninstall = set()  # holds keys
 
     pkgs_to_ignore = get_dists_to_ignore(installed_dists)
@@ -110,7 +110,7 @@ def diff(compiled_requirements, installed_dists):
 
     for key, requirement in requirements_lut.items():
         if key not in satisfied:
-            to_install.add(str(requirement.link or requirement.req))
+            to_install.add(requirement)
 
     # Make sure to not uninstall any packages that should be ignored
     to_uninstall -= set(pkgs_to_ignore)
@@ -151,8 +151,14 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None,
             install_flags = []
         if dry_run:
             click.echo("Would install:")
-            for pkg in to_install:
-                click.echo("  {}".format(pkg))
+            for ireq in to_install:
+                click.echo("  {}".format(format_requirement(ireq)))
         else:
-            check_call([pip, 'install'] + pip_flags + install_flags + sorted(to_install))
+            package_args = []
+            for ireq in sorted(to_install):
+                if ireq.editable:
+                    package_args.extend(['-e', str(ireq.link or ireq.req)])
+                else:
+                    package_args.append(str(ireq.req))
+            check_call([pip, 'install'] + pip_flags + install_flags + package_args)
     return 0

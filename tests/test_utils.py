@@ -1,12 +1,12 @@
 from pytest import raises
 
-from piptools.utils import as_tuple, format_requirement, format_specifier, flat_map
+from piptools.utils import (
+    as_tuple, format_requirement, format_specifier, flat_map, dedup)
 
 
 def test_format_requirement(from_line):
     ireq = from_line('test==1.2')
     assert format_requirement(ireq) == 'test==1.2'
-    assert format_requirement(ireq, include_specifier=False) == 'test'
 
 
 def test_format_requirement_editable(from_editable):
@@ -54,3 +54,7 @@ def test_as_tuple(from_line):
 
 def test_flat_map():
     assert [1, 2, 4, 1, 3, 9] == list(flat_map(lambda x: [1, x, x * x], [2, 3]))
+
+
+def test_dedup():
+    assert list(dedup([3, 1, 2, 4, 3, 5])) == [3, 1, 2, 4, 5]

@@ -2,7 +2,7 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-from piptools.utils import key_from_req
+from piptools.utils import as_tuple, key_from_req, make_install_requirement
 from .base import BaseRepository
 
 
@@ -11,14 +11,8 @@ def ireq_satisfied_by_existing_pin(ireq, existing_pin):
     Return True if the given InstallationRequirement is satisfied by the
     previously encountered version pin.
     """
-    if hasattr(existing_pin.req, 'specs'):
-        # pip < 8.1.2
-        version = existing_pin.req.specs[0][1]
-        return version in ireq.req
-    else:
-        # pip >= 8.1.2
-        version = next(iter(existing_pin.req.specifier)).version
-        return version in ireq.req.specifier
+    version = next(iter(existing_pin.req.specifier)).version
+    return version in ireq.req.specifier
 
 
 class LocalRequirementsRepository(BaseRepository):
@@ -57,9 +51,15 @@ class LocalRequirementsRepository(BaseRepository):
         key = key_from_req(ireq.req)
         existing_pin = self.existing_pins.get(key)
         if existing_pin and ireq_satisfied_by_existing_pin(ireq, existing_pin):
-            return existing_pin
+            project, version, _ = as_tuple(existing_pin)
+            return make_install_requirement(
+                project, version, ireq.extras, constraint=ireq.constraint
+            )
         else:
             return self.repository.find_best_match(ireq, prereleases)
 
     def get_dependencies(self, ireq):
         return self.repository.get_dependencies(ireq)
+
+    def get_hashes(self, ireq):
+        return self.repository.get_hashes(ireq)

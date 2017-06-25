@@ -1,36 +1,21 @@
 sudo: false
 language: python
-
-# Run tox with python 3.5, but let _it_ build the envs for the various Python
-# versions (instead of Travis)
-python: 3.5
-
-env:
-  matrix:
-    - TOXENV=py27-piplatest
-    - TOXENV=py34-piplatest
-    - TOXENV=py35-piplatest
-    - TOXENV=py27-pip8
-    - TOXENV=py34-pip8
-    - TOXENV=py35-pip8
-    - TOXENV=py27-pip811
-    - TOXENV=py34-pip811
-    - TOXENV=py35-pip811
-    - TOXENV=py27-pip7
-    - TOXENV=py34-pip7
-    - TOXENV=py35-pip7
-    - TOXENV=py27-pip71
-    - TOXENV=py34-pip71
-    - TOXENV=py35-pip71
-    - TOXENV=py27-pip70
-    - TOXENV=py34-pip70
-    - TOXENV=py35-pip70
-    - TOXENV=flake8
-
+python:
+  - "2.7"
+  - "3.4"
+  - "3.5"
+  - "3.6"
 install:
-  - travis_retry pip install tox
-
+- travis_retry pip install tox-travis
 cache: pip
-
-script:
-  - tox
+script: tox --travis-after
+deploy:
+  provider: pypi
+  user: jazzband
+  distributions: sdist bdist_wheel
+  password:
+    secure: EswzTeyLEtslHlgrDwAz8sBdDJMzTPr761p7UoDW4jaL2RYyR4018oaGKeYESveKq5IMS1AxGXvXZVeln0YcXAwVOWp2S5SE9pkT0d/OdUcq5KHhFkS6UL/WVzG5L+eLQdwS5D3mVBcQGyShLs/uY1vjyQU1j6wfQrSsHOHHTEI=
+  on:
+    tags: true
+    repo: jazzband/pip-tools
+    python: 2.7

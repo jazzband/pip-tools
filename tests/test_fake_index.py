@@ -34,21 +34,21 @@ def test_get_dependencies(from_line, repository):
 
     ireq = from_line('Flask==0.10.1')
     dependencies = repository.get_dependencies(ireq)
-    assert (set(str(req) for req in dependencies) ==
+    assert ({str(req) for req in dependencies} ==
             {'Werkzeug>=0.7', 'Jinja2>=2.4', 'itsdangerous>=0.21'})
 
     ireq = from_line('ipython==2.1.0')
     dependencies = repository.get_dependencies(ireq)
-    assert set(str(req) for req in dependencies) == {'gnureadline'}
+    assert {str(req) for req in dependencies} == {'gnureadline'}
 
     ireq = from_line('ipython[notebook]==2.1.0')
     dependencies = repository.get_dependencies(ireq)
-    assert (set(str(req) for req in dependencies) ==
+    assert ({str(req) for req in dependencies} ==
             {'gnureadline', 'pyzmq>=2.1.11', 'tornado>=3.1', 'jinja2'})
 
     ireq = from_line('ipython[notebook,nbconvert]==2.1.0')
     dependencies = repository.get_dependencies(ireq)
-    assert (set(str(req) for req in dependencies) ==
+    assert ({str(req) for req in dependencies} ==
             {'gnureadline', 'pyzmq>=2.1.11', 'tornado>=3.1', 'jinja2', 'pygments', 'Sphinx>=0.3'})
 
 
