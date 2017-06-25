@@ -7,6 +7,8 @@ not only wheels for the currently running platform ([#520](https://github.com/ja
 Bug Fixes:
 - Fixed bug where unsafe packages would get pinned in generated requirements files
 when `--allow-unsafe` was not set. ([#517](https://github.com/jazzband/pip-tools/pull/517)). Thanks @dschaller
+- Fixed bug where editable PyPI dependencies would have a `download_dir` and be exposed to `git-checkout-index`,
+(thus losing their VCS directory) and `python setup.py egg_info` fails. ([#385](https://github.com/jazzband/pip-tools/pull/385#) and [#538](https://github.com/jazzband/pip-tools/pull/538)). Thanks @blueyed and @dfee
 
 # 1.9.0
 
