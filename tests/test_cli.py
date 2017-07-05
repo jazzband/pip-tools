@@ -223,7 +223,7 @@ def test_editable_package(tmpdir):
 
 
 def test_editable_package_vcs(tmpdir):
-    vcs_package = 'git+git://github.com/pytest-dev/pytest-django#egg=pytest-django'
+    vcs_package = 'git+git://github.com/pytest-dev/pytest-django@21492afc88a19d4ca01cd0ac392a5325b14f95c7#egg=pytest-django'
     runner = CliRunner()
     with runner.isolated_filesystem():
         with open('requirements.in', 'w') as req_in:
@@ -233,6 +233,7 @@ def test_editable_package_vcs(tmpdir):
         print(out.output)
         assert out.exit_code == 0
         assert vcs_package in out.output
+        assert 'pytest' in out.output  # dependency of pytest-django
 
 
 def test_input_file_without_extension(tmpdir):
