@@ -5,7 +5,7 @@ from ._compat import ExitStack
 from .click import unstyle
 from .io import AtomicSaver
 from .logging import log
-from .utils import comment, format_requirement, dedup, UNSAFE_PACKAGES
+from .utils import comment, dedup, format_requirement, key_from_req, UNSAFE_PACKAGES
 
 
 class OutputWriter(object):
@@ -96,7 +96,7 @@ class OutputWriter(object):
         for ireq in packages:
             line = self._format_requirement(
                 ireq, reverse_dependencies, primary_packages,
-                markers.get(ireq.req.name), hashes=hashes)
+                markers.get(key_from_req(ireq.req)), hashes=hashes)
             yield line
 
         if unsafe_requirements:
@@ -108,7 +108,7 @@ class OutputWriter(object):
                 req = self._format_requirement(ireq,
                                                reverse_dependencies,
                                                primary_packages,
-                                               marker=markers.get(ireq.req.name),
+                                               marker=markers.get(key_from_req(ireq.req)),
                                                hashes=hashes)
                 if not allow_unsafe:
                     yield comment('# {}'.format(req))
