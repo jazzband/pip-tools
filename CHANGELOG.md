@@ -3,6 +3,7 @@
 Features:
 - `--generate-hashes` now generates hashes for all wheels,
 not only wheels for the currently running platform ([#520](https://github.com/jazzband/pip-tools/pull/520)). Thanks @jdufresne
+- Added a `-q`/`--quiet` argument to the pip-sync command to reduce log output.
 
 Bug Fixes:
 - Fixed bug where unsafe packages would get pinned in generated requirements files

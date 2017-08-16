@@ -26,8 +26,9 @@ DEFAULT_REQUIREMENTS_FILE = 'requirements.txt'
 @click.option('-i', '--index-url', help="Change index URL (defaults to PyPI)", envvar='PIP_INDEX_URL')
 @click.option('--extra-index-url', multiple=True, help="Add additional index URL to search", envvar='PIP_EXTRA_INDEX_URL')  # noqa
 @click.option('--no-index', is_flag=True, help="Ignore package index (only looking at --find-links URLs instead)")
+@click.option('-q', '--quiet', default=False, is_flag=True, help="Give less output")
 @click.argument('src_files', required=False, type=click.Path(exists=True), nargs=-1)
-def cli(dry_run, force, find_links, index_url, extra_index_url, no_index, src_files):
+def cli(dry_run, force, find_links, index_url, extra_index_url, no_index, quiet, src_files):
     """Synchronize virtual environment with requirements.txt."""
     if not src_files:
         if os.path.exists(DEFAULT_REQUIREMENTS_FILE):
@@ -69,5 +70,5 @@ def cli(dry_run, force, find_links, index_url, extra_index_url, no_index, src_fi
         for extra_index in extra_index_url:
             install_flags.extend(['--extra-index-url', extra_index])
 
-    sys.exit(sync.sync(to_install, to_uninstall, verbose=True, dry_run=dry_run,
+    sys.exit(sync.sync(to_install, to_uninstall, verbose=(not quiet), dry_run=dry_run,
                        install_flags=install_flags))
