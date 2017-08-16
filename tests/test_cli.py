@@ -3,11 +3,13 @@ from textwrap import dedent
 from six.moves.urllib.request import pathname2url
 import subprocess
 import sys
+import mock
 
 from click.testing import CliRunner
 
 import pytest
 from piptools.scripts.compile import cli
+from piptools.scripts.sync import cli as sync_cli
 
 
 @pytest.yield_fixture
@@ -200,6 +202,23 @@ def test_run_as_module_sync():
     assert output.startswith('Usage:')
     assert 'Synchronize virtual environment with' in output
     assert status == 0
+
+
+def test_sync_quiet(tmpdir):
+    """sync command can be run with `--quiet` or `-q` flag."""
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements.txt', 'w') as req_in:
+            req_in.write('six==1.10.0')
+
+        with mock.patch('piptools.sync.check_call') as check_call:
+            out = runner.invoke(sync_cli, ['-q'])
+            assert out.output == ''
+            assert out.exit_code == 0
+            # for every call to pip ensure the `-q` flag is set
+            for call in check_call.call_args_list:
+                assert '-q' in call[0][0]
 
 
 def test_editable_package(tmpdir):
