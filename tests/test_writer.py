@@ -59,6 +59,17 @@ def test_format_requirement_not_for_primary(from_line, writer):
             'test==1.2')
 
 
+def test_format_requirement_not_for_primary_lower_case(from_line, writer):
+    "Primary packages should not get annotated."
+    ireq = from_line('Test==1.2')
+    reverse_dependencies = {'test': ['xyz']}
+
+    assert (writer._format_requirement(ireq,
+                                       reverse_dependencies,
+                                       primary_packages=['test']) ==
+            'test==1.2')
+
+
 def test_format_requirement_environment_marker(from_line, writer):
     "Environment markers should get passed through to output."
     ireq = from_line('test ; python_version == "2.7" and platform_python_implementation == "CPython"')

@@ -137,7 +137,7 @@ class OutputWriter(object):
             for hash_ in sorted(ireq_hashes):
                 line += " \\\n    --hash={}".format(hash_)
 
-        if not self.annotate or ireq.name in primary_packages:
+        if not self.annotate or key_from_req(ireq.req) in primary_packages:
             return line
 
         # Annotate what packages this package is required by
