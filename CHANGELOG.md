@@ -11,6 +11,7 @@ when `--allow-unsafe` was not set. ([#517](https://github.com/jazzband/pip-tools
 - Fixed bug where editable PyPI dependencies would have a `download_dir` and be exposed to `git-checkout-index`,
 (thus losing their VCS directory) and `python setup.py egg_info` fails. ([#385](https://github.com/jazzband/pip-tools/pull/385#) and [#538](https://github.com/jazzband/pip-tools/pull/538)). Thanks @blueyed and @dfee
 - Fixed bug where some primary dependencies were annotated with "via" info comments. ([#542](https://github.com/jazzband/pip-tools/pull/542)). Thanks @quantus
+- Fixed bug where pkg-resources would be removed by pip-sync in Ubuntu. ([#555](https://github.com/jazzband/pip-tools/pull/555)). Thanks @cemsbr
 
 # 1.9.0 (2017-04-12)
 
