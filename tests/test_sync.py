@@ -100,6 +100,16 @@ def test_diff_should_uninstall(fake_dist):
     assert to_uninstall == {'django'}  # no version spec when uninstalling
 
 
+def test_diff_should_not_uninstall(fake_dist):
+    ignored = ('pip==7.1.0', 'pip-tools==1.1.1', 'pip-review==1.1.1',
+               'pkg-resources==0.0.0', 'setuptools==34.0.0', 'wheel==0.29.0')
+    installed = [fake_dist(pkg) for pkg in ignored]
+    reqs = []
+
+    to_uninstall = diff(reqs, installed)[1]
+    assert to_uninstall == set()
+
+
 def test_diff_should_update(fake_dist, from_line):
     installed = [fake_dist('django==1.7')]
     reqs = [from_line('django==1.8')]
