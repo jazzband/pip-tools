@@ -195,8 +195,18 @@ class PyPIRepository(BaseRepository):
 
     def _get_file_hash(self, location):
         with TemporaryDirectory() as tmpdir:
+            # Some distributions have incompatible type of files with same name
+            # on the root directory. For example, matplotlib-2.0.2.tar.gz has a
+            # directory named "LICENSE" on the root, which may conflict many
+            # other distributions, causing errors like:
+            #
+            #   IOError: [Errno 20] Not a directory: u'/tmp/tmpz/LICENSE/LICENSE_STIX'
+            #
+            # So we need to isolate unpacking directory of each distributions.
+            isolated_build_dir = os.path.join(
+                self.build_dir, location.filename)
             unpack_url(
-                location, self.build_dir,
+                location, isolated_build_dir,
                 download_dir=tmpdir, only_download=True, session=self.session
             )
             files = os.listdir(tmpdir)
