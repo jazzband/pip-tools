@@ -4,9 +4,10 @@ from __future__ import (absolute_import, division, print_function,
 
 import hashlib
 import os
+from contextlib import contextmanager
 from shutil import rmtree
 
-from pip.download import unpack_url
+from pip.download import is_file_url, url_to_path
 from pip.index import PackageFinder
 from pip.req.req_set import RequirementSet
 from pip.wheel import Wheel
@@ -194,18 +195,38 @@ class PyPIRepository(BaseRepository):
         }
 
     def _get_file_hash(self, location):
-        with TemporaryDirectory() as tmpdir:
-            unpack_url(
-                location, self.build_dir,
-                download_dir=tmpdir, only_download=True, session=self.session
-            )
-            files = os.listdir(tmpdir)
-            assert len(files) == 1
-            filename = os.path.abspath(os.path.join(tmpdir, files[0]))
-
-            h = hashlib.new(FAVORITE_HASH)
-            with open(filename, "rb") as fp:
-                for chunk in iter(lambda: fp.read(8096), b""):
-                    h.update(chunk)
-
+        h = hashlib.new(FAVORITE_HASH)
+        with open_local_or_remote_file(location, self.session) as fp:
+            for chunk in iter(lambda: fp.read(8096), b""):
+                h.update(chunk)
         return ":".join([FAVORITE_HASH, h.hexdigest()])
+
+
+@contextmanager
+def open_local_or_remote_file(link, session):
+    """
+    Open local or remote file for reading.
+
+    :type link: pip.index.Link
+    :type session: requests.Session
+    :raises ValueError: If link points to a local directory.
+    :return: a context manager to the opened file-like object
+    """
+    url = link.url_without_fragment
+
+    if is_file_url(link):
+        # Local URL
+        local_path = url_to_path(url)
+        if os.path.isdir(local_path):
+            raise ValueError("Cannot open directory for read: {}".format(url))
+        else:
+            with open(local_path, 'rb') as local_file:
+                yield local_file
+    else:
+        # Remote URL
+        headers = {"Accept-Encoding": "identity"}
+        response = session.get(url, headers=headers, stream=True)
+        try:
+            yield response.raw
+        finally:
+            response.close()
