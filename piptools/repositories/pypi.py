@@ -17,7 +17,7 @@ except ImportError:
 
 from ..cache import CACHE_DIR
 from ..exceptions import NoCandidateFound
-from ..utils import (is_pinned_requirement, lookup_table,
+from ..utils import (fs_str, is_pinned_requirement, lookup_table,
                      make_install_requirement, pip_version_info)
 from .base import BaseRepository
 
@@ -83,16 +83,16 @@ class PyPIRepository(BaseRepository):
 
         # Setup file paths
         self.freshen_build_caches()
-        self._download_dir = os.path.join(CACHE_DIR, 'pkgs')
-        self._wheel_download_dir = os.path.join(CACHE_DIR, 'wheels')
+        self._download_dir = fs_str(os.path.join(CACHE_DIR, 'pkgs'))
+        self._wheel_download_dir = fs_str(os.path.join(CACHE_DIR, 'wheels'))
 
     def freshen_build_caches(self):
         """
         Start with fresh build/source caches.  Will remove any old build
         caches from disk automatically.
         """
-        self._build_dir = TemporaryDirectory('build')
-        self._source_dir = TemporaryDirectory('source')
+        self._build_dir = TemporaryDirectory(fs_str('build'))
+        self._source_dir = TemporaryDirectory(fs_str('source'))
 
     @property
     def build_dir(self):
