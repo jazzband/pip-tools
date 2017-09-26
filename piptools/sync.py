@@ -14,6 +14,7 @@ PACKAGES_TO_IGNORE = [
     'pkg-resources',
     'setuptools',
     'wheel',
+    'pkg-resources',
 ]
 
 
