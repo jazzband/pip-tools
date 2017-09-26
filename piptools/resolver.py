@@ -32,11 +32,11 @@ class RequirementSummary(object):
     """
     Summary of a requirement's properties for comparison purposes.
     """
-    def __init__(self, req):
-        self.req = req
-        self.key = key_from_req(req)
-        self.extras = str(sorted(req.extras))
-        self.specifier = str(req.specifier)
+    def __init__(self, ireq):
+        self.req = ireq.req
+        self.key = key_from_req(ireq.req)
+        self.extras = str(sorted(ireq.extras))
+        self.specifier = str(ireq.specifier)
 
     def __eq__(self, other):
         return str(self) == str(other)
@@ -210,11 +210,11 @@ class Resolver(object):
 
         # NOTE: We need to compare RequirementSummary objects, since
         # InstallRequirement does not define equality
-        diff = {RequirementSummary(t.req) for t in theirs} - {RequirementSummary(t.req) for t in self.their_constraints}
-        removed = ({RequirementSummary(t.req) for t in self.their_constraints} -
-                   {RequirementSummary(t.req) for t in theirs})
-        unsafe = ({RequirementSummary(t.req) for t in unsafe_constraints} -
-                  {RequirementSummary(t.req) for t in self.unsafe_constraints})
+        diff = {RequirementSummary(t) for t in theirs} - {RequirementSummary(t) for t in self.their_constraints}
+        removed = ({RequirementSummary(t) for t in self.their_constraints} -
+                   {RequirementSummary(t) for t in theirs})
+        unsafe = ({RequirementSummary(t) for t in unsafe_constraints} -
+                  {RequirementSummary(t) for t in self.unsafe_constraints})
 
         has_changed = len(diff) > 0 or len(removed) > 0 or len(unsafe) > 0
         if has_changed:
