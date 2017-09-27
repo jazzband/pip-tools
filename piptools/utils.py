@@ -34,6 +34,14 @@ def assert_compatible_pip_version():
         sys.exit(4)
 
 
+def key_from_ireq(ireq):
+    """Get a standardized key for an InstallRequirement."""
+    if ireq.req is None and ireq.link is not None:
+        return str(ireq.link)
+    else:
+        return key_from_req(ireq.req)
+
+
 def key_from_req(req):
     """Get an all-lowercase version of the requirement's name."""
     if hasattr(req, 'key'):
