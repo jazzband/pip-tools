@@ -58,7 +58,9 @@ def make_install_requirement(name, version, extras, constraint=False):
         # Sort extras for stability
         extras_string = "[{}]".format(",".join(sorted(extras)))
 
-    return InstallRequirement.from_line('{}{}=={}'.format(name, extras_string, str(version)), constraint=constraint)
+    return InstallRequirement.from_line(
+        str('{}{}=={}'.format(name, extras_string, version)),
+        constraint=constraint)
 
 
 def format_requirement(ireq, marker=None):
@@ -208,3 +210,30 @@ def dedup(iterable):
     order-reserved.
     """
     return iter(OrderedDict.fromkeys(iterable))
+
+
+def fs_str(string):
+    """
+    Convert given string to a correctly encoded filesystem string.
+
+    On Python 2, if the input string is unicode, converts it to bytes
+    encoded with the filesystem encoding.
+
+    On Python 3 returns the string as is, since Python 3 uses unicode
+    paths and the input string shouldn't be bytes.
+
+    >>> fs_str(u'some path component/Something')
+    'some path component/Something'
+    >>> assert isinstance(fs_str('whatever'), str)
+    >>> assert isinstance(fs_str(u'whatever'), str)
+
+    :type string: str|unicode
+    :rtype: str
+    """
+    if isinstance(string, str):
+        return string
+    assert not isinstance(string, bytes)
+    return string.encode(_fs_encoding)
+
+
+_fs_encoding = sys.getfilesystemencoding() or sys.getdefaultencoding()
