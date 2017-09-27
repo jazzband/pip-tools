@@ -22,7 +22,8 @@ class TemporaryDirectory(object):
     def __init__(self, suffix="", prefix="tmp", dir=None):
         self._closed = False
         self.name = None  # Handle mkdtemp raising an exception
-        self.name = mkdtemp(suffix, prefix, dir)
+        self.name = mkdtemp(
+                suffix.encode(), prefix.encode(), dir.encode() if dir else None)
 
     def __repr__(self):
         return "<{} {!r}>".format(self.__class__.__name__, self.name)

@@ -4,6 +4,7 @@ from __future__ import (absolute_import, division, print_function,
 
 import json
 import os
+import re
 import sys
 
 from pkg_resources import Requirement
@@ -159,6 +160,10 @@ class DependencyCache(object):
         """
         # First, collect all the dependencies into a sequence of (parent, child) tuples, like [('flake8', 'pep8'),
         # ('flake8', 'mccabe'), ...]
-        return lookup_table((key_from_req(Requirement.parse(dep_name)), name)
+        return lookup_table((key_from_req(parse(dep_name)), name)
                             for name, version_and_extras in cache_keys
                             for dep_name in self.cache[name][version_and_extras])
+
+
+def parse(dep_name):
+    return Requirement.parse(re.sub(r';.*$', '', dep_name))
