@@ -192,6 +192,21 @@ def test_diff_with_editable(fake_dist, from_editable):
     assert str(package.link) == _get_file_url(path_to_package)
 
 
+@pytest.mark.parametrize(
+    'lines',
+    [
+        ['django==1.8'],
+        ['django==1.8', 'click==4.0'],
+    ]
+)
+def test_sync_install(from_line, lines):
+    with mock.patch('piptools.sync.check_call') as check_call:
+        to_install = {from_line(line) for line in lines}
+
+        sync(to_install, set())
+        check_call.assert_called_once_with(['pip', 'install', '-q'] + sorted(lines))
+
+
 def test_sync_with_editable(from_editable):
     with mock.patch('piptools.sync.check_call') as check_call:
         path_to_package = os.path.join(os.path.dirname(__file__), 'fixtures', 'small_fake_package')
