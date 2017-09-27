@@ -1,4 +1,4 @@
-# 1.10.0 (UNRELEASED)
+# 1.10.0 (2017-09-27)
 
 Features:
 - `--generate-hashes` now generates hashes for all wheels,
