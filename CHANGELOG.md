@@ -14,6 +14,7 @@ when `--allow-unsafe` was not set. ([#517](https://github.com/jazzband/pip-tools
 - Fixed bug where pkg-resources would be removed by pip-sync in Ubuntu. ([#555](https://github.com/jazzband/pip-tools/pull/555)). Thanks @cemsbr
 - Fixed bug where the resolver would sometime not stabilize on requirements specifying extras. ([#566](https://github.com/jazzband/pip-tools/pull/566)). Thanks @vphilippon
 - Fixed an unicode encoding error when distribution package contains non-ASCII file names ([#567](https://github.com/jazzband/pip-tools/pull/567)). Thanks @suutari
+- Fixed package hashing doing unnecessary unpacking
 
 # 1.9.0 (2017-04-12)
 
