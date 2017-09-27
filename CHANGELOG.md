@@ -1,4 +1,4 @@
-# 1.10.1 (UNRELEASED)
+# 1.10.1 (2017-09-27)
 
 Bug Fixes:
 - Fixed bug breaking `pip-sync` on Python 3, raising `TypeError: '<' not supported between instances of 'InstallRequirement' and 'InstallRequirement'` ([#570](https://github.com/jazzband/pip-tools/pull/570)).
