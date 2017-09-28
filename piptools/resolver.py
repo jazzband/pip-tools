@@ -68,7 +68,8 @@ class Resolver(object):
         """
         Finds acceptable hashes for all of the given InstallRequirements.
         """
-        return {ireq: self.repository.get_hashes(ireq) for ireq in ireqs}
+        with self.repository.allow_all_wheels():
+            return {ireq: self.repository.get_hashes(ireq) for ireq in ireqs}
 
     def resolve(self, max_rounds=10):
         """
