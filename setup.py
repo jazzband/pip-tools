@@ -4,7 +4,7 @@ pip-tools keeps your pinned dependencies fresh.
 from setuptools import find_packages, setup
 
 setup(
-    name='pip-tools',
+    name='test',
     use_scm_version=True,
     url='https://github.com/jazzband/pip-tools/',
     license='BSD',
