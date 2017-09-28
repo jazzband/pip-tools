@@ -165,12 +165,11 @@ class PyPIRepository(BaseRepository):
         # We need to get all of the candidates that match our current version
         # pin, these will represent all of the files that could possibly
         # satisfy this constraint.
-        with self.allow_all_wheels():
-            all_candidates = self.find_all_candidates(ireq.name)
-            candidates_by_version = lookup_table(all_candidates, key=lambda c: c.version)
-            matching_versions = list(
-                ireq.specifier.filter((candidate.version for candidate in all_candidates)))
-            matching_candidates = candidates_by_version[matching_versions[0]]
+        all_candidates = self.find_all_candidates(ireq.name)
+        candidates_by_version = lookup_table(all_candidates, key=lambda c: c.version)
+        matching_versions = list(
+            ireq.specifier.filter((candidate.version for candidate in all_candidates)))
+        matching_candidates = candidates_by_version[matching_versions[0]]
 
         return {
             self._get_file_hash(candidate.location)

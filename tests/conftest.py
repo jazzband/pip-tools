@@ -1,4 +1,5 @@
 import json
+from contextlib import contextmanager
 from functools import partial
 
 from pip._vendor.packaging.version import Version
@@ -48,6 +49,11 @@ class FakeRepository(BaseRepository):
         extras += ("",)
         dependencies = [dep for extra in extras for dep in self.index[name][version][extra]]
         return [InstallRequirement.from_line(dep, constraint=ireq.constraint) for dep in dependencies]
+
+    @contextmanager
+    def allow_all_wheels(self):
+        # No need to do an actual pip.Wheel mock here.
+        yield
 
 
 class FakeInstalledDistribution(object):
