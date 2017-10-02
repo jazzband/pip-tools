@@ -1,3 +1,8 @@
+# 1.10.2 (UNRELEASED)
+
+Bug Fixes:
+- Fixed bug causing dependencies from invalid wheels for the current platform to be included ([#571](https://github.com/jazzband/pip-tools/pull/571)).
+
 # 1.10.1 (2017-09-27)
 
 Bug Fixes:
