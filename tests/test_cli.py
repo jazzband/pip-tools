@@ -320,7 +320,7 @@ def test_handle_directory_as_input(tmpdir):
         with open('requirements-dir/test.in', 'w') as req_in:
             req_in.write('pytest==3.2.3')
 
-        out = runner.invoke(cli, ['requirements-dir'])
+        out = runner.invoke(cli, ['--output-file', 'requirements.txt', 'requirements-dir'])
 
         assert out.exit_code == 0
         assert '--output-file requirements.txt' in out.output

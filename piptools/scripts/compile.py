@@ -3,6 +3,8 @@ from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
 import optparse
+from glob import glob
+
 import os
 import sys
 import tempfile
@@ -151,6 +153,17 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         log.debug('Configuration:')
         for find_link in repository.finder.find_links:
             log.debug('  -f {}'.format(find_link))
+
+    ###
+    # Find source files in input directories
+    ###
+
+    src_dirs = list(filter(os.path.isdir, src_files))
+    src_files = list(set(src_files) - set(src_dirs))
+
+    for d in src_dirs:
+        more_files = glob('{}/*.in'.format(d))
+        src_files += more_files
 
     ###
     # Parsing/collecting initial requirements
