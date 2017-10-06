@@ -305,7 +305,7 @@ def test_directory_as_input_requires_setting_output_file(tmpdir):
         out = runner.invoke(cli, ['requirements-dir'])
 
         assert out.exit_code == 2
-        assert '--output-file is required if an input directory is given' in out.output
+        assert '--output-file is required if an input directory is given.' in out.output
 
 
 def test_handle_directory_as_input(tmpdir):

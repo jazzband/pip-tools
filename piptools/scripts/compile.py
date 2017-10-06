@@ -86,6 +86,9 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         if not output_file:
             raise click.BadParameter('--output-file is required if input is from stdin')
 
+    if any(map(os.path.isdir, src_files)) and not output_file:
+        raise click.BadParameter('--output-file is required if an input directory is given.')
+
     if len(src_files) > 1 and not output_file:
         raise click.BadParameter('--output-file is required if two or more input files are given.')
 
