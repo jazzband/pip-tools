@@ -1,13 +1,13 @@
-import os
-from textwrap import dedent
-from six.moves.urllib.request import pathname2url
 import subprocess
 import sys
+from textwrap import dedent
+
 import mock
-
-from click.testing import CliRunner
-
+import os
 import pytest
+from click.testing import CliRunner
+from six.moves.urllib.request import pathname2url
+
 from piptools.scripts.compile import cli
 from piptools.scripts.sync import cli as sync_cli
 
