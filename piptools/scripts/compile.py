@@ -70,7 +70,11 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         client_cert, trusted_host, header, index, emit_trusted_host, annotate,
         upgrade, upgrade_packages, output_file, allow_unsafe, generate_hashes,
         src_files, max_rounds):
-    """Compiles requirements.txt from requirements.in specs."""
+    """
+    Compiles requirements.txt from requirements.in specs.
+
+    SRC_FILES may include directories of *.in files.
+    """
     log.verbose = verbose
 
     if len(src_files) == 0:
