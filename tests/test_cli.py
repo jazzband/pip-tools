@@ -292,3 +292,37 @@ def test_upgrade_packages_option(tmpdir):
         assert out.exit_code == 0
         assert 'small-fake-a==0.1' in out.output
         assert 'small-fake-b==0.2' in out.output
+
+
+def test_directory_as_input_requires_setting_output_file(tmpdir):
+    """
+    piptools requires setting --output-file if directory is input.
+    """
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        os.mkdir('requirements-dir')
+
+        out = runner.invoke(cli, ['requirements-dir'])
+
+        assert out.exit_code == 2
+        assert '--output-file is required if an input directory is given' in out.output
+
+
+def test_handle_directory_as_input(tmpdir):
+    """
+    piptools can take a directory as input, parsing all *.in files within it.
+    """
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        os.mkdir('requirements-dir')
+        with open('requirements-dir/base.in', 'w') as req_in:
+            req_in.write('six==1.10.0')
+        with open('requirements-dir/test.in', 'w') as req_in:
+            req_in.write('pytest==3.2.3')
+
+        out = runner.invoke(cli, ['requirements-dir'])
+
+        assert out.exit_code == 0
+        assert '--output-file requirements.txt' in out.output
+        assert 'six==1.10.0' in out.output
+        assert 'pytest==3.2.3' in out.output
