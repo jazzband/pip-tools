@@ -1,3 +1,7 @@
+# 3.4.0 (2019-02-4)
+
+- Support URLs as packages ([#???](https://github.com/jazzband/pip-tools/pull/???)).
+
 # 3.3.2 (2019-01-26)
 
 Bug Fixes:
@@ -59,7 +63,7 @@ Bug Fixes:
 - Added missing package data from vendored pip, such as missing cacert.pem file. Thanks @vphilippon
 
 # 2.0.0 (2018-04-15)
- 
+
 Major changes:
 - Vendored `pip` 9.0.3 to keep compatibility for users with `pip` 10.0.0
 ([#644](https://github.com/jazzband/pip-tools/pull/644)). Thanks @vphilippon

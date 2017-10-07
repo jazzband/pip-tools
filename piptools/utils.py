@@ -53,6 +53,18 @@ def make_install_requirement(name, version, extras, constraint=False):
         constraint=constraint)
 
 
+def is_url_requirement(ireq, repository=None):
+    """
+    Finds if a requirement is a URL
+    """
+    if not ireq.link or 'pypi.python.org' in ireq.link.url or ireq.link.url.startswith('file'):
+        return False
+    if repository is not None and hasattr(repository, 'finder'):
+        if any(index_url in ireq.link.url for index_url in repository.finder.index_urls):
+            return False
+    return True
+
+
 def format_requirement(ireq, marker=None, hashes=None):
     """
     Generic formatter for pretty printing InstallRequirements to the terminal
@@ -60,6 +72,8 @@ def format_requirement(ireq, marker=None, hashes=None):
     """
     if ireq.editable:
         line = '-e {}'.format(ireq.link)
+    elif is_url_requirement(ireq):
+        line = ireq.link.url
     else:
         line = str(ireq.req).lower()
 

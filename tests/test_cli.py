@@ -296,6 +296,18 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(tmpdir)
     assert not os.listdir(os.path.join(str(cache_dir), 'pkgs'))
 
 
+def test_url_package(tmpdir):
+    url_package = 'https://github.com/jazzband/pip-tools/archive/master.zip#egg=pip-tools'
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements.in', 'w') as req_in:
+            req_in.write(url_package)
+        out = runner.invoke(cli, ['-n', '-r'])
+        assert out.exit_code == 0
+        assert url_package in out.output
+        assert 'click' in out.output  # dependency of pip-tools
+
+
 def test_input_file_without_extension(tmpdir):
     """
     piptools can compile a file without an extension,

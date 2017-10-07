@@ -23,8 +23,8 @@ from .._compat import (
 
 from ..cache import CACHE_DIR
 from ..exceptions import NoCandidateFound
-from ..utils import (fs_str, is_pinned_requirement, lookup_table,
-                     make_install_requirement)
+from ..utils import (fs_str, is_pinned_requirement, is_url_requirement,
+                     lookup_table, make_install_requirement)
 from .base import BaseRepository
 
 try:
@@ -118,7 +118,7 @@ class PyPIRepository(BaseRepository):
         Returns a Version object that indicates the best match for the given
         InstallRequirement according to the external repository.
         """
-        if ireq.editable:
+        if ireq.editable or is_url_requirement(ireq, self):
             return ireq  # return itself as the best match
 
         all_candidates = self.find_all_candidates(ireq.name)
@@ -195,12 +195,12 @@ class PyPIRepository(BaseRepository):
 
     def get_dependencies(self, ireq):
         """
-        Given a pinned or an editable InstallRequirement, returns a set of
+        Given a pinned, an url, or an editable InstallRequirement, returns a set of
         dependencies (also InstallRequirements, but not necessarily pinned).
         They indicate the secondary dependencies for the given requirement.
         """
-        if not (ireq.editable or is_pinned_requirement(ireq)):
-            raise TypeError('Expected pinned or editable InstallRequirement, got {}'.format(ireq))
+        if not (ireq.editable or is_url_requirement(ireq, self) or is_pinned_requirement(ireq)):
+            raise TypeError('Expected url, pinned or editable InstallRequirement, got {}'.format(ireq))
 
         if ireq not in self._dependencies_cache:
             if ireq.editable and (ireq.source_dir and os.path.exists(ireq.source_dir)):
