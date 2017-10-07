@@ -77,9 +77,9 @@ def merge(requirements, ignore_conflicts):
     by_key = {}
 
     for ireq in requirements:
-        if ireq.link is not None and not ireq.editable:
+        if ireq.link is not None and ireq.link.url.startswith('file:') and not ireq.editable:
             msg = (
-                "pip-compile does not support URLs as packages, unless they are "
+                "pip-compile does not support file URLs as packages, unless they are "
                 "editable. Perhaps add -e option?"
             )
             raise UnsupportedConstraint(msg, ireq)
