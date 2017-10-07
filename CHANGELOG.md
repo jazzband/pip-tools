@@ -1,3 +1,7 @@
+# 1.12.0
+
+- Support URLs as packages ([#574](https://github.com/jazzband/pip-tools/pull/574)).
+
 # 1.11.0 (2017-11-30)
 
 Features:
