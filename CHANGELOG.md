@@ -3,10 +3,12 @@
 Bug Fixes:
 - Fixed bug causing dependencies from invalid wheels for the current platform to be included ([#571](https://github.com/jazzband/pip-tools/pull/571)).
 
+
 # 1.10.1 (2017-09-27)
 
 Bug Fixes:
 - Fixed bug breaking `pip-sync` on Python 3, raising `TypeError: '<' not supported between instances of 'InstallRequirement' and 'InstallRequirement'` ([#570](https://github.com/jazzband/pip-tools/pull/570)).
+
 
 # 1.10.0 (2017-09-27)
 
@@ -26,6 +28,7 @@ when `--allow-unsafe` was not set. ([#517](https://github.com/jazzband/pip-tools
 - Fixed an unicode encoding error when distribution package contains non-ASCII file names ([#567](https://github.com/jazzband/pip-tools/pull/567)). Thanks @suutari
 - Fixed package hashing doing unnecessary unpacking ([#557](https://github.com/jazzband/pip-tools/pull/557)). Thanks @suutari-ai
 
+
 # 1.9.0 (2017-04-12)
 
 Features:
@@ -43,12 +46,14 @@ Bug Fixes:
 - Fixed crash on editable requirements introduced in 1.8.2.
 - Fixed duplicated --trusted-host, --extra-index-url and --index-url in the generated requirements.
 
+
 # 1.8.2 (2017-03-28)
 
 - Regression fix: editable reqs were loosing their dependencies after first round ([#476](https://github.com/jazzband/pip-tools/pull/476))
   Thanks @mattlong
 - Remove duplicate index urls in generated requirements.txt ([#468](https://github.com/jazzband/pip-tools/pull/468))
   Thanks @majuscule
+
 
 # 1.8.1 (2017-03-22)
 
@@ -58,6 +63,7 @@ Bug Fixes:
 - Fix duplicate entries that could happen in generated requirements.txt (#427)
 - Gracefully report invalid pip version (#457)
 - Fix capitalization in the generated requirements.txt, packages will always be lowercased (#452)
+
 
 # 1.8.0 (2016-11-17)
 
