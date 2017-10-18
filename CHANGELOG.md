@@ -1,3 +1,9 @@
+# 1.11.0 (UNRELEASED)
+
+Features:
+- `pip-compile` can now take directories of `*.in` files as input arguments ([#573](https://github.com/jazzband/pip-tools/pull/573)). Thanks @simlun
+
+
 # 1.10.2 (UNRELEASED)
 
 Bug Fixes:
