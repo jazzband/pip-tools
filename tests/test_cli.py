@@ -255,6 +255,29 @@ def test_editable_package_vcs(tmpdir):
         assert 'pytest' in out.output  # dependency of pytest-django
 
 
+def test_locally_available_editable_package_is_not_archived_in_cache_dir(tmpdir):
+    """ piptools will not create an archive for a locally available editable requirement """
+    cache_dir = tmpdir.mkdir('cache_dir')
+
+    fake_package_dir = os.path.join(os.path.split(__file__)[0], 'fixtures', 'small_fake_package')
+    fake_package_dir = 'file:' + pathname2url(fake_package_dir)
+
+    with mock.patch('piptools.repositories.pypi.CACHE_DIR', new=str(cache_dir)):
+        runner = CliRunner()
+        with runner.isolated_filesystem():
+            with open('requirements.in', 'w') as req_in:
+                req_in.write('-e ' + fake_package_dir)  # require editable fake package
+
+            out = runner.invoke(cli, ['-n'])
+
+            assert out.exit_code == 0
+            assert fake_package_dir in out.output
+            assert 'six==1.10.0' in out.output
+
+    # we should not find any archived file in {cache_dir}/pkgs
+    assert not os.listdir(os.path.join(str(cache_dir), 'pkgs'))
+
+
 def test_input_file_without_extension(tmpdir):
     """
     piptools can compile a file without an extension,
