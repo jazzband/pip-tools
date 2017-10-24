@@ -15,13 +15,16 @@ even when you've pinned them.  [You do pin them, right?][0]
 Installation
 ============
 
-As part of a Python project's environment tooling (similar to `pip`), it's recommended to install `pip-tools` in each project's [virtual environment](https://packaging.python.org/tutorials/installing-packages/#creating-virtual-environments):
+As part of a Python project's environment tooling (similar to `pip`), it's recommended to install `pip-tools` in each
+project's [virtual environment][1]:
 
 ```console
 $ source /path/to/venv/bin/activate
 (venv) $ pip install --upgrade pip  # pip-tools needs pip==8.0 or higher (!)
 (venv) $ pip install pip-tools
 ```
+
+[1]: https://packaging.python.org/tutorials/installing-packages/#creating-virtual-environments
 
 
 Example usage for `pip-compile`
@@ -53,7 +56,7 @@ werkzeug==0.10.4          # via flask
 Without setup.py
 ----------------
 
-If you don't use `setup.py` ([it's easy to write one][1]), you can instead write the following line to a file:
+If you don't use `setup.py` ([it's easy to write one][2]), you can instead write the following line to a file:
 
     # requirements.in
     Flask
@@ -78,7 +81,7 @@ werkzeug==0.10.4          # via flask
 And it will produce your `requirements.txt`, with all the Flask dependencies
 (and all underlying dependencies) pinned.  Don't forget to put this file under version control as well.
 
-[1]: https://packaging.python.org/distributing/#configuring-your-project
+[2]: https://packaging.python.org/distributing/#configuring-your-project
 
 Updating requirements
 ---------------------
