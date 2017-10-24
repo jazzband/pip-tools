@@ -15,10 +15,16 @@ even when you've pinned them.  [You do pin them, right?][0]
 Installation
 ============
 
+As part of a Python project's environment tooling (similar to `pip`), it's recommended to install `pip-tools` in each
+project's [virtual environment][1]:
+
 ```console
-$ pip install --upgrade pip  # pip-tools needs pip==8.0 or higher (!)
-$ pip install pip-tools
+$ source /path/to/venv/bin/activate
+(venv) $ pip install --upgrade pip  # pip-tools needs pip==8.0 or higher (!)
+(venv) $ pip install pip-tools
 ```
+
+[1]: https://packaging.python.org/tutorials/installing-packages/#creating-virtual-environments
 
 
 Example usage for `pip-compile`
@@ -50,7 +56,7 @@ werkzeug==0.10.4          # via flask
 Without setup.py
 ----------------
 
-If you don't use `setup.py` ([it's easy to write one][1]), you can instead write the following line to a file:
+If you don't use `setup.py` ([it's easy to write one][2]), you can instead write the following line to a file:
 
     # requirements.in
     Flask
@@ -75,7 +81,7 @@ werkzeug==0.10.4          # via flask
 And it will produce your `requirements.txt`, with all the Flask dependencies
 (and all underlying dependencies) pinned.  Don't forget to put this file under version control as well.
 
-[1]: https://packaging.python.org/distributing/#configuring-your-project
+[2]: https://packaging.python.org/distributing/#configuring-your-project
 
 Updating requirements
 ---------------------
@@ -97,7 +103,7 @@ on other systems.
 Configuration
 -------------
 
-You might be wrapping the pip-compile command in another script. To avoid confusing
+You might be wrapping the `pip-compile` command in another script. To avoid confusing
 consumers of your custom script you can override the update command generated at the top of
 requirements files by setting the `CUSTOM_COMPILE_COMMAND` environment variable.
 
@@ -120,7 +126,7 @@ Example usage for `pip-sync`
 ============================
 
 Now that you have a `requirements.txt`, you can use `pip-sync` to update your
-virtual env to reflect exactly what's in there.  Note: this will
+virtual environment to reflect exactly what's in there.  Note: this will
 install/upgrade/uninstall everything necessary to match the `requirements.txt`
 contents.
 
