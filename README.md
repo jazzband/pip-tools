@@ -15,9 +15,12 @@ even when you've pinned them.  [You do pin them, right?][0]
 Installation
 ============
 
+As part of a Python project's environment tooling (similar to `pip`), it's recommended to install `pip-tools` in each project's [virtual environment](https://packaging.python.org/tutorials/installing-packages/#creating-virtual-environments):
+
 ```console
-$ pip install --upgrade pip  # pip-tools needs pip==8.0 or higher (!)
-$ pip install pip-tools
+$ source /path/to/venv/bin/activate
+(venv) $ pip install --upgrade pip  # pip-tools needs pip==8.0 or higher (!)
+(venv) $ pip install pip-tools
 ```
 
 
@@ -97,7 +100,7 @@ on other systems.
 Configuration
 -------------
 
-You might be wrapping the pip-compile command in another script. To avoid confusing
+You might be wrapping the `pip-compile` command in another script. To avoid confusing
 consumers of your custom script you can override the update command generated at the top of
 requirements files by setting the `CUSTOM_COMPILE_COMMAND` environment variable.
 
@@ -120,7 +123,7 @@ Example usage for `pip-sync`
 ============================
 
 Now that you have a `requirements.txt`, you can use `pip-sync` to update your
-virtual env to reflect exactly what's in there.  Note: this will
+virtual environment to reflect exactly what's in there.  Note: this will
 install/upgrade/uninstall everything necessary to match the `requirements.txt`
 contents.
 
