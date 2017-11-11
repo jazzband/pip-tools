@@ -5,14 +5,23 @@ python:
   - "3.4"
   - "3.5"
   - "3.6"
+  - "pypy"
+env:
+  - PIP=8
+  - PIP=8.1.1
+  - PIP=9
+  - PIP=latest
 matrix:
   include:
-    - { python: 2.7, env: flake8 }
-    - { python: 2.7, env: checkdocs }
+    - { python: 2.7, env: TOXENV=flake8 }
+    - { python: 2.7, env: TOXENV=checkdocs }
+
+cache: pip
 install:
   - travis_retry pip install tox-travis
-cache: pip
-script: tox --travis-after
+script:
+  - tox --travis-after
+
 deploy:
   provider: pypi
   user: jazzband
