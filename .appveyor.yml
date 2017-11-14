@@ -17,6 +17,10 @@ environment:
         - TOXENV: py36-pip8.1.1
         - TOXENV: py36-pip9
         - TOXENV: py36-piplatest
+        - TOXENV: pypy-pip8
+        - TOXENV: pypy-pip8.1.1
+        - TOXENV: pypy-pip9
+        - TOXENV: pypy-piplatest
 
 install:
     - C:\Python36\python -m pip install tox
