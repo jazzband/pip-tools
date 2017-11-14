@@ -19,6 +19,9 @@ setup(
         'six',
         'setuptools'
     ],
+    extras_require={
+        ':python_version < "3.0"': ['contextlib2']
+    },
     zip_safe=False,
     entry_points={
         'console_scripts': [
