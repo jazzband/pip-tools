@@ -5,10 +5,23 @@ python:
   - "3.4"
   - "3.5"
   - "3.6"
-install:
-- travis_retry pip install tox-travis
+  - "pypy"
+env:
+  - PIP=8
+  - PIP=8.1.1
+  - PIP=9
+  - PIP=latest
+matrix:
+  include:
+    - { python: 2.7, env: TOXENV=flake8 }
+    - { python: 2.7, env: TOXENV=checkdocs }
+
 cache: pip
-script: tox --travis-after
+install:
+  - travis_retry pip install tox-travis
+script:
+  - tox --travis-after
+
 deploy:
   provider: pypi
   user: jazzband
