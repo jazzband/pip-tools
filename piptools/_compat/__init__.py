@@ -6,8 +6,8 @@ from __future__ import (absolute_import, division, print_function,
 import six
 
 if six.PY2:
+    from contextlib2 import ExitStack
     from .tempfile import TemporaryDirectory
-    from .contextlib import ExitStack
 else:
-    from tempfile import TemporaryDirectory
     from contextlib import ExitStack
+    from tempfile import TemporaryDirectory
