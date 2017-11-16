@@ -11,24 +11,28 @@ env:
   - PIP=8.1.1
   - PIP=9
   - PIP=latest
-matrix:
-  include:
-    - { python: 2.7, env: TOXENV=flake8 }
-    - { python: 2.7, env: TOXENV=checkdocs }
 
 cache: pip
 install:
   - travis_retry pip install tox-travis
 script:
-  - tox --travis-after
+  - tox
 
-deploy:
-  provider: pypi
-  user: jazzband
-  distributions: sdist bdist_wheel
-  password:
-    secure: EswzTeyLEtslHlgrDwAz8sBdDJMzTPr761p7UoDW4jaL2RYyR4018oaGKeYESveKq5IMS1AxGXvXZVeln0YcXAwVOWp2S5SE9pkT0d/OdUcq5KHhFkS6UL/WVzG5L+eLQdwS5D3mVBcQGyShLs/uY1vjyQU1j6wfQrSsHOHHTEI=
-  on:
-    tags: true
-    repo: jazzband/pip-tools
-    python: 2.7
+jobs:
+  include:
+    - { python: 2.7, env: TOXENV=flake8 }
+    - { python: 2.7, env: TOXENV=checkdocs }
+    - stage: deploy
+      install: skip  # No need to install tox-travis on deploy.
+      script: skip  # No test on the deploy stage.
+      python: 2.7
+      env: skip  # No special env required.
+      deploy:
+        provider: pypi
+        user: jazzband
+        distributions: sdist bdist_wheel
+        password:
+          secure: EswzTeyLEtslHlgrDwAz8sBdDJMzTPr761p7UoDW4jaL2RYyR4018oaGKeYESveKq5IMS1AxGXvXZVeln0YcXAwVOWp2S5SE9pkT0d/OdUcq5KHhFkS6UL/WVzG5L+eLQdwS5D3mVBcQGyShLs/uY1vjyQU1j6wfQrSsHOHHTEI=
+        on:
+          tags: true
+          repo: jazzband/pip-tools
