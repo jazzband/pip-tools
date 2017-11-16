@@ -1,6 +1,7 @@
 from collections import Counter
 import os
 import platform
+import sys
 
 import mock
 import pytest
@@ -117,6 +118,24 @@ def test_diff_should_update(fake_dist, from_line):
     to_install, to_uninstall = diff(reqs, installed)
     assert {str(x.req) for x in to_install} == {'django==1.8'}
     assert to_uninstall == set()
+
+
+def test_diff_should_install_with_markers(from_line):
+    installed = []
+    reqs = [from_line("subprocess32==3.2.7 ; python_version=='2.7'")]
+
+    to_install, to_uninstall = diff(reqs, installed)
+    assert {str(x.req) for x in to_install} == ({'subprocess32==3.2.7'} if sys.version.startswith('2.7') else set())
+    assert to_uninstall == set()
+
+
+def test_diff_should_uninstall_with_markers(fake_dist, from_line):
+    installed = [fake_dist('subprocess32==3.2.7')]
+    reqs = [from_line("subprocess32==3.2.7 ; python_version=='2.7'")]
+
+    to_install, to_uninstall = diff(reqs, installed)
+    assert to_install == set()
+    assert to_uninstall == (set() if sys.version.startswith('2.7') else {'subprocess32'})
 
 
 def test_diff_leave_packaging_packages_alone(fake_dist, from_line):
