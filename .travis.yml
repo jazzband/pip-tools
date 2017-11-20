@@ -20,8 +20,12 @@ script:
 
 jobs:
   include:
-    - { python: 2.7, env: TOXENV=flake8 }
-    - { python: 2.7, env: TOXENV=checkdocs }
+    - stage: flake8
+      python: 2.7
+      env: TOXENV=flake8
+    - stage: checkdocs
+      python: 2.7
+      env: TOXENV=checkdocs
     - stage: deploy
       install: skip  # No need to install tox-travis on deploy.
       script: skip  # No test on the deploy stage.
@@ -30,9 +34,10 @@ jobs:
       deploy:
         provider: pypi
         user: jazzband
+        server: https://jazzband.co/projects/pip-tools/upload
         distributions: sdist bdist_wheel
         password:
-          secure: EswzTeyLEtslHlgrDwAz8sBdDJMzTPr761p7UoDW4jaL2RYyR4018oaGKeYESveKq5IMS1AxGXvXZVeln0YcXAwVOWp2S5SE9pkT0d/OdUcq5KHhFkS6UL/WVzG5L+eLQdwS5D3mVBcQGyShLs/uY1vjyQU1j6wfQrSsHOHHTEI=
+        secure: TCG9beQgarL/EDHiwSCgEf1JnofTroA5QRp2OTL3QC+eaar6FftqxcJQw3FwnHJ7NarI6E7bcxn9wDRs6tXqiLcyGOzWUnR4jQ94w/7YaLQjzLr8g1toRnb9dNwU1l14z2hmnzc4oRqu7+pi4wIpBx+11Ke9JXNcrC+cRFwCdLQ=
         on:
           tags: true
           repo: jazzband/pip-tools
