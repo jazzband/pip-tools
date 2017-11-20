@@ -1,3 +1,14 @@
+# 1.10.2 (UNRELEASED)
+
+Bug Fixes:
+- Fixed bug causing dependencies from invalid wheels for the current platform to be included ([#571](https://github.com/jazzband/pip-tools/pull/571)).
+- `pip-sync` will respect environment markers in the requirements.txt ([600](https://github.com/jazzband/pip-tools/pull/600)). Thanks @hazmat345
+
+# 1.10.1 (2017-09-27)
+
+Bug Fixes:
+- Fixed bug breaking `pip-sync` on Python 3, raising `TypeError: '<' not supported between instances of 'InstallRequirement' and 'InstallRequirement'` ([#570](https://github.com/jazzband/pip-tools/pull/570)).
+
 # 1.10.0 (2017-09-27)
 
 Features:
@@ -14,7 +25,7 @@ when `--allow-unsafe` was not set. ([#517](https://github.com/jazzband/pip-tools
 - Fixed bug where pkg-resources would be removed by pip-sync in Ubuntu. ([#555](https://github.com/jazzband/pip-tools/pull/555)). Thanks @cemsbr
 - Fixed bug where the resolver would sometime not stabilize on requirements specifying extras. ([#566](https://github.com/jazzband/pip-tools/pull/566)). Thanks @vphilippon
 - Fixed an unicode encoding error when distribution package contains non-ASCII file names ([#567](https://github.com/jazzband/pip-tools/pull/567)). Thanks @suutari
-- Fixed package hashing doing unnecessary unpacking
+- Fixed package hashing doing unnecessary unpacking ([#557](https://github.com/jazzband/pip-tools/pull/557)). Thanks @suutari-ai
 
 # 1.9.0 (2017-04-12)
 
