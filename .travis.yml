@@ -37,7 +37,7 @@ jobs:
         server: https://jazzband.co/projects/pip-tools/upload
         distributions: sdist bdist_wheel
         password:
-        secure: TCG9beQgarL/EDHiwSCgEf1JnofTroA5QRp2OTL3QC+eaar6FftqxcJQw3FwnHJ7NarI6E7bcxn9wDRs6tXqiLcyGOzWUnR4jQ94w/7YaLQjzLr8g1toRnb9dNwU1l14z2hmnzc4oRqu7+pi4wIpBx+11Ke9JXNcrC+cRFwCdLQ=
+          secure: TCG9beQgarL/EDHiwSCgEf1JnofTroA5QRp2OTL3QC+eaar6FftqxcJQw3FwnHJ7NarI6E7bcxn9wDRs6tXqiLcyGOzWUnR4jQ94w/7YaLQjzLr8g1toRnb9dNwU1l14z2hmnzc4oRqu7+pi4wIpBx+11Ke9JXNcrC+cRFwCdLQ=
         on:
           tags: true
           repo: jazzband/pip-tools
