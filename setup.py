@@ -10,7 +10,7 @@ def read_file(filename):
         return thefile.read()
 
 setup(
-    name='test',
+    name='pip-tools',
     use_scm_version=True,
     url='https://github.com/jazzband/pip-tools/',
     license='BSD',
