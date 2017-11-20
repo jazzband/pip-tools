@@ -15,17 +15,10 @@ from .cache import DependencyCache
 from .exceptions import UnsupportedConstraint
 from .logging import log
 from .utils import (format_requirement, format_specifier, full_groupby,
-                    is_pinned_requirement, key_from_req, UNSAFE_PACKAGES)
+                    is_pinned_requirement, key_from_ireq, key_from_req, UNSAFE_PACKAGES)
 
 green = partial(click.style, fg='green')
 magenta = partial(click.style, fg='magenta')
-
-
-def _dep_key(ireq):
-    if ireq.req is None and ireq.link is not None:
-        return str(ireq.link)
-    else:
-        return key_from_req(ireq.req)
 
 
 class RequirementSummary(object):
@@ -75,7 +68,8 @@ class Resolver(object):
         """
         Finds acceptable hashes for all of the given InstallRequirements.
         """
-        return {ireq: self.repository.get_hashes(ireq) for ireq in ireqs}
+        with self.repository.allow_all_wheels():
+            return {ireq: self.repository.get_hashes(ireq) for ireq in ireqs}
 
     def resolve(self, max_rounds=10):
         """
@@ -147,7 +141,7 @@ class Resolver(object):
             flask~=0.7
 
         """
-        for _, ireqs in full_groupby(constraints, key=_dep_key):
+        for _, ireqs in full_groupby(constraints, key=key_from_ireq):
             ireqs = list(ireqs)
             editable_ireq = first(ireqs, key=lambda ireq: ireq.editable)
             if editable_ireq:
@@ -178,7 +172,7 @@ class Resolver(object):
         configuration.
         """
         # Sort this list for readability of terminal output
-        constraints = sorted(self.constraints, key=_dep_key)
+        constraints = sorted(self.constraints, key=key_from_ireq)
         unsafe_constraints = []
         original_constraints = copy.copy(constraints)
         if not self.allow_unsafe:
