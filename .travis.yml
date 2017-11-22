@@ -23,9 +23,9 @@ jobs:
     - stage: flake8
       python: 2.7
       env: TOXENV=flake8
-    - stage: checkdocs
+    - stage: readme
       python: 2.7
-      env: TOXENV=checkdocs
+      env: TOXENV=readme
     - stage: deploy
       install: skip  # No need to install tox-travis on deploy.
       script: skip  # No test on the deploy stage.
