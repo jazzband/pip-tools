@@ -16,7 +16,7 @@ setup(
     license='BSD',
     author='Vincent Driessen',
     author_email='me@nvie.com',
-    description=__doc__,
+    description=__doc__.strip(),
     long_description=read_file('README.rst'),
     packages=find_packages(exclude=['tests']),
     setup_requires=['setuptools_scm'],
