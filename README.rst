@@ -22,7 +22,7 @@ even when you've pinned them.  `You do pin them, right?`_
 Installation
 ============
 
-.. code-block::
+.. code-block:: bash
 
     $ pip install --upgrade pip  # pip-tools needs pip==8.0 or higher (!)
     $ pip install pip-tools
@@ -38,7 +38,7 @@ Suppose you have a Flask project, and want to pin it for production.
 If you have a ``setup.py`` with ``install_requires=['Flask']``, then run
 ``pip-compile`` without any arguments:
 
-.. code-block::
+.. code-block:: bash
 
     $ pip-compile
     #
@@ -64,14 +64,14 @@ Without setup.py
 If you don't use ``setup.py`` (`it's easy to write one`_), you can instead
 write the following line to a file:
 
-.. code-block::
+.. code-block:: ini
 
     # requirements.in
     Flask
 
 This time, run ``pip-compile requirements.in``:
 
-.. code-block::
+.. code-block:: bash
 
     $ pip-compile requirements.in
     #
@@ -99,7 +99,7 @@ Using hashes
 If you would like to use *Hash-Checking Mode* available in *pip* since version
 8.0, ``pip-compile`` offers ``--generate-hashes`` flag:
 
-.. code-block::
+.. code-block:: bash
 
     $ pip-compile --generate-hashes requirements.in
     #
@@ -138,7 +138,7 @@ To update all packages, periodically re-run ``pip-compile --upgrade``.
 To update a specific package to the latest or a specific version use the
 ``--upgrade-package`` or ``-P`` flag:
 
-.. code-block::
+.. code-block:: bash
 
     $ pip-compile --upgrade-package flask  # only update the flask package
     $ pip-compile --upgrade-package flask --upgrade-package requests  # update both the flask and requests packages
@@ -156,7 +156,7 @@ confusing consumers of your custom script you can override the update command
 generated at the top of requirements files by setting the
 ``CUSTOM_COMPILE_COMMAND`` environment variable.
 
-.. code-block::
+.. code-block:: bash
 
     $ CUSTOM_COMPILE_COMMAND="./pipcompilewrapper" pip-compile requirements.in
     #
@@ -179,7 +179,7 @@ your virtual env to reflect exactly what's in there.  Note: this will
 install/upgrade/uninstall everything necessary to match the ``requirements.txt``
 contents.
 
-.. code-block::
+.. code-block:: bash
 
     $ pip-sync
     Uninstalling flake8-2.4.1:
@@ -195,7 +195,7 @@ contents.
 To sync multiple ``*.txt`` dependency lists, just pass them in via command
 line arguments, e.g.
 
-.. code-block::
+.. code-block:: bash
 
     $ pip-sync dev-requirements.txt requirements.txt
 
