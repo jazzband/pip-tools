@@ -8,6 +8,7 @@ from .exceptions import IncompatibleRequirements, UnsupportedConstraint
 from .utils import flat_map, format_requirement, key_from_ireq, key_from_req
 
 PACKAGES_TO_IGNORE = [
+    '-markerlib',
     'pip',
     'pip-tools',
     'pip-review',
