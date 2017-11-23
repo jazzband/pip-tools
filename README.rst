@@ -171,13 +171,15 @@ generated at the top of requirements files by setting the
     markupsafe==0.23          # via jinja2
     werkzeug==0.10.4          # via flask
 
-Example usage for `pip-sync`
-============================
+Example usage for ``pip-sync``
+==============================
 
 Now that you have a ``requirements.txt``, you can use ``pip-sync`` to update
 your virtual env to reflect exactly what's in there.  Note: this will
 install/upgrade/uninstall everything necessary to match the ``requirements.txt``
 contents.
+
+*Be careful: pip-sync is meant to be used only with a pip-compile'd requirements.txt.*
 
 .. code-block:: bash
 
