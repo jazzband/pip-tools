@@ -133,7 +133,12 @@ class PyPIRepository(BaseRepository):
             raise TypeError('Expected pinned or editable InstallRequirement, got {}'.format(ireq))
 
         if ireq not in self._dependencies_cache:
-            if ireq.link and not ireq.link.is_artifact:
+            if ireq.editable and (ireq.source_dir and os.path.exists(ireq.source_dir)):
+                # No download_dir for locally available editable requirements.
+                # If a download_dir is passed, pip will  unnecessarely
+                # archive the entire source directory
+                download_dir = None
+            elif ireq.link and not ireq.link.is_artifact:
                 # No download_dir for VCS sources.  This also works around pip
                 # using git-checkout-index, which gets rid of the .git dir.
                 download_dir = None
