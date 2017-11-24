@@ -36,7 +36,7 @@ class FakeRepository(BaseRepository):
         versions = list(ireq.specifier.filter(self.index[key_from_req(ireq.req)],
                                               prereleases=prereleases))
         if not versions:
-            raise NoCandidateFound(ireq, self.index[key_from_req(ireq.req)])
+            raise NoCandidateFound(ireq, self.index[key_from_req(ireq.req)], ['https://fake.url.foo'])
         best_version = max(versions, key=Version)
         return make_install_requirement(key_from_req(ireq.req), best_version, ireq.extras, constraint=ireq.constraint)
 
