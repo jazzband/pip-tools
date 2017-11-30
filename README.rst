@@ -1,4 +1,4 @@
-|buildstatus| |jazzband|
+|buildstatus-travis| |buildstatus-appveyor| |jazzband| |pypi|
 
 ==================================
 pip-tools = pip-compile + pip-sync
@@ -10,12 +10,18 @@ even when you've pinned them.  `You do pin them, right?`_
 .. image:: https://github.com/jazzband/pip-tools/raw/master/img/pip-tools-overview.png
    :alt: pip-tools overview for phase II
 
-.. |buildstatus| image:: https://img.shields.io/travis/jazzband/pip-tools/master.svg
-   :alt: Build status
+.. |buildstatus-travis| image:: https://img.shields.io/travis/jazzband/pip-tools/master.svg
+   :alt: Travis-CI build status
    :target: https://travis-ci.org/jazzband/pip-tools
+.. |buildstatus-appveyor| image:: https://img.shields.io/appveyor/ci/jazzband/pip-tools/master.svg
+   :alt: Appveyor build status
+   :target: https://ci.appveyor.com/project/jazzband/pip-tools
 .. |jazzband| image:: https://jazzband.co/static/img/badge.svg
    :alt: Jazzband
    :target: https://jazzband.co/
+.. |pypi| image:: https://img.shields.io/pypi/v/pip-tools.svg
+   :alt: PyPi
+   :target: https://pypi.python.org/pypi/pip-tools/
 .. _You do pin them, right?: http://nvie.com/posts/pin-your-packages/
 
 
