@@ -6,7 +6,7 @@ and follow the [guidelines](https://jazzband.co/about/guidelines).
 
 Also, here are a few additional or emphasized guidelines to follow:
 - Always provide tests for your changes.
-- Add your changes to the [CHANGELOG](CHANGELOG.md).
+- Give a clear one-line description in the PR (that the maintainers can add to [CHANGELOG](CHANGELOG.md) afterwards).
 - Wait for the review of at least one other contributor before merging (even if you're a Jazzband member).
 
 The only exception to those guidelines is for trivial changes, such as
