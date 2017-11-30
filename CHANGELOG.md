@@ -1,3 +1,15 @@
+# 1.11.0 (2017-11-30)
+
+Features:
+- Allow editable packages in requirements.in with `pip-compile --generate-hashes` ([#524](https://github.com/jazzband/pip-tools/pull/524)). Thanks @jdufresne
+- Allow for CA bundles with `pip-compile --cert` ([#612](https://github.com/jazzband/pip-tools/pull/612)). Thanks @khwilson
+- Improved `pip-compile` duration with large locally available editable requirement by skipping a copy to the cache
+([#583](https://github.com/jazzband/pip-tools/pull/583)). Thanks @costypetrisor
+- Slightly improved the `NoCandidateFound` error message on potential causes ([#614](https://github.com/jazzband/pip-tools/pull/614)). Thanks @vphilippon
+
+Bug Fixes:
+- Add `-markerlib` to the list of `PACKAGES_TO_IGNORE` of `pip-sync` ([#613](https://github.com/jazzband/pip-tools/pull/613)).
+
 # 1.10.2 (2017-11-22)
 
 Bug Fixes:
