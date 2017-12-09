@@ -221,6 +221,18 @@ def test_sync_quiet(tmpdir):
                 assert '-q' in call[0][0]
 
 
+def test_url_package(tmpdir):
+    url_package = 'https://github.com/jazzband/pip-tools/archive/master.zip#egg=pip-tools'
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements.in', 'w') as req_in:
+            req_in.write(url_package)
+        out = runner.invoke(cli, ['-n', '-r'])
+        assert out.exit_code == 0
+        assert url_package in out.output
+        assert 'click' in out.output  # dependency of pip-tools
+
+
 def test_editable_package(tmpdir):
     """ piptools can compile an editable """
     fake_package_dir = os.path.join(os.path.split(__file__)[0], 'fixtures', 'small_fake_package')
@@ -235,6 +247,24 @@ def test_editable_package(tmpdir):
         assert out.exit_code == 0
         assert fake_package_dir in out.output
         assert 'six==1.10.0' in out.output
+
+
+def test_url_package_vcs(tmpdir):
+    vcs_package = (
+        'git+git://github.com/pytest-dev/pytest-django'
+        '@21492afc88a19d4ca01cd0ac392a5325b14f95c7'
+        '#egg=pytest-django'
+    )
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements.in', 'w') as req_in:
+            req_in.write(vcs_package)
+        out = runner.invoke(cli, ['-n',
+                                  '--rebuild'])
+        print(out.output)
+        assert out.exit_code == 0
+        assert vcs_package in out.output
+        assert 'pytest' in out.output  # dependency of pytest-django
 
 
 def test_editable_package_vcs(tmpdir):
@@ -276,18 +306,6 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(tmpdir)
 
     # we should not find any archived file in {cache_dir}/pkgs
     assert not os.listdir(os.path.join(str(cache_dir), 'pkgs'))
-
-
-def test_url_package(tmpdir):
-    url_package = 'https://github.com/jazzband/pip-tools/archive/master.zip#egg=pip-tools'
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        with open('requirements.in', 'w') as req_in:
-            req_in.write(url_package)
-        out = runner.invoke(cli, ['-n', '-r'])
-        assert out.exit_code == 0
-        assert url_package in out.output
-        assert 'click' in out.output  # dependency of pip-tools
 
 
 def test_input_file_without_extension(tmpdir):
