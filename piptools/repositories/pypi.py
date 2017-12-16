@@ -16,16 +16,12 @@ try:
 except ImportError:
     FAVORITE_HASH = 'sha256'
 
+from .._compat import TemporaryDirectory
 from ..cache import CACHE_DIR
 from ..exceptions import NoCandidateFound
 from ..utils import (fs_str, is_pinned_requirement, lookup_table,
                      make_install_requirement, pip_version_info)
 from .base import BaseRepository
-
-try:
-    from tempfile import TemporaryDirectory  # added in 3.2
-except ImportError:
-    from .._compat import TemporaryDirectory
 
 
 class PyPIRepository(BaseRepository):
