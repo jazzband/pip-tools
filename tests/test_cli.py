@@ -45,7 +45,8 @@ def test_default_pip_conf_read(pip_conf):
     runner = CliRunner()
     with runner.isolated_filesystem():
         # preconditions
-        open('requirements.in', 'w').close()
+        with open('requirements.in', 'w'):
+            pass
         out = runner.invoke(cli, ['-v'])
 
         # check that we have our index-url as specified in pip.conf
@@ -60,7 +61,8 @@ def test_command_line_overrides_pip_conf(pip_conf):
     runner = CliRunner()
     with runner.isolated_filesystem():
         # preconditions
-        open('requirements.in', 'w').close()
+        with open('requirements.in', 'w'):
+            pass
         out = runner.invoke(cli, ['-v', '-i', 'http://override.com'])
 
         # check that we have our index-url as specified in pip.conf
@@ -89,7 +91,8 @@ def test_find_links_option(pip_conf):
 
     runner = CliRunner()
     with runner.isolated_filesystem():
-        open('requirements.in', 'w').close()
+        with open('requirements.in', 'w'):
+            pass
         out = runner.invoke(cli, ['-v', '-f', './libs1', '-f', './libs2'])
 
         # Check that find-links has been passed to pip
@@ -102,7 +105,8 @@ def test_extra_index_option(pip_conf):
 
     runner = CliRunner()
     with runner.isolated_filesystem():
-        open('requirements.in', 'w').close()
+        with open('requirements.in', 'w'):
+            pass
         out = runner.invoke(cli, ['-v',
                                   '--extra-index-url', 'http://extraindex1.com',
                                   '--extra-index-url', 'http://extraindex2.com'])
@@ -120,7 +124,8 @@ def test_trusted_host(pip_conf):
 
     runner = CliRunner()
     with runner.isolated_filesystem():
-        open('requirements.in', 'w').close()
+        with open('requirements.in', 'w'):
+            pass
         out = runner.invoke(cli, ['-v',
                                   '--trusted-host', 'example.com',
                                   '--trusted-host', 'example2.com'])
@@ -133,7 +138,8 @@ def test_trusted_host_no_emit(pip_conf):
 
     runner = CliRunner()
     with runner.isolated_filesystem():
-        open('requirements.in', 'w').close()
+        with open('requirements.in', 'w'):
+            pass
         out = runner.invoke(cli, ['-v',
                                   '--trusted-host', 'example.com',
                                   '--no-emit-trusted-host'])
