@@ -104,8 +104,10 @@ class PyPIRepository(BaseRepository):
             return ireq  # return itself as the best match
 
         all_candidates = self.find_all_candidates(ireq.name)
-        candidates_by_version = lookup_table(all_candidates, key=lambda c: c.version, unique=True)
-        matching_versions = ireq.specifier.filter((candidate.version for candidate in all_candidates),
+        candidates_by_version = lookup_table(all_candidates,
+                                             key=lambda c: str(c.version),
+                                             unique=True)
+        matching_versions = ireq.specifier.filter((str(candidate.version) for candidate in all_candidates),
                                                   prereleases=prereleases)
 
         # Reuses pip's internal candidate sort key to sort
