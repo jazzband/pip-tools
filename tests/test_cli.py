@@ -227,6 +227,39 @@ def test_sync_quiet(tmpdir):
                 assert '-q' in call[0][0]
 
 
+@pytest.mark.parametrize('option_name', [
+    'find-links', 'f', 'no-index', 'index-url', 'i', 'extra-index-url'])
+def test_sync_uses_opts_from_txt_file(option_name):
+    """sync command uses pip options from the txt file."""
+    (opt_in_txt_file, pip_opt) = {
+        'find-links': ('--find-links ./pkg-dir', '-f ./pkg-dir'),
+        'f': ('-f ./pkg-dir', '-f ./pkg-dir'),
+        'no-index': ('--no-index', '--no-index'),
+        'index-url': ('--index-url http://index-url', '-i http://index-url'),
+        'i': ('-i http://index.localhost', '-i http://index.localhost'),
+        'extra-index-url': (
+            '--extra-index-url http://extra-index.localhost',
+            '--extra-index-url http://extra-index.localhost'),
+    }[option_name]
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements.txt', 'w') as req_txt:
+            req_txt.write('{}\n'.format(opt_in_txt_file))
+            req_txt.write('foobar==0.42\n')
+
+        with mock.patch('piptools.sync.check_call') as check_call:
+            run_result = runner.invoke(sync_cli, ['-q'])
+            assert run_result.output == ''
+            assert run_result.exit_code == 0
+            number_of_install_calls = 0
+            for (call_args, _call_kwargs) in check_call.call_args_list:
+                cmd = ' '.join(call_args[0])
+                if cmd.startswith('pip install'):
+                    assert pip_opt in cmd
+                    number_of_install_calls += 1
+            assert number_of_install_calls == 1
+
+
 def test_editable_package(tmpdir):
     """ piptools can compile an editable """
     fake_package_dir = os.path.join(os.path.split(__file__)[0], 'fixtures', 'small_fake_package')
