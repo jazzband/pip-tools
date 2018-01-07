@@ -154,37 +154,35 @@ def lookup_table(values, key=None, keyval=None, unique=False, use_lists=False):
 
     Supports building normal and unique lookup tables.  For example:
 
-    >>> lookup_table(['foo', 'bar', 'baz', 'qux', 'quux'],
-    ...              lambda s: s[0])
-    {
-        'b': {'bar', 'baz'},
-        'f': {'foo'},
-        'q': {'quux', 'qux'}
-    }
+    >>> assert lookup_table(
+    ...     ['foo', 'bar', 'baz', 'qux', 'quux'], lambda s: s[0]) == {
+    ...     'b': {'bar', 'baz'},
+    ...     'f': {'foo'},
+    ...     'q': {'quux', 'qux'}
+    ... }
 
     For key functions that uniquely identify values, set unique=True:
 
-    >>> lookup_table(['foo', 'bar', 'baz', 'qux', 'quux'],
-    ...              lambda s: s[0],
-    ...              unique=True)
-    {
-        'b': 'baz',
-        'f': 'foo',
-        'q': 'quux'
-    }
+    >>> assert lookup_table(
+    ...     ['foo', 'bar', 'baz', 'qux', 'quux'], lambda s: s[0],
+    ...     unique=True) == {
+    ...     'b': 'baz',
+    ...     'f': 'foo',
+    ...     'q': 'quux'
+    ... }
 
     The values of the resulting lookup table will be values, not sets.
 
     For extra power, you can even change the values while building up the LUT.
     To do so, use the `keyval` function instead of the `key` arg:
 
-    >>> lookup_table(['foo', 'bar', 'baz', 'qux', 'quux'],
-    ...              keyval=lambda s: (s[0], s[1:]))
-    {
-        'b': {'ar', 'az'},
-        'f': {'oo'},
-        'q': {'uux', 'ux'}
-    }
+    >>> assert lookup_table(
+    ...     ['foo', 'bar', 'baz', 'qux', 'quux'],
+    ...     keyval=lambda s: (s[0], s[1:])) == {
+    ...     'b': {'ar', 'az'},
+    ...     'f': {'oo'},
+    ...     'q': {'uux', 'ux'}
+    ... }
 
     """
     if keyval is None:
