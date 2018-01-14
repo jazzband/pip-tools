@@ -15,7 +15,7 @@ Bug Fixes:
 Bug Fixes:
 - Fixed bug causing dependencies from invalid wheels for the current platform to be included ([#571](https://github.com/jazzband/pip-tools/pull/571)).
 - `pip-sync` will respect environment markers in the requirements.txt ([600](https://github.com/jazzband/pip-tools/pull/600)). Thanks @hazmat345
-- Converted the ReadMe to have a nice description rendering on PyPi. Thanks @bittner
+- Converted the ReadMe to have a nice description rendering on PyPI. Thanks @bittner
 
 # 1.10.1 (2017-09-27)
 
