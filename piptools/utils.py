@@ -218,6 +218,16 @@ def dedup(iterable):
     return iter(OrderedDict.fromkeys(iterable))
 
 
+def name_from_req(req):
+    """Get the name of the requirement"""
+    if hasattr(req, 'project_name'):
+        # pip 8.1.1 or below, using pkg_resources
+        return req.project_name
+    else:
+        # pip 8.1.2 or above, using packaging
+        return req.name
+
+
 def fs_str(string):
     """
     Convert given string to a correctly encoded filesystem string.

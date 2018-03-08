@@ -1,15 +1,6 @@
 import pytest
 from piptools.repositories import LocalRequirementsRepository
-
-
-def name_from_req(req):
-    """Get the name of the requirement"""
-    if hasattr(req, 'project_name'):
-        # pip 8.1.1 or below, using pkg_resources
-        return req.project_name
-    else:
-        # pip 8.1.2 or above, using packaging
-        return req.name
+from piptools.utils import name_from_req
 
 
 @pytest.mark.parametrize(
