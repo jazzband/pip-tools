@@ -6,7 +6,6 @@ import sys
 from itertools import chain, groupby
 from collections import OrderedDict
 
-import pip
 from pip.req import InstallRequirement
 
 from first import first
@@ -14,24 +13,7 @@ from first import first
 from .click import style
 
 
-def safeint(s):
-    try:
-        return int(s)
-    except ValueError:
-        return 0
-
-
-pip_version_info = tuple(safeint(digit) for digit in pip.__version__.split('.'))
-
 UNSAFE_PACKAGES = {'setuptools', 'distribute', 'pip'}
-
-
-def assert_compatible_pip_version():
-    # Make sure we're using a reasonably modern version of pip
-    if not pip_version_info >= (8, 0):
-        print('pip-compile requires at least version 8.0 of pip ({} found), '
-              'perhaps run `pip install --upgrade pip`?'.format(pip.__version__))
-        sys.exit(4)
 
 
 def key_from_ireq(ireq):
@@ -45,10 +27,10 @@ def key_from_ireq(ireq):
 def key_from_req(req):
     """Get an all-lowercase version of the requirement's name."""
     if hasattr(req, 'key'):
-        # pip 8.1.1 or below, using pkg_resources
+        # from pkg_resources, such as installed dists for pip-sync
         key = req.key
     else:
-        # pip 8.1.2 or above, using packaging
+        # from packaging, such as install requirements from requirements.txt
         key = req.name
 
     key = key.replace('_', '-').lower()
@@ -221,10 +203,10 @@ def dedup(iterable):
 def name_from_req(req):
     """Get the name of the requirement"""
     if hasattr(req, 'project_name'):
-        # pip 8.1.1 or below, using pkg_resources
+        # from pkg_resources, such as installed dists for pip-sync
         return req.project_name
     else:
-        # pip 8.1.2 or above, using packaging
+        # from packaging, such as install requirements from requirements.txt
         return req.name
 
 

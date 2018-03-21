@@ -11,16 +11,13 @@ from pip.download import is_file_url, url_to_path
 from pip.index import PackageFinder
 from pip.req.req_set import RequirementSet
 from pip.wheel import Wheel
-try:
-    from pip.utils.hashes import FAVORITE_HASH
-except ImportError:
-    FAVORITE_HASH = 'sha256'
+from pip.utils.hashes import FAVORITE_HASH
 
 from .._compat import TemporaryDirectory
 from ..cache import CACHE_DIR
 from ..exceptions import NoCandidateFound
 from ..utils import (fs_str, is_pinned_requirement, lookup_table,
-                     make_install_requirement, pip_version_info)
+                     make_install_requirement)
 from .base import BaseRepository
 
 
@@ -87,11 +84,7 @@ class PyPIRepository(BaseRepository):
 
     def find_all_candidates(self, req_name):
         if req_name not in self._available_candidates_cache:
-            # pip 8 changed the internal API, making this a public method
-            if pip_version_info >= (8, 0):
-                candidates = self.finder.find_all_candidates(req_name)
-            else:
-                candidates = self.finder._find_all_versions(req_name)
+            candidates = self.finder.find_all_candidates(req_name)
             self._available_candidates_cache[req_name] = candidates
         return self._available_candidates_cache[req_name]
 

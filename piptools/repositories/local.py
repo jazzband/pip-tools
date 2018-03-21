@@ -6,10 +6,7 @@ from contextlib import contextmanager
 
 from piptools.utils import as_tuple, key_from_req, make_install_requirement
 from .base import BaseRepository
-try:
-    from pip.utils.hashes import FAVORITE_HASH
-except ImportError:
-    FAVORITE_HASH = 'sha256'
+from pip.utils.hashes import FAVORITE_HASH
 
 
 def ireq_satisfied_by_existing_pin(ireq, existing_pin):
