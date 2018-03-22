@@ -6,11 +6,6 @@ python:
   - "3.5"
   - "3.6"
   - "pypy"
-env:
-  - PIP=8
-  - PIP=8.1.1
-  - PIP=9
-  - PIP=latest
 
 cache: pip
 install:
