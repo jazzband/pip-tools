@@ -15,12 +15,8 @@ from ..exceptions import PipToolsError
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
-from ..utils import (assert_compatible_pip_version, dedup, is_pinned_requirement,
-                     key_from_req, UNSAFE_PACKAGES)
+from ..utils import (dedup, is_pinned_requirement, key_from_req, UNSAFE_PACKAGES)
 from ..writer import OutputWriter
-
-# Make sure we're using a compatible version of pip
-assert_compatible_pip_version()
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
 
