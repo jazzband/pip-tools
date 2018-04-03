@@ -174,6 +174,10 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
             constraints.extend(parse_requirements(
                 src_file, finder=repository.finder, session=repository.session, options=pip_options))
 
+    # Filter out pip environment markers which do not match (PEP496)
+    constraints = [req for req in constraints
+                   if req.markers is None or req.markers.evaluate()]
+
     # Check the given base set of constraints first
     Resolver.check_constraints(constraints)
 

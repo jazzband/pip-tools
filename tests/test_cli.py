@@ -347,3 +347,22 @@ def test_generate_hashes_with_editable():
     ).format(small_fake_package_url)
     assert out.exit_code == 0
     assert expected in out.output
+
+
+def test_filter_pip_markes():
+    """
+    Check that pip-compile works with pip environment markers (PEP496)
+    """
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements', 'w') as req_in:
+            req_in.write(
+                "six==1.10.0\n"
+                "unknown_package==0.1; python_version == '1'")
+
+        out = runner.invoke(cli, ['-n', 'requirements'])
+
+        assert out.exit_code == 0
+        assert '--output-file requirements.txt' in out.output
+        assert 'six==1.10.0' in out.output
+        assert 'unknown_package' not in out.output
