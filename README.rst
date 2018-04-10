@@ -155,7 +155,7 @@ To update a specific package to the latest or a specific version use the
 
     $ pip-compile --upgrade-package flask  # only update the flask package
     $ pip-compile --upgrade-package flask --upgrade-package requests  # update both the flask and requests packages
-    $ pip-compile -P flask -P requests==2.0.0  # update the flask package to the latest, and requests to v2.0.0
+    $ pip-compile -P flask -P requests  # same as above, but shorter
 
 If you use multiple Python versions, you can run ``pip-compile`` as
 ``py -X.Y -m piptools compile ...`` on Windows and
