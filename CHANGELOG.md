@@ -1,3 +1,8 @@
+# 2.0.1 (2018-04-15)
+
+Bug Fixes:
+- Added missing package data from vendored pip, such as missing cacert.pem file.
+
 # 2.0.0 (2018-04-15)
  
 Major changes:
