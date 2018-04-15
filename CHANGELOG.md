@@ -1,3 +1,16 @@
+# 2.0.0 (2018-04-15)
+ 
+Major changes:
+- Vendored `pip` 9.0.3 to keep compatibility for users with `pip` 10.0.0
+([#644](https://github.com/jazzband/pip-tools/pull/644)).
+
+Features:
+- Improved the speed of pip-compile --generate-hashes by caching the hashes from an existing output file
+([#641](https://github.com/jazzband/pip-tools/pull/641)). Thanks @justicz
+- Added a `pip-sync --user` option to restrict attention to user-local directory
+([#642](https://github.com/jazzband/pip-tools/pull/642)). Thanks @jbergknoff-10e
+- Removed the hard dependency on setuptools ([#645](https://github.com/jazzband/pip-tools/pull/645)).
+
 # 1.11.0 (2017-11-30)
 
 Features:
