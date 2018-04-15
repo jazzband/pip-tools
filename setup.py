@@ -19,6 +19,12 @@ setup(
     description=__doc__.strip(),
     long_description=read_file('README.rst'),
     packages=find_packages(exclude=['tests']),
+    package_data={
+        "piptools._vendored.pip._vendor.certifi": ["*.pem"],
+        "piptools._vendored.pip._vendor.requests": ["*.pem"],
+        "piptools._vendored.pip._vendor.distlib._backport": ["sysconfig.cfg"],
+        "piptools._vendored.pip._vendor.distlib": ["t32.exe", "t64.exe", "w32.exe", "w64.exe"],
+    },
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*",
     setup_requires=['setuptools_scm'],
     install_requires=[
