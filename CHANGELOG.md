@@ -1,20 +1,26 @@
 # 2.0.1 (2018-04-15)
 
 Bug Fixes:
-- Added missing package data from vendored pip, such as missing cacert.pem file.
+- Added missing package data from vendored pip, such as missing cacert.pem file. Thanks @vphilippon
 
 # 2.0.0 (2018-04-15)
  
 Major changes:
 - Vendored `pip` 9.0.3 to keep compatibility for users with `pip` 10.0.0
-([#644](https://github.com/jazzband/pip-tools/pull/644)).
+([#644](https://github.com/jazzband/pip-tools/pull/644)). Thanks @vphilippon
 
 Features:
 - Improved the speed of pip-compile --generate-hashes by caching the hashes from an existing output file
 ([#641](https://github.com/jazzband/pip-tools/pull/641)). Thanks @justicz
 - Added a `pip-sync --user` option to restrict attention to user-local directory
 ([#642](https://github.com/jazzband/pip-tools/pull/642)). Thanks @jbergknoff-10e
-- Removed the hard dependency on setuptools ([#645](https://github.com/jazzband/pip-tools/pull/645)).
+- Removed the hard dependency on setuptools
+([#645](https://github.com/jazzband/pip-tools/pull/645)). Thanks @vphilippon
+
+Bug fixes:
+- The pip environment markers on top-level requirements in the source file (requirements.in)
+are now properly handled and will only be processed in the right environment
+([#647](https://github.com/jazzband/pip-tools/pull/647)). Thanks @JoergRittinger
 
 # 1.11.0 (2017-11-30)
 
