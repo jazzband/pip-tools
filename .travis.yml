@@ -7,6 +7,14 @@ python:
   - "3.6"
   - "pypy"
 
+env:
+  - PIP=8.1.1
+  - PIP=9.0.1
+  - PIP=9.0.3
+  - PIP=master
+  - PIP=latest
+  - PIP=master
+
 cache: pip
 install:
   - travis_retry pip install tox-travis

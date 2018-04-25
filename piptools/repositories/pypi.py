@@ -7,13 +7,17 @@ import os
 from contextlib import contextmanager
 from shutil import rmtree
 
-from pip.download import is_file_url, url_to_path
-from pip.index import PackageFinder
-from pip.req.req_set import RequirementSet
-from pip.wheel import Wheel
-from pip.utils.hashes import FAVORITE_HASH
+from .._compat import (
+    is_file_url,
+    url_to_path,
+    PackageFinder,
+    RequirementSet,
+    Wheel,
+    FAVORITE_HASH,
+    TemporaryDirectory,
+    PyPI
+)
 
-from .._compat import TemporaryDirectory
 from ..cache import CACHE_DIR
 from ..exceptions import NoCandidateFound
 from ..utils import (fs_str, is_pinned_requirement, lookup_table,
@@ -21,8 +25,20 @@ from ..utils import (fs_str, is_pinned_requirement, lookup_table,
 from .base import BaseRepository
 
 
+try:
+    from pip._internal.operations.prepare import RequirementPreparer
+    from pip._internal.resolve import Resolver as PipResolver
+except ImportError:
+    pass
+
+try:
+    from pip._internal.cache import WheelCache
+except ImportError:
+    from pip.wheel import WheelCache
+
+
 class PyPIRepository(BaseRepository):
-    DEFAULT_INDEX_URL = 'https://pypi.python.org/simple'
+    DEFAULT_INDEX_URL = PyPI.simple_url
 
     """
     The PyPIRepository will use the provided Finder instance to lookup
@@ -32,6 +48,8 @@ class PyPIRepository(BaseRepository):
     """
     def __init__(self, pip_options, session):
         self.session = session
+        self.pip_options = pip_options
+        self.wheel_cache = WheelCache(CACHE_DIR, pip_options.format_control)
 
         index_urls = [pip_options.index_url] + pip_options.extra_index_urls
         if pip_options.no_index:
@@ -138,12 +156,47 @@ class PyPIRepository(BaseRepository):
             if not os.path.isdir(self._wheel_download_dir):
                 os.makedirs(self._wheel_download_dir)
 
-            reqset = RequirementSet(self.build_dir,
-                                    self.source_dir,
-                                    download_dir=download_dir,
-                                    wheel_download_dir=self._wheel_download_dir,
-                                    session=self.session)
-            self._dependencies_cache[ireq] = reqset._prepare_file(self.finder, ireq)
+            try:
+                reqset = RequirementSet(
+                    self.build_dir,
+                    self.source_dir,
+                    download_dir=download_dir,
+                    wheel_download_dir=self._wheel_download_dir,
+                    session=self.session,
+                    wheel_cache=self.wheel_cache,
+                )
+                self._dependencies_cache[ireq] = reqset._prepare_file(
+                    self.finder,
+                    ireq
+                )
+            except TypeError:
+                preparer = RequirementPreparer(
+                    build_dir=self.build_dir,
+                    src_dir=self.source_dir,
+                    download_dir=download_dir,
+                    wheel_download_dir=self._wheel_download_dir,
+                    progress_bar='off',
+                    build_isolation=False
+                )
+                reqset = RequirementSet()
+                ireq.is_direct = True
+                reqset.add_requirement(ireq)
+                self.resolver = PipResolver(
+                    preparer=preparer,
+                    finder=self.finder,
+                    session=self.session,
+                    upgrade_strategy="to-satisfy-only",
+                    force_reinstall=False,
+                    ignore_dependencies=False,
+                    ignore_requires_python=False,
+                    ignore_installed=True,
+                    isolated=False,
+                    wheel_cache=self.wheel_cache,
+                    use_user_site=False,
+                )
+                self.resolver.resolve(reqset)
+                self._dependencies_cache[ireq] = reqset.requirements.values()
+            reqset.cleanup_files()
         return set(self._dependencies_cache[ireq])
 
     def get_hashes(self, ireq):
