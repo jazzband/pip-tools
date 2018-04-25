@@ -10,6 +10,16 @@ from click.testing import CliRunner
 import pytest
 from piptools.scripts.compile import cli
 from piptools.scripts.sync import cli as sync_cli
+from pip._vendor.packaging.version import parse as parse_version
+from pip import __version__ as pip_version
+
+
+PIP_VERSION = parse_version(os.environ.get('PIP', pip_version))
+
+fail_below_pip9 = pytest.mark.xfail(
+    PIP_VERSION < parse_version('9'),
+    reason="needs pip 9 or greater"
+)
 
 
 @pytest.yield_fixture
@@ -349,6 +359,7 @@ def test_generate_hashes_with_editable():
     assert expected in out.output
 
 
+@fail_below_pip9
 def test_filter_pip_markes():
     """
     Check that pip-compile works with pip environment markers (PEP496)

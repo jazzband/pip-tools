@@ -1,6 +1,5 @@
 from mock import MagicMock, patch
-from pip.index import PackageFinder
-from pip.req import InstallRequirement
+from piptools._compat import PackageFinder, InstallRequirement
 
 from piptools.repositories.pypi import PyPIRepository
 from piptools.scripts.compile import get_pip_command
