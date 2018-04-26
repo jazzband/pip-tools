@@ -3,13 +3,12 @@ class PipToolsError(Exception):
 
 
 class NoCandidateFound(PipToolsError):
-    def __init__(self, ireq, candidates_tried, index_urls):
+    def __init__(self, ireq, candidates_tried, finder):
         self.ireq = ireq
         self.candidates_tried = candidates_tried
-        self.index_urls = index_urls
+        self.finder = finder
 
     def __str__(self):
-        sorted_candidates = sorted(self.candidates_tried)
         versions = []
         pre_versions = []
 
@@ -28,14 +27,20 @@ class NoCandidateFound(PipToolsError):
             lines.append('Tried: {}'.format(', '.join(versions)))
 
         if pre_versions:
-            lines.append('Skipped pre-versions: {}'.format(', '.join(pre_versions)))
+            if self.finder.allow_all_prereleases:
+                line = 'Tried'
+            else:
+                line = 'Skipped'
+
+            line += ' pre-versions: {}'.format(', '.join(pre_versions))
+            lines.append(line)
 
         if versions or pre_versions:
             lines.append('There are incompatible versions in the resolved dependencies.')
         else:
             lines.append('No versions found')
             lines.append('{} {} reachable?'.format(
-                'Were' if len(self.index_urls) > 1 else 'Was', ' or '.join(self.index_urls))
+                'Were' if len(self.finder.index_urls) > 1 else 'Was', ' or '.join(self.finder.index_urls))
             )
         return '\n'.join(lines)
 

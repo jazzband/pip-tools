@@ -366,3 +366,27 @@ def test_filter_pip_markes():
         assert '--output-file requirements.txt' in out.output
         assert 'six==1.10.0' in out.output
         assert 'unknown_package' not in out.output
+
+
+def test_no_candidates():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements', 'w') as req_in:
+            req_in.write('six>1.0b0,<1.0b0')
+
+        out = runner.invoke(cli, ['-n', 'requirements'])
+
+        assert out.exit_code == 2
+        assert 'Skipped pre-versions:' in out.output
+
+
+def test_no_candidates_pre():
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements', 'w') as req_in:
+            req_in.write('six>1.0b0,<1.0b0')
+
+        out = runner.invoke(cli, ['-n', 'requirements', '--pre'])
+
+        assert out.exit_code == 2
+        assert 'Tried pre-versions:' in out.output
