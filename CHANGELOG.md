@@ -1,3 +1,9 @@
+# 2.0.2 (2018-04-28)
+
+Bug Fixes:
+- Added clearer error reporting when skipping pre-releases
+([#655](https://github.com/jazzband/pip-tools/pull/655)). Thanks @WoLpH
+
 # 2.0.1 (2018-04-15)
 
 Bug Fixes:
