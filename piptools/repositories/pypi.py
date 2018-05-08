@@ -157,6 +157,7 @@ class PyPIRepository(BaseRepository):
                 os.makedirs(self._wheel_download_dir)
 
             try:
+                # Pip < 9 and below
                 reqset = RequirementSet(
                     self.build_dir,
                     self.source_dir,
@@ -170,6 +171,7 @@ class PyPIRepository(BaseRepository):
                     ireq
                 )
             except TypeError:
+                # Pip >= 10 (new resolver!)
                 preparer = RequirementPreparer(
                     build_dir=self.build_dir,
                     src_dir=self.source_dir,
