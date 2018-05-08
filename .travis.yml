@@ -13,7 +13,6 @@ env:
   - PIP=9.0.3
   - PIP=master
   - PIP=latest
-  - PIP=master
 
 cache: pip
 install:
