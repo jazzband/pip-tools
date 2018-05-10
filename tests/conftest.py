@@ -4,7 +4,7 @@ from functools import partial
 
 from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Requirement
-from pip.req import InstallRequirement
+from piptools._compat import InstallRequirement
 from pytest import fixture
 
 from piptools.cache import DependencyCache
