@@ -21,7 +21,7 @@ even when you've pinned them.  `You do pin them, right?`_
    :target: https://jazzband.co/
 .. |pypi| image:: https://img.shields.io/pypi/v/pip-tools.svg
    :alt: PyPI
-   :target: https://pypi.python.org/pypi/pip-tools/
+   :target: https://pypi.org/project/pip-tools/
 .. _You do pin them, right?: http://nvie.com/posts/pin-your-packages/
 
 
