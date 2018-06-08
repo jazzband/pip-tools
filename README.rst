@@ -225,17 +225,6 @@ If you use multiple Python versions, you can run ``pip-sync`` as
 ``setuptools``, ``pip``, or ``pip-tools`` itself. Use ``pip install --upgrade``
 to upgrade those packages.
 
-
-Note about ``pip``
-==================
-
-As of v2.0.0, pip-tools has vendored ``pip v9.0.3`` in its codebase.
-This was done to keep ``pip-tools`` working for users with ``pip v10.0.0``.
-Only the ``pip-sync`` command still use the ``pip`` found in the ``virtualenv``,
-and only for the ``pip install`` and ``pip uninstall`` commands issued as shell-outs
-by ``pip-sync``.
-
-
 Other useful tools
 ==================
 
