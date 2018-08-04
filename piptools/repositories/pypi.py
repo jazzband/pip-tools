@@ -180,8 +180,8 @@ class PyPIRepository(BaseRepository):
                 preparer = RequirementPreparer(**preparer_kwargs)
                 resolver_kwargs['preparer'] = preparer
                 resolver = PipResolver(**resolver_kwargs)
-                resolver.resolve(reqset)
-            results = reqset.requirements.values()
+                resolver.require_hashes = False
+            results = resolver._resolve_one(reqset, ireq)
             reqset.cleanup_files()
         finally:
             if 'PIP_REQ_TRACKER' in os.environ:
@@ -217,7 +217,11 @@ class PyPIRepository(BaseRepository):
             if not os.path.isdir(self._wheel_download_dir):
                 os.makedirs(self._wheel_download_dir)
 
-            self._dependencies_cache[ireq] = self.resolve_reqs(download_dir, ireq)
+            try:
+                self._dependencies_cache[ireq] = self.resolve_reqs(download_dir, ireq)
+            finally:
+                if callable(getattr(self.wheel_cache, 'cleanup', None)):
+                    self.wheel_cache.cleanup()
         return set(self._dependencies_cache[ireq])
 
     def get_hashes(self, ireq):
