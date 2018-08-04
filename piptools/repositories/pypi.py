@@ -49,7 +49,6 @@ class PyPIRepository(BaseRepository):
     def __init__(self, pip_options, session):
         self.session = session
         self.pip_options = pip_options
-        self.wheel_cache = WheelCache(CACHE_DIR, pip_options.format_control)
 
         index_urls = [pip_options.index_url] + pip_options.extra_index_urls
         if pip_options.no_index:
@@ -130,8 +129,8 @@ class PyPIRepository(BaseRepository):
             best_candidate.project, best_candidate.version, ireq.extras, constraint=ireq.constraint
         )
 
-    def resolve_reqs(self, download_dir, ireq):
-        prev_tracker = os.environ.get('PIP_REQ_TRACKER')
+    def resolve_reqs(self, download_dir, ireq, wheel_cache):
+        results = None
         try:
             from pip._internal.operations.prepare import RequirementPreparer
             from pip._internal.resolve import Resolver as PipResolver
@@ -143,7 +142,7 @@ class PyPIRepository(BaseRepository):
                 download_dir=download_dir,
                 wheel_download_dir=self._wheel_download_dir,
                 session=self.session,
-                wheel_cache=self.wheel_cache,
+                wheel_cache=wheel_cache
             )
             results = reqset._prepare_file(self.finder, ireq)
         else:
@@ -165,31 +164,26 @@ class PyPIRepository(BaseRepository):
                 'ignore_requires_python': False,
                 'ignore_installed': True,
                 'isolated': False,
-                'wheel_cache': self.wheel_cache,
+                'wheel_cache': wheel_cache,
                 'use_user_site': False
             }
             resolver = None
             preparer = None
-            reqset = RequirementSet()
-            ireq.is_direct = True
-            reqset.add_requirement(ireq)
             with RequirementTracker() as req_tracker:
                 # Pip 18 uses a requirement tracker to prevent fork bombs
                 if req_tracker:
                     preparer_kwargs['req_tracker'] = req_tracker
                 preparer = RequirementPreparer(**preparer_kwargs)
                 resolver_kwargs['preparer'] = preparer
+                reqset = RequirementSet()
+                ireq.is_direct = True
+                reqset.add_requirement(ireq)
                 resolver = PipResolver(**resolver_kwargs)
                 resolver.require_hashes = False
-            results = resolver._resolve_one(reqset, ireq)
-            reqset.cleanup_files()
-        finally:
-            if 'PIP_REQ_TRACKER' in os.environ:
-                if prev_tracker:
-                    os.environ['PIP_REQ_TRACKER'] = prev_tracker
-                else:
-                    del os.environ['PIP_REQ_TRACKER']
-        return results
+                results = resolver._resolve_one(reqset, ireq)
+                reqset.cleanup_files()
+
+        return set(results)
 
     def get_dependencies(self, ireq):
         """
@@ -217,12 +211,21 @@ class PyPIRepository(BaseRepository):
             if not os.path.isdir(self._wheel_download_dir):
                 os.makedirs(self._wheel_download_dir)
 
+            wheel_cache = WheelCache(CACHE_DIR, self.pip_options.format_control)
+            prev_tracker = os.environ.get('PIP_REQ_TRACKER')
             try:
-                self._dependencies_cache[ireq] = self.resolve_reqs(download_dir, ireq)
+                self._dependencies_cache[ireq] = self.resolve_reqs(download_dir, ireq, wheel_cache)
             finally:
-                if callable(getattr(self.wheel_cache, 'cleanup', None)):
+                if 'PIP_REQ_TRACKER' in os.environ:
+                    if prev_tracker:
+                        os.environ['PIP_REQ_TRACKER'] = prev_tracker
+                    else:
+                        del os.environ['PIP_REQ_TRACKER']
+                try:
                     self.wheel_cache.cleanup()
-        return set(self._dependencies_cache[ireq])
+                except AttributeError:
+                    pass
+        return self._dependencies_cache[ireq]
 
     def get_hashes(self, ireq):
         """
