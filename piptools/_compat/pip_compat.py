@@ -16,7 +16,7 @@ def do_import(module_path, subimport=None, old_path=None):
             continue
         else:
             return getattr(imported, package)
-    
+
 
 InstallRequirement = do_import('req.req_install', 'InstallRequirement')
 parse_requirements = do_import('req.req_file', 'parse_requirements')
