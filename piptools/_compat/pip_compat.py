@@ -2,16 +2,20 @@
 import importlib
 
 def do_import(module_path, subimport=None, old_path=None):
-    internal = 'pip._internal.{0}'.format(module_path)
     old_path = old_path or module_path
-    pip9 = 'pip.{0}'.format(old_path)
-    try:
-        _tmp = importlib.import_module(internal)
-    except ImportError:
-        _tmp = importlib.import_module(pip9)
-    if subimport:
-        return getattr(_tmp, subimport, _tmp)
-    return _tmp
+    prefixes = ["pip._internal", "pip"]
+    paths = [module_path, old_path]
+    search_order = ["{0}.{1}".format(p, pth) for p in prefixes for pth in paths if pth is not None]
+    package = subimport if subimport else None
+    for to_import in search_order:
+        if not subimport:
+            to_import, _, package = to_import.rpartition(".")
+        try:
+            imported = importlib.import_module(to_import)
+        except ImportError:
+            continue
+        else:
+            return getattr(imported, package)
     
 
 InstallRequirement = do_import('req.req_install', 'InstallRequirement')
@@ -24,7 +28,7 @@ url_to_path = do_import('download', 'url_to_path')
 PackageFinder = do_import('index', 'PackageFinder')
 FormatControl = do_import('index', 'FormatControl')
 Wheel = do_import('wheel', 'Wheel')
-Command = do_import('basecommand', 'Command')
-cmdoptions = do_import('cmdoptions')
+Command = do_import('cli.base_command', 'Command', old_path='basecommand')
+cmdoptions = do_import('cli.cmdoptions', old_path='cmdoptions')
 get_installed_distributions = do_import('utils.misc', 'get_installed_distributions', old_path='utils')
 PyPI = do_import('models.index', 'PyPI')
