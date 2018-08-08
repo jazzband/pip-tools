@@ -1,7 +1,7 @@
 # Master
 
 Features:
-- Made local, editable, and relative requirements resolve to relative paths instead of absolute ones ([#507](https://github.com/jazzband/pip-tools/pull/507). Thanks to @orf)
+- Made local, editable, and relative requirements resolve to relative paths instead of absolute ones ([#507](https://github.com/jazzband/pip-tools/pull/507). Thanks to @orf, @maciej-gol, @AmiroNasr)
 
 # 2.0.2 (2018-04-28)
 
@@ -15,7 +15,6 @@ Bug Fixes:
 - Added missing package data from vendored pip, such as missing cacert.pem file. Thanks @vphilippon
 
 # 2.0.0 (2018-04-15)
-
 Major changes:
 - Vendored `pip` 9.0.3 to keep compatibility for users with `pip` 10.0.0
 ([#644](https://github.com/jazzband/pip-tools/pull/644)). Thanks @vphilippon
