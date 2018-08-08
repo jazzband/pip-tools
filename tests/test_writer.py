@@ -17,9 +17,12 @@ def writer():
                         format_control=FormatControl(set(), set()))
 
 
-def test_format_requirements_relative_path(from_editable, writer):
-    ireq = from_editable('file:fixtures/fake_package#egg=fake_package')
-    assert writer._format_requirement(ireq, {}, primary_packages=['fake_package']) == '-e file:./fixtures/fake_package'
+def test_format_requirements_relative_path(from_editable, writer, fake_package_dir):
+    # The os.getcwd() is set to the piptools directory. Thus the expected path
+    # starts with tests directory.
+    ireq = from_editable('file://{}#egg=fake_package'.format(fake_package_dir))
+    formatted_requirement = writer._format_requirement(ireq, {}, primary_packages=['fake_package'])
+    assert formatted_requirement == '-e tests/test_data/fake_package'
 
 
 def test_format_requirement_annotation_editable(from_editable, writer):

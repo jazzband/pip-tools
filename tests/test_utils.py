@@ -4,17 +4,7 @@ import shutil
 from pytest import raises
 
 from piptools.utils import (
-    as_tuple, format_requirement, format_specifier, flat_map, dedup, is_subdirectory)
-
-
-def test_is_subdirectory():
-    cwd = os.getcwd()
-    test_dir = os.path.join(cwd, 'test')
-    assert is_subdirectory(cwd, test_dir)
-    assert is_subdirectory(os.path.join(test_dir, '..'), test_dir)
-    assert is_subdirectory(cwd, cwd)
-
-    assert not is_subdirectory(test_dir, cwd)
+    as_tuple, format_requirement, format_specifier, flat_map, dedup)
 
 
 def test_format_requirement(from_line):
@@ -36,7 +26,7 @@ def test_format_requirement_non_relative_editable(from_editable, small_fake_pack
 
 def test_format_requirement_relative_editable(from_editable, small_fake_package_dir):
     ireq = from_editable(small_fake_package_dir)
-    assert format_requirement(ireq) == '-e file:./tests/fixtures/small_fake_package'
+    assert format_requirement(ireq, relative_to='.') == '-e tests/test_data/small_fake_package'
 
 
 def test_format_specifier(from_line):

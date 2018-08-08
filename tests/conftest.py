@@ -117,14 +117,14 @@ def from_editable():
 
 @fixture
 def fake_package_dir():
-    return os.path.join(os.path.split(__file__)[0], 'fixtures', 'fake_package')
+    return os.path.join(os.path.dirname(__file__), 'test_data', 'fake_package')
 
 
 @fixture
 def small_fake_package_dir():
-    return os.path.join(os.path.split(__file__)[0], 'fixtures', 'small_fake_package')
+    return os.path.join(os.path.dirname(__file__), 'test_data', 'small_fake_package')
 
 
 @fixture
 def minimal_wheels_dir():
-    return os.path.join(os.path.split(__file__)[0], 'fixtures', 'minimal_wheels')
+    return os.path.join(os.path.dirname(__file__), 'test_data', 'minimal_wheels')

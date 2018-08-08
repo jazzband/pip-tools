@@ -55,30 +55,26 @@ def make_install_requirement(name, version, extras, constraint=False):
         constraint=constraint)
 
 
-def is_subdirectory(base, directory):
-    """
-    Return True if directory is a child directory of base
-    """
-    base = os.path.join(os.path.realpath(base), '')
-    directory = os.path.join(os.path.realpath(directory), '')
+def _link_as_relative_to(ireq_link, relative_to):
+    if not relative_to:
+        return ireq_link
 
-    return os.path.commonprefix([base, directory]) == base
+    if ireq_link.scheme != 'file':
+        return ireq_link
+
+    return os.path.relpath(ireq_link.path, start=relative_to)
 
 
-def format_requirement(ireq, marker=None):
+def format_requirement(ireq, marker=None, relative_to=None):
     """
     Generic formatter for pretty printing InstallRequirements to the terminal
     in a less verbose way than using its `__str__` method.
+
+    If `relative_to` is a path to a directory, all file path requirements will
+    be relative to that directory.
     """
     if ireq.editable:
-        path = ireq.link.path
-        if ireq.link.scheme == 'file' and is_subdirectory(os.getcwd(), path):
-            # If the ireq.link is relative to the current directory then output a relative path
-            path = 'file:' + os.path.join('.', os.path.relpath(path))
-        else:
-            path = ireq.link
-
-        line = '-e {}'.format(path)
+        line = '-e {}'.format(_link_as_relative_to(ireq.link, relative_to=relative_to))
     else:
         line = str(ireq.req).lower()
 
