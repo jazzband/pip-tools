@@ -1,6 +1,5 @@
 import os
 from textwrap import dedent
-from six.moves.urllib.request import pathname2url
 import subprocess
 import sys
 import shutil
