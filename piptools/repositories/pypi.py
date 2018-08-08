@@ -4,30 +4,41 @@ from __future__ import (absolute_import, division, print_function,
 
 import hashlib
 import os
+from contextlib import contextmanager
 from shutil import rmtree
 
-from pip.download import unpack_url
-from pip.index import PackageFinder
-from pip.req.req_set import RequirementSet
-try:
-    from pip.utils.hashes import FAVORITE_HASH
-except ImportError:
-    FAVORITE_HASH = 'sha256'
+from .._compat import (
+    is_file_url,
+    url_to_path,
+    PackageFinder,
+    RequirementSet,
+    Wheel,
+    FAVORITE_HASH,
+    TemporaryDirectory,
+    PyPI
+)
 
 from ..cache import CACHE_DIR
 from ..exceptions import NoCandidateFound
-from ..utils import (is_pinned_requirement, lookup_table,
-                     make_install_requirement, pip_version_info)
+from ..utils import (fs_str, is_pinned_requirement, lookup_table,
+                     make_install_requirement)
 from .base import BaseRepository
 
+
 try:
-    from tempfile import TemporaryDirectory  # added in 3.2
+    from pip._internal.operations.prepare import RequirementPreparer
+    from pip._internal.resolve import Resolver as PipResolver
 except ImportError:
-    from .._compat import TemporaryDirectory
+    pass
+
+try:
+    from pip._internal.cache import WheelCache
+except ImportError:
+    from pip.wheel import WheelCache
 
 
 class PyPIRepository(BaseRepository):
-    DEFAULT_INDEX_URL = 'https://pypi.python.org/simple'
+    DEFAULT_INDEX_URL = PyPI.simple_url
 
     """
     The PyPIRepository will use the provided Finder instance to lookup
@@ -37,6 +48,8 @@ class PyPIRepository(BaseRepository):
     """
     def __init__(self, pip_options, session):
         self.session = session
+        self.pip_options = pip_options
+        self.wheel_cache = WheelCache(CACHE_DIR, pip_options.format_control)
 
         index_urls = [pip_options.index_url] + pip_options.extra_index_urls
         if pip_options.no_index:
@@ -64,16 +77,16 @@ class PyPIRepository(BaseRepository):
 
         # Setup file paths
         self.freshen_build_caches()
-        self._download_dir = os.path.join(CACHE_DIR, 'pkgs')
-        self._wheel_download_dir = os.path.join(CACHE_DIR, 'wheels')
+        self._download_dir = fs_str(os.path.join(CACHE_DIR, 'pkgs'))
+        self._wheel_download_dir = fs_str(os.path.join(CACHE_DIR, 'wheels'))
 
     def freshen_build_caches(self):
         """
         Start with fresh build/source caches.  Will remove any old build
         caches from disk automatically.
         """
-        self._build_dir = TemporaryDirectory('build')
-        self._source_dir = TemporaryDirectory('source')
+        self._build_dir = TemporaryDirectory(fs_str('build'))
+        self._source_dir = TemporaryDirectory(fs_str('source'))
 
     @property
     def build_dir(self):
@@ -89,11 +102,7 @@ class PyPIRepository(BaseRepository):
 
     def find_all_candidates(self, req_name):
         if req_name not in self._available_candidates_cache:
-            # pip 8 changed the internal API, making this a public method
-            if pip_version_info >= (8, 0):
-                candidates = self.finder.find_all_candidates(req_name)
-            else:
-                candidates = self.finder._find_all_versions(req_name)
+            candidates = self.finder.find_all_candidates(req_name)
             self._available_candidates_cache[req_name] = candidates
         return self._available_candidates_cache[req_name]
 
@@ -113,7 +122,7 @@ class PyPIRepository(BaseRepository):
         # Reuses pip's internal candidate sort key to sort
         matching_candidates = [candidates_by_version[ver] for ver in matching_versions]
         if not matching_candidates:
-            raise NoCandidateFound(ireq, all_candidates)
+            raise NoCandidateFound(ireq, all_candidates, self.finder)
         best_candidate = max(matching_candidates, key=self.finder._candidate_sort_key)
 
         # Turn the candidate into a pinned InstallRequirement
@@ -131,33 +140,83 @@ class PyPIRepository(BaseRepository):
             raise TypeError('Expected pinned or editable InstallRequirement, got {}'.format(ireq))
 
         if ireq not in self._dependencies_cache:
-
-            if not os.path.isdir(self._download_dir):
-                os.makedirs(self._download_dir)
+            if ireq.editable and (ireq.source_dir and os.path.exists(ireq.source_dir)):
+                # No download_dir for locally available editable requirements.
+                # If a download_dir is passed, pip will  unnecessarely
+                # archive the entire source directory
+                download_dir = None
+            elif ireq.link and not ireq.link.is_artifact:
+                # No download_dir for VCS sources.  This also works around pip
+                # using git-checkout-index, which gets rid of the .git dir.
+                download_dir = None
+            else:
+                download_dir = self._download_dir
+                if not os.path.isdir(download_dir):
+                    os.makedirs(download_dir)
             if not os.path.isdir(self._wheel_download_dir):
                 os.makedirs(self._wheel_download_dir)
 
-            reqset = RequirementSet(self.build_dir,
-                                    self.source_dir,
-                                    download_dir=self._download_dir,
-                                    wheel_download_dir=self._wheel_download_dir,
-                                    session=self.session)
-            self._dependencies_cache[ireq] = reqset._prepare_file(self.finder, ireq)
+            try:
+                # Pip < 9 and below
+                reqset = RequirementSet(
+                    self.build_dir,
+                    self.source_dir,
+                    download_dir=download_dir,
+                    wheel_download_dir=self._wheel_download_dir,
+                    session=self.session,
+                    wheel_cache=self.wheel_cache,
+                )
+                self._dependencies_cache[ireq] = reqset._prepare_file(
+                    self.finder,
+                    ireq
+                )
+            except TypeError:
+                # Pip >= 10 (new resolver!)
+                preparer = RequirementPreparer(
+                    build_dir=self.build_dir,
+                    src_dir=self.source_dir,
+                    download_dir=download_dir,
+                    wheel_download_dir=self._wheel_download_dir,
+                    progress_bar='off',
+                    build_isolation=False
+                )
+                reqset = RequirementSet()
+                ireq.is_direct = True
+                reqset.add_requirement(ireq)
+                self.resolver = PipResolver(
+                    preparer=preparer,
+                    finder=self.finder,
+                    session=self.session,
+                    upgrade_strategy="to-satisfy-only",
+                    force_reinstall=False,
+                    ignore_dependencies=False,
+                    ignore_requires_python=False,
+                    ignore_installed=True,
+                    isolated=False,
+                    wheel_cache=self.wheel_cache,
+                    use_user_site=False,
+                )
+                self.resolver.resolve(reqset)
+                self._dependencies_cache[ireq] = reqset.requirements.values()
+            reqset.cleanup_files()
         return set(self._dependencies_cache[ireq])
 
     def get_hashes(self, ireq):
         """
-        Given a pinned InstallRequire, returns a set of hashes that represent
-        all of the files for a given requirement. It is not acceptable for an
-        editable or unpinned requirement to be passed to this function.
+        Given an InstallRequirement, return a set of hashes that represent all
+        of the files for a given requirement. Editable requirements return an
+        empty set. Unpinned requirements raise a TypeError.
         """
-        if ireq.editable or not is_pinned_requirement(ireq):
+        if ireq.editable:
+            return set()
+
+        if not is_pinned_requirement(ireq):
             raise TypeError(
-                "Expected pinned requirement, not unpinned or editable, got {}".format(ireq))
+                "Expected pinned requirement, got {}".format(ireq))
 
         # We need to get all of the candidates that match our current version
         # pin, these will represent all of the files that could possibly
-        # satisify this constraint.
+        # satisfy this constraint.
         all_candidates = self.find_all_candidates(ireq.name)
         candidates_by_version = lookup_table(all_candidates, key=lambda c: c.version)
         matching_versions = list(
@@ -170,18 +229,69 @@ class PyPIRepository(BaseRepository):
         }
 
     def _get_file_hash(self, location):
-        with TemporaryDirectory() as tmpdir:
-            unpack_url(
-                location, self.build_dir,
-                download_dir=tmpdir, only_download=True, session=self.session
-            )
-            files = os.listdir(tmpdir)
-            assert len(files) == 1
-            filename = os.path.abspath(os.path.join(tmpdir, files[0]))
-
-            h = hashlib.new(FAVORITE_HASH)
-            with open(filename, "rb") as fp:
-                for chunk in iter(lambda: fp.read(8096), b""):
-                    h.update(chunk)
-
+        h = hashlib.new(FAVORITE_HASH)
+        with open_local_or_remote_file(location, self.session) as fp:
+            for chunk in iter(lambda: fp.read(8096), b""):
+                h.update(chunk)
         return ":".join([FAVORITE_HASH, h.hexdigest()])
+
+    @contextmanager
+    def allow_all_wheels(self):
+        """
+        Monkey patches pip.Wheel to allow wheels from all platforms and Python versions.
+
+        This also saves the candidate cache and set a new one, or else the results from the
+        previous non-patched calls will interfere.
+        """
+        def _wheel_supported(self, tags=None):
+            # Ignore current platform. Support everything.
+            return True
+
+        def _wheel_support_index_min(self, tags=None):
+            # All wheels are equal priority for sorting.
+            return 0
+
+        original_wheel_supported = Wheel.supported
+        original_support_index_min = Wheel.support_index_min
+        original_cache = self._available_candidates_cache
+
+        Wheel.supported = _wheel_supported
+        Wheel.support_index_min = _wheel_support_index_min
+        self._available_candidates_cache = {}
+
+        try:
+            yield
+        finally:
+            Wheel.supported = original_wheel_supported
+            Wheel.support_index_min = original_support_index_min
+            self._available_candidates_cache = original_cache
+
+
+@contextmanager
+def open_local_or_remote_file(link, session):
+    """
+    Open local or remote file for reading.
+
+    :type link: pip.index.Link
+    :type session: requests.Session
+    :raises ValueError: If link points to a local directory.
+    :return: a context manager to the opened file-like object
+    """
+    url = link.url_without_fragment
+
+    if is_file_url(link):
+        # Local URL
+        local_path = url_to_path(url)
+        if os.path.isdir(local_path):
+            raise ValueError("Cannot open directory for read: {}".format(url))
+        else:
+            with open(local_path, 'rb') as local_file:
+                yield local_file
+    else:
+        # Remote URL
+        headers = {"Accept-Encoding": "identity"}
+        response = session.get(url, headers=headers, stream=True)
+        try:
+            yield response.raw
+        finally:
+            response.close()

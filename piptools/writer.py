@@ -5,7 +5,7 @@ from ._compat import ExitStack
 from .click import unstyle
 from .io import AtomicSaver
 from .logging import log
-from .utils import comment, format_requirement, dedup, UNSAFE_PACKAGES
+from .utils import comment, dedup, format_requirement, key_from_req, UNSAFE_PACKAGES
 
 
 class OutputWriter(object):
@@ -81,44 +81,49 @@ class OutputWriter(object):
         if emitted:
             yield ''
 
-    def _iter_lines(self, results, reverse_dependencies, primary_packages, markers, hashes):
+    def _iter_lines(self, results, unsafe_requirements, reverse_dependencies,
+                    primary_packages, markers, hashes, allow_unsafe=False):
         for line in self.write_header():
             yield line
         for line in self.write_flags():
             yield line
 
-        unsafe_packages = {r for r in results if r.name in UNSAFE_PACKAGES}
+        unsafe_requirements = {r for r in results if r.name in UNSAFE_PACKAGES} if not unsafe_requirements else unsafe_requirements  # noqa
         packages = {r for r in results if r.name not in UNSAFE_PACKAGES}
 
         packages = sorted(packages, key=self._sort_key)
-        unsafe_packages = sorted(unsafe_packages, key=self._sort_key)
 
         for ireq in packages:
             line = self._format_requirement(
                 ireq, reverse_dependencies, primary_packages,
-                markers.get(ireq.req.name), hashes=hashes)
+                markers.get(key_from_req(ireq.req)), hashes=hashes)
             yield line
 
-        if unsafe_packages:
+        if unsafe_requirements:
+            unsafe_requirements = sorted(unsafe_requirements, key=self._sort_key)
             yield ''
             yield comment('# The following packages are considered to be unsafe in a requirements file:')
 
-            for ireq in unsafe_packages:
-
-                yield self._format_requirement(ireq,
+            for ireq in unsafe_requirements:
+                req = self._format_requirement(ireq,
                                                reverse_dependencies,
                                                primary_packages,
-                                               marker=markers.get(ireq.req.name),
+                                               marker=markers.get(key_from_req(ireq.req)),
                                                hashes=hashes)
+                if not allow_unsafe:
+                    yield comment('# {}'.format(req))
+                else:
+                    yield req
 
-    def write(self, results, reverse_dependencies, primary_packages, markers, hashes):
+    def write(self, results, unsafe_requirements, reverse_dependencies,
+              primary_packages, markers, hashes, allow_unsafe=False):
         with ExitStack() as stack:
             f = None
             if not self.dry_run:
                 f = stack.enter_context(AtomicSaver(self.dst_file))
 
-            for line in self._iter_lines(results, reverse_dependencies,
-                                         primary_packages, markers, hashes):
+            for line in self._iter_lines(results, unsafe_requirements, reverse_dependencies,
+                                         primary_packages, markers, hashes, allow_unsafe=allow_unsafe):
                 log.info(line)
                 if f:
                     f.write(unstyle(line).encode('utf-8'))
@@ -132,7 +137,7 @@ class OutputWriter(object):
             for hash_ in sorted(ireq_hashes):
                 line += " \\\n    --hash={}".format(hash_)
 
-        if not self.annotate or ireq.name in primary_packages:
+        if not self.annotate or key_from_req(ireq.req) in primary_packages:
             return line
 
         # Annotate what packages this package is required by

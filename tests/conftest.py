@@ -1,10 +1,11 @@
 import json
 import os
+from contextlib import contextmanager
 from functools import partial
 
 from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Requirement
-from pip.req import InstallRequirement
+from piptools._compat import InstallRequirement
 from pytest import fixture
 
 from piptools.cache import DependencyCache
@@ -16,10 +17,10 @@ from piptools.exceptions import NoCandidateFound
 
 class FakeRepository(BaseRepository):
     def __init__(self):
-        with open('tests/fixtures/fake-index.json', 'r') as f:
+        with open('tests/test_data/fake-index.json', 'r') as f:
             self.index = json.load(f)
 
-        with open('tests/fixtures/fake-editables.json', 'r') as f:
+        with open('tests/test_data/fake-editables.json', 'r') as f:
             self.editables = json.load(f)
 
     def get_hashes(self, ireq):
@@ -36,7 +37,7 @@ class FakeRepository(BaseRepository):
         versions = list(ireq.specifier.filter(self.index[key_from_req(ireq.req)],
                                               prereleases=prereleases))
         if not versions:
-            raise NoCandidateFound(ireq, self.index[key_from_req(ireq.req)])
+            raise NoCandidateFound(ireq, self.index[key_from_req(ireq.req)], ['https://fake.url.foo'])
         best_version = max(versions, key=Version)
         return make_install_requirement(key_from_req(ireq.req), best_version, ireq.extras, constraint=ireq.constraint)
 
@@ -49,6 +50,11 @@ class FakeRepository(BaseRepository):
         extras += ("",)
         dependencies = [dep for extra in extras for dep in self.index[name][version][extra]]
         return [InstallRequirement.from_line(dep, constraint=ireq.constraint) for dep in dependencies]
+
+    @contextmanager
+    def allow_all_wheels(self):
+        # No need to do an actual pip.Wheel mock here.
+        yield
 
 
 class FakeInstalledDistribution(object):

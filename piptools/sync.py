@@ -5,12 +5,14 @@ from subprocess import check_call
 
 from . import click
 from .exceptions import IncompatibleRequirements, UnsupportedConstraint
-from .utils import flat_map, format_requirement, key_from_req
+from .utils import flat_map, format_requirement, key_from_ireq, key_from_req
 
 PACKAGES_TO_IGNORE = [
+    '-markerlib',
     'pip',
     'pip-tools',
     'pip-review',
+    'pkg-resources',
     'setuptools',
     'wheel',
 ]
@@ -103,13 +105,13 @@ def diff(compiled_requirements, installed_dists):
     pkgs_to_ignore = get_dists_to_ignore(installed_dists)
     for dist in installed_dists:
         key = key_from_req(dist)
-        if key not in requirements_lut:
+        if key not in requirements_lut or not requirements_lut[key].match_markers():
             to_uninstall.add(key)
         elif requirements_lut[key].specifier.contains(dist.version):
             satisfied.add(key)
 
     for key, requirement in requirements_lut.items():
-        if key not in satisfied:
+        if key not in satisfied and requirement.match_markers():
             to_install.add(requirement)
 
     # Make sure to not uninstall any packages that should be ignored
@@ -155,7 +157,7 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None,
                 click.echo("  {}".format(format_requirement(ireq)))
         else:
             package_args = []
-            for ireq in sorted(to_install):
+            for ireq in sorted(to_install, key=key_from_ireq):
                 if ireq.editable:
                     package_args.extend(['-e', str(ireq.link or ireq.req)])
                 else:

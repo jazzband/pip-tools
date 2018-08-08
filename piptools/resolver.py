@@ -2,41 +2,34 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import os
 import copy
 from functools import partial
 from itertools import chain, count
+import os
 
 from first import first
-from pip.req import InstallRequirement
+from ._compat import InstallRequirement
 
 from . import click
 from .cache import DependencyCache
 from .exceptions import UnsupportedConstraint
 from .logging import log
 from .utils import (format_requirement, format_specifier, full_groupby,
-                    is_pinned_requirement, key_from_req, UNSAFE_PACKAGES)
+                    is_pinned_requirement, key_from_ireq, key_from_req, UNSAFE_PACKAGES)
 
 green = partial(click.style, fg='green')
 magenta = partial(click.style, fg='magenta')
-
-
-def _dep_key(ireq):
-    if ireq.req is None and ireq.link is not None:
-        return str(ireq.link)
-    else:
-        return key_from_req(ireq.req)
 
 
 class RequirementSummary(object):
     """
     Summary of a requirement's properties for comparison purposes.
     """
-    def __init__(self, req):
-        self.req = req
-        self.key = key_from_req(req)
-        self.extras = str(sorted(req.extras))
-        self.specifier = str(req.specifier)
+    def __init__(self, ireq):
+        self.req = ireq.req
+        self.key = key_from_req(ireq.req)
+        self.extras = str(sorted(ireq.extras))
+        self.specifier = str(ireq.specifier)
 
     def __eq__(self, other):
         return str(self) == str(other)
@@ -64,6 +57,7 @@ class Resolver(object):
         self.prereleases = prereleases
         self.clear_caches = clear_caches
         self.allow_unsafe = allow_unsafe
+        self.unsafe_constraints = set()
 
     @property
     def constraints(self):
@@ -74,7 +68,8 @@ class Resolver(object):
         """
         Finds acceptable hashes for all of the given InstallRequirements.
         """
-        return {ireq: self.repository.get_hashes(ireq) for ireq in ireqs}
+        with self.repository.allow_all_wheels():
+            return {ireq: self.repository.get_hashes(ireq) for ireq in ireqs}
 
     def resolve(self, max_rounds=10):
         """
@@ -146,7 +141,7 @@ class Resolver(object):
             flask~=0.7
 
         """
-        for _, ireqs in full_groupby(constraints, key=_dep_key):
+        for _, ireqs in full_groupby(constraints, key=key_from_ireq):
             ireqs = list(ireqs)
             editable_ireq = first(ireqs, key=lambda ireq: ireq.editable)
             if editable_ireq:
@@ -177,7 +172,16 @@ class Resolver(object):
         configuration.
         """
         # Sort this list for readability of terminal output
-        constraints = sorted(self.constraints, key=_dep_key)
+        constraints = sorted(self.constraints, key=key_from_ireq)
+        unsafe_constraints = []
+        original_constraints = copy.copy(constraints)
+        if not self.allow_unsafe:
+            for constraint in original_constraints:
+                if constraint.name in UNSAFE_PACKAGES:
+                    constraints.remove(constraint)
+                    constraint.req.specifier = None
+                    unsafe_constraints.append(constraint)
+
         log.debug('Current constraints:')
         for constraint in constraints:
             log.debug('  {}'.format(constraint))
@@ -190,21 +194,23 @@ class Resolver(object):
         log.debug('')
         log.debug('Finding secondary dependencies:')
 
-        ungrouped = []
+        safe_constraints = []
         for best_match in best_matches:
             for dep in self._iter_dependencies(best_match):
                 if self.allow_unsafe or dep.name not in UNSAFE_PACKAGES:
-                    ungrouped.append(dep)
+                    safe_constraints.append(dep)
         # Grouping constraints to make clean diff between rounds
-        theirs = set(self._group_constraints(ungrouped))
+        theirs = set(self._group_constraints(safe_constraints))
 
         # NOTE: We need to compare RequirementSummary objects, since
         # InstallRequirement does not define equality
-        diff = {RequirementSummary(t.req) for t in theirs} - {RequirementSummary(t.req) for t in self.their_constraints}
-        removed = ({RequirementSummary(t.req) for t in self.their_constraints} -
-                   {RequirementSummary(t.req) for t in theirs})
+        diff = {RequirementSummary(t) for t in theirs} - {RequirementSummary(t) for t in self.their_constraints}
+        removed = ({RequirementSummary(t) for t in self.their_constraints} -
+                   {RequirementSummary(t) for t in theirs})
+        unsafe = ({RequirementSummary(t) for t in unsafe_constraints} -
+                  {RequirementSummary(t) for t in self.unsafe_constraints})
 
-        has_changed = len(diff) > 0 or len(removed) > 0
+        has_changed = len(diff) > 0 or len(removed) > 0 or len(unsafe) > 0
         if has_changed:
             log.debug('')
             log.debug('New dependencies found in this round:')
@@ -213,9 +219,14 @@ class Resolver(object):
             log.debug('Removed dependencies in this round:')
             for removed_dependency in sorted(removed, key=lambda req: key_from_req(req.req)):
                 log.debug('  removing {}'.format(removed_dependency))
+            log.debug('Unsafe dependencies in this round:')
+            for unsafe_dependency in sorted(unsafe, key=lambda req: key_from_req(req.req)):
+                log.debug('  remembering unsafe {}'.format(unsafe_dependency))
 
         # Store the last round's results in the their_constraints
         self.their_constraints = theirs
+        # Store the last round's unsafe constraints
+        self.unsafe_constraints = unsafe_constraints
         return has_changed, best_matches
 
     def get_best_match(self, ireq):

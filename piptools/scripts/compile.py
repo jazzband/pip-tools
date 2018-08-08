@@ -7,25 +7,25 @@ import os
 import sys
 import tempfile
 
-import pip
-from pip.req import InstallRequirement, parse_requirements
+from .._compat import (
+    InstallRequirement,
+    parse_requirements,
+    cmdoptions,
+    Command,
+)
 
 from .. import click
 from ..exceptions import PipToolsError
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
-from ..utils import (assert_compatible_pip_version, is_pinned_requirement,
-                     key_from_req, dedup)
+from ..utils import (dedup, is_pinned_requirement, key_from_req, UNSAFE_PACKAGES)
 from ..writer import OutputWriter
-
-# Make sure we're using a compatible version of pip
-assert_compatible_pip_version()
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
 
 
-class PipCommand(pip.basecommand.Command):
+class PipCommand(Command):
     name = 'PipCommand'
 
 
@@ -38,6 +38,7 @@ class PipCommand(pip.basecommand.Command):
 @click.option('-f', '--find-links', multiple=True, help="Look for archives in this directory or on this HTML page", envvar='PIP_FIND_LINKS')  # noqa
 @click.option('-i', '--index-url', help="Change index URL (defaults to PyPI)", envvar='PIP_INDEX_URL')
 @click.option('--extra-index-url', multiple=True, help="Add additional index URL to search", envvar='PIP_EXTRA_INDEX_URL')  # noqa
+@click.option('--cert', help="Path to alternate CA bundle.")
 @click.option('--client-cert', help="Path to SSL client certificate, a single file containing the private key and the certificate in PEM format.")  # noqa
 @click.option('--trusted-host', multiple=True, envvar='PIP_TRUSTED_HOST',
               help="Mark this host as trusted, even though it does not have "
@@ -58,14 +59,14 @@ class PipCommand(pip.basecommand.Command):
               help=('Output file name. Required if more than one input file is given. '
                     'Will be derived from input file otherwise.'))
 @click.option('--allow-unsafe', is_flag=True, default=False,
-              help="Pin packages considered unsafe: pip, setuptools & distribute")
+              help="Pin packages considered unsafe: {}".format(', '.join(sorted(UNSAFE_PACKAGES))))
 @click.option('--generate-hashes', is_flag=True, default=False,
               help="Generate pip 8 style hashes in the resulting requirements file.")
 @click.option('--max-rounds', default=10,
               help="Maximum number of rounds before resolving the requirements aborts.")
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
-        client_cert, trusted_host, header, index, emit_trusted_host, annotate,
+        cert, client_cert, trusted_host, header, index, emit_trusted_host, annotate,
         upgrade, upgrade_packages, output_file, allow_unsafe, generate_hashes,
         src_files, max_rounds):
     """Compiles requirements.txt from requirements.in specs."""
@@ -113,6 +114,8 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     if extra_index_url:
         for extra_index in extra_index_url:
             pip_args.extend(['--extra-index-url', extra_index])
+    if cert:
+        pip_args.extend(['--cert', cert])
     if client_cert:
         pip_args.extend(['--client-cert', client_cert])
     if pre:
@@ -175,6 +178,10 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
             constraints.extend(parse_requirements(
                 src_file, finder=repository.finder, session=repository.session, options=pip_options))
 
+    # Filter out pip environment markers which do not match (PEP496)
+    constraints = [req for req in constraints
+                   if req.markers is None or req.markers.evaluate()]
+
     # Check the given base set of constraints first
     Resolver.check_constraints(constraints)
 
@@ -231,11 +238,13 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
                           trusted_hosts=pip_options.trusted_hosts,
                           format_control=repository.finder.format_control)
     writer.write(results=results,
+                 unsafe_requirements=resolver.unsafe_constraints,
                  reverse_dependencies=reverse_dependencies,
                  primary_packages={key_from_req(ireq.req) for ireq in constraints if not ireq.constraint},
                  markers={key_from_req(ireq.req): ireq.markers
                           for ireq in constraints if ireq.markers},
-                 hashes=hashes)
+                 hashes=hashes,
+                 allow_unsafe=allow_unsafe)
 
     if dry_run:
         log.warning('Dry-run, so nothing updated.')
@@ -246,8 +255,10 @@ def get_pip_command():
     # General options (find_links, index_url, extra_index_url, trusted_host,
     # and pre) are defered to pip.
     pip_command = PipCommand()
-    index_opts = pip.cmdoptions.make_option_group(
-        pip.cmdoptions.index_group,
+    pip_command.parser.add_option(cmdoptions.no_binary())
+    pip_command.parser.add_option(cmdoptions.only_binary())
+    index_opts = cmdoptions.make_option_group(
+        cmdoptions.index_group,
         pip_command.parser,
     )
     pip_command.parser.insert_option_group(0, index_opts)

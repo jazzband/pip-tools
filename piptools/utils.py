@@ -6,42 +6,33 @@ import os
 import sys
 from itertools import chain, groupby
 from collections import OrderedDict
+from contextlib import contextmanager
 
-import pip
-from pip.req import InstallRequirement
+from ._compat import InstallRequirement
 
 from first import first
 
 from .click import style
 
 
-def safeint(s):
-    try:
-        return int(s)
-    except ValueError:
-        return 0
-
-
-pip_version_info = tuple(safeint(digit) for digit in pip.__version__.split('.'))
-
 UNSAFE_PACKAGES = {'setuptools', 'distribute', 'pip'}
 
 
-def assert_compatible_pip_version():
-    # Make sure we're using a reasonably modern version of pip
-    if not pip_version_info >= (8, 0):
-        print('pip-compile requires at least version 8.0 of pip ({} found), '
-              'perhaps run `pip install --upgrade pip`?'.format(pip.__version__))
-        sys.exit(4)
+def key_from_ireq(ireq):
+    """Get a standardized key for an InstallRequirement."""
+    if ireq.req is None and ireq.link is not None:
+        return str(ireq.link)
+    else:
+        return key_from_req(ireq.req)
 
 
 def key_from_req(req):
     """Get an all-lowercase version of the requirement's name."""
     if hasattr(req, 'key'):
-        # pip 8.1.1 or below, using pkg_resources
+        # from pkg_resources, such as installed dists for pip-sync
         key = req.key
     else:
-        # pip 8.1.2 or above, using packaging
+        # from packaging, such as install requirements from requirements.txt
         key = req.name
 
     key = key.replace('_', '-').lower()
@@ -59,7 +50,9 @@ def make_install_requirement(name, version, extras, constraint=False):
         # Sort extras for stability
         extras_string = "[{}]".format(",".join(sorted(extras)))
 
-    return InstallRequirement.from_line('{}{}=={}'.format(name, extras_string, str(version)), constraint=constraint)
+    return InstallRequirement.from_line(
+        str('{}{}=={}'.format(name, extras_string, version)),
+        constraint=constraint)
 
 
 def is_subdirectory(base, directory):
@@ -162,37 +155,35 @@ def lookup_table(values, key=None, keyval=None, unique=False, use_lists=False):
 
     Supports building normal and unique lookup tables.  For example:
 
-    >>> lookup_table(['foo', 'bar', 'baz', 'qux', 'quux'],
-    ...              lambda s: s[0])
-    {
-        'b': {'bar', 'baz'},
-        'f': {'foo'},
-        'q': {'quux', 'qux'}
-    }
+    >>> assert lookup_table(
+    ...     ['foo', 'bar', 'baz', 'qux', 'quux'], lambda s: s[0]) == {
+    ...     'b': {'bar', 'baz'},
+    ...     'f': {'foo'},
+    ...     'q': {'quux', 'qux'}
+    ... }
 
     For key functions that uniquely identify values, set unique=True:
 
-    >>> lookup_table(['foo', 'bar', 'baz', 'qux', 'quux'],
-    ...              lambda s: s[0],
-    ...              unique=True)
-    {
-        'b': 'baz',
-        'f': 'foo',
-        'q': 'quux'
-    }
+    >>> assert lookup_table(
+    ...     ['foo', 'bar', 'baz', 'qux', 'quux'], lambda s: s[0],
+    ...     unique=True) == {
+    ...     'b': 'baz',
+    ...     'f': 'foo',
+    ...     'q': 'quux'
+    ... }
 
     The values of the resulting lookup table will be values, not sets.
 
     For extra power, you can even change the values while building up the LUT.
     To do so, use the `keyval` function instead of the `key` arg:
 
-    >>> lookup_table(['foo', 'bar', 'baz', 'qux', 'quux'],
-    ...              keyval=lambda s: (s[0], s[1:]))
-    {
-        'b': {'ar', 'az'},
-        'f': {'oo'},
-        'q': {'uux', 'ux'}
-    }
+    >>> assert lookup_table(
+    ...     ['foo', 'bar', 'baz', 'qux', 'quux'],
+    ...     keyval=lambda s: (s[0], s[1:])) == {
+    ...     'b': {'ar', 'az'},
+    ...     'f': {'oo'},
+    ...     'q': {'uux', 'ux'}
+    ... }
 
     """
     if keyval is None:
@@ -226,3 +217,54 @@ def dedup(iterable):
     order-reserved.
     """
     return iter(OrderedDict.fromkeys(iterable))
+
+
+def name_from_req(req):
+    """Get the name of the requirement"""
+    if hasattr(req, 'project_name'):
+        # from pkg_resources, such as installed dists for pip-sync
+        return req.project_name
+    else:
+        # from packaging, such as install requirements from requirements.txt
+        return req.name
+
+
+def fs_str(string):
+    """
+    Convert given string to a correctly encoded filesystem string.
+
+    On Python 2, if the input string is unicode, converts it to bytes
+    encoded with the filesystem encoding.
+
+    On Python 3 returns the string as is, since Python 3 uses unicode
+    paths and the input string shouldn't be bytes.
+
+    >>> fs_str(u'some path component/Something')
+    'some path component/Something'
+    >>> assert isinstance(fs_str('whatever'), str)
+    >>> assert isinstance(fs_str(u'whatever'), str)
+
+    :type string: str|unicode
+    :rtype: str
+    """
+    if isinstance(string, str):
+        return string
+    assert not isinstance(string, bytes)
+    return string.encode(_fs_encoding)
+
+
+_fs_encoding = sys.getfilesystemencoding() or sys.getdefaultencoding()
+
+
+# Borrowed from pew to avoid importing pew which imports psutil
+# See https://github.com/berdario/pew/blob/master/pew/_utils.py#L82
+@contextmanager
+def temp_environ():
+    """Allow the ability to set os.environ temporarily"""
+    environ = dict(os.environ)
+    try:
+        yield
+
+    finally:
+        os.environ.clear()
+        os.environ.update(environ)

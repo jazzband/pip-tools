@@ -1,5 +1,6 @@
 from collections import Counter
 import platform
+import sys
 
 import mock
 import pytest
@@ -99,6 +100,16 @@ def test_diff_should_uninstall(fake_dist):
     assert to_uninstall == {'django'}  # no version spec when uninstalling
 
 
+def test_diff_should_not_uninstall(fake_dist):
+    ignored = ('pip==7.1.0', 'pip-tools==1.1.1', 'pip-review==1.1.1',
+               'pkg-resources==0.0.0', 'setuptools==34.0.0', 'wheel==0.29.0')
+    installed = [fake_dist(pkg) for pkg in ignored]
+    reqs = []
+
+    to_uninstall = diff(reqs, installed)[1]
+    assert to_uninstall == set()
+
+
 def test_diff_should_update(fake_dist, from_line):
     installed = [fake_dist('django==1.7')]
     reqs = [from_line('django==1.8')]
@@ -106,6 +117,24 @@ def test_diff_should_update(fake_dist, from_line):
     to_install, to_uninstall = diff(reqs, installed)
     assert {str(x.req) for x in to_install} == {'django==1.8'}
     assert to_uninstall == set()
+
+
+def test_diff_should_install_with_markers(from_line):
+    installed = []
+    reqs = [from_line("subprocess32==3.2.7 ; python_version=='2.7'")]
+
+    to_install, to_uninstall = diff(reqs, installed)
+    assert {str(x.req) for x in to_install} == ({'subprocess32==3.2.7'} if sys.version.startswith('2.7') else set())
+    assert to_uninstall == set()
+
+
+def test_diff_should_uninstall_with_markers(fake_dist, from_line):
+    installed = [fake_dist('subprocess32==3.2.7')]
+    reqs = [from_line("subprocess32==3.2.7 ; python_version=='2.7'")]
+
+    to_install, to_uninstall = diff(reqs, installed)
+    assert to_install == set()
+    assert to_uninstall == (set() if sys.version.startswith('2.7') else {'subprocess32'})
 
 
 def test_diff_leave_packaging_packages_alone(fake_dist, from_line):
@@ -178,6 +207,21 @@ def test_diff_with_editable(fake_dist, from_editable, small_fake_package_dir):
     package = list(to_install)[0]
     assert package.editable
     assert str(package.link) == _get_file_url(small_fake_package_dir)
+
+
+@pytest.mark.parametrize(
+    'lines',
+    [
+        ['django==1.8'],
+        ['django==1.8', 'click==4.0'],
+    ]
+)
+def test_sync_install(from_line, lines):
+    with mock.patch('piptools.sync.check_call') as check_call:
+        to_install = {from_line(line) for line in lines}
+
+        sync(to_install, set())
+        check_call.assert_called_once_with(['pip', 'install', '-q'] + sorted(lines))
 
 
 def test_sync_with_editable(from_editable, small_fake_package_dir):

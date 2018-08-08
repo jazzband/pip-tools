@@ -2,8 +2,11 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+from contextlib import contextmanager
+
 from piptools.utils import as_tuple, key_from_req, make_install_requirement
 from .base import BaseRepository
+from .._compat import FAVORITE_HASH
 
 
 def ireq_satisfied_by_existing_pin(ireq, existing_pin):
@@ -62,4 +65,19 @@ class LocalRequirementsRepository(BaseRepository):
         return self.repository.get_dependencies(ireq)
 
     def get_hashes(self, ireq):
+        key = key_from_req(ireq.req)
+        existing_pin = self.existing_pins.get(key)
+        if existing_pin and ireq_satisfied_by_existing_pin(ireq, existing_pin):
+            hashes = existing_pin.options.get('hashes', {})
+            hexdigests = hashes.get(FAVORITE_HASH)
+            if hexdigests:
+                return {
+                    ':'.join([FAVORITE_HASH, hexdigest])
+                    for hexdigest in hexdigests
+                }
         return self.repository.get_hashes(ireq)
+
+    @contextmanager
+    def allow_all_wheels(self):
+        with self.repository.allow_all_wheels():
+            yield

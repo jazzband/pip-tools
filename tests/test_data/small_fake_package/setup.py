@@ -5,5 +5,5 @@ setup(
     version=0.1,
     install_requires=[
         "six==1.10.0",
-        ],
+    ],
 )
