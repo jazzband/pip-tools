@@ -7,12 +7,16 @@ import sys
 
 
 from .. import click, sync
-from .._compat import parse_requirements, get_installed_distributions
+from .._compat import PackageFinder, parse_requirements, get_installed_distributions, Command
 from ..exceptions import PipToolsError
 from ..logging import log
 from ..utils import flat_map
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.txt'
+
+
+class PipCommand(Command):
+    name = 'PipCommand'
 
 
 @click.command()
@@ -45,7 +49,12 @@ def cli(dry_run, force, find_links, index_url, extra_index_url, no_index, quiet,
             log.error('ERROR: ' + msg)
             sys.exit(2)
 
-    requirements = flat_map(lambda src: parse_requirements(src, session=True),
+    pip_command = PipCommand()
+    pip_options, _ = pip_command.parse_args([])
+    session = pip_command._build_session(pip_options)
+
+    finder = PackageFinder(find_links=find_links, index_urls=[index_url], session=session)
+    requirements = flat_map(lambda src: parse_requirements(src, session=finder.session, finder=finder),
                             src_files)
 
     try:
@@ -57,6 +66,11 @@ def cli(dry_run, force, find_links, index_url, extra_index_url, no_index, quiet,
     installed_dists = get_installed_distributions(skip=[], user_only=user_only)
     to_install, to_uninstall = sync.diff(requirements, installed_dists)
 
+    index_url = index_url or finder.index_urls[0] or None
+
+    extra_index_urls = [extra_index_url] if extra_index_url else []
+    extra_index_urls.extend(finder.index_urls[1:])
+
     install_flags = []
     for link in find_links or []:
         install_flags.extend(['-f', link])
@@ -64,9 +78,8 @@ def cli(dry_run, force, find_links, index_url, extra_index_url, no_index, quiet,
         install_flags.append('--no-index')
     if index_url:
         install_flags.extend(['-i', index_url])
-    if extra_index_url:
-        for extra_index in extra_index_url:
-            install_flags.extend(['--extra-index-url', extra_index])
+    for extra_index in extra_index_urls:
+        install_flags.extend(['--extra-index-url', extra_index])
     if user_only:
         install_flags.append('--user')
 

@@ -129,6 +129,31 @@ def test_extra_index_option(pip_conf):
                 '--extra-index-url http://extraindex2.com' in out.output)
 
 
+def test_extra_index_option_in_requirements(pip_conf):
+    assert os.path.exists(pip_conf)
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements.txt', 'w') as req_in:
+            req_in.write('--index-url http://extraindex1.com\n')
+            req_in.write('--extra-index-url http://extraindex2.com\n')
+            req_in.write('django\n')
+            req_in.write('flask\n')
+
+        with mock.patch('piptools.sync.check_call') as check_call:
+            out = runner.invoke(sync_cli, [])
+            assert out.output == ''
+            assert out.exit_code == 0
+
+            # For every install call, assert that the extra index was used
+            call_args = [call[0][0] for call in check_call.call_args_list]
+            install_calls = [' '.join(args) for args in call_args if args[:2] == ['pip', 'install']]
+            assert install_calls
+            for args in install_calls:
+                assert '-i http://extraindex1.com' in args
+                assert '--extra-index-url http://extraindex2.com' in args
+
+
 def test_trusted_host(pip_conf):
     assert os.path.exists(pip_conf)
 
