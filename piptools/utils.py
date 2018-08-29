@@ -10,8 +10,6 @@ from contextlib import contextmanager
 
 from ._compat import InstallRequirement
 
-from first import first
-
 from .click import style
 
 
@@ -105,7 +103,7 @@ def is_pinned_requirement(ireq):
     if len(ireq.specifier._specs) != 1:
         return False
 
-    op, version = first(ireq.specifier._specs)._spec
+    op, version = next(iter(ireq.specifier._specs))._spec
     return (op == '==' or op == '===') and not version.endswith('.*')
 
 
@@ -117,7 +115,7 @@ def as_tuple(ireq):
         raise TypeError('Expected a pinned InstallRequirement, got {}'.format(ireq))
 
     name = key_from_req(ireq.req)
-    version = first(ireq.specifier._specs)._spec[1]
+    version = next(iter(ireq.specifier._specs))._spec[1]
     extras = tuple(sorted(ireq.extras))
     return name, version, extras
 
