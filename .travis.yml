@@ -11,6 +11,7 @@ env:
   - PIP=8.1.1
   - PIP=9.0.1
   - PIP=9.0.3
+  - PIP=10.0.1
   - PIP=master
   - PIP=latest
 
