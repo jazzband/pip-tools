@@ -24,7 +24,6 @@ setup(
     setup_requires=['setuptools_scm'],
     install_requires=[
         'click>=6',
-        'first',
         'six',
     ],
     zip_safe=False,
