@@ -7,7 +7,6 @@ from functools import partial
 from itertools import chain, count
 import os
 
-from first import first
 from ._compat import InstallRequirement
 
 from . import click
@@ -143,7 +142,7 @@ class Resolver(object):
         """
         for _, ireqs in full_groupby(constraints, key=key_from_ireq):
             ireqs = list(ireqs)
-            editable_ireq = first(ireqs, key=lambda ireq: ireq.editable)
+            editable_ireq = next((ireq for ireq in ireqs if ireq.editable), None)
             if editable_ireq:
                 yield editable_ireq  # ignore all the other specs: the editable one is the one that counts
                 continue
