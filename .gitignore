@@ -9,6 +9,7 @@
 .direnv
 
 # Testing
+.pytest_cache/
 .tox
 htmlcov
 
