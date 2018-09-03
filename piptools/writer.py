@@ -127,7 +127,7 @@ class OutputWriter(object):
                 log.info(line)
                 if f:
                     f.write(unstyle(line).encode('utf-8'))
-                    f.write(os.linesep.encode('utf-8'))
+                    f.write('\n'.encode('utf-8'))
 
     def _format_requirement(self, ireq, reverse_dependencies, primary_packages, marker=None, hashes=None):
         line = format_requirement(ireq, marker=marker)
