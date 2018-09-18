@@ -23,6 +23,32 @@ script:
 
 jobs:
   include:
+    # Python 3.7 in Travis: https://github.com/travis-ci/travis-ci/issues/9815
+    - python: 3.7
+      dist: xenial
+      sudo: true
+      env: PIP=8.1.1
+    - python: 3.7
+      dist: xenial
+      sudo: true
+      env: PIP=9.0.1
+    - python: 3.7
+      dist: xenial
+      sudo: true
+      env: PIP=9.0.3
+    - python: 3.7
+      dist: xenial
+      sudo: true
+      env: PIP=10.0.1
+    - python: 3.7
+      dist: xenial
+      sudo: true
+      env: PIP=latest
+    - python: 3.7
+      dist: xenial
+      sudo: true
+      env: PIP=master
+
     - stage: flake8
       python: 2.7
       env: TOXENV=flake8
@@ -44,3 +70,6 @@ jobs:
         on:
           tags: true
           repo: jazzband/pip-tools
+
+  allow_failures:
+    - env: PIP=master
