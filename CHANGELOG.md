@@ -1,3 +1,14 @@
+# 3.0.0rc1 (2018-09-18)
+
+Major changes:
+- Update `pip-tools` for native `pip` 8, 9, 10 and 18 compatibility, un-vendoring `pip` to use the user-installed `pip`
+([#657](https://github.com/jazzband/pip-tools/pull/657) and [#672](https://github.com/jazzband/pip-tools/pull/672)).
+Thanks to @techalchemy, @suutari, @tysonclugg and @vphilippon for contributing on this.
+
+Features:
+- Removed the dependency on the external library `first`
+([#676](https://github.com/jazzband/pip-tools/pull/676)). Thanks @jdufresne
+
 # 2.0.2 (2018-04-28)
 
 Bug Fixes:
