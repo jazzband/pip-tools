@@ -62,6 +62,10 @@ environment:
         - TOXENV: py37-piplatest
           PIP: latest
 
+matrix:
+  allow_failures:
+    - PIP: master
+
 install:
     - C:\Python36\python -m pip install tox
 
