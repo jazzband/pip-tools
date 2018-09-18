@@ -58,3 +58,6 @@ jobs:
         on:
           tags: true
           repo: jazzband/pip-tools
+
+  allow_failures:
+    - env: PIP=master
