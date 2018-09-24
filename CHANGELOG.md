@@ -1,4 +1,4 @@
-# 3.0.0rc1 (2018-09-18)
+# 3.0.0 (2018-09-24)
 
 Major changes:
 - Update `pip-tools` for native `pip` 8, 9, 10 and 18 compatibility, un-vendoring `pip` to use the user-installed `pip`
