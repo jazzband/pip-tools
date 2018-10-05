@@ -1,3 +1,9 @@
+# 3.1.0 (2018-10-05)
+
+Features:
+- Added support of `pip` 18.1
+([#689](https://github.com/jazzband/pip-tools/pull/689)). Thanks @vphilippon
+
 # 3.0.0 (2018-09-24)
 
 Major changes:
