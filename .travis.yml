@@ -12,6 +12,7 @@ env:
   - PIP=9.0.1
   - PIP=9.0.3
   - PIP=10.0.1
+  - PIP=18.0
   - PIP=master
   - PIP=latest
 
@@ -40,6 +41,10 @@ jobs:
       dist: xenial
       sudo: true
       env: PIP=10.0.1
+    - python: 3.7
+      dist: xenial
+      sudo: true
+      env: PIP=18.0
     - python: 3.7
       dist: xenial
       sudo: true

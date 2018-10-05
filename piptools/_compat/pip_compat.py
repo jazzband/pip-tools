@@ -1,6 +1,9 @@
 # -*- coding=utf-8 -*-
 import importlib
 
+import pip
+import pkg_resources
+
 def do_import(module_path, subimport=None, old_path=None):
     old_path = old_path or module_path
     prefixes = ["pip._internal", "pip"]
@@ -32,3 +35,11 @@ Command = do_import('cli.base_command', 'Command', old_path='basecommand')
 cmdoptions = do_import('cli.cmdoptions', old_path='cmdoptions')
 get_installed_distributions = do_import('utils.misc', 'get_installed_distributions', old_path='utils')
 PyPI = do_import('models.index', 'PyPI')
+
+# pip 18.1 has refactored InstallRequirement constructors use by pip-tools.
+if pkg_resources.parse_version(pip.__version__) < pkg_resources.parse_version('18.1'):
+    install_req_from_line = InstallRequirement.from_line
+    install_req_from_editable = InstallRequirement.from_editable
+else:
+    install_req_from_line = do_import('req.constructors', 'install_req_from_line')
+    install_req_from_editable = do_import('req.constructors', 'install_req_from_editable')
