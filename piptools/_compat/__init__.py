@@ -27,4 +27,6 @@ from .pip_compat import (
     cmdoptions,
     get_installed_distributions,
     PyPI,
+    install_req_from_line,
+    install_req_from_editable,
 )

@@ -1,7 +1,7 @@
 from mock import MagicMock, patch
 from pip._vendor.packaging.version import parse as parse_version
 from pip import __version__ as pip_version
-from piptools._compat import PackageFinder, InstallRequirement
+from piptools._compat import PackageFinder, install_req_from_line
 
 from piptools.repositories.pypi import PyPIRepository
 from piptools.scripts.compile import get_pip_command
@@ -30,7 +30,7 @@ def test_pypirepo_calls_reqset_with_str_paths():
     """
     with patch('piptools.repositories.pypi.RequirementSet') as mocked_init:
         repo = get_pypi_repository()
-        ireq = InstallRequirement.from_line('ansible==2.4.0.0')
+        ireq = install_req_from_line('ansible==2.4.0.0')
 
         # Setup a mock object to be returned from the RequirementSet call
         mocked_reqset = MagicMock()

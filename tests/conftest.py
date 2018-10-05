@@ -4,7 +4,7 @@ from functools import partial
 
 from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Requirement
-from piptools._compat import InstallRequirement
+from piptools._compat import install_req_from_line, install_req_from_editable
 from pytest import fixture
 
 from piptools.cache import DependencyCache
@@ -48,7 +48,7 @@ class FakeRepository(BaseRepository):
         # Store non-extra dependencies under the empty string
         extras += ("",)
         dependencies = [dep for extra in extras for dep in self.index[name][version][extra]]
-        return [InstallRequirement.from_line(dep, constraint=ireq.constraint) for dep in dependencies]
+        return [install_req_from_line(dep, constraint=ireq.constraint) for dep in dependencies]
 
     @contextmanager
     def allow_all_wheels(self):
@@ -106,9 +106,9 @@ def base_resolver(depcache):
 
 @fixture
 def from_line():
-    return InstallRequirement.from_line
+    return install_req_from_line
 
 
 @fixture
 def from_editable():
-    return InstallRequirement.from_editable
+    return install_req_from_editable
