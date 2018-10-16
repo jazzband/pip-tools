@@ -326,7 +326,29 @@ def test_upgrade_packages_option(tmpdir):
             req_in.write('small-fake-a==0.1\nsmall-fake-b==0.1')
 
         out = runner.invoke(cli, [
-            '-P', 'small_fake_b',
+            '-P', 'small-fake-b',
+            '-f', fake_package_dir,
+        ])
+
+        assert out.exit_code == 0
+        assert 'small-fake-a==0.1' in out.output
+        assert 'small-fake-b==0.3' in out.output
+
+
+def test_upgrade_packages_version_option(tmpdir):
+    """
+    piptools respects --upgrade-package/-P inline list with specified versions.
+    """
+    fake_package_dir = os.path.join(os.path.split(__file__)[0], 'test_data', 'minimal_wheels')
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements.in', 'w') as req_in:
+            req_in.write('small-fake-a\nsmall-fake-b')
+        with open('requirements.txt', 'w') as req_in:
+            req_in.write('small-fake-a==0.1\nsmall-fake-b==0.1')
+
+        out = runner.invoke(cli, [
+            '-P', 'small-fake-b==0.2',
             '-f', fake_package_dir,
         ])
 
