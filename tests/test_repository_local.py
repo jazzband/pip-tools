@@ -50,7 +50,9 @@ EXPECTED = {
 
 def test_get_hashes_local_repository_cache_miss(from_line):
     pip_command = get_pip_command()
-    pip_options, _ = pip_command.parse_args([])
+    pip_options, _ = pip_command.parse_args([
+        '--index-url', PyPIRepository.DEFAULT_INDEX_URL
+    ])
     session = pip_command._build_session(pip_options)
     repository = PyPIRepository(pip_options, session)
 
