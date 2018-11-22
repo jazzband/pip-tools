@@ -48,7 +48,9 @@ def test_generate_hashes_all_platforms(from_line):
     }
 
     pip_command = get_pip_command()
-    pip_options, _ = pip_command.parse_args([])
+    pip_options, _ = pip_command.parse_args([
+        '--index-url', PyPIRepository.DEFAULT_INDEX_URL
+    ])
     session = pip_command._build_session(pip_options)
     repository = PyPIRepository(pip_options, session)
     ireq = from_line('cffi==1.9.1')
@@ -58,7 +60,9 @@ def test_generate_hashes_all_platforms(from_line):
 
 def test_generate_hashes_without_interfering_with_each_other(from_line):
     pip_command = get_pip_command()
-    pip_options, _ = pip_command.parse_args([])
+    pip_options, _ = pip_command.parse_args([
+        '--index-url', PyPIRepository.DEFAULT_INDEX_URL
+    ])
     session = pip_command._build_session(pip_options)
     repository = PyPIRepository(pip_options, session)
     repository.get_hashes(from_line('cffi==1.9.1'))
@@ -67,7 +71,9 @@ def test_generate_hashes_without_interfering_with_each_other(from_line):
 
 def test_get_hashes_editable_empty_set(from_editable):
     pip_command = get_pip_command()
-    pip_options, _ = pip_command.parse_args([])
+    pip_options, _ = pip_command.parse_args([
+        '--index-url', PyPIRepository.DEFAULT_INDEX_URL
+    ])
     session = pip_command._build_session(pip_options)
     repository = PyPIRepository(pip_options, session)
     ireq = from_editable('git+https://github.com/django/django.git#egg=django')
