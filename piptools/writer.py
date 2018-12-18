@@ -11,7 +11,8 @@ from .utils import comment, dedup, format_requirement, key_from_req, UNSAFE_PACK
 class OutputWriter(object):
     def __init__(self, src_files, dst_file, dry_run, emit_header, emit_index,
                  emit_trusted_host, annotate, generate_hashes,
-                 default_index_url, index_urls, trusted_hosts, format_control):
+                 default_index_url, index_urls, trusted_hosts, format_control,
+                 files_relative_to):
         self.src_files = src_files
         self.dst_file = dst_file
         self.dry_run = dry_run
@@ -24,6 +25,7 @@ class OutputWriter(object):
         self.index_urls = index_urls
         self.trusted_hosts = trusted_hosts
         self.format_control = format_control
+        self.files_relative_to = files_relative_to
 
     def _sort_key(self, ireq):
         return (not ireq.editable, str(ireq.req).lower())
@@ -130,7 +132,7 @@ class OutputWriter(object):
                     f.write(os.linesep.encode('utf-8'))
 
     def _format_requirement(self, ireq, reverse_dependencies, primary_packages, marker=None, hashes=None):
-        line = format_requirement(ireq, marker=marker)
+        line = format_requirement(ireq, marker=marker, files_relative_to=self.files_relative_to)
 
         ireq_hashes = (hashes if hashes is not None else {}).get(ireq)
         if ireq_hashes:

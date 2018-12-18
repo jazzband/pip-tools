@@ -64,11 +64,15 @@ class PipCommand(Command):
               help="Generate pip 8 style hashes in the resulting requirements file.")
 @click.option('--max-rounds', default=10,
               help="Maximum number of rounds before resolving the requirements aborts.")
+@click.option('--files-relative-to',
+              help="Render file:// requirements relative to this path. "
+              "By default, absolute paths are used.",
+              type=click.Path(resolve_path=True))
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
 def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         cert, client_cert, trusted_host, header, index, emit_trusted_host, annotate,
         upgrade, upgrade_packages, output_file, allow_unsafe, generate_hashes,
-        src_files, max_rounds):
+        src_files, max_rounds, files_relative_to):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbose = verbose
 
@@ -241,7 +245,8 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
                           default_index_url=repository.DEFAULT_INDEX_URL,
                           index_urls=repository.finder.index_urls,
                           trusted_hosts=pip_options.trusted_hosts,
-                          format_control=repository.finder.format_control)
+                          format_control=repository.finder.format_control,
+                          files_relative_to=files_relative_to)
     writer.write(results=results,
                  unsafe_requirements=resolver.unsafe_constraints,
                  reverse_dependencies=reverse_dependencies,

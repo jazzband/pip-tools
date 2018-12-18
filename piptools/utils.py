@@ -8,9 +8,11 @@ from itertools import chain, groupby
 from collections import OrderedDict
 from contextlib import contextmanager
 
-from ._compat import install_req_from_line
+from ._compat import install_req_from_line, is_file_url, url_to_path
 
 from .click import style
+import six.moves.urllib.request as urllib_request
+import six.moves.urllib.parse as urllib_parse
 
 
 UNSAFE_PACKAGES = {'setuptools', 'distribute', 'pip'}
@@ -53,13 +55,22 @@ def make_install_requirement(name, version, extras, constraint=False):
         constraint=constraint)
 
 
-def format_requirement(ireq, marker=None):
+def format_requirement(ireq, marker=None, files_relative_to=None):
     """
     Generic formatter for pretty printing InstallRequirements to the terminal
     in a less verbose way than using its `__str__` method.
+
+    By default, file:// urls are rendered using absolute paths. If
+    ``files_relative_to`` is specified, file paths for are rendered relative to
+    the given path. This is used when rendering outputs from pip-compile.
     """
     if ireq.editable:
-        line = '-e {}'.format(ireq.link)
+        link = ireq.link
+        if is_file_url(ireq.link) and files_relative_to is not None:
+            target = os.path.relpath(link.path, start=files_relative_to)
+        else:
+            target = ireq.link
+        line = '-e {}'.format(target)
     else:
         line = str(ireq.req).lower()
 
@@ -249,3 +260,9 @@ def temp_environ():
     finally:
         os.environ.clear()
         os.environ.update(environ)
+
+
+def path_to_url(path):
+    """Render a filesystem path as a URL.
+    """
+    return urllib_parse.urljoin('file:', urllib_request.pathname2url(path))

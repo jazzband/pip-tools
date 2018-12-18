@@ -14,7 +14,8 @@ def writer():
                         generate_hashes=False,
                         default_index_url=None, index_urls=[],
                         trusted_hosts=[],
-                        format_control=FormatControl(set(), set()))
+                        format_control=FormatControl(set(), set()),
+                        files_relative_to=None)
 
 
 def test_format_requirement_annotation_editable(from_editable, writer):
