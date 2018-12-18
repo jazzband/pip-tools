@@ -1,3 +1,9 @@
+# 3.2.0 (2018-12-18)
+
+Features:
+- Apply version constraints specified with package upgrade option (`-P, --upgrade-package`)
+([#694](https://github.com/jazzband/pip-tools/pull/694)). Thanks @richafrank
+
 # 3.1.0 (2018-10-05)
 
 Features:
