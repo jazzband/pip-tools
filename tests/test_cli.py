@@ -239,6 +239,200 @@ def test_sync_quiet(tmpdir):
                 assert '-q' in call[0][0]
 
 
+def test_sync_requirements_no_index(tmpdir):
+    """sync command can be run with `--no-index` in requirements.txt."""
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements.txt', 'w') as req_in:
+            req_in.write('--no-index\n')
+            req_in.write('six==1.10.0')
+
+        with mock.patch('piptools.sync.check_call') as check_call:
+            out = runner.invoke(sync_cli)
+            assert out.output == ''
+            assert out.exit_code == 0
+            # for every call to pip install ensure the `--no-index` flag is set
+            for call in check_call.call_args_list:
+                if call[0][0][0:2] == ['pip', 'install']:
+                    assert '--no-index' in call[0][0]
+
+
+def test_sync_requirements_index_url(tmpdir):
+    """sync command can be run with `-i <url>` in requirements.txt."""
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements.txt', 'w') as req_in:
+            req_in.write('-i url\n')
+            req_in.write('six==1.10.0')
+
+        with mock.patch('piptools.sync.check_call') as check_call:
+            out = runner.invoke(sync_cli)
+            assert out.output == ''
+            assert out.exit_code == 0
+            # for every call to pip install ensure the `-i url` flag is set
+            for call in check_call.call_args_list:
+                if call[0][0][0:2] == ['pip', 'install']:
+                    assert '-i url' in ' '.join(call[0][0])
+
+
+def test_sync_requirements_extra_index_url(tmpdir):
+    """sync command can be run with `--extra-index-url <url>` in requirements.txt."""
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements.txt', 'w') as req_in:
+            req_in.write('--extra-index-url url\n')
+            req_in.write('six==1.10.0')
+
+        with mock.patch('piptools.sync.check_call') as check_call:
+            out = runner.invoke(sync_cli)
+            assert out.output == ''
+            assert out.exit_code == 0
+            # for every call to pip install ensure the `--extra-index-url url`
+            # flag is set
+            for call in check_call.call_args_list:
+                if call[0][0][0:2] == ['pip', 'install']:
+                    assert '--extra-index-url url' in ' '.join(call[0][0])
+
+
+def test_sync_requirements_extra_and_index_url(tmpdir):
+    """sync command can be run with both `-i <url>` and `--extra-index-url` in requirements.txt."""
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements.txt', 'w') as req_in:
+            req_in.write('-i url\n')
+            req_in.write('--extra-index-url extra_url\n')
+            req_in.write('six==1.10.0')
+
+        with mock.patch('piptools.sync.check_call') as check_call:
+            out = runner.invoke(sync_cli)
+            assert out.output == ''
+            assert out.exit_code == 0
+            # for every call to pip install ensure the `-i url` and
+            # `--extra-index-url extra_url` flags are set
+            for call in check_call.call_args_list:
+                if call[0][0][0:2] == ['pip', 'install']:
+                    assert '-i url' in ' '.join(call[0][0])
+                    assert '--extra-index-url extra_url' in ' '.join(call[0][0])
+
+
+def test_sync_requirements_find_links(tmpdir):
+    """sync command can be run with `-f <url>` in requirements.txt."""
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements.txt', 'w') as req_in:
+            req_in.write('-f url\n')
+            req_in.write('six==1.10.0')
+
+        with mock.patch('piptools.sync.check_call') as check_call:
+            out = runner.invoke(sync_cli)
+            assert out.output == ''
+            assert out.exit_code == 0
+            # for every call to pip install ensure the `-f url` flag is set
+            for call in check_call.call_args_list:
+                if call[0][0][0:2] == ['pip', 'install']:
+                    assert '-f url' in ' '.join(call[0][0])
+
+
+def test_sync_requirements_process_dependency_links(tmpdir):
+    """sync command can be run with `--process-dependency-links` in requirements.txt."""
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements.txt', 'w') as req_in:
+            req_in.write('--process-dependency-links\n')
+            req_in.write('six==1.10.0')
+
+        with mock.patch('piptools.sync.check_call') as check_call:
+            out = runner.invoke(sync_cli)
+            assert out.output == ''
+            assert out.exit_code == 0
+            # for every call to pip install ensure the `--process-dependency-links` flag is set
+            for call in check_call.call_args_list:
+                if call[0][0][0:2] == ['pip', 'install']:
+                    assert '--process-dependency-links' in call[0][0]
+
+
+def test_sync_requirements_no_binary(tmpdir):
+    """sync command can be run with `--no-binary <format_control>` in requirements.txt."""
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements.txt', 'w') as req_in:
+            req_in.write('--no-binary fmt\n')
+            req_in.write('six==1.10.0')
+
+        with mock.patch('piptools.sync.check_call') as check_call:
+            out = runner.invoke(sync_cli)
+            assert out.output == ''
+            assert out.exit_code == 0
+            # for every call to pip install ensure the `--no-binary fmt` flag is set
+            for call in check_call.call_args_list:
+                if call[0][0][0:2] == ['pip', 'install']:
+                    assert '--no-binary fmt' in ' '.join(call[0][0])
+
+
+def test_sync_requirements_only_binary(tmpdir):
+    """sync command can be run with `--only-binary <format_control>` in requirements.txt."""
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements.txt', 'w') as req_in:
+            req_in.write('--only-binary fmt\n')
+            req_in.write('six==1.10.0')
+
+        with mock.patch('piptools.sync.check_call') as check_call:
+            out = runner.invoke(sync_cli)
+            assert out.output == ''
+            assert out.exit_code == 0
+            # for every call to pip install ensure the `--only-binary fmt` flag is set
+            for call in check_call.call_args_list:
+                if call[0][0][0:2] == ['pip', 'install']:
+                    assert '--only-binary fmt' in ' '.join(call[0][0])
+
+
+def test_sync_requirements_pre(tmpdir):
+    """sync command can be run with `--pre` in requirements.txt."""
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements.txt', 'w') as req_in:
+            req_in.write('--pre\n')
+            req_in.write('six==1.10.0')
+
+        with mock.patch('piptools.sync.check_call') as check_call:
+            out = runner.invoke(sync_cli)
+            assert out.output == ''
+            assert out.exit_code == 0
+            # for every call to pip install ensure the `--pre` flag is set
+            for call in check_call.call_args_list:
+                if call[0][0][0:2] == ['pip', 'install']:
+                    assert '--pre' in call[0][0]
+
+
+def test_sync_requirements_trusted_host(tmpdir):
+    """sync command can be run with `--trusted-host <hostname>` in requirements.txt."""
+
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements.txt', 'w') as req_in:
+            req_in.write('--trusted-host host\n')
+            req_in.write('six==1.10.0')
+
+        with mock.patch('piptools.sync.check_call') as check_call:
+            out = runner.invoke(sync_cli)
+            assert out.output == ''
+            assert out.exit_code == 0
+            # for every call to pip install ensure the `--trusted-host host` flag is set
+            for call in check_call.call_args_list:
+                if call[0][0][0:2] == ['pip', 'install']:
+                    assert '--trusted-host host' in ' '.join(call[0][0])
+
+
 def test_editable_package(tmpdir):
     """ piptools can compile an editable """
     fake_package_dir = os.path.join(os.path.split(__file__)[0], 'test_data', 'small_fake_package')
