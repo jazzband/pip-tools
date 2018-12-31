@@ -2,12 +2,13 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
+import collections
 import os
 import sys
 
 
 from .. import click, sync
-from .._compat import parse_requirements, get_installed_distributions
+from .._compat import parse_requirements, get_installed_distributions, PackageFinder
 from ..exceptions import PipToolsError
 from ..logging import log
 from ..utils import flat_map
@@ -45,7 +46,13 @@ def cli(dry_run, force, find_links, index_url, extra_index_url, no_index, quiet,
             log.error('ERROR: ' + msg)
             sys.exit(2)
 
-    requirements = flat_map(lambda src: parse_requirements(src, session=True),
+    # Note: Passing in a deque instead of a list as index_urls is a hack to be able
+    #       to detect if parse_requirements encountered a --no-index or --index-url
+    #       (as opposed to just --extra-index-url flags), in which case it will have
+    #       set it to a list during parsing.
+    finder = PackageFinder(find_links=[], index_urls=collections.deque(), session=True)
+
+    requirements = flat_map(lambda src: parse_requirements(src, finder=finder, session=True),
                             src_files)
 
     try:
@@ -58,6 +65,30 @@ def cli(dry_run, force, find_links, index_url, extra_index_url, no_index, quiet,
     to_install, to_uninstall = sync.diff(requirements, installed_dists)
 
     install_flags = []
+
+    # Install flags from requirements files.
+    for link in finder.find_links:
+        install_flags.extend(['-f', link])
+    if not finder.index_urls and isinstance(finder.index_urls, list):
+        install_flags.append('--no-index')
+    if finder.index_urls and isinstance(finder.index_urls, list):
+        install_flags.extend(['-i', finder.index_urls.pop(0)])
+    for extra_index in finder.index_urls:
+        install_flags.extend(['--extra-index-url', extra_index])
+    if finder.format_control.no_binary:
+        install_flags.extend(['--no-binary',
+                              ','.join(finder.format_control.no_binary)])
+    if finder.format_control.only_binary:
+        install_flags.extend(['--only-binary',
+                              ','.join(finder.format_control.only_binary)])
+    if finder.allow_all_prereleases:
+        install_flags.append('--pre')
+    if finder.process_dependency_links:
+        install_flags.append('--process-dependency-links')
+    for host_pattern in finder.secure_origins:
+        install_flags.extend(['--trusted-host', host_pattern[1]])
+
+    # Install flags passed on command line.
     for link in find_links or []:
         install_flags.extend(['-f', link])
     if no_index:
