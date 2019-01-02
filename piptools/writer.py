@@ -11,7 +11,8 @@ from .utils import comment, dedup, format_requirement, key_from_req, UNSAFE_PACK
 class OutputWriter(object):
     def __init__(self, src_files, dst_file, dry_run, emit_header, emit_index,
                  emit_trusted_host, annotate, generate_hashes,
-                 default_index_url, index_urls, trusted_hosts, format_control):
+                 default_index_url, index_urls, find_links, trusted_hosts,
+                 format_control):
         self.src_files = src_files
         self.dst_file = dst_file
         self.dry_run = dry_run
@@ -22,6 +23,7 @@ class OutputWriter(object):
         self.generate_hashes = generate_hashes
         self.default_index_url = default_index_url
         self.index_urls = index_urls
+        self.find_links = find_links
         self.trusted_hosts = trusted_hosts
         self.format_control = format_control
 
@@ -60,6 +62,10 @@ class OutputWriter(object):
                 flag = '--index-url' if index == 0 else '--extra-index-url'
                 yield '{} {}'.format(flag, index_url)
 
+    def write_find_links(self):
+        for find_link in self.find_links:
+            yield '--find-links {}'.format(find_link)
+
     def write_trusted_hosts(self):
         if self.emit_trusted_host:
             for trusted_host in dedup(self.trusted_hosts):
@@ -74,6 +80,7 @@ class OutputWriter(object):
     def write_flags(self):
         emitted = False
         for line in chain(self.write_index_options(),
+                          self.write_find_links(),
                           self.write_trusted_hosts(),
                           self.write_format_controls()):
             emitted = True

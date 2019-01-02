@@ -103,12 +103,12 @@ def test_find_links_option(pip_conf):
 
     runner = CliRunner()
     with runner.isolated_filesystem():
-        with open('requirements.in', 'w'):
-            pass
+        with open('requirements.in', 'w') as in_req:
+            in_req.write('-f ./libs3')
         out = runner.invoke(cli, ['-v', '-f', './libs1', '-f', './libs2'])
 
         # Check that find-links has been passed to pip
-        assert 'Configuration:\n  -f ./libs1\n  -f ./libs2' in out.output
+        assert 'Configuration:\n  -f ./libs1\n  -f ./libs2\n  -f ./libs3' in out.output
 
 
 def test_extra_index_option(pip_conf):

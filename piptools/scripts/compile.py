@@ -143,18 +143,6 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
                          if is_pinned_requirement(ireq) and key_from_req(ireq.req) not in upgrade_install_reqs}
         repository = LocalRequirementsRepository(existing_pins, repository)
 
-    log.debug('Using indexes:')
-    # remove duplicate index urls before processing
-    repository.finder.index_urls = list(dedup(repository.finder.index_urls))
-    for index_url in repository.finder.index_urls:
-        log.debug('  {}'.format(index_url))
-
-    if repository.finder.find_links:
-        log.debug('')
-        log.debug('Configuration:')
-        for find_link in repository.finder.find_links:
-            log.debug('  -f {}'.format(find_link))
-
     ###
     # Parsing/collecting initial requirements
     ###
@@ -186,6 +174,20 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
     # Filter out pip environment markers which do not match (PEP496)
     constraints = [req for req in constraints
                    if req.markers is None or req.markers.evaluate()]
+
+    log.debug('Using indexes:')
+    # remove duplicate index urls before processing
+    repository.finder.index_urls = list(dedup(repository.finder.index_urls))
+    for index_url in repository.finder.index_urls:
+        log.debug('  {}'.format(index_url))
+
+    # remove duplicate find links before processing
+    repository.finder.find_links = list(dedup(repository.finder.find_links))
+    if repository.finder.find_links:
+        log.debug('')
+        log.debug('Configuration:')
+        for find_link in repository.finder.find_links:
+            log.debug('  -f {}'.format(find_link))
 
     # Check the given base set of constraints first
     Resolver.check_constraints(constraints)
@@ -240,6 +242,7 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
                           generate_hashes=generate_hashes,
                           default_index_url=repository.DEFAULT_INDEX_URL,
                           index_urls=repository.finder.index_urls,
+                          find_links=repository.finder.find_links,
                           trusted_hosts=pip_options.trusted_hosts,
                           format_control=repository.finder.format_control)
     writer.write(results=results,

@@ -13,6 +13,7 @@ def writer():
                         annotate=True,
                         generate_hashes=False,
                         default_index_url=None, index_urls=[],
+                        find_links=[],
                         trusted_hosts=[],
                         format_control=FormatControl(set(), set()))
 
