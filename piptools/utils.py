@@ -53,7 +53,7 @@ def make_install_requirement(name, version, extras, constraint=False):
         constraint=constraint)
 
 
-def format_requirement(ireq, marker=None):
+def format_requirement(ireq, marker=None, hashes=None):
     """
     Generic formatter for pretty printing InstallRequirements to the terminal
     in a less verbose way than using its `__str__` method.
@@ -62,6 +62,10 @@ def format_requirement(ireq, marker=None):
         line = '-e {}'.format(ireq.link)
     else:
         line = str(ireq.req).lower()
+
+    if hashes:
+        for hash_ in sorted(hashes):
+            line += " \\\n    --hash={}".format(hash_)
 
     if marker:
         line = '{} ; {}'.format(line, marker)
@@ -249,3 +253,16 @@ def temp_environ():
     finally:
         os.environ.clear()
         os.environ.update(environ)
+
+
+def get_hashes_from_ireq(ireq):
+    """
+    Given an InstallRequirement, return a list of string hashes in the format "{algorithm}:{hash}".
+    Return an empty list if there are no hashes in the requirement options.
+    """
+    result = []
+    ireq_hashes = ireq.options.get('hashes', {})
+    for algorithm, hexdigests in ireq_hashes.items():
+        for hash_ in hexdigests:
+            result.append("{}:{}".format(algorithm, hash_))
+    return result
