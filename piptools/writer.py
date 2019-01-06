@@ -130,12 +130,9 @@ class OutputWriter(object):
                     f.write(os.linesep.encode('utf-8'))
 
     def _format_requirement(self, ireq, reverse_dependencies, primary_packages, marker=None, hashes=None):
-        line = format_requirement(ireq, marker=marker)
-
         ireq_hashes = (hashes if hashes is not None else {}).get(ireq)
-        if ireq_hashes:
-            for hash_ in sorted(ireq_hashes):
-                line += " \\\n    --hash={}".format(hash_)
+
+        line = format_requirement(ireq, marker=marker, hashes=ireq_hashes)
 
         if not self.annotate or key_from_req(ireq.req) in primary_packages:
             return line

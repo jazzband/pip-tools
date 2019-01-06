@@ -2,12 +2,20 @@ from collections import Counter
 import os
 import platform
 import sys
+import tempfile
 
 import mock
 import pytest
 
 from piptools.exceptions import IncompatibleRequirements
 from piptools.sync import dependency_tree, diff, merge, sync
+
+
+@pytest.fixture
+def mocked_tmp_req_file():
+    with mock.patch.object(tempfile, 'NamedTemporaryFile') as m:
+        m.return_value.__enter__.return_value.name = 'requirements.txt'
+        yield m.return_value.__enter__.return_value
 
 
 @pytest.mark.parametrize(
@@ -218,18 +226,9 @@ def test_diff_with_editable(fake_dist, from_editable):
         ['django==1.8', 'click==4.0'],
     ]
 )
-def test_sync_install(from_line, lines):
+def test_sync_install(from_line, lines, mocked_tmp_req_file):
     with mock.patch('piptools.sync.check_call') as check_call:
         to_install = {from_line(line) for line in lines}
 
         sync(to_install, set())
-        check_call.assert_called_once_with(['pip', 'install', '-q'] + sorted(lines))
-
-
-def test_sync_with_editable(from_editable):
-    with mock.patch('piptools.sync.check_call') as check_call:
-        path_to_package = os.path.join(os.path.dirname(__file__), 'test_data', 'small_fake_package')
-        to_install = {from_editable(path_to_package)}
-
-        sync(to_install, set())
-        check_call.assert_called_once_with(['pip', 'install', '-q', '-e', _get_file_url(path_to_package)])
+        check_call.assert_called_once_with(['pip', 'install', '-r', mocked_tmp_req_file.name, '-q'])
