@@ -219,16 +219,71 @@ def test_diff_with_editable(fake_dist, from_editable):
     assert str(package.link) == _get_file_url(path_to_package)
 
 
-@pytest.mark.parametrize(
-    'lines',
-    [
-        ['django==1.8'],
-        ['django==1.8', 'click==4.0'],
-    ]
-)
-def test_sync_install(from_line, lines, mocked_tmp_req_file):
+def test_sync_install_temporary_requirement_file(from_line, from_editable, mocked_tmp_req_file):
     with mock.patch('piptools.sync.check_call') as check_call:
-        to_install = {from_line(line) for line in lines}
-
+        to_install = {from_line('django==1.8')}
         sync(to_install, set())
         check_call.assert_called_once_with(['pip', 'install', '-r', mocked_tmp_req_file.name, '-q'])
+
+
+def test_sync_requirement_file(from_line, from_editable, mocked_tmp_req_file):
+    with mock.patch('piptools.sync.check_call'):
+        to_install = {
+            from_line('django==1.8'),
+            from_editable('git+git://fake.org/x/y.git#egg=y'),
+            from_line('click==4.0'),
+            from_editable('git+git://fake.org/i/j.git#egg=j'),
+            from_line('pytz==2017.2'),
+        }
+
+        sync(to_install, set())
+
+        expected = (
+            'click==4.0\n'
+            'django==1.8\n'
+            '-e git+git://fake.org/i/j.git#egg=j\n'
+            'pytz==2017.2\n'
+            '-e git+git://fake.org/x/y.git#egg=y'
+        )
+        mocked_tmp_req_file.write.assert_called_once_with(expected)
+
+
+def test_sync_requirement_file_with_hashes(from_line, from_editable, mocked_tmp_req_file):
+    with mock.patch('piptools.sync.check_call'):
+        to_install = {
+            from_line('django==1.8', options={
+                'hashes': {
+                    'sha256': [
+                        '6a03ce2feafdd193a0ba8a26dbd9773e757d2e5d5e7933a62eac129813bd381a',
+                    ]
+                }
+            }),
+            from_line('click==4.0', options={
+                'hashes': {
+                    'sha256': [
+                        '9ab1d313f99b209f8f71a629f36833030c8d7c72282cf7756834baf567dca662',
+                    ]
+                }
+            }),
+            from_line('pytz==2017.2', options={
+                'hashes': {
+                    'sha256': [
+                        'd1d6729c85acea5423671382868627129432fba9a89ecbb248d8d1c7a9f01c67',
+                        'f5c056e8f62d45ba8215e5cb8f50dfccb198b4b9fbea8500674f3443e4689589'
+                    ]
+                }
+            })
+        }
+
+        sync(to_install, set())
+
+        expected = (
+            'click==4.0 \\\n'
+            '    --hash=sha256:9ab1d313f99b209f8f71a629f36833030c8d7c72282cf7756834baf567dca662\n'
+            'django==1.8 \\\n'
+            '    --hash=sha256:6a03ce2feafdd193a0ba8a26dbd9773e757d2e5d5e7933a62eac129813bd381a\n'
+            'pytz==2017.2 \\\n'
+            '    --hash=sha256:d1d6729c85acea5423671382868627129432fba9a89ecbb248d8d1c7a9f01c67 \\\n'
+            '    --hash=sha256:f5c056e8f62d45ba8215e5cb8f50dfccb198b4b9fbea8500674f3443e4689589'
+        )
+        mocked_tmp_req_file.write.assert_called_once_with(expected)
