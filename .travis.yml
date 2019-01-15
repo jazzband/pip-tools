@@ -1,3 +1,4 @@
+dist: xenial
 sudo: false
 language: python
 python:
@@ -5,7 +6,9 @@ python:
   - "3.4"
   - "3.5"
   - "3.6"
-  - "pypy"
+  - "3.7"
+  - "pypy2.7-6.0"
+  - "pypy3.5-6.0"
 
 env:
   - PIP=8.1.1
@@ -13,8 +16,8 @@ env:
   - PIP=9.0.3
   - PIP=10.0.1
   - PIP=18.0
-  - PIP=master
   - PIP=latest
+  - PIP=master
 
 cache: pip
 install:
@@ -23,37 +26,10 @@ script:
   - tox
 
 jobs:
-  include:
-    # Python 3.7 in Travis: https://github.com/travis-ci/travis-ci/issues/9815
-    - python: 3.7
-      dist: xenial
-      sudo: true
+  exclude:
+    - python: "pypy3.5-6.0"
       env: PIP=8.1.1
-    - python: 3.7
-      dist: xenial
-      sudo: true
-      env: PIP=9.0.1
-    - python: 3.7
-      dist: xenial
-      sudo: true
-      env: PIP=9.0.3
-    - python: 3.7
-      dist: xenial
-      sudo: true
-      env: PIP=10.0.1
-    - python: 3.7
-      dist: xenial
-      sudo: true
-      env: PIP=18.0
-    - python: 3.7
-      dist: xenial
-      sudo: true
-      env: PIP=latest
-    - python: 3.7
-      dist: xenial
-      sudo: true
-      env: PIP=master
-
+  include:
     - stage: flake8
       python: 2.7
       env: TOXENV=flake8
@@ -75,6 +51,5 @@ jobs:
         on:
           tags: true
           repo: jazzband/pip-tools
-
   allow_failures:
     - env: PIP=master
