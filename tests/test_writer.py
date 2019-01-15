@@ -98,11 +98,9 @@ def test_iter_lines__unsafe_dependencies(from_line, writer, allow_unsafe):
     str_lines = list(lines)
     assert comment('# The following packages are considered to be unsafe in a requirements file:') in str_lines
     if allow_unsafe:
-        assert any('#    pip-compile --allow-unsafe --output-file ' in str_line
-                   for str_line in str_lines)
+        assert comment('#    pip-compile --allow-unsafe --output-file dst_file src_file src_file2') in str_lines
         assert 'setuptools' in str_lines
     else:
-        assert any('#    pip-compile --output-file ' in str_line
-                   for str_line in str_lines)
+        assert comment('#    pip-compile --output-file dst_file src_file src_file2') in str_lines
         assert comment('# setuptools') in str_lines
     assert 'test==1.2' in str_lines
