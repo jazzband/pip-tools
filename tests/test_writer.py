@@ -14,7 +14,8 @@ def writer():
                         generate_hashes=False,
                         default_index_url=None, index_urls=[],
                         trusted_hosts=[],
-                        format_control=FormatControl(set(), set()))
+                        format_control=FormatControl(set(), set()),
+                        allow_unsafe=False)
 
 
 def test_format_requirement_annotation_editable(from_editable, writer):
@@ -83,19 +84,32 @@ def test_format_requirement_environment_marker(from_line, writer):
 
 
 @mark.parametrize(('allow_unsafe',), [(True,), (False,)])
-def test_iter_lines__unsafe_dependencies(from_line, writer, allow_unsafe):
+def test_iter_lines__unsafe_dependencies(from_line, allow_unsafe):
+
+    writer = OutputWriter(
+        src_files=["src_file", "src_file2"], dst_file="dst_file",
+        dry_run=True,
+        emit_header=True, emit_index=True, emit_trusted_host=True,
+        annotate=True,
+        generate_hashes=False,
+        default_index_url=None, index_urls=[],
+        trusted_hosts=[],
+        format_control=FormatControl(set(), set()),
+        allow_unsafe=allow_unsafe,
+    )
+
     ireq = [from_line('test==1.2')]
     unsafe_req = [from_line('setuptools')]
     reverse_dependencies = {'test': ['xyz']}
 
-    lines = writer._iter_lines(ireq,
-                               unsafe_req,
-                               reverse_dependencies,
-                               ['test'],
-                               {},
-                               None,
-                               allow_unsafe=allow_unsafe)
-    str_lines = list(lines)
+    str_lines = list(writer._iter_lines(
+        ireq,
+        unsafe_req,
+        reverse_dependencies,
+        ['test'],
+        {},
+        None,
+    ))
     assert comment('# The following packages are considered to be unsafe in a requirements file:') in str_lines
     if allow_unsafe:
         assert comment('#    pip-compile --allow-unsafe --output-file dst_file src_file src_file2') in str_lines
