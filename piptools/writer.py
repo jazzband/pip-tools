@@ -11,7 +11,8 @@ from .utils import comment, dedup, format_requirement, key_from_req, UNSAFE_PACK
 class OutputWriter(object):
     def __init__(self, src_files, dst_file, dry_run, emit_header, emit_index,
                  emit_trusted_host, annotate, generate_hashes,
-                 default_index_url, index_urls, trusted_hosts, format_control):
+                 default_index_url, index_urls, trusted_hosts, format_control,
+                 allow_unsafe):
         self.src_files = src_files
         self.dst_file = dst_file
         self.dry_run = dry_run
@@ -24,6 +25,7 @@ class OutputWriter(object):
         self.index_urls = index_urls
         self.trusted_hosts = trusted_hosts
         self.format_control = format_control
+        self.allow_unsafe = allow_unsafe
 
     def _sort_key(self, ireq):
         return (not ireq.editable, str(ireq.req).lower())
@@ -47,6 +49,8 @@ class OutputWriter(object):
                     params += ['--no-annotate']
                 if self.generate_hashes:
                     params += ["--generate-hashes"]
+                if self.allow_unsafe:
+                    params += ["--allow-unsafe"]
                 params += ['--output-file', self.dst_file]
                 params += self.src_files
                 yield comment('#    pip-compile {}'.format(' '.join(params)))
@@ -82,7 +86,7 @@ class OutputWriter(object):
             yield ''
 
     def _iter_lines(self, results, unsafe_requirements, reverse_dependencies,
-                    primary_packages, markers, hashes, allow_unsafe=False):
+                    primary_packages, markers, hashes):
         for line in self.write_header():
             yield line
         for line in self.write_flags():
@@ -110,20 +114,20 @@ class OutputWriter(object):
                                                primary_packages,
                                                marker=markers.get(key_from_req(ireq.req)),
                                                hashes=hashes)
-                if not allow_unsafe:
+                if not self.allow_unsafe:
                     yield comment('# {}'.format(req))
                 else:
                     yield req
 
     def write(self, results, unsafe_requirements, reverse_dependencies,
-              primary_packages, markers, hashes, allow_unsafe=False):
+              primary_packages, markers, hashes):
         with ExitStack() as stack:
             f = None
             if not self.dry_run:
                 f = stack.enter_context(AtomicSaver(self.dst_file))
 
             for line in self._iter_lines(results, unsafe_requirements, reverse_dependencies,
-                                         primary_packages, markers, hashes, allow_unsafe=allow_unsafe):
+                                         primary_packages, markers, hashes):
                 log.info(line)
                 if f:
                     f.write(unstyle(line).encode('utf-8'))

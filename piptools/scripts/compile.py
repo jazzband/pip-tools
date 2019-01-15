@@ -241,15 +241,15 @@ def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
                           default_index_url=repository.DEFAULT_INDEX_URL,
                           index_urls=repository.finder.index_urls,
                           trusted_hosts=pip_options.trusted_hosts,
-                          format_control=repository.finder.format_control)
+                          format_control=repository.finder.format_control,
+                          allow_unsafe=allow_unsafe)
     writer.write(results=results,
                  unsafe_requirements=resolver.unsafe_constraints,
                  reverse_dependencies=reverse_dependencies,
                  primary_packages={key_from_req(ireq.req) for ireq in constraints if not ireq.constraint},
                  markers={key_from_req(ireq.req): ireq.markers
                           for ireq in constraints if ireq.markers},
-                 hashes=hashes,
-                 allow_unsafe=allow_unsafe)
+                 hashes=hashes)
 
     if dry_run:
         log.warning('Dry-run, so nothing updated.')
