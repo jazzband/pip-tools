@@ -24,7 +24,8 @@ install:
   - travis_retry pip install tox-travis coveralls
 script:
   - tox
-after_success: coveralls
+after_success:
+  - "COVERALLS_PARALLEL=true coveralls"
 
 jobs:
   exclude:
@@ -57,3 +58,6 @@ jobs:
           repo: jazzband/pip-tools
   allow_failures:
     - env: PIP=master
+
+notifications:
+  webhooks: https://coveralls.io/webhook
