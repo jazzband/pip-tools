@@ -1,4 +1,4 @@
-|buildstatus-travis| |buildstatus-appveyor| |codecov| |jazzband| |pypi|
+|buildstatus-travis| |buildstatus-appveyor| |codecov| |coveralls| |jazzband| |pypi|
 
 ==================================
 pip-tools = pip-compile + pip-sync
@@ -17,8 +17,11 @@ even when you've pinned them.  `You do pin them, right?`_
    :alt: Appveyor build status
    :target: https://ci.appveyor.com/project/jazzband/pip-tools
 .. |codecov| image:: https://codecov.io/gh/jazzband/pip-tools/branch/master/graph/badge.svg
-   :alt: Coverage
+   :alt: Codecov
    :target: https://codecov.io/gh/jazzband/pip-tools
+.. |coveralls| image:: https://coveralls.io/repos/github/jazzband/pip-tools/badge.svg?branch=master
+   :alt: Coveralls
+   :target: https://coveralls.io/github/jazzband/pip-tools?branch=master
 .. |jazzband| image:: https://jazzband.co/static/img/badge.svg
    :alt: Jazzband
    :target: https://jazzband.co/
