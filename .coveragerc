@@ -7,4 +7,4 @@ omit =
     piptools/_vendored/*
 
 [report]
-include = piptools/*
+include = piptools/*, tests/*
