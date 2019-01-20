@@ -21,9 +21,12 @@ env:
 
 cache: pip
 install:
-  - travis_retry pip install tox-travis
+  - travis_retry pip install tox-travis codecov coveralls
 script:
   - tox
+after_success:
+  - codecov -e PIP
+  - "COVERALLS_PARALLEL=true coveralls"
 
 jobs:
   exclude:
@@ -33,14 +36,17 @@ jobs:
     - stage: flake8
       python: 2.7
       env: TOXENV=flake8
+      after_success: skip  # No need coverage
     - stage: readme
       python: 2.7
       env: TOXENV=readme
+      after_success: skip  # No need coverage
     - stage: deploy
       install: skip  # No need to install tox-travis on deploy.
       script: skip  # No test on the deploy stage.
       python: 2.7
       env: skip  # No special env required.
+      after_success: skip  # No need coverage
       deploy:
         provider: pypi
         user: jazzband
@@ -53,3 +59,6 @@ jobs:
           repo: jazzband/pip-tools
   allow_failures:
     - env: PIP=master
+
+notifications:
+  webhooks: https://coveralls.io/webhook
