@@ -1,6 +1,5 @@
 import os
 from textwrap import dedent
-from six.moves.urllib.request import pathname2url
 import subprocess
 import sys
 import mock
@@ -9,6 +8,7 @@ from click.testing import CliRunner
 
 import pytest
 
+from piptools._compat.pip_compat import path_to_url
 from piptools.repositories import PyPIRepository
 from piptools.scripts.compile import cli
 from piptools.scripts.sync import cli as sync_cli
@@ -242,7 +242,7 @@ def test_sync_quiet(tmpdir):
 def test_editable_package(tmpdir):
     """ piptools can compile an editable """
     fake_package_dir = os.path.join(os.path.split(__file__)[0], 'test_data', 'small_fake_package')
-    fake_package_dir = 'file:' + pathname2url(fake_package_dir)
+    fake_package_dir = path_to_url(fake_package_dir)
     runner = CliRunner()
     with runner.isolated_filesystem():
         with open('requirements.in', 'w') as req_in:
@@ -278,7 +278,7 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(tmpdir)
     cache_dir = tmpdir.mkdir('cache_dir')
 
     fake_package_dir = os.path.join(os.path.split(__file__)[0], 'test_data', 'small_fake_package')
-    fake_package_dir = 'file:' + pathname2url(fake_package_dir)
+    fake_package_dir = path_to_url(fake_package_dir)
 
     with mock.patch('piptools.repositories.pypi.CACHE_DIR', new=str(cache_dir)):
         runner = CliRunner()
@@ -360,7 +360,7 @@ def test_upgrade_packages_version_option(tmpdir):
 def test_generate_hashes_with_editable():
     small_fake_package_dir = os.path.join(
         os.path.split(__file__)[0], 'test_data', 'small_fake_package')
-    small_fake_package_url = 'file:' + pathname2url(small_fake_package_dir)
+    small_fake_package_url = path_to_url(small_fake_package_dir)
     runner = CliRunner()
     with runner.isolated_filesystem():
         with open('requirements.in', 'w') as fp:
