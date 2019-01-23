@@ -1,3 +1,15 @@
+# 3.3.0 (2019-01-23)
+
+Features:
+- Added support of `pip` 19.0
+([#715](https://github.com/jazzband/pip-tools/pull/715)). Thanks @atugushev
+- Add `--allow-unsafe` to update instructions in the generated `requirements.txt`
+([#708](https://github.com/jazzband/pip-tools/pull/708)). Thanks @richafrank
+
+Bug Fixes:
+- Fix `pip-sync` to check hashes
+([#706](https://github.com/jazzband/pip-tools/pull/706)). Thanks @atugushev
+
 # 3.2.0 (2018-12-18)
 
 Features:
