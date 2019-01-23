@@ -7,6 +7,9 @@ import os
 from contextlib import contextmanager
 from shutil import rmtree
 
+import pip
+import pkg_resources
+
 from .._compat import (
     is_file_url,
     url_to_path,
@@ -54,14 +57,19 @@ class PyPIRepository(BaseRepository):
         if pip_options.no_index:
             index_urls = []
 
-        self.finder = PackageFinder(
-            find_links=pip_options.find_links,
-            index_urls=index_urls,
-            trusted_hosts=pip_options.trusted_hosts,
-            allow_all_prereleases=pip_options.pre,
-            process_dependency_links=pip_options.process_dependency_links,
-            session=self.session,
-        )
+        finder_kwargs = {
+            "find_links": pip_options.find_links,
+            "index_urls": index_urls,
+            "trusted_hosts": pip_options.trusted_hosts,
+            "allow_all_prereleases": pip_options.pre,
+            "session": self.session,
+        }
+
+        # pip 19.0 has removed process_dependency_links from the PackageFinder constructor
+        if pkg_resources.parse_version(pip.__version__) < pkg_resources.parse_version('19.0'):
+            finder_kwargs["process_dependency_links"] = pip_options.process_dependency_links
+
+        self.finder = PackageFinder(**finder_kwargs)
 
         # Caches
         # stores project_name => InstallationCandidate mappings for all
