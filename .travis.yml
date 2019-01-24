@@ -47,7 +47,7 @@ jobs:
       script: skip  # No test on the deploy stage.
       python: 2.7
       env: skip  # No special env required.
-      after_success: skip  # No need coverage
+      after_success: true  # No need coverage
       deploy:
         provider: pypi
         user: jazzband
