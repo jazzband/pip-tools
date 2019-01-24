@@ -4,6 +4,7 @@ import sys
 import tempfile
 from subprocess import check_call
 
+from piptools._compat import stdlib_pkgs, DEV_PKGS
 from . import click
 from .exceptions import IncompatibleRequirements, UnsupportedConstraint
 from .utils import flat_map, format_requirement, key_from_ireq, key_from_req, get_hashes_from_ireq
@@ -14,9 +15,7 @@ PACKAGES_TO_IGNORE = [
     'pip-tools',
     'pip-review',
     'pkg-resources',
-    'setuptools',
-    'wheel',
-]
+] + list(stdlib_pkgs) + list(DEV_PKGS)
 
 
 def dependency_tree(installed_keys, root_key):
