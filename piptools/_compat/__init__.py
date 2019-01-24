@@ -29,4 +29,6 @@ from .pip_compat import (
     PyPI,
     install_req_from_line,
     install_req_from_editable,
+    stdlib_pkgs,
+    DEV_PKGS,
 )

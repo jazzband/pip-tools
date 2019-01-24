@@ -36,6 +36,8 @@ Command = do_import('cli.base_command', 'Command', old_path='basecommand')
 cmdoptions = do_import('cli.cmdoptions', old_path='cmdoptions')
 get_installed_distributions = do_import('utils.misc', 'get_installed_distributions', old_path='utils')
 PyPI = do_import('models.index', 'PyPI')
+stdlib_pkgs = do_import('utils.compat', 'stdlib_pkgs', old_path='compat')
+DEV_PKGS = do_import('commands.freeze', 'DEV_PKGS')
 
 # pip 18.1 has refactored InstallRequirement constructors use by pip-tools.
 if pkg_resources.parse_version(pip.__version__) < pkg_resources.parse_version('18.1'):
