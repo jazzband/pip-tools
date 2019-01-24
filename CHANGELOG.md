@@ -1,4 +1,10 @@
+# 3.3.1 (2019-01-24)
+
+- Re-release of 3.3.0 after fixing the deployment pipeline
+([#716](https://github.com/jazzband/pip-tools/issues/716)). Thanks @atugushev
+
 # 3.3.0 (2019-01-23)
+(Unreleased - Deployment pipeline issue, see 3.3.1)
 
 Features:
 - Added support of `pip` 19.0
