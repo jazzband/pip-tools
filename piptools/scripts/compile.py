@@ -31,7 +31,8 @@ class PipCommand(Command):
 
 @click.command()
 @click.version_option()
-@click.option('-v', '--verbose', is_flag=True, help="Show more output")
+@click.option('-v', '--verbose', count=True, help="Show more output")
+@click.option('-q', '--quiet', count=True, help="Give less output")
 @click.option('-n', '--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
 @click.option('-p', '--pre', is_flag=True, default=None, help="Allow resolving to prereleases (default is not)")
 @click.option('-r', '--rebuild', is_flag=True, help="Clear any caches upfront, rebuild from scratch")
@@ -65,12 +66,12 @@ class PipCommand(Command):
 @click.option('--max-rounds', default=10,
               help="Maximum number of rounds before resolving the requirements aborts.")
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
-def cli(verbose, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
+def cli(verbose, quiet, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         cert, client_cert, trusted_host, header, index, emit_trusted_host, annotate,
         upgrade, upgrade_packages, output_file, allow_unsafe, generate_hashes,
         src_files, max_rounds):
     """Compiles requirements.txt from requirements.in specs."""
-    log.verbose = verbose
+    log.verbosity = verbose - quiet
 
     if len(src_files) == 0:
         if os.path.exists(DEFAULT_REQUIREMENTS_FILE):
