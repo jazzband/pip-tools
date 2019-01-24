@@ -357,6 +357,16 @@ def test_upgrade_packages_version_option(tmpdir):
         assert 'small-fake-b==0.2' in out.output
 
 
+def test_quiet_option(tmpdir):
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        with open('requirements', 'w'):
+            pass
+        out = runner.invoke(cli, ['--quiet', '-n', 'requirements'])
+        # Pinned requirements result has not been written to output
+        assert 'Dry-run, so nothing updated.' == out.output.strip()
+
+
 def test_generate_hashes_with_editable():
     small_fake_package_dir = os.path.join(
         os.path.split(__file__)[0], 'test_data', 'small_fake_package')
