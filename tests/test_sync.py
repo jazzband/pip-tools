@@ -12,10 +12,16 @@ from piptools.sync import dependency_tree, diff, merge, sync
 
 
 @pytest.fixture
-def mocked_tmp_req_file():
+def mocked_tmp_file():
     with mock.patch.object(tempfile, 'NamedTemporaryFile') as m:
-        m.return_value.__enter__.return_value.name = 'requirements.txt'
-        yield m.return_value.__enter__.return_value
+        yield m.return_value
+
+
+@pytest.fixture
+def mocked_tmp_req_file(mocked_tmp_file):
+    with mock.patch('os.unlink'):
+        mocked_tmp_file.name = 'requirements.txt'
+        yield mocked_tmp_file
 
 
 @pytest.mark.parametrize(
@@ -225,6 +231,16 @@ def test_sync_install_temporary_requirement_file(from_line, from_editable, mocke
         to_install = {from_line('django==1.8')}
         sync(to_install, set())
         check_call.assert_called_once_with(['pip', 'install', '-r', mocked_tmp_req_file.name, '-q'])
+
+
+def test_temporary_requirement_file_deleted(from_line, from_editable, mocked_tmp_file):
+    with mock.patch('piptools.sync.check_call'):
+        to_install = {from_line('django==1.8')}
+
+        with mock.patch('os.unlink') as unlink:
+            sync(to_install, set())
+
+            unlink.assert_called_once_with(mocked_tmp_file.name)
 
 
 def test_sync_requirement_file(from_line, from_editable, mocked_tmp_req_file):
