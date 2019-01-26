@@ -163,9 +163,13 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None,
                 req_lines.append(format_requirement(ireq, hashes=ireq_hashes))
 
             # save requirement lines to a temporary file
-            with tempfile.NamedTemporaryFile(mode='wt') as tmp_req_file:
-                tmp_req_file.write('\n'.join(req_lines))
-                tmp_req_file.flush()
+            tmp_req_file = tempfile.NamedTemporaryFile(mode='wt', delete=False)
+            tmp_req_file.write('\n'.join(req_lines))
+            tmp_req_file.close()
 
+            try:
                 check_call([pip, 'install', '-r', tmp_req_file.name] + pip_flags + install_flags)
+            finally:
+                os.unlink(tmp_req_file.name)
+
     return 0
