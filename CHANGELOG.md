@@ -1,3 +1,11 @@
+# 3.3.2 (2019-01-26)
+
+Bug Fixes:
+- Fix `pip-sync` with a temporary requirement file on Windows
+([#723](https://github.com/jazzband/pip-tools/pull/723)). Thanks @atugushev
+- Fix `pip-sync` to prevent uninstall of stdlib and dev packages
+([#718](https://github.com/jazzband/pip-tools/pull/718)). Thanks @atugushev
+
 # 3.3.1 (2019-01-24)
 
 - Re-release of 3.3.0 after fixing the deployment pipeline
