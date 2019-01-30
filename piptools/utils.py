@@ -10,7 +10,6 @@ from ._compat import install_req_from_line
 
 from .click import style
 
-
 UNSAFE_PACKAGES = {'setuptools', 'distribute', 'pip'}
 
 

@@ -6,8 +6,8 @@ from piptools.writer import OutputWriter
 
 
 @fixture
-def writer():
-    return OutputWriter(src_files=["src_file", "src_file2"], dst_file="dst_file",
+def writer(tmp_file):
+    return OutputWriter(src_files=["src_file", "src_file2"], dst_file=tmp_file,
                         dry_run=True,
                         emit_header=True, emit_index=True, emit_trusted_host=True,
                         annotate=True,
