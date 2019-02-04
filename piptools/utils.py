@@ -115,7 +115,7 @@ def is_pinned_requirement(ireq):
         django~=1.8   # NOT pinned
         django==1.*   # NOT pinned
     """
-    if ireq.editable:
+    if ireq.editable or is_url_requirement(ireq):
         return False
 
     if len(ireq.specifier._specs) != 1:
