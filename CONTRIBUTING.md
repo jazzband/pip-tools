@@ -34,10 +34,10 @@ To help keeping track of the releases and their changes, here's the current rele
   - *Release title:* Same as the tag. *Ex: 3.4.0*
   - *Describe this release:* Copy of this release's changelog segment.
 - Publish release. This will push a tag on the HEAD of master, trigger the CI pipeline and
-  deploy a pip-tools release in **Jazzband private package index** upon success.
+  deploy a pip-tools release in the **Jazzband private package index** upon success.
 - The pip-tools "lead" project members will receive an email notification to review the release and
-  deploy it to the public PyPi if all is correct.
-- Once the release to the public PyPi is confirmed, close the milestone.
+  deploy it to the public PyPI if all is correct.
+- Once the release to the public PyPI is confirmed, close the milestone.
 
 Please be mindful of other before and when performing a release, and use this access responsibly.
 
