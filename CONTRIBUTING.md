@@ -29,7 +29,7 @@ To help keeping track of the releases and their changes, here's the current rele
   Check the previous release changelog format for an example. Don't forget the "Thanks @contributor" mentions.
 - Make sure that the tests/CI still pass.
 - Once ready, go to `Github pip-tools Homepage > releases tab > Draft a new release` and type in:
-  - *Tag version:* The exact version number. *Ex: 3.4.0*
+  - *Tag version:* The exact version number, following [Semantic Versioning](https://blog.versioneye.com/2014/01/16/semantic-versioning/). *Ex: 3.4.0*
   - *Target:* master. As a general rule, the HEAD commit of the master branch should be the release target.
   - *Release title:* Same as the tag. *Ex: 3.4.0*
   - *Describe this release:* Copy of this release's changelog segment.
