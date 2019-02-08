@@ -402,3 +402,15 @@ def test_default_index_url():
         '                                  http://example.com)' + os.linesep
     )
     assert expected in output
+
+
+def test_stdin_without_output_file():
+    """
+    The --output-file option is required for STDIN.
+    """
+    runner = CliRunner()
+    with runner.isolated_filesystem():
+        out = runner.invoke(cli, ['-n', '-'])
+
+        assert out.exit_code == 2
+        assert '--output-file is required if input is from stdin' in out.output
