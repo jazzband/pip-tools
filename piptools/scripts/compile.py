@@ -2,7 +2,6 @@
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 
-import optparse
 import os
 import sys
 import tempfile
@@ -10,23 +9,18 @@ import tempfile
 from .._compat import (
     install_req_from_line,
     parse_requirements,
-    cmdoptions,
-    Command,
 )
 
 from .. import click
 from ..exceptions import PipToolsError
 from ..logging import log
+from ..pip import get_pip_command, pip_defaults
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
 from ..utils import (dedup, is_pinned_requirement, key_from_req, UNSAFE_PACKAGES)
 from ..writer import OutputWriter
 
 DEFAULT_REQUIREMENTS_FILE = 'requirements.in'
-
-
-class PipCommand(Command):
-    name = 'PipCommand'
 
 
 @click.command()
@@ -37,7 +31,7 @@ class PipCommand(Command):
 @click.option('-p', '--pre', is_flag=True, default=None, help="Allow resolving to prereleases (default is not)")
 @click.option('-r', '--rebuild', is_flag=True, help="Clear any caches upfront, rebuild from scratch")
 @click.option('-f', '--find-links', multiple=True, help="Look for archives in this directory or on this HTML page", envvar='PIP_FIND_LINKS')  # noqa
-@click.option('-i', '--index-url', help="Change index URL (defaults to PyPI)", envvar='PIP_INDEX_URL')
+@click.option('-i', '--index-url', help="Change index URL (defaults to {})".format(pip_defaults.index_url), envvar='PIP_INDEX_URL')  # noqa
 @click.option('--extra-index-url', multiple=True, help="Add additional index URL to search", envvar='PIP_EXTRA_INDEX_URL')  # noqa
 @click.option('--cert', help="Path to alternate CA bundle.")
 @click.option('--client-cert', help="Path to SSL client certificate, a single file containing the private key and the certificate in PEM format.")  # noqa
@@ -254,20 +248,3 @@ def cli(verbose, quiet, dry_run, pre, rebuild, find_links, index_url, extra_inde
 
     if dry_run:
         log.warning('Dry-run, so nothing updated.')
-
-
-def get_pip_command():
-    # Use pip's parser for pip.conf management and defaults.
-    # General options (find_links, index_url, extra_index_url, trusted_host,
-    # and pre) are defered to pip.
-    pip_command = PipCommand()
-    pip_command.parser.add_option(cmdoptions.no_binary())
-    pip_command.parser.add_option(cmdoptions.only_binary())
-    index_opts = cmdoptions.make_option_group(
-        cmdoptions.index_group,
-        pip_command.parser,
-    )
-    pip_command.parser.insert_option_group(0, index_opts)
-    pip_command.parser.add_option(optparse.Option('--pre', action='store_true', default=False))
-
-    return pip_command

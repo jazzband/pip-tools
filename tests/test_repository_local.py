@@ -1,7 +1,7 @@
-from piptools.scripts.compile import get_pip_command
 from piptools.repositories.local import LocalRequirementsRepository
 from piptools.repositories.pypi import PyPIRepository
 from piptools.utils import name_from_req
+from piptools.pip import get_pip_command
 
 EXPECTED = {
     'sha256:04b133ef629ae2bc05f83d0b079a964494a9cd17914943e690c57209b44aae20',
