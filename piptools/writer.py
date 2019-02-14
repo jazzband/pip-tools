@@ -1,8 +1,9 @@
 import os
+import sys
 from itertools import chain
 
 from ._compat import ExitStack
-from .click import unstyle
+from .click import unstyle, get_os_args
 from .io import AtomicSaver
 from .logging import log
 from .utils import comment, dedup, format_requirement, key_from_req, UNSAFE_PACKAGES
@@ -40,20 +41,9 @@ class OutputWriter(object):
             if custom_cmd:
                 yield comment('#    {}'.format(custom_cmd))
             else:
-                params = []
-                if not self.emit_index:
-                    params += ['--no-index']
-                if not self.emit_trusted_host:
-                    params += ['--no-emit-trusted-host']
-                if not self.annotate:
-                    params += ['--no-annotate']
-                if self.generate_hashes:
-                    params += ["--generate-hashes"]
-                if self.allow_unsafe:
-                    params += ["--allow-unsafe"]
-                params += ['--output-file', self.dst_file]
-                params += self.src_files
-                yield comment('#    pip-compile {}'.format(' '.join(params)))
+                prog = os.path.basename(sys.argv[0])
+                args = ' '.join(get_os_args())
+                yield comment('#    {prog} {args}'.format(prog=prog, args=args))
             yield comment('#')
 
     def write_index_options(self):
