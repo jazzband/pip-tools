@@ -29,6 +29,11 @@ after_success:
   - codecov -e PIP
   - "COVERALLS_PARALLEL=true coveralls"
 
+stages:
+- test
+- name: deploy
+  if: repo = jazzband/pip-tools AND tag IS present
+
 jobs:
   exclude:
     - python: "pypy3.5-6.0"
@@ -36,14 +41,17 @@ jobs:
   include:
     - python: 3.8-dev
       env: PIP=latest
+
     - stage: flake8
       python: 2.7
       env: TOXENV=flake8
       after_success: skip  # No need coverage
+
     - stage: readme
       python: 2.7
       env: TOXENV=readme
       after_success: skip  # No need coverage
+
     - stage: deploy
       install: skip  # No need to install tox-travis on deploy.
       script: skip  # No test on the deploy stage.
