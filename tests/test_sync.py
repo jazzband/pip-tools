@@ -230,7 +230,9 @@ def test_sync_install_temporary_requirement_file(from_line, from_editable, mocke
     with mock.patch('piptools.sync.check_call') as check_call:
         to_install = {from_line('django==1.8')}
         sync(to_install, set())
-        check_call.assert_called_once_with(['pip', 'install', '-r', mocked_tmp_req_file.name, '-q'])
+        check_call.assert_called_once_with(
+            [sys.executable, '-m', 'pip', 'install', '-r', mocked_tmp_req_file.name, '-q']
+        )
 
 
 def test_temporary_requirement_file_deleted(from_line, from_editable, mocked_tmp_file):
@@ -304,3 +306,13 @@ def test_sync_requirement_file_with_hashes(from_line, from_editable, mocked_tmp_
             '    --hash=sha256:f5c056e8f62d45ba8215e5cb8f50dfccb198b4b9fbea8500674f3443e4689589'
         )
         mocked_tmp_req_file.write.assert_called_once_with(expected)
+
+
+@mock.patch('piptools.sync.check_call')
+def test_sync_uninstall_pip_command(check_call):
+    to_uninstall = ['six', 'django', 'pytz', 'click']
+
+    sync(set(), to_uninstall)
+    check_call.assert_called_once_with(
+        [sys.executable, '-m', 'pip', 'uninstall', '-y', '-q'] + sorted(to_uninstall)
+    )
