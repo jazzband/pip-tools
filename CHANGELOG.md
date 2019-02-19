@@ -1,3 +1,15 @@
+# 3.4.0 (2019-02-19)
+
+Features:
+- Add option `--quiet` to `pip-compile`
+([#720](https://github.com/jazzband/pip-tools/pull/720)). Thanks @bendikro
+- Emit the original command to the `pip-compile`'s header
+([#733](https://github.com/jazzband/pip-tools/pull/733)). Thanks @atugushev
+
+Bug Fixes:
+- Fix `pip-sync` to use pip script depending on a python version
+([#737](https://github.com/jazzband/pip-tools/pull/737)). Thanks @atugushev
+
 # 3.3.2 (2019-01-26)
 
 Bug Fixes:
