@@ -133,20 +133,13 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None,
     if not verbose:
         pip_flags += ['-q']
 
-    if os.environ.get('VIRTUAL_ENV'):
-        # find pip via PATH
-        pip = 'pip'
-    else:
-        # find pip in same directory as pip-sync entry-point script
-        pip = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), 'pip')
-
     if to_uninstall:
         if dry_run:
             click.echo("Would uninstall:")
             for pkg in to_uninstall:
                 click.echo("  {}".format(pkg))
         else:
-            check_call([pip, 'uninstall', '-y'] + pip_flags + sorted(to_uninstall))
+            check_call([sys.executable, '-m', 'pip', 'uninstall', '-y'] + pip_flags + sorted(to_uninstall))
 
     if to_install:
         if install_flags is None:
@@ -168,7 +161,9 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None,
             tmp_req_file.close()
 
             try:
-                check_call([pip, 'install', '-r', tmp_req_file.name] + pip_flags + install_flags)
+                check_call(
+                    [sys.executable, '-m', 'pip', 'install', '-r', tmp_req_file.name] + pip_flags + install_flags
+                )
             finally:
                 os.unlink(tmp_req_file.name)
 
