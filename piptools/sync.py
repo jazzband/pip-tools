@@ -125,7 +125,9 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None,
     Install and uninstalls the given sets of modules.
     """
     if not to_uninstall and not to_install:
-        click.echo("Everything up-to-date")
+        if not verbose:
+            click.echo("Everything up-to-date")
+        return 0
 
     if pip_flags is None:
         pip_flags = []
