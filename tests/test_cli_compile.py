@@ -343,6 +343,19 @@ def test_generate_hashes_with_editable(runner):
     assert expected in out.output
 
 
+def test_generate_hashes_verbose(runner):
+    """
+    The hashes generation process should show a progress.
+    """
+    with open("requirements.in", "w") as fp:
+        fp.write("pytz==2017.2")
+
+    out = runner.invoke(cli, ["--generate-hashes", "-v"])
+
+    expected_verbose_text = "Generating hashes:\n  pytz\n"
+    assert expected_verbose_text in out.output
+
+
 @fail_below_pip9
 def test_filter_pip_markers(runner):
     """
