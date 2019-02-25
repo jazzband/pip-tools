@@ -24,8 +24,8 @@ fail_below_pip9 = pytest.mark.xfail(
 )
 
 
-@pytest.yield_fixture
-def pip_conf(tmpdir):
+@pytest.fixture
+def pip_conf(tmpdir, monkeypatch):
     test_conf = dedent("""\
         [global]
         index-url = http://example.com
@@ -38,15 +38,11 @@ def pip_conf(tmpdir):
     with open(path, 'w') as f:
         f.write(test_conf)
 
-    old_value = os.environ.get('PIP_CONFIG_FILE')
+    monkeypatch.setenv('PIP_CONFIG_FILE', path)
+
     try:
-        os.environ['PIP_CONFIG_FILE'] = path
         yield path
     finally:
-        if old_value is not None:
-            os.environ['PIP_CONFIG_FILE'] = old_value
-        else:
-            del os.environ['PIP_CONFIG_FILE']
         os.remove(path)
 
 
