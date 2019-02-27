@@ -2,6 +2,7 @@ import json
 from contextlib import contextmanager
 from functools import partial
 
+from click.testing import CliRunner
 from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Requirement
 from piptools._compat import install_req_from_line, install_req_from_editable
@@ -112,3 +113,10 @@ def from_line():
 @fixture
 def from_editable():
     return install_req_from_editable
+
+
+@fixture
+def runner():
+    cli_runner = CliRunner()
+    with cli_runner.isolated_filesystem():
+        yield cli_runner
