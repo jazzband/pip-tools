@@ -372,7 +372,7 @@ def test_generate_hashes_with_editable():
 
 
 @fail_below_pip9
-def test_filter_pip_markes():
+def test_filter_pip_markers():
     """
     Check that pip-compile works with pip environment markers (PEP496)
     """
@@ -440,3 +440,97 @@ def test_stdin_without_output_file():
 
         assert out.exit_code == 2
         assert '--output-file is required if input is from stdin' in out.output
+
+
+def test_not_specified_input_file(runner):
+    """
+    It should raise an error if there are no input files or default input files
+    such as "setup.py" or "requirements.in".
+    """
+    out = runner.invoke(cli)
+    assert 'If you do not specify an input file' in out.output
+    assert out.exit_code == 2
+
+
+def test_stdin(runner):
+    """
+    Test compile requirements from STDIN.
+    """
+    out = runner.invoke(
+        cli,
+        ['-', '--output-file', 'requirements.txt', '-n'],
+        input='six==1.10.0'
+    )
+
+    assert 'six==1.10.0' in out.output
+
+
+def test_multiple_input_files_without_output_file(runner):
+    """
+    The --output-file option is required for multiple requirement input files.
+    """
+    with open('src_file1.in', 'w') as req_in:
+        req_in.write('six==1.10.0')
+
+    with open('src_file2.in', 'w') as req_in:
+        req_in.write('django==2.1')
+
+    out = runner.invoke(cli, ['src_file1.in', 'src_file2.in'])
+
+    assert '--output-file is required if two or more input files are given' in out.output
+    assert out.exit_code == 2
+
+
+def test_mutually_exclusive_upgrade_options(runner):
+    """
+    The options --upgrade and --upgrade-package should be mutual exclusive.
+    """
+    with open('requirements.in', 'w') as req_in:
+        req_in.write('six==1.10.0')
+
+    out = runner.invoke(cli, ['--upgrade', '--upgrade-package', 'six'])
+
+    assert 'Only one of --upgrade or --upgrade-package can be provided as an argument' in out.output
+    assert out.exit_code == 2
+
+
+@pytest.mark.usefixtures('pip_conf')
+@pytest.mark.parametrize('option, expected', [
+    ('--annotate', 'six==1.10.0               # via small-fake-with-deps\n'),
+    ('--no-annotate', 'six==1.10.0\n'),
+])
+def test_annotate_option(runner, option, expected):
+    """
+    The output lines has have annotations if option is turned on.
+    """
+    fake_package_dir = os.path.join(os.path.split(__file__)[0], 'test_data', 'minimal_wheels')
+
+    with open('requirements.in', 'w') as req_in:
+        req_in.write('small_fake_with_deps')
+
+    out = runner.invoke(cli, [option, '-n', '-f', fake_package_dir])
+
+    assert expected in out.output
+    assert out.exit_code == 0
+
+
+@pytest.mark.parametrize('option, attr, expected', [
+    ('--cert', 'cert', 'foo.crt'),
+    ('--client-cert', 'client_cert', 'bar.pem'),
+])
+@mock.patch('piptools.scripts.compile.PyPIRepository')
+def test_cert_option(MockPyPIRepository, runner, option, attr, expected):
+    """
+    The options --cert and --client-crt have to be passed to the PyPIRepository.
+    """
+    with open('requirements.in', 'w') as req_in:
+        req_in.write('six==1.10.0')
+
+    out = runner.invoke(cli, [option, expected])
+
+    assert 'six==1.10.0' in out.output
+
+    # Ensure the pip_options in PyPIRepository has have the expected option
+    for call in MockPyPIRepository.call_args_list:
+        pip_options = call[0][0]
+        assert getattr(pip_options, attr) == expected
