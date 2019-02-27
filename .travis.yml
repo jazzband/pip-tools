@@ -26,7 +26,7 @@ install:
 script:
   - tox
 after_success:
-  - codecov -e PIP
+  - codecov -F $TRAVIS_OS_NAME -n "py$TRAVIS_PYTHON_VERSION-pip$PIP"
   - "COVERALLS_PARALLEL=true coveralls"
 
 stages:

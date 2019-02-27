@@ -98,4 +98,4 @@ test_script:
     - tox
 
 after_test:
-    - codecov
+    - codecov -F windows -n %TOXENV%
