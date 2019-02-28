@@ -85,6 +85,7 @@ environment:
           PIP: latest
 
 matrix:
+  fast_finish: true
   allow_failures:
     - PIP: master
 
