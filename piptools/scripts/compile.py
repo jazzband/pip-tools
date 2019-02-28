@@ -79,7 +79,7 @@ def cli(verbose, quiet, dry_run, pre, rebuild, find_links, index_url, extra_inde
 
     if src_files == ('-',) and not output_file:
         raise click.BadParameter('--output-file is required if input is from stdin')
-    elif src_files == ('setup.py',):
+    elif src_files == ('setup.py',) and not output_file:
         output_file = DEFAULT_REQUIREMENTS_OUTPUT_FILE
 
     if len(src_files) > 1 and not output_file:
