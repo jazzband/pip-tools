@@ -120,16 +120,14 @@ def diff(compiled_requirements, installed_dists):
     return (to_install, to_uninstall)
 
 
-def sync(to_install, to_uninstall, verbose=False, dry_run=False, pip_flags=None, install_flags=None):
+def sync(to_install, to_uninstall, verbose=False, dry_run=False, install_flags=None):
     """
     Install and uninstalls the given sets of modules.
     """
     if not to_uninstall and not to_install:
         click.echo("Everything up-to-date")
 
-    if pip_flags is None:
-        pip_flags = []
-
+    pip_flags = []
     if not verbose:
         pip_flags += ['-q']
 
