@@ -382,3 +382,19 @@ def test_no_candidates_pre():
 
         assert out.exit_code == 2
         assert 'Tried pre-versions:' in out.output
+
+
+@pytest.mark.usefixtures('pip_conf')
+def test_default_index_url():
+    status, output = invoke([sys.executable, '-m', 'piptools', 'compile', '--help'])
+    output = output.decode('utf-8')
+
+    # Click's subprocess output has \r\r\n line endings on win py27. Fix it.
+    output = output.replace('\r\r', '\r')
+
+    assert status == 0
+    expected = (
+        '  -i, --index-url TEXT            Change index URL (defaults to' + os.linesep +
+        '                                  http://example.com)' + os.linesep
+    )
+    assert expected in output
