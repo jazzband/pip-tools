@@ -30,6 +30,7 @@ after_success:
   - "COVERALLS_PARALLEL=true coveralls"
 
 stages:
+- baseline
 - test
 - name: deploy
   if: repo = jazzband/pip-tools AND tag IS present
@@ -38,19 +39,32 @@ jobs:
   exclude:
     - python: "pypy3.5-6.0"
       env: PIP=8.1.1
+
+    # Baseline jobs (included there/below).
+    - env: PIP=latest
+      python: "3.7"
+    - env: PIP=latest
+      python: "2.7"
+
   include:
-    - python: 3.8-dev
+    # Baseline stage to abort early.
+    - stage: baseline
       env: PIP=latest
+      python: "3.7"
+    - env: PIP=latest
+      python: "2.7"
 
-    - stage: flake8
+    # QA checks.
+    - env: TOXENV=flake8
       python: 2.7
-      env: TOXENV=flake8
+      after_success: skip  # No need coverage
+    - env: TOXENV=readme
+      python: 2.7
       after_success: skip  # No need coverage
 
-    - stage: readme
-      python: 2.7
-      env: TOXENV=readme
-      after_success: skip  # No need coverage
+    - stage: test
+      python: 3.8-dev
+      env: PIP=latest
 
     - stage: deploy
       install: skip  # No need to install tox-travis on deploy.
