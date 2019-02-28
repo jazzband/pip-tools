@@ -1,6 +1,7 @@
 import sys
 
 import mock
+import pytest
 from click.testing import CliRunner
 
 from piptools.scripts.sync import cli
@@ -36,3 +37,100 @@ def test_quiet_option(tmpdir):
             # for every call to pip ensure the `-q` flag is set
             for call in check_call.call_args_list:
                 assert '-q' in call[0][0]
+
+
+def test_no_requirements_file(runner):
+    """
+    It should raise an error if there are no input files
+    or a requirements.txt file does not exist.
+    """
+    out = runner.invoke(cli)
+
+    assert 'No requirement files given' in out.output
+    assert out.exit_code == 2
+
+
+def test_input_files_with_dot_in_extension(runner):
+    """
+    It should raise an error if some of the input files have .in extension.
+    """
+    with open('requirements.in', 'w') as req_in:
+        req_in.write('six==1.10.0')
+
+    out = runner.invoke(cli, ['requirements.in'])
+
+    assert 'ERROR: Some input files have the .in extension' in out.output
+    assert out.exit_code == 2
+
+
+def test_force_files_with_dot_in_extension(runner):
+    """
+    It should print a warning and sync anyway if some of the input files have .in extension.
+    """
+
+    with open('requirements.in', 'w') as req_in:
+        req_in.write('six==1.10.0')
+
+    with mock.patch('piptools.sync.check_call'):
+        out = runner.invoke(cli, ['requirements.in', '--force'])
+
+    assert 'WARNING: Some input files have the .in extension' in out.output
+    assert out.exit_code == 0
+
+
+def test_merge_error(runner):
+    """
+    Sync command should raise an error if there are merge errors.
+    """
+    with open('requirements.txt', 'w') as req_in:
+        req_in.write('six>1.10.0\n')
+
+        # Add incompatible package
+        req_in.write('six<1.10.0')
+
+    with mock.patch('piptools.sync.check_call'):
+        out = runner.invoke(cli, ['-n'])
+
+    assert out.exit_code == 2
+    assert 'Incompatible requirements found' in out.output
+
+
+@pytest.mark.parametrize(
+    ('cli_flags', 'expected_install_flags'),
+    [
+        (['--find-links', './libs'], ['-f', './libs']),
+        (['--no-index'], ['--no-index']),
+        (['--index-url', 'https://example.com'], ['-i', 'https://example.com']),
+        (
+            [
+                '--extra-index-url', 'https://foo',
+                '--extra-index-url', 'https://bar',
+            ],
+            [
+                '--extra-index-url', 'https://foo',
+                '--extra-index-url', 'https://bar',
+            ]
+        ),
+        (['--user'], ['--user']),
+    ]
+)
+@mock.patch('piptools.sync.check_call')
+def test_pip_install_flags(check_call, cli_flags, expected_install_flags, runner):
+    """
+    Test the cli flags have to be passed to the pip install command.
+    """
+    with open('requirements.txt', 'w') as req_in:
+        req_in.write('six==1.10.0')
+
+    runner.invoke(cli, cli_flags)
+
+    for call in check_call.call_args_list:
+        check_call_args = call[0][0]
+        pip_command = check_call_args[3]
+
+        # Skip uninstall command
+        if pip_command != 'install':
+            continue
+
+        install_flags = check_call_args[6:]
+        assert install_flags == expected_install_flags
