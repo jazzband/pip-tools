@@ -4,7 +4,7 @@ from pip import __version__ as pip_version
 from piptools._compat import PackageFinder, install_req_from_line
 
 from piptools.repositories.pypi import PyPIRepository
-from piptools.scripts.compile import get_pip_command
+from piptools.pip import get_pip_command
 import pytest
 
 

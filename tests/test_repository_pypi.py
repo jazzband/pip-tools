@@ -1,4 +1,4 @@
-from piptools.scripts.compile import get_pip_command
+from piptools.pip import get_pip_command
 from piptools.repositories.pypi import PyPIRepository
 
 
