@@ -1,4 +1,6 @@
 environment:
+    global:
+      PYTHON: "C:\\Python36"
 
     matrix:
         - TOXENV: py27-pip8.1.1
@@ -87,9 +89,13 @@ matrix:
     - PIP: master
 
 install:
-    - C:\Python36\python -m pip install tox
+    - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+    - pip install tox codecov
 
 build: false
 
 test_script:
-    - C:\Python36\Scripts\tox
+    - tox
+
+after_test:
+    - codecov -F windows -n %TOXENV%
