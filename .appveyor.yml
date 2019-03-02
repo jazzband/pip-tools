@@ -100,4 +100,4 @@ test_script:
 
 after_test:
     - pip install codecov
-    - codecov -n %TOXENV%
+    - codecov -n %TOXENV%-windows
