@@ -11,6 +11,7 @@ python:
   - "pypy3.5-6.0"
 
 env:
+  # NOTE: keep this in sync with envlist in tox.ini for tox-travis.
   - PIP=8.1.1
   - PIP=9.0.1
   - PIP=9.0.3
