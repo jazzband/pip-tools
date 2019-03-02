@@ -7,8 +7,6 @@ python:
   - "3.5"
   - "3.6"
   - "3.7"
-  - "pypy2.7-6.0"
-  - "pypy3.5-6.0"
 
 env:
   - PIP=8.1.1
@@ -62,9 +60,16 @@ jobs:
       python: 2.7
       after_success: skip  # No need coverage
 
+    # Default stage (used with matrix).
     - stage: test
       python: 3.8-dev
       env: PIP=latest
+
+    # Only test pypy/pypy3 with latest pip.
+    - env: PIP=latest
+      python: "pypy2.7-6.0"
+    - env: PIP=latest
+      python: "pypy3.5-6.0"
 
     - stage: deploy
       install: skip  # No need to install tox-travis on deploy.
