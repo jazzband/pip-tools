@@ -22,12 +22,9 @@ env:
 
 cache: pip
 install:
-  - travis_retry pip install tox-travis codecov coveralls
+  - travis_retry pip install tox-travis
 script:
   - tox
-after_success:
-  - codecov -F $TRAVIS_OS_NAME -n "py$TRAVIS_PYTHON_VERSION-pip$PIP"
-  - "COVERALLS_PARALLEL=true coveralls"
 
 stages:
 - baseline
@@ -85,6 +82,11 @@ jobs:
   allow_failures:
     - env: PIP=master
     - python: 3.8-dev
+
+after_success:
+  - travis_retry pip install codecov coveralls
+  - codecov -n "py${TRAVIS_PYTHON_VERSION}-pip${PIP}-${TRAVIS_OS_NAME}"
+  - "COVERALLS_PARALLEL=true coveralls"
 
 notifications:
   webhooks: https://coveralls.io/webhook
