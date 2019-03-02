@@ -91,7 +91,7 @@ matrix:
 
 install:
     - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
-    - pip install tox codecov
+    - pip install tox
 
 build: false
 
@@ -99,4 +99,5 @@ test_script:
     - tox
 
 after_test:
-    - codecov -F windows -n %TOXENV%
+    - pip install codecov
+    - codecov -n %TOXENV%-windows
