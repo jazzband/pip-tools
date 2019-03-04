@@ -103,5 +103,10 @@ test_script:
     - tox
 
 after_test:
-    - pip install codecov
-    - codecov -n %TOXENV%-windows
+  # Add tox environment to PATH.
+  - "SET PATH=%CD%\\.tox\\%TOXENV%\\scripts;%PATH%"
+  - IF NOT "x%TOXENV:-coverage=%"=="x%TOXENV%" (
+      pip install codecov &&
+      coverage xml &&
+      codecov --required -X gcov pycov search -f coverage.xml -n %TOXENV%-windows
+    )
