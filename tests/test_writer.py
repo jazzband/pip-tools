@@ -1,4 +1,4 @@
-from pytest import fixture, mark
+from pytest import fixture, mark, raises
 
 from piptools._compat import FormatControl
 from piptools.utils import comment
@@ -84,19 +84,8 @@ def test_format_requirement_environment_marker(from_line, writer):
 
 
 @mark.parametrize(('allow_unsafe',), [(True,), (False,)])
-def test_iter_lines__unsafe_dependencies(from_line, allow_unsafe):
-
-    writer = OutputWriter(
-        src_files=["src_file", "src_file2"], dst_file="dst_file",
-        dry_run=True,
-        emit_header=True, emit_index=True, emit_trusted_host=True,
-        annotate=True,
-        generate_hashes=False,
-        default_index_url=None, index_urls=[],
-        trusted_hosts=[],
-        format_control=FormatControl(set(), set()),
-        allow_unsafe=allow_unsafe,
-    )
+def test_iter_lines__unsafe_dependencies(writer, from_line, allow_unsafe):
+    writer.allow_unsafe = allow_unsafe
 
     ireq = [from_line('test==1.2')]
     unsafe_req = [from_line('setuptools')]
@@ -142,3 +131,97 @@ def test_write_header_custom_compile_command(writer, monkeypatch):
         '#',
     ])
     assert list(writer.write_header()) == list(expected)
+
+
+def test_write_header_no_emit_header(writer):
+    """
+    There should not be headers if emit_header is False
+    """
+    writer.emit_header = False
+
+    with raises(StopIteration):
+        next(writer.write_header())
+
+
+def test_write_format_controls(writer):
+    """
+    Tests --no-binary/--only-binary options.
+    """
+
+    writer.format_control = FormatControl(
+        no_binary=['psycopg2', 'click'],
+        only_binary=['pytz', 'django']
+    )
+    lines = list(writer.write_format_controls())
+
+    assert '--no-binary psycopg2' in lines
+    assert '--no-binary click' in lines
+
+    assert '--only-binary pytz' in lines
+    assert '--only-binary django' in lines
+
+
+@mark.parametrize(
+    (
+        'index_urls',
+        'expected_lines',
+    ),
+    (
+        # No urls - no options
+        [
+            [],
+            [],
+        ],
+        # Single URL should be index-url
+        [
+            ['https://index-url.com'],
+            ['--index-url https://index-url.com'],
+        ],
+        # First URL should be index-url, the others should be extra-index-url
+        [
+            ['https://index-url1.com', 'https://index-url2.com', 'https://index-url3.com'],
+            [
+                '--index-url https://index-url1.com',
+                '--extra-index-url https://index-url2.com',
+                '--extra-index-url https://index-url3.com',
+            ]
+        ],
+        # If a first URL equals to the default URL, the the index url must not be set
+        # and the others should be extra-index-url
+        [
+            ['https://default-index-url.com', 'https://index-url1.com', 'https://index-url2.com'],
+            ['--extra-index-url https://index-url1.com', '--extra-index-url https://index-url2.com']
+        ],
+        # Ignore URLs equal to the default index-url (note: the previous case is exception)
+        [
+            ['https://index-url1.com', 'https://default-index-url.com', 'https://index-url2.com'],
+            ['--index-url https://index-url1.com', '--extra-index-url https://index-url2.com']
+        ],
+        # Ignore URLs equal to the default index-url
+        [
+            ['https://default-index-url.com', 'https://default-index-url.com'],
+            [],
+        ],
+        # All URLs must be deduplicated
+        [
+            ['https://index-url1.com', 'https://index-url1.com', 'https://index-url2.com'],
+            ['--index-url https://index-url1.com', '--extra-index-url https://index-url2.com']
+        ],
+    )
+)
+def test_write_index_options(writer, index_urls, expected_lines):
+    """
+    Test write_index_options method.
+    """
+    writer.index_urls = index_urls
+    writer.default_index_url = 'https://default-index-url.com'
+    assert list(writer.write_index_options()) == expected_lines
+
+
+def test_write_index_options_no_emit_index(writer):
+    """
+    There should not be --index-url/--extra-index-url options if emit_index is False.
+    """
+    writer.emit_index = False
+    with raises(StopIteration):
+        next(writer.write_index_options())
