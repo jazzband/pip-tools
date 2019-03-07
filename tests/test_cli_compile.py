@@ -551,6 +551,4 @@ def test_build_isolation_option(MockPyPIRepository, runner, option, expected):
     runner.invoke(cli, [option])
 
     # Ensure the build_isolation option in PyPIRepository has the expected value.
-    for call in MockPyPIRepository.call_args_list:
-        build_isolation = call[0][2]
-        assert build_isolation is expected
+    assert [call[0][2] for call in MockPyPIRepository.call_args_list] == [expected]
