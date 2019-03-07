@@ -1,7 +1,8 @@
-from pytest import raises
+from pytest import raises, mark
 
 from piptools.utils import (
-    as_tuple, format_requirement, format_specifier, flat_map, dedup, get_hashes_from_ireq)
+    as_tuple, format_requirement, format_specifier, flat_map, dedup,
+    get_hashes_from_ireq, is_pinned_requirement, name_from_req)
 
 
 def test_format_requirement(from_line):
@@ -89,3 +90,34 @@ def test_get_hashes_from_ireq(from_line):
         'sha256:f5c056e8f62d45ba8215e5cb8f50dfccb198b4b9fbea8500674f3443e4689589',
     ]
     assert get_hashes_from_ireq(ireq) == expected
+
+
+@mark.parametrize(
+    ('line', 'expected'),
+    [
+        ('django==1.8', True),
+        ('django===1.8', True),
+        ('django>1.8', False),
+        ('django~=1.8', False),
+        ('django==1.*', False),
+    ]
+)
+def test_is_pinned_requirement(from_line, line, expected):
+    ireq = from_line(line)
+    assert is_pinned_requirement(ireq) is expected
+
+
+def test_is_pinned_requirement_editable(from_editable):
+    ireq = from_editable('git+git://fake.org/x/y.git#egg=y')
+    assert not is_pinned_requirement(ireq)
+
+
+def test_name_from_req(from_line):
+    ireq = from_line('django==1.8')
+    assert name_from_req(ireq.req) == 'django'
+
+
+def test_name_from_req_with_project_name(from_line):
+    ireq = from_line('foo==1.8')
+    ireq.req.project_name = 'bar'
+    assert name_from_req(ireq.req) == 'bar'

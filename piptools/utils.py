@@ -155,6 +155,16 @@ def lookup_table(values, key=None, keyval=None, unique=False, use_lists=False):
     ...     'q': 'quux'
     ... }
 
+    For the values represented as lists, set use_lists=True:
+
+    >>> assert lookup_table(
+    ...     ['foo', 'bar', 'baz', 'qux', 'quux'], lambda s: s[0],
+    ...     use_lists=True) == {
+    ...     'b': ['bar', 'baz'],
+    ...     'f': ['foo'],
+    ...     'q': ['qux', 'quux']
+    ... }
+
     The values of the resulting lookup table will be values, not sets.
 
     For extra power, you can even change the values while building up the LUT.
