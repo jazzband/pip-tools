@@ -89,7 +89,7 @@ class Resolver(object):
 
         # Ignore existing packages
         os.environ[str('PIP_EXISTS_ACTION')] = str('i')  # NOTE: str() wrapping necessary for Python 2/3 compat
-        for current_round in count(start=1):
+        for current_round in count(start=1):  # pragma: no branch
             if current_round > max_rounds:
                 raise RuntimeError('No stable configuration of concrete packages '
                                    'could be found for the given constraints after '
