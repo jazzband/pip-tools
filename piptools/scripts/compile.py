@@ -61,10 +61,14 @@ DEFAULT_REQUIREMENTS_OUTPUT_FILE = 'requirements.txt'
 @click.option('--max-rounds', default=10,
               help="Maximum number of rounds before resolving the requirements aborts.")
 @click.argument('src_files', nargs=-1, type=click.Path(exists=True, allow_dash=True))
+@click.option('--build-isolation/--no-build-isolation', is_flag=True, default=False,
+              help="Enable isolation when building a modern source distribution. "
+                   "Build dependencies specified by PEP 518 must be already installed "
+                   "if build isolation is disabled.")
 def cli(verbose, quiet, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         cert, client_cert, trusted_host, header, index, emit_trusted_host, annotate,
         upgrade, upgrade_packages, output_file, allow_unsafe, generate_hashes,
-        src_files, max_rounds):
+        src_files, max_rounds, build_isolation):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbosity = verbose - quiet
 
@@ -122,7 +126,7 @@ def cli(verbose, quiet, dry_run, pre, rebuild, find_links, index_url, extra_inde
     pip_options, _ = pip_command.parse_args(pip_args)
 
     session = pip_command._build_session(pip_options)
-    repository = PyPIRepository(pip_options, session)
+    repository = PyPIRepository(pip_options, session, build_isolation)
 
     upgrade_install_reqs = {}
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified

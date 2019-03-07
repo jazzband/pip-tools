@@ -534,3 +534,23 @@ def test_cert_option(MockPyPIRepository, runner, option, attr, expected):
     for call in MockPyPIRepository.call_args_list:
         pip_options = call[0][0]
         assert getattr(pip_options, attr) == expected
+
+
+@pytest.mark.parametrize('option, expected', [
+    ('--build-isolation', True),
+    ('--no-build-isolation', False),
+])
+@mock.patch('piptools.scripts.compile.PyPIRepository')
+def test_build_isolation_option(MockPyPIRepository, runner, option, expected):
+    """
+    A value of the --build-isolation/--no-build-isolation flag must be passed to the PyPIRepository.
+    """
+    with open('requirements.in', 'w'):
+        pass
+
+    runner.invoke(cli, [option])
+
+    # Ensure the build_isolation in PyPIRepository has have the expected option
+    for call in MockPyPIRepository.call_args_list:
+        build_isolation = call[0][2]
+        assert build_isolation is expected
