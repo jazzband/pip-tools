@@ -235,5 +235,7 @@ Other useful tools
 ==================
 
 - `pipdeptree`_ to print the dependency tree of the installed packages.
+- `requirements.txt.vim`_ more easily for editing ``requirements.in`` and ``requirements.txt`` with Vim.
 
 .. _pipdeptree: https://github.com/naiquevin/pipdeptree
+.. _requirements.txt.vim: https://github.com/raimon49/requirements.txt.vim
