@@ -49,9 +49,10 @@ class PyPIRepository(BaseRepository):
     config), but any other PyPI mirror can be used if index_urls is
     changed/configured on the Finder.
     """
-    def __init__(self, pip_options, session):
+    def __init__(self, pip_options, session, build_isolation=False):
         self.session = session
         self.pip_options = pip_options
+        self.build_isolation = build_isolation
 
         index_urls = [pip_options.index_url] + pip_options.extra_index_urls
         if pip_options.no_index:
@@ -161,7 +162,7 @@ class PyPIRepository(BaseRepository):
                 'download_dir': download_dir,
                 'wheel_download_dir': self._wheel_download_dir,
                 'progress_bar': 'off',
-                'build_isolation': False
+                'build_isolation': self.build_isolation,
             }
             resolver_kwargs = {
                 'finder': self.finder,
