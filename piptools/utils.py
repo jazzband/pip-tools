@@ -61,12 +61,12 @@ def format_requirement(ireq, marker=None, hashes=None):
     else:
         line = str(ireq.req).lower()
 
+    if marker:
+        line = '{} ; {}'.format(line, marker)
+
     if hashes:
         for hash_ in sorted(hashes):
             line += " \\\n    --hash={}".format(hash_)
-
-    if marker:
-        line = '{} ; {}'.format(line, marker)
 
     return line
 
