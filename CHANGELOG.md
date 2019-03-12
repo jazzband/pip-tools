@@ -1,3 +1,17 @@
+# 3.5.0 (2019-03-13)
+
+Features:
+- Show default index url provided by `pip`
+([#735](https://github.com/jazzband/pip-tools/pull/735)). Thanks @atugushev
+- Add an option to allow enabling/disabling build isolation
+([#758](https://github.com/jazzband/pip-tools/pull/758)). Thanks @atugushev
+
+Bug Fixes:
+- Fix the output file for `pip-compile` with an explicit `setup.py` as source file
+([#731](https://github.com/jazzband/pip-tools/pull/731)). Thanks @atugushev
+- Fix order issue with generated lock file when `hashes` and `markers` are used together
+([#763](https://github.com/jazzband/pip-tools/pull/763)). Thanks @milind-shakya-sp
+
 # 3.4.0 (2019-02-19)
 
 Features:
