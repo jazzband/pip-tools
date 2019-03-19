@@ -39,6 +39,22 @@ def test_quiet_option(tmpdir):
                 assert '-q' in call[0][0]
 
 
+@mock.patch('piptools.sync.check_call')
+def test_quiet_option_when_up_to_date(check_call, runner):
+    """
+    Sync should output nothing when everything is up to date and quiet option is set.
+    """
+    with open('requirements.txt', 'w'):
+        pass
+
+    with mock.patch('piptools.sync.diff', return_value=(set(), set())):
+        out = runner.invoke(cli, ['-q'])
+
+    assert out.output == ''
+    assert out.exit_code == 0
+    check_call.assert_not_called()
+
+
 def test_no_requirements_file(runner):
     """
     It should raise an error if there are no input files
