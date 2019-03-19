@@ -110,7 +110,7 @@ And it will produce your ``requirements.txt``, with all the Flask dependencies
 (and all underlying dependencies) pinned.  You should put both
 ``requirements.in`` and ``requirements.txt`` under version control.
 
-.. _it's easy to write one: https://packaging.python.org/distributing/#configuring-your-project
+.. _it's easy to write one: https://packaging.python.org/guides/distributing-packages-using-setuptools/#configuring-your-project
 
 Using hashes
 ------------
