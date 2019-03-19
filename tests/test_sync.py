@@ -328,7 +328,7 @@ def test_sync_up_to_date(echo):
     """
     Everything up-to-date should be printed.
     """
-    sync(set(), set())
+    sync(set(), set(), verbose=True)
     echo.assert_called_once_with('Everything up-to-date')
 
 
