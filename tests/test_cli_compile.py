@@ -160,20 +160,21 @@ def test_trusted_host_no_emit(runner):
     assert '--trusted-host example.com' not in out.output
 
 
-def test_realistic_complex_sub_dependencies(tmpdir, runner):
+def test_realistic_complex_sub_dependencies(runner):
+    wheels_dir = 'wheels'
 
     # make a temporary wheel of a fake package
     subprocess.check_output(['pip', 'wheel',
                              '--no-deps',
-                             '-w', str(tmpdir),
-                             os.path.join('.', 'tests', 'test_data', 'fake_package', '.')])
+                             '-w', wheels_dir,
+                             os.path.join(os.path.split(__file__)[0], 'test_data', 'fake_package', '.')])
 
     with open('requirements.in', 'w') as req_in:
         req_in.write('fake_with_deps')  # require fake package
 
     out = runner.invoke(cli, ['-v',
                               '-n', '--rebuild',
-                              '-f', str(tmpdir)])
+                              '-f', wheels_dir])
 
     assert out.exit_code == 0
 
