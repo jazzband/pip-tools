@@ -17,6 +17,7 @@ from .utils import invoke
 
 
 PIP_VERSION = parse_version(os.environ.get('PIP', pip_version))
+TEST_DATA_PATH = os.path.join(os.path.split(__file__)[0], 'test_data')
 
 fail_below_pip9 = pytest.mark.xfail(
     PIP_VERSION < parse_version('9'),
@@ -167,7 +168,7 @@ def test_realistic_complex_sub_dependencies(runner):
     subprocess.check_output(['pip', 'wheel',
                              '--no-deps',
                              '-w', wheels_dir,
-                             os.path.join(os.path.split(__file__)[0], 'test_data', 'fake_package', '.')])
+                             os.path.join(TEST_DATA_PATH, 'fake_package', '.')])
 
     with open('requirements.in', 'w') as req_in:
         req_in.write('fake_with_deps')  # require fake package
@@ -195,7 +196,7 @@ def test_run_as_module_compile():
 
 def test_editable_package(runner):
     """ piptools can compile an editable """
-    fake_package_dir = os.path.join(os.path.split(__file__)[0], 'test_data', 'small_fake_package')
+    fake_package_dir = os.path.join(TEST_DATA_PATH, 'small_fake_package')
     fake_package_dir = path_to_url(fake_package_dir)
     with open('requirements.in', 'w') as req_in:
         req_in.write('-e ' + fake_package_dir)  # require editable fake package
@@ -227,7 +228,7 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(tmpdir,
     """ piptools will not create an archive for a locally available editable requirement """
     cache_dir = tmpdir.mkdir('cache_dir')
 
-    fake_package_dir = os.path.join(os.path.split(__file__)[0], 'test_data', 'small_fake_package')
+    fake_package_dir = os.path.join(TEST_DATA_PATH, 'small_fake_package')
     fake_package_dir = path_to_url(fake_package_dir)
 
     with mock.patch('piptools.repositories.pypi.CACHE_DIR', new=str(cache_dir)):
@@ -263,7 +264,7 @@ def test_upgrade_packages_option(runner):
     """
     piptools respects --upgrade-package/-P inline list.
     """
-    fake_package_dir = os.path.join(os.path.split(__file__)[0], 'test_data', 'minimal_wheels')
+    fake_package_dir = os.path.join(TEST_DATA_PATH, 'minimal_wheels')
     with open('requirements.in', 'w') as req_in:
         req_in.write('small-fake-a\nsmall-fake-b')
     with open('requirements.txt', 'w') as req_in:
@@ -283,7 +284,7 @@ def test_upgrade_packages_version_option(runner):
     """
     piptools respects --upgrade-package/-P inline list with specified versions.
     """
-    fake_package_dir = os.path.join(os.path.split(__file__)[0], 'test_data', 'minimal_wheels')
+    fake_package_dir = os.path.join(TEST_DATA_PATH, 'minimal_wheels')
     with open('requirements.in', 'w') as req_in:
         req_in.write('small-fake-a\nsmall-fake-b')
     with open('requirements.txt', 'w') as req_in:
@@ -308,8 +309,7 @@ def test_quiet_option(runner):
 
 
 def test_generate_hashes_with_editable(runner):
-    small_fake_package_dir = os.path.join(
-        os.path.split(__file__)[0], 'test_data', 'small_fake_package')
+    small_fake_package_dir = os.path.join(TEST_DATA_PATH, 'small_fake_package')
     small_fake_package_url = path_to_url(small_fake_package_dir)
     with open('requirements.in', 'w') as fp:
         fp.write('-e {}\n'.format(small_fake_package_url))
@@ -454,7 +454,7 @@ def test_annotate_option(runner, option, expected):
     """
     The output lines has have annotations if option is turned on.
     """
-    fake_package_dir = os.path.join(os.path.split(__file__)[0], 'test_data', 'minimal_wheels')
+    fake_package_dir = os.path.join(TEST_DATA_PATH, 'minimal_wheels')
 
     with open('requirements.in', 'w') as req_in:
         req_in.write('small_fake_with_deps')
