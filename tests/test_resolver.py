@@ -1,5 +1,7 @@
 import pytest
 
+from piptools.exceptions import UnsupportedConstraint
+
 
 @pytest.mark.parametrize(
     ('input', 'expected', 'prereleases'),
@@ -142,3 +144,35 @@ def test_resolver__allows_unsafe_deps(resolver, from_line, input, expected, prer
     output = resolver(input, prereleases=prereleases, allow_unsafe=True).resolve()
     output = {str(line) for line in output}
     assert output == {str(line) for line in expected}
+
+
+def test_resolver__max_number_rounds_reached(resolver, from_line):
+    """
+    Resolver should raise an exception if max round has been reached.
+    """
+    input = [from_line('django')]
+    with pytest.raises(RuntimeError, match='after 0 rounds of resolving'):
+        resolver(input).resolve(max_rounds=0)
+
+
+def test_resolver__check_constraints(resolver, from_line):
+    """
+    Resolver should not support non-editable URLs as packages.
+    """
+    input = [
+        from_line('django'),
+        from_line('https://example.com/#egg=example')
+    ]
+    with pytest.raises(UnsupportedConstraint, match='pip-compile does not support URLs as packages'):
+        resolver(input).resolve()
+
+
+def test_iter_dependencies(resolver, from_line):
+    """
+    Dependencies should be pinned or editable.
+    """
+    ireq = from_line('django>=1.8')
+    res = resolver([])
+
+    with pytest.raises(TypeError, match='Expected pinned or editable requirement, got django>=1.8'):
+        next(res._iter_dependencies(ireq))
