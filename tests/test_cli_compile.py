@@ -47,8 +47,7 @@ def pip_conf(tmpdir, monkeypatch):
         os.remove(path)
 
 
-@pytest.mark.usefixtures('pip_conf')
-def test_default_pip_conf_read(runner):
+def test_default_pip_conf_read(pip_conf, runner):
     # preconditions
     with open('requirements.in', 'w'):
         pass
@@ -59,8 +58,7 @@ def test_default_pip_conf_read(runner):
     assert '--index-url http://example.com' in out.output
 
 
-@pytest.mark.usefixtures('pip_conf')
-def test_command_line_overrides_pip_conf(runner):
+def test_command_line_overrides_pip_conf(pip_conf, runner):
     # preconditions
     with open('requirements.in', 'w'):
         pass
@@ -70,8 +68,7 @@ def test_command_line_overrides_pip_conf(runner):
     assert 'Using indexes:\n  http://override.com' in out.output
 
 
-@pytest.mark.usefixtures('pip_conf')
-def test_command_line_setuptools_read(runner):
+def test_command_line_setuptools_read(pip_conf, runner):
     package = open('setup.py', 'w')
     package.write(dedent("""\
         from setuptools import setup
@@ -85,7 +82,6 @@ def test_command_line_setuptools_read(runner):
     assert os.path.exists('requirements.txt')
 
 
-@pytest.mark.usefixtures('pip_conf')
 @pytest.mark.parametrize('options, expected_output_file', [
     # For the `pip-compile` output file should be "requirements.txt"
     ([], 'requirements.txt'),
@@ -96,7 +92,7 @@ def test_command_line_setuptools_read(runner):
     # For the `pip-compile setup.py --output-file=output.txt` output file should be "output.txt"
     (['setup.py', '--output-file', 'output.txt'], 'output.txt'),
 ])
-def test_command_line_setuptools_output_file(options, expected_output_file):
+def test_command_line_setuptools_output_file(pip_conf, options, expected_output_file):
     """
     Test the output files for setup.py as a requirement file.
     """
@@ -114,8 +110,7 @@ def test_command_line_setuptools_output_file(options, expected_output_file):
         assert os.path.exists(expected_output_file)
 
 
-@pytest.mark.usefixtures('pip_conf')
-def test_find_links_option(runner):
+def test_find_links_option(pip_conf, runner):
     with open('requirements.in', 'w'):
         pass
     out = runner.invoke(cli, ['-v', '-f', './libs1', '-f', './libs2'])
@@ -124,8 +119,7 @@ def test_find_links_option(runner):
     assert 'Configuration:\n  -f ./libs1\n  -f ./libs2' in out.output
 
 
-@pytest.mark.usefixtures('pip_conf')
-def test_extra_index_option(runner):
+def test_extra_index_option(pip_conf, runner):
     with open('requirements.in', 'w'):
         pass
     out = runner.invoke(cli, ['-v',
@@ -140,8 +134,7 @@ def test_extra_index_option(runner):
             '--extra-index-url http://extraindex2.com' in out.output)
 
 
-@pytest.mark.usefixtures('pip_conf')
-def test_trusted_host(runner):
+def test_trusted_host(pip_conf, runner):
     with open('requirements.in', 'w'):
         pass
     out = runner.invoke(cli, ['-v',
@@ -151,8 +144,7 @@ def test_trusted_host(runner):
             '--trusted-host example2.com\n' in out.output)
 
 
-@pytest.mark.usefixtures('pip_conf')
-def test_trusted_host_no_emit(runner):
+def test_trusted_host_no_emit(pip_conf, runner):
     with open('requirements.in', 'w'):
         pass
     out = runner.invoke(cli, ['-v',
@@ -367,8 +359,7 @@ def test_no_candidates_pre(runner):
     assert 'Tried pre-versions:' in out.output
 
 
-@pytest.mark.usefixtures('pip_conf')
-def test_default_index_url():
+def test_default_index_url(pip_conf):
     status, output = invoke([sys.executable, '-m', 'piptools', 'compile', '--help'])
     output = output.decode('utf-8')
 
@@ -445,12 +436,11 @@ def test_mutually_exclusive_upgrade_options(runner):
     assert out.exit_code == 2
 
 
-@pytest.mark.usefixtures('pip_conf')
 @pytest.mark.parametrize('option, expected', [
     ('--annotate', 'six==1.10.0               # via small-fake-with-deps\n'),
     ('--no-annotate', 'six==1.10.0\n'),
 ])
-def test_annotate_option(runner, option, expected):
+def test_annotate_option(pip_conf, runner, option, expected):
     """
     The output lines has have annotations if option is turned on.
     """
