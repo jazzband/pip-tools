@@ -1,16 +1,14 @@
 # coding: utf-8
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys
-from itertools import chain, groupby
 from collections import OrderedDict
+from itertools import chain, groupby
 
 from ._compat import install_req_from_line
-
 from .click import style
 
-UNSAFE_PACKAGES = {'setuptools', 'distribute', 'pip'}
+UNSAFE_PACKAGES = {"setuptools", "distribute", "pip"}
 
 
 def key_from_ireq(ireq):
@@ -23,19 +21,19 @@ def key_from_ireq(ireq):
 
 def key_from_req(req):
     """Get an all-lowercase version of the requirement's name."""
-    if hasattr(req, 'key'):
+    if hasattr(req, "key"):
         # from pkg_resources, such as installed dists for pip-sync
         key = req.key
     else:
         # from packaging, such as install requirements from requirements.txt
         key = req.name
 
-    key = key.replace('_', '-').lower()
+    key = key.replace("_", "-").lower()
     return key
 
 
 def comment(text):
-    return style(text, fg='green')
+    return style(text, fg="green")
 
 
 def make_install_requirement(name, version, extras, constraint=False):
@@ -46,8 +44,8 @@ def make_install_requirement(name, version, extras, constraint=False):
         extras_string = "[{}]".format(",".join(sorted(extras)))
 
     return install_req_from_line(
-        str('{}{}=={}'.format(name, extras_string, version)),
-        constraint=constraint)
+        str("{}{}=={}".format(name, extras_string, version)), constraint=constraint
+    )
 
 
 def format_requirement(ireq, marker=None, hashes=None):
@@ -56,12 +54,12 @@ def format_requirement(ireq, marker=None, hashes=None):
     in a less verbose way than using its `__str__` method.
     """
     if ireq.editable:
-        line = '-e {}'.format(ireq.link)
+        line = "-e {}".format(ireq.link)
     else:
         line = str(ireq.req).lower()
 
     if marker:
-        line = '{} ; {}'.format(line, marker)
+        line = "{} ; {}".format(line, marker)
 
     if hashes:
         for hash_ in sorted(hashes):
@@ -78,7 +76,7 @@ def format_specifier(ireq):
     # TODO: Ideally, this is carried over to the pip library itself
     specs = ireq.specifier._specs if ireq.req is not None else []
     specs = sorted(specs, key=lambda x: x._spec[1])
-    return ','.join(str(s) for s in specs) or '<any>'
+    return ",".join(str(s) for s in specs) or "<any>"
 
 
 def is_pinned_requirement(ireq):
@@ -105,7 +103,7 @@ def is_pinned_requirement(ireq):
         return False
 
     op, version = next(iter(ireq.specifier._specs))._spec
-    return (op == '==' or op == '===') and not version.endswith('.*')
+    return (op == "==" or op == "===") and not version.endswith(".*")
 
 
 def as_tuple(ireq):
@@ -113,7 +111,7 @@ def as_tuple(ireq):
     Pulls out the (name: str, version:str, extras:(str)) tuple from the pinned InstallRequirement.
     """
     if not is_pinned_requirement(ireq):
-        raise TypeError('Expected a pinned InstallRequirement, got {}'.format(ireq))
+        raise TypeError("Expected a pinned InstallRequirement, got {}".format(ireq))
 
     name = key_from_req(ireq.req)
     version = next(iter(ireq.specifier._specs))._spec[1]
@@ -180,9 +178,9 @@ def lookup_table(values, key=None, keyval=None, unique=False, use_lists=False):
     """
     if keyval is None:
         if key is None:
-            keyval = (lambda v: v)
+            keyval = lambda v: v
         else:
-            keyval = (lambda v: (key(v), v))
+            keyval = lambda v: (key(v), v)
 
     if unique:
         return dict(keyval(v) for v in values)
@@ -213,7 +211,7 @@ def dedup(iterable):
 
 def name_from_req(req):
     """Get the name of the requirement"""
-    if hasattr(req, 'project_name'):
+    if hasattr(req, "project_name"):
         # from pkg_resources, such as installed dists for pip-sync
         return req.project_name
     else:
@@ -254,7 +252,7 @@ def get_hashes_from_ireq(ireq):
     Return an empty list if there are no hashes in the requirement options.
     """
     result = []
-    ireq_hashes = ireq.options.get('hashes', {})
+    ireq_hashes = ireq.options.get("hashes", {})
     for algorithm, hexdigests in ireq_hashes.items():
         for hash_ in hexdigests:
             result.append("{}:{}".format(algorithm, hash_))
