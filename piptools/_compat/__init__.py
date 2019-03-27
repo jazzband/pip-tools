@@ -7,10 +7,8 @@ import six
 
 if six.PY2:
     from .tempfile import TemporaryDirectory
-    from .contextlib import ExitStack
 else:
     from tempfile import TemporaryDirectory
-    from contextlib import ExitStack
 
 from .pip_compat import (
     InstallRequirement,

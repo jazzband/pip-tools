@@ -6,6 +6,8 @@ import os
 import sys
 import tempfile
 
+from click.utils import safecall
+
 from .._compat import (
     install_req_from_line,
     parse_requirements,
@@ -26,6 +28,7 @@ DEFAULT_REQUIREMENTS_OUTPUT_FILE = 'requirements.txt'
 
 @click.command()
 @click.version_option()
+@click.pass_context
 @click.option('-v', '--verbose', count=True, help="Show more output")
 @click.option('-q', '--quiet', count=True, help="Give less output")
 @click.option('-n', '--dry-run', is_flag=True, help="Only show what would happen, don't change anything")
@@ -51,7 +54,7 @@ DEFAULT_REQUIREMENTS_OUTPUT_FILE = 'requirements.txt'
               help='Try to upgrade all dependencies to their latest versions')
 @click.option('-P', '--upgrade-package', 'upgrade_packages', nargs=1, multiple=True,
               help="Specify particular packages to upgrade.")
-@click.option('-o', '--output-file', nargs=1, type=str, default=None,
+@click.option('-o', '--output-file', nargs=1, default=None, type=click.File('w+b', atomic=True, lazy=True),
               help=('Output file name. Required if more than one input file is given. '
                     'Will be derived from input file otherwise.'))
 @click.option('--allow-unsafe', is_flag=True, default=False,
@@ -65,7 +68,7 @@ DEFAULT_REQUIREMENTS_OUTPUT_FILE = 'requirements.txt'
               help="Enable isolation when building a modern source distribution. "
                    "Build dependencies specified by PEP 518 must be already installed "
                    "if build isolation is disabled.")
-def cli(verbose, quiet, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
+def cli(ctx, verbose, quiet, dry_run, pre, rebuild, find_links, index_url, extra_index_url,
         cert, client_cert, trusted_host, header, index, emit_trusted_host, annotate,
         upgrade, upgrade_packages, output_file, allow_unsafe, generate_hashes,
         src_files, max_rounds, build_isolation):
@@ -81,19 +84,25 @@ def cli(verbose, quiet, dry_run, pre, rebuild, find_links, index_url, extra_inde
             raise click.BadParameter(("If you do not specify an input file, "
                                       "the default is {} or setup.py").format(DEFAULT_REQUIREMENTS_FILE))
 
-    if src_files == ('-',) and not output_file:
-        raise click.BadParameter('--output-file is required if input is from stdin')
-    elif src_files == ('setup.py',) and not output_file:
-        output_file = DEFAULT_REQUIREMENTS_OUTPUT_FILE
+    if not output_file:
+        # An output file must be provided for stdin
+        if src_files == ('-',):
+            raise click.BadParameter('--output-file is required if input is from stdin')
+        # Use default requirements output file if there is a setup.py the source file
+        elif src_files == ('setup.py',):
+            file_name = DEFAULT_REQUIREMENTS_OUTPUT_FILE
+        # An output file must be provided if there are multiple source files
+        elif len(src_files) > 1:
+            raise click.BadParameter('--output-file is required if two or more input files are given.')
+        # Otherwise derive the output file from the source file
+        else:
+            base_name = src_files[0].rsplit('.', 1)[0]
+            file_name = base_name + '.txt'
 
-    if len(src_files) > 1 and not output_file:
-        raise click.BadParameter('--output-file is required if two or more input files are given.')
+        output_file = click.open_file(file_name, 'w+b', atomic=True, lazy=True)
 
-    if output_file:
-        dst_file = output_file
-    else:
-        base_name = src_files[0].rsplit('.', 1)[0]
-        dst_file = base_name + '.txt'
+        # Close the file at the end of the context execution
+        ctx.call_on_close(safecall(output_file.close_intelligently))
 
     if upgrade and upgrade_packages:
         raise click.BadParameter('Only one of --upgrade or --upgrade-package can be provided as an argument.')
@@ -131,8 +140,9 @@ def cli(verbose, quiet, dry_run, pre, rebuild, find_links, index_url, extra_inde
     upgrade_install_reqs = {}
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified
     # (= default invocation)
-    if not upgrade and os.path.exists(dst_file):
-        ireqs = parse_requirements(dst_file, finder=repository.finder, session=repository.session, options=pip_options)
+    if not upgrade and os.path.exists(output_file.name):
+        ireqs = parse_requirements(
+            output_file.name, finder=repository.finder, session=repository.session, options=pip_options)
         # Exclude packages from --upgrade-package/-P from the existing pins: We want to upgrade.
         upgrade_reqs_gen = (install_req_from_line(pkg) for pkg in upgrade_packages)
         upgrade_install_reqs = {key_from_req(install_req.req): install_req for install_req in upgrade_reqs_gen}
@@ -232,7 +242,7 @@ def cli(verbose, quiet, dry_run, pre, rebuild, find_links, index_url, extra_inde
     if annotate:
         reverse_dependencies = resolver.reverse_dependencies(results)
 
-    writer = OutputWriter(src_files, dst_file, dry_run=dry_run,
+    writer = OutputWriter(src_files, output_file, dry_run=dry_run,
                           emit_header=header, emit_index=index,
                           emit_trusted_host=emit_trusted_host,
                           annotate=annotate,
