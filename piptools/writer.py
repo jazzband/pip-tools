@@ -2,9 +2,7 @@ import os
 import sys
 from itertools import chain
 
-from ._compat import ExitStack
-from .click import unstyle, get_os_args
-from .io import AtomicSaver
+from .click import get_os_args, unstyle
 from .logging import log
 from .utils import comment, dedup, format_requirement, key_from_req, UNSAFE_PACKAGES
 
@@ -111,17 +109,13 @@ class OutputWriter(object):
 
     def write(self, results, unsafe_requirements, reverse_dependencies,
               primary_packages, markers, hashes):
-        with ExitStack() as stack:
-            f = None
-            if not self.dry_run:
-                f = stack.enter_context(AtomicSaver(self.dst_file))
 
-            for line in self._iter_lines(results, unsafe_requirements, reverse_dependencies,
-                                         primary_packages, markers, hashes):
-                log.info(line)
-                if f:
-                    f.write(unstyle(line).encode('utf-8'))
-                    f.write(os.linesep.encode('utf-8'))
+        for line in self._iter_lines(results, unsafe_requirements, reverse_dependencies,
+                                     primary_packages, markers, hashes):
+            log.info(line)
+            if not self.dry_run:
+                self.dst_file.write(unstyle(line).encode('utf-8'))
+                self.dst_file.write(os.linesep.encode('utf-8'))
 
     def _format_requirement(self, ireq, reverse_dependencies, primary_packages, marker=None, hashes=None):
         ireq_hashes = (hashes if hashes is not None else {}).get(ireq)
