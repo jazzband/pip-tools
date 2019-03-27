@@ -1,6 +1,5 @@
 # coding: utf-8
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import json
 import os
@@ -19,23 +18,23 @@ class CorruptCacheError(PipToolsError):
 
     def __str__(self):
         lines = [
-            'The dependency cache seems to have been corrupted.',
-            'Inspect, or delete, the following file:',
-            '  {}'.format(self.path),
+            "The dependency cache seems to have been corrupted.",
+            "Inspect, or delete, the following file:",
+            "  {}".format(self.path),
         ]
         return os.linesep.join(lines)
 
 
 def read_cache_file(cache_file_path):
-    with open(cache_file_path, 'r') as cache_file:
+    with open(cache_file_path, "r") as cache_file:
         try:
             doc = json.load(cache_file)
         except ValueError:
             raise CorruptCacheError(cache_file_path)
 
         # Check version and load the contents
-        assert doc['__format__'] == 1, 'Unknown cache file format'
-        return doc['dependencies']
+        assert doc["__format__"] == 1, "Unknown cache file format"
+        return doc["dependencies"]
 
 
 class DependencyCache(object):
@@ -48,13 +47,14 @@ class DependencyCache(object):
 
     Where X.Y indicates the Python version.
     """
+
     def __init__(self, cache_dir=None):
         if cache_dir is None:
             cache_dir = CACHE_DIR
         if not os.path.isdir(cache_dir):
             os.makedirs(cache_dir)
-        py_version = '.'.join(str(digit) for digit in sys.version_info[:2])
-        cache_filename = 'depcache-py{}.json'.format(py_version)
+        py_version = ".".join(str(digit) for digit in sys.version_info[:2])
+        cache_filename = "depcache-py{}.json".format(py_version)
 
         self._cache_file = os.path.join(cache_dir, cache_filename)
         self._cache = None
@@ -97,11 +97,8 @@ class DependencyCache(object):
 
     def write_cache(self):
         """Writes the cache to disk as JSON."""
-        doc = {
-            '__format__': 1,
-            'dependencies': self._cache,
-        }
-        with open(self._cache_file, 'w') as f:
+        doc = {"__format__": 1, "dependencies": self._cache}
+        with open(self._cache_file, "w") as f:
             json.dump(doc, f, sort_keys=True)
 
     def clear(self):
@@ -159,6 +156,8 @@ class DependencyCache(object):
         """
         # First, collect all the dependencies into a sequence of (parent, child) tuples, like [('flake8', 'pep8'),
         # ('flake8', 'mccabe'), ...]
-        return lookup_table((key_from_req(Requirement(dep_name)), name)
-                            for name, version_and_extras in cache_keys
-                            for dep_name in self.cache[name][version_and_extras])
+        return lookup_table(
+            (key_from_req(Requirement(dep_name)), name)
+            for name, version_and_extras in cache_keys
+            for dep_name in self.cache[name][version_and_extras]
+        )

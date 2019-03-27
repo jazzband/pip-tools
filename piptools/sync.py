@@ -4,18 +4,23 @@ import sys
 import tempfile
 from subprocess import check_call
 
-from piptools._compat import stdlib_pkgs, DEV_PKGS
 from . import click
 from .exceptions import IncompatibleRequirements, UnsupportedConstraint
-from .utils import flat_map, format_requirement, key_from_ireq, key_from_req, get_hashes_from_ireq
+from .utils import (
+    flat_map,
+    format_requirement,
+    get_hashes_from_ireq,
+    key_from_ireq,
+    key_from_req,
+)
 
-PACKAGES_TO_IGNORE = [
-    '-markerlib',
-    'pip',
-    'pip-tools',
-    'pip-review',
-    'pkg-resources',
-] + list(stdlib_pkgs) + list(DEV_PKGS)
+from piptools._compat import DEV_PKGS, stdlib_pkgs
+
+PACKAGES_TO_IGNORE = (
+    ["-markerlib", "pip", "pip-tools", "pip-review", "pkg-resources"]
+    + list(stdlib_pkgs)
+    + list(DEV_PKGS)
+)
 
 
 def dependency_tree(installed_keys, root_key):
@@ -63,7 +68,9 @@ def get_dists_to_ignore(installed):
     requirements.
     """
     installed_keys = {key_from_req(r): r for r in installed}
-    return list(flat_map(lambda req: dependency_tree(installed_keys, req), PACKAGES_TO_IGNORE))
+    return list(
+        flat_map(lambda req: dependency_tree(installed_keys, req), PACKAGES_TO_IGNORE)
+    )
 
 
 def merge(requirements, ignore_conflicts):
@@ -71,8 +78,10 @@ def merge(requirements, ignore_conflicts):
 
     for ireq in requirements:
         if ireq.link is not None and not ireq.editable:
-            msg = ('pip-compile does not support URLs as packages, unless they are editable. '
-                   'Perhaps add -e option?')
+            msg = (
+                "pip-compile does not support URLs as packages, unless they are editable. "
+                "Perhaps add -e option?"
+            )
             raise UnsupportedConstraint(msg, ireq)
 
         key = ireq.link or key_from_req(ireq.req)
@@ -131,7 +140,7 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, install_flags=N
 
     pip_flags = []
     if not verbose:
-        pip_flags += ['-q']
+        pip_flags += ["-q"]
 
     if to_uninstall:
         if dry_run:
@@ -139,7 +148,11 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, install_flags=N
             for pkg in to_uninstall:
                 click.echo("  {}".format(pkg))
         else:
-            check_call([sys.executable, '-m', 'pip', 'uninstall', '-y'] + pip_flags + sorted(to_uninstall))
+            check_call(
+                [sys.executable, "-m", "pip", "uninstall", "-y"]
+                + pip_flags
+                + sorted(to_uninstall)
+            )
 
     if to_install:
         if install_flags is None:
@@ -156,13 +169,15 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, install_flags=N
                 req_lines.append(format_requirement(ireq, hashes=ireq_hashes))
 
             # save requirement lines to a temporary file
-            tmp_req_file = tempfile.NamedTemporaryFile(mode='wt', delete=False)
-            tmp_req_file.write('\n'.join(req_lines))
+            tmp_req_file = tempfile.NamedTemporaryFile(mode="wt", delete=False)
+            tmp_req_file.write("\n".join(req_lines))
             tmp_req_file.close()
 
             try:
                 check_call(
-                    [sys.executable, '-m', 'pip', 'install', '-r', tmp_req_file.name] + pip_flags + install_flags
+                    [sys.executable, "-m", "pip", "install", "-r", tmp_req_file.name]
+                    + pip_flags
+                    + install_flags
                 )
             finally:
                 os.unlink(tmp_req_file.name)
