@@ -235,7 +235,11 @@ Other useful tools
 ==================
 
 - `pipdeptree`_ to print the dependency tree of the installed packages.
-- `requirements.txt.vim`_ more easily for editing ``requirements.in`` and ``requirements.txt`` with Vim.
+- ``requirements.in``/``requirements.txt`` syntax highlighting:
+
+  * `requirements.txt.vim`_ for Vim.
+  * `Python extension for VS Code`_ for VS Code.
 
 .. _pipdeptree: https://github.com/naiquevin/pipdeptree
 .. _requirements.txt.vim: https://github.com/raimon49/requirements.txt.vim
+.. _Python extension for VS Code: https://marketplace.visualstudio.com/items?itemName=ms-python.python
