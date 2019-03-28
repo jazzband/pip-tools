@@ -91,11 +91,13 @@ def test_command_line_setuptools_read(pip_conf, runner):
     [
         # For the `pip-compile` output file should be "requirements.txt"
         ([], "requirements.txt"),
-        # For the `pip-compile --output-file=output.txt` output file should be "output.txt"
+        # For the `pip-compile --output-file=output.txt`
+        # output file should be "output.txt"
         (["--output-file", "output.txt"], "output.txt"),
         # For the `pip-compile setup.py` output file should be "requirements.txt"
         (["setup.py"], "requirements.txt"),
-        # For the `pip-compile setup.py --output-file=output.txt` output file should be "output.txt"
+        # For the `pip-compile setup.py --output-file=output.txt`
+        # output file should be "output.txt"
         (["setup.py", "--output-file", "output.txt"], "output.txt"),
     ],
 )
@@ -241,7 +243,9 @@ def test_editable_package_vcs(runner):
 def test_locally_available_editable_package_is_not_archived_in_cache_dir(
     tmpdir, runner
 ):
-    """ piptools will not create an archive for a locally available editable requirement """
+    """
+    piptools will not create an archive for a locally available editable requirement
+    """
     cache_dir = tmpdir.mkdir("cache_dir")
 
     fake_package_dir = os.path.join(TEST_DATA_PATH, "small_fake_package")
@@ -330,8 +334,10 @@ def test_generate_hashes_with_editable(runner):
     expected = (
         "-e {}\n"
         "pytz==2017.2 \\\n"
-        "    --hash=sha256:d1d6729c85acea5423671382868627129432fba9a89ecbb248d8d1c7a9f01c67 \\\n"
-        "    --hash=sha256:f5c056e8f62d45ba8215e5cb8f50dfccb198b4b9fbea8500674f3443e4689589\n"
+        "    --hash=sha256:d1d6729c85acea542367138286"
+        "8627129432fba9a89ecbb248d8d1c7a9f01c67 \\\n"
+        "    --hash=sha256:f5c056e8f62d45ba8215e5cb8f"
+        "50dfccb198b4b9fbea8500674f3443e4689589\n"
     ).format(small_fake_package_url)
     assert out.exit_code == 0
     assert expected in out.output
@@ -504,7 +510,8 @@ def test_cert_option(MockPyPIRepository, runner, option, attr, expected):
 @mock.patch("piptools.scripts.compile.PyPIRepository")
 def test_build_isolation_option(MockPyPIRepository, runner, option, expected):
     """
-    A value of the --build-isolation/--no-build-isolation flag must be passed to the PyPIRepository.
+    A value of the --build-isolation/--no-build-isolation flag
+    must be passed to the PyPIRepository.
     """
     with open("requirements.in", "w"):
         pass

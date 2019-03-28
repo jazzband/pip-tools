@@ -71,7 +71,8 @@ class PyPIRepository(BaseRepository):
             "session": self.session,
         }
 
-        # pip 19.0 has removed process_dependency_links from the PackageFinder constructor
+        # pip 19.0 has removed process_dependency_links
+        # from the PackageFinder constructor
         if pkg_resources.parse_version(pip.__version__) < pkg_resources.parse_version(
             "19.0"
         ):
@@ -293,8 +294,8 @@ class PyPIRepository(BaseRepository):
         """
         Monkey patches pip.Wheel to allow wheels from all platforms and Python versions.
 
-        This also saves the candidate cache and set a new one, or else the results from the
-        previous non-patched calls will interfere.
+        This also saves the candidate cache and set a new one, or else the results from
+        the previous non-patched calls will interfere.
         """
 
         def _wheel_supported(self, tags=None):

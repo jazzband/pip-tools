@@ -68,10 +68,12 @@ from piptools.exceptions import UnsupportedConstraint
                     "sphinx==0.3",
                 ],
             ),
-            # We must remove child dependencies from result if parent is removed (e.g. vine from amqp>=2.0)
+            # We must remove child dependencies from result if parent
+            # is removed (e.g. vine from amqp>=2.0)
             # See: GH-370
             # because of upated dependencies in the test index, we need to pin celery
-            # in order to reproduce vine removal (because it was readded in later releases)
+            # in order to reproduce vine removal (because it was readded in later
+            # releases)
             (
                 ["celery<=3.1.23", "librabbitmq"],
                 [

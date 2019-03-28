@@ -63,7 +63,8 @@ def test_reverse_dependencies(from_line, tmpdir):
     # Since this is a test, make a temporary directory. Converting to str from py.path.
     tmp_dir_path = str(tmpdir)
 
-    # Create a cache object. The keys are packages, and the values are lists of packages on which the keys depend.
+    # Create a cache object. The keys are packages, and the values are lists
+    # of packages on which the keys depend.
     cache = DependencyCache(cache_dir=tmp_dir_path)
     cache[from_line("top==1.2")] = ["middle>=0.3", "bottom>=5.1.2"]
     cache[from_line("top[xtra]==1.2")] = ["middle>=0.3", "bottom>=5.1.2", "bonus==0.4"]
@@ -71,7 +72,8 @@ def test_reverse_dependencies(from_line, tmpdir):
     cache[from_line("bottom==5.3.5")] = []
     cache[from_line("bonus==0.4")] = []
 
-    # In this case, we're using top 1.2 without an extra, so the "bonus" package is not depended upon.
+    # In this case, we're using top 1.2 without an extra, so the "bonus" package
+    # is not depended upon.
     reversed_no_extra = cache.reverse_dependencies(
         [
             from_line("top==1.2"),
@@ -82,7 +84,8 @@ def test_reverse_dependencies(from_line, tmpdir):
     )
     assert reversed_no_extra == {"middle": {"top"}, "bottom": {"middle", "top"}}
 
-    # Now we're using top 1.2 with the "xtra" extra, so it depends on the "bonus" package.
+    # Now we're using top 1.2 with the "xtra" extra, so it depends
+    # on the "bonus" package.
     reversed_extra = cache.reverse_dependencies(
         [
             from_line("top[xtra]==1.2"),

@@ -241,8 +241,8 @@ def test_diff_with_editable(fake_dist, from_editable):
     reqs = [from_editable(path_to_package)]
     to_install, to_uninstall = diff(reqs, installed)
 
-    # FIXME: The editable package is uninstalled and reinstalled, including all its dependencies,
-    # even if the version numbers match.
+    # FIXME: The editable package is uninstalled and reinstalled, including
+    # all its dependencies, even if the version numbers match.
     assert to_uninstall == {"six", "small-fake-with-deps"}
 
     assert len(to_install) == 1
@@ -312,7 +312,8 @@ def test_sync_requirement_file_with_hashes(
                 options={
                     "hashes": {
                         "sha256": [
-                            "6a03ce2feafdd193a0ba8a26dbd9773e757d2e5d5e7933a62eac129813bd381a"
+                            "6a03ce2feafdd193a0ba8a26dbd9773e"
+                            "757d2e5d5e7933a62eac129813bd381a"
                         ]
                     }
                 },
@@ -322,7 +323,8 @@ def test_sync_requirement_file_with_hashes(
                 options={
                     "hashes": {
                         "sha256": [
-                            "9ab1d313f99b209f8f71a629f36833030c8d7c72282cf7756834baf567dca662"
+                            "9ab1d313f99b209f8f71a629f3683303"
+                            "0c8d7c72282cf7756834baf567dca662"
                         ]
                     }
                 },
@@ -332,8 +334,10 @@ def test_sync_requirement_file_with_hashes(
                 options={
                     "hashes": {
                         "sha256": [
-                            "d1d6729c85acea5423671382868627129432fba9a89ecbb248d8d1c7a9f01c67",
-                            "f5c056e8f62d45ba8215e5cb8f50dfccb198b4b9fbea8500674f3443e4689589",
+                            "d1d6729c85acea542367138286862712"
+                            "9432fba9a89ecbb248d8d1c7a9f01c67",
+                            "f5c056e8f62d45ba8215e5cb8f50dfcc"
+                            "b198b4b9fbea8500674f3443e4689589",
                         ]
                     }
                 },
@@ -344,12 +348,16 @@ def test_sync_requirement_file_with_hashes(
 
         expected = (
             "click==4.0 \\\n"
-            "    --hash=sha256:9ab1d313f99b209f8f71a629f36833030c8d7c72282cf7756834baf567dca662\n"
+            "    --hash=sha256:9ab1d313f99b209f8f71a629"
+            "f36833030c8d7c72282cf7756834baf567dca662\n"
             "django==1.8 \\\n"
-            "    --hash=sha256:6a03ce2feafdd193a0ba8a26dbd9773e757d2e5d5e7933a62eac129813bd381a\n"
+            "    --hash=sha256:6a03ce2feafdd193a0ba8a26"
+            "dbd9773e757d2e5d5e7933a62eac129813bd381a\n"
             "pytz==2017.2 \\\n"
-            "    --hash=sha256:d1d6729c85acea5423671382868627129432fba9a89ecbb248d8d1c7a9f01c67 \\\n"
-            "    --hash=sha256:f5c056e8f62d45ba8215e5cb8f50dfccb198b4b9fbea8500674f3443e4689589"
+            "    --hash=sha256:d1d6729c85acea542367138286"
+            "8627129432fba9a89ecbb248d8d1c7a9f01c67 \\\n"
+            "    --hash=sha256:f5c056e8f62d45ba8215e5cb8f"
+            "50dfccb198b4b9fbea8500674f3443e4689589"
         )
         mocked_tmp_req_file.write.assert_called_once_with(expected)
 

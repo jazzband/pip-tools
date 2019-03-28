@@ -108,7 +108,8 @@ def is_pinned_requirement(ireq):
 
 def as_tuple(ireq):
     """
-    Pulls out the (name: str, version:str, extras:(str)) tuple from the pinned InstallRequirement.
+    Pulls out the (name: str, version:str, extras:(str)) tuple from
+    the pinned InstallRequirement.
     """
     if not is_pinned_requirement(ireq):
         raise TypeError("Expected a pinned InstallRequirement, got {}".format(ireq))
@@ -253,8 +254,9 @@ _fs_encoding = sys.getfilesystemencoding() or sys.getdefaultencoding()
 
 def get_hashes_from_ireq(ireq):
     """
-    Given an InstallRequirement, return a list of string hashes in the format "{algorithm}:{hash}".
-    Return an empty list if there are no hashes in the requirement options.
+    Given an InstallRequirement, return a list of string hashes in
+    the format "{algorithm}:{hash}". Return an empty list if there are no hashes
+    in the requirement options.
     """
     result = []
     ireq_hashes = ireq.options.get("hashes", {})

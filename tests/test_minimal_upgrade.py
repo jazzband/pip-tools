@@ -23,7 +23,8 @@ from piptools.utils import name_from_req
                     "flask==0.10.1",
                     "itsdangerous==0.24",
                     "werkzeug==0.10.4",
-                    # Other requirements are unchanged from the original requirements.txt
+                    # Other requirements are unchanged from
+                    # the original requirements.txt
                     "jinja2==2.7.3",
                     "markupsafe==0.23",
                 ],

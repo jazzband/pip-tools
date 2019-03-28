@@ -89,8 +89,8 @@ def test_format_requirement_environment_marker(from_line, writer):
         ireq, reverse_dependencies, primary_packages=["test"], marker=ireq.markers
     )
     assert (
-        result
-        == 'test ; python_version == "2.7" and platform_python_implementation == "CPython"'
+        result == 'test ; python_version == "2.7" and '
+        'platform_python_implementation == "CPython"'
     )
 
 
@@ -107,7 +107,8 @@ def test_iter_lines__unsafe_dependencies(writer, from_line, allow_unsafe):
     )
     assert (
         comment(
-            "# The following packages are considered to be unsafe in a requirements file:"
+            "# The following packages are considered "
+            "to be unsafe in a requirements file:"
         )
         in str_lines
     )
@@ -213,7 +214,8 @@ def test_write_format_controls(writer):
                 "--extra-index-url https://index-url2.com",
             ],
         ],
-        # Ignore URLs equal to the default index-url (note: the previous case is exception)
+        # Ignore URLs equal to the default index-url
+        # (note: the previous case is exception)
         [
             [
                 "https://index-url1.com",
