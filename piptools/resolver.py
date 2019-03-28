@@ -142,8 +142,8 @@ class Resolver(object):
         for constraint in constraints:
             if constraint.link is not None and not constraint.editable:
                 msg = (
-                    "pip-compile does not support URLs as packages, unless they are editable. "
-                    "Perhaps add -e option?"
+                    "pip-compile does not support URLs as packages, unless "
+                    "they are editable. Perhaps add -e option?"
                 )
                 raise UnsupportedConstraint(msg, constraint)
 
@@ -167,11 +167,13 @@ class Resolver(object):
             ireqs = list(ireqs)
             editable_ireq = next((ireq for ireq in ireqs if ireq.editable), None)
             if editable_ireq:
-                yield editable_ireq  # ignore all the other specs: the editable one is the one that counts
+                # ignore all the other specs: the editable one is the one that counts
+                yield editable_ireq
                 continue
 
             ireqs = iter(ireqs)
-            # deepcopy the accumulator so as to not modify the self.our_constraints invariant
+            # deepcopy the accumulator so as to not modify
+            # the self.our_constraints invariant
             combined_ireq = copy.deepcopy(next(ireqs))
             combined_ireq.comes_from = None
             for ireq in ireqs:

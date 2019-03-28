@@ -67,7 +67,8 @@ DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 @click.option("--cert", help="Path to alternate CA bundle.")
 @click.option(
     "--client-cert",
-    help="Path to SSL client certificate, a single file containing the private key and the certificate in PEM format.",
+    help="Path to SSL client certificate, a single file containing "
+    "the private key and the certificate in PEM format.",
 )  # noqa
 @click.option(
     "--trusted-host",
@@ -263,7 +264,8 @@ def cli(
             session=repository.session,
             options=pip_options,
         )
-        # Exclude packages from --upgrade-package/-P from the existing pins: We want to upgrade.
+        # Exclude packages from --upgrade-package/-P from
+        # the existing pins: We want to upgrade.
         upgrade_reqs_gen = (install_req_from_line(pkg) for pkg in upgrade_packages)
         upgrade_install_reqs = {
             key_from_req(install_req.req): install_req
@@ -372,12 +374,14 @@ def cli(
     # TODO (1b): perhaps it's easiest if the dependency cache has an API
     #            that could take InstallRequirements directly, like:
     #
-    #                cache.set(ireq, ...)
+    #              cache.set(ireq, ...)
     #
     #            then, when ireq is editable, it would store in
     #
     #              editables[egg_name][link_without_fragment] = deps
-    #              editables['pip-tools']['git+...ols.git@future'] = {'click>=3.0', 'six'}
+    #              editables['pip-tools']['git+...ols.git@future'] = {
+    #                  'click>=3.0', 'six'
+    #              }
     #
     #            otherwise:
     #

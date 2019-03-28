@@ -77,7 +77,8 @@ def test_input_files_with_dot_in_extension(runner):
 
 def test_force_files_with_dot_in_extension(runner):
     """
-    It should print a warning and sync anyway if some of the input files have .in extension.
+    It should print a warning and sync anyway if some of the input files
+    have .in extension.
     """
 
     with open("requirements.in", "w") as req_in:

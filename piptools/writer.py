@@ -124,7 +124,8 @@ class OutputWriter(object):
             unsafe_requirements = sorted(unsafe_requirements, key=self._sort_key)
             yield ""
             yield comment(
-                "# The following packages are considered to be unsafe in a requirements file:"
+                "# The following packages are considered "
+                "to be unsafe in a requirements file:"
             )
 
             for ireq in unsafe_requirements:

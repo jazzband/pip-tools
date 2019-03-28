@@ -73,8 +73,9 @@ def cli(
 
     if any(src_file.endswith(".in") for src_file in src_files):
         msg = (
-            "Some input files have the .in extension, which is most likely an error and can "
-            "cause weird behaviour.  You probably meant to use the corresponding *.txt file?"
+            "Some input files have the .in extension, which is most likely an error "
+            "and can cause weird behaviour. You probably meant to use "
+            "the corresponding *.txt file?"
         )
         if force:
             log.warning("WARNING: " + msg)

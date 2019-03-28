@@ -71,13 +71,14 @@ class DependencyCache(object):
 
     def as_cache_key(self, ireq):
         """
-        Given a requirement, return its cache key. This behavior is a little weird in order to allow backwards
-        compatibility with cache files. For a requirement without extras, this will return, for example:
+        Given a requirement, return its cache key. This behavior is a little weird
+        in order to allow backwards compatibility with cache files. For a requirement
+        without extras, this will return, for example:
 
         ("ipython", "2.1.0")
 
-        For a requirement with extras, the extras will be comma-separated and appended to the version, inside brackets,
-        like so:
+        For a requirement with extras, the extras will be comma-separated and appended
+        to the version, inside brackets, like so:
 
         ("ipython", "2.1.0[nbconvert,notebook]")
         """
@@ -154,8 +155,8 @@ class DependencyCache(object):
              'pyflakes': ['flake8']}
 
         """
-        # First, collect all the dependencies into a sequence of (parent, child) tuples, like [('flake8', 'pep8'),
-        # ('flake8', 'mccabe'), ...]
+        # First, collect all the dependencies into a sequence of (parent, child)
+        # tuples, like [('flake8', 'pep8'), ('flake8', 'mccabe'), ...]
         return lookup_table(
             (key_from_req(Requirement(dep_name)), name)
             for name, version_and_extras in cache_keys
