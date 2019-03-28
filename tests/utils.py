@@ -9,7 +9,7 @@ def invoke(command):
             stderr=subprocess.STDOUT,
         )
         status = 0
-    except subprocess.CalledProcessError as error:
+    except subprocess.CalledProcessError as error:  # pragma: no cover
         output = error.output
         status = error.returncode
 
