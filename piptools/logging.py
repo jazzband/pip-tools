@@ -1,6 +1,5 @@
 # coding: utf-8
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys
 
@@ -23,13 +22,13 @@ class LogContext(object):
             self.log(*args, **kwargs)
 
     def warning(self, *args, **kwargs):
-        kwargs.setdefault('fg', 'yellow')
-        kwargs.setdefault('file', sys.stderr)
+        kwargs.setdefault("fg", "yellow")
+        kwargs.setdefault("file", sys.stderr)
         self.log(*args, **kwargs)
 
     def error(self, *args, **kwargs):
-        kwargs.setdefault('fg', 'red')
-        kwargs.setdefault('file', sys.stderr)
+        kwargs.setdefault("fg", "red")
+        kwargs.setdefault("file", sys.stderr)
         self.log(*args, **kwargs)
 
 
