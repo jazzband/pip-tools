@@ -20,19 +20,21 @@ def test_run_as_module_sync():
     assert status == 0
 
 
-def test_quiet_option(runner):
+@mock.patch("piptools.sync.check_call")
+def test_quiet_option(check_call, runner):
     """sync command can be run with `--quiet` or `-q` flag."""
 
     with open("requirements.txt", "w") as req_in:
         req_in.write("six==1.10.0")
 
-    with mock.patch("piptools.sync.check_call") as check_call:
-        out = runner.invoke(cli, ["-q"])
-        assert out.output == ""
-        assert out.exit_code == 0
-        # for every call to pip ensure the `-q` flag is set
-        for call in check_call.call_args_list:
-            assert "-q" in call[0][0]
+    out = runner.invoke(cli, ["-q"])
+    assert out.output == ""
+    assert out.exit_code == 0
+
+    # for every call to pip ensure the `-q` flag is set
+    assert check_call.call_count == 2
+    for call in check_call.call_args_list:
+        assert "-q" in call[0][0]
 
 
 @mock.patch("piptools.sync.check_call")
@@ -131,13 +133,7 @@ def test_pip_install_flags(check_call, cli_flags, expected_install_flags, runner
 
     runner.invoke(cli, cli_flags)
 
-    for call in check_call.call_args_list:
-        check_call_args = call[0][0]
-        pip_command = check_call_args[3]
-
-        # Skip uninstall command
-        if pip_command != "install":
-            continue
-
-        install_flags = check_call_args[6:]
-        assert install_flags == expected_install_flags
+    call_args = [call[0][0] for call in check_call.call_args_list]
+    assert [args[6:] for args in call_args if args[3] == "install"] == [
+        expected_install_flags
+    ]
