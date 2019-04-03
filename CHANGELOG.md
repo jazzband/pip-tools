@@ -1,3 +1,11 @@
+# 3.6.0 (2019-04-03)
+
+Features:
+- Show less output on `pip-sync` with `--quiet` option
+([#765](https://github.com/jazzband/pip-tools/pull/765)). Thanks @atugushev
+- Support the flag `--trusted-host` in `pip-sync`
+([#777](https://github.com/jazzband/pip-tools/pull/777)). Thanks @firebirdberlin
+
 # 3.5.0 (2019-03-13)
 
 Features:
