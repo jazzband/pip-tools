@@ -7,6 +7,7 @@ and follow the [guidelines](https://jazzband.co/about/guidelines).
 ## Project Contribution Guidelines
 
 Here are a few additional or emphasized guidelines to follow when contributing to pip-tools:
+- Check with `tox -e checkqa` to see your changes are not breaking the style conventions.
 - Always provide tests for your changes.
 - Give a clear one-line description in the PR (that the maintainers can add to [CHANGELOG](CHANGELOG.md) afterwards).
 - Wait for the review of at least one other contributor before merging (even if you're a Jazzband member).
