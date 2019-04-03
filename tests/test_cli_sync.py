@@ -118,6 +118,14 @@ def test_merge_error(runner):
             ["--extra-index-url", "https://foo", "--extra-index-url", "https://bar"],
             ["--extra-index-url", "https://foo", "--extra-index-url", "https://bar"],
         ),
+        (
+            ["--trusted-host", "https://foo", "--trusted-host", "https://bar"],
+            ["--trusted-host", "https://foo", "--trusted-host", "https://bar"],
+        ),
+        (
+            ["--extra-index-url", "https://foo", "--trusted-host", "https://bar"],
+            ["--extra-index-url", "https://foo", "--trusted-host", "https://bar"],
+        ),
         (["--user"], ["--user"]),
     ],
 )
