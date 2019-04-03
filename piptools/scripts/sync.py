@@ -42,6 +42,11 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
     envvar="PIP_EXTRA_INDEX_URL",
 )  # noqa
 @click.option(
+    "--trusted-host",
+    multiple=True,
+    help="Mark this host as trusted, even though it does not have valid or any HTTPS.",
+)
+@click.option(
     "--no-index",
     is_flag=True,
     help="Ignore package index (only looking at --find-links URLs instead)",
@@ -57,6 +62,7 @@ def cli(
     find_links,
     index_url,
     extra_index_url,
+    trusted_host,
     no_index,
     quiet,
     user_only,
@@ -106,6 +112,9 @@ def cli(
     if extra_index_url:
         for extra_index in extra_index_url:
             install_flags.extend(["--extra-index-url", extra_index])
+    if trusted_host:
+        for host in trusted_host:
+            install_flags.extend(["--trusted-host", host])
     if user_only:
         install_flags.append("--user")
 
