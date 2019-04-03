@@ -51,7 +51,7 @@ jobs:
       python: "2.7"
 
     # QA checks.
-    - env: TOXENV=black
+    - env: TOXENV=checkqa
       python: 3.7
       after_success: skip  # No need coverage
     - env: TOXENV=readme
