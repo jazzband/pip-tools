@@ -2,7 +2,7 @@ import collections
 import os
 import sys
 import tempfile
-from subprocess import check_call
+from subprocess import check_call  # nosec
 
 from . import click
 from .exceptions import IncompatibleRequirements, UnsupportedConstraint
@@ -148,7 +148,7 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, install_flags=N
             for pkg in to_uninstall:
                 click.echo("  {}".format(pkg))
         else:
-            check_call(
+            check_call(  # nosec
                 [sys.executable, "-m", "pip", "uninstall", "-y"]
                 + pip_flags
                 + sorted(to_uninstall)
@@ -174,7 +174,7 @@ def sync(to_install, to_uninstall, verbose=False, dry_run=False, install_flags=N
             tmp_req_file.close()
 
             try:
-                check_call(
+                check_call(  # nosec
                     [sys.executable, "-m", "pip", "install", "-r", tmp_req_file.name]
                     + pip_flags
                     + install_flags

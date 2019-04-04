@@ -245,7 +245,8 @@ def fs_str(string):
     """
     if isinstance(string, str):
         return string
-    assert not isinstance(string, bytes)
+    if isinstance(string, bytes):
+        raise AssertionError
     return string.encode(_fs_encoding)
 
 
