@@ -1,2 +1,2 @@
 [bandit]
-exclude: tests,.tox,.eggs
+exclude: tests,.tox,.eggs,.venv,.git
