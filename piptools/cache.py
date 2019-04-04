@@ -33,7 +33,8 @@ def read_cache_file(cache_file_path):
             raise CorruptCacheError(cache_file_path)
 
         # Check version and load the contents
-        assert doc["__format__"] == 1, "Unknown cache file format"
+        if doc["__format__"] != 1:
+            raise AssertionError("Unknown cache file format")
         return doc["dependencies"]
 
 
