@@ -28,7 +28,7 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
     multiple=True,
     help="Look for archives in this directory or on this HTML page",
     envvar="PIP_FIND_LINKS",
-)  # noqa
+)
 @click.option(
     "-i",
     "--index-url",
@@ -40,7 +40,7 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
     multiple=True,
     help="Add additional index URL to search",
     envvar="PIP_EXTRA_INDEX_URL",
-)  # noqa
+)
 @click.option(
     "--trusted-host",
     multiple=True,
