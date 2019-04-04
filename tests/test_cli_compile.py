@@ -498,10 +498,10 @@ def test_cert_option(MockPyPIRepository, runner, option, attr, expected):
 
     assert "six==1.10.0" in out.output
 
-    # Ensure the pip_options in PyPIRepository has have the expected option
-    for call in MockPyPIRepository.call_args_list:
-        pip_options = call[0][0]
-        assert getattr(pip_options, attr) == expected
+    # Ensure the pip_options in PyPIRepository has the expected option
+    assert [
+        getattr(call[0][0], attr) for call in MockPyPIRepository.call_args_list
+    ] == [expected]
 
 
 @pytest.mark.parametrize(

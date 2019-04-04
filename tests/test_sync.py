@@ -376,7 +376,8 @@ def test_sync_verbose(check_call, from_line):
     """
     The -q option has to be passed to every pip calls.
     """
-    sync({from_line("django==1.8")}, set(), verbose=True)
+    sync({from_line("django==1.8")}, {from_line("click==4.0")}, verbose=True)
+    assert check_call.call_count == 2
     for call in check_call.call_args_list:
         check_call_args = call[0][0]
         assert "-q" not in check_call_args
