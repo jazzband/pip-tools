@@ -51,25 +51,25 @@ DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
     multiple=True,
     help="Look for archives in this directory or on this HTML page",
     envvar="PIP_FIND_LINKS",
-)  # noqa
+)
 @click.option(
     "-i",
     "--index-url",
     help="Change index URL (defaults to {})".format(pip_defaults.index_url),
     envvar="PIP_INDEX_URL",
-)  # noqa
+)
 @click.option(
     "--extra-index-url",
     multiple=True,
     help="Add additional index URL to search",
     envvar="PIP_EXTRA_INDEX_URL",
-)  # noqa
+)
 @click.option("--cert", help="Path to alternate CA bundle.")
 @click.option(
     "--client-cert",
     help="Path to SSL client certificate, a single file containing "
     "the private key and the certificate in PEM format.",
-)  # noqa
+)
 @click.option(
     "--trusted-host",
     multiple=True,

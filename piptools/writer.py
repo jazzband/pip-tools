@@ -105,7 +105,7 @@ class OutputWriter(object):
             {r for r in results if r.name in UNSAFE_PACKAGES}
             if not unsafe_requirements
             else unsafe_requirements
-        )  # noqa
+        )
         packages = {r for r in results if r.name not in UNSAFE_PACKAGES}
 
         packages = sorted(packages, key=self._sort_key)
