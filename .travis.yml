@@ -54,6 +54,9 @@ jobs:
     - env: TOXENV=checkqa
       python: 3.7
       after_success: skip  # No need coverage
+      cache:
+        directories:
+          - $HOME/.cache/pre-commit
     - env: TOXENV=readme
       python: 2.7
       after_success: skip  # No need coverage
