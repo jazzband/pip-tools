@@ -48,7 +48,7 @@ except ImportError:
     from pip.wheel import WheelCache
 
 FILE_CHUNK_SIZE = 4096
-FileStream = collections.namedtuple("File", "stream size")
+FileStream = collections.namedtuple("FileStream", "stream size")
 
 
 class PyPIRepository(BaseRepository):
