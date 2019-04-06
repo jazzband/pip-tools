@@ -1,3 +1,4 @@
+import six
 from pytest import mark, raises
 
 from piptools.utils import (
@@ -6,6 +7,7 @@ from piptools.utils import (
     flat_map,
     format_requirement,
     format_specifier,
+    fs_str,
     get_hashes_from_ireq,
     is_pinned_requirement,
     name_from_req,
@@ -147,3 +149,15 @@ def test_name_from_req_with_project_name(from_line):
     ireq = from_line("foo==1.8")
     ireq.req.project_name = "bar"
     assert name_from_req(ireq.req) == "bar"
+
+
+def test_fs_str():
+    assert fs_str(u"some path component/Something") == "some path component/Something"
+    assert isinstance(fs_str("whatever"), str)
+    assert isinstance(fs_str(u"whatever"), str)
+
+
+@mark.skipif(six.PY2, reason="Not supported in py2")
+def test_fs_str_with_bytes():
+    with raises(AssertionError):
+        fs_str(b"whatever")
