@@ -235,11 +235,6 @@ def fs_str(string):
     On Python 3 returns the string as is, since Python 3 uses unicode
     paths and the input string shouldn't be bytes.
 
-    >>> fs_str(u'some path component/Something')
-    'some path component/Something'
-    >>> assert isinstance(fs_str('whatever'), str)
-    >>> assert isinstance(fs_str(u'whatever'), str)
-
     :type string: str|unicode
     :rtype: str
     """
