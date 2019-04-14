@@ -352,7 +352,7 @@ def open_local_or_remote_file(link, session):
     :type link: pip.index.Link
     :type session: requests.Session
     :raises ValueError: If link points to a local directory.
-    :return: a context manager to the opened file-like object
+    :return: a context manager to a FileStream with the opened file-like object
     """
     url = link.url_without_fragment
 
@@ -371,9 +371,10 @@ def open_local_or_remote_file(link, session):
         response = session.get(url, headers=headers, stream=True)
 
         # Content length must be int or None
-        content_length = response.headers.get("content-length")
-        if content_length is not None:
-            content_length = int(content_length)
+        try:
+            content_length = int(response.headers["content-length"])
+        except (ValueError, KeyError, TypeError):
+            content_length = None
 
         try:
             yield FileStream(stream=response.raw, size=content_length)
