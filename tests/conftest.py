@@ -105,7 +105,7 @@ def repository():
 
 @fixture
 def depcache(tmpdir):
-    return DependencyCache(str(tmpdir))
+    return DependencyCache(str(tmpdir / "dep-cache"))
 
 
 @fixture

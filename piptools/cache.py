@@ -121,10 +121,6 @@ class DependencyCache(object):
         self.cache[pkgname][pkgversion_and_extras] = values
         self.write_cache()
 
-    def get(self, ireq, default=None):
-        pkgname, pkgversion_and_extras = self.as_cache_key(ireq)
-        return self.cache.get(pkgname, {}).get(pkgversion_and_extras, default)
-
     def reverse_dependencies(self, ireqs):
         """
         Returns a lookup table of reverse dependencies for all the given ireqs.

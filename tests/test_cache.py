@@ -36,7 +36,10 @@ def test_read_cache_file_not_json():
     A cache file that's not JSON should throw a corrupt cache error.
     """
     with _read_cache_file_helper("not json") as cache_file_name:
-        with raises(CorruptCacheError):
+        with raises(
+            CorruptCacheError,
+            match="The dependency cache seems to have been corrupted.",
+        ):
             read_cache_file(cache_file_name)
 
 
