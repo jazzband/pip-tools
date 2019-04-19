@@ -21,6 +21,7 @@ setup(
     author_email="me@nvie.com",
     description=__doc__.strip(),
     long_description=read_file("README.rst"),
+    long_description_content_type="text/x-rst",
     packages=find_packages(exclude=["tests"]),
     package_data={},
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*",
