@@ -280,18 +280,6 @@ def cli(
         }
         repository = LocalRequirementsRepository(existing_pins, repository)
 
-    log.debug("Using indexes:")
-    # remove duplicate index urls before processing
-    repository.finder.index_urls = list(dedup(repository.finder.index_urls))
-    for index_url in repository.finder.index_urls:
-        log.debug("  {}".format(index_url))
-
-    if repository.finder.find_links:
-        log.debug("")
-        log.debug("Configuration:")
-        for find_link in repository.finder.find_links:
-            log.debug("  -f {}".format(find_link))
-
     ###
     # Parsing/collecting initial requirements
     ###
@@ -337,6 +325,18 @@ def cli(
     constraints = [
         req for req in constraints if req.markers is None or req.markers.evaluate()
     ]
+
+    log.debug("Using indexes:")
+    # remove duplicate index urls before processing
+    repository.finder.index_urls = list(dedup(repository.finder.index_urls))
+    for index_url in repository.finder.index_urls:
+        log.debug("  {}".format(index_url))
+
+    if repository.finder.find_links:
+        log.debug("")
+        log.debug("Configuration:")
+        for find_link in repository.finder.find_links:
+            log.debug("  -f {}".format(find_link))
 
     # Check the given base set of constraints first
     Resolver.check_constraints(constraints)
@@ -405,6 +405,7 @@ def cli(
         trusted_hosts=pip_options.trusted_hosts,
         format_control=repository.finder.format_control,
         allow_unsafe=allow_unsafe,
+        find_links=repository.finder.find_links,
     )
     writer.write(
         results=results,
