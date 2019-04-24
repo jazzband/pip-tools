@@ -1,3 +1,9 @@
+# 3.6.1 (2019-04-24)
+
+Bug Fixes:
+- Fix `pip>=19.1` compatibility
+([#795](https://github.com/jazzband/pip-tools/pull/795)). Thanks @atugushev
+
 # 3.6.0 (2019-04-03)
 
 Features:
