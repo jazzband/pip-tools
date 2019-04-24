@@ -144,7 +144,16 @@ class PyPIRepository(BaseRepository):
         matching_candidates = [candidates_by_version[ver] for ver in matching_versions]
         if not matching_candidates:
             raise NoCandidateFound(ireq, all_candidates, self.finder)
-        best_candidate = max(matching_candidates, key=self.finder._candidate_sort_key)
+
+        # pip <= 19.0.3
+        if hasattr(self.finder, "_candidate_sort_key"):
+            best_candidate = max(
+                matching_candidates, key=self.finder._candidate_sort_key
+            )
+        # pip >= 19.1
+        else:
+            evaluator = self.finder.candidate_evaluator
+            best_candidate = evaluator.get_best_candidate(matching_candidates)
 
         # Turn the candidate into a pinned InstallRequirement
         return make_install_requirement(
