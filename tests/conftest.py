@@ -1,7 +1,6 @@
 import json
 from contextlib import contextmanager
 from functools import partial
-from tempfile import NamedTemporaryFile
 
 from click.testing import CliRunner
 from pip._vendor.packaging.version import Version
@@ -136,9 +135,3 @@ def runner():
     cli_runner = CliRunner()
     with cli_runner.isolated_filesystem():
         yield cli_runner
-
-
-@fixture
-def tmp_file():
-    with NamedTemporaryFile("wt") as fp:
-        yield fp
