@@ -1,6 +1,9 @@
+import os
+
 import six
 from pytest import mark, raises
 
+from piptools.scripts.compile import cli as compile_cli
 from piptools.utils import (
     as_tuple,
     dedup,
@@ -8,6 +11,7 @@ from piptools.utils import (
     format_requirement,
     format_specifier,
     fs_str,
+    get_compile_command,
     get_hashes_from_ireq,
     is_pinned_requirement,
     name_from_req,
@@ -173,3 +177,105 @@ def test_fs_str():
 def test_fs_str_with_bytes():
     with raises(AssertionError):
         fs_str(b"whatever")
+
+
+@mark.parametrize(
+    "cli_args, expected_command",
+    [
+        # Check empty args
+        ([], "pip-compile"),
+        # Check all options which will be excluded from command
+        (["-v"], "pip-compile"),
+        (["--verbose"], "pip-compile"),
+        (["-n"], "pip-compile"),
+        (["--dry-run"], "pip-compile"),
+        (["-q"], "pip-compile"),
+        (["--quiet"], "pip-compile"),
+        (["-r"], "pip-compile"),
+        (["--rebuild"], "pip-compile"),
+        (["-U"], "pip-compile"),
+        (["--upgrade"], "pip-compile"),
+        (["-P", "django"], "pip-compile"),
+        (["--upgrade-package", "django"], "pip-compile"),
+        # Check options
+        (["--max-rounds", "42"], "pip-compile --max-rounds=42"),
+        (["--index-url", "https://foo"], "pip-compile --index-url=https://foo"),
+        # Check that short options will be expanded to long options
+        (["-p"], "pip-compile --pre"),
+        (["-f", "links"], "pip-compile --find-links=links"),
+        (["-i", "https://foo"], "pip-compile --index-url=https://foo"),
+        # Check positive flags
+        (["--generate-hashes"], "pip-compile --generate-hashes"),
+        (["--pre"], "pip-compile --pre"),
+        (["--allow-unsafe"], "pip-compile --allow-unsafe"),
+        # Check negative flags
+        (["--no-index"], "pip-compile --no-index"),
+        (["--no-emit-trusted-host"], "pip-compile --no-emit-trusted-host"),
+        (["--no-annotate"], "pip-compile --no-annotate"),
+        # Check that default values will be removed from the command
+        (["--emit-trusted-host"], "pip-compile"),
+        (["--annotate"], "pip-compile"),
+        (["--index"], "pip-compile"),
+        (["--max-rounds=10"], "pip-compile"),
+        (["--no-build-isolation"], "pip-compile"),
+        # Check options with multiple values
+        (
+            ["--find-links", "links1", "--find-links", "links2"],
+            "pip-compile --find-links=links1 --find-links=links2",
+        ),
+    ],
+)
+def test_get_compile_command(runner, cli_args, expected_command):
+    """
+    Test general scenarios for the get_compile_command function.
+    """
+    with compile_cli.make_context("pip-compile", cli_args) as ctx:
+        assert get_compile_command(ctx) == expected_command
+
+
+def test_get_compile_command_with_files(runner):
+    """
+    Test that get_compile_command returns a command with correct file names.
+    """
+    os.mkdir("foo")
+
+    filename = os.path.join("foo", "bar.in")
+    with open(filename, "w"):
+        pass
+
+    args = [filename, "--output-file", "bar.txt"]
+    with compile_cli.make_context("pip-compile", args) as ctx:
+        assert get_compile_command(
+            ctx
+        ) == "pip-compile --output-file=bar.txt {src_file}".format(src_file=filename)
+
+
+def test_get_compile_command_sort_args(runner):
+    """
+    Test that get_compile_command correctly sorts arguments.
+
+    The order is "pip-compile {sorted options} {sorted src files}".
+    """
+    with open("setup.py", "w"):
+        pass
+
+    with open("requirements.in", "w"):
+        pass
+
+    args = [
+        "--no-index",
+        "--no-emit-trusted-host",
+        "--no-annotate",
+        "setup.py",
+        "--find-links",
+        "foo",
+        "--find-links",
+        "bar",
+        "requirements.in",
+    ]
+    with compile_cli.make_context("pip-compile", args) as ctx:
+        assert get_compile_command(ctx) == (
+            "pip-compile --find-links=bar --find-links=foo "
+            "--no-annotate --no-emit-trusted-host --no-index "
+            "requirements.in setup.py"
+        )
