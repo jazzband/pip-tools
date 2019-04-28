@@ -55,6 +55,12 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 @click.option(
     "--user", "user_only", is_flag=True, help="Restrict attention to user directory"
 )
+@click.option("--cert", help="Path to alternate CA bundle.")
+@click.option(
+    "--client-cert",
+    help="Path to SSL client certificate, a single file containing "
+    "the private key and the certificate in PEM format.",
+)
 @click.argument("src_files", required=False, type=click.Path(exists=True), nargs=-1)
 def cli(
     dry_run,
@@ -66,6 +72,8 @@ def cli(
     no_index,
     quiet,
     user_only,
+    cert,
+    client_cert,
     src_files,
 ):
     """Synchronize virtual environment with requirements.txt."""
@@ -117,6 +125,10 @@ def cli(
             install_flags.extend(["--trusted-host", host])
     if user_only:
         install_flags.append("--user")
+    if cert:
+        install_flags.extend(["--cert", cert])
+    if client_cert:
+        install_flags.extend(["--client-cert", client_cert])
 
     sys.exit(
         sync.sync(

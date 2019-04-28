@@ -129,6 +129,8 @@ def test_merge_error(runner):
             ["--extra-index-url", "https://foo", "--trusted-host", "https://bar"],
         ),
         (["--user"], ["--user"]),
+        (["--cert", "foo.crt"], ["--cert", "foo.crt"]),
+        (["--client-cert", "foo.pem"], ["--client-cert", "foo.pem"]),
     ],
 )
 @mock.patch("piptools.sync.check_call")
