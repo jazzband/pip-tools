@@ -124,12 +124,20 @@ def test_command_line_setuptools_output_file(pip_conf, options, expected_output_
 
 
 def test_find_links_option(pip_conf, runner):
-    with open("requirements.in", "w"):
-        pass
+    with open("requirements.in", "w") as req_in:
+        req_in.write("-f ./libs3")
+
     out = runner.invoke(cli, ["-v", "-f", "./libs1", "-f", "./libs2"])
 
     # Check that find-links has been passed to pip
-    assert "Configuration:\n  -f ./libs1\n  -f ./libs2" in out.output
+    assert "Configuration:\n  -f ./libs1\n  -f ./libs2\n  -f ./libs3\n" in out.output
+
+    # Check that find-links has been written to a requirements.txt
+    with open("requirements.txt", "r") as req_txt:
+        assert (
+            "--find-links ./libs1\n--find-links ./libs2\n--find-links ./libs3\n"
+            in req_txt.read()
+        )
 
 
 def test_extra_index_option(pip_conf, runner):
