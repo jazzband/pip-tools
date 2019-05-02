@@ -1,6 +1,7 @@
 # coding: utf-8
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import collections
 import hashlib
 import os
 from contextlib import contextmanager
@@ -16,11 +17,14 @@ from .._compat import (
     RequirementSet,
     TemporaryDirectory,
     Wheel,
+    contextlib,
     is_file_url,
     url_to_path,
 )
 from ..cache import CACHE_DIR
+from ..click import progressbar
 from ..exceptions import NoCandidateFound
+from ..logging import log
 from ..utils import (
     fs_str,
     is_pinned_requirement,
@@ -42,6 +46,9 @@ try:
     from pip._internal.cache import WheelCache
 except ImportError:
     from pip.wheel import WheelCache
+
+FILE_CHUNK_SIZE = 4096
+FileStream = collections.namedtuple("FileStream", "stream size")
 
 
 class PyPIRepository(BaseRepository):
@@ -287,15 +294,30 @@ class PyPIRepository(BaseRepository):
         )
         matching_candidates = candidates_by_version[matching_versions[0]]
 
+        log.debug("  {}".format(ireq.name))
+
         return {
             self._get_file_hash(candidate.location) for candidate in matching_candidates
         }
 
     def _get_file_hash(self, location):
+        log.debug("    Hashing {}".format(location.url_without_fragment))
         h = hashlib.new(FAVORITE_HASH)
-        with open_local_or_remote_file(location, self.session) as fp:
-            for chunk in iter(lambda: fp.read(8096), b""):
-                h.update(chunk)
+        with open_local_or_remote_file(location, self.session) as f:
+            # Chunks to iterate
+            chunks = iter(lambda: f.stream.read(FILE_CHUNK_SIZE), b"")
+
+            # Choose a context manager depending on verbosity
+            if log.verbosity >= 1:
+                iter_length = f.size / FILE_CHUNK_SIZE if f.size else None
+                context_manager = progressbar(chunks, length=iter_length, label="  ")
+            else:
+                context_manager = contextlib.nullcontext(chunks)
+
+            # Iterate over the chosen context manager
+            with context_manager as bar:
+                for chunk in bar:
+                    h.update(chunk)
         return ":".join([FAVORITE_HASH, h.hexdigest()])
 
     @contextmanager
@@ -339,7 +361,7 @@ def open_local_or_remote_file(link, session):
     :type link: pip.index.Link
     :type session: requests.Session
     :raises ValueError: If link points to a local directory.
-    :return: a context manager to the opened file-like object
+    :return: a context manager to a FileStream with the opened file-like object
     """
     url = link.url_without_fragment
 
@@ -349,13 +371,21 @@ def open_local_or_remote_file(link, session):
         if os.path.isdir(local_path):
             raise ValueError("Cannot open directory for read: {}".format(url))
         else:
+            st = os.stat(local_path)
             with open(local_path, "rb") as local_file:
-                yield local_file
+                yield FileStream(stream=local_file, size=st.st_size)
     else:
         # Remote URL
         headers = {"Accept-Encoding": "identity"}
         response = session.get(url, headers=headers, stream=True)
+
+        # Content length must be int or None
         try:
-            yield response.raw
+            content_length = int(response.headers["content-length"])
+        except (ValueError, KeyError, TypeError):
+            content_length = None
+
+        try:
+            yield FileStream(stream=response.raw, size=content_length)
         finally:
             response.close()
