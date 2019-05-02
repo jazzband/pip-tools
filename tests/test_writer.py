@@ -21,6 +21,7 @@ def writer(tmp_file):
         trusted_hosts=[],
         format_control=FormatControl(set(), set()),
         allow_unsafe=False,
+        find_links=[],
     )
 
 
@@ -259,3 +260,19 @@ def test_write_index_options_no_emit_index(writer):
     writer.emit_index = False
     with raises(StopIteration):
         next(writer.write_index_options())
+
+
+@mark.parametrize(
+    "find_links, expected_lines",
+    (
+        [[], []],
+        [["./foo"], ["--find-links ./foo"]],
+        [["./foo", "./bar"], ["--find-links ./foo", "--find-links ./bar"]],
+    ),
+)
+def test_write_find_links(writer, find_links, expected_lines):
+    """
+    Test write_find_links method.
+    """
+    writer.find_links = find_links
+    assert list(writer.write_find_links()) == expected_lines
