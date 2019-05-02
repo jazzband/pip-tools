@@ -1,5 +1,9 @@
+import mock
+import pytest
+
+from piptools._compat.pip_compat import Link, Session, path_to_url
 from piptools.pip import get_pip_command
-from piptools.repositories.pypi import PyPIRepository
+from piptools.repositories.pypi import PyPIRepository, open_local_or_remote_file
 
 
 def test_generate_hashes_all_platforms(from_line):
@@ -78,3 +82,62 @@ def test_get_hashes_editable_empty_set(from_editable):
     repository = PyPIRepository(pip_options, session)
     ireq = from_editable("git+https://github.com/django/django.git#egg=django")
     assert repository.get_hashes(ireq) == set()
+
+
+@pytest.mark.parametrize("content, content_length", [(b"foo", 3), (b"foobar", 6)])
+def test_open_local_or_remote_file__local_file(tmp_path, content, content_length):
+    """
+    Test the `open_local_or_remote_file` returns a context manager to a FileStream
+    for a given `Link` to a local file.
+    """
+    local_file_path = tmp_path / "foo.txt"
+    local_file_path.write_bytes(content)
+
+    link = Link(local_file_path.as_uri())
+    session = Session()
+
+    with open_local_or_remote_file(link, session) as file_stream:
+        assert file_stream.stream.read() == content
+        assert file_stream.size == content_length
+
+
+def test_open_local_or_remote_file__directory(tmpdir):
+    """
+    Test the `open_local_or_remote_file` raises a ValueError for a given `Link`
+    to a directory.
+    """
+    link = Link(path_to_url(tmpdir.strpath))
+    session = Session()
+
+    with pytest.raises(ValueError, match="Cannot open directory for read"):
+        with open_local_or_remote_file(link, session):
+            pass  # pragma: no cover
+
+
+@pytest.mark.parametrize(
+    "content, content_length, expected_content_length",
+    [(b"foo", 3, 3), (b"bar", None, None), (b"kek", "invalid-content-length", None)],
+)
+def test_open_local_or_remote_file__remote_file(
+    tmp_path, content, content_length, expected_content_length
+):
+    """
+    Test the `open_local_or_remote_file` returns a context manager to a FileStream
+    for a given `Link` to a remote file.
+    """
+    link = Link("https://example.com/foo.txt")
+    session = Session()
+
+    response_file_path = tmp_path / "foo.txt"
+    response_file_path.write_bytes(content)
+
+    mock_response = mock.Mock()
+    mock_response.raw = response_file_path.open("rb")
+    mock_response.headers = {"content-length": content_length}
+
+    with mock.patch.object(session, "get", return_value=mock_response):
+        with open_local_or_remote_file(link, session) as file_stream:
+            assert file_stream.stream.read() == content
+            assert file_stream.size == expected_content_length
+
+    mock_response.close.assert_called_once()

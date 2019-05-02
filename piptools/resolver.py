@@ -82,6 +82,8 @@ class Resolver(object):
         """
         Finds acceptable hashes for all of the given InstallRequirements.
         """
+        log.debug("")
+        log.debug("Generating hashes:")
         with self.repository.allow_all_wheels():
             return {ireq: self.repository.get_hashes(ireq) for ireq in ireqs}
 
