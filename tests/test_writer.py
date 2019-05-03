@@ -7,16 +7,17 @@ from piptools.writer import OutputWriter
 
 
 @fixture
-def writer(tmpdir):
-    with open("src_file", "w"):
+def writer(tmpdir_cwd):
+    with open("src_file", "w"), open("src_file2", "w"):
         pass
 
-    with open("src_file2", "w"):
-        pass
-
-    output_file = tmpdir / "requirements.txt"
-
-    cli_args = ["--dry-run", "--output-file", output_file, "src_file", "src_file2"]
+    cli_args = [
+        "--dry-run",
+        "--output-file",
+        "requirements.txt",
+        "src_file",
+        "src_file2",
+    ]
 
     with cli.make_context("pip-compile", cli_args) as ctx:
         writer = OutputWriter(
@@ -143,7 +144,7 @@ def test_write_header(writer):
             "# To update, run:",
             "#",
             "#    pip-compile --output-file={} src_file src_file2".format(
-                writer.click_ctx.params["output_file"]
+                writer.click_ctx.params["output_file"].name
             ),
             "#",
         ],

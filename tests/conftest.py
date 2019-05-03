@@ -135,3 +135,9 @@ def runner():
     cli_runner = CliRunner()
     with cli_runner.isolated_filesystem():
         yield cli_runner
+
+
+@fixture
+def tmpdir_cwd(tmpdir):
+    with tmpdir.as_cwd():
+        yield tmpdir
