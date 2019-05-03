@@ -12,6 +12,7 @@ import pkg_resources
 
 from .._compat import (
     FAVORITE_HASH,
+    Link,
     PackageFinder,
     PyPI,
     RequirementSet,
@@ -19,6 +20,7 @@ from .._compat import (
     Wheel,
     contextlib,
     is_file_url,
+    path_to_url,
     url_to_path,
 )
 from ..cache import CACHE_DIR
@@ -137,7 +139,7 @@ class PyPIRepository(BaseRepository):
         Returns a Version object that indicates the best match for the given
         InstallRequirement according to the external repository.
         """
-        if ireq.editable or is_url_requirement(ireq, self):
+        if ireq.editable or is_url_requirement(ireq):
             return ireq  # return itself as the best match
 
         all_candidates = self.find_all_candidates(ireq.name)
@@ -229,13 +231,17 @@ class PyPIRepository(BaseRepository):
 
     def get_dependencies(self, ireq):
         """
-        Given a pinned, a url, or an editable InstallRequirement, returns a set of
+        Given a pinned, URL, or editable InstallRequirement, returns a set of
         dependencies (also InstallRequirements, but not necessarily pinned).
         They indicate the secondary dependencies for the given requirement.
         """
-        if not (ireq.editable or is_url_requirement(ireq, self) or is_pinned_requirement(ireq)):
+        if not (
+            ireq.editable or is_url_requirement(ireq) or is_pinned_requirement(ireq)
+        ):
             raise TypeError(
-                "Expected url, pinned or editable InstallRequirement, got {}".format(ireq)
+                "Expected url, pinned or editable InstallRequirement, got {}".format(
+                    ireq
+                )
             )
 
         if ireq not in self._dependencies_cache:
@@ -281,6 +287,16 @@ class PyPIRepository(BaseRepository):
         """
         if ireq.editable:
             return set()
+
+        if is_url_requirement(ireq):
+            # url requirements may have been previously downloaded and cached
+            # locally by self.resolve_reqs()
+            cached_path = os.path.join(self._download_dir, ireq.link.filename)
+            if os.path.exists(cached_path):
+                cached_link = Link(path_to_url(cached_path))
+            else:
+                cached_link = ireq.link
+            return {self._get_file_hash(cached_link)}
 
         if not is_pinned_requirement(ireq):
             raise TypeError("Expected pinned requirement, got {}".format(ireq))

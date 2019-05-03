@@ -11,7 +11,7 @@ from .utils import (
     dedup,
     format_requirement,
     get_compile_command,
-    key_from_req,
+    key_from_ireq,
 )
 
 
@@ -129,7 +129,7 @@ class OutputWriter(object):
                 ireq,
                 reverse_dependencies,
                 primary_packages,
-                markers.get(key_from_req(ireq.req)),
+                markers.get(key_from_ireq(ireq)),
                 hashes=hashes,
             )
             yield line
@@ -147,7 +147,7 @@ class OutputWriter(object):
                     ireq,
                     reverse_dependencies,
                     primary_packages,
-                    marker=markers.get(key_from_req(ireq.req)),
+                    marker=markers.get(key_from_ireq(ireq)),
                     hashes=hashes,
                 )
                 if not self.allow_unsafe:
@@ -185,7 +185,7 @@ class OutputWriter(object):
 
         line = format_requirement(ireq, marker=marker, hashes=ireq_hashes)
 
-        if not self.annotate or key_from_req(ireq.req) in primary_packages:
+        if not self.annotate or key_from_ireq(ireq) in primary_packages:
             return line
 
         # Annotate what packages this package is required by

@@ -9,7 +9,6 @@ from itertools import chain, count
 from . import click
 from ._compat import install_req_from_line
 from .cache import DependencyCache
-from .exceptions import UnsupportedConstraint
 from .logging import log
 from .utils import (
     UNSAFE_PACKAGES,
@@ -102,8 +101,6 @@ class Resolver(object):
             self.dependency_cache.clear()
             self.repository.clear_caches()
 
-        self.check_constraints(chain(self.our_constraints, self.their_constraints))
-
         # Ignore existing packages
         os.environ[str("PIP_EXISTS_ACTION")] = str(
             "i"
@@ -139,16 +136,6 @@ class Resolver(object):
         del os.environ["PIP_EXISTS_ACTION"]
         # Only include hard requirements and not pip constraints
         return {req for req in best_matches if not req.constraint}
-
-    @staticmethod
-    def check_constraints(constraints):
-        for constraint in constraints:
-            if constraint.link is not None and constraint.link.url.startswith('file:') and not constraint.editable:
-                msg = (
-                    "pip-compile does not support file URLs as packages, unless "
-                    "they are editable. Perhaps add -e option?"
-                )
-                raise UnsupportedConstraint(msg, constraint)
 
     def _group_constraints(self, constraints):
         """
@@ -281,7 +268,7 @@ class Resolver(object):
             Flask==0.10.1 => Flask==0.10.1
 
         """
-        if ireq.editable or is_url_requirement(ireq, self.repository):
+        if ireq.editable or is_url_requirement(ireq):
             # NOTE: it's much quicker to immediately return instead of
             # hitting the index server
             best_match = ireq
@@ -311,7 +298,7 @@ class Resolver(object):
         Editable requirements will never be looked up, as they may have
         changed at any time.
         """
-        if ireq.editable or is_url_requirement(ireq, self.repository):
+        if ireq.editable or is_url_requirement(ireq):
             for dependency in self.repository.get_dependencies(ireq):
                 yield dependency
             return
@@ -346,5 +333,7 @@ class Resolver(object):
             yield install_req_from_line(dependency_string, constraint=ireq.constraint)
 
     def reverse_dependencies(self, ireqs):
-        non_editable = [ireq for ireq in ireqs if not (ireq.editable or is_url_requirement(ireq, self.repository))]
+        non_editable = [
+            ireq for ireq in ireqs if not (ireq.editable or is_url_requirement(ireq))
+        ]
         return self.dependency_cache.reverse_dependencies(non_editable)

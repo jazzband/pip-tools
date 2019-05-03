@@ -8,6 +8,7 @@ import pytest
 from click.testing import CliRunner
 from pip import __version__ as pip_version
 from pip._vendor.packaging.version import parse as parse_version
+from pytest import mark
 
 from .utils import invoke
 
@@ -273,34 +274,76 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
     assert not os.listdir(os.path.join(str(cache_dir), "pkgs"))
 
 
-def test_url_package(tmpdir):
-    url_package = 'https://github.com/jazzband/pip-tools/archive/master.zip#egg=pip-tools'
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        with open('requirements.in', 'w') as req_in:
-            req_in.write(url_package)
-        out = runner.invoke(cli, ['-n', '-r'])
-        assert out.exit_code == 0
-        assert url_package in out.output
-        assert 'click' in out.output  # dependency of pip-tools
-
-
-def test_url_package_vcs(tmpdir):
-    vcs_package = (
-        'git+git://github.com/pytest-dev/pytest-django'
-        '@21492afc88a19d4ca01cd0ac392a5325b14f95c7'
-        '#egg=pytest-django'
-    )
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        with open('requirements.in', 'w') as req_in:
-            req_in.write(vcs_package)
-        out = runner.invoke(cli, ['-n',
-                                  '--rebuild'])
-        print(out.output)
-        assert out.exit_code == 0
-        assert vcs_package in out.output
-        assert 'pytest' in out.output  # dependency of pytest-django
+@mark.parametrize(
+    ("line", "dependency", "rewritten_line"),
+    [
+        # zip URL
+        # use pip-tools version prior to its use of setuptools_scm,
+        # which is incompatible with https: install
+        (
+            "https://github.com/jazzband/pip-tools/archive/"
+            "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3.zip",
+            "\nclick==",
+            None,
+        ),
+        # scm URL
+        (
+            "git+git://github.com/jazzband/pip-tools@"
+            "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3",
+            "\nclick==",
+            None,
+        ),
+        # wheel URL
+        (
+            "https://files.pythonhosted.org/packages/06/96/"
+            "89872db07ae70770fba97205b0737c17ef013d0d1c790"
+            "899c16bb8bac419/pip_tools-3.6.1-py2.py3-none-any.whl",
+            "\nclick==",
+            None,
+        ),
+        # file:// wheel URL
+        (
+            path_to_url(
+                os.path.join(
+                    TEST_DATA_PATH,
+                    "minimal_wheels/small_fake_with_deps-0.1-py2.py3-none-any.whl",
+                )
+            ),
+            "\nsix==",
+            None,
+        ),
+        # file:// directory
+        (
+            path_to_url(os.path.join(TEST_DATA_PATH, "small_fake_package")),
+            "\nsix==",
+            None,
+        ),
+        # bare path
+        # will be rewritten to file:// URL
+        (
+            os.path.join(
+                TEST_DATA_PATH,
+                "minimal_wheels/small_fake_with_deps-0.1-py2.py3-none-any.whl",
+            ),
+            "\nsix==",
+            path_to_url(
+                os.path.join(
+                    TEST_DATA_PATH,
+                    "minimal_wheels/small_fake_with_deps-0.1-py2.py3-none-any.whl",
+                )
+            ),
+        ),
+    ],
+)
+def test_url_package(runner, line, dependency, rewritten_line):
+    if rewritten_line is None:
+        rewritten_line = line
+    with open("requirements.in", "w") as req_in:
+        req_in.write(line)
+    out = runner.invoke(cli, ["-n", "--rebuild"])
+    assert out.exit_code == 0
+    assert rewritten_line in out.output
+    assert dependency in out.output
 
 
 def test_input_file_without_extension(runner):
@@ -377,6 +420,23 @@ def test_generate_hashes_with_editable(runner):
         "    --hash=sha256:f5c056e8f62d45ba8215e5cb8f"
         "50dfccb198b4b9fbea8500674f3443e4689589\n"
     ).format(small_fake_package_url)
+    assert out.exit_code == 0
+    assert expected in out.output
+
+
+def test_generate_hashes_with_url(runner):
+    with open("requirements.in", "w") as fp:
+        fp.write(
+            "https://github.com/jazzband/pip-tools/archive/"
+            "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3.zip#egg=pip-tools\n"
+        )
+    out = runner.invoke(cli, ["--generate-hashes"])
+    expected = (
+        "https://github.com/jazzband/pip-tools/archive/"
+        "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3.zip#egg=pip-tools \\\n"
+        "    --hash=sha256:d24de92e18ad5bf291f25cfcdcf"
+        "0171be6fa70d01d0bef9eeda356b8549715e7\n"
+    )
     assert out.exit_code == 0
     assert expected in out.output
 

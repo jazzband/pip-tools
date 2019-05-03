@@ -14,7 +14,13 @@ from ..logging import log
 from ..pip import get_pip_command, pip_defaults
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
-from ..utils import UNSAFE_PACKAGES, dedup, is_pinned_requirement, key_from_req
+from ..utils import (
+    UNSAFE_PACKAGES,
+    dedup,
+    is_pinned_requirement,
+    key_from_ireq,
+    key_from_req,
+)
 from ..writer import OutputWriter
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.in"
@@ -338,9 +344,6 @@ def cli(
         for find_link in repository.finder.find_links:
             log.debug("  -f {}".format(find_link))
 
-    # Check the given base set of constraints first
-    Resolver.check_constraints(constraints)
-
     try:
         resolver = Resolver(
             constraints,
@@ -413,10 +416,10 @@ def cli(
         unsafe_requirements=resolver.unsafe_constraints,
         reverse_dependencies=reverse_dependencies,
         primary_packages={
-            key_from_req(ireq.req) for ireq in constraints if not ireq.constraint
+            key_from_ireq(ireq) for ireq in constraints if not ireq.constraint
         },
         markers={
-            key_from_req(ireq.req): ireq.markers for ireq in constraints if ireq.markers
+            key_from_ireq(ireq): ireq.markers for ireq in constraints if ireq.markers
         },
         hashes=hashes,
     )
