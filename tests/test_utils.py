@@ -1,13 +1,18 @@
+# coding: utf-8
+from __future__ import unicode_literals
+
 import os
 
 import six
 from pytest import mark, raises
+from six.moves import shlex_quote
 
 from piptools.scripts.compile import cli as compile_cli
 from piptools.utils import (
     as_tuple,
     dedup,
     flat_map,
+    force_text,
     format_requirement,
     format_specifier,
     fs_str,
@@ -168,15 +173,21 @@ def test_name_from_req_with_project_name(from_line):
 
 
 def test_fs_str():
-    assert fs_str(u"some path component/Something") == "some path component/Something"
+    assert fs_str("some path component/Something") == "some path component/Something"
     assert isinstance(fs_str("whatever"), str)
-    assert isinstance(fs_str(u"whatever"), str)
 
 
 @mark.skipif(six.PY2, reason="Not supported in py2")
 def test_fs_str_with_bytes():
     with raises(AssertionError):
         fs_str(b"whatever")
+
+
+@mark.parametrize(
+    "value, expected_text", [(None, ""), (42, "42"), ("foo", "foo"), ("bãr", "bãr")]
+)
+def test_force_text(value, expected_text):
+    assert force_text(value) == expected_text
 
 
 @mark.parametrize(
@@ -223,9 +234,14 @@ def test_fs_str_with_bytes():
             ["--find-links", "links1", "--find-links", "links2"],
             "pip-compile --find-links=links1 --find-links=links2",
         ),
+        # Check that option values will be quoted
+        (["-f", "foo;bar"], "pip-compile --find-links='foo;bar'"),
+        (["-f", "συνδέσεις"], "pip-compile --find-links='συνδέσεις'"),
+        (["-o", "my file.txt"], "pip-compile --output-file='my file.txt'"),
+        (["-o", "απαιτήσεις.txt"], "pip-compile --output-file='απαιτήσεις.txt'"),
     ],
 )
-def test_get_compile_command(runner, cli_args, expected_command):
+def test_get_compile_command(tmpdir_cwd, cli_args, expected_command):
     """
     Test general scenarios for the get_compile_command function.
     """
@@ -233,33 +249,36 @@ def test_get_compile_command(runner, cli_args, expected_command):
         assert get_compile_command(ctx) == expected_command
 
 
-def test_get_compile_command_with_files(runner):
+@mark.parametrize(
+    "filename", ["requirements.in", "my requirements.in", "απαιτήσεις.txt"]
+)
+def test_get_compile_command_with_files(tmpdir_cwd, filename):
     """
-    Test that get_compile_command returns a command with correct file names.
+    Test that get_compile_command returns a command with correct
+    and sanitized file names.
     """
-    os.mkdir("foo")
+    os.mkdir("sub")
 
-    filename = os.path.join("foo", "bar.in")
-    with open(filename, "w"):
+    path = os.path.join("sub", filename)
+    with open(path, "w"):
         pass
 
-    args = [filename, "--output-file", "bar.txt"]
+    args = [path, "--output-file", "requirements.txt"]
     with compile_cli.make_context("pip-compile", args) as ctx:
         assert get_compile_command(
             ctx
-        ) == "pip-compile --output-file=bar.txt {src_file}".format(src_file=filename)
+        ) == "pip-compile --output-file=requirements.txt {src_file}".format(
+            src_file=shlex_quote(path)
+        )
 
 
-def test_get_compile_command_sort_args(runner):
+def test_get_compile_command_sort_args(tmpdir_cwd):
     """
     Test that get_compile_command correctly sorts arguments.
 
     The order is "pip-compile {sorted options} {sorted src files}".
     """
-    with open("setup.py", "w"):
-        pass
-
-    with open("requirements.in", "w"):
+    with open("setup.py", "w"), open("requirements.in", "w"):
         pass
 
     args = [

@@ -5,6 +5,9 @@ import sys
 from collections import OrderedDict
 from itertools import chain, groupby
 
+import six
+from six.moves import shlex_quote
+
 from ._compat import install_req_from_line
 from .click import style
 
@@ -270,6 +273,17 @@ def get_hashes_from_ireq(ireq):
     return result
 
 
+def force_text(s):
+    """
+    Return a string representing `s`.
+    """
+    if s is None:
+        return ""
+    if not isinstance(s, six.string_types):
+        return six.text_type(s)
+    return s
+
+
 def get_compile_command(click_ctx):
     """
     Returns a normalized compile command depending on cli context.
@@ -298,7 +312,7 @@ def get_compile_command(click_ctx):
         # Collect variadic args separately, they will be added
         # at the end of the command later
         if option.nargs < 0:
-            right_args.extend(value)
+            right_args.extend([shlex_quote(force_text(val)) for val in value])
             continue
 
         # Exclude one-off options (--upgrade/--upgrade-package/--rebuild/...)
@@ -323,14 +337,13 @@ def get_compile_command(click_ctx):
             value = value.name
 
         # Convert value to the list
-        values = value
-        if not isinstance(values, (tuple, list)):
-            values = [value]
+        if not isinstance(value, (tuple, list)):
+            value = [value]
 
-        for val in values:
-            # Flags don't have a value, thus add to args true or false option lone name
+        for val in value:
+            # Flags don't have a value, thus add to args true or false option long name
             if option.is_flag:
-                # If there are false-options, choose an option name depends on a value
+                # If there are false-options, choose an option name depending on a value
                 if option.secondary_opts:
                     # Get the latest false-option
                     secondary_option_long_name = option.secondary_opts[-1]
@@ -338,18 +351,13 @@ def get_compile_command(click_ctx):
                 # There are no false-options, use true-option
                 else:
                     arg = option_long_name
-                left_args.append(arg)
+                left_args.append(shlex_quote(arg))
             # Append to args the option with a value
             else:
                 left_args.append(
-                    "{option}={value}".format(option=option_long_name, value=val)
+                    "{option}={value}".format(
+                        option=option_long_name, value=shlex_quote(force_text(val))
+                    )
                 )
 
-    command = "pip-compile"
-
-    if left_args:
-        command += " " + " ".join(sorted(left_args))
-    if right_args:
-        command += " " + " ".join(sorted(right_args))
-
-    return command
+    return " ".join(["pip-compile"] + sorted(left_args) + sorted(right_args))
