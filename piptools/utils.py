@@ -54,7 +54,7 @@ def format_requirement(ireq, marker=None, hashes=None):
     in a less verbose way than using its `__str__` method.
     """
     if ireq.editable:
-        line = "-e {}".format(ireq.link)
+        line = "-e {}".format(ireq.link.url)
     else:
         line = str(ireq.req).lower()
 
