@@ -59,16 +59,12 @@ def make_install_requirement(name, version, extras, constraint=False):
     )
 
 
-def is_url_requirement(ireq, repository=None):
+def is_url_requirement(ireq):
     """
-    Finds if a requirement is a URL
+    Return True if requirement was specified as a path or URL.
+    ireq.original_link will have been set by InstallRequirement.__init__
     """
-    if not ireq.link or 'pypi.python.org' in ireq.link.url or ireq.link.url.startswith('file'):
-        return False
-    if repository is not None and hasattr(repository, 'finder'):
-        if any(index_url in ireq.link.url for index_url in repository.finder.index_urls):
-            return False
-    return True
+    return bool(ireq.original_link)
 
 
 def format_requirement(ireq, marker=None, hashes=None):
@@ -124,10 +120,7 @@ def is_pinned_requirement(ireq):
     if ireq.editable:
         return False
 
-    try:
-        if len(ireq.specifier._specs) != 1:
-            return False
-    except Exception:
+    if ireq.req is None or len(ireq.specifier._specs) != 1:
         return False
 
     op, version = next(iter(ireq.specifier._specs))._spec

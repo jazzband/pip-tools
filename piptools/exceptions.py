@@ -48,16 +48,6 @@ class NoCandidateFound(PipToolsError):
         return "\n".join(lines)
 
 
-class UnsupportedConstraint(PipToolsError):
-    def __init__(self, message, constraint):
-        super(UnsupportedConstraint, self).__init__(message)
-        self.constraint = constraint
-
-    def __str__(self):
-        message = super(UnsupportedConstraint, self).__str__()
-        return "{} (constraint was: {})".format(message, str(self.constraint))
-
-
 class IncompatibleRequirements(PipToolsError):
     def __init__(self, ireq_a, ireq_b):
         self.ireq_a = ireq_a
