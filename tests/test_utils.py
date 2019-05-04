@@ -19,9 +19,21 @@ def test_format_requirement(from_line):
     assert format_requirement(ireq) == "test==1.2"
 
 
-def test_format_requirement_editable(from_editable):
+def test_format_requirement_editable_vcs(from_editable):
     ireq = from_editable("git+git://fake.org/x/y.git#egg=y")
     assert format_requirement(ireq) == "-e git+git://fake.org/x/y.git#egg=y"
+
+
+def test_format_requirement_editable_vcs_with_password(from_editable):
+    ireq = from_editable("git+git://user:password@fake.org/x/y.git#egg=y")
+    assert (
+        format_requirement(ireq) == "-e git+git://user:password@fake.org/x/y.git#egg=y"
+    )
+
+
+def test_format_requirement_editable_local_path(from_editable):
+    ireq = from_editable("file:///home/user/package")
+    assert format_requirement(ireq) == "-e file:///home/user/package"
 
 
 def test_format_requirement_ireq_with_hashes(from_line):
