@@ -5,10 +5,21 @@ import sys
 from collections import OrderedDict
 from itertools import chain, groupby
 
+import six
+from six.moves import shlex_quote
+
 from ._compat import install_req_from_line
 from .click import style
 
 UNSAFE_PACKAGES = {"setuptools", "distribute", "pip"}
+COMPILE_EXCLUDE_OPTIONS = {
+    "--dry-run",
+    "--quiet",
+    "--rebuild",
+    "--upgrade",
+    "--upgrade-package",
+    "--verbose",
+}
 
 
 def key_from_ireq(ireq):
@@ -260,3 +271,93 @@ def get_hashes_from_ireq(ireq):
         for hash_ in hexdigests:
             result.append("{}:{}".format(algorithm, hash_))
     return result
+
+
+def force_text(s):
+    """
+    Return a string representing `s`.
+    """
+    if s is None:
+        return ""
+    if not isinstance(s, six.string_types):
+        return six.text_type(s)
+    return s
+
+
+def get_compile_command(click_ctx):
+    """
+    Returns a normalized compile command depending on cli context.
+
+    The command will be normalized by:
+        - expanding options short to long
+        - removing values that are already default
+        - sorting the arguments
+        - removing one-off arguments like '--upgrade'
+        - removing arguments that don't change build behaviour like '--verbose'
+    """
+    from piptools.scripts.compile import cli
+
+    # Map of the compile cli options (option name -> click.Option)
+    compile_options = {option.name: option for option in cli.params}
+
+    left_args = []
+    right_args = []
+
+    for option_name, value in click_ctx.params.items():
+        option = compile_options[option_name]
+
+        # Get the latest option name (usually it'll be a long name)
+        option_long_name = option.opts[-1]
+
+        # Collect variadic args separately, they will be added
+        # at the end of the command later
+        if option.nargs < 0:
+            right_args.extend([shlex_quote(force_text(val)) for val in value])
+            continue
+
+        # Exclude one-off options (--upgrade/--upgrade-package/--rebuild/...)
+        # or options that don't change compile behaviour (--verbose/--dry-run/...)
+        if option_long_name in COMPILE_EXCLUDE_OPTIONS:
+            continue
+
+        # Skip options without a value
+        if option.default is None and not value:
+            continue
+
+        # Skip options with a default value
+        if option.default == value:
+            continue
+
+        # Use a file name for file-like objects
+        if (
+            hasattr(value, "write")
+            and hasattr(value, "read")
+            and hasattr(value, "name")
+        ):
+            value = value.name
+
+        # Convert value to the list
+        if not isinstance(value, (tuple, list)):
+            value = [value]
+
+        for val in value:
+            # Flags don't have a value, thus add to args true or false option long name
+            if option.is_flag:
+                # If there are false-options, choose an option name depending on a value
+                if option.secondary_opts:
+                    # Get the latest false-option
+                    secondary_option_long_name = option.secondary_opts[-1]
+                    arg = option_long_name if val else secondary_option_long_name
+                # There are no false-options, use true-option
+                else:
+                    arg = option_long_name
+                left_args.append(shlex_quote(arg))
+            # Append to args the option with a value
+            else:
+                left_args.append(
+                    "{option}={value}".format(
+                        option=option_long_name, value=shlex_quote(force_text(val))
+                    )
+                )
+
+    return " ".join(["pip-compile"] + sorted(left_args) + sorted(right_args))
