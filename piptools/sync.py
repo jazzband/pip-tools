@@ -5,16 +5,16 @@ import tempfile
 from subprocess import check_call  # nosec
 
 from . import click
-from .exceptions import IncompatibleRequirements, UnsupportedConstraint
+from ._compat import DEV_PKGS, stdlib_pkgs
+from .exceptions import IncompatibleRequirements
 from .utils import (
     flat_map,
     format_requirement,
     get_hashes_from_ireq,
+    is_url_requirement,
     key_from_ireq,
     key_from_req,
 )
-
-from piptools._compat import DEV_PKGS, stdlib_pkgs
 
 PACKAGES_TO_IGNORE = (
     ["-markerlib", "pip", "pip-tools", "pip-review", "pkg-resources"]
@@ -77,14 +77,10 @@ def merge(requirements, ignore_conflicts):
     by_key = {}
 
     for ireq in requirements:
-        if ireq.link is not None and not ireq.editable:
-            msg = (
-                "pip-compile does not support URLs as packages, unless they are "
-                "editable. Perhaps add -e option?"
-            )
-            raise UnsupportedConstraint(msg, ireq)
-
-        key = ireq.link or key_from_req(ireq.req)
+        # Limitation: URL requirements are merged by precise string match, so
+        # "file:///example.zip#egg=example", "file:///example.zip", and
+        # "example==1.0" will not merge with each other
+        key = key_from_ireq(ireq)
 
         if not ignore_conflicts:
             existing_ireq = by_key.get(key)
@@ -96,8 +92,27 @@ def merge(requirements, ignore_conflicts):
 
         # TODO: Always pick the largest specifier in case of a conflict
         by_key[key] = ireq
-
     return by_key.values()
+
+
+def diff_key_from_ireq(ireq):
+    """
+    Calculate a key for comparing a compiled requirement with installed modules.
+    For URL requirements, only provide a useful key if the url includes
+    #egg=name==version, which will set ireq.req.name and ireq.specifier.
+    Otherwise return ireq.link so the key will not match and the package will
+    reinstall. Reinstall is necessary to ensure that packages will reinstall
+    if the URL is changed but the version is not.
+    """
+    if is_url_requirement(ireq):
+        if (
+            ireq.req
+            and (getattr(ireq.req, "key", None) or getattr(ireq.req, "name", None))
+            and ireq.specifier
+        ):
+            return key_from_ireq(ireq)
+        return str(ireq.link)
+    return key_from_ireq(ireq)
 
 
 def diff(compiled_requirements, installed_dists):
@@ -105,7 +120,7 @@ def diff(compiled_requirements, installed_dists):
     Calculate which packages should be installed or uninstalled, given a set
     of compiled requirements and a list of currently installed modules.
     """
-    requirements_lut = {r.link or key_from_req(r.req): r for r in compiled_requirements}
+    requirements_lut = {diff_key_from_ireq(r): r for r in compiled_requirements}
 
     satisfied = set()  # holds keys
     to_install = set()  # holds InstallRequirement objects

@@ -59,6 +59,14 @@ def make_install_requirement(name, version, extras, constraint=False):
     )
 
 
+def is_url_requirement(ireq):
+    """
+    Return True if requirement was specified as a path or URL.
+    ireq.original_link will have been set by InstallRequirement.__init__
+    """
+    return bool(ireq.original_link)
+
+
 def format_requirement(ireq, marker=None, hashes=None):
     """
     Generic formatter for pretty printing InstallRequirements to the terminal
@@ -66,6 +74,8 @@ def format_requirement(ireq, marker=None, hashes=None):
     """
     if ireq.editable:
         line = "-e {}".format(ireq.link.url)
+    elif is_url_requirement(ireq):
+        line = ireq.link.url
     else:
         line = str(ireq.req).lower()
 
@@ -110,7 +120,7 @@ def is_pinned_requirement(ireq):
     if ireq.editable:
         return False
 
-    if len(ireq.specifier._specs) != 1:
+    if ireq.req is None or len(ireq.specifier._specs) != 1:
         return False
 
     op, version = next(iter(ireq.specifier._specs))._spec

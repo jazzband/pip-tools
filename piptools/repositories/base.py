@@ -25,7 +25,7 @@ class BaseRepository(object):
     @abstractmethod
     def get_dependencies(self, ireq):
         """
-        Given a pinned or an editable InstallRequirement, returns a set of
+        Given a pinned, URL, or editable InstallRequirement, returns a set of
         dependencies (also InstallRequirements, but not necessarily pinned).
         They indicate the secondary dependencies for the given requirement.
         """

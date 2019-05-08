@@ -19,6 +19,7 @@ from piptools.utils import (
     get_compile_command,
     get_hashes_from_ireq,
     is_pinned_requirement,
+    is_url_requirement,
     name_from_req,
 )
 
@@ -26,6 +27,11 @@ from piptools.utils import (
 def test_format_requirement(from_line):
     ireq = from_line("test==1.2")
     assert format_requirement(ireq) == "test==1.2"
+
+
+def test_format_requirement_url(from_line):
+    ireq = from_line("https://example.com/example.zip")
+    assert format_requirement(ireq) == "https://example.com/example.zip"
 
 
 def test_format_requirement_editable_vcs(from_editable):
@@ -149,6 +155,8 @@ def test_get_hashes_from_ireq(from_line):
         ("django>1.8", False),
         ("django~=1.8", False),
         ("django==1.*", False),
+        ("file:///example.zip", False),
+        ("https://example.com/example.zip", False),
     ],
 )
 def test_is_pinned_requirement(from_line, line, expected):
@@ -159,6 +167,24 @@ def test_is_pinned_requirement(from_line, line, expected):
 def test_is_pinned_requirement_editable(from_editable):
     ireq = from_editable("git+git://fake.org/x/y.git#egg=y")
     assert not is_pinned_requirement(ireq)
+
+
+@mark.parametrize(
+    ("line", "expected"),
+    [
+        ("django==1.8", False),
+        ("django", False),
+        ("file:///example.zip", True),
+        ("https://example.com/example.zip", True),
+        ("https://example.com/example.zip#egg=example", True),
+        ("git+git://github.com/jazzband/pip-tools@master", True),
+        ("../example.zip", True),
+        ("/example.zip", True),
+    ],
+)
+def test_is_url_requirement(from_line, line, expected):
+    ireq = from_line(line)
+    assert is_url_requirement(ireq) is expected
 
 
 def test_name_from_req(from_line):

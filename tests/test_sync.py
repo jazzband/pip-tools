@@ -7,7 +7,7 @@ from collections import Counter
 import mock
 import pytest
 
-from piptools.exceptions import IncompatibleRequirements, UnsupportedConstraint
+from piptools.exceptions import IncompatibleRequirements
 from piptools.sync import dependency_tree, diff, merge, sync
 
 
@@ -98,17 +98,16 @@ def test_merge(from_line):
     )
 
 
-def test_merge_non_editable_url(from_line):
-    """
-    Non-editable URLs are not supported.
-    """
+def test_merge_urls(from_line):
     requirements = [
-        from_line("django==1.8"),
-        from_line("https://example.com/#egg=example"),
+        from_line("file:///example.zip#egg=example==1.0"),
+        from_line("example==1.0"),
+        from_line("file:///unrelated.zip"),
     ]
 
-    with pytest.raises(UnsupportedConstraint):
-        merge(requirements, ignore_conflicts=True)
+    assert Counter(requirements[1:]) == Counter(
+        merge(requirements, ignore_conflicts=False)
+    )
 
 
 def test_diff_should_do_nothing():
@@ -249,6 +248,27 @@ def test_diff_with_editable(fake_dist, from_editable):
     package = list(to_install)[0]
     assert package.editable
     assert str(package.link) == _get_file_url(path_to_package)
+
+
+def test_diff_with_matching_url_versions(fake_dist, from_line):
+    # if URL version is explicitly provided, use it to avoid reinstalling
+    installed = [fake_dist("example==1.0")]
+    reqs = [from_line("file:///example.zip#egg=example==1.0")]
+
+    to_install, to_uninstall = diff(reqs, installed)
+    assert to_install == set()
+    assert to_uninstall == set()
+
+
+def test_diff_with_no_url_versions(fake_dist, from_line):
+    # if URL version is not provided, assume the contents have
+    # changed and reinstall
+    installed = [fake_dist("example==1.0")]
+    reqs = [from_line("file:///example.zip#egg=example")]
+
+    to_install, to_uninstall = diff(reqs, installed)
+    assert to_install == set(reqs)
+    assert to_uninstall == {"example"}
 
 
 def test_sync_install_temporary_requirement_file(
