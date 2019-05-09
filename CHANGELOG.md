@@ -1,3 +1,21 @@
+# 3.7.0 (2019-05-09)
+
+Features:
+- Show progressbar on generation hashes in `pip-compile` verbose mode.
+([#743](https://github.com/jazzband/pip-tools/pull/743)). Thanks @atugushev
+- Add options `--cert` and `--client-cert` to `pip-sync`
+([#798](https://github.com/jazzband/pip-tools/pull/798)). Thanks @atugushev
+- Add support for `--find-links` in `pip-compile` output
+([#793](https://github.com/jazzband/pip-tools/pull/793)). Thanks @estan and @atugushev
+- Normalize «command to run» in `pip-compile` headers
+([#800](https://github.com/jazzband/pip-tools/pull/800)). Thanks @atugushev
+- Support URLs as packages
+([#807](https://github.com/jazzband/pip-tools/pull/807)). Thanks @jcushman, @nim65s and @toejough
+
+Bug Fixes:
+- Fix replacing password to asterisks in `pip-compile`
+([#808](https://github.com/jazzband/pip-tools/pull/808)). Thanks @atugushev
+
 # 3.6.1 (2019-04-24)
 
 Bug Fixes:
