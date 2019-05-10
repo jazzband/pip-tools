@@ -2,9 +2,9 @@ import pytest
 
 
 @pytest.mark.parametrize(
-    ("input", "expected", "prereleases"),
+    ("input", "expected", "prereleases", "unsafe_constraints"),
     (
-        (tup + (False,))[:3]
+        (tup + (False, set())[len(tup) - 2 :])  # noqa: E203
         for tup in [
             (["Django"], ["django==1.8"]),
             (
@@ -99,7 +99,7 @@ import pytest
                 ],
             ),
             # Exclude package dependcy of setuptools as it is unsafe.
-            (["html5lib"], ["html5lib==0.999999999"]),
+            (["html5lib"], ["html5lib==0.999999999"], False, {"setuptools==35.0.0"}),
             # We shouldn't include irrelevant pip constraints
             # See: GH-471
             (
@@ -113,20 +113,31 @@ import pytest
                 ],
             ),
             # Unsafe dependencies should be filtered
-            (["setuptools==35.0.0", "anyjson==0.3.3"], ["anyjson==0.3.3"]),
+            (
+                ["setuptools==35.0.0", "anyjson==0.3.3"],
+                ["anyjson==0.3.3"],
+                False,
+                {"setuptools==35.0.0"},
+            ),
             (
                 ["fake-piptools-test-with-unsafe-deps==0.1"],
                 ["fake-piptools-test-with-unsafe-deps==0.1"],
+                False,
+                {"setuptools==34.0.0", "appdirs==1.4.9", "packaging==16.8"},
             ),
         ]
     ),
 )
-def test_resolver(resolver, from_line, input, expected, prereleases):
+def test_resolver(
+    resolver, from_line, input, expected, prereleases, unsafe_constraints
+):
     input = [line if isinstance(line, tuple) else (line, False) for line in input]
     input = [from_line(req[0], constraint=req[1]) for req in input]
-    output = resolver(input, prereleases=prereleases).resolve()
+    resolver = resolver(input, prereleases=prereleases)
+    output = resolver.resolve()
     output = {str(line) for line in output}
     assert output == {str(line) for line in expected}
+    assert {str(line) for line in resolver.unsafe_constraints} == unsafe_constraints
 
 
 @pytest.mark.parametrize(
