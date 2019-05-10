@@ -19,7 +19,9 @@ from .._compat import (
     TemporaryDirectory,
     Wheel,
     contextlib,
+    is_dir_url,
     is_file_url,
+    is_vcs_url,
     path_to_url,
     url_to_path,
 )
@@ -282,21 +284,29 @@ class PyPIRepository(BaseRepository):
     def get_hashes(self, ireq):
         """
         Given an InstallRequirement, return a set of hashes that represent all
-        of the files for a given requirement. Editable requirements return an
+        of the files for a given requirement. Unhashable requirements return an
         empty set. Unpinned requirements raise a TypeError.
         """
-        if ireq.editable:
-            return set()
 
-        if is_url_requirement(ireq):
-            # url requirements may have been previously downloaded and cached
-            # locally by self.resolve_reqs()
-            cached_path = os.path.join(self._download_dir, ireq.link.filename)
-            if os.path.exists(cached_path):
-                cached_link = Link(path_to_url(cached_path))
-            else:
-                cached_link = ireq.link
-            return {self._get_file_hash(cached_link)}
+        if ireq.link:
+            link = ireq.link
+
+            if is_vcs_url(link) or (is_file_url(link) and is_dir_url(link)):
+                # Return empty set for unhashable requirements.
+                # Unhashable logic modeled on pip's
+                # RequirementPreparer.prepare_linked_requirement
+                return set()
+
+            if is_url_requirement(ireq):
+                # Directly hash URL requirements.
+                # URL requirements may have been previously downloaded and cached
+                # locally by self.resolve_reqs()
+                cached_path = os.path.join(self._download_dir, link.filename)
+                if os.path.exists(cached_path):
+                    cached_link = Link(path_to_url(cached_path))
+                else:
+                    cached_link = link
+                return {self._get_file_hash(cached_link)}
 
         if not is_pinned_requirement(ireq):
             raise TypeError("Expected pinned requirement, got {}".format(ireq))
