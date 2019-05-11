@@ -335,12 +335,15 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
         ),
     ],
 )
-def test_url_package(runner, line, dependency, rewritten_line):
+@mark.parametrize(("generate_hashes",), [(True,), (False,)])
+def test_url_package(runner, line, dependency, rewritten_line, generate_hashes):
     if rewritten_line is None:
         rewritten_line = line
     with open("requirements.in", "w") as req_in:
         req_in.write(line)
-    out = runner.invoke(cli, ["-n", "--rebuild"])
+    out = runner.invoke(
+        cli, ["-n", "--rebuild"] + (["--generate-hashes"] if generate_hashes else [])
+    )
     assert out.exit_code == 0
     assert rewritten_line in out.output
     assert dependency in out.output
