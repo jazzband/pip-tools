@@ -134,8 +134,28 @@ class Resolver(object):
             self.repository.freshen_build_caches()
 
         del os.environ["PIP_EXISTS_ACTION"]
+
         # Only include hard requirements and not pip constraints
-        return {req for req in best_matches if not req.constraint}
+        results = {req for req in best_matches if not req.constraint}
+
+        # Filter out unsafe requirements.
+        self.unsafe_constraints = set()
+        if not self.allow_unsafe:
+            # reverse_dependencies is used to filter out packages that are only
+            # required by unsafe packages. This logic is incomplete, as it would
+            # fail to filter sub-sub-dependencies of unsafe packages. None of the
+            # UNSAFE_PACKAGES currently have any dependencies at all (which makes
+            # sense for installation tools) so this seems sufficient.
+            reverse_dependencies = self.reverse_dependencies(results)
+            for req in results.copy():
+                required_by = reverse_dependencies.get(req.name.lower(), [])
+                if req.name in UNSAFE_PACKAGES or (
+                    required_by and all(name in UNSAFE_PACKAGES for name in required_by)
+                ):
+                    self.unsafe_constraints.add(req)
+                    results.remove(req)
+
+        return results
 
     def _group_constraints(self, constraints):
         """
@@ -189,14 +209,6 @@ class Resolver(object):
         """
         # Sort this list for readability of terminal output
         constraints = sorted(self.constraints, key=key_from_ireq)
-        unsafe_constraints = []
-        original_constraints = copy.copy(constraints)
-        if not self.allow_unsafe:
-            for constraint in original_constraints:
-                if constraint.name in UNSAFE_PACKAGES:
-                    constraints.remove(constraint)
-                    constraint.req.specifier = None
-                    unsafe_constraints.append(constraint)
 
         log.debug("Current constraints:")
         for constraint in constraints:
@@ -210,13 +222,11 @@ class Resolver(object):
         log.debug("")
         log.debug("Finding secondary dependencies:")
 
-        safe_constraints = []
+        their_constraints = []
         for best_match in best_matches:
-            for dep in self._iter_dependencies(best_match):
-                if self.allow_unsafe or dep.name not in UNSAFE_PACKAGES:
-                    safe_constraints.append(dep)
+            their_constraints.extend(self._iter_dependencies(best_match))
         # Grouping constraints to make clean diff between rounds
-        theirs = set(self._group_constraints(safe_constraints))
+        theirs = set(self._group_constraints(their_constraints))
 
         # NOTE: We need to compare RequirementSummary objects, since
         # InstallRequirement does not define equality
@@ -226,11 +236,8 @@ class Resolver(object):
         removed = {RequirementSummary(t) for t in self.their_constraints} - {
             RequirementSummary(t) for t in theirs
         }
-        unsafe = {RequirementSummary(t) for t in unsafe_constraints} - {
-            RequirementSummary(t) for t in self.unsafe_constraints
-        }
 
-        has_changed = len(diff) > 0 or len(removed) > 0 or len(unsafe) > 0
+        has_changed = len(diff) > 0 or len(removed) > 0
         if has_changed:
             log.debug("")
             log.debug("New dependencies found in this round:")
@@ -241,16 +248,9 @@ class Resolver(object):
                 removed, key=lambda req: key_from_req(req.req)
             ):
                 log.debug("  removing {}".format(removed_dependency))
-            log.debug("Unsafe dependencies in this round:")
-            for unsafe_dependency in sorted(
-                unsafe, key=lambda req: key_from_req(req.req)
-            ):
-                log.debug("  remembering unsafe {}".format(unsafe_dependency))
 
         # Store the last round's results in the their_constraints
         self.their_constraints = theirs
-        # Store the last round's unsafe constraints
-        self.unsafe_constraints = unsafe_constraints
         return has_changed, best_matches
 
     def get_best_match(self, ireq):

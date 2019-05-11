@@ -597,6 +597,24 @@ def test_annotate_option(pip_conf, runner, option, expected):
 
 
 @pytest.mark.parametrize(
+    "option, expected",
+    [("--allow-unsafe", "\nsetuptools=="), (None, "\n# setuptools==")],
+)
+def test_allow_unsafe_option(runner, option, expected):
+    """
+    Unsafe packages are printed as expected with and without --allow-unsafe.
+    """
+
+    with open("requirements.in", "w") as req_in:
+        req_in.write(path_to_url(os.path.join(TEST_DATA_PATH, "small_fake_package")))
+
+    out = runner.invoke(cli, [option] if option else [])
+
+    assert expected in out.output
+    assert out.exit_code == 0
+
+
+@pytest.mark.parametrize(
     "option, attr, expected",
     [("--cert", "cert", "foo.crt"), ("--client-cert", "client_cert", "bar.pem")],
 )
