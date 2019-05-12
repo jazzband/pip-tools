@@ -14,6 +14,27 @@ from .utils import (
     key_from_ireq,
 )
 
+MESSAGE_UNHASHED_PACKAGE = comment(
+    "# WARNING: pip install will require the following package to be hashed."
+    "\n# Consider using a hashable URL like "
+    "https://github.com/jazzband/pip-tools/archive/SOMECOMMIT.zip"
+)
+
+MESSAGE_UNSAFE_PACKAGES_UNPINNED = comment(
+    "# WARNING: The following packages were not pinned, but pip requires them to be"
+    "\n# pinned when the requirements file includes hashes. "
+    "Consider using the --allow-unsafe flag."
+)
+
+MESSAGE_UNSAFE_PACKAGES = comment(
+    "# The following packages are considered to be unsafe in a requirements file:"
+)
+
+MESSAGE_UNINSTALLABLE = (
+    "The generated requirements file may be rejected by pip install. "
+    "See # WARNING lines for details."
+)
+
 
 class OutputWriter(object):
     def __init__(
@@ -104,12 +125,24 @@ class OutputWriter(object):
     def _iter_lines(
         self,
         results,
-        unsafe_requirements,
-        reverse_dependencies,
-        primary_packages,
-        markers,
-        hashes,
+        unsafe_requirements=None,
+        reverse_dependencies=None,
+        primary_packages=None,
+        markers=None,
+        hashes=None,
     ):
+        # default values
+        unsafe_requirements = unsafe_requirements or []
+        reverse_dependencies = reverse_dependencies or {}
+        primary_packages = primary_packages or []
+        markers = markers or {}
+        hashes = hashes or {}
+
+        # Check for unhashed or unpinned packages if at least one package does have
+        # hashes, which will trigger pip install's --require-hashes mode.
+        warn_uninstallable = False
+        has_hashes = hashes and any(hash for hash in hashes.values())
+
         for line in self.write_header():
             yield line
         for line in self.write_flags():
@@ -125,6 +158,9 @@ class OutputWriter(object):
         packages = sorted(packages, key=self._sort_key)
 
         for ireq in packages:
+            if has_hashes and not hashes.get(ireq):
+                yield MESSAGE_UNHASHED_PACKAGE
+                warn_uninstallable = True
             line = self._format_requirement(
                 ireq,
                 reverse_dependencies,
@@ -137,10 +173,11 @@ class OutputWriter(object):
         if unsafe_requirements:
             unsafe_requirements = sorted(unsafe_requirements, key=self._sort_key)
             yield ""
-            yield comment(
-                "# The following packages are considered "
-                "to be unsafe in a requirements file:"
-            )
+            if has_hashes and not self.allow_unsafe:
+                yield MESSAGE_UNSAFE_PACKAGES_UNPINNED
+                warn_uninstallable = True
+            else:
+                yield MESSAGE_UNSAFE_PACKAGES
 
             for ireq in unsafe_requirements:
                 req = self._format_requirement(
@@ -154,6 +191,9 @@ class OutputWriter(object):
                     yield comment("# {}".format(req))
                 else:
                     yield req
+
+        if warn_uninstallable:
+            log.warning(MESSAGE_UNINSTALLABLE)
 
     def write(
         self,

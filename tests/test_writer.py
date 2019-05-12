@@ -3,7 +3,12 @@ from pytest import fixture, mark, raises
 from piptools._compat import FormatControl
 from piptools.scripts.compile import cli
 from piptools.utils import comment
-from piptools.writer import OutputWriter
+from piptools.writer import (
+    MESSAGE_UNHASHED_PACKAGE,
+    MESSAGE_UNSAFE_PACKAGES,
+    MESSAGE_UNSAFE_PACKAGES_UNPINNED,
+    OutputWriter,
+)
 
 
 @fixture
@@ -113,26 +118,52 @@ def test_format_requirement_environment_marker(from_line, writer):
 @mark.parametrize(("allow_unsafe",), [(True,), (False,)])
 def test_iter_lines__unsafe_dependencies(writer, from_line, allow_unsafe):
     writer.allow_unsafe = allow_unsafe
-
-    ireq = [from_line("test==1.2")]
-    unsafe_req = [from_line("setuptools")]
-    reverse_dependencies = {"test": ["xyz"]}
-
-    str_lines = list(
-        writer._iter_lines(ireq, unsafe_req, reverse_dependencies, ["test"], {}, None)
+    output = "\n".join(
+        writer._iter_lines([from_line("test==1.2")], [from_line("setuptools")])
     )
     assert (
-        comment(
-            "# The following packages are considered "
-            "to be unsafe in a requirements file:"
+        "\n".join(
+            [
+                "test==1.2",
+                "",
+                MESSAGE_UNSAFE_PACKAGES,
+                "setuptools" if allow_unsafe else comment("# setuptools"),
+            ]
         )
-        in str_lines
+        in output
     )
-    if allow_unsafe:
-        assert "setuptools" in str_lines
-    else:
-        assert comment("# setuptools") in str_lines
-    assert "test==1.2" in str_lines
+
+
+def test_iter_lines__unsafe_with_hashes(writer, from_line):
+    writer.allow_unsafe = False
+    ireqs = [from_line("test==1.2")]
+    unsafe_ireqs = [from_line("setuptools")]
+    hashes = {ireqs[0]: {"FAKEHASH"}, unsafe_ireqs[0]: set()}
+    output = "\n".join(writer._iter_lines(ireqs, unsafe_ireqs, hashes=hashes))
+    assert (
+        "\n".join(
+            [
+                "test==1.2 \\",
+                "    --hash=FAKEHASH",
+                "",
+                MESSAGE_UNSAFE_PACKAGES_UNPINNED,
+                comment("# setuptools"),
+            ]
+        )
+        in output
+    )
+
+
+def test_iter_lines__hash_missing(writer, from_line):
+    ireqs = [from_line("test==1.2"), from_line("file:///example/#egg=example")]
+    hashes = {ireqs[0]: {"FAKEHASH"}, ireqs[1]: set()}
+    output = "\n".join(writer._iter_lines(ireqs, hashes=hashes))
+    assert (
+        "\n".join(
+            [MESSAGE_UNHASHED_PACKAGE, "file:///example/#egg=example", "test==1.2"]
+        )
+        in output
+    )
 
 
 def test_write_header(writer):
