@@ -14,3 +14,9 @@ repos:
     hooks:
     - id: flake8
       language_version: python3.7
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.6.0
+    hooks:
+    - id: bandit
+      language_version: python3.7
+      exclude: ^(tests|\.tox|\.eggs|\.venv|\.git)
