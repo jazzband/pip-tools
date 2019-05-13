@@ -208,7 +208,7 @@ install/upgrade/uninstall everything necessary to match the
       Successfully uninstalled flake8-2.4.1
     Collecting click==4.1
       Downloading click-4.1-py2.py3-none-any.whl (62kB)
-        100% |████████████████████████████████| 65kB 1.8MB/s
+        100% |................................| 65kB 1.8MB/s
       Found existing installation: click 4.0
         Uninstalling click-4.0:
           Successfully uninstalled click-4.0
