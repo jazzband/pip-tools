@@ -18,6 +18,7 @@ from piptools.scripts.compile import cli
 
 PIP_VERSION = parse_version(os.environ.get("PIP", pip_version))
 TEST_DATA_PATH = os.path.join(os.path.split(__file__)[0], "test_data")
+MINIMAL_WHEELS_PATH = os.path.join(TEST_DATA_PATH, "minimal_wheels")
 
 fail_below_pip9 = pytest.mark.xfail(
     PIP_VERSION < parse_version("9"), reason="needs pip 9 or greater"
@@ -305,8 +306,7 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
         (
             path_to_url(
                 os.path.join(
-                    TEST_DATA_PATH,
-                    "minimal_wheels/small_fake_with_deps-0.1-py2.py3-none-any.whl",
+                    MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
                 )
             ),
             "\nsix==",
@@ -322,14 +322,12 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
         # will be rewritten to file:// URL
         (
             os.path.join(
-                TEST_DATA_PATH,
-                "minimal_wheels/small_fake_with_deps-0.1-py2.py3-none-any.whl",
+                MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
             ),
             "\nsix==",
             path_to_url(
                 os.path.join(
-                    TEST_DATA_PATH,
-                    "minimal_wheels/small_fake_with_deps-0.1-py2.py3-none-any.whl",
+                    MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
                 )
             ),
         ),
@@ -368,13 +366,12 @@ def test_upgrade_packages_option(runner):
     """
     piptools respects --upgrade-package/-P inline list.
     """
-    fake_package_dir = os.path.join(TEST_DATA_PATH, "minimal_wheels")
     with open("requirements.in", "w") as req_in:
         req_in.write("small-fake-a\nsmall-fake-b")
     with open("requirements.txt", "w") as req_in:
         req_in.write("small-fake-a==0.1\nsmall-fake-b==0.1")
 
-    out = runner.invoke(cli, ["-P", "small-fake-b", "-f", fake_package_dir])
+    out = runner.invoke(cli, ["-P", "small-fake-b", "-f", MINIMAL_WHEELS_PATH])
 
     assert out.exit_code == 0
     assert "small-fake-a==0.1" in out.output
@@ -385,13 +382,12 @@ def test_upgrade_packages_version_option(runner):
     """
     piptools respects --upgrade-package/-P inline list with specified versions.
     """
-    fake_package_dir = os.path.join(TEST_DATA_PATH, "minimal_wheels")
     with open("requirements.in", "w") as req_in:
         req_in.write("small-fake-a\nsmall-fake-b")
     with open("requirements.txt", "w") as req_in:
         req_in.write("small-fake-a==0.1\nsmall-fake-b==0.1")
 
-    out = runner.invoke(cli, ["-P", "small-fake-b==0.2", "-f", fake_package_dir])
+    out = runner.invoke(cli, ["-P", "small-fake-b==0.2", "-f", MINIMAL_WHEELS_PATH])
 
     assert out.exit_code == 0
     assert "small-fake-a==0.1" in out.output
@@ -585,12 +581,10 @@ def test_annotate_option(pip_conf, runner, option, expected):
     """
     The output lines has have annotations if option is turned on.
     """
-    fake_package_dir = os.path.join(TEST_DATA_PATH, "minimal_wheels")
-
     with open("requirements.in", "w") as req_in:
         req_in.write("small_fake_with_deps")
 
-    out = runner.invoke(cli, [option, "-n", "-f", fake_package_dir])
+    out = runner.invoke(cli, [option, "-n", "-f", MINIMAL_WHEELS_PATH])
 
     assert expected in out.output
     assert out.exit_code == 0
@@ -652,3 +646,25 @@ def test_build_isolation_option(MockPyPIRepository, runner, option, expected):
 
     # Ensure the build_isolation option in PyPIRepository has the expected value.
     assert [call[0][2] for call in MockPyPIRepository.call_args_list] == [expected]
+
+
+@pytest.mark.parametrize(
+    "pre_option, expected_package",
+    [
+        # no --pre pip-compile should resolve to the last stable version
+        ([], "small-fake-a==0.2"),
+        # pip-compile --pre should resolve to the last pre-released version
+        (["-p"], "small-fake-a==0.3b1"),
+    ],
+)
+def test_pre_option(runner, pre_option, expected_package):
+    """
+    Tests pip-compile respects --pre option.
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-a\n")
+
+    out = runner.invoke(cli, ["-n", "-f", MINIMAL_WHEELS_PATH] + pre_option)
+
+    assert out.exit_code == 0, out.output
+    assert expected_package in out.output.splitlines(), out.output
