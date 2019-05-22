@@ -649,22 +649,28 @@ def test_build_isolation_option(MockPyPIRepository, runner, option, expected):
 
 
 @pytest.mark.parametrize(
-    "pre_option, expected_package",
+    "cli_option, infile_option, expected_package",
     [
         # no --pre pip-compile should resolve to the last stable version
-        ([], "small-fake-a==0.2"),
+        (False, False, "small-fake-a==0.2"),
         # pip-compile --pre should resolve to the last pre-released version
-        (["-p"], "small-fake-a==0.3b1"),
+        (True, False, "small-fake-a==0.3b1"),
+        (False, True, "small-fake-a==0.3b1"),
+        (True, True, "small-fake-a==0.3b1"),
     ],
 )
-def test_pre_option(runner, pre_option, expected_package):
+def test_pre_option(runner, cli_option, infile_option, expected_package):
     """
     Tests pip-compile respects --pre option.
     """
     with open("requirements.in", "w") as req_in:
+        if infile_option:
+            req_in.write("--pre\n")
         req_in.write("small-fake-a\n")
 
-    out = runner.invoke(cli, ["-n", "-f", MINIMAL_WHEELS_PATH] + pre_option)
+    out = runner.invoke(
+        cli, ["-n", "-f", MINIMAL_WHEELS_PATH] + (["-p"] if cli_option else [])
+    )
 
     assert out.exit_code == 0, out.output
     assert expected_package in out.output.splitlines(), out.output

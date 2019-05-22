@@ -348,7 +348,7 @@ def cli(
         resolver = Resolver(
             constraints,
             repository,
-            prereleases=pre,
+            prereleases=repository.finder.allow_all_prereleases or pre,
             clear_caches=rebuild,
             allow_unsafe=allow_unsafe,
         )
