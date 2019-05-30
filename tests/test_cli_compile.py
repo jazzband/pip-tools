@@ -362,55 +362,93 @@ def test_input_file_without_extension(runner):
     assert os.path.exists("requirements.txt")
 
 
-@pytest.mark.parametrize("existing_requirements_txt", [True, False])
-def test_upgrade_packages_option(runner, existing_requirements_txt):
+def test_upgrade_packages_option(runner):
     """
     piptools respects --upgrade-package/-P inline list.
     """
     with open("requirements.in", "w") as req_in:
         req_in.write("small-fake-a\nsmall-fake-b")
-    if existing_requirements_txt:
-        with open("requirements.txt", "w") as req_in:
-            req_in.write("small-fake-a==0.1\nsmall-fake-b==0.1")
+    with open("requirements.txt", "w") as req_in:
+        req_in.write("small-fake-a==0.1\nsmall-fake-b==0.1")
 
     out = runner.invoke(cli, ["-P", "small-fake-b", "-f", MINIMAL_WHEELS_PATH])
 
     assert out.exit_code == 0
-    if existing_requirements_txt:
-        assert "small-fake-a==0.1" in out.output
+    assert "small-fake-a==0.1" in out.output
     assert "small-fake-b==0.3" in out.output
 
 
-@pytest.mark.parametrize("existing_requirements_txt", [True, False])
-def test_upgrade_packages_version_option(runner, existing_requirements_txt):
+def test_upgrade_packages_option_no_existing_file(runner):
+    """
+    piptools respects --upgrade-package/-P inline list when the output file
+    doesn't exist.
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-a\nsmall-fake-b")
+
+    out = runner.invoke(cli, ["-P", "small-fake-b", "-f", MINIMAL_WHEELS_PATH])
+
+    assert out.exit_code == 0
+    assert "small-fake-a==0.2" in out.output
+    assert "small-fake-b==0.3" in out.output
+
+
+def test_upgrade_packages_version_option(runner):
     """
     piptools respects --upgrade-package/-P inline list with specified versions.
     """
     with open("requirements.in", "w") as req_in:
         req_in.write("small-fake-a\nsmall-fake-b")
-    if existing_requirements_txt:
-        with open("requirements.txt", "w") as req_in:
-            req_in.write("small-fake-a==0.1\nsmall-fake-b==0.1")
+    with open("requirements.txt", "w") as req_in:
+        req_in.write("small-fake-a==0.1\nsmall-fake-b==0.1")
 
     out = runner.invoke(cli, ["-P", "small-fake-b==0.2", "-f", MINIMAL_WHEELS_PATH])
 
     assert out.exit_code == 0
-    if existing_requirements_txt:
-        assert "small-fake-a==0.1" in out.output
+    assert "small-fake-a==0.1" in out.output
     assert "small-fake-b==0.2" in out.output
 
 
-@pytest.mark.parametrize("existing_requirements_txt", [True, False])
-def test_upgrade_packages_version_option_and_upgrade(runner, existing_requirements_txt):
+def test_upgrade_packages_version_option_no_existing_file(runner):
+    """
+    piptools respects --upgrade-package/-P inline list with specified versions.
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-a\nsmall-fake-b")
+
+    out = runner.invoke(cli, ["-P", "small-fake-b==0.2", "-f", MINIMAL_WHEELS_PATH])
+
+    assert out.exit_code == 0
+    assert "small-fake-a==0.2" in out.output
+    assert "small-fake-b==0.2" in out.output
+
+
+def test_upgrade_packages_version_option_and_upgrade(runner):
     """
     piptools respects --upgrade-package/-P inline list with specified versions
     whilst also doing --upgrade.
     """
     with open("requirements.in", "w") as req_in:
         req_in.write("small-fake-a\nsmall-fake-b")
-    if existing_requirements_txt:
-        with open("requirements.txt", "w") as req_in:
-            req_in.write("small-fake-a==0.1\nsmall-fake-b==0.1")
+    with open("requirements.txt", "w") as req_in:
+        req_in.write("small-fake-a==0.1\nsmall-fake-b==0.1")
+
+    out = runner.invoke(
+        cli, ["--upgrade", "-P", "small-fake-b==0.1", "-f", MINIMAL_WHEELS_PATH]
+    )
+
+    assert out.exit_code == 0
+    assert "small-fake-a==0.2" in out.output
+    assert "small-fake-b==0.1" in out.output
+
+
+def test_upgrade_packages_version_option_and_upgrade_no_existing_file(runner):
+    """
+    piptools respects --upgrade-package/-P inline list with specified versions
+    whilst also doing --upgrade and the output file doesn't exist.
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-a\nsmall-fake-b")
 
     out = runner.invoke(
         cli, ["--upgrade", "-P", "small-fake-b==0.1", "-f", MINIMAL_WHEELS_PATH]
