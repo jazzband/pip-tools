@@ -1,7 +1,24 @@
+# 3.8.0 (2019-06-06)
+
+Features:
+- Options `--upgrade` and `--upgrade-package` are no longer mutually exclusive
+([#831](https://github.com/jazzband/pip-tools/pull/831)). Thanks @adamchainz
+
+Bug Fixes:
+- Fix `--generate-hashes` with bare VCS URLs
+([#812](https://github.com/jazzband/pip-tools/pull/812)). Thanks @jcushman
+- Fix issues with `UnicodeError` when installing `pip-tools` from source in some systems
+([#816](https://github.com/jazzband/pip-tools/pull/816)). Thanks @AbdealiJK
+- Respect `--pre` option in the input file
+([#822](https://github.com/jazzband/pip-tools/pull/822)). Thanks @atugushev
+- Option `--upgrade-package` now works even if the output file does not exist
+([#831](https://github.com/jazzband/pip-tools/pull/831)). Thanks @adamchainz
+
+
 # 3.7.0 (2019-05-09)
 
 Features:
-- Show progressbar on generation hashes in `pip-compile` verbose mode.
+- Show progressbar on generation hashes in `pip-compile` verbose mode
 ([#743](https://github.com/jazzband/pip-tools/pull/743)). Thanks @atugushev
 - Add options `--cert` and `--client-cert` to `pip-sync`
 ([#798](https://github.com/jazzband/pip-tools/pull/798)). Thanks @atugushev
