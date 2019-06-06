@@ -225,11 +225,6 @@ def cli(
         # Close the file at the end of the context execution
         ctx.call_on_close(safecall(output_file.close_intelligently))
 
-    if upgrade and upgrade_packages:
-        raise click.BadParameter(
-            "Only one of --upgrade or --upgrade-package can be provided as an argument."
-        )
-
     ###
     # Setup
     ###
@@ -260,7 +255,12 @@ def cli(
     session = pip_command._build_session(pip_options)
     repository = PyPIRepository(pip_options, session, build_isolation)
 
-    upgrade_install_reqs = {}
+    # Parse all constraints coming from --upgrade-package/-P
+    upgrade_reqs_gen = (install_req_from_line(pkg) for pkg in upgrade_packages)
+    upgrade_install_reqs = {
+        key_from_req(install_req.req): install_req for install_req in upgrade_reqs_gen
+    }
+
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified
     # (= default invocation)
     if not upgrade and os.path.exists(output_file.name):
@@ -270,14 +270,9 @@ def cli(
             session=repository.session,
             options=pip_options,
         )
-        # Exclude packages from --upgrade-package/-P from
-        # the existing pins: We want to upgrade.
-        upgrade_reqs_gen = (install_req_from_line(pkg) for pkg in upgrade_packages)
-        upgrade_install_reqs = {
-            key_from_req(install_req.req): install_req
-            for install_req in upgrade_reqs_gen
-        }
 
+        # Exclude packages from --upgrade-package/-P from the existing
+        # constraints
         existing_pins = {
             key_from_req(ireq.req): ireq
             for ireq in ireqs
