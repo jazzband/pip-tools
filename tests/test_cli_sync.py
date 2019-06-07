@@ -28,7 +28,7 @@ def test_quiet_option(check_call, runner):
         req_in.write("six==1.10.0")
 
     out = runner.invoke(cli, ["-q"])
-    assert out.output == ""
+    assert not out.stderr_bytes
     assert out.exit_code == 0
 
     # for every call to pip ensure the `-q` flag is set
@@ -48,7 +48,7 @@ def test_quiet_option_when_up_to_date(check_call, runner):
     with mock.patch("piptools.sync.diff", return_value=(set(), set())):
         out = runner.invoke(cli, ["-q"])
 
-    assert out.output == ""
+    assert not out.stderr_bytes
     assert out.exit_code == 0
     check_call.assert_not_called()
 
@@ -60,7 +60,7 @@ def test_no_requirements_file(runner):
     """
     out = runner.invoke(cli)
 
-    assert "No requirement files given" in out.output
+    assert "No requirement files given" in out.stderr
     assert out.exit_code == 2
 
 
@@ -73,7 +73,7 @@ def test_input_files_with_dot_in_extension(runner):
 
     out = runner.invoke(cli, ["requirements.in"])
 
-    assert "ERROR: Some input files have the .in extension" in out.output
+    assert "ERROR: Some input files have the .in extension" in out.stderr
     assert out.exit_code == 2
 
 
@@ -89,7 +89,7 @@ def test_force_files_with_dot_in_extension(runner):
     with mock.patch("piptools.sync.check_call"):
         out = runner.invoke(cli, ["requirements.in", "--force"])
 
-    assert "WARNING: Some input files have the .in extension" in out.output
+    assert "WARNING: Some input files have the .in extension" in out.stderr
     assert out.exit_code == 0
 
 
@@ -107,7 +107,7 @@ def test_merge_error(runner):
         out = runner.invoke(cli, ["-n"])
 
     assert out.exit_code == 2
-    assert "Incompatible requirements found" in out.output
+    assert "Incompatible requirements found" in out.stderr
 
 
 @pytest.mark.parametrize(

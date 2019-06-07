@@ -138,7 +138,7 @@ def from_editable():
 
 @fixture
 def runner():
-    cli_runner = CliRunner()
+    cli_runner = CliRunner(mix_stderr=False)
     with cli_runner.isolated_filesystem():
         yield cli_runner
 
