@@ -2,8 +2,10 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
+import re
 import sys
 import tempfile
+from collections import defaultdict
 
 from click.utils import safecall
 
@@ -161,6 +163,12 @@ DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
     "Build dependencies specified by PEP 518 must be already installed "
     "if build isolation is disabled.",
 )
+@click.option(
+    "--preserve-inline-comments",
+    is_flag=True,
+    default=False,
+    help="Preserve inline requirement comments",
+)
 def cli(
     ctx,
     verbose,
@@ -186,6 +194,7 @@ def cli(
     src_files,
     max_rounds,
     build_isolation,
+    preserve_inline_comments,
 ):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbosity = verbose - quiet
@@ -285,6 +294,45 @@ def cli(
     # Parsing/collecting initial requirements
     ###
 
+    def collect_comments(file_to_parse, comment_collection):
+        COMMENT_FULLLINE_RE = re.compile(r"(^|\s+)(#.*)$")
+        COMMENT_INLINE_RE = re.compile(r"(^[^#]+)(#.*)$")
+        OPERATOR_RE = re.compile(r"^(.*?)(;|~=|<|<=|>|>=|==|===|\!=)(.*)$")
+        EXTRAS_RE = re.compile(r"^(.*?)\[(.*)\]$")
+
+        with open(file_to_parse, "r") as f:
+            for line in f.readlines():
+                line = line.lstrip().rstrip()
+                m = COMMENT_FULLLINE_RE.match(line)
+                if m or line == "":
+                    pass
+                else:
+                    m = COMMENT_INLINE_RE.match(line)
+                    if m:
+                        req = re.sub(r"\s", "", m.groups()[0].rstrip())
+                        comment = m.groups()[1]
+                    else:
+                        req = re.sub(r"\s", "", line)
+                        comment = ""
+                    m = OPERATOR_RE.match(req)
+                    if m:
+                        req = m.groups()[0]
+                        opts = m.groups()[1] + m.groups()[2]
+                    else:
+                        opts = ""
+                    m = EXTRAS_RE.match(req)
+                    if m:
+                        req = m.groups()[0]
+                        extras = set(m.groups()[1].split(","))
+                    else:
+                        extras = set()
+                    if req not in comment_collection:
+                        comment_collection[req] = defaultdict(list)
+                    comment_collection[req]["comments"].append(comment)
+                    comment_collection[req]["opts"].append(opts)
+                    comment_collection[req]["extras"].append(extras)
+
+    comment_collection = {}
     constraints = []
     for src_file in src_files:
         is_setup_file = os.path.basename(src_file) == "setup.py"
@@ -302,23 +350,19 @@ def cli(
             else:
                 tmpfile.write(sys.stdin.read())
             tmpfile.flush()
-            constraints.extend(
-                parse_requirements(
-                    tmpfile.name,
-                    finder=repository.finder,
-                    session=repository.session,
-                    options=pip_options,
-                )
-            )
+            file_to_parse = tmpfile.name
         else:
-            constraints.extend(
-                parse_requirements(
-                    src_file,
-                    finder=repository.finder,
-                    session=repository.session,
-                    options=pip_options,
-                )
+            file_to_parse = src_file
+        constraints.extend(
+            parse_requirements(
+                file_to_parse,
+                finder=repository.finder,
+                session=repository.session,
+                options=pip_options,
             )
+        )
+        if preserve_inline_comments:
+            collect_comments(file_to_parse, comment_collection)
 
     constraints.extend(upgrade_install_reqs.values())
 
@@ -405,6 +449,8 @@ def cli(
         format_control=repository.finder.format_control,
         allow_unsafe=allow_unsafe,
         find_links=repository.finder.find_links,
+        preserve_inline_comments=preserve_inline_comments,
+        comment_collection=comment_collection,
     )
     writer.write(
         results=results,

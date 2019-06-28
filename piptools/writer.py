@@ -54,6 +54,8 @@ class OutputWriter(object):
         format_control,
         allow_unsafe,
         find_links,
+        preserve_inline_comments,
+        comment_collection,
     ):
         self.src_files = src_files
         self.dst_file = dst_file
@@ -70,6 +72,8 @@ class OutputWriter(object):
         self.format_control = format_control
         self.allow_unsafe = allow_unsafe
         self.find_links = find_links
+        self.preserve_inline_comments = preserve_inline_comments
+        self.comment_collection = comment_collection
 
     def _sort_key(self, ireq):
         return (not ireq.editable, str(ireq.req).lower())
@@ -168,6 +172,11 @@ class OutputWriter(object):
                 markers.get(key_from_ireq(ireq)),
                 hashes=hashes,
             )
+            if self.preserve_inline_comments and ireq.name in self.comment_collection:
+                if self.comment_collection[ireq.name]["comments"]:
+                    line += "  " + "  ".join(
+                        self.comment_collection[ireq.name]["comments"]
+                    )
             yield line
 
         if unsafe_requirements:
@@ -180,17 +189,25 @@ class OutputWriter(object):
                 yield MESSAGE_UNSAFE_PACKAGES
 
             for ireq in unsafe_requirements:
-                req = self._format_requirement(
+                line = self._format_requirement(
                     ireq,
                     reverse_dependencies,
                     primary_packages,
                     marker=markers.get(key_from_ireq(ireq)),
                     hashes=hashes,
                 )
+                if (
+                    self.preserve_inline_comments
+                    and ireq.name in self.comment_collection
+                ):
+                    if self.comment_collection[ireq.name]["comments"]:
+                        line += "  " + "  ".join(
+                            self.comment_collection[ireq.name]["comments"]
+                        )
                 if not self.allow_unsafe:
-                    yield comment("# {}".format(req))
+                    yield comment("# {}".format(line))
                 else:
-                    yield req
+                    yield line
 
         if warn_uninstallable:
             log.warning(MESSAGE_UNINSTALLABLE)

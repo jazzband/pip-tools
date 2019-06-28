@@ -640,6 +640,28 @@ def test_annotate_option(pip_conf, runner, option, expected):
 
 @pytest.mark.parametrize(
     "option, expected",
+    [
+        (
+            "--preserve-inline-comments",
+            "six==1.10.0               # via small-fake-with-deps\n",
+        )
+    ],
+)
+def test_preserve_inline_comments_option(pip_conf, runner, option, expected):
+    """
+    The output lines have inline comments preserved if option is turned on.
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small_fake_with_deps")
+
+    out = runner.invoke(cli, [option, "-n", "-f", MINIMAL_WHEELS_PATH])
+
+    assert expected in out.stderr
+    assert out.exit_code == 0
+
+
+@pytest.mark.parametrize(
+    "option, expected",
     [("--allow-unsafe", "\nsetuptools=="), (None, "\n# setuptools==")],
 )
 def test_allow_unsafe_option(runner, option, expected):

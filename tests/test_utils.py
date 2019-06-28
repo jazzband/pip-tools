@@ -245,6 +245,7 @@ def test_force_text(value, expected_text):
         (["--generate-hashes"], "pip-compile --generate-hashes"),
         (["--pre"], "pip-compile --pre"),
         (["--allow-unsafe"], "pip-compile --allow-unsafe"),
+        (["--preserve-inline-comments"], "pip-compile --preserve-inline-comments"),
         # Check negative flags
         (["--no-index"], "pip-compile --no-index"),
         (["--no-emit-trusted-host"], "pip-compile --no-emit-trusted-host"),
