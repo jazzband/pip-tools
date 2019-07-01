@@ -25,6 +25,9 @@ def do_import(module_path, subimport=None, old_path=None):
 
 
 InstallRequirement = do_import("req.req_install", "InstallRequirement")
+InstallationCandidate = do_import(
+    "models.candidate", "InstallationCandidate", old_path="index"
+)
 parse_requirements = do_import("req.req_file", "parse_requirements")
 RequirementSet = do_import("req.req_set", "RequirementSet")
 user_cache_dir = do_import("utils.appdirs", "user_cache_dir")
