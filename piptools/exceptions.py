@@ -35,8 +35,10 @@ class NoCandidateFound(PipToolsError):
 
         if versions or pre_versions:
             lines.append(
-                "There are incompatible versions in the resolved dependencies."
+                "There are incompatible versions in the resolved dependencies:"
             )
+            source_ireqs = getattr(self.ireq, "_source_ireqs", [])
+            lines.extend("  {}".format(ireq) for ireq in source_ireqs)
         else:
             lines.append("No versions found")
             lines.append(
