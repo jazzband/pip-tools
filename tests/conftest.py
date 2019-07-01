@@ -7,7 +7,11 @@ from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Requirement
 from pytest import fixture
 
-from piptools._compat import install_req_from_editable, install_req_from_line
+from piptools._compat import (
+    InstallationCandidate,
+    install_req_from_editable,
+    install_req_from_line,
+)
 from piptools.cache import DependencyCache
 from piptools.exceptions import NoCandidateFound
 from piptools.repositories.base import BaseRepository
@@ -40,9 +44,11 @@ class FakeRepository(BaseRepository):
             )
         )
         if not versions:
-            raise NoCandidateFound(
-                ireq, self.index[key_from_req(ireq.req)], ["https://fake.url.foo"]
-            )
+            tried_versions = [
+                InstallationCandidate(ireq.name, version, "https://fake.url.foo")
+                for version in self.index[key_from_req(ireq.req)]
+            ]
+            raise NoCandidateFound(ireq, tried_versions, ["https://fake.url.foo"])
         best_version = max(versions, key=Version)
         return make_install_requirement(
             key_from_req(ireq.req),
