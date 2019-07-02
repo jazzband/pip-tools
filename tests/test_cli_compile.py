@@ -237,17 +237,16 @@ def test_editable_package(runner):
 
 def test_editable_package_vcs(runner):
     vcs_package = (
-        "git+git://github.com/pytest-dev/pytest-django"
-        "@21492afc88a19d4ca01cd0ac392a5325b14f95c7"
-        "#egg=pytest-django"
+        "git+git://github.com/jazzband/pip-tools@"
+        "f97e62ecb0d9b70965c8eff952c001d8e2722e94"
+        "#egg=pip-tools"
     )
     with open("requirements.in", "w") as req_in:
         req_in.write("-e " + vcs_package)
     out = runner.invoke(cli, ["-n", "--rebuild"])
-    print(out.output)
     assert out.exit_code == 0
     assert vcs_package in out.output
-    assert "pytest" in out.output  # dependency of pytest-django
+    assert "click" in out.output  # dependency of pip-tools
 
 
 def test_locally_available_editable_package_is_not_archived_in_cache_dir(
