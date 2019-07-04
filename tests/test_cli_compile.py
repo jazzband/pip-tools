@@ -722,3 +722,74 @@ def test_pre_option(runner, cli_option, infile_option, expected_package):
 
     assert out.exit_code == 0, out.output
     assert expected_package in out.output.splitlines(), out.output
+
+
+@pytest.mark.parametrize(
+    "add_options",
+    [
+        [],
+        ["--output-file", "requirements.txt"],
+        ["--upgrade"],
+        ["--upgrade", "--output-file", "requirements.txt"],
+        ["--upgrade-package", "small-fake-a"],
+        ["--upgrade-package", "small-fake-a", "--output-file", "requirements.txt"],
+    ],
+)
+def test_dry_run_option(runner, add_options):
+    """
+    Tests pip-compile doesn't create requirements.txt file on dry-run.
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-a\n")
+
+    out = runner.invoke(
+        cli, ["--dry-run", "--find-links", MINIMAL_WHEELS_PATH] + add_options
+    )
+
+    assert out.exit_code == 0, out.output
+    assert "small-fake-a==0.2" in out.output.splitlines()
+    assert not os.path.exists("requirements.txt")
+
+
+@pytest.mark.parametrize(
+    "add_options, expected_cli_output_package",
+    [
+        ([], "small-fake-a==0.1"),
+        (["--output-file", "requirements.txt"], "small-fake-a==0.1"),
+        (["--upgrade"], "small-fake-a==0.2"),
+        (["--upgrade", "--output-file", "requirements.txt"], "small-fake-a==0.2"),
+        (["--upgrade-package", "small-fake-a"], "small-fake-a==0.2"),
+        (
+            ["--upgrade-package", "small-fake-a", "--output-file", "requirements.txt"],
+            "small-fake-a==0.2",
+        ),
+    ],
+)
+def test_dry_run_doesnt_touch_output_file(
+    runner, add_options, expected_cli_output_package
+):
+    """
+    Tests pip-compile doesn't touch requirements.txt file on dry-run.
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-a\n")
+
+    with open("requirements.txt", "w") as req_txt:
+        req_txt.write("small-fake-a==0.1\n")
+
+    before_compile_mtime = os.stat("requirements.txt").st_mtime
+
+    out = runner.invoke(
+        cli, ["--dry-run", "--find-links", MINIMAL_WHEELS_PATH] + add_options
+    )
+
+    assert out.exit_code == 0, out.output
+    assert expected_cli_output_package in out.output.splitlines()
+
+    # The package version must NOT be updated in the output file
+    with open("requirements.txt", "r") as req_txt:
+        assert "small-fake-a==0.1" in req_txt.read().splitlines()
+
+    # The output file must not be touched
+    after_compile_mtime = os.stat("requirements.txt").st_mtime
+    assert after_compile_mtime == before_compile_mtime
