@@ -6,6 +6,7 @@ from collections import OrderedDict
 from itertools import chain, groupby
 
 import six
+from click.utils import LazyFile
 from six.moves import shlex_quote
 
 from ._compat import install_req_from_line
@@ -339,11 +340,7 @@ def get_compile_command(click_ctx):
             continue
 
         # Use a file name for file-like objects
-        if (
-            hasattr(value, "write")
-            and hasattr(value, "read")
-            and hasattr(value, "name")
-        ):
+        if isinstance(value, LazyFile):
             value = value.name
 
         # Convert value to the list
