@@ -1,4 +1,4 @@
-|buildstatus-travis| |buildstatus-appveyor| |codecov| |coveralls| |jazzband| |pypi|
+|jazzband| |pypi| |pyversions| |buildstatus-travis| |buildstatus-appveyor| |codecov|
 
 ==================================
 pip-tools = pip-compile + pip-sync
@@ -10,23 +10,23 @@ even when you've pinned them.  `You do pin them, right?`_
 .. image:: https://github.com/jazzband/pip-tools/raw/master/img/pip-tools-overview.png
    :alt: pip-tools overview for phase II
 
-.. |buildstatus-travis| image:: https://img.shields.io/travis/jazzband/pip-tools/master.svg
-   :alt: Travis-CI build status
+.. |buildstatus-travis| image:: https://img.shields.io/travis/jazzband/pip-tools/master.svg?logo=travis
+   :alt: Travis CI build status
    :target: https://travis-ci.org/jazzband/pip-tools
-.. |buildstatus-appveyor| image:: https://img.shields.io/appveyor/ci/jazzband/pip-tools/master.svg
-   :alt: Appveyor build status
+.. |buildstatus-appveyor| image:: https://img.shields.io/appveyor/ci/jazzband/pip-tools/master.svg?logo=appveyor
+   :alt: AppVeyor build status
    :target: https://ci.appveyor.com/project/jazzband/pip-tools
 .. |codecov| image:: https://codecov.io/gh/jazzband/pip-tools/branch/master/graph/badge.svg
-   :alt: Codecov
+   :alt: Coverage
    :target: https://codecov.io/gh/jazzband/pip-tools
-.. |coveralls| image:: https://coveralls.io/repos/github/jazzband/pip-tools/badge.svg?branch=master
-   :alt: Coveralls
-   :target: https://coveralls.io/github/jazzband/pip-tools?branch=master
 .. |jazzband| image:: https://jazzband.co/static/img/badge.svg
    :alt: Jazzband
    :target: https://jazzband.co/
 .. |pypi| image:: https://img.shields.io/pypi/v/pip-tools.svg
-   :alt: PyPI
+   :alt: PyPI version
+   :target: https://pypi.org/project/pip-tools/
+.. |pyversions| image:: https://img.shields.io/pypi/pyversions/pip-tools.svg
+   :alt: Supported Python versions
    :target: https://pypi.org/project/pip-tools/
 .. _You do pin them, right?: http://nvie.com/posts/pin-your-packages/
 
