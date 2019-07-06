@@ -8,7 +8,6 @@ import sys
 from pip._vendor.packaging.requirements import Requirement
 
 from .exceptions import PipToolsError
-from .locations import CACHE_DIR
 from .utils import as_tuple, key_from_req, lookup_table
 
 
@@ -49,9 +48,7 @@ class DependencyCache(object):
     Where X.Y indicates the Python version.
     """
 
-    def __init__(self, cache_dir=None):
-        if cache_dir is None:
-            cache_dir = CACHE_DIR
+    def __init__(self, cache_dir):
         if not os.path.isdir(cache_dir):
             os.makedirs(cache_dir)
         py_version = ".".join(str(digit) for digit in sys.version_info[:2])

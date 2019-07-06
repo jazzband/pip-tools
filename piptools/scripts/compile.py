@@ -9,7 +9,9 @@ from click.utils import safecall
 
 from .. import click
 from .._compat import install_req_from_line, parse_requirements
+from ..cache import DependencyCache
 from ..exceptions import PipToolsError
+from ..locations import CACHE_DIR
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
@@ -172,6 +174,15 @@ pip_defaults = install_command.parser.get_default_values()
     default=True,
     help="Add the find-links option to generated file",
 )
+@click.option(
+    "--cache-dir",
+    help="Specify a directory to cache dependency information (defaults to {})".format(
+        CACHE_DIR
+    ),
+    envvar="PIP_TOOLS_CACHE_DIR",
+    show_envvar=True,
+    type=click.Path(file_okay=False, writable=True),
+)
 def cli(
     ctx,
     verbose,
@@ -198,6 +209,7 @@ def cli(
     max_rounds,
     build_isolation,
     emit_find_links,
+    cache_dir,
 ):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbosity = verbose - quiet
@@ -348,11 +360,15 @@ def cli(
         for find_link in dedup(repository.finder.find_links):
             log.debug("  -f {}".format(find_link))
 
+    if cache_dir is None:
+        cache_dir = CACHE_DIR
+
     try:
         resolver = Resolver(
             constraints,
             repository,
             prereleases=repository.finder.allow_all_prereleases or pre,
+            cache=DependencyCache(cache_dir),
             clear_caches=rebuild,
             allow_unsafe=allow_unsafe,
         )
