@@ -191,6 +191,13 @@ library with both versions using `tox <https://tox.readthedocs.io/en/latest/>`__
     $ pip-compile --upgrade-package 'flask<1.0' --output-file requirements-flask0x.txt
     $ pip-compile --upgrade-package 'flask<2.0' --output-file requirements-flask1x.txt
 
+Or to output to standard output, use ``--output-file=-``:
+
+.. code-block:: bash
+
+    $ pip-compile --output-file=- > requirements.txt
+    $ pip-compile - --output-file=- < requirements.in > requirements.txt
+
 Configuration
 -------------
 
