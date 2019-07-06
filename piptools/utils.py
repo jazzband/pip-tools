@@ -186,7 +186,7 @@ def lookup_table(values, key=None, keyval=None, unique=False, use_lists=False):
     ...     'q': ['qux', 'quux']
     ... }
 
-    The values of the resulting lookup table will be values, not sets.
+    The values of the resulting lookup table will be lists, not sets.
 
     For extra power, you can even change the values while building up the LUT.
     To do so, use the `keyval` function instead of the `key` arg:
