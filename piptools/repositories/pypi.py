@@ -26,9 +26,9 @@ from .._compat import (
     path_to_url,
     url_to_path,
 )
-from ..cache import CACHE_DIR
 from ..click import progressbar
 from ..exceptions import NoCandidateFound
+from ..locations import CACHE_DIR
 from ..logging import log
 from ..utils import (
     create_install_command,

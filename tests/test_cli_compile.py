@@ -15,6 +15,11 @@ from piptools._compat.pip_compat import PIP_VERSION, path_to_url
 from piptools.scripts.compile import cli
 
 
+@pytest.fixture(autouse=True)
+def temp_dep_cache(tmpdir, monkeypatch):
+    monkeypatch.setenv("PIP_TOOLS_CACHE_DIR", str(tmpdir / "cache"))
+
+
 def test_default_pip_conf_read(pip_with_index_conf, runner):
     # preconditions
     with open("requirements.in", "w"):
@@ -519,7 +524,7 @@ def test_generate_hashes_verbose(pip_conf, runner):
 
 
 @pytest.mark.skipif(PIP_VERSION < (9,), reason="needs pip 9 or greater")
-def test_filter_pip_markers(runner):
+def test_filter_pip_markers(pip_conf, runner):
     """
     Check that pip-compile works with pip environment markers (PEP496)
     """
@@ -592,7 +597,7 @@ def test_not_specified_input_file(runner):
     assert out.exit_code == 2
 
 
-def test_stdin(runner):
+def test_stdin(pip_conf, runner):
     """
     Test compile requirements from STDIN.
     """
