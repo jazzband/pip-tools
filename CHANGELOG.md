@@ -1,3 +1,15 @@
+# 3.9.0 (2019-07-17)
+
+Features:
+- Print provenance information when `pip-compile` fails
+([#837](https://github.com/jazzband/pip-tools/pull/837)). Thanks @jakevdp
+
+Bug Fixes:
+- Output all logging to stderr instead of stdout
+([#834](https://github.com/jazzband/pip-tools/pull/834)). Thanks @georgek
+- Fix output file update with `--dry-run` option in `pip-compile`
+([#842](https://github.com/jazzband/pip-tools/pull/842)). Thanks @shipmints and @atugushev
+
 # 3.8.0 (2019-06-06)
 
 Features:
