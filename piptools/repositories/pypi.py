@@ -7,8 +7,7 @@ import os
 from contextlib import contextmanager
 from shutil import rmtree
 
-import pip
-import pkg_resources
+from pkg_resources import parse_version
 
 from .._compat import (
     FAVORITE_HASH,
@@ -16,6 +15,7 @@ from .._compat import (
     PackageFinder,
     PyPI,
     RequirementSet,
+    Resolver as PipResolver,
     TemporaryDirectory,
     Wheel,
     contextlib,
@@ -31,6 +31,7 @@ from ..exceptions import NoCandidateFound
 from ..logging import log
 from ..utils import (
     fs_str,
+    get_pip_version,
     is_pinned_requirement,
     is_url_requirement,
     lookup_table,
@@ -75,24 +76,30 @@ class PyPIRepository(BaseRepository):
         if pip_options.no_index:
             index_urls = []
 
-        finder_kwargs = {
-            "find_links": pip_options.find_links,
-            "index_urls": index_urls,
-            "trusted_hosts": pip_options.trusted_hosts,
-            "allow_all_prereleases": pip_options.pre,
-            "session": self.session,
-        }
+        # Since pip 19.2 PackageFinder has been refactored
+        if get_pip_version() < parse_version("19.2"):
+            finder_kwargs = {
+                "find_links": pip_options.find_links,
+                "index_urls": index_urls,
+                "trusted_hosts": pip_options.trusted_hosts,
+                "allow_all_prereleases": pip_options.pre,
+                "session": self.session,
+            }
 
-        # pip 19.0 has removed process_dependency_links
-        # from the PackageFinder constructor
-        if pkg_resources.parse_version(pip.__version__) < pkg_resources.parse_version(
-            "19.0"
-        ):
-            finder_kwargs[
-                "process_dependency_links"
-            ] = pip_options.process_dependency_links
+            # pip 19.0 has removed process_dependency_links
+            # from the PackageFinder constructor
+            if get_pip_version() < parse_version("19.0"):
+                finder_kwargs[
+                    "process_dependency_links"
+                ] = pip_options.process_dependency_links
 
-        self.finder = PackageFinder(**finder_kwargs)
+            self.finder = PackageFinder(**finder_kwargs)
+        else:
+            from pip._internal.commands import InstallCommand
+
+            self.finder = InstallCommand()._build_package_finder(
+                options=pip_options, session=session
+            )
 
         # Caches
         # stores project_name => InstallationCandidate mappings for all
@@ -157,14 +164,15 @@ class PyPIRepository(BaseRepository):
         if not matching_candidates:
             raise NoCandidateFound(ireq, all_candidates, self.finder)
 
-        # pip <= 19.0.3
-        if hasattr(self.finder, "_candidate_sort_key"):
+        if get_pip_version() < parse_version("19.1"):
             best_candidate = max(
                 matching_candidates, key=self.finder._candidate_sort_key
             )
-        # pip >= 19.1
-        else:
+        elif get_pip_version() < parse_version("19.2"):
             evaluator = self.finder.candidate_evaluator
+            best_candidate = evaluator.get_best_candidate(matching_candidates)
+        else:
+            evaluator = self.finder.make_candidate_evaluator(ireq.name)
             best_candidate = evaluator.get_best_candidate(matching_candidates)
 
         # Turn the candidate into a pinned InstallRequirement
@@ -177,11 +185,8 @@ class PyPIRepository(BaseRepository):
 
     def resolve_reqs(self, download_dir, ireq, wheel_cache):
         results = None
-        try:
-            from pip._internal.operations.prepare import RequirementPreparer
-            from pip._internal.resolve import Resolver as PipResolver
-        except ImportError:
-            # Pip 9 and below
+
+        if get_pip_version() < parse_version("10"):
             reqset = RequirementSet(
                 self.build_dir,
                 self.source_dir,
@@ -192,7 +197,8 @@ class PyPIRepository(BaseRepository):
             )
             results = reqset._prepare_file(self.finder, ireq)
         else:
-            # pip >= 10
+            from pip._internal.operations.prepare import RequirementPreparer
+
             preparer_kwargs = {
                 "build_dir": self.build_dir,
                 "src_dir": self.source_dir,
@@ -323,14 +329,21 @@ class PyPIRepository(BaseRepository):
 
         log.debug("  {}".format(ireq.name))
 
+        def get_candidate_link(candidate):
+            if get_pip_version() < parse_version("19.2"):
+                return candidate.location
+            else:
+                return candidate.link
+
         return {
-            self._get_file_hash(candidate.location) for candidate in matching_candidates
+            self._get_file_hash(get_candidate_link(candidate))
+            for candidate in matching_candidates
         }
 
-    def _get_file_hash(self, location):
-        log.debug("    Hashing {}".format(location.url_without_fragment))
+    def _get_file_hash(self, link):
+        log.debug("    Hashing {}".format(link.url_without_fragment))
         h = hashlib.new(FAVORITE_HASH)
-        with open_local_or_remote_file(location, self.session) as f:
+        with open_local_or_remote_file(link, self.session) as f:
             # Chunks to iterate
             chunks = iter(lambda: f.stream.read(FILE_CHUNK_SIZE), b"")
 
