@@ -5,8 +5,10 @@ import sys
 from collections import OrderedDict
 from itertools import chain, groupby
 
+import pip
 import six
 from click.utils import LazyFile
+from pkg_resources import parse_version
 from six.moves import shlex_quote
 
 from ._compat import install_req_from_line
@@ -368,3 +370,7 @@ def get_compile_command(click_ctx):
                 )
 
     return " ".join(["pip-compile"] + sorted(left_args) + sorted(right_args))
+
+
+def get_pip_version():
+    return parse_version(pip.__version__)
