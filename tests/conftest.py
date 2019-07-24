@@ -14,6 +14,7 @@ from piptools._compat import (
 )
 from piptools.cache import DependencyCache
 from piptools.exceptions import NoCandidateFound
+from piptools.repositories import PyPIRepository
 from piptools.repositories.base import BaseRepository
 from piptools.resolver import Resolver
 from piptools.utils import as_tuple, key_from_req, make_install_requirement
@@ -106,6 +107,11 @@ def fake_dist():
 @fixture
 def repository():
     return FakeRepository()
+
+
+@fixture
+def pypi_repository():
+    return PyPIRepository(pip_args=["--index-url", PyPIRepository.DEFAULT_INDEX_URL])
 
 
 @fixture

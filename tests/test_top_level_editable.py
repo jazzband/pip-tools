@@ -2,7 +2,6 @@ import os
 
 import pytest
 
-from piptools.pip import get_pip_command
 from piptools.repositories import PyPIRepository
 
 
@@ -16,13 +15,11 @@ class MockedPyPIRepository(PyPIRepository):
         return super(MockedPyPIRepository, self).get_dependencies(ireq)
 
 
-def _get_repository():
-    pip_command = get_pip_command()
-    pip_args = []
-    pip_options, _ = pip_command.parse_args(pip_args)
-    session = pip_command._build_session(pip_options)
-    repository = MockedPyPIRepository(pip_options, session)
-    return repository
+@pytest.fixture
+def mocked_repository():
+    return MockedPyPIRepository(
+        pip_args=["--index-url", PyPIRepository.DEFAULT_INDEX_URL]
+    )
 
 
 @pytest.mark.parametrize(
@@ -42,11 +39,12 @@ def _get_repository():
     ),
 )
 def test_editable_top_level_deps_preserved(
-    base_resolver, repository, from_editable, input, expected
+    base_resolver, mocked_repository, from_editable, input, expected
 ):
     input = [from_editable(line) for line in input]
-    repository = _get_repository()
-    output = base_resolver(input, prereleases=False, repository=repository).resolve()
+    output = base_resolver(
+        input, prereleases=False, repository=mocked_repository
+    ).resolve()
 
     output = {p.name for p in output}
 

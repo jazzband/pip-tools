@@ -4,23 +4,21 @@ from pip import __version__ as pip_version
 from pip._vendor.packaging.version import parse as parse_version
 
 from piptools._compat import PackageFinder, install_req_from_line
-from piptools.pip import get_pip_command
-from piptools.repositories.pypi import PyPIRepository
 
 
-def test_pypirepo_build_dir_is_str():
-    assert isinstance(get_pypi_repository().build_dir, str)
+def test_pypirepo_build_dir_is_str(pypi_repository):
+    assert isinstance(pypi_repository.build_dir, str)
 
 
-def test_pypirepo_source_dir_is_str():
-    assert isinstance(get_pypi_repository().source_dir, str)
+def test_pypirepo_source_dir_is_str(pypi_repository):
+    assert isinstance(pypi_repository.source_dir, str)
 
 
 @pytest.mark.skipif(
     parse_version(pip_version) >= parse_version("10.0.0"),
     reason="RequirementSet objects don't take arguments after pip 10.",
 )
-def test_pypirepo_calls_reqset_with_str_paths():
+def test_pypirepo_calls_reqset_with_str_paths(pypi_repository):
     """
     Make sure that paths passed to RequirementSet init are str.
 
@@ -29,7 +27,6 @@ def test_pypirepo_calls_reqset_with_str_paths():
     non-ASCII str and unicode paths cannot be combined.
     """
     with patch("piptools.repositories.pypi.RequirementSet") as mocked_init:
-        repo = get_pypi_repository()
         ireq = install_req_from_line("ansible==2.4.0.0")
 
         # Setup a mock object to be returned from the RequirementSet call
@@ -37,7 +34,7 @@ def test_pypirepo_calls_reqset_with_str_paths():
         mocked_init.return_value = mocked_reqset
 
         # Do the call
-        repo.get_dependencies(ireq)
+        pypi_repository.get_dependencies(ireq)
 
         # Check that RequirementSet init is called with correct type arguments
         assert mocked_init.call_count == 1
@@ -54,15 +51,3 @@ def test_pypirepo_calls_reqset_with_str_paths():
         assert isinstance(called_with_finder, PackageFinder)
         assert called_with_ireq == ireq
         assert not pf_call_kwargs
-
-
-def get_pypi_repository():
-    """
-    Get a PyPIRepository object for the tests.
-
-    :rtype: PyPIRepository
-    """
-    pip_command = get_pip_command()
-    pip_options = pip_command.parse_args([])[0]
-    session = pip_command._build_session(pip_options)
-    return PyPIRepository(pip_options, session)

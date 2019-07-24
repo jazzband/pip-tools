@@ -11,6 +11,7 @@ from pkg_resources import parse_version
 
 from .._compat import (
     FAVORITE_HASH,
+    InstallCommand,
     Link,
     PackageFinder,
     PyPI,
@@ -67,39 +68,19 @@ class PyPIRepository(BaseRepository):
     changed/configured on the Finder.
     """
 
-    def __init__(self, pip_options, session, build_isolation=False):
-        self.session = session
-        self.pip_options = pip_options
+    def __init__(self, pip_args=None, build_isolation=False):
+        if pip_args is None:
+            pip_args = []
+
         self.build_isolation = build_isolation
 
-        index_urls = [pip_options.index_url] + pip_options.extra_index_urls
-        if pip_options.no_index:
-            index_urls = []
-
-        # Since pip 19.2 PackageFinder has been refactored
-        if get_pip_version() < parse_version("19.2"):
-            finder_kwargs = {
-                "find_links": pip_options.find_links,
-                "index_urls": index_urls,
-                "trusted_hosts": pip_options.trusted_hosts,
-                "allow_all_prereleases": pip_options.pre,
-                "session": self.session,
-            }
-
-            # pip 19.0 has removed process_dependency_links
-            # from the PackageFinder constructor
-            if get_pip_version() < parse_version("19.0"):
-                finder_kwargs[
-                    "process_dependency_links"
-                ] = pip_options.process_dependency_links
-
-            self.finder = PackageFinder(**finder_kwargs)
-        else:
-            from pip._internal.commands import InstallCommand
-
-            self.finder = InstallCommand()._build_package_finder(
-                options=pip_options, session=session
-            )
+        # Use pip's parser for pip.conf management and defaults.
+        # General options (find_links, index_url, extra_index_url, trusted_host,
+        # and pre) are deferred to pip.
+        self.command = InstallCommand()
+        self.options, _ = self.command.parse_args(pip_args)
+        self.session = self.command._build_session(self.options)
+        self.finder = self._make_package_finder()
 
         # Caches
         # stores project_name => InstallationCandidate mappings for all
@@ -116,6 +97,37 @@ class PyPIRepository(BaseRepository):
         self.freshen_build_caches()
         self._download_dir = fs_str(os.path.join(CACHE_DIR, "pkgs"))
         self._wheel_download_dir = fs_str(os.path.join(CACHE_DIR, "wheels"))
+
+    def _make_package_finder(self):
+        """
+        Create a PackageFinder.
+        """
+        # Since pip 19.2 PackageFinder has been refactored
+        if get_pip_version() < parse_version("19.2"):
+            index_urls = [self.options.index_url] + self.options.extra_index_urls
+            if self.options.no_index:
+                index_urls = []
+
+            kwargs = {
+                "find_links": self.options.find_links,
+                "index_urls": index_urls,
+                "trusted_hosts": self.options.trusted_hosts,
+                "allow_all_prereleases": self.options.pre,
+                "session": self.session,
+            }
+
+            # pip 19.0 has removed process_dependency_links
+            # from the PackageFinder constructor
+            if get_pip_version() < parse_version("19.0"):
+                kwargs[
+                    "process_dependency_links"
+                ] = self.options.process_dependency_links
+
+            return PackageFinder(**kwargs)
+        else:
+            return self.command._build_package_finder(
+                options=self.options, session=self.session
+            )
 
     def freshen_build_caches(self):
         """
@@ -269,7 +281,7 @@ class PyPIRepository(BaseRepository):
             if not os.path.isdir(self._wheel_download_dir):
                 os.makedirs(self._wheel_download_dir)
 
-            wheel_cache = WheelCache(CACHE_DIR, self.pip_options.format_control)
+            wheel_cache = WheelCache(CACHE_DIR, self.options.format_control)
             prev_tracker = os.environ.get("PIP_REQ_TRACKER")
             try:
                 self._dependencies_cache[ireq] = self.resolve_reqs(

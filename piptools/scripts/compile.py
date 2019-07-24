@@ -8,10 +8,9 @@ import tempfile
 from click.utils import safecall
 
 from .. import click
-from .._compat import install_req_from_line, parse_requirements
+from .._compat import InstallCommand, install_req_from_line, parse_requirements
 from ..exceptions import PipToolsError
 from ..logging import log
-from ..pip import get_pip_command, pip_defaults
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
 from ..utils import (
@@ -25,6 +24,9 @@ from ..writer import OutputWriter
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.in"
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
+
+# Get default values of the pip's options (including options from pip.conf).
+pip_defaults = InstallCommand().parser.get_default_values()
 
 
 @click.command()
@@ -229,8 +231,6 @@ def cli(
     # Setup
     ###
 
-    pip_command = get_pip_command()
-
     pip_args = []
     if find_links:
         for link in find_links:
@@ -250,10 +250,7 @@ def cli(
         for host in trusted_host:
             pip_args.extend(["--trusted-host", host])
 
-    pip_options, _ = pip_command.parse_args(pip_args)
-
-    session = pip_command._build_session(pip_options)
-    repository = PyPIRepository(pip_options, session, build_isolation)
+    repository = PyPIRepository(pip_args=pip_args, build_isolation=build_isolation)
 
     # Parse all constraints coming from --upgrade-package/-P
     upgrade_reqs_gen = (install_req_from_line(pkg) for pkg in upgrade_packages)
@@ -268,7 +265,7 @@ def cli(
             output_file.name,
             finder=repository.finder,
             session=repository.session,
-            options=pip_options,
+            options=repository.options,
         )
 
         # Exclude packages from --upgrade-package/-P from the existing
@@ -307,7 +304,7 @@ def cli(
                     tmpfile.name,
                     finder=repository.finder,
                     session=repository.session,
-                    options=pip_options,
+                    options=repository.options,
                 )
             )
         else:
@@ -316,7 +313,7 @@ def cli(
                     src_file,
                     finder=repository.finder,
                     session=repository.session,
-                    options=pip_options,
+                    options=repository.options,
                 )
             )
 
@@ -399,7 +396,7 @@ def cli(
         generate_hashes=generate_hashes,
         default_index_url=repository.DEFAULT_INDEX_URL,
         index_urls=repository.finder.index_urls,
-        trusted_hosts=pip_options.trusted_hosts,
+        trusted_hosts=repository.options.trusted_hosts,
         format_control=repository.finder.format_control,
         allow_unsafe=allow_unsafe,
         find_links=repository.finder.find_links,
