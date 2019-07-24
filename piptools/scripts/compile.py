@@ -250,7 +250,7 @@ def cli(
         for host in trusted_host:
             pip_args.extend(["--trusted-host", host])
 
-    repository = PyPIRepository(pip_args=pip_args, build_isolation=build_isolation)
+    repository = PyPIRepository(pip_args, build_isolation=build_isolation)
 
     # Parse all constraints coming from --upgrade-package/-P
     upgrade_reqs_gen = (install_req_from_line(pkg) for pkg in upgrade_packages)

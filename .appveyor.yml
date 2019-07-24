@@ -15,6 +15,8 @@ environment:
           PIP: 18.0
         - TOXENV: py27-pip19.0
           PIP: 19.0
+        - TOXENV: py27-pip19.1
+          PIP: 19.1
         - TOXENV: py27-pipmaster
           PIP: master
         - TOXENV: py27-piplatest-coverage
@@ -32,6 +34,8 @@ environment:
           PIP: 18.0
         - TOXENV: py35-pip19.0
           PIP: 19.0
+        - TOXENV: py35-pip19.1
+          PIP: 19.1
         - TOXENV: py35-pipmaster
           PIP: master
         - TOXENV: py35-piplatest
@@ -49,6 +53,8 @@ environment:
           PIP: 18.0
         - TOXENV: py36-pip19.0-coverage
           PIP: 19.0
+        - TOXENV: py36-pip19.1
+          PIP: 19.1
         - TOXENV: py36-pipmaster
           PIP: master
         - TOXENV: py36-piplatest
@@ -66,6 +72,8 @@ environment:
           PIP: 18.0
         - TOXENV: py37-pip19.0
           PIP: 19.0
+        - TOXENV: py37-pip19.1-coverage
+          PIP: 19.1
         - TOXENV: py37-pipmaster-coverage
           PIP: master
         - TOXENV: py37-piplatest-coverage

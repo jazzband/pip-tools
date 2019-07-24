@@ -17,9 +17,7 @@ class MockedPyPIRepository(PyPIRepository):
 
 @pytest.fixture
 def mocked_repository():
-    return MockedPyPIRepository(
-        pip_args=["--index-url", PyPIRepository.DEFAULT_INDEX_URL]
-    )
+    return MockedPyPIRepository(["--index-url", PyPIRepository.DEFAULT_INDEX_URL])
 
 
 @pytest.mark.parametrize(

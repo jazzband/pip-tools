@@ -68,10 +68,7 @@ class PyPIRepository(BaseRepository):
     changed/configured on the Finder.
     """
 
-    def __init__(self, pip_args=None, build_isolation=False):
-        if pip_args is None:
-            pip_args = []
-
+    def __init__(self, pip_args, build_isolation=False):
         self.build_isolation = build_isolation
 
         # Use pip's parser for pip.conf management and defaults.
