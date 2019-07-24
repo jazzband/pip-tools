@@ -8,12 +8,13 @@ from itertools import chain, groupby
 import pip
 import six
 from click.utils import LazyFile
-from pkg_resources import parse_version
+from pip._vendor.packaging.version import parse as parse_version
 from six.moves import shlex_quote
 
 from ._compat import install_req_from_line
 from .click import style
 
+PIP_VERSION = tuple(map(int, parse_version(pip.__version__).base_version.split(".")))
 UNSAFE_PACKAGES = {"setuptools", "distribute", "pip"}
 COMPILE_EXCLUDE_OPTIONS = {
     "--dry-run",
@@ -370,7 +371,3 @@ def get_compile_command(click_ctx):
                 )
 
     return " ".join(["pip-compile"] + sorted(left_args) + sorted(right_args))
-
-
-def get_pip_version():
-    return parse_version(pip.__version__)

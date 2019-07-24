@@ -1,9 +1,8 @@
 import pytest
 from mock import MagicMock, patch
-from pip import __version__ as pip_version
-from pip._vendor.packaging.version import parse as parse_version
 
 from piptools._compat import PackageFinder, install_req_from_line
+from piptools.utils import PIP_VERSION
 
 
 def test_pypirepo_build_dir_is_str(pypi_repository):
@@ -15,7 +14,7 @@ def test_pypirepo_source_dir_is_str(pypi_repository):
 
 
 @pytest.mark.skipif(
-    parse_version(pip_version) >= parse_version("10.0.0"),
+    PIP_VERSION >= (10,),
     reason="RequirementSet objects don't take arguments after pip 10.",
 )
 def test_pypirepo_calls_reqset_with_str_paths(pypi_repository):

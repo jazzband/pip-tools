@@ -6,8 +6,6 @@ from textwrap import dedent
 import mock
 import pytest
 from click.testing import CliRunner
-from pip import __version__ as pip_version
-from pip._vendor.packaging.version import parse as parse_version
 from pytest import mark
 
 from .utils import invoke
@@ -15,14 +13,12 @@ from .utils import invoke
 from piptools._compat.pip_compat import path_to_url
 from piptools.repositories import PyPIRepository
 from piptools.scripts.compile import cli
+from piptools.utils import PIP_VERSION
 
-PIP_VERSION = parse_version(os.environ.get("PIP", pip_version))
 TEST_DATA_PATH = os.path.join(os.path.split(__file__)[0], "test_data")
 MINIMAL_WHEELS_PATH = os.path.join(TEST_DATA_PATH, "minimal_wheels")
 
-fail_below_pip9 = pytest.mark.xfail(
-    PIP_VERSION < parse_version("9"), reason="needs pip 9 or greater"
-)
+fail_below_pip9 = pytest.mark.xfail(PIP_VERSION < (9,), reason="needs pip 9 or greater")
 
 
 @pytest.fixture

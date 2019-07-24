@@ -7,8 +7,6 @@ import os
 from contextlib import contextmanager
 from shutil import rmtree
 
-from pkg_resources import parse_version
-
 from .._compat import (
     FAVORITE_HASH,
     InstallCommand,
@@ -30,8 +28,8 @@ from ..click import progressbar
 from ..exceptions import NoCandidateFound
 from ..logging import log
 from ..utils import (
+    PIP_VERSION,
     fs_str,
-    get_pip_version,
     is_pinned_requirement,
     is_url_requirement,
     lookup_table,
@@ -144,11 +142,11 @@ class PyPIRepository(BaseRepository):
         if not matching_candidates:
             raise NoCandidateFound(ireq, all_candidates, self.finder)
 
-        if get_pip_version() < parse_version("19.1"):
+        if PIP_VERSION < (19, 1):
             best_candidate = max(
                 matching_candidates, key=self.finder._candidate_sort_key
             )
-        elif get_pip_version() < parse_version("19.2"):
+        elif PIP_VERSION < (19, 2):
             evaluator = self.finder.candidate_evaluator
             best_candidate = evaluator.get_best_candidate(matching_candidates)
         else:
@@ -166,7 +164,7 @@ class PyPIRepository(BaseRepository):
     def resolve_reqs(self, download_dir, ireq, wheel_cache):
         results = None
 
-        if get_pip_version() < parse_version("10"):
+        if PIP_VERSION < (10,):
             reqset = RequirementSet(
                 self.build_dir,
                 self.source_dir,
@@ -310,10 +308,9 @@ class PyPIRepository(BaseRepository):
         log.debug("  {}".format(ireq.name))
 
         def get_candidate_link(candidate):
-            if get_pip_version() < parse_version("19.2"):
+            if PIP_VERSION < (19, 2):
                 return candidate.location
-            else:
-                return candidate.link
+            return candidate.link
 
         return {
             self._get_file_hash(get_candidate_link(candidate))
