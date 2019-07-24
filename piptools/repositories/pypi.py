@@ -13,7 +13,6 @@ from .._compat import (
     FAVORITE_HASH,
     InstallCommand,
     Link,
-    PackageFinder,
     PyPI,
     RequirementSet,
     Resolver as PipResolver,
@@ -74,10 +73,13 @@ class PyPIRepository(BaseRepository):
         # Use pip's parser for pip.conf management and defaults.
         # General options (find_links, index_url, extra_index_url, trusted_host,
         # and pre) are deferred to pip.
-        self.command = InstallCommand()
-        self.options, _ = self.command.parse_args(pip_args)
-        self.session = self.command._build_session(self.options)
-        self.finder = self._make_package_finder()
+        command = InstallCommand()
+        self.options, _ = command.parse_args(pip_args)
+
+        self.session = command._build_session(self.options)
+        self.finder = command._build_package_finder(
+            options=self.options, session=self.session
+        )
 
         # Caches
         # stores project_name => InstallationCandidate mappings for all
@@ -94,37 +96,6 @@ class PyPIRepository(BaseRepository):
         self.freshen_build_caches()
         self._download_dir = fs_str(os.path.join(CACHE_DIR, "pkgs"))
         self._wheel_download_dir = fs_str(os.path.join(CACHE_DIR, "wheels"))
-
-    def _make_package_finder(self):
-        """
-        Create a PackageFinder.
-        """
-        # Since pip 19.2 PackageFinder has been refactored
-        if get_pip_version() < parse_version("19.2"):
-            index_urls = [self.options.index_url] + self.options.extra_index_urls
-            if self.options.no_index:
-                index_urls = []
-
-            kwargs = {
-                "find_links": self.options.find_links,
-                "index_urls": index_urls,
-                "trusted_hosts": self.options.trusted_hosts,
-                "allow_all_prereleases": self.options.pre,
-                "session": self.session,
-            }
-
-            # pip 19.0 has removed process_dependency_links
-            # from the PackageFinder constructor
-            if get_pip_version() < parse_version("19.0"):
-                kwargs[
-                    "process_dependency_links"
-                ] = self.options.process_dependency_links
-
-            return PackageFinder(**kwargs)
-        else:
-            return self.command._build_package_finder(
-                options=self.options, session=self.session
-            )
 
     def freshen_build_caches(self):
         """
