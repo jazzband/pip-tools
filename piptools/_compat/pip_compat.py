@@ -2,7 +2,7 @@
 import importlib
 
 import pip
-import pkg_resources
+from pip._vendor.packaging.version import parse as parse_version
 
 
 def do_import(module_path, subimport=None, old_path=None):
@@ -53,7 +53,7 @@ Session = do_import("_vendor.requests.sessions", "Session")
 Resolver = do_import("legacy_resolve", "Resolver", old_path="resolve")
 
 # pip 18.1 has refactored InstallRequirement constructors use by pip-tools.
-if pkg_resources.parse_version(pip.__version__) < pkg_resources.parse_version("18.1"):
+if parse_version(pip.__version__) < parse_version("18.1"):
     install_req_from_line = InstallRequirement.from_line
     install_req_from_editable = InstallRequirement.from_editable
 else:
