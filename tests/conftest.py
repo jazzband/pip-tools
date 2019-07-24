@@ -111,7 +111,7 @@ def repository():
 
 @fixture
 def pypi_repository():
-    return PyPIRepository(pip_args=["--index-url", PyPIRepository.DEFAULT_INDEX_URL])
+    return PyPIRepository(["--index-url", PyPIRepository.DEFAULT_INDEX_URL])
 
 
 @fixture
