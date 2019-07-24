@@ -660,29 +660,28 @@ def test_allow_unsafe_option(runner, option, expected):
     "option, attr, expected",
     [("--cert", "cert", "foo.crt"), ("--client-cert", "client_cert", "bar.pem")],
 )
-@mock.patch("piptools.scripts.compile.PyPIRepository")
-def test_cert_option(MockPyPIRepository, runner, option, attr, expected):
+@mock.patch("piptools.scripts.compile.parse_requirements")
+def test_cert_option(parse_requirements, runner, option, attr, expected):
     """
     The options --cert and --client-crt have to be passed to the PyPIRepository.
     """
-    with open("requirements.in", "w") as req_in:
-        req_in.write("six==1.10.0")
+    with open("requirements.in", "w"):
+        pass
 
-    out = runner.invoke(cli, [option, expected])
+    runner.invoke(cli, [option, expected])
 
-    assert "six==1.10.0" in out.stderr
-
-    # Ensure the pip_options in PyPIRepository has the expected option
-    assert [
-        getattr(call[0][0], attr) for call in MockPyPIRepository.call_args_list
-    ] == [expected]
+    # Ensure the options in parse_requirements has the expected option
+    assert getattr(parse_requirements.call_args.kwargs["options"], attr) == expected
 
 
 @pytest.mark.parametrize(
     "option, expected", [("--build-isolation", True), ("--no-build-isolation", False)]
 )
 @mock.patch("piptools.scripts.compile.PyPIRepository")
-def test_build_isolation_option(MockPyPIRepository, runner, option, expected):
+@mock.patch("piptools.scripts.compile.parse_requirements")  # prevent to parse
+def test_build_isolation_option(
+    parse_requirements, PyPIRepository, runner, option, expected
+):
     """
     A value of the --build-isolation/--no-build-isolation flag
     must be passed to the PyPIRepository.
@@ -693,7 +692,7 @@ def test_build_isolation_option(MockPyPIRepository, runner, option, expected):
     runner.invoke(cli, [option])
 
     # Ensure the build_isolation option in PyPIRepository has the expected value.
-    assert [call[0][2] for call in MockPyPIRepository.call_args_list] == [expected]
+    assert PyPIRepository.call_args.kwargs["build_isolation"] is expected
 
 
 @pytest.mark.parametrize(
