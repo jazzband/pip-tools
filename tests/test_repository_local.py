@@ -1,6 +1,4 @@
-from piptools.pip import get_pip_command
 from piptools.repositories.local import LocalRequirementsRepository
-from piptools.repositories.pypi import PyPIRepository
 from piptools.utils import name_from_req
 
 EXPECTED = {
@@ -48,17 +46,10 @@ EXPECTED = {
 }
 
 
-def test_get_hashes_local_repository_cache_miss(from_line):
-    pip_command = get_pip_command()
-    pip_options, _ = pip_command.parse_args(
-        ["--index-url", PyPIRepository.DEFAULT_INDEX_URL]
-    )
-    session = pip_command._build_session(pip_options)
-    repository = PyPIRepository(pip_options, session)
-
+def test_get_hashes_local_repository_cache_miss(from_line, pypi_repository):
     existing_pins = {}
-    local_repository = LocalRequirementsRepository(existing_pins, repository)
-    with repository.allow_all_wheels():
+    local_repository = LocalRequirementsRepository(existing_pins, pypi_repository)
+    with pypi_repository.allow_all_wheels():
         hashes = local_repository.get_hashes(from_line("cffi==1.9.1"))
         assert hashes == EXPECTED
 

@@ -2,11 +2,10 @@ import mock
 import pytest
 
 from piptools._compat.pip_compat import Link, Session, path_to_url
-from piptools.pip import get_pip_command
-from piptools.repositories.pypi import PyPIRepository, open_local_or_remote_file
+from piptools.repositories.pypi import open_local_or_remote_file
 
 
-def test_generate_hashes_all_platforms(from_line):
+def test_generate_hashes_all_platforms(from_line, pypi_repository):
     expected = {
         "sha256:04b133ef629ae2bc05f83d0b079a964494a9cd17914943e690c57209b44aae20",
         "sha256:0f1b3193c17b93c75e73eeac92f22eec4c98a021d9969b1c347d1944fae0d26b",
@@ -51,37 +50,21 @@ def test_generate_hashes_all_platforms(from_line):
         "sha256:fde17c52d7ce7d55a9fb263b57ccb5da6439915b5c7105617eb21f636bb1bd9c",
     }
 
-    pip_command = get_pip_command()
-    pip_options, _ = pip_command.parse_args(
-        ["--index-url", PyPIRepository.DEFAULT_INDEX_URL]
-    )
-    session = pip_command._build_session(pip_options)
-    repository = PyPIRepository(pip_options, session)
     ireq = from_line("cffi==1.9.1")
-    with repository.allow_all_wheels():
-        assert repository.get_hashes(ireq) == expected
+    with pypi_repository.allow_all_wheels():
+        assert pypi_repository.get_hashes(ireq) == expected
 
 
-def test_generate_hashes_without_interfering_with_each_other(from_line):
-    pip_command = get_pip_command()
-    pip_options, _ = pip_command.parse_args(
-        ["--index-url", PyPIRepository.DEFAULT_INDEX_URL]
-    )
-    session = pip_command._build_session(pip_options)
-    repository = PyPIRepository(pip_options, session)
-    repository.get_hashes(from_line("cffi==1.9.1"))
-    repository.get_hashes(from_line("matplotlib==2.0.2"))
+def test_generate_hashes_without_interfering_with_each_other(
+    from_line, pypi_repository
+):
+    pypi_repository.get_hashes(from_line("cffi==1.9.1"))
+    pypi_repository.get_hashes(from_line("matplotlib==2.0.2"))
 
 
-def test_get_hashes_editable_empty_set(from_editable):
-    pip_command = get_pip_command()
-    pip_options, _ = pip_command.parse_args(
-        ["--index-url", PyPIRepository.DEFAULT_INDEX_URL]
-    )
-    session = pip_command._build_session(pip_options)
-    repository = PyPIRepository(pip_options, session)
+def test_get_hashes_editable_empty_set(from_editable, pypi_repository):
     ireq = from_editable("git+https://github.com/django/django.git#egg=django")
-    assert repository.get_hashes(ireq) == set()
+    assert pypi_repository.get_hashes(ireq) == set()
 
 
 @pytest.mark.parametrize("content, content_length", [(b"foo", 3), (b"foobar", 6)])
