@@ -2,7 +2,7 @@
 import importlib
 
 import pip
-import pkg_resources
+from pip._vendor.packaging.version import parse as parse_version
 
 
 def do_import(module_path, subimport=None, old_path=None):
@@ -40,7 +40,7 @@ url_to_path = do_import("download", "url_to_path")
 PackageFinder = do_import("index", "PackageFinder")
 FormatControl = do_import("index", "FormatControl")
 Wheel = do_import("wheel", "Wheel")
-Command = do_import("cli.base_command", "Command", old_path="basecommand")
+InstallCommand = do_import("commands.install", "InstallCommand")
 cmdoptions = do_import("cli.cmdoptions", old_path="cmdoptions")
 get_installed_distributions = do_import(
     "utils.misc", "get_installed_distributions", old_path="utils"
@@ -50,9 +50,10 @@ stdlib_pkgs = do_import("utils.compat", "stdlib_pkgs", old_path="compat")
 DEV_PKGS = do_import("commands.freeze", "DEV_PKGS")
 Link = do_import("models.link", "Link", old_path="index")
 Session = do_import("_vendor.requests.sessions", "Session")
+Resolver = do_import("legacy_resolve", "Resolver", old_path="resolve")
 
 # pip 18.1 has refactored InstallRequirement constructors use by pip-tools.
-if pkg_resources.parse_version(pip.__version__) < pkg_resources.parse_version("18.1"):
+if parse_version(pip.__version__) < parse_version("18.1"):
     install_req_from_line = InstallRequirement.from_line
     install_req_from_editable = InstallRequirement.from_editable
 else:

@@ -34,6 +34,10 @@ class LocalRequirementsRepository(BaseRepository):
         self.existing_pins = existing_pins
 
     @property
+    def options(self):
+        return self.repository.options
+
+    @property
     def finder(self):
         return self.repository.finder
 

@@ -5,13 +5,16 @@ import sys
 from collections import OrderedDict
 from itertools import chain, groupby
 
+import pip
 import six
 from click.utils import LazyFile
+from pip._vendor.packaging.version import parse as parse_version
 from six.moves import shlex_quote
 
 from ._compat import install_req_from_line
 from .click import style
 
+PIP_VERSION = tuple(map(int, parse_version(pip.__version__).base_version.split(".")))
 UNSAFE_PACKAGES = {"setuptools", "distribute", "pip"}
 COMPILE_EXCLUDE_OPTIONS = {
     "--dry-run",
