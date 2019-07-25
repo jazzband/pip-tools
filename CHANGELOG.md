@@ -1,3 +1,13 @@
+# 4.0.0 (2019-07-25)
+
+Backwards Incompatible Changes:
+- Drop support for EOL Python 3.4
+([#803](https://github.com/jazzband/pip-tools/pull/803)). Thanks @auvipy
+
+Bug Fixes:
+- Fix `pip>=19.2` compatibility
+([#857](https://github.com/jazzband/pip-tools/pull/857)). Thanks @atugushev
+
 # 3.9.0 (2019-07-17)
 
 Features:
