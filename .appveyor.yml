@@ -43,6 +43,9 @@ environment:
 
         - TOXENV: py36-pip8.1.1
           PIP: 8.1.1
+          # Turn off --upgrade option for pip==8.1.1.
+          # See https://github.com/pypa/pip/issues/3964
+          PIP_INSTALL_OPTS: ""
         - TOXENV: py36-pip9.0.1
           PIP: 9.0.1
         - TOXENV: py36-pip9.0.3
