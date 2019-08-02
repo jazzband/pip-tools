@@ -9,7 +9,6 @@ from shutil import rmtree
 
 from .._compat import (
     FAVORITE_HASH,
-    InstallCommand,
     Link,
     PyPI,
     RequirementSet,
@@ -29,6 +28,7 @@ from ..exceptions import NoCandidateFound
 from ..logging import log
 from ..utils import (
     PIP_VERSION,
+    create_install_command,
     fs_str,
     is_pinned_requirement,
     is_url_requirement,
@@ -71,7 +71,7 @@ class PyPIRepository(BaseRepository):
         # Use pip's parser for pip.conf management and defaults.
         # General options (find_links, index_url, extra_index_url, trusted_host,
         # and pre) are deferred to pip.
-        command = InstallCommand()
+        command = create_install_command()
         self.options, _ = command.parse_args(pip_args)
 
         self.session = command._build_session(self.options)
