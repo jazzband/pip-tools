@@ -19,7 +19,7 @@ env:
   - PIP=latest
   - PIP=master
 
-cache: pip
+cache: false
 install:
   - travis_retry pip install tox-travis
 script:
