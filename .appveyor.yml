@@ -13,8 +13,8 @@ environment:
           PIP: 10.0.1
         - TOXENV: py27-pip18.0
           PIP: 18.0
-        - TOXENV: py27-pip19.0
-          PIP: 19.0
+        - TOXENV: py27-pip19.0.3
+          PIP: 19.0.3
         - TOXENV: py27-pip19.1
           PIP: 19.1
         - TOXENV: py27-pipmaster
@@ -32,8 +32,8 @@ environment:
           PIP: 10.0.1
         - TOXENV: py35-pip18.0-coverage
           PIP: 18.0
-        - TOXENV: py35-pip19.0
-          PIP: 19.0
+        - TOXENV: py35-pip19.0.3
+          PIP: 19.0.3
         - TOXENV: py35-pip19.1
           PIP: 19.1
         - TOXENV: py35-pipmaster
@@ -51,8 +51,8 @@ environment:
           PIP: 10.0.1
         - TOXENV: py36-pip18.0
           PIP: 18.0
-        - TOXENV: py36-pip19.0-coverage
-          PIP: 19.0
+        - TOXENV: py36-pip19.0.3-coverage
+          PIP: 19.0.3
         - TOXENV: py36-pip19.1
           PIP: 19.1
         - TOXENV: py36-pipmaster
@@ -70,8 +70,8 @@ environment:
           PIP: 10.0.1
         - TOXENV: py37-pip18.0
           PIP: 18.0
-        - TOXENV: py37-pip19.0
-          PIP: 19.0
+        - TOXENV: py37-pip19.0.3
+          PIP: 19.0.3
         - TOXENV: py37-pip19.1-coverage
           PIP: 19.1
         - TOXENV: py37-pipmaster-coverage
