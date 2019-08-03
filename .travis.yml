@@ -94,7 +94,7 @@ jobs:
 
 after_success:
   - travis_retry pip install codecov coveralls
-  - codecov -n "py${TRAVIS_PYTHON_VERSION}-pip${PIP}-${TRAVIS_OS_NAME}"
+  - travis_retry codecov --required -n "py${TRAVIS_PYTHON_VERSION}-pip${PIP}-${TRAVIS_OS_NAME}"
   - "COVERALLS_PARALLEL=true coveralls"
 
 notifications:
