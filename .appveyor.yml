@@ -41,8 +41,10 @@ environment:
         - TOXENV: py35-piplatest
           PIP: latest
 
-        - TOXENV: py36-pip8.1.1
-          PIP: 8.1.1
+        # Note, pip install -U pip doesn't work on py36 windows
+        # See https://github.com/pypa/pip/issues/3964
+        # - TOXENV: py36-pip8.1.1
+        #   PIP: 8.1.1
         - TOXENV: py36-pip9.0.1
           PIP: 9.0.1
         - TOXENV: py36-pip9.0.3
