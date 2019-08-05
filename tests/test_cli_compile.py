@@ -28,7 +28,7 @@ def pip_conf(tmpdir, monkeypatch):
         [global]
         index-url = http://example.com
         trusted-host = example.com
-    """
+        """
     )
 
     pip_conf_file = "pip.conf" if os.name != "nt" else "pip.ini"
@@ -71,9 +71,9 @@ def test_command_line_setuptools_read(pip_conf, runner):
     package.write(
         dedent(
             """\
-        from setuptools import setup
-        setup(install_requires=[])
-    """
+            from setuptools import setup
+            setup(install_requires=[])
+            """
         )
     )
     package.close()
@@ -109,9 +109,9 @@ def test_command_line_setuptools_output_file(pip_conf, options, expected_output_
         package.write(
             dedent(
                 """\
-            from setuptools import setup
-            setup(install_requires=[])
-        """
+                from setuptools import setup
+                setup(install_requires=[])
+                """
             )
         )
         package.close()
