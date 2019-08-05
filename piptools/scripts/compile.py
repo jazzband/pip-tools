@@ -29,7 +29,7 @@ DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 pip_defaults = InstallCommand().parser.get_default_values()
 
 
-@click.command()
+@click.command(name="pip-compile")
 @click.version_option()
 @click.pass_context
 @click.option("-v", "--verbose", count=True, help="Show more output")
@@ -317,6 +317,20 @@ def cli(
                 )
             )
 
+    # A package to upgrade must be in a requirements.in.
+    # NOTE: If you want to upgrade a package in a requirements.txt
+    #       you must add the package to the requirements.in.
+    primary_packages = {
+        key_from_ireq(ireq) for ireq in constraints if not ireq.constraint
+    }
+    for package_name in upgrade_install_reqs:
+        if package_name not in primary_packages:
+            raise click.BadParameter(
+                "Package {} not found in [SRC_FILES].".format(package_name),
+                ctx=ctx,
+                param_hint=["-P", "--upgrade-package"],
+            )
+
     constraints.extend(upgrade_install_reqs.values())
 
     # Filter out pip environment markers which do not match (PEP496)
@@ -405,9 +419,7 @@ def cli(
         results=results,
         unsafe_requirements=resolver.unsafe_constraints,
         reverse_dependencies=reverse_dependencies,
-        primary_packages={
-            key_from_ireq(ireq) for ireq in constraints if not ireq.constraint
-        },
+        primary_packages=primary_packages,
         markers={
             key_from_ireq(ireq): ireq.markers for ireq in constraints if ireq.markers
         },

@@ -779,3 +779,29 @@ def test_dry_run_doesnt_touch_output_file(
     # The output file must not be touched
     after_compile_mtime = os.stat("requirements.txt").st_mtime
     assert after_compile_mtime == before_compile_mtime
+
+
+@pytest.mark.parametrize(
+    "package",
+    [
+        # This package is not in requirements.in
+        "small-fake-c"
+        # This package is not in requirements.in, but in requirements.txt
+        "small-fake-b"
+    ],
+)
+def test_upgrade_package_not_in_requirements(pip_conf, runner, package):
+    """
+    A package to upgrade must be in a requirements.in file.
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-a")
+    with open("requirements.txt", "w") as req_txt:
+        req_txt.write("small-fake-a==0.1\nsmall-fake-b==0.1")
+
+    out = runner.invoke(
+        cli, ["--dry-run", "--upgrade-package", "{}==0.2".format(package)]
+    )
+    assert out.exit_code == 2
+    expected_message = "Package {} not found in [SRC_FILES].".format(package)
+    assert expected_message in out.stderr, out.stderr
