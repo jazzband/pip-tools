@@ -28,6 +28,7 @@ def pip_conf(tmpdir, monkeypatch):
         [global]
         index-url = http://example.com
         trusted-host = example.com
+        find-links = {wheels_path}
         """
     )
 
@@ -35,7 +36,7 @@ def pip_conf(tmpdir, monkeypatch):
     path = (tmpdir / pip_conf_file).strpath
 
     with open(path, "w") as f:
-        f.write(test_conf)
+        f.write(test_conf.format(wheels_path=MINIMAL_WHEELS_PATH))
 
     monkeypatch.setenv("PIP_CONFIG_FILE", path)
 
@@ -121,7 +122,7 @@ def test_command_line_setuptools_output_file(pip_conf, options, expected_output_
         assert os.path.exists(expected_output_file)
 
 
-def test_find_links_option(pip_conf, runner):
+def test_find_links_option(runner):
     with open("requirements.in", "w") as req_in:
         req_in.write("-f ./libs3")
 
@@ -357,7 +358,7 @@ def test_input_file_without_extension(runner):
     assert os.path.exists("requirements.txt")
 
 
-def test_upgrade_packages_option(runner):
+def test_upgrade_packages_option(pip_conf, runner):
     """
     piptools respects --upgrade-package/-P inline list.
     """
@@ -366,14 +367,14 @@ def test_upgrade_packages_option(runner):
     with open("requirements.txt", "w") as req_in:
         req_in.write("small-fake-a==0.1\nsmall-fake-b==0.1")
 
-    out = runner.invoke(cli, ["-P", "small-fake-b", "-f", MINIMAL_WHEELS_PATH])
+    out = runner.invoke(cli, ["-P", "small-fake-b"])
 
     assert out.exit_code == 0
     assert "small-fake-a==0.1" in out.stderr
     assert "small-fake-b==0.3" in out.stderr
 
 
-def test_upgrade_packages_option_no_existing_file(runner):
+def test_upgrade_packages_option_no_existing_file(pip_conf, runner):
     """
     piptools respects --upgrade-package/-P inline list when the output file
     doesn't exist.
@@ -381,14 +382,14 @@ def test_upgrade_packages_option_no_existing_file(runner):
     with open("requirements.in", "w") as req_in:
         req_in.write("small-fake-a\nsmall-fake-b")
 
-    out = runner.invoke(cli, ["-P", "small-fake-b", "-f", MINIMAL_WHEELS_PATH])
+    out = runner.invoke(cli, ["-P", "small-fake-b"])
 
     assert out.exit_code == 0
     assert "small-fake-a==0.2" in out.stderr
     assert "small-fake-b==0.3" in out.stderr
 
 
-def test_upgrade_packages_version_option(runner):
+def test_upgrade_packages_version_option(pip_conf, runner):
     """
     piptools respects --upgrade-package/-P inline list with specified versions.
     """
@@ -397,28 +398,28 @@ def test_upgrade_packages_version_option(runner):
     with open("requirements.txt", "w") as req_in:
         req_in.write("small-fake-a==0.1\nsmall-fake-b==0.1")
 
-    out = runner.invoke(cli, ["-P", "small-fake-b==0.2", "-f", MINIMAL_WHEELS_PATH])
+    out = runner.invoke(cli, ["-P", "small-fake-b==0.2"])
 
     assert out.exit_code == 0
     assert "small-fake-a==0.1" in out.stderr
     assert "small-fake-b==0.2" in out.stderr
 
 
-def test_upgrade_packages_version_option_no_existing_file(runner):
+def test_upgrade_packages_version_option_no_existing_file(pip_conf, runner):
     """
     piptools respects --upgrade-package/-P inline list with specified versions.
     """
     with open("requirements.in", "w") as req_in:
         req_in.write("small-fake-a\nsmall-fake-b")
 
-    out = runner.invoke(cli, ["-P", "small-fake-b==0.2", "-f", MINIMAL_WHEELS_PATH])
+    out = runner.invoke(cli, ["-P", "small-fake-b==0.2"])
 
     assert out.exit_code == 0
     assert "small-fake-a==0.2" in out.stderr
     assert "small-fake-b==0.2" in out.stderr
 
 
-def test_upgrade_packages_version_option_and_upgrade(runner):
+def test_upgrade_packages_version_option_and_upgrade(pip_conf, runner):
     """
     piptools respects --upgrade-package/-P inline list with specified versions
     whilst also doing --upgrade.
@@ -428,16 +429,14 @@ def test_upgrade_packages_version_option_and_upgrade(runner):
     with open("requirements.txt", "w") as req_in:
         req_in.write("small-fake-a==0.1\nsmall-fake-b==0.1")
 
-    out = runner.invoke(
-        cli, ["--upgrade", "-P", "small-fake-b==0.1", "-f", MINIMAL_WHEELS_PATH]
-    )
+    out = runner.invoke(cli, ["--upgrade", "-P", "small-fake-b==0.1"])
 
     assert out.exit_code == 0
     assert "small-fake-a==0.2" in out.stderr
     assert "small-fake-b==0.1" in out.stderr
 
 
-def test_upgrade_packages_version_option_and_upgrade_no_existing_file(runner):
+def test_upgrade_packages_version_option_and_upgrade_no_existing_file(pip_conf, runner):
     """
     piptools respects --upgrade-package/-P inline list with specified versions
     whilst also doing --upgrade and the output file doesn't exist.
@@ -445,9 +444,7 @@ def test_upgrade_packages_version_option_and_upgrade_no_existing_file(runner):
     with open("requirements.in", "w") as req_in:
         req_in.write("small-fake-a\nsmall-fake-b")
 
-    out = runner.invoke(
-        cli, ["--upgrade", "-P", "small-fake-b==0.1", "-f", MINIMAL_WHEELS_PATH]
-    )
+    out = runner.invoke(cli, ["--upgrade", "-P", "small-fake-b==0.1"])
 
     assert out.exit_code == 0
     assert "small-fake-a==0.2" in out.stderr
@@ -628,7 +625,7 @@ def test_annotate_option(pip_conf, runner, option, expected):
     with open("requirements.in", "w") as req_in:
         req_in.write("small_fake_with_deps")
 
-    out = runner.invoke(cli, [option, "-n", "-f", MINIMAL_WHEELS_PATH])
+    out = runner.invoke(cli, [option, "-n"])
 
     assert expected in out.stderr
     assert out.exit_code == 0
@@ -702,7 +699,7 @@ def test_build_isolation_option(
         (True, True, "small-fake-a==0.3b1"),
     ],
 )
-def test_pre_option(runner, cli_option, infile_option, expected_package):
+def test_pre_option(pip_conf, runner, cli_option, infile_option, expected_package):
     """
     Tests pip-compile respects --pre option.
     """
@@ -711,9 +708,7 @@ def test_pre_option(runner, cli_option, infile_option, expected_package):
             req_in.write("--pre\n")
         req_in.write("small-fake-a\n")
 
-    out = runner.invoke(
-        cli, ["-n", "-f", MINIMAL_WHEELS_PATH] + (["-p"] if cli_option else [])
-    )
+    out = runner.invoke(cli, ["-n"] + (["-p"] if cli_option else []))
 
     assert out.exit_code == 0, out.stderr
     assert expected_package in out.stderr.splitlines(), out.stderr
@@ -730,16 +725,14 @@ def test_pre_option(runner, cli_option, infile_option, expected_package):
         ["--upgrade-package", "small-fake-a", "--output-file", "requirements.txt"],
     ],
 )
-def test_dry_run_option(runner, add_options):
+def test_dry_run_option(pip_conf, runner, add_options):
     """
     Tests pip-compile doesn't create requirements.txt file on dry-run.
     """
     with open("requirements.in", "w") as req_in:
         req_in.write("small-fake-a\n")
 
-    out = runner.invoke(
-        cli, ["--dry-run", "--find-links", MINIMAL_WHEELS_PATH] + add_options
-    )
+    out = runner.invoke(cli, ["--dry-run"] + add_options)
 
     assert out.exit_code == 0, out.stderr
     assert "small-fake-a==0.2" in out.stderr.splitlines()
@@ -761,7 +754,7 @@ def test_dry_run_option(runner, add_options):
     ],
 )
 def test_dry_run_doesnt_touch_output_file(
-    runner, add_options, expected_cli_output_package
+    pip_conf, runner, add_options, expected_cli_output_package
 ):
     """
     Tests pip-compile doesn't touch requirements.txt file on dry-run.
@@ -774,9 +767,7 @@ def test_dry_run_doesnt_touch_output_file(
 
     before_compile_mtime = os.stat("requirements.txt").st_mtime
 
-    out = runner.invoke(
-        cli, ["--dry-run", "--find-links", MINIMAL_WHEELS_PATH] + add_options
-    )
+    out = runner.invoke(cli, ["--dry-run"] + add_options)
 
     assert out.exit_code == 0, out.stderr
     assert expected_cli_output_package in out.stderr.splitlines()
