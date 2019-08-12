@@ -415,4 +415,4 @@ def cli(
     )
 
     if dry_run:
-        log.warning("Dry-run, so nothing updated.")
+        log.info("Dry-run, so nothing updated.")
