@@ -455,8 +455,24 @@ def test_quiet_option(runner):
     with open("requirements", "w"):
         pass
     out = runner.invoke(cli, ["--quiet", "-n", "requirements"])
-    # Pinned requirements result has not been written to output
-    assert "Dry-run, so nothing updated." == out.stderr.strip()
+    # Pinned requirements result has not been written to output.
+    assert not out.stderr_bytes
+
+
+def test_dry_run_noisy_option(runner):
+    with open("requirements", "w"):
+        pass
+    out = runner.invoke(cli, ["--dry-run", "requirements"])
+    # Dry-run message has been written to output
+    assert "Dry-run, so nothing updated." in out.stderr.splitlines()
+
+
+def test_dry_run_quiet_option(runner):
+    with open("requirements", "w"):
+        pass
+    out = runner.invoke(cli, ["--dry-run", "--quiet", "requirements"])
+    # Dry-run message has not been written to output.
+    assert not out.stderr_bytes
 
 
 def test_generate_hashes_with_editable(runner):
