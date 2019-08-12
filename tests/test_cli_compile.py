@@ -466,8 +466,8 @@ def test_dry_run_noisy_option(runner):
     with open("requirements", "w"):
         pass
     # Dry-run massage has been written to output
-    assert "Dry-run, so nothing updated." in out.stderr.strip()
     out = runner.invoke(cli, ["--dry-run", "requirements"])
+    assert "Dry-run, so nothing updated." in out.stderr.splitlines()
 
 
 def test_dry_run_quiet_option(runner):
