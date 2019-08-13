@@ -186,9 +186,7 @@ def test_trusted_host_no_emit(pip_conf, runner):
 def test_find_links_no_emit(pip_conf, runner):
     with open("requirements.in", "w"):
         pass
-    out = runner.invoke(
-        cli, ["-v", "--no-emit-find-links"]
-    )
+    out = runner.invoke(cli, ["-v", "--no-emit-find-links"])
     assert "--find-links" not in out.stderr
 
 
