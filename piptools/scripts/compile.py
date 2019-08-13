@@ -163,6 +163,12 @@ pip_defaults = InstallCommand().parser.get_default_values()
     "Build dependencies specified by PEP 518 must be already installed "
     "if build isolation is disabled.",
 )
+@click.option(
+    "--emit-find-links/--no-emit-find-links",
+    is_flag=True,
+    default=True,
+    help="Add the find-links option to generated file",
+)
 def cli(
     ctx,
     verbose,
@@ -188,6 +194,7 @@ def cli(
     src_files,
     max_rounds,
     build_isolation,
+    emit_find_links,
 ):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbosity = verbose - quiet
@@ -400,6 +407,7 @@ def cli(
         format_control=repository.finder.format_control,
         allow_unsafe=allow_unsafe,
         find_links=repository.finder.find_links,
+        emit_find_links=emit_find_links,
     )
     writer.write(
         results=results,

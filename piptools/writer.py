@@ -54,6 +54,7 @@ class OutputWriter(object):
         format_control,
         allow_unsafe,
         find_links,
+        emit_find_links,
     ):
         self.src_files = src_files
         self.dst_file = dst_file
@@ -70,6 +71,7 @@ class OutputWriter(object):
         self.format_control = format_control
         self.allow_unsafe = allow_unsafe
         self.find_links = find_links
+        self.emit_find_links = emit_find_links
 
     def _sort_key(self, ireq):
         return (not ireq.editable, str(ireq.req).lower())
@@ -106,8 +108,9 @@ class OutputWriter(object):
             yield "--only-binary {}".format(ob)
 
     def write_find_links(self):
-        for find_link in dedup(self.find_links):
-            yield "--find-links {}".format(find_link)
+        if self.emit_find_links:
+            for find_link in dedup(self.find_links):
+                yield "--find-links {}".format(find_link)
 
     def write_flags(self):
         emitted = False

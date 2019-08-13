@@ -183,6 +183,15 @@ def test_trusted_host_no_emit(pip_conf, runner):
     assert "--trusted-host example.com" not in out.stderr
 
 
+def test_find_links_no_emit(pip_conf, runner):
+    with open("requirements.in", "w"):
+        pass
+    out = runner.invoke(
+        cli, ["-v", "--no-emit-find-links"]
+    )
+    assert "--find-links" not in out.stderr
+
+
 def test_realistic_complex_sub_dependencies(runner):
     wheels_dir = "wheels"
 
