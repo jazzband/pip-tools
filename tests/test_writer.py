@@ -41,6 +41,7 @@ def writer(tmpdir_cwd):
             format_control=FormatControl(set(), set()),
             allow_unsafe=False,
             find_links=[],
+            emit_find_links=True,
         )
         yield writer
 
