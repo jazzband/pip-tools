@@ -22,8 +22,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip==${{ matrix.pip-version }}
-        pip install -r dev-requirements.txt
-    - name: Test with pytest
+    - name: Test with tox
       run: |
-        pip install pytest
-        pytest
+        pip install tox
+        tox -e pip${{ matrix.pip-version }}
