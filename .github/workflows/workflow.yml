@@ -1,0 +1,99 @@
+name: Workflow
+
+on: [push]
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      max-parallel: 4
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [2.7, 3.7]
+        toxenv: [piplatest, checkqa, readme]
+        exclude:
+        - toxenv: checkqa
+          python-version: 2.7
+        - toxenv: readme
+          python-version: 2.7
+
+    steps:
+      - uses: actions/checkout@master
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          pip install tox
+      - name: Test
+        run: |
+          tox -e ${{ matrix.toxenv }}
+
+  tests:
+    needs: baseline
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      max-parallel: 4
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: [2.7, 3.5, 3.6, 3.7]
+        toxenv: [pip8.1.1, pip9.0.1, pip9.0.3, pip10.0.1, pip18.0, pip19.0.3, pip19.1]
+
+        # Included in baseline above
+        exclude:
+        - toxenv: piplatest
+          os: ubuntu-latest
+          python-version: 2.7
+        - toxenv: piplatest
+          os: ubuntu-latest
+          python-version: 3.7
+
+    steps:
+      - uses: actions/checkout@master
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          pip install tox
+      - name: Test
+        run: |
+          tox -e ${{ matrix.toxenv }}
+
+  master-tests:
+    needs: tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      max-parallel: 4
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: [2.7, 3.5, 3.6, 3.7]
+        toxenv: [piplatest, pipmaster]
+
+        # Included in baseline above
+        exclude:
+        - toxenv: piplatest
+          os: ubuntu-latest
+          python-version: 2.7
+        - toxenv: piplatest
+          os: ubuntu-latest
+          python-version: 3.7
+
+    steps:
+      - uses: actions/checkout@master
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          pip install tox
+      - name: Test
+        continue-on-error: true
+        run: |
+          tox -e ${{ matrix.toxenv }}
