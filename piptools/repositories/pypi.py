@@ -27,7 +27,6 @@ from ..click import progressbar
 from ..exceptions import NoCandidateFound
 from ..logging import log
 from ..utils import (
-    PIP_VERSION,
     create_install_command,
     fs_str,
     is_pinned_requirement,
@@ -36,6 +35,8 @@ from ..utils import (
     make_install_requirement,
 )
 from .base import BaseRepository
+
+from piptools._compat.pip_compat import PIP_VERSION
 
 try:
     from pip._internal.req.req_tracker import RequirementTracker
