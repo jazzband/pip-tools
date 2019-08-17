@@ -2,7 +2,7 @@ import pytest
 from mock import MagicMock, patch
 
 from piptools._compat import PackageFinder, install_req_from_line
-from piptools.utils import PIP_VERSION
+from piptools._compat.pip_compat import PIP_VERSION
 
 
 def test_pypirepo_build_dir_is_str(pypi_repository):
