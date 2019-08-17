@@ -36,7 +36,6 @@ user_cache_dir = do_import("utils.appdirs", "user_cache_dir")
 FAVORITE_HASH = do_import("utils.hashes", "FAVORITE_HASH")
 is_file_url = do_import("download", "is_file_url")
 is_dir_url = do_import("download", "is_dir_url")
-is_vcs_url = do_import("download", "is_vcs_url")
 path_to_url = do_import("download", "path_to_url")
 url_to_path = do_import("download", "url_to_path")
 PackageFinder = do_import("index", "PackageFinder")
@@ -63,3 +62,11 @@ else:
     install_req_from_editable = do_import(
         "req.constructors", "install_req_from_editable"
     )
+
+
+def is_vcs_url(link):
+    if PIP_VERSION < (19, 3):
+        _is_vcs_url = do_import("download", "is_vcs_url")
+        return _is_vcs_url(link)
+
+    return link.is_vcs
