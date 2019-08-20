@@ -122,6 +122,55 @@ def test_command_line_setuptools_output_file(pip_conf, options, expected_output_
         assert os.path.exists(expected_output_file)
 
 
+@fail_below_pip9
+@pytest.mark.parametrize(
+    "str_attrs",
+    [
+        # Test with markers in install_requires
+        """install_requires=['small-fake-a==0.1; python_version >= "2.7"']""",
+        # Test with markers in extras_require
+        """extras_require={':python_version >= "2.7"': "small-fake-a==0.1"}""",
+    ],
+)
+def test_setuptools_with_env_markers(pip_conf, runner, str_attrs):
+    """
+    Test pip-compile handles environment markers (PEP496)
+    in setup.py in install_requires/extras_require.
+    """
+    with open("setup.py", "w") as setup:
+        setup.write("from setuptools import setup\nsetup({})".format(str_attrs))
+
+    out = runner.invoke(cli)
+
+    expected_line = 'small-fake-a==0.1 ; python_version >= "2.7"'
+    assert out.exit_code == 0
+    assert expected_line in out.stderr.splitlines(), out.stderr
+
+
+@fail_below_pip9
+@pytest.mark.parametrize(
+    "str_attrs",
+    [
+        # Test invalid marker
+        """install_requires=['small-fake-a==0.1; python_version < "2.7"']""",
+        # Test non-empty extra
+        """extras_require={'dev:python_version >= "2.7"': "small-fake-a==0.1"}""",
+    ],
+)
+def test_setuptools_skips_packages(pip_conf, runner, str_attrs):
+    """
+    Test pip-compile skips packages in install_requires/extras_require
+    due to environment markers (PEP496) or non-empty extras.
+    """
+    with open("setup.py", "w") as setup:
+        setup.write("from setuptools import setup\nsetup({})".format(str_attrs))
+
+    out = runner.invoke(cli)
+
+    assert out.exit_code == 0
+    assert "small-fake-a" not in out.stderr, out.stderr
+
+
 def test_find_links_option(runner):
     with open("requirements.in", "w") as req_in:
         req_in.write("-f ./libs3")

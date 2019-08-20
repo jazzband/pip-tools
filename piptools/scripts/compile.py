@@ -303,6 +303,18 @@ def cli(
 
                 dist = run_setup(src_file)
                 tmpfile.write("\n".join(dist.install_requires))
+
+                # Parse extras_require of the form
+                # "extra:{marker}": ["package"] to
+                # "package ; {marker}" if extra is empty.
+                for extra_and_marker, packages in dist.extras_require.items():
+                    extra, marker = extra_and_marker.split(":")
+                    # TODO: non-empty extras will be ignored, perhaps we need
+                    #  an option like --with-extra to specify one. See GH-625.
+                    if extra:
+                        continue
+                    for package in packages:
+                        tmpfile.write("{} ; {}\n".format(package, marker))
             else:
                 tmpfile.write(sys.stdin.read())
             tmpfile.flush()
