@@ -150,9 +150,15 @@ class PyPIRepository(BaseRepository):
         elif PIP_VERSION < (19, 2):
             evaluator = self.finder.candidate_evaluator
             best_candidate = evaluator.get_best_candidate(matching_candidates)
-        else:
+        elif PIP_VERSION < (19, 3):
             evaluator = self.finder.make_candidate_evaluator(ireq.name)
             best_candidate = evaluator.get_best_candidate(matching_candidates)
+        else:
+            evaluator = self.finder.make_candidate_evaluator(ireq.name)
+            best_candidate_result = evaluator.compute_best_candidate(
+                matching_candidates
+            )
+            best_candidate = best_candidate_result.best_candidate
 
         # Turn the candidate into a pinned InstallRequirement
         return make_install_requirement(
