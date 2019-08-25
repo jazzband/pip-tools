@@ -17,7 +17,12 @@ from piptools.exceptions import NoCandidateFound
 from piptools.repositories import PyPIRepository
 from piptools.repositories.base import BaseRepository
 from piptools.resolver import Resolver
-from piptools.utils import as_tuple, key_from_req, make_install_requirement
+from piptools.utils import (
+    as_tuple,
+    is_url_requirement,
+    key_from_req,
+    make_install_requirement,
+)
 
 
 class FakeRepository(BaseRepository):
@@ -59,7 +64,7 @@ class FakeRepository(BaseRepository):
         )
 
     def get_dependencies(self, ireq):
-        if ireq.editable:
+        if ireq.editable or is_url_requirement(ireq):
             return self.editables[str(ireq.link)]
 
         name, version, extras = as_tuple(ireq)

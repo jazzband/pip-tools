@@ -56,7 +56,6 @@ def combine_install_requirements(ireqs):
     source_ireqs = []
     for ireq in ireqs:
         source_ireqs.extend(getattr(ireq, "_source_ireqs", [ireq]))
-    source_ireqs.sort(key=str)
 
     # deepcopy the accumulator so as to not modify the inputs
     combined_ireq = copy.deepcopy(source_ireqs[0])
@@ -120,7 +119,12 @@ class Resolver(object):
     @property
     def constraints(self):
         return set(
-            self._group_constraints(chain(self.our_constraints, self.their_constraints))
+            self._group_constraints(
+                chain(
+                    sorted(self.our_constraints, key=str),
+                    sorted(self.their_constraints, key=str),
+                )
+            )
         )
 
     def resolve_hashes(self, ireqs):
@@ -258,7 +262,7 @@ class Resolver(object):
         for best_match in best_matches:
             their_constraints.extend(self._iter_dependencies(best_match))
         # Grouping constraints to make clean diff between rounds
-        theirs = set(self._group_constraints(their_constraints))
+        theirs = set(self._group_constraints(sorted(their_constraints, key=str)))
 
         # NOTE: We need to compare RequirementSummary objects, since
         # InstallRequirement does not define equality
