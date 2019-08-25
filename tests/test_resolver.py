@@ -155,6 +155,23 @@ from piptools.resolver import combine_install_requirements
                     ),
                 },
             ),
+            # Git URL requirement
+            # See: GH-851
+            (
+                [
+                    "git+https://github.com/celery/billiard#egg=billiard==3.5.9999",
+                    "celery==4.0.2",
+                ],
+                [
+                    "amqp==2.1.4 (from kombu==4.0.2->celery==4.0.2)",
+                    "kombu==4.0.2 (from celery==4.0.2)",
+                    "billiard<3.6.0,==3.5.9999,>=3.5.0.2 from "
+                    "git+https://github.com/celery/billiard#egg=billiard==3.5.9999",
+                    "vine==1.1.3 (from amqp==2.1.4->kombu==4.0.2->celery==4.0.2)",
+                    "celery==4.0.2",
+                    "pytz==2016.4 (from celery==4.0.2)",
+                ],
+            ),
         ]
     ),
 )
@@ -264,8 +281,8 @@ def test_compile_failure_shows_provenance(resolver, from_line):
     with pytest.raises(NoCandidateFound) as err:
         resolver(requirements).resolve()
     lines = str(err.value).splitlines()
+    assert lines[-2].strip() == "celery>3.2"
     assert (
-        lines[-2].strip()
+        lines[-1].strip()
         == "celery==3.1.18 (from fake-piptools-test-with-pinned-deps==0.1)"
     )
-    assert lines[-1].strip() == "celery>3.2"
