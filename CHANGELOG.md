@@ -1,3 +1,15 @@
+# 4.1.0 (2019-08-26)
+
+Features:
+- Add `--no-emit-find-links` option to `pip-compile`
+([#873](https://github.com/jazzband/pip-tools/pull/873)). Thanks @jacobtolar
+
+Bug Fixes:
+- Prevent `--dry-run` log message from being printed with `--quiet` option in `pip-compile`
+([#861](https://github.com/jazzband/pip-tools/pull/861)). Thanks @ddormer
+- Fix resolution of requirements from Git URLs without `-e`
+([#879](https://github.com/jazzband/pip-tools/pull/879)). Thanks @andersk
+
 # 4.0.0 (2019-07-25)
 
 Backwards Incompatible Changes:
