@@ -7,16 +7,23 @@ import sys
 
 from pip._vendor.packaging.requirements import Requirement
 
+from ._compat.typing import MYPY
 from .exceptions import PipToolsError
 from .locations import CACHE_DIR
 from .utils import as_tuple, key_from_req, lookup_table
 
+if MYPY:
+    from typing import Dict, List, Optional, Set, Tuple
+    from ._compat import InstallRequirement
+
 
 class CorruptCacheError(PipToolsError):
     def __init__(self, path):
+        # type: (str) -> None
         self.path = path
 
     def __str__(self):
+        # type: () -> str
         lines = [
             "The dependency cache seems to have been corrupted.",
             "Inspect, or delete, the following file:",
@@ -26,6 +33,7 @@ class CorruptCacheError(PipToolsError):
 
 
 def read_cache_file(cache_file_path):
+    # type: (str) -> Dict[str, dict]
     with open(cache_file_path, "r") as cache_file:
         try:
             doc = json.load(cache_file)
@@ -49,7 +57,10 @@ class DependencyCache(object):
     Where X.Y indicates the Python version.
     """
 
+    _cache = None  # type: Dict[str, dict]
+
     def __init__(self, cache_dir=None):
+        # type: (Optional[str]) -> None
         if cache_dir is None:
             cache_dir = CACHE_DIR
         if not os.path.isdir(cache_dir):
@@ -58,10 +69,10 @@ class DependencyCache(object):
         cache_filename = "depcache-py{}.json".format(py_version)
 
         self._cache_file = os.path.join(cache_dir, cache_filename)
-        self._cache = None
 
     @property
     def cache(self):
+        # type: () -> Dict[str, dict]
         """
         The dictionary that is the actual in-memory cache.  This property
         lazily loads the cache from disk.
@@ -71,6 +82,7 @@ class DependencyCache(object):
         return self._cache
 
     def as_cache_key(self, ireq):
+        # type: (InstallRequirement) -> Tuple[str, str]
         """
         Given a requirement, return its cache key. This behavior is a little weird
         in order to allow backwards compatibility with cache files. For a requirement
@@ -91,6 +103,7 @@ class DependencyCache(object):
         return name, "{}{}".format(version, extras_string)
 
     def read_cache(self):
+        # type: () -> None
         """Reads the cached contents into memory."""
         if os.path.exists(self._cache_file):
             self._cache = read_cache_file(self._cache_file)
@@ -98,30 +111,36 @@ class DependencyCache(object):
             self._cache = {}
 
     def write_cache(self):
+        # type: () -> None
         """Writes the cache to disk as JSON."""
         doc = {"__format__": 1, "dependencies": self._cache}
         with open(self._cache_file, "w") as f:
             json.dump(doc, f, sort_keys=True)
 
     def clear(self):
+        # type: () -> None
         self._cache = {}
         self.write_cache()
 
     def __contains__(self, ireq):
+        # type: (InstallRequirement) -> bool
         pkgname, pkgversion_and_extras = self.as_cache_key(ireq)
         return pkgversion_and_extras in self.cache.get(pkgname, {})
 
     def __getitem__(self, ireq):
+        # type: (InstallRequirement) -> List[str]
         pkgname, pkgversion_and_extras = self.as_cache_key(ireq)
         return self.cache[pkgname][pkgversion_and_extras]
 
     def __setitem__(self, ireq, values):
+        # type: (InstallRequirement, List[str]) -> None
         pkgname, pkgversion_and_extras = self.as_cache_key(ireq)
         self.cache.setdefault(pkgname, {})
         self.cache[pkgname][pkgversion_and_extras] = values
         self.write_cache()
 
     def reverse_dependencies(self, ireqs):
+        # type: (List[InstallRequirement]) -> Dict[str, Set[str]]
         """
         Returns a lookup table of reverse dependencies for all the given ireqs.
 
@@ -134,6 +153,7 @@ class DependencyCache(object):
         return self._reverse_dependencies(ireqs_as_cache_values)
 
     def _reverse_dependencies(self, cache_keys):
+        # type: (List[Tuple[str, str]]) -> Dict[str, Set[str]]
         """
         Returns a lookup table of reverse dependencies for all the given cache keys.
 
