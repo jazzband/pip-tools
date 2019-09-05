@@ -166,9 +166,14 @@ To update a specific package to the latest or a specific version use the
 
 .. code-block:: bash
 
-    $ pip-compile --upgrade-package flask  # only update the flask package
-    $ pip-compile --upgrade-package flask --upgrade-package requests  # update both the flask and requests packages
-    $ pip-compile -P flask -P requests==2.0.0  # update the flask package to the latest, and requests to v2.0.0
+    # only update the flask package
+    $ pip-compile --upgrade-package flask
+
+    # update both the flask and requests packages
+    $ pip-compile --upgrade-package flask --upgrade-package requests
+
+    # update the flask package to the latest, and requests to v2.0.0
+    $ pip-compile --upgrade-package flask --upgrade-package requests==2.0.0
 
 You can combine ``--upgrade`` and ``--upgrade-package`` in one command, to
 provide constraints on the allowed upgrades. For example to upgrade all
