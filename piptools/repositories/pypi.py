@@ -5,6 +5,7 @@ import collections
 import hashlib
 import os
 from contextlib import contextmanager
+from functools import partial
 from shutil import rmtree
 
 from .._compat import (
@@ -200,10 +201,20 @@ class PyPIRepository(BaseRepository):
                 "ignore_dependencies": False,
                 "ignore_requires_python": False,
                 "ignore_installed": True,
-                "isolated": False,
-                "wheel_cache": wheel_cache,
                 "use_user_site": False,
             }
+            make_install_req_kwargs = {"isolated": False, "wheel_cache": wheel_cache}
+
+            if PIP_VERSION < (19, 3):
+                resolver_kwargs.update(**make_install_req_kwargs)
+            else:
+                from pip._internal.req.constructors import install_req_from_req_string
+
+                make_install_req = partial(
+                    install_req_from_req_string, **make_install_req_kwargs
+                )
+                resolver_kwargs["make_install_req"] = make_install_req
+
             resolver = None
             preparer = None
             with RequirementTracker() as req_tracker:
