@@ -1,4 +1,4 @@
 -e .
 mock
-pytest
+pytest!=5.1.2
 wheel
