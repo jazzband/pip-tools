@@ -4,6 +4,8 @@ import importlib
 import pip
 from pip._vendor.packaging.version import parse as parse_version
 
+PIP_VERSION = tuple(map(int, parse_version(pip.__version__).base_version.split(".")))
+
 
 def do_import(module_path, subimport=None, old_path=None):
     old_path = old_path or module_path
@@ -34,13 +36,12 @@ user_cache_dir = do_import("utils.appdirs", "user_cache_dir")
 FAVORITE_HASH = do_import("utils.hashes", "FAVORITE_HASH")
 is_file_url = do_import("download", "is_file_url")
 is_dir_url = do_import("download", "is_dir_url")
-is_vcs_url = do_import("download", "is_vcs_url")
 path_to_url = do_import("download", "path_to_url")
 url_to_path = do_import("download", "url_to_path")
 PackageFinder = do_import("index", "PackageFinder")
 FormatControl = do_import("index", "FormatControl")
-Wheel = do_import("wheel", "Wheel")
 InstallCommand = do_import("commands.install", "InstallCommand")
+Wheel = do_import("wheel", "Wheel")
 cmdoptions = do_import("cli.cmdoptions", old_path="cmdoptions")
 get_installed_distributions = do_import(
     "utils.misc", "get_installed_distributions", old_path="utils"
@@ -53,7 +54,7 @@ Session = do_import("_vendor.requests.sessions", "Session")
 Resolver = do_import("legacy_resolve", "Resolver", old_path="resolve")
 
 # pip 18.1 has refactored InstallRequirement constructors use by pip-tools.
-if parse_version(pip.__version__) < parse_version("18.1"):
+if PIP_VERSION < (18, 1):
     install_req_from_line = InstallRequirement.from_line
     install_req_from_editable = InstallRequirement.from_editable
 else:
@@ -61,3 +62,11 @@ else:
     install_req_from_editable = do_import(
         "req.constructors", "install_req_from_editable"
     )
+
+
+def is_vcs_url(link):
+    if PIP_VERSION < (19, 3):
+        _is_vcs_url = do_import("download", "is_vcs_url")
+        return _is_vcs_url(link)
+
+    return link.is_vcs

@@ -7,6 +7,7 @@ import six
 from .pip_compat import (
     DEV_PKGS,
     FAVORITE_HASH,
+    PIP_VERSION,
     FormatControl,
     InstallationCandidate,
     InstallCommand,
