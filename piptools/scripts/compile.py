@@ -8,13 +8,14 @@ import tempfile
 from click.utils import safecall
 
 from .. import click
-from .._compat import InstallCommand, install_req_from_line, parse_requirements
+from .._compat import install_req_from_line, parse_requirements
 from ..exceptions import PipToolsError
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
 from ..utils import (
     UNSAFE_PACKAGES,
+    create_install_command,
     dedup,
     is_pinned_requirement,
     key_from_ireq,
@@ -26,7 +27,8 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.in"
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 
 # Get default values of the pip's options (including options from pip.conf).
-pip_defaults = InstallCommand().parser.get_default_values()
+install_command = create_install_command()
+pip_defaults = install_command.parser.get_default_values()
 
 
 @click.command()

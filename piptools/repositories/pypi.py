@@ -5,11 +5,11 @@ import collections
 import hashlib
 import os
 from contextlib import contextmanager
+from functools import partial
 from shutil import rmtree
 
 from .._compat import (
     FAVORITE_HASH,
-    InstallCommand,
     Link,
     PyPI,
     RequirementSet,
@@ -28,7 +28,7 @@ from ..click import progressbar
 from ..exceptions import NoCandidateFound
 from ..logging import log
 from ..utils import (
-    PIP_VERSION,
+    create_install_command,
     fs_str,
     is_pinned_requirement,
     is_url_requirement,
@@ -36,6 +36,8 @@ from ..utils import (
     make_install_requirement,
 )
 from .base import BaseRepository
+
+from piptools._compat.pip_compat import PIP_VERSION
 
 try:
     from pip._internal.req.req_tracker import RequirementTracker
@@ -71,7 +73,7 @@ class PyPIRepository(BaseRepository):
         # Use pip's parser for pip.conf management and defaults.
         # General options (find_links, index_url, extra_index_url, trusted_host,
         # and pre) are deferred to pip.
-        command = InstallCommand()
+        command = create_install_command()
         self.options, _ = command.parse_args(pip_args)
 
         self.session = command._build_session(self.options)
@@ -149,9 +151,15 @@ class PyPIRepository(BaseRepository):
         elif PIP_VERSION < (19, 2):
             evaluator = self.finder.candidate_evaluator
             best_candidate = evaluator.get_best_candidate(matching_candidates)
-        else:
+        elif PIP_VERSION < (19, 3):
             evaluator = self.finder.make_candidate_evaluator(ireq.name)
             best_candidate = evaluator.get_best_candidate(matching_candidates)
+        else:
+            evaluator = self.finder.make_candidate_evaluator(ireq.name)
+            best_candidate_result = evaluator.compute_best_candidate(
+                matching_candidates
+            )
+            best_candidate = best_candidate_result.best_candidate
 
         # Turn the candidate into a pinned InstallRequirement
         return make_install_requirement(
@@ -193,10 +201,20 @@ class PyPIRepository(BaseRepository):
                 "ignore_dependencies": False,
                 "ignore_requires_python": False,
                 "ignore_installed": True,
-                "isolated": False,
-                "wheel_cache": wheel_cache,
                 "use_user_site": False,
             }
+            make_install_req_kwargs = {"isolated": False, "wheel_cache": wheel_cache}
+
+            if PIP_VERSION < (19, 3):
+                resolver_kwargs.update(**make_install_req_kwargs)
+            else:
+                from pip._internal.req.constructors import install_req_from_req_string
+
+                make_install_req = partial(
+                    install_req_from_req_string, **make_install_req_kwargs
+                )
+                resolver_kwargs["make_install_req"] = make_install_req
+
             resolver = None
             preparer = None
             with RequirementTracker() as req_tracker:
