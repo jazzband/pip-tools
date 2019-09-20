@@ -100,3 +100,8 @@ after_success:
 
 notifications:
   webhooks: https://coveralls.io/webhook
+  email:
+    recipients:
+      - pip-tools-ci@python.org
+    on_success: change
+    on_failure: change
