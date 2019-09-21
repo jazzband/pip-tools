@@ -91,6 +91,7 @@ jobs:
           repo: jazzband/pip-tools
   allow_failures:
     - env: PIP=master
+      if: type != cron
     - python: 3.8-dev
 
 after_success:
