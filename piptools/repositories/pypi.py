@@ -254,7 +254,7 @@ class PyPIRepository(BaseRepository):
                 # If a download_dir is passed, pip will  unnecessarely
                 # archive the entire source directory
                 download_dir = None
-            elif ireq.link and not ireq.link.is_artifact:
+            elif ireq.link and is_vcs_url(ireq.link):
                 # No download_dir for VCS sources.  This also works around pip
                 # using git-checkout-index, which gets rid of the .git dir.
                 download_dir = None
