@@ -237,6 +237,10 @@ toolbar, then you can create two ``.in`` files, one for each layer:
     # requirements.in
     django<2.2
 
+At the top of the development requirements ``requirements-dev.in`` you use ``-c
+requirements.txt`` to constrain the dev requirements to packages already
+selected for production in ``requirements.txt``.
+
 .. code-block:: ini
 
     # requirements-dev.in
@@ -257,7 +261,7 @@ First compile ``requirements.txt`` as usual:
     django==2.1.12
     pytz==2019.2              # via django
 
-Now compile the dev requirements, the ``requirements.txt`` file is used as
+Now compile the dev requirements and the ``requirements.txt`` file is used as
 constraint:
 
 .. code-block:: bash
@@ -274,8 +278,9 @@ constraint:
     sqlparse==0.3.0           # via django-debug-toolbar
 
 As you can see above, even though a ``2.2`` release of Django is available, the
-dev requirements only include a ``2.1`` because they were constrained. Now both
-compiled requirements files can be installed safely in the dev environment.
+dev requirements only include a ``2.1`` version of Django because they were
+constrained. Now both compiled requirements files can be installed safely in
+the dev environment.
 
 Example usage for ``pip-sync``
 ==============================
