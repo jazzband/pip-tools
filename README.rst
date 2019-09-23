@@ -247,7 +247,7 @@ selected for production in ``requirements.txt``.
     -c requirements.txt
     django-debug-toolbar
 
-First compile ``requirements.txt`` as usual:
+First, compile ``requirements.txt`` as usual:
 
 .. code-block:: bash
 
