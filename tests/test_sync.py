@@ -118,7 +118,7 @@ def test_diff_should_do_nothing():
     reqs = []  # no requirements
 
     to_install, to_uninstall = diff(reqs, installed)
-    assert to_install == set()
+    assert to_install == set(reqs)
     assert to_uninstall == set()
 
 
@@ -136,7 +136,7 @@ def test_diff_should_uninstall(fake_dist):
     reqs = []
 
     to_install, to_uninstall = diff(reqs, installed)
-    assert to_install == set()
+    assert to_install == set(reqs)
     assert to_uninstall == {"django"}  # no version spec when uninstalling
 
 
@@ -200,7 +200,7 @@ def test_diff_leave_packaging_packages_alone(fake_dist, from_line):
     reqs = [from_line("django==1.7")]
 
     to_install, to_uninstall = diff(reqs, installed)
-    assert to_install == set()
+    assert to_install == set(reqs)
     assert to_uninstall == {"first"}
 
 
@@ -221,7 +221,7 @@ def test_diff_leave_piptools_alone(fake_dist, from_line):
     reqs = [from_line("django==1.7")]
 
     to_install, to_uninstall = diff(reqs, installed)
-    assert to_install == set()
+    assert to_install == set(reqs)
     assert to_uninstall == {"foobar"}
 
 
@@ -242,12 +242,12 @@ def test_diff_with_editable(fake_dist, from_editable):
 
 
 def test_diff_with_matching_url_versions(fake_dist, from_line):
-    # if URL version is explicitly provided, use it to avoid reinstalling
+    # if URL version is explicitly provided, pip itself will avoid reinstalling
     installed = [fake_dist("example==1.0")]
     reqs = [from_line("file:///example.zip#egg=example==1.0")]
 
     to_install, to_uninstall = diff(reqs, installed)
-    assert to_install == set()
+    assert to_install == set(reqs)
     assert to_uninstall == set()
 
 

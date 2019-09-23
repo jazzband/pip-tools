@@ -150,7 +150,6 @@ def diff(
     """
     requirements_lut = {diff_key_from_ireq(r): r for r in compiled_requirements}
 
-    satisfied = set()  # holds keys
     to_install = set()  # holds InstallRequirement objects
     to_uninstall = set()  # holds keys
 
@@ -159,11 +158,9 @@ def diff(
         key = key_from_req(dist)
         if key not in requirements_lut or not requirements_lut[key].match_markers():
             to_uninstall.add(key)
-        elif requirements_lut[key].specifier.contains(dist.version):
-            satisfied.add(key)
 
     for key, requirement in requirements_lut.items():
-        if key not in satisfied and requirement.match_markers():
+        if requirement.match_markers():
             to_install.add(requirement)
 
     # Make sure to not uninstall any packages that should be ignored
