@@ -34,8 +34,6 @@ parse_requirements = do_import("req.req_file", "parse_requirements")
 RequirementSet = do_import("req.req_set", "RequirementSet")
 user_cache_dir = do_import("utils.appdirs", "user_cache_dir")
 FAVORITE_HASH = do_import("utils.hashes", "FAVORITE_HASH")
-is_file_url = do_import("download", "is_file_url")
-is_dir_url = do_import("download", "is_dir_url")
 path_to_url = do_import("download", "path_to_url")
 url_to_path = do_import("download", "url_to_path")
 PackageFinder = do_import("index", "PackageFinder")
@@ -70,3 +68,19 @@ def is_vcs_url(link):
         return _is_vcs_url(link)
 
     return link.is_vcs
+
+
+def is_file_url(link):
+    if PIP_VERSION < (19, 3):
+        _is_file_url = do_import("download", "is_file_url")
+        return _is_file_url(link)
+
+    return link.is_file
+
+
+def is_dir_url(link):
+    if PIP_VERSION < (19, 3):
+        _is_dir_url = do_import("download", "is_dir_url")
+        return _is_dir_url(link)
+
+    return link.is_existing_dir()
