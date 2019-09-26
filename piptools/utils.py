@@ -377,6 +377,6 @@ def create_install_command():
     if PIP_VERSION < (19, 3):
         return InstallCommand()
 
-    from pip._internal import create_command
+    from pip._internal.commands import create_command
 
     return create_command("install")
