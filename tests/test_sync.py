@@ -403,38 +403,80 @@ def test_sync_verbose(check_call, from_line):
         assert "-q" not in check_call_args
 
 
+@pytest.mark.parametrize(
+    ("to_install", "to_uninstall", "expected_message"),
+    [
+        ({"django==1.8", "click==4.0"}, set(), "Would install:"),
+        (set(), {"django==1.8", "click==4.0"}, "Would uninstall:"),
+    ],
+)
 @mock.patch("piptools.sync.click.echo")
-def test_sync_dry_run_would_install(echo, from_line):
+def test_sync_dry_run(echo, from_line, to_install, to_uninstall, expected_message):
     """
-    Sync with --dry-run option prints what's is going to be installed.
+    Sync with --dry-run option prints what's is going to be installed/uninstalled.
     """
-    to_install = {from_line("django==1.8"), from_line("click==4.0")}
+    to_install = set(from_line(pkg) for pkg in to_install)
+    to_uninstall = set(from_line(pkg) for pkg in to_uninstall)
 
-    sync(to_install, set(), dry_run=True)
+    sync(to_install, to_uninstall, dry_run=True)
 
     expected_calls = [
-        mock.call("Would install:"),
+        mock.call(expected_message),
         mock.call("  django==1.8"),
         mock.call("  click==4.0"),
     ]
     echo.assert_has_calls(expected_calls, any_order=True)
 
 
+@pytest.mark.parametrize(
+    ("to_install", "to_uninstall", "expected_message"),
+    [
+        ({"django==1.8", "click==4.0"}, set(), "Would install:"),
+        (set(), {"django==1.8", "click==4.0"}, "Would uninstall:"),
+    ],
+)
+@mock.patch("piptools.sync.check_call")
+@mock.patch("piptools.sync.click.confirm")
 @mock.patch("piptools.sync.click.echo")
-def test_sync_dry_run_would_uninstall(echo, from_line):
+def test_sync_ask_declined(
+    echo, confirm, check_call, from_line, to_install, to_uninstall, expected_message
+):
     """
-    Sync with --dry-run option prints what is going to be uninstalled.
+    Sync with --ask option does a dry run if the user declines
     """
-    to_uninstall = {from_line("django==1.8"), from_line("click==4.0")}
+    confirm.return_value = False
 
-    sync(set(), to_uninstall, dry_run=True)
+    to_install = set(from_line(pkg) for pkg in to_install)
+    to_uninstall = set(from_line(pkg) for pkg in to_uninstall)
+
+    sync(to_install, to_uninstall, ask=True)
 
     expected_calls = [
-        mock.call("Would uninstall:"),
+        mock.call(expected_message),
         mock.call("  django==1.8"),
         mock.call("  click==4.0"),
     ]
     echo.assert_has_calls(expected_calls, any_order=True)
+
+    confirm.assert_called_once_with("Would you like to proceed with these changes?")
+    check_call.assert_not_called()
+
+
+@pytest.mark.parametrize("dry_run", [True, False])
+@mock.patch("piptools.sync.click.confirm")
+@mock.patch("piptools.sync.check_call")
+def test_sync_ask_accepted(check_call, confirm, from_line, dry_run):
+    """
+    pip should be called as normal when the user confirms, even with dry_run
+    """
+    confirm.return_value = True
+
+    sync(
+        {from_line("django==1.8")}, {from_line("click==4.0")}, ask=True, dry_run=dry_run
+    )
+    assert check_call.call_count == 2
+
+    confirm.assert_called_once_with("Would you like to proceed with these changes?")
 
 
 @mock.patch("piptools.sync.check_call")
