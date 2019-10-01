@@ -801,3 +801,29 @@ def test_dry_run_doesnt_touch_output_file(
     # The output file must not be touched
     after_compile_mtime = os.stat("requirements.txt").st_mtime
     assert after_compile_mtime == before_compile_mtime
+
+
+@pytest.mark.parametrize(
+    "empty_input_pkg, prior_output_pkg",
+    [
+        ("", ""),
+        ("", "small-fake-a==0.1\n"),
+        ("# Nothing to see here", ""),
+        ("# Nothing to see here", "small-fake-a==0.1\n"),
+    ],
+)
+def test_empty_input_file_no_header(runner, empty_input_pkg, prior_output_pkg):
+    """
+    Tests pip-compile creates an empty requirements.txt file,
+    given --no-header and empty requirements.in
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write(empty_input_pkg)  # empty input file
+
+    with open("requirements.txt", "w") as req_txt:
+        req_txt.write(prior_output_pkg)
+
+    runner.invoke(cli, ["--no-header", "requirements.in"])
+
+    with open("requirements.txt", "r") as req_txt:
+        assert req_txt.read().strip() == ""
