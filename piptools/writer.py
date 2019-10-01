@@ -146,10 +146,14 @@ class OutputWriter(object):
         warn_uninstallable = False
         has_hashes = hashes and any(hash for hash in hashes.values())
 
+        yielded = False
+
         for line in self.write_header():
             yield line
+            yielded = True
         for line in self.write_flags():
             yield line
+            yielded = True
 
         unsafe_requirements = (
             {r for r in results if r.name in UNSAFE_PACKAGES}
@@ -158,24 +162,26 @@ class OutputWriter(object):
         )
         packages = {r for r in results if r.name not in UNSAFE_PACKAGES}
 
-        packages = sorted(packages, key=self._sort_key)
-
-        for ireq in packages:
-            if has_hashes and not hashes.get(ireq):
-                yield MESSAGE_UNHASHED_PACKAGE
-                warn_uninstallable = True
-            line = self._format_requirement(
-                ireq,
-                reverse_dependencies,
-                primary_packages,
-                markers.get(key_from_ireq(ireq)),
-                hashes=hashes,
-            )
-            yield line
+        if packages:
+            packages = sorted(packages, key=self._sort_key)
+            for ireq in packages:
+                if has_hashes and not hashes.get(ireq):
+                    yield MESSAGE_UNHASHED_PACKAGE
+                    warn_uninstallable = True
+                line = self._format_requirement(
+                    ireq,
+                    reverse_dependencies,
+                    primary_packages,
+                    markers.get(key_from_ireq(ireq)),
+                    hashes=hashes,
+                )
+                yield line
+            yielded = True
 
         if unsafe_requirements:
             unsafe_requirements = sorted(unsafe_requirements, key=self._sort_key)
             yield ""
+            yielded = True
             if has_hashes and not self.allow_unsafe:
                 yield MESSAGE_UNSAFE_PACKAGES_UNPINNED
                 warn_uninstallable = True
@@ -194,6 +200,10 @@ class OutputWriter(object):
                     yield comment("# {}".format(req))
                 else:
                     yield req
+
+        # Yield even when there's no real content, so that blank files are written
+        if not yielded:
+            yield ""
 
         if warn_uninstallable:
             log.warning(MESSAGE_UNINSTALLABLE)
