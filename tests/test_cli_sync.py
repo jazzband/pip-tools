@@ -115,6 +115,7 @@ def test_merge_error(runner):
     [
         (["--find-links", "./libs"], ["-f", "./libs"]),
         (["--no-index"], ["--no-index"]),
+        (["--no-deps"], ["--no-deps"]),
         (["--index-url", "https://example.com"], ["-i", "https://example.com"]),
         (
             ["--extra-index-url", "https://foo", "--extra-index-url", "https://bar"],

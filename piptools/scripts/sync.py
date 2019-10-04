@@ -28,6 +28,7 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
     help="Only show what would happen, don't change anything",
 )
 @click.option("--force", is_flag=True, help="Proceed even if conflicts are found")
+@click.option("--no-deps", is_flag=True, help="Don't install package dependencies")
 @click.option(
     "-f",
     "--find-links",
@@ -72,6 +73,7 @@ def cli(
     ask,
     dry_run,
     force,
+    no_deps,
     find_links,
     index_url,
     extra_index_url,
@@ -120,6 +122,8 @@ def cli(
     install_flags = []
     for link in find_links or []:
         install_flags.extend(["-f", link])
+    if no_deps:
+        install_flags.append("--no-deps")
     if no_index:
         install_flags.append("--no-index")
     if index_url:
