@@ -1,3 +1,5 @@
+import pytest
+
 from piptools.repositories.local import LocalRequirementsRepository
 from piptools.utils import name_from_req
 
@@ -46,6 +48,7 @@ EXPECTED = {
 }
 
 
+@pytest.mark.network
 def test_get_hashes_local_repository_cache_miss(from_line, pypi_repository):
     existing_pins = {}
     local_repository = LocalRequirementsRepository(existing_pins, pypi_repository)
