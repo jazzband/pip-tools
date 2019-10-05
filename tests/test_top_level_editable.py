@@ -36,6 +36,7 @@ def mocked_repository():
         ]
     ),
 )
+@pytest.mark.network
 def test_editable_top_level_deps_preserved(
     base_resolver, mocked_repository, from_editable, input, expected
 ):
