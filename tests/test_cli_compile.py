@@ -189,6 +189,7 @@ def test_find_links_no_emit(pip_conf, runner):
     assert "--find-links" not in out.stderr
 
 
+@pytest.mark.network
 def test_realistic_complex_sub_dependencies(runner):
     wheels_dir = "wheels"
 
@@ -224,6 +225,7 @@ def test_run_as_module_compile():
     assert status == 0
 
 
+@pytest.mark.network
 def test_editable_package(runner):
     """ piptools can compile an editable """
     fake_package_dir = os.path.join(TEST_DATA_PATH, "small_fake_package")
@@ -238,6 +240,7 @@ def test_editable_package(runner):
     assert "six==1.10.0" in out.stderr
 
 
+@pytest.mark.network
 def test_editable_package_vcs(runner):
     vcs_package = (
         "git+git://github.com/jazzband/pip-tools@"
@@ -252,6 +255,7 @@ def test_editable_package_vcs(runner):
     assert "click" in out.stderr  # dependency of pip-tools
 
 
+@pytest.mark.network
 def test_locally_available_editable_package_is_not_archived_in_cache_dir(
     tmpdir, runner
 ):
@@ -336,6 +340,7 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
     ],
 )
 @mark.parametrize(("generate_hashes",), [(True,), (False,)])
+@pytest.mark.network
 def test_url_package(runner, line, dependency, rewritten_line, generate_hashes):
     if rewritten_line is None:
         rewritten_line = line
@@ -349,6 +354,7 @@ def test_url_package(runner, line, dependency, rewritten_line, generate_hashes):
     assert dependency in out.stderr
 
 
+@pytest.mark.network
 def test_input_file_without_extension(runner):
     """
     piptools can compile a file without an extension,
@@ -481,6 +487,7 @@ def test_dry_run_quiet_option(runner):
     assert not out.stderr_bytes
 
 
+@pytest.mark.network
 def test_generate_hashes_with_editable(runner):
     small_fake_package_dir = os.path.join(TEST_DATA_PATH, "small_fake_package")
     small_fake_package_url = path_to_url(small_fake_package_dir)
@@ -502,6 +509,7 @@ def test_generate_hashes_with_editable(runner):
     assert expected in out.stderr
 
 
+@pytest.mark.network
 def test_generate_hashes_with_url(runner):
     with open("requirements.in", "w") as fp:
         fp.write(
@@ -519,6 +527,7 @@ def test_generate_hashes_with_url(runner):
     assert expected in out.stderr
 
 
+@pytest.mark.network
 def test_generate_hashes_verbose(runner):
     """
     The hashes generation process should show a progress.
@@ -533,6 +542,7 @@ def test_generate_hashes_verbose(runner):
 
 
 @fail_below_pip9
+@pytest.mark.network
 def test_filter_pip_markers(runner):
     """
     Check that pip-compile works with pip environment markers (PEP496)
@@ -547,6 +557,7 @@ def test_filter_pip_markers(runner):
     assert "unknown_package" not in out.stderr
 
 
+@pytest.mark.network
 def test_no_candidates(runner):
     with open("requirements", "w") as req_in:
         req_in.write("six>1.0b0,<1.0b0")
@@ -557,6 +568,7 @@ def test_no_candidates(runner):
     assert "Skipped pre-versions:" in out.stderr
 
 
+@pytest.mark.network
 def test_no_candidates_pre(runner):
     with open("requirements", "w") as req_in:
         req_in.write("six>1.0b0,<1.0b0")
@@ -604,6 +616,7 @@ def test_not_specified_input_file(runner):
     assert out.exit_code == 2
 
 
+@pytest.mark.network
 def test_stdin(runner):
     """
     Test compile requirements from STDIN.
@@ -640,6 +653,7 @@ def test_multiple_input_files_without_output_file(runner):
         ("--no-annotate", "six==1.10.0\n"),
     ],
 )
+@pytest.mark.network
 def test_annotate_option(pip_conf, runner, option, expected):
     """
     The output lines has have annotations if option is turned on.
@@ -657,6 +671,7 @@ def test_annotate_option(pip_conf, runner, option, expected):
     "option, expected",
     [("--allow-unsafe", "\nsetuptools=="), (None, "\n# setuptools==")],
 )
+@pytest.mark.network
 def test_allow_unsafe_option(runner, option, expected):
     """
     Unsafe packages are printed as expected with and without --allow-unsafe.
@@ -721,6 +736,7 @@ def test_build_isolation_option(
         (True, True, "small-fake-a==0.3b1"),
     ],
 )
+@pytest.mark.network
 def test_pre_option(pip_conf, runner, cli_option, infile_option, expected_package):
     """
     Tests pip-compile respects --pre option.

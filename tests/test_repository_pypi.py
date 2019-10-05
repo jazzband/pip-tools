@@ -5,6 +5,7 @@ from piptools._compat.pip_compat import Link, Session, path_to_url
 from piptools.repositories.pypi import open_local_or_remote_file
 
 
+@pytest.mark.network
 def test_generate_hashes_all_platforms(from_line, pypi_repository):
     expected = {
         "sha256:04b133ef629ae2bc05f83d0b079a964494a9cd17914943e690c57209b44aae20",
@@ -55,6 +56,7 @@ def test_generate_hashes_all_platforms(from_line, pypi_repository):
         assert pypi_repository.get_hashes(ireq) == expected
 
 
+@pytest.mark.network
 def test_generate_hashes_without_interfering_with_each_other(
     from_line, pypi_repository
 ):
