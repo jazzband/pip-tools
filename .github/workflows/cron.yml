@@ -22,9 +22,7 @@ jobs:
         with:
           version: ${{ matrix.python-version }}
       - name: Install dependencies
-        run: |
-          pip install tox
+        run: pip install tox
       - name: Test with tox ${{ matrix.env.TOXENV }}
-        run: |
-          tox
+        run: tox
         env: ${{ matrix.env }}
