@@ -1,12 +1,12 @@
-import os
 import json
+import os
 from contextlib import contextmanager
 from functools import partial
 
+import pytest
 from click.testing import CliRunner
 from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Requirement
-import pytest
 from pytest import fixture
 
 from piptools._compat import (
