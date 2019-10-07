@@ -1,3 +1,4 @@
+import os
 import json
 from contextlib import contextmanager
 from functools import partial
@@ -5,6 +6,7 @@ from functools import partial
 from click.testing import CliRunner
 from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Requirement
+import pytest
 from pytest import fixture
 
 from piptools._compat import (
@@ -102,6 +104,13 @@ class FakeInstalledDistribution(object):
 
     def as_requirement(self):
         return self.req
+
+
+def pytest_collection_modifyitems(config, items):
+    for item in items:
+        # Mark network tests as flaky
+        if item.get_closest_marker("network") and "CI" in os.environ:
+            item.add_marker(pytest.mark.flaky(reruns=3, reruns_delay=2))
 
 
 @fixture
