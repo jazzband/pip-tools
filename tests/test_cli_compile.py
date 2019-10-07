@@ -354,19 +354,18 @@ def test_url_package(runner, line, dependency, rewritten_line, generate_hashes):
     assert dependency in out.stderr
 
 
-@pytest.mark.network
-def test_input_file_without_extension(runner):
+def test_input_file_without_extension(pip_conf, runner):
     """
     piptools can compile a file without an extension,
     and add .txt as the defaut output file extension.
     """
     with open("requirements", "w") as req_in:
-        req_in.write("six==1.10.0")
+        req_in.write("small-fake-a==0.1")
 
     out = runner.invoke(cli, ["requirements"])
 
     assert out.exit_code == 0
-    assert "six==1.10.0" in out.stderr
+    assert "small-fake-a==0.1" in out.stderr
     assert os.path.exists("requirements.txt")
 
 
@@ -542,25 +541,25 @@ def test_generate_hashes_verbose(runner):
 
 
 @fail_below_pip9
-@pytest.mark.network
 def test_filter_pip_markers(runner):
     """
     Check that pip-compile works with pip environment markers (PEP496)
     """
     with open("requirements", "w") as req_in:
-        req_in.write("six==1.10.0\n" "unknown_package==0.1; python_version == '1'")
+        req_in.write(
+            "small-fake-a==0.1\n" "unknown_package==0.1; python_version == '1'"
+        )
 
     out = runner.invoke(cli, ["-n", "requirements"])
 
     assert out.exit_code == 0
-    assert "six==1.10.0" in out.stderr
+    assert "small-fake-a==0.1" in out.stderr
     assert "unknown_package" not in out.stderr
 
 
-@pytest.mark.network
-def test_no_candidates(runner):
+def test_no_candidates(pip_conf, runner):
     with open("requirements", "w") as req_in:
-        req_in.write("six>1.0b0,<1.0b0")
+        req_in.write("small-fake-a==>0.3b1,<0.3b1")
 
     out = runner.invoke(cli, ["-n", "requirements"])
 
@@ -568,10 +567,9 @@ def test_no_candidates(runner):
     assert "Skipped pre-versions:" in out.stderr
 
 
-@pytest.mark.network
-def test_no_candidates_pre(runner):
+def test_no_candidates_pre(pip_conf, runner):
     with open("requirements", "w") as req_in:
-        req_in.write("six>1.0b0,<1.0b0")
+        req_in.write("small-fake-a==>0.3b1,<0.3b1")
 
     out = runner.invoke(cli, ["-n", "requirements", "--pre"])
 
@@ -616,16 +614,15 @@ def test_not_specified_input_file(runner):
     assert out.exit_code == 2
 
 
-@pytest.mark.network
 def test_stdin(runner):
     """
     Test compile requirements from STDIN.
     """
     out = runner.invoke(
-        cli, ["-", "--output-file", "requirements.txt", "-n"], input="six==1.10.0"
+        cli, ["-", "--output-file", "requirements.txt", "-n"], input="small-fake-a==0.1"
     )
 
-    assert "six==1.10.0" in out.stderr
+    assert "small-fake-a==0.1" in out.stderr
 
 
 def test_multiple_input_files_without_output_file(runner):
@@ -649,17 +646,16 @@ def test_multiple_input_files_without_output_file(runner):
 @pytest.mark.parametrize(
     "option, expected",
     [
-        ("--annotate", "six==1.10.0               # via small-fake-with-deps\n"),
-        ("--no-annotate", "six==1.10.0\n"),
+        ("--annotate", "small-fake-a==0.1         # via small-fake-with-deps-a\n"),
+        ("--no-annotate", "small-fake-a==0.1\n"),
     ],
 )
-@pytest.mark.network
 def test_annotate_option(pip_conf, runner, option, expected):
     """
     The output lines has have annotations if option is turned on.
     """
     with open("requirements.in", "w") as req_in:
-        req_in.write("small_fake_with_deps")
+        req_in.write("small_fake_with_deps_a")
 
     out = runner.invoke(cli, [option, "-n"])
 
@@ -736,7 +732,6 @@ def test_build_isolation_option(
         (True, True, "small-fake-a==0.3b1"),
     ],
 )
-@pytest.mark.network
 def test_pre_option(pip_conf, runner, cli_option, infile_option, expected_package):
     """
     Tests pip-compile respects --pre option.
