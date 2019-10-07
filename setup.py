@@ -27,6 +27,10 @@ setup(
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*",
     setup_requires=["setuptools_scm"],
     install_requires=["click>=7", "six", "pip>=20.0"],
+    extras_require={
+        "testing": ["mock", "pytest", "pytest-rerunfailures"],
+        "coverage": ["pytest-cov"],
+    },
     zip_safe=False,
     entry_points={
         "console_scripts": [
