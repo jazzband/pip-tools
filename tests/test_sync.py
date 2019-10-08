@@ -235,7 +235,7 @@ def _get_file_url(local_path):
 def test_diff_with_editable(fake_dist, from_editable):
     installed = [fake_dist("small-fake-with-deps==0.0.1"), fake_dist("six==1.10.0")]
     path_to_package = os.path.join(
-        os.path.dirname(__file__), "test_data", "small_fake_package"
+        os.path.dirname(__file__), "test_data", "packages", "small_fake_with_deps"
     )
     reqs = [from_editable(path_to_package)]
     to_install, to_uninstall = diff(reqs, installed)
