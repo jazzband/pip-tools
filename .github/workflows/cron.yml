@@ -21,7 +21,7 @@ jobs:
         uses: actions/setup-python@v1
         with:
           version: ${{ matrix.python-version }}
-      - name: Install dependencies
+      - name: Install tox
         run: pip install tox
       - name: Test with tox ${{ matrix.env.TOXENV }}
         run: tox
