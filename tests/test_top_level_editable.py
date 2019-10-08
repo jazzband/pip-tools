@@ -28,7 +28,10 @@ def mocked_repository():
             (
                 [
                     os.path.join(
-                        os.path.dirname(__file__), "test_data", "small_fake_package"
+                        os.path.dirname(__file__),
+                        "test_data",
+                        "packages",
+                        "small_fake_with_deps",
                     )
                 ],
                 ["six"],

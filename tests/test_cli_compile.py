@@ -16,6 +16,7 @@ from piptools.scripts.compile import cli
 
 TEST_DATA_PATH = os.path.join(os.path.split(__file__)[0], "test_data")
 MINIMAL_WHEELS_PATH = os.path.join(TEST_DATA_PATH, "minimal_wheels")
+PACKAGES_PATH = os.path.join(TEST_DATA_PATH, "packages")
 
 fail_below_pip9 = pytest.mark.xfail(PIP_VERSION < (9,), reason="needs pip 9 or greater")
 
@@ -201,7 +202,7 @@ def test_realistic_complex_sub_dependencies(runner):
             "--no-deps",
             "-w",
             wheels_dir,
-            os.path.join(TEST_DATA_PATH, "fake_package", "."),
+            os.path.join(PACKAGES_PATH, "fake_with_deps", "."),
         ]
     )
 
@@ -228,7 +229,7 @@ def test_run_as_module_compile():
 @pytest.mark.network
 def test_editable_package(runner):
     """ piptools can compile an editable """
-    fake_package_dir = os.path.join(TEST_DATA_PATH, "small_fake_package")
+    fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
     fake_package_dir = path_to_url(fake_package_dir)
     with open("requirements.in", "w") as req_in:
         req_in.write("-e " + fake_package_dir)  # require editable fake package
@@ -264,7 +265,7 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
     """
     cache_dir = tmpdir.mkdir("cache_dir")
 
-    fake_package_dir = os.path.join(TEST_DATA_PATH, "small_fake_package")
+    fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
     fake_package_dir = path_to_url(fake_package_dir)
 
     with mock.patch("piptools.repositories.pypi.CACHE_DIR", new=str(cache_dir)):
@@ -320,7 +321,7 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
         ),
         # file:// directory
         (
-            path_to_url(os.path.join(TEST_DATA_PATH, "small_fake_package")),
+            path_to_url(os.path.join(PACKAGES_PATH, "small_fake_with_deps")),
             "\nsix==",
             None,
         ),
@@ -488,7 +489,7 @@ def test_dry_run_quiet_option(runner):
 
 @pytest.mark.network
 def test_generate_hashes_with_editable(runner):
-    small_fake_package_dir = os.path.join(TEST_DATA_PATH, "small_fake_package")
+    small_fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
     small_fake_package_url = path_to_url(small_fake_package_dir)
     with open("requirements.in", "w") as fp:
         fp.write("-e {}\n".format(small_fake_package_url))
@@ -674,7 +675,7 @@ def test_allow_unsafe_option(runner, option, expected):
     """
 
     with open("requirements.in", "w") as req_in:
-        req_in.write(path_to_url(os.path.join(TEST_DATA_PATH, "small_fake_package")))
+        req_in.write(path_to_url(os.path.join(PACKAGES_PATH, "small_fake_with_deps")))
 
     out = runner.invoke(cli, [option] if option else [])
 
