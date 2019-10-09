@@ -1,5 +1,7 @@
 import pytest
+import random
+
 
 @pytest.mark.network
-def test_always_fails():
-    assert False
+def test_flaky():
+    assert random.choice([True, False])
