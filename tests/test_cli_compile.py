@@ -22,31 +22,59 @@ fail_below_pip9 = pytest.mark.xfail(PIP_VERSION < (9,), reason="needs pip 9 or g
 
 
 @pytest.fixture
-def pip_conf(tmpdir, monkeypatch):
-    test_conf = dedent(
-        """\
-        [global]
-        index-url = http://example.com
-        trusted-host = example.com
-        find-links = {wheels_path}
-        """
-    )
+def make_pip_conf(tmpdir, monkeypatch):
+    created_paths = []
 
-    pip_conf_file = "pip.conf" if os.name != "nt" else "pip.ini"
-    path = (tmpdir / pip_conf_file).strpath
+    def _make_pip_conf(content):
+        pip_conf_file = "pip.conf" if os.name != "nt" else "pip.ini"
+        path = (tmpdir / pip_conf_file).strpath
 
-    with open(path, "w") as f:
-        f.write(test_conf.format(wheels_path=MINIMAL_WHEELS_PATH))
+        with open(path, "w") as f:
+            f.write(content)
 
-    monkeypatch.setenv("PIP_CONFIG_FILE", path)
+        monkeypatch.setenv("PIP_CONFIG_FILE", path)
+
+        created_paths.append(path)
+        return path
 
     try:
-        yield path
+        yield _make_pip_conf
     finally:
-        os.remove(path)
+        for path in created_paths:
+            os.remove(path)
 
 
-def test_default_pip_conf_read(pip_conf, runner):
+@pytest.fixture
+def pip_conf(make_pip_conf):
+    return make_pip_conf(
+        dedent(
+            """\
+            [global]
+            no-index = true
+            find-links = {wheels_path}
+            """.format(
+                wheels_path=MINIMAL_WHEELS_PATH
+            )
+        )
+    )
+
+
+@pytest.fixture
+def pip_with_index_conf(make_pip_conf):
+    return make_pip_conf(
+        dedent(
+            """\
+            [global]
+            index-url = http://example.com
+            find-links = {wheels_path}
+            """.format(
+                wheels_path=MINIMAL_WHEELS_PATH
+            )
+        )
+    )
+
+
+def test_default_pip_conf_read(pip_with_index_conf, runner):
     # preconditions
     with open("requirements.in", "w"):
         pass
@@ -57,7 +85,7 @@ def test_default_pip_conf_read(pip_conf, runner):
     assert "--index-url http://example.com" in out.stderr
 
 
-def test_command_line_overrides_pip_conf(pip_conf, runner):
+def test_command_line_overrides_pip_conf(pip_with_index_conf, runner):
     # preconditions
     with open("requirements.in", "w"):
         pass
@@ -139,7 +167,7 @@ def test_find_links_option(runner):
         )
 
 
-def test_extra_index_option(pip_conf, runner):
+def test_extra_index_option(pip_with_index_conf, runner):
     with open("requirements.in", "w"):
         pass
     out = runner.invoke(
@@ -578,7 +606,7 @@ def test_no_candidates_pre(pip_conf, runner):
     assert "Tried pre-versions:" in out.stderr
 
 
-def test_default_index_url(pip_conf):
+def test_default_index_url(pip_with_index_conf):
     status, output = invoke([sys.executable, "-m", "piptools", "compile", "--help"])
     output = output.decode("utf-8")
 
