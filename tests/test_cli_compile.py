@@ -647,8 +647,8 @@ def test_multiple_input_files_without_output_file(runner):
 @pytest.mark.parametrize(
     "option, expected",
     [
-        ("--annotate", "small-fake-a==0.1         # via small-fake-with-deps-a\n"),
-        ("--no-annotate", "small-fake-a==0.1\n"),
+        ("--annotate", "small-fake-a==0.2         # via small-fake-with-deps-a\n"),
+        ("--no-annotate", "small-fake-a==0.2\n"),
     ],
 )
 def test_annotate_option(pip_conf, runner, option, expected):
