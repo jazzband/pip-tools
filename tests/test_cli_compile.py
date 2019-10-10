@@ -839,3 +839,29 @@ def test_empty_input_file_no_header(runner, empty_input_pkg, prior_output_pkg):
 
     with open("requirements.txt", "r") as req_txt:
         assert req_txt.read().strip() == ""
+
+
+def test_upgrade_package_doesnt_remove_annotation(pip_conf, runner):
+    """
+    Tests pip-compile --upgrade-package shouldn't remove "via" annotation.
+    See: GH-929
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-with-deps-a\n")
+
+    runner.invoke(cli)
+
+    # Downgrade small-fake-a to 0.1
+    with open("requirements.txt", "w") as req_txt:
+        req_txt.write(
+            "small-fake-with-deps-a==0.1\n"
+            "small-fake-a==0.1         # via small-fake-with-deps-a\n"
+        )
+
+    runner.invoke(cli, ["-P", "small-fake-a"])
+
+    with open("requirements.txt", "r") as req_txt:
+        assert (
+            "small-fake-a==0.2         # via small-fake-with-deps-a"
+            in req_txt.read().splitlines()
+        )
