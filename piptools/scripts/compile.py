@@ -326,6 +326,10 @@ def cli(
                 )
             )
 
+    primary_packages = {
+        key_from_ireq(ireq) for ireq in constraints if not ireq.constraint
+    }
+
     constraints.extend(upgrade_install_reqs.values())
 
     # Filter out pip environment markers which do not match (PEP496)
@@ -415,9 +419,7 @@ def cli(
         results=results,
         unsafe_requirements=resolver.unsafe_constraints,
         reverse_dependencies=reverse_dependencies,
-        primary_packages={
-            key_from_ireq(ireq) for ireq in constraints if not ireq.constraint
-        },
+        primary_packages=primary_packages,
         markers={
             key_from_ireq(ireq): ireq.markers for ireq in constraints if ireq.markers
         },
