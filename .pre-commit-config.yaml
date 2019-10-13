@@ -19,4 +19,4 @@ repos:
     hooks:
     - id: bandit
       language_version: python3.7
-      exclude: ^(tests|\.tox|\.eggs|\.venv|\.git)
+      exclude: ^tests/
