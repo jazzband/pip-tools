@@ -1,6 +1,6 @@
 <!--- Describe the changes here. --->
 
-**Changelog-friendly one-liner**: <!--- One-liner description here --->
+**Changelog-friendly one-liner**: <!-- One-liner description here -->
 
 ##### Contributor checklist
 
