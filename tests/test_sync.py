@@ -1,5 +1,4 @@
 import os
-import platform
 import sys
 import tempfile
 from collections import Counter
@@ -7,6 +6,7 @@ from collections import Counter
 import mock
 import pytest
 
+from piptools._compat import path_to_url
 from piptools.exceptions import IncompatibleRequirements
 from piptools.sync import dependency_tree, diff, merge, sync
 
@@ -226,12 +226,6 @@ def test_diff_leave_piptools_alone(fake_dist, from_line):
     assert to_uninstall == {"foobar"}
 
 
-def _get_file_url(local_path):
-    if platform.system() == "Windows":
-        local_path = "/%s" % local_path.replace("\\", "/")
-    return "file://%s" % local_path
-
-
 def test_diff_with_editable(fake_dist, from_editable):
     installed = [fake_dist("small-fake-with-deps==0.0.1"), fake_dist("six==1.10.0")]
     path_to_package = os.path.join(
@@ -247,7 +241,7 @@ def test_diff_with_editable(fake_dist, from_editable):
     assert len(to_install) == 1
     package = list(to_install)[0]
     assert package.editable
-    assert str(package.link) == _get_file_url(path_to_package)
+    assert package.link.url == path_to_url(path_to_package)
 
 
 def test_diff_with_matching_url_versions(fake_dist, from_line):
