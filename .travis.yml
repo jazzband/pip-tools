@@ -91,7 +91,6 @@ jobs:
           repo: jazzband/pip-tools
   allow_failures:
     - env: PIP=master
-    - env: PIP=19.3  # TODO remove after pip==19.3 being released
     - python: 3.8-dev
 
 after_success:

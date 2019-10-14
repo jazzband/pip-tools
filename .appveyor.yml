@@ -91,7 +91,6 @@ matrix:
   fast_finish: true
   allow_failures:
     - PIP: master
-    - PIP: 19.3  # TODO remove after pip==19.3 being released
 
 install:
     - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
