@@ -1,8 +1,8 @@
 import os
+
 import pytest
 
 from piptools.repositories import PyPIRepository
-from piptools.scripts.compile import get_pip_command
 
 
 class MockedPyPIRepository(PyPIRepository):
@@ -15,27 +15,38 @@ class MockedPyPIRepository(PyPIRepository):
         return super(MockedPyPIRepository, self).get_dependencies(ireq)
 
 
-def _get_repository():
-    pip_command = get_pip_command()
-    pip_args = []
-    pip_options, _ = pip_command.parse_args(pip_args)
-    session = pip_command._build_session(pip_options)
-    repository = MockedPyPIRepository(pip_options, session)
-    return repository
+@pytest.fixture
+def mocked_repository():
+    return MockedPyPIRepository(["--index-url", PyPIRepository.DEFAULT_INDEX_URL])
 
 
 @pytest.mark.parametrize(
-    ('input', 'expected'),
-
-    ((tup) for tup in [
-        ([os.path.join(os.path.dirname(__file__), 'test_data', 'small_fake_package')],
-         ['six']),
-    ])
+    ("input", "expected"),
+    (
+        (tup)
+        for tup in [
+            (
+                [
+                    os.path.join(
+                        os.path.dirname(__file__),
+                        "test_data",
+                        "packages",
+                        "small_fake_with_deps",
+                    )
+                ],
+                ["six"],
+            )
+        ]
+    ),
 )
-def test_editable_top_level_deps_preserved(base_resolver, repository, from_editable, input, expected):
+@pytest.mark.network
+def test_editable_top_level_deps_preserved(
+    base_resolver, mocked_repository, from_editable, input, expected
+):
     input = [from_editable(line) for line in input]
-    repository = _get_repository()
-    output = base_resolver(input, prereleases=False, repository=repository).resolve()
+    output = base_resolver(
+        input, prereleases=False, repository=mocked_repository
+    ).resolve()
 
     output = {p.name for p in output}
 
