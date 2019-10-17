@@ -18,8 +18,6 @@ TEST_DATA_PATH = os.path.join(os.path.split(__file__)[0], "test_data")
 MINIMAL_WHEELS_PATH = os.path.join(TEST_DATA_PATH, "minimal_wheels")
 PACKAGES_PATH = os.path.join(TEST_DATA_PATH, "packages")
 
-fail_below_pip9 = pytest.mark.xfail(PIP_VERSION < (9,), reason="needs pip 9 or greater")
-
 
 @pytest.fixture
 def make_pip_conf(tmpdir, monkeypatch):
@@ -569,7 +567,7 @@ def test_generate_hashes_verbose(runner):
     assert expected_verbose_text in out.stderr
 
 
-@fail_below_pip9
+@pytest.mark.skipif(PIP_VERSION < (9,), reason="needs pip 9 or greater")
 def test_filter_pip_markers(runner):
     """
     Check that pip-compile works with pip environment markers (PEP496)
