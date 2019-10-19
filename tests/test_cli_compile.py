@@ -14,7 +14,6 @@ from piptools._compat.pip_compat import PIP_VERSION, path_to_url
 from piptools.repositories import PyPIRepository
 from piptools.scripts.compile import cli
 
-fail_below_pip9 = pytest.mark.xfail(PIP_VERSION < (9,), reason="needs pip 9 or greater")
 
 
 @pytest.fixture
@@ -527,7 +526,7 @@ def test_generate_hashes_verbose(runner):
     assert expected_verbose_text in out.stderr
 
 
-@fail_below_pip9
+@pytest.mark.skipif(PIP_VERSION < (9,), reason="needs pip 9 or greater")
 def test_filter_pip_markers(runner):
     """
     Check that pip-compile works with pip environment markers (PEP496)
