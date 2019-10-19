@@ -15,7 +15,6 @@ from piptools.repositories import PyPIRepository
 from piptools.scripts.compile import cli
 
 
-
 @pytest.fixture
 def pip_with_index_conf(make_pip_conf):
     return make_pip_conf(
