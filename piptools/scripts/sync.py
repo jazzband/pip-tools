@@ -1,13 +1,15 @@
 # coding: utf-8
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import itertools
 import os
 import sys
 
 from .. import click, sync
-from .._compat import get_installed_distributions, parse_requirements
+from .._compat import PIP_VERSION, get_installed_distributions, parse_requirements
 from ..exceptions import PipToolsError
 from ..logging import log
+from ..repositories import PyPIRepository
 from ..utils import flat_map
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
@@ -104,8 +106,15 @@ def cli(
             log.error("ERROR: " + msg)
             sys.exit(2)
 
+    repository = PyPIRepository()
+
+    # Parse requirements file. Note, all options inside requirements file
+    # will be collected by the finder.
     requirements = flat_map(
-        lambda src: parse_requirements(src, session=True), src_files
+        lambda src: parse_requirements(
+            src, finder=repository.finder, session=repository.session
+        ),
+        src_files,
     )
 
     try:
@@ -117,26 +126,17 @@ def cli(
     installed_dists = get_installed_distributions(skip=[], user_only=user_only)
     to_install, to_uninstall = sync.diff(requirements, installed_dists)
 
-    install_flags = []
-    for link in find_links or []:
-        install_flags.extend(["-f", link])
-    if no_index:
-        install_flags.append("--no-index")
-    if index_url:
-        install_flags.extend(["-i", index_url])
-    if extra_index_url:
-        for extra_index in extra_index_url:
-            install_flags.extend(["--extra-index-url", extra_index])
-    if trusted_host:
-        for host in trusted_host:
-            install_flags.extend(["--trusted-host", host])
-    if user_only:
-        install_flags.append("--user")
-    if cert:
-        install_flags.extend(["--cert", cert])
-    if client_cert:
-        install_flags.extend(["--client-cert", client_cert])
-
+    install_flags = _build_install_flags(
+        repository.finder,
+        no_index=no_index,
+        index_url=index_url,
+        extra_index_url=extra_index_url,
+        trusted_host=trusted_host,
+        find_links=find_links,
+        user_only=user_only,
+        cert=cert,
+        client_cert=client_cert,
+    )
     sys.exit(
         sync.sync(
             to_install,
@@ -147,3 +147,68 @@ def cli(
             ask=ask,
         )
     )
+
+
+def _build_install_flags(
+    finder,
+    no_index=False,
+    index_url=None,
+    extra_index_url=None,
+    trusted_host=None,
+    find_links=None,
+    user_only=False,
+    cert=None,
+    client_cert=None,
+):
+    """
+    Builds install flags with the given finder and CLI options.
+    """
+    result = []
+
+    # Build --index-url/--extra-index-url/--no-index
+    if no_index:
+        result.append("--no-index")
+    elif index_url:
+        result.extend(["--index-url", index_url])
+    elif finder.index_urls:
+        finder_index_url = finder.index_urls[0]
+        if finder_index_url != PyPIRepository.DEFAULT_INDEX_URL:
+            result.extend(["--index-url", finder_index_url])
+        for extra_index in finder.index_urls[1:]:
+            result.extend(["--extra-index-url", extra_index])
+    else:
+        result.append("--no-index")
+
+    for extra_index in extra_index_url or []:
+        result.extend(["--extra-index-url", extra_index])
+
+    # Build --trusted-hosts
+    if PIP_VERSION < (19, 2):
+        finder_trusted_hosts = (host for _, host, _ in finder.secure_origins)
+    else:
+        finder_trusted_hosts = finder.trusted_hosts
+    for host in itertools.chain(trusted_host or [], finder_trusted_hosts):
+        result.extend(["--trusted-host", host])
+
+    # Build --find-links
+    for link in itertools.chain(find_links or [], finder.find_links):
+        result.extend(["--find-links", link])
+
+    # Build format controls --no-binary/--only-binary
+    for format_control in ("no_binary", "only_binary"):
+        formats = getattr(finder.format_control, format_control)
+        if formats:
+            result.extend(
+                ["--" + format_control.replace("_", "-"), ",".join(sorted(formats))]
+            )
+
+    if user_only:
+        result.append("--user")
+
+    if cert:
+        result.extend(["--cert", cert])
+
+    if client_cert:
+        result.extend(["--client-cert", client_cert])
+
+    return result
