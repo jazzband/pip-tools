@@ -8,55 +8,13 @@ import pytest
 from click.testing import CliRunner
 from pytest import mark
 
-from .utils import invoke
+from .utils import MINIMAL_WHEELS_PATH, PACKAGES_PATH, invoke
 
 from piptools._compat.pip_compat import PIP_VERSION, path_to_url
 from piptools.repositories import PyPIRepository
 from piptools.scripts.compile import cli
 
-TEST_DATA_PATH = os.path.join(os.path.split(__file__)[0], "test_data")
-MINIMAL_WHEELS_PATH = os.path.join(TEST_DATA_PATH, "minimal_wheels")
-PACKAGES_PATH = os.path.join(TEST_DATA_PATH, "packages")
-
 fail_below_pip9 = pytest.mark.xfail(PIP_VERSION < (9,), reason="needs pip 9 or greater")
-
-
-@pytest.fixture
-def make_pip_conf(tmpdir, monkeypatch):
-    created_paths = []
-
-    def _make_pip_conf(content):
-        pip_conf_file = "pip.conf" if os.name != "nt" else "pip.ini"
-        path = (tmpdir / pip_conf_file).strpath
-
-        with open(path, "w") as f:
-            f.write(content)
-
-        monkeypatch.setenv("PIP_CONFIG_FILE", path)
-
-        created_paths.append(path)
-        return path
-
-    try:
-        yield _make_pip_conf
-    finally:
-        for path in created_paths:
-            os.remove(path)
-
-
-@pytest.fixture
-def pip_conf(make_pip_conf):
-    return make_pip_conf(
-        dedent(
-            """\
-            [global]
-            no-index = true
-            find-links = {wheels_path}
-            """.format(
-                wheels_path=MINIMAL_WHEELS_PATH
-            )
-        )
-    )
 
 
 @pytest.fixture

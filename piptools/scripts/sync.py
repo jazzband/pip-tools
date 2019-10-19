@@ -5,7 +5,16 @@ import os
 import sys
 
 from .. import click, sync
-from .._compat import PackageFinder, get_installed_distributions, parse_requirements, Command
+from .._compat import (
+    PIP_VERSION,
+    InstallCommand,
+    LinkCollector,
+    PackageFinder,
+    SearchScope,
+    TargetPython,
+    get_installed_distributions,
+    parse_requirements,
+)
 from ..exceptions import PipToolsError
 from ..logging import log
 from ..utils import flat_map
@@ -13,8 +22,18 @@ from ..utils import flat_map
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 
 
-class PipCommand(Command):
-    name = 'PipCommand'
+class PipCommand(InstallCommand):
+    if PIP_VERSION < (19, 3):
+        name = "PipCommand"
+
+    def __init__(self, *args, **kwargs):
+        if PIP_VERSION >= (19, 3):
+            # https://github.com/pypa/pip/commit/1f09e67f342037fb2ae38ef5a82d232ef9116880
+            kwargs.setdefault("name", "PipCommand")
+            # TODO: as it says...
+            kwargs.setdefault("summary", "i do not know what goes here")
+
+        super(PipCommand, self).__init__(*args, **kwargs)
 
 
 @click.command()
@@ -47,6 +66,7 @@ class PipCommand(Command):
 )
 @click.option(
     "--extra-index-url",
+    "extra_index_urls",
     multiple=True,
     help="Add additional index URL to search",
     envvar="PIP_EXTRA_INDEX_URL",
@@ -78,7 +98,7 @@ def cli(
     force,
     find_links,
     index_url,
-    extra_index_url,
+    extra_index_urls,
     trusted_host,
     no_index,
     quiet,
@@ -111,10 +131,30 @@ def cli(
     pip_command = PipCommand()
     pip_options, _ = pip_command.parse_args([])
     session = pip_command._build_session(pip_options)
+    if PIP_VERSION < (19, 2):
+        finder = PackageFinder(
+            find_links=find_links, index_urls=[index_url], session=session
+        )
+    else:
+        search_scope = SearchScope(find_links=find_links, index_urls=[index_url])
 
-    finder = PackageFinder(find_links=find_links, index_urls=[index_url], session=session)
+        if PIP_VERSION < (19, 3):
+            finder = PackageFinder(
+                search_scope=search_scope,
+                session=session,
+                target_python=TargetPython(),
+                allow_yanked=False,
+            )
+        else:
+            link_collector = LinkCollector(session=session, search_scope=search_scope)
+            finder = PackageFinder(
+                link_collector=link_collector,
+                target_python=TargetPython(),
+                allow_yanked=False,
+            )
+
     requirements = flat_map(
-        lambda src: parse_requirements(src, session=finder.session, finder=finder), src_files
+        lambda src: parse_requirements(src, session=session, finder=finder), src_files
     )
 
     try:
@@ -128,8 +168,7 @@ def cli(
 
     index_url = index_url or finder.index_urls[0] or None
 
-    extra_index_urls = [extra_index_url] if extra_index_url else []
-    extra_index_urls.extend(finder.index_urls[1:])
+    extra_index_urls += tuple(finder.index_urls[1:])
 
     install_flags = []
     for link in find_links or []:
