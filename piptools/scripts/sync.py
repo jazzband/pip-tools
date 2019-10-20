@@ -197,10 +197,11 @@ def _build_install_flags(
     # Build format controls --no-binary/--only-binary
     for format_control in ("no_binary", "only_binary"):
         formats = getattr(finder.format_control, format_control)
-        if formats:
-            result.extend(
-                ["--" + format_control.replace("_", "-"), ",".join(sorted(formats))]
-            )
+        if not formats:
+            continue
+        result.extend(
+            ["--" + format_control.replace("_", "-"), ",".join(sorted(formats))]
+        )
 
     if user_only:
         result.append("--user")
