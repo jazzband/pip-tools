@@ -226,9 +226,16 @@ class PyPIRepository(BaseRepository):
                 reqset = RequirementSet()
                 ireq.is_direct = True
                 reqset.add_requirement(ireq)
+
                 resolver = PipResolver(**resolver_kwargs)
-                resolver.require_hashes = False
-                results = resolver._resolve_one(reqset, ireq)
+                require_hashes = False
+                if PIP_VERSION < (19, 4):
+                    resolver.require_hashes = require_hashes
+                    results = resolver._resolve_one(reqset, ireq)
+                else:  # pragma: no cover
+                    # TODO remove pragma after pip==19.4 being released
+                    results = resolver._resolve_one(reqset, ireq, require_hashes)
+
                 reqset.cleanup_files()
 
         return set(results)
