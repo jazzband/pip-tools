@@ -891,3 +891,30 @@ def test_upgrade_package_doesnt_remove_annotation(pip_conf, runner):
             "small-fake-a==0.2         # via small-fake-with-deps-a"
             in req_txt.read().splitlines()
         )
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        # TODO add --no-index support in OutputWriter
+        # "--no-index",
+        "--index-url https://example.com",
+        "--extra-index-url https://example.com",
+        "--find-links ./libs1",
+        "--trusted-host example.com",
+        "--no-binary :all:",
+        "--only-binary :all:",
+    ],
+)
+def test_options_in_requirements_file(runner, options):
+    """
+    Test the options from requirements.in is copied to requirements.txt.
+    """
+    with open("requirements.in", "w") as reqs_in:
+        reqs_in.write(options)
+
+    out = runner.invoke(cli)
+    assert out.exit_code == 0, out
+
+    with open("requirements.txt") as reqs_txt:
+        assert options in reqs_txt.read().splitlines()
