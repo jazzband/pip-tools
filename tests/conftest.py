@@ -102,9 +102,6 @@ class FakeInstalledDistribution(object):
     def requires(self):
         return self.deps
 
-    def as_requirement(self):
-        return self.req
-
 
 def pytest_collection_modifyitems(config, items):
     for item in items:
