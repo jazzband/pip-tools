@@ -387,6 +387,6 @@ def get_trusted_hosts(finder):
     Returns a list of trusted hosts from given finder.
     """
     if PIP_VERSION < (19, 2):
-        return [host for _, host, _ in finder.secure_origins]
+        return (host for _, host, _ in finder.secure_origins)
 
     return finder.trusted_hosts
