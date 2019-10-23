@@ -1,10 +1,21 @@
 # -*- coding=utf-8 -*-
+from __future__ import absolute_import
+
 import importlib
+from contextlib import contextmanager
 
 import pip
 from pip._vendor.packaging.version import parse as parse_version
 
 PIP_VERSION = tuple(map(int, parse_version(pip.__version__).base_version.split(".")))
+
+try:
+    from pip._internal.req.req_tracker import RequirementTracker
+except ImportError:
+
+    @contextmanager
+    def RequirementTracker():
+        yield
 
 
 def do_import(module_path, subimport=None, old_path=None):
@@ -50,6 +61,7 @@ DEV_PKGS = do_import("commands.freeze", "DEV_PKGS")
 Link = do_import("models.link", "Link", old_path="index")
 Session = do_import("_vendor.requests.sessions", "Session")
 Resolver = do_import("legacy_resolve", "Resolver", old_path="resolve")
+WheelCache = do_import("cache", "WheelCache", old_path="wheel")
 
 # pip 18.1 has refactored InstallRequirement constructors use by pip-tools.
 if PIP_VERSION < (18, 1):
