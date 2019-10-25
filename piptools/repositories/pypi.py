@@ -10,12 +10,15 @@ from shutil import rmtree
 
 from .._compat import (
     FAVORITE_HASH,
+    PIP_VERSION,
     Link,
     PyPI,
     RequirementSet,
+    RequirementTracker,
     Resolver as PipResolver,
     TemporaryDirectory,
     Wheel,
+    WheelCache,
     contextlib,
     is_dir_url,
     is_file_url,
@@ -36,22 +39,6 @@ from ..utils import (
     make_install_requirement,
 )
 from .base import BaseRepository
-
-from piptools._compat.pip_compat import PIP_VERSION
-
-try:
-    from pip._internal.req.req_tracker import RequirementTracker
-except ImportError:
-
-    @contextmanager
-    def RequirementTracker():
-        yield
-
-
-try:
-    from pip._internal.cache import WheelCache
-except ImportError:
-    from pip.wheel import WheelCache
 
 FILE_CHUNK_SIZE = 4096
 FileStream = collections.namedtuple("FileStream", "stream size")
