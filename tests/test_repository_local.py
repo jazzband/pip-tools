@@ -52,7 +52,7 @@ EXPECTED = {
 def test_get_hashes_local_repository_cache_miss(from_line, pypi_repository):
     existing_pins = {}
     local_repository = LocalRequirementsRepository(existing_pins, pypi_repository)
-    with pypi_repository.allow_all_wheels():
+    with local_repository.allow_all_wheels():
         hashes = local_repository.get_hashes(from_line("cffi==1.9.1"))
         assert hashes == EXPECTED
 
@@ -66,6 +66,6 @@ def test_get_hashes_local_repository_cache_hit(from_line, repository):
 
     # Use fake repository so that we know the hashes are coming from cache
     local_repository = LocalRequirementsRepository(existing_pins, repository)
-    with repository.allow_all_wheels():
+    with local_repository.allow_all_wheels():
         hashes = local_repository.get_hashes(from_line("cffi==1.9.1"))
         assert hashes == EXPECTED
