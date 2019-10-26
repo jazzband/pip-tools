@@ -7,3 +7,6 @@ omit =
 
 [report]
 include = piptools/*, tests/*
+exclude_lines =
+    # Don't complain about typing imports
+    if MYPY:
