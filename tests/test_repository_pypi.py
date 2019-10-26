@@ -1,8 +1,7 @@
 import mock
 import pytest
-from mock import MagicMock, patch
 
-from piptools._compat import PackageFinder, install_req_from_line
+from piptools._compat import PackageFinder
 from piptools._compat.pip_compat import PIP_VERSION, Link, Session, path_to_url
 from piptools.repositories.pypi import open_local_or_remote_file
 
@@ -142,7 +141,7 @@ def test_pypirepo_source_dir_is_str(pypi_repository):
     PIP_VERSION >= (10,),
     reason="RequirementSet objects don't take arguments after pip 10.",
 )
-def test_pypirepo_calls_reqset_with_str_paths(pypi_repository):
+def test_pypirepo_calls_reqset_with_str_paths(pypi_repository, from_line):
     """
     Make sure that paths passed to RequirementSet init are str.
 
@@ -150,11 +149,11 @@ def test_pypirepo_calls_reqset_with_str_paths(pypi_repository):
     unpack, if the package contains non-ASCII file names, because
     non-ASCII str and unicode paths cannot be combined.
     """
-    with patch("piptools.repositories.pypi.RequirementSet") as mocked_init:
-        ireq = install_req_from_line("ansible==2.4.0.0")
+    with mock.patch("piptools.repositories.pypi.RequirementSet") as mocked_init:
+        ireq = from_line("ansible==2.4.0.0")
 
         # Setup a mock object to be returned from the RequirementSet call
-        mocked_reqset = MagicMock()
+        mocked_reqset = mock.MagicMock()
         mocked_init.return_value = mocked_reqset
 
         # Do the call
