@@ -380,3 +380,13 @@ def create_install_command():
     from pip._internal.commands import create_command
 
     return create_command("install")
+
+
+def get_trusted_hosts(finder):
+    """
+    Returns an iterable of trusted hosts from a given finder.
+    """
+    if PIP_VERSION < (19, 2):
+        return (host for _, host, _ in finder.secure_origins)
+
+    return finder.trusted_hosts
