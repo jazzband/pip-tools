@@ -126,7 +126,7 @@ def cli(
     installed_dists = get_installed_distributions(skip=[], user_only=user_only)
     to_install, to_uninstall = sync.diff(requirements, installed_dists)
 
-    install_flags = _build_install_flags(
+    install_flags = _compose_install_flags(
         repository.finder,
         no_index=no_index,
         index_url=index_url,
@@ -149,7 +149,7 @@ def cli(
     )
 
 
-def _build_install_flags(
+def _compose_install_flags(
     finder,
     no_index=False,
     index_url=None,
@@ -161,7 +161,7 @@ def _build_install_flags(
     client_cert=None,
 ):
     """
-    Builds install flags with the given finder and CLI options.
+    Compose install flags with the given finder and CLI options.
     """
     result = []
 
