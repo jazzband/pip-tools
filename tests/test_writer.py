@@ -129,7 +129,7 @@ def test_iter_lines__unsafe_dependencies(writer, from_line, allow_unsafe):
         "test==1.2",
         "",
         MESSAGE_UNSAFE_PACKAGES,
-        "setuptools==1.10.0" if allow_unsafe else comment("# setuptools==1.10.0"),
+        "setuptools==1.10.0" if allow_unsafe else comment("# setuptools"),
     )
     assert tuple(lines) == expected_lines
 
@@ -147,7 +147,7 @@ def test_iter_lines__unsafe_with_hashes(writer, from_line):
         "test==1.2 \\\n    --hash=FAKEHASH",
         "",
         MESSAGE_UNSAFE_PACKAGES_UNPINNED,
-        comment("# setuptools==1.10.0"),
+        comment("# setuptools"),
     )
     assert tuple(lines) == expected_lines
 
