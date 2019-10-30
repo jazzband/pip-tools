@@ -287,6 +287,21 @@ dev requirements only include a ``2.1`` version of Django because they were
 constrained. Now both compiled requirements files can be installed safely in
 the dev environment.
 
+Version control integration
+---------------------------
+
+You might use ``pip-compile`` as a hook for the `pre-commit <https://github.com/pre-commit/pre-commit>`_.
+See `pre-commit docs <https://pre-commit.com/>`_ for instructions.
+Sample ``.pre-commit-config.yaml``:
+
+.. code::
+
+    repos:
+      - repo: https://github.com/jazzband/pip-tools
+        rev: 4.2.0
+        hooks:
+          - id: pip-compile
+
 Example usage for ``pip-sync``
 ==============================
 
