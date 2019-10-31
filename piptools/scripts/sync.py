@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os
 import sys
 
-from .. import click, sync
+from .. import __version__ as piptools_version, click, sync
 from .._compat import get_installed_distributions, parse_requirements
 from ..exceptions import PipToolsError
 from ..logging import log
@@ -14,7 +14,7 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 
 
 @click.command(name="pip-sync")
-@click.version_option(None, "-V", "--version")
+@click.version_option(piptools_version, "-V", "--version")
 @click.option(
     "-a",
     "--ask",

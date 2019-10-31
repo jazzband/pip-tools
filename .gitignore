@@ -28,3 +28,6 @@ venv/
 requirements.in
 requirements.txt
 .eggs/
+
+# Dynamic version file written by setuptools_scm
+/piptools/__version__.py

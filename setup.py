@@ -14,7 +14,10 @@ def read_file(filename):
 
 setup(
     name="pip-tools",
-    use_scm_version=True,
+    use_scm_version={
+        "write_to": "piptools/__version__.py",
+        "write_to_template": '__version__ = "{version}"',
+    },
     url="https://github.com/jazzband/pip-tools/",
     license="BSD",
     author="Vincent Driessen",

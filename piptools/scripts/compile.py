@@ -7,7 +7,7 @@ import tempfile
 
 from click.utils import safecall
 
-from .. import click
+from .. import __version__ as piptools_version, click
 from .._compat import install_req_from_line, parse_requirements
 from ..exceptions import PipToolsError
 from ..logging import log
@@ -33,7 +33,7 @@ pip_defaults = install_command.parser.get_default_values()
 
 
 @click.command(name="pip-compile")
-@click.version_option(None, "-V", "--version")
+@click.version_option(piptools_version, "-V", "--version")
 @click.pass_context
 @click.option("-v", "--verbose", count=True, help="Show more output")
 @click.option("-q", "--quiet", count=True, help="Give less output")
