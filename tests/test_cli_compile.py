@@ -10,6 +10,7 @@ from pytest import mark
 
 from .utils import invoke
 
+import piptools
 from piptools._compat.pip_compat import PIP_VERSION, path_to_url
 from piptools.repositories import PyPIRepository
 from piptools.scripts.compile import cli
@@ -925,4 +926,4 @@ def test_version_option(runner, version_option):
     out = runner.invoke(cli, [version_option])
 
     assert out.exit_code == 0, out
-    assert out.stdout.startswith("pip-compile, version")
+    assert out.stdout.strip() == "pip-compile, version {}".format(piptools.__version__)

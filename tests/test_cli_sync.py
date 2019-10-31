@@ -5,6 +5,7 @@ import pytest
 
 from .utils import invoke
 
+import piptools
 from piptools.scripts.sync import cli
 
 
@@ -181,4 +182,4 @@ def test_version_option(runner, version_option):
     out = runner.invoke(cli, [version_option])
 
     assert out.exit_code == 0, out
-    assert out.stdout.startswith("pip-sync, version")
+    assert out.stdout.strip() == "pip-sync, version {}".format(piptools.__version__)
