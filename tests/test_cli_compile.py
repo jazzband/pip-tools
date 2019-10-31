@@ -918,3 +918,11 @@ def test_options_in_requirements_file(runner, options):
 
     with open("requirements.txt") as reqs_txt:
         assert options in reqs_txt.read().splitlines()
+
+
+@pytest.mark.parametrize("version_option", ["-V", "--version"])
+def test_version_option(runner, version_option):
+    out = runner.invoke(cli, [version_option])
+
+    assert out.exit_code == 0, out
+    assert out.stdout.startswith("pip-compile, version")

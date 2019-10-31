@@ -32,8 +32,8 @@ install_command = create_install_command()
 pip_defaults = install_command.parser.get_default_values()
 
 
-@click.command()
-@click.version_option()
+@click.command(name="pip-compile")
+@click.version_option(None, "-V", "--version")
 @click.pass_context
 @click.option("-v", "--verbose", count=True, help="Show more output")
 @click.option("-q", "--quiet", count=True, help="Give less output")

@@ -174,3 +174,11 @@ def test_sync_ask_accepted(check_call, runner):
     runner.invoke(cli, ["--ask", "--dry-run"], input="y\n")
 
     assert check_call.call_count == 2
+
+
+@pytest.mark.parametrize("version_option", ["-V", "--version"])
+def test_version_option(runner, version_option):
+    out = runner.invoke(cli, [version_option])
+
+    assert out.exit_code == 0, out
+    assert out.stdout.startswith("pip-sync, version")

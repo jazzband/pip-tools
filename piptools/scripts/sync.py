@@ -13,8 +13,8 @@ from ..utils import flat_map
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 
 
-@click.command()
-@click.version_option()
+@click.command(name="pip-sync")
+@click.version_option(None, "-V", "--version")
 @click.option(
     "-a",
     "--ask",
