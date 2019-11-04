@@ -223,8 +223,7 @@ class PyPIRepository(BaseRepository):
                 if PIP_VERSION < (19, 4):
                     resolver.require_hashes = require_hashes
                     results = resolver._resolve_one(reqset, ireq)
-                else:  # pragma: no cover
-                    # TODO remove pragma after pip==19.4 being released
+                else:
                     results = resolver._resolve_one(reqset, ireq, require_hashes)
 
                 reqset.cleanup_files()
