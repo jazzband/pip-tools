@@ -202,6 +202,10 @@ class PyPIRepository(BaseRepository):
                 )
                 resolver_kwargs["make_install_req"] = make_install_req
 
+            if PIP_VERSION >= (19, 4):
+                preparer_kwargs["session"] = self.session
+                del resolver_kwargs["session"]
+
             resolver = None
             preparer = None
             with RequirementTracker() as req_tracker:
