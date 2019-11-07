@@ -202,6 +202,10 @@ class PyPIRepository(BaseRepository):
                 )
                 resolver_kwargs["make_install_req"] = make_install_req
 
+            if PIP_VERSION >= (19, 4):
+                preparer_kwargs["session"] = self.session
+                del resolver_kwargs["session"]
+
             resolver = None
             preparer = None
             with RequirementTracker() as req_tracker:
@@ -219,8 +223,7 @@ class PyPIRepository(BaseRepository):
                 if PIP_VERSION < (19, 4):
                     resolver.require_hashes = require_hashes
                     results = resolver._resolve_one(reqset, ireq)
-                else:  # pragma: no cover
-                    # TODO remove pragma after pip==19.4 being released
+                else:
                     results = resolver._resolve_one(reqset, ireq, require_hashes)
 
                 reqset.cleanup_files()
