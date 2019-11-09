@@ -102,6 +102,7 @@ matrix:
 
 install:
     - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+    - pip install -U virtualenv
     - pip install tox
 
 build: false
