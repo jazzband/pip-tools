@@ -6,6 +6,7 @@ python:
   - "3.5"
   - "3.6"
   - "3.7"
+  - "3.8"
 
 env:
   # NOTE: keep this in sync with envlist in tox.ini for tox-travis.
@@ -37,8 +38,13 @@ jobs:
   exclude:
     - python: "pypy3.5-6.0"
       env: PIP=8.1.1
+    # platform.linux_distribution() is removed in Python 3.8 (bpo-28167).
+    - python: "3.8"
+      env: PIP=8.1.1
 
     # Baseline jobs (included there/below).
+    - env: PIP=latest
+      python: "3.8"
     - env: PIP=latest
       python: "3.7"
     - env: PIP=latest
@@ -48,6 +54,8 @@ jobs:
     # Baseline stage to abort early.
     - stage: baseline
       env: PIP=latest
+      python: "3.8"
+    - env: PIP=latest
       python: "3.7"
     - env: PIP=latest
       python: "2.7"
@@ -62,11 +70,6 @@ jobs:
     - env: TOXENV=readme
       python: 2.7
       after_success: skip  # No need coverage
-
-    # Default stage (used with matrix).
-    - stage: test
-      python: 3.8-dev
-      env: PIP=latest
 
     # Only test pypy/pypy3 with latest pip.
     - env: PIP=latest
@@ -92,7 +95,6 @@ jobs:
           repo: jazzband/pip-tools
   allow_failures:
     - env: PIP=master
-    - python: 3.8-dev
 
 after_success:
   - travis_retry pip install codecov coveralls
