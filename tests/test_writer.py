@@ -119,52 +119,53 @@ def test_format_requirement_environment_marker(from_line, writer):
 @mark.parametrize(("allow_unsafe",), [(True,), (False,)])
 def test_iter_lines__unsafe_dependencies(writer, from_line, allow_unsafe):
     writer.allow_unsafe = allow_unsafe
-    output = "\n".join(
-        writer._iter_lines([from_line("test==1.2")], [from_line("setuptools")])
+    writer.emit_header = False
+
+    lines = writer._iter_lines(
+        [from_line("test==1.2")], [from_line("setuptools==1.10.0")]
     )
-    assert (
-        "\n".join(
-            [
-                "test==1.2",
-                "",
-                MESSAGE_UNSAFE_PACKAGES,
-                "setuptools" if allow_unsafe else comment("# setuptools"),
-            ]
-        )
-        in output
+
+    expected_lines = (
+        "test==1.2",
+        "",
+        MESSAGE_UNSAFE_PACKAGES,
+        "setuptools==1.10.0" if allow_unsafe else comment("# setuptools==1.10.0"),
     )
+    assert tuple(lines) == expected_lines
 
 
 def test_iter_lines__unsafe_with_hashes(writer, from_line):
     writer.allow_unsafe = False
+    writer.emit_header = False
     ireqs = [from_line("test==1.2")]
-    unsafe_ireqs = [from_line("setuptools")]
+    unsafe_ireqs = [from_line("setuptools==1.10.0")]
     hashes = {ireqs[0]: {"FAKEHASH"}, unsafe_ireqs[0]: set()}
-    output = "\n".join(writer._iter_lines(ireqs, unsafe_ireqs, hashes=hashes))
-    assert (
-        "\n".join(
-            [
-                "test==1.2 \\",
-                "    --hash=FAKEHASH",
-                "",
-                MESSAGE_UNSAFE_PACKAGES_UNPINNED,
-                comment("# setuptools"),
-            ]
-        )
-        in output
+
+    lines = writer._iter_lines(ireqs, unsafe_ireqs, hashes=hashes)
+
+    expected_lines = (
+        "test==1.2 \\\n    --hash=FAKEHASH",
+        "",
+        MESSAGE_UNSAFE_PACKAGES_UNPINNED,
+        comment("# setuptools==1.10.0"),
     )
+    assert tuple(lines) == expected_lines
 
 
 def test_iter_lines__hash_missing(writer, from_line):
+    writer.allow_unsafe = False
+    writer.emit_header = False
     ireqs = [from_line("test==1.2"), from_line("file:///example/#egg=example")]
     hashes = {ireqs[0]: {"FAKEHASH"}, ireqs[1]: set()}
-    output = "\n".join(writer._iter_lines(ireqs, hashes=hashes))
-    assert (
-        "\n".join(
-            [MESSAGE_UNHASHED_PACKAGE, "file:///example/#egg=example", "test==1.2"]
-        )
-        in output
+
+    lines = writer._iter_lines(ireqs, hashes=hashes)
+
+    expected_lines = (
+        MESSAGE_UNHASHED_PACKAGE,
+        "file:///example/#egg=example",
+        "test==1.2 \\\n    --hash=FAKEHASH",
     )
+    assert tuple(lines) == expected_lines
 
 
 def test_write_header(writer):
