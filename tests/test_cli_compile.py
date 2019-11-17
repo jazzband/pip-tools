@@ -691,8 +691,7 @@ def test_annotate_option(pip_conf, runner, option, expected):
 
 
 @pytest.mark.parametrize(
-    "option, expected",
-    [("--allow-unsafe", "\nsetuptools=="), (None, "\n# setuptools==")],
+    "option, expected", [("--allow-unsafe", "\nsetuptools=="), (None, "\n# setuptools")]
 )
 @pytest.mark.network
 def test_allow_unsafe_option(runner, option, expected):
