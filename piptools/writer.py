@@ -189,17 +189,18 @@ class OutputWriter(object):
                 yield MESSAGE_UNSAFE_PACKAGES
 
             for ireq in unsafe_requirements:
-                req = self._format_requirement(
-                    ireq,
-                    reverse_dependencies,
-                    primary_packages,
-                    marker=markers.get(key_from_ireq(ireq)),
-                    hashes=hashes,
-                )
+                ireq_key = key_from_ireq(ireq)
                 if not self.allow_unsafe:
-                    yield comment("# {}".format(req))
+                    yield comment("# {}".format(ireq_key))
                 else:
-                    yield req
+                    line = self._format_requirement(
+                        ireq,
+                        reverse_dependencies,
+                        primary_packages,
+                        marker=markers.get(ireq_key),
+                        hashes=hashes,
+                    )
+                    yield line
 
         # Yield even when there's no real content, so that blank files are written
         if not yielded:
