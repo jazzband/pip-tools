@@ -8,15 +8,12 @@ import pytest
 from click.testing import CliRunner
 from pytest import mark
 
+from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
 from .utils import invoke
 
 from piptools._compat.pip_compat import PIP_VERSION, path_to_url
 from piptools.repositories import PyPIRepository
 from piptools.scripts.compile import cli
-
-TEST_DATA_PATH = os.path.join(os.path.split(__file__)[0], "test_data")
-MINIMAL_WHEELS_PATH = os.path.join(TEST_DATA_PATH, "minimal_wheels")
-PACKAGES_PATH = os.path.join(TEST_DATA_PATH, "packages")
 
 
 @pytest.fixture
