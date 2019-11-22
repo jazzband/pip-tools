@@ -57,6 +57,10 @@ Run it with ``pip-compile`` or  ``python -m piptools compile``. If you use
 multiple Python versions, you can run ``pip-compile`` as ``py -X.Y -m piptools
 compile`` on Windows and ``pythonX.Y -m piptools compile`` on other systems.
 
+**Note**: ensure you don't have ``requirements.txt`` if you compile
+``setup.py`` or ``requirements.in`` from scratch, otherwise, it might
+interfere.
+
 Requirements from ``setup.py``
 ------------------------------
 
