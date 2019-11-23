@@ -250,7 +250,7 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
 
 
 @mark.parametrize(
-    ("line", "dependency", "rewritten_line"),
+    ("line", "dependency"),
     [
         # zip URL
         # use pip-tools version prior to its use of setuptools_scm,
@@ -259,14 +259,12 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
             "https://github.com/jazzband/pip-tools/archive/"
             "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3.zip",
             "\nclick==",
-            None,
         ),
         # scm URL
         (
             "git+git://github.com/jazzband/pip-tools@"
             "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3",
             "\nclick==",
-            None,
         ),
         # wheel URL
         (
@@ -274,8 +272,24 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
             "89872db07ae70770fba97205b0737c17ef013d0d1c790"
             "899c16bb8bac419/pip_tools-3.6.1-py2.py3-none-any.whl",
             "\nclick==",
-            None,
         ),
+    ],
+)
+@mark.parametrize(("generate_hashes",), [(True,), (False,)])
+@pytest.mark.network
+def test_url_package(runner, line, dependency, generate_hashes):
+    with open("requirements.in", "w") as req_in:
+        req_in.write(line)
+    out = runner.invoke(
+        cli, ["-n", "--rebuild"] + (["--generate-hashes"] if generate_hashes else [])
+    )
+    assert out.exit_code == 0
+    assert dependency in out.stderr
+
+
+@mark.parametrize(
+    ("line", "dependency", "rewritten_line"),
+    [
         # file:// wheel URL
         (
             path_to_url(
@@ -283,13 +297,13 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
                     MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
                 )
             ),
-            "\nsix==",
+            "\nsmall-fake-a==",
             None,
         ),
         # file:// directory
         (
             path_to_url(os.path.join(PACKAGES_PATH, "small_fake_with_deps")),
-            "\nsix==",
+            "\nsmall-fake-a==",
             None,
         ),
         # bare path
@@ -298,7 +312,7 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
             os.path.join(
                 MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
             ),
-            "\nsix==",
+            "\nsmall-fake-a==",
             path_to_url(
                 os.path.join(
                     MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
@@ -308,8 +322,9 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
     ],
 )
 @mark.parametrize(("generate_hashes",), [(True,), (False,)])
-@pytest.mark.network
-def test_url_package(runner, line, dependency, rewritten_line, generate_hashes):
+def test_local_url_package(
+    pip_conf, runner, line, dependency, rewritten_line, generate_hashes
+):
     if rewritten_line is None:
         rewritten_line = line
     with open("requirements.in", "w") as req_in:
