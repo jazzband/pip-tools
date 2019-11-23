@@ -1,5 +1,3 @@
-import pytest
-
 from piptools.repositories.local import LocalRequirementsRepository
 from piptools.utils import name_from_req
 
