@@ -624,8 +624,8 @@ def test_multiple_input_files_without_output_file(runner):
 @pytest.mark.parametrize(
     "option, expected",
     [
-        ("--annotate", "small-fake-a==0.2         # via small-fake-with-deps-a\n"),
-        ("--no-annotate", "small-fake-a==0.2\n"),
+        ("--annotate", "small-fake-a==0.1         # via small-fake-with-deps\n"),
+        ("--no-annotate", "small-fake-a==0.1\n"),
     ],
 )
 def test_annotate_option(pip_conf, runner, option, expected):
@@ -633,7 +633,7 @@ def test_annotate_option(pip_conf, runner, option, expected):
     The output lines has have annotations if option is turned on.
     """
     with open("requirements.in", "w") as req_in:
-        req_in.write("small_fake_with_deps_a")
+        req_in.write("small_fake_with_deps")
 
     out = runner.invoke(cli, [option, "-n"])
 
@@ -823,22 +823,22 @@ def test_upgrade_package_doesnt_remove_annotation(pip_conf, runner):
     See: GH-929
     """
     with open("requirements.in", "w") as req_in:
-        req_in.write("small-fake-with-deps-a\n")
+        req_in.write("small-fake-with-deps\n")
 
     runner.invoke(cli)
 
     # Downgrade small-fake-a to 0.1
     with open("requirements.txt", "w") as req_txt:
         req_txt.write(
-            "small-fake-with-deps-a==0.1\n"
-            "small-fake-a==0.1         # via small-fake-with-deps-a\n"
+            "small-fake-with-deps==0.1\n"
+            "small-fake-a==0.1         # via small-fake-with-deps\n"
         )
 
     runner.invoke(cli, ["-P", "small-fake-a"])
 
     with open("requirements.txt", "r") as req_txt:
         assert (
-            "small-fake-a==0.2         # via small-fake-with-deps-a"
+            "small-fake-a==0.1         # via small-fake-with-deps"
             in req_txt.read().splitlines()
         )
 
