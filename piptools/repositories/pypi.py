@@ -274,10 +274,10 @@ class PyPIRepository(BaseRepository):
                         os.environ["PIP_REQ_TRACKER"] = prev_tracker
                     else:
                         del os.environ["PIP_REQ_TRACKER"]
-                try:
-                    self.wheel_cache.cleanup()
-                except AttributeError:
-                    pass
+
+                # WheelCache.cleanup() introduced in pip==10.0.0
+                if PIP_VERSION >= (10,):
+                    wheel_cache.cleanup()
         return self._dependencies_cache[ireq]
 
     def get_hashes(self, ireq):
