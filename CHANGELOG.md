@@ -7,12 +7,14 @@ Features:
 Bug Fixes:
 - Add compatibility with `pip>=19.3`
 ([#864](https://github.com/jazzband/pip-tools/pull/864), [#904](https://github.com/jazzband/pip-tools/pull/904), [#910](https://github.com/jazzband/pip-tools/pull/910), [#912](https://github.com/jazzband/pip-tools/pull/912) and [#915](https://github.com/jazzband/pip-tools/pull/915)). Thanks @atugushev
-- Add info to `README` about layered requirements files and `-c` flag
-([#905](https://github.com/jazzband/pip-tools/pull/905)). Thanks @jamescooke
 - Ensure `pip-compile --no-header <blank requirements.in>` creates/overwrites `requirements.txt`
 ([#909](https://github.com/jazzband/pip-tools/pull/909)). Thanks @AndydeCleyre
 - Fix `pip-compile --upgrade-package` removes «via» annotation
 ([#931](https://github.com/jazzband/pip-tools/pull/931)). Thanks @hramezani
+
+Improved Documentation:
+- Add info to `README` about layered requirements files and `-c` flag
+([#905](https://github.com/jazzband/pip-tools/pull/905)). Thanks @jamescooke
 
 # 4.1.0 (2019-08-26)
 
