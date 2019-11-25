@@ -174,3 +174,19 @@ def test_pypirepo_calls_reqset_with_str_paths(pypi_repository, from_line):
         assert isinstance(called_with_finder, PackageFinder)
         assert called_with_ireq == ireq
         assert not pf_call_kwargs
+
+
+@pytest.mark.skipif(
+    PIP_VERSION < (10,), reason="WheelCache.cleanup() introduced in pip==10.0.0"
+)
+@mock.patch("piptools.repositories.pypi.PyPIRepository.resolve_reqs")  # to run offline
+@mock.patch("piptools.repositories.pypi.WheelCache")
+def test_wheel_cache_cleanup_called(
+    WheelCache, resolve_reqs, pypi_repository, from_line
+):
+    """
+    Test WheelCache.cleanup() called once after dependency resolution.
+    """
+    ireq = from_line("six==1.10.0")
+    pypi_repository.get_dependencies(ireq)
+    WheelCache.return_value.cleanup.assert_called_once_with()
