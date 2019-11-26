@@ -2,6 +2,8 @@ import os
 
 import pytest
 
+from .constants import PACKAGES_PATH
+
 from piptools.repositories import PyPIRepository
 
 
@@ -20,37 +22,17 @@ def mocked_repository():
     return MockedPyPIRepository(["--no-index"])
 
 
-@pytest.mark.parametrize(
-    ("input", "expected"),
-    (
-        (tup)
-        for tup in [
-            (
-                [
-                    os.path.join(
-                        os.path.dirname(__file__),
-                        "test_data",
-                        "packages",
-                        "small_fake_with_deps",
-                    )
-                ],
-                ["small-fake-a"],
-            )
-        ]
-    ),
-)
 def test_editable_top_level_deps_preserved(
-    base_resolver, mocked_repository, from_editable, input, expected
+    base_resolver, mocked_repository, from_editable
 ):
-    input = [from_editable(line) for line in input]
+    package_path = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
+    ireqs = [from_editable(package_path)]
     output = base_resolver(
-        input, prereleases=False, repository=mocked_repository
+        ireqs, prereleases=False, repository=mocked_repository
     ).resolve()
 
     output = {p.name for p in output}
 
     # sanity check that we're expecting something
     assert output != set()
-
-    for package_name in expected:
-        assert package_name in output
+    assert "small-fake-a" in output
