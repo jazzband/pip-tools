@@ -6,6 +6,8 @@ from collections import Counter
 import mock
 import pytest
 
+from .constants import PACKAGES_PATH
+
 from piptools._compat import path_to_url
 from piptools.exceptions import IncompatibleRequirements
 from piptools.sync import dependency_tree, diff, merge, sync
@@ -228,9 +230,7 @@ def test_diff_leave_piptools_alone(fake_dist, from_line):
 
 def test_diff_with_editable(fake_dist, from_editable):
     installed = [fake_dist("small-fake-with-deps==0.0.1"), fake_dist("six==1.10.0")]
-    path_to_package = os.path.join(
-        os.path.dirname(__file__), "test_data", "packages", "small_fake_with_deps"
-    )
+    path_to_package = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
     reqs = [from_editable(path_to_package)]
     to_install, to_uninstall = diff(reqs, installed)
 
