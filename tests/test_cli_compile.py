@@ -12,61 +12,7 @@ from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
 from .utils import invoke
 
 from piptools._compat.pip_compat import PIP_VERSION, path_to_url
-from piptools.repositories import PyPIRepository
 from piptools.scripts.compile import cli
-
-
-@pytest.fixture
-def make_pip_conf(tmpdir, monkeypatch):
-    created_paths = []
-
-    def _make_pip_conf(content):
-        pip_conf_file = "pip.conf" if os.name != "nt" else "pip.ini"
-        path = (tmpdir / pip_conf_file).strpath
-
-        with open(path, "w") as f:
-            f.write(content)
-
-        monkeypatch.setenv("PIP_CONFIG_FILE", path)
-
-        created_paths.append(path)
-        return path
-
-    try:
-        yield _make_pip_conf
-    finally:
-        for path in created_paths:
-            os.remove(path)
-
-
-@pytest.fixture
-def pip_conf(make_pip_conf):
-    return make_pip_conf(
-        dedent(
-            """\
-            [global]
-            no-index = true
-            find-links = {wheels_path}
-            """.format(
-                wheels_path=MINIMAL_WHEELS_PATH
-            )
-        )
-    )
-
-
-@pytest.fixture
-def pip_with_index_conf(make_pip_conf):
-    return make_pip_conf(
-        dedent(
-            """\
-            [global]
-            index-url = http://example.com
-            find-links = {wheels_path}
-            """.format(
-                wheels_path=MINIMAL_WHEELS_PATH
-            )
-        )
-    )
 
 
 def test_default_pip_conf_read(pip_with_index_conf, runner):
@@ -249,8 +195,7 @@ def test_run_as_module_compile():
     assert status == 0
 
 
-@pytest.mark.network
-def test_editable_package(runner):
+def test_editable_package(pip_conf, runner):
     """ piptools can compile an editable """
     fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
     fake_package_dir = path_to_url(fake_package_dir)
@@ -261,7 +206,7 @@ def test_editable_package(runner):
 
     assert out.exit_code == 0
     assert fake_package_dir in out.stderr
-    assert "six==1.10.0" in out.stderr
+    assert "small-fake-a==0.1" in out.stderr
 
 
 @pytest.mark.network
@@ -279,9 +224,8 @@ def test_editable_package_vcs(runner):
     assert "click" in out.stderr  # dependency of pip-tools
 
 
-@pytest.mark.network
 def test_locally_available_editable_package_is_not_archived_in_cache_dir(
-    tmpdir, runner
+    pip_conf, tmpdir, runner
 ):
     """
     piptools will not create an archive for a locally available editable requirement
@@ -299,14 +243,14 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
 
         assert out.exit_code == 0
         assert fake_package_dir in out.stderr
-        assert "six==1.10.0" in out.stderr
+        assert "small-fake-a==0.1" in out.stderr
 
     # we should not find any archived file in {cache_dir}/pkgs
     assert not os.listdir(os.path.join(str(cache_dir), "pkgs"))
 
 
 @mark.parametrize(
-    ("line", "dependency", "rewritten_line"),
+    ("line", "dependency"),
     [
         # zip URL
         # use pip-tools version prior to its use of setuptools_scm,
@@ -315,14 +259,12 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
             "https://github.com/jazzband/pip-tools/archive/"
             "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3.zip",
             "\nclick==",
-            None,
         ),
         # scm URL
         (
             "git+git://github.com/jazzband/pip-tools@"
             "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3",
             "\nclick==",
-            None,
         ),
         # wheel URL
         (
@@ -330,8 +272,24 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
             "89872db07ae70770fba97205b0737c17ef013d0d1c790"
             "899c16bb8bac419/pip_tools-3.6.1-py2.py3-none-any.whl",
             "\nclick==",
-            None,
         ),
+    ],
+)
+@mark.parametrize(("generate_hashes",), [(True,), (False,)])
+@pytest.mark.network
+def test_url_package(runner, line, dependency, generate_hashes):
+    with open("requirements.in", "w") as req_in:
+        req_in.write(line)
+    out = runner.invoke(
+        cli, ["-n", "--rebuild"] + (["--generate-hashes"] if generate_hashes else [])
+    )
+    assert out.exit_code == 0
+    assert dependency in out.stderr
+
+
+@mark.parametrize(
+    ("line", "dependency", "rewritten_line"),
+    [
         # file:// wheel URL
         (
             path_to_url(
@@ -339,13 +297,13 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
                     MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
                 )
             ),
-            "\nsix==",
+            "\nsmall-fake-a==",
             None,
         ),
         # file:// directory
         (
             path_to_url(os.path.join(PACKAGES_PATH, "small_fake_with_deps")),
-            "\nsix==",
+            "\nsmall-fake-a==",
             None,
         ),
         # bare path
@@ -354,7 +312,7 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
             os.path.join(
                 MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
             ),
-            "\nsix==",
+            "\nsmall-fake-a==",
             path_to_url(
                 os.path.join(
                     MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
@@ -364,8 +322,9 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
     ],
 )
 @mark.parametrize(("generate_hashes",), [(True,), (False,)])
-@pytest.mark.network
-def test_url_package(runner, line, dependency, rewritten_line, generate_hashes):
+def test_local_url_package(
+    pip_conf, runner, line, dependency, rewritten_line, generate_hashes
+):
     if rewritten_line is None:
         rewritten_line = line
     with open("requirements.in", "w") as req_in:
@@ -510,23 +469,20 @@ def test_dry_run_quiet_option(runner):
     assert not out.stderr_bytes
 
 
-@pytest.mark.network
-def test_generate_hashes_with_editable(runner):
+def test_generate_hashes_with_editable(pip_conf, runner):
     small_fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
     small_fake_package_url = path_to_url(small_fake_package_dir)
     with open("requirements.in", "w") as fp:
         fp.write("-e {}\n".format(small_fake_package_url))
-        fp.write("pytz==2017.2\n")
-    out = runner.invoke(
-        cli, ["--generate-hashes", "--index-url", PyPIRepository.DEFAULT_INDEX_URL]
-    )
+    out = runner.invoke(cli, ["--generate-hashes"])
     expected = (
         "-e {}\n"
-        "pytz==2017.2 \\\n"
-        "    --hash=sha256:d1d6729c85acea542367138286"
-        "8627129432fba9a89ecbb248d8d1c7a9f01c67 \\\n"
-        "    --hash=sha256:f5c056e8f62d45ba8215e5cb8f"
-        "50dfccb198b4b9fbea8500674f3443e4689589\n"
+        "small-fake-a==0.1 \\\n"
+        "    --hash=sha256:5e6071ee6e4c59e0d0408d366f"
+        "e9b66781d2cf01be9a6e19a2433bb3c5336330\n"
+        "small-fake-b==0.1 \\\n"
+        "    --hash=sha256:acdba8f8b8a816213c30d5310c"
+        "3fe296c0107b16ed452062f7f994a5672e3b3f\n"
     ).format(small_fake_package_url)
     assert out.exit_code == 0
     assert expected in out.stderr
@@ -550,17 +506,15 @@ def test_generate_hashes_with_url(runner):
     assert expected in out.stderr
 
 
-@pytest.mark.network
-def test_generate_hashes_verbose(runner):
+def test_generate_hashes_verbose(pip_conf, runner):
     """
     The hashes generation process should show a progress.
     """
     with open("requirements.in", "w") as fp:
-        fp.write("pytz==2017.2")
+        fp.write("small-fake-a==0.1")
 
     out = runner.invoke(cli, ["--generate-hashes", "-v"])
-
-    expected_verbose_text = "Generating hashes:\n  pytz\n"
+    expected_verbose_text = "Generating hashes:\n  small-fake-a\n"
     assert expected_verbose_text in out.stderr
 
 
@@ -670,8 +624,8 @@ def test_multiple_input_files_without_output_file(runner):
 @pytest.mark.parametrize(
     "option, expected",
     [
-        ("--annotate", "small-fake-a==0.2         # via small-fake-with-deps-a\n"),
-        ("--no-annotate", "small-fake-a==0.2\n"),
+        ("--annotate", "small-fake-a==0.1         # via small-fake-with-deps\n"),
+        ("--no-annotate", "small-fake-a==0.1\n"),
     ],
 )
 def test_annotate_option(pip_conf, runner, option, expected):
@@ -679,7 +633,7 @@ def test_annotate_option(pip_conf, runner, option, expected):
     The output lines has have annotations if option is turned on.
     """
     with open("requirements.in", "w") as req_in:
-        req_in.write("small_fake_with_deps_a")
+        req_in.write("small_fake_with_deps")
 
     out = runner.invoke(cli, [option, "-n"])
 
@@ -688,14 +642,14 @@ def test_annotate_option(pip_conf, runner, option, expected):
 
 
 @pytest.mark.parametrize(
-    "option, expected", [("--allow-unsafe", "\nsetuptools=="), (None, "\n# setuptools")]
+    "option, expected",
+    [("--allow-unsafe", "\nsmall-fake-a=="), (None, "\n# small-fake-a")],
 )
-@pytest.mark.network
-def test_allow_unsafe_option(runner, option, expected):
+def test_allow_unsafe_option(pip_conf, monkeypatch, runner, option, expected):
     """
     Unsafe packages are printed as expected with and without --allow-unsafe.
     """
-
+    monkeypatch.setattr("piptools.resolver.UNSAFE_PACKAGES", {"small-fake-a"})
     with open("requirements.in", "w") as req_in:
         req_in.write(path_to_url(os.path.join(PACKAGES_PATH, "small_fake_with_deps")))
 
@@ -869,22 +823,22 @@ def test_upgrade_package_doesnt_remove_annotation(pip_conf, runner):
     See: GH-929
     """
     with open("requirements.in", "w") as req_in:
-        req_in.write("small-fake-with-deps-a\n")
+        req_in.write("small-fake-with-deps\n")
 
     runner.invoke(cli)
 
     # Downgrade small-fake-a to 0.1
     with open("requirements.txt", "w") as req_txt:
         req_txt.write(
-            "small-fake-with-deps-a==0.1\n"
-            "small-fake-a==0.1         # via small-fake-with-deps-a\n"
+            "small-fake-with-deps==0.1\n"
+            "small-fake-a==0.1         # via small-fake-with-deps\n"
         )
 
     runner.invoke(cli, ["-P", "small-fake-a"])
 
     with open("requirements.txt", "r") as req_txt:
         assert (
-            "small-fake-a==0.2         # via small-fake-with-deps-a"
+            "small-fake-a==0.1         # via small-fake-with-deps"
             in req_txt.read().splitlines()
         )
 
