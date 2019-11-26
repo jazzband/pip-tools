@@ -8,6 +8,7 @@
 .envrc
 .direnv
 .venv
+venv/
 
 # Testing
 .pytest_cache/
@@ -23,7 +24,6 @@ dist
 
 # IDE
 .idea
-venv/
 
 # Test files
 requirements.in
