@@ -1,3 +1,23 @@
+# 4.3.0 (2019-11-25)
+
+Features:
+- Add Python 3.8 support
+([#956](https://github.com/jazzband/pip-tools/pull/956)). Thanks @hramezani
+- Unpin commented out unsafe packages in `requirements.txt`
+([#975](https://github.com/jazzband/pip-tools/pull/975)).  Thanks @atugushev
+
+Bug Fixes:
+- Fix `pip-compile` doesn't copy `--trusted-host` from `requirements.in` to `requirements.txt`
+([#964](https://github.com/jazzband/pip-tools/pull/964)). Thanks @atugushev
+- Add compatibility with `pip>=20.0`
+([#953](https://github.com/jazzband/pip-tools/pull/953) and [#978](https://github.com/jazzband/pip-tools/pull/978)). Thanks @atugushev
+- Fix a bug where the resolver wouldn't clean up the ephemeral wheel cache
+([#968](https://github.com/jazzband/pip-tools/pull/968)). Thanks @atugushev
+
+Improved Documentation:
+- Add a note to `README` about `requirements.txt` file, which would possibly interfere if you're compiling from scratch
+([#959](https://github.com/jazzband/pip-tools/pull/959)). Thanks @hramezani
+
 # 4.2.0 (2019-10-12)
 
 Features:
