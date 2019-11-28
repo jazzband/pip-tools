@@ -61,8 +61,35 @@ def test_generate_hashes_all_platforms(from_line, pypi_repository):
 def test_generate_hashes_without_interfering_with_each_other(
     from_line, pypi_repository
 ):
-    pypi_repository.get_hashes(from_line("cffi==1.9.1"))
-    pypi_repository.get_hashes(from_line("matplotlib==2.0.2"))
+    """
+    The PyPIRepository._get_file_hash() used to call unpack_url(),
+    when generating the hash. Unpacking both packages to the same directory
+    will then fail. E.g. matplotlib-2.0.2.tar.gz has a directory named LICENSE,
+    but many other packages have a file named LICENSE.
+
+    See GH-512 and GH-544.
+    """
+    assert (
+        pypi_repository._get_file_hash(
+            Link(
+                "https://files.pythonhosted.org/packages/"
+                "f5/f0/9da3ef24ea7eb0ccd12430a261b66eca36b924aeef06e17147f9f9d7d310/"
+                "matplotlib-2.0.2.tar.gz"
+            )
+        )
+        == "sha256:0ffbc44faa34a8b1704bc108c451ecf87988f900ef7ce757b8e2e84383121ff1"
+    )
+
+    assert (
+        pypi_repository._get_file_hash(
+            Link(
+                "https://files.pythonhosted.org/packages/"
+                "a1/32/e3d6c3a8b5461b903651dd6ce958ed03c093d2e00128e3f33ea69f1d7965/"
+                "cffi-1.9.1.tar.gz"
+            )
+        )
+        == "sha256:563e0bd53fda03c151573217b3a49b3abad8813de9dd0632e10090f6190fdaf8"
+    )
 
 
 def test_get_hashes_editable_empty_set(from_editable, pypi_repository):
