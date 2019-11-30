@@ -58,9 +58,7 @@ def test_generate_hashes_all_platforms(from_line, pypi_repository):
 
 
 @pytest.mark.network
-def test_generate_hashes_without_interfering_with_each_other(
-    from_line, pypi_repository
-):
+def test_get_file_hash_without_interfering_with_each_other(from_line, pypi_repository):
     """
     The PyPIRepository._get_file_hash() used to call unpack_url(),
     when generating the hash. Unpacking both packages to the same directory
