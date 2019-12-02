@@ -239,7 +239,7 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
         with open("requirements.in", "w") as req_in:
             req_in.write("-e " + fake_package_dir)  # require editable fake package
 
-        out = runner.invoke(cli, ["-n"])
+        out = runner.invoke(cli, ["-n", "--rebuild"])
 
         assert out.exit_code == 0
         assert fake_package_dir in out.stderr
