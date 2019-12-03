@@ -297,13 +297,13 @@ def test_url_package(runner, line, dependency, generate_hashes):
                     MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
                 )
             ),
-            "\nsmall-fake-a==",
+            "\nsmall-fake-a==0.1",
             None,
         ),
         # file:// directory
         (
             path_to_url(os.path.join(PACKAGES_PATH, "small_fake_with_deps")),
-            "\nsmall-fake-a==",
+            "\nsmall-fake-a==0.1",
             None,
         ),
         # bare path
@@ -312,7 +312,7 @@ def test_url_package(runner, line, dependency, generate_hashes):
             os.path.join(
                 MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
             ),
-            "\nsmall-fake-a==",
+            "\nsmall-fake-a==0.1",
             path_to_url(
                 os.path.join(
                     MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
@@ -643,7 +643,7 @@ def test_annotate_option(pip_conf, runner, option, expected):
 
 @pytest.mark.parametrize(
     "option, expected",
-    [("--allow-unsafe", "\nsmall-fake-a=="), (None, "\n# small-fake-a")],
+    [("--allow-unsafe", "small-fake-a==0.1"), (None, "# small-fake-a")],
 )
 def test_allow_unsafe_option(pip_conf, monkeypatch, runner, option, expected):
     """
@@ -655,7 +655,7 @@ def test_allow_unsafe_option(pip_conf, monkeypatch, runner, option, expected):
 
     out = runner.invoke(cli, [option] if option else [])
 
-    assert expected in out.stderr
+    assert expected in out.stderr.splitlines()
     assert out.exit_code == 0
 
 
