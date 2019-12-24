@@ -22,7 +22,6 @@ from ..utils import (
     get_trusted_hosts,
     is_pinned_requirement,
     key_from_ireq,
-    key_from_req,
 )
 from ..writer import OutputWriter
 
@@ -279,7 +278,7 @@ def cli(
     # Parse all constraints coming from --upgrade-package/-P
     upgrade_reqs_gen = (install_req_from_line(pkg) for pkg in upgrade_packages)
     upgrade_install_reqs = {
-        key_from_req(install_req.req): install_req for install_req in upgrade_reqs_gen
+        key_from_ireq(install_req): install_req for install_req in upgrade_reqs_gen
     }
 
     existing_pins_to_upgrade = set()
@@ -303,7 +302,7 @@ def cli(
         # constraints, and separately gather pins to be upgraded
         existing_pins = {}
         for ireq in filter(is_pinned_requirement, ireqs):
-            key = key_from_req(ireq.req)
+            key = key_from_ireq(ireq)
             if key in upgrade_install_reqs:
                 existing_pins_to_upgrade.add(key)
             else:

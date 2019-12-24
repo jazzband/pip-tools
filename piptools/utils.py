@@ -137,7 +137,7 @@ def as_tuple(ireq):
     if not is_pinned_requirement(ireq):
         raise TypeError("Expected a pinned InstallRequirement, got {}".format(ireq))
 
-    name = key_from_req(ireq.req)
+    name = key_from_ireq(ireq)
     version = next(iter(ireq.specifier._specs))._spec[1]
     extras = tuple(sorted(ireq.extras))
     return name, version, extras
