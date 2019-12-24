@@ -5,7 +5,6 @@ from textwrap import dedent
 
 import mock
 import pytest
-from click.testing import CliRunner
 from pytest import mark
 
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
@@ -74,13 +73,13 @@ def test_command_line_setuptools_read(pip_conf, runner):
         (["setup.py", "--output-file", "output.txt"], "output.txt"),
     ],
 )
-def test_command_line_setuptools_output_file(pip_conf, options, expected_output_file):
+def test_command_line_setuptools_output_file(
+    pip_conf, runner, options, expected_output_file
+):
     """
     Test the output files for setup.py as a requirement file.
     """
-    runner = CliRunner(mix_stderr=False)
-    with runner.isolated_filesystem():
-        package = open("setup.py", "w")
+    with open("setup.py", "w") as package:
         package.write(
             dedent(
                 """\
@@ -89,11 +88,10 @@ def test_command_line_setuptools_output_file(pip_conf, options, expected_output_
                 """
             )
         )
-        package.close()
 
-        out = runner.invoke(cli, options)
-        assert out.exit_code == 0
-        assert os.path.exists(expected_output_file)
+    out = runner.invoke(cli, options)
+    assert out.exit_code == 0
+    assert os.path.exists(expected_output_file)
 
 
 def test_find_links_option(runner):
