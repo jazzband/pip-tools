@@ -34,18 +34,24 @@ even when you've pinned them.  `You do pin them, right?`_
 Installation
 ============
 
-As part of a Python project's environment tooling (similar to ``pip``), it's
-recommended to install ``pip-tools`` in each project's `virtual environment`_:
+Similar to ``pip``, ``pip-tools`` should be installed in each of your project's
+`virtual environments`_:
 
 .. code-block:: bash
 
     $ source /path/to/venv/bin/activate
     (venv)$ pip install pip-tools
 
+``pip-sync`` needs to run in the same environment as
+your project to identify which packages to install or upgrade. This is also
+recommended for ``pip-compile`` so conditional dependencies that require a
+specific Python version or other environment marker resolve relative to your
+project's environment.
+
 **Note**: all of the remaining example commands assume you've activated your
 project's virtual environment.
 
-.. _virtual environment: https://packaging.python.org/tutorials/installing-packages/#creating-virtual-environments
+.. _virtual environments: https://packaging.python.org/tutorials/installing-packages/#creating-virtual-environments
 
 Example usage for ``pip-compile``
 =================================
