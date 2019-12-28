@@ -149,9 +149,14 @@ class PyPIRepository(BaseRepository):
             )
             best_candidate = best_candidate_result.best_candidate
 
+        if PIP_VERSION[:2] <= (19, 3):
+            best_candidate_name = best_candidate.project
+        else:
+            best_candidate_name = best_candidate.name
+
         # Turn the candidate into a pinned InstallRequirement
         return make_install_requirement(
-            best_candidate.project,
+            best_candidate_name,
             best_candidate.version,
             ireq.extras,
             constraint=ireq.constraint,
