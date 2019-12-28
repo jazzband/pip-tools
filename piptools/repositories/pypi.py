@@ -14,12 +14,12 @@ from .._compat import (
     Link,
     PyPI,
     RequirementSet,
-    RequirementTracker,
     Resolver as PipResolver,
     TemporaryDirectory,
     Wheel,
     WheelCache,
     contextlib,
+    get_requirement_tracker,
     is_dir_url,
     is_file_url,
     is_vcs_url,
@@ -208,7 +208,7 @@ class PyPIRepository(BaseRepository):
 
             resolver = None
             preparer = None
-            with RequirementTracker() as req_tracker:
+            with get_requirement_tracker() as req_tracker:
                 # Pip 18 uses a requirement tracker to prevent fork bombs
                 if req_tracker:
                     preparer_kwargs["req_tracker"] = req_tracker
