@@ -96,3 +96,12 @@ def is_dir_url(link):
         return _is_dir_url(link)
 
     return link.is_existing_dir()
+
+
+def get_requirement_tracker():
+    if PIP_VERSION[:2] <= (19, 3):
+        return RequirementTracker()
+
+    from pip._internal.req import req_tracker
+
+    return req_tracker.get_requirement_tracker()
