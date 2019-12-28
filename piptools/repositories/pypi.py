@@ -205,6 +205,7 @@ class PyPIRepository(BaseRepository):
             if PIP_VERSION >= (20,):
                 preparer_kwargs["session"] = self.session
                 del resolver_kwargs["session"]
+                del preparer_kwargs["progress_bar"]
 
             resolver = None
             preparer = None
