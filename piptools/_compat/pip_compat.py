@@ -18,6 +18,16 @@ except ImportError:
         yield
 
 
+# Introduced in pip 20.0
+try:
+    from pip._internal.utils.temp_dir import global_tempdir_manager
+except ImportError:
+
+    @contextmanager
+    def global_tempdir_manager():
+        yield
+
+
 def do_import(module_path, subimport=None, old_path=None):
     old_path = old_path or module_path
     prefixes = ["pip._internal", "pip"]

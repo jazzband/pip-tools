@@ -20,6 +20,7 @@ from .._compat import (
     WheelCache,
     contextlib,
     get_requirement_tracker,
+    global_tempdir_manager,
     is_dir_url,
     is_file_url,
     is_vcs_url,
@@ -60,11 +61,11 @@ class PyPIRepository(BaseRepository):
         # Use pip's parser for pip.conf management and defaults.
         # General options (find_links, index_url, extra_index_url, trusted_host,
         # and pre) are deferred to pip.
-        command = create_install_command()
-        self.options, _ = command.parse_args(pip_args)
+        self.command = create_install_command()
+        self.options, _ = self.command.parse_args(pip_args)
 
-        self.session = command._build_session(self.options)
-        self.finder = command._build_package_finder(
+        self.session = self.command._build_session(self.options)
+        self.finder = self.command._build_package_finder(
             options=self.options, session=self.session
         )
 
@@ -208,23 +209,39 @@ class PyPIRepository(BaseRepository):
 
             resolver = None
             preparer = None
-            with get_requirement_tracker() as req_tracker:
+
+            if PIP_VERSION[:2] <= (19, 3):
+                tmp_dir_cm = contextlib.nullcontext()
+            else:
+                from pip._internal.utils.temp_dir import TempDirectory
+
+                tmp_dir_cm = TempDirectory(kind="req-tracker")
+
+            with get_requirement_tracker() as req_tracker, tmp_dir_cm as temp_build_dir:
                 # Pip 18 uses a requirement tracker to prevent fork bombs
                 if req_tracker:
                     preparer_kwargs["req_tracker"] = req_tracker
-                preparer = RequirementPreparer(**preparer_kwargs)
+
+                if PIP_VERSION[:2] <= (19, 3):
+                    preparer = RequirementPreparer(**preparer_kwargs)
+                else:
+                    preparer = self.command.make_requirement_preparer(
+                        temp_build_dir=temp_build_dir,
+                        options=self.options,
+                        req_tracker=req_tracker,
+                        session=self.session,
+                        finder=self.finder,
+                        use_user_site=self.options.use_user_site,
+                    )
+
                 resolver_kwargs["preparer"] = preparer
                 reqset = RequirementSet()
                 ireq.is_direct = True
                 reqset.add_requirement(ireq)
 
                 resolver = PipResolver(**resolver_kwargs)
-                require_hashes = False
-                if PIP_VERSION < (20,):
-                    resolver.require_hashes = require_hashes
-                    results = resolver._resolve_one(reqset, ireq)
-                else:
-                    results = resolver._resolve_one(reqset, ireq, require_hashes)
+                resolver.require_hashes = False
+                results = resolver._resolve_one(reqset, ireq)
 
                 reqset.cleanup_files()
 
@@ -265,9 +282,10 @@ class PyPIRepository(BaseRepository):
             wheel_cache = WheelCache(CACHE_DIR, self.options.format_control)
             prev_tracker = os.environ.get("PIP_REQ_TRACKER")
             try:
-                self._dependencies_cache[ireq] = self.resolve_reqs(
-                    download_dir, ireq, wheel_cache
-                )
+                with global_tempdir_manager():
+                    self._dependencies_cache[ireq] = self.resolve_reqs(
+                        download_dir, ireq, wheel_cache
+                    )
             finally:
                 if "PIP_REQ_TRACKER" in os.environ:
                     if prev_tracker:

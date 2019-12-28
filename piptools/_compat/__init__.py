@@ -22,6 +22,7 @@ from .pip_compat import (
     cmdoptions,
     get_installed_distributions,
     get_requirement_tracker,
+    global_tempdir_manager,
     install_req_from_editable,
     install_req_from_line,
     is_dir_url,
