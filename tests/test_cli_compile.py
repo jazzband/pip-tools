@@ -238,15 +238,14 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
     fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
     fake_package_dir = path_to_url(fake_package_dir)
 
-    with mock.patch("piptools.repositories.pypi.CACHE_DIR", new=str(cache_dir)):
-        with open("requirements.in", "w") as req_in:
-            req_in.write("-e " + fake_package_dir)  # require editable fake package
+    with open("requirements.in", "w") as req_in:
+        req_in.write("-e " + fake_package_dir)  # require editable fake package
 
-        out = runner.invoke(cli, ["-n", "--rebuild"])
+    out = runner.invoke(cli, ["-n", "--rebuild", "--cache-dir", str(cache_dir)])
 
-        assert out.exit_code == 0
-        assert fake_package_dir in out.stderr
-        assert "small-fake-a==0.1" in out.stderr
+    assert out.exit_code == 0
+    assert fake_package_dir in out.stderr
+    assert "small-fake-a==0.1" in out.stderr
 
     # we should not find any archived file in {cache_dir}/pkgs
     assert not os.listdir(os.path.join(str(cache_dir), "pkgs"))

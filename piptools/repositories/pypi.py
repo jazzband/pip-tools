@@ -28,7 +28,6 @@ from .._compat import (
 )
 from ..click import progressbar
 from ..exceptions import NoCandidateFound
-from ..locations import CACHE_DIR
 from ..logging import log
 from ..utils import (
     create_install_command,
@@ -54,7 +53,7 @@ class PyPIRepository(BaseRepository):
     changed/configured on the Finder.
     """
 
-    def __init__(self, pip_args, build_isolation=False):
+    def __init__(self, pip_args, cache_dir, build_isolation=False):
         self.build_isolation = build_isolation
 
         # Use pip's parser for pip.conf management and defaults.
@@ -81,8 +80,9 @@ class PyPIRepository(BaseRepository):
 
         # Setup file paths
         self.freshen_build_caches()
-        self._download_dir = fs_str(os.path.join(CACHE_DIR, "pkgs"))
-        self._wheel_download_dir = fs_str(os.path.join(CACHE_DIR, "wheels"))
+        self._cache_dir = cache_dir
+        self._download_dir = fs_str(os.path.join(self._cache_dir, "pkgs"))
+        self._wheel_download_dir = fs_str(os.path.join(self._cache_dir, "wheels"))
 
     def freshen_build_caches(self):
         """
@@ -262,7 +262,7 @@ class PyPIRepository(BaseRepository):
             if not os.path.isdir(self._wheel_download_dir):
                 os.makedirs(self._wheel_download_dir)
 
-            wheel_cache = WheelCache(CACHE_DIR, self.options.format_control)
+            wheel_cache = WheelCache(self._cache_dir, self.options.format_control)
             prev_tracker = os.environ.get("PIP_REQ_TRACKER")
             try:
                 self._dependencies_cache[ireq] = self.resolve_reqs(
