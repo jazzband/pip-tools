@@ -124,8 +124,11 @@ def repository():
 
 
 @fixture
-def pypi_repository():
-    return PyPIRepository(["--index-url", PyPIRepository.DEFAULT_INDEX_URL])
+def pypi_repository(tmpdir):
+    return PyPIRepository(
+        ["--index-url", PyPIRepository.DEFAULT_INDEX_URL],
+        cache_dir=str(tmpdir / "pypi-repo"),
+    )
 
 
 @fixture
