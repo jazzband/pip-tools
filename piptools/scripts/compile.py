@@ -176,10 +176,10 @@ pip_defaults = install_command.parser.get_default_values()
 )
 @click.option(
     "--cache-dir",
-    help="Specify a directory to cache dependency information (defaults to {})".format(
-        CACHE_DIR
-    ),
+    help="Store the cache data in DIRECTORY.",
+    default=CACHE_DIR,
     envvar="PIP_TOOLS_CACHE_DIR",
+    show_default=True,
     show_envvar=True,
     type=click.Path(file_okay=False, writable=True),
 )
@@ -359,9 +359,6 @@ def cli(
         log.debug("Configuration:")
         for find_link in dedup(repository.finder.find_links):
             log.debug("  -f {}".format(find_link))
-
-    if cache_dir is None:
-        cache_dir = CACHE_DIR
 
     try:
         resolver = Resolver(
