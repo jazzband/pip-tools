@@ -159,8 +159,8 @@ class Resolver(object):
                 raise RuntimeError(
                     "No stable configuration of concrete packages "
                     "could be found for the given constraints after "
-                    "%d rounds of resolving.\n"
-                    "This is likely a bug." % max_rounds
+                    "{max_rounds} rounds of resolving.\n"
+                    "This is likely a bug.".format(max_rounds=max_rounds)
                 )
 
             log.debug("")
