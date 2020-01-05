@@ -5,7 +5,6 @@ from textwrap import dedent
 
 import mock
 import pytest
-from click.testing import CliRunner
 from pytest import mark
 
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
@@ -13,6 +12,11 @@ from .utils import invoke
 
 from piptools._compat.pip_compat import PIP_VERSION, path_to_url
 from piptools.scripts.compile import cli
+
+
+@pytest.fixture(autouse=True)
+def temp_dep_cache(tmpdir, monkeypatch):
+    monkeypatch.setenv("PIP_TOOLS_CACHE_DIR", str(tmpdir / "cache"))
 
 
 def test_default_pip_conf_read(pip_with_index_conf, runner):
@@ -69,13 +73,13 @@ def test_command_line_setuptools_read(pip_conf, runner):
         (["setup.py", "--output-file", "output.txt"], "output.txt"),
     ],
 )
-def test_command_line_setuptools_output_file(pip_conf, options, expected_output_file):
+def test_command_line_setuptools_output_file(
+    pip_conf, runner, options, expected_output_file
+):
     """
     Test the output files for setup.py as a requirement file.
     """
-    runner = CliRunner(mix_stderr=False)
-    with runner.isolated_filesystem():
-        package = open("setup.py", "w")
+    with open("setup.py", "w") as package:
         package.write(
             dedent(
                 """\
@@ -84,11 +88,10 @@ def test_command_line_setuptools_output_file(pip_conf, options, expected_output_
                 """
             )
         )
-        package.close()
 
-        out = runner.invoke(cli, options)
-        assert out.exit_code == 0
-        assert os.path.exists(expected_output_file)
+    out = runner.invoke(cli, options)
+    assert out.exit_code == 0
+    assert os.path.exists(expected_output_file)
 
 
 def test_find_links_option(runner):
@@ -235,15 +238,14 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
     fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
     fake_package_dir = path_to_url(fake_package_dir)
 
-    with mock.patch("piptools.repositories.pypi.CACHE_DIR", new=str(cache_dir)):
-        with open("requirements.in", "w") as req_in:
-            req_in.write("-e " + fake_package_dir)  # require editable fake package
+    with open("requirements.in", "w") as req_in:
+        req_in.write("-e " + fake_package_dir)  # require editable fake package
 
-        out = runner.invoke(cli, ["-n", "--rebuild"])
+    out = runner.invoke(cli, ["-n", "--rebuild", "--cache-dir", str(cache_dir)])
 
-        assert out.exit_code == 0
-        assert fake_package_dir in out.stderr
-        assert "small-fake-a==0.1" in out.stderr
+    assert out.exit_code == 0
+    assert fake_package_dir in out.stderr
+    assert "small-fake-a==0.1" in out.stderr
 
     # we should not find any archived file in {cache_dir}/pkgs
     assert not os.listdir(os.path.join(str(cache_dir), "pkgs"))
@@ -519,7 +521,7 @@ def test_generate_hashes_verbose(pip_conf, runner):
 
 
 @pytest.mark.skipif(PIP_VERSION < (9,), reason="needs pip 9 or greater")
-def test_filter_pip_markers(runner):
+def test_filter_pip_markers(pip_conf, runner):
     """
     Check that pip-compile works with pip environment markers (PEP496)
     """
@@ -592,7 +594,7 @@ def test_not_specified_input_file(runner):
     assert out.exit_code == 2
 
 
-def test_stdin(runner):
+def test_stdin(pip_conf, runner):
     """
     Test compile requirements from STDIN.
     """

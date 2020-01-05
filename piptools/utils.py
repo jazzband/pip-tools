@@ -20,6 +20,7 @@ COMPILE_EXCLUDE_OPTIONS = {
     "--upgrade",
     "--upgrade-package",
     "--verbose",
+    "--cache-dir",
 }
 
 

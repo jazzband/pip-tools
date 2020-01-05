@@ -9,7 +9,9 @@ from click.utils import safecall
 
 from .. import click
 from .._compat import install_req_from_line, parse_requirements
+from ..cache import DependencyCache
 from ..exceptions import PipToolsError
+from ..locations import CACHE_DIR
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
@@ -172,6 +174,15 @@ pip_defaults = install_command.parser.get_default_values()
     default=True,
     help="Add the find-links option to generated file",
 )
+@click.option(
+    "--cache-dir",
+    help="Store the cache data in DIRECTORY.",
+    default=CACHE_DIR,
+    envvar="PIP_TOOLS_CACHE_DIR",
+    show_default=True,
+    show_envvar=True,
+    type=click.Path(file_okay=False, writable=True),
+)
 def cli(
     ctx,
     verbose,
@@ -198,6 +209,7 @@ def cli(
     max_rounds,
     build_isolation,
     emit_find_links,
+    cache_dir,
 ):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbosity = verbose - quiet
@@ -260,7 +272,9 @@ def cli(
         for host in trusted_host:
             pip_args.extend(["--trusted-host", host])
 
-    repository = PyPIRepository(pip_args, build_isolation=build_isolation)
+    repository = PyPIRepository(
+        pip_args, build_isolation=build_isolation, cache_dir=cache_dir
+    )
 
     # Parse all constraints coming from --upgrade-package/-P
     upgrade_reqs_gen = (install_req_from_line(pkg) for pkg in upgrade_packages)
@@ -353,6 +367,7 @@ def cli(
             constraints,
             repository,
             prereleases=repository.finder.allow_all_prereleases or pre,
+            cache=DependencyCache(cache_dir),
             clear_caches=rebuild,
             allow_unsafe=allow_unsafe,
         )
