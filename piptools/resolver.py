@@ -8,7 +8,6 @@ from itertools import chain, count
 
 from . import click
 from ._compat import install_req_from_line
-from .cache import DependencyCache
 from .logging import log
 from .utils import (
     UNSAFE_PACKAGES,
@@ -95,7 +94,7 @@ class Resolver(object):
         self,
         constraints,
         repository,
-        cache=None,
+        cache,
         prereleases=False,
         clear_caches=False,
         allow_unsafe=False,
@@ -108,8 +107,6 @@ class Resolver(object):
         self.our_constraints = set(constraints)
         self.their_constraints = set()
         self.repository = repository
-        if cache is None:
-            cache = DependencyCache()  # pragma: no cover
         self.dependency_cache = cache
         self.prereleases = prereleases
         self.clear_caches = clear_caches

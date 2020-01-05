@@ -18,8 +18,8 @@ class MockedPyPIRepository(PyPIRepository):
 
 
 @pytest.fixture
-def mocked_repository():
-    return MockedPyPIRepository(["--no-index"])
+def mocked_repository(tmpdir):
+    return MockedPyPIRepository(["--no-index"], cache_dir=str(tmpdir / "pypi-repo"))
 
 
 def test_editable_top_level_deps_preserved(
