@@ -285,11 +285,16 @@ def cli(
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified
     # (= default invocation)
     if not upgrade and os.path.exists(output_file.name):
+        # Use a temporary repository to ensure outdated(removed) options from
+        # existing requirements.txt wouldn't get into the current repository.
+        tmp_repository = PyPIRepository(
+            pip_args, build_isolation=build_isolation, cache_dir=cache_dir
+        )
         ireqs = parse_requirements(
             output_file.name,
-            finder=repository.finder,
-            session=repository.session,
-            options=repository.options,
+            finder=tmp_repository.finder,
+            session=tmp_repository.session,
+            options=tmp_repository.options,
         )
 
         # Exclude packages from --upgrade-package/-P from the existing
