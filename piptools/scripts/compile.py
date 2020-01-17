@@ -282,6 +282,8 @@ def cli(
         key_from_req(install_req.req): install_req for install_req in upgrade_reqs_gen
     }
 
+    existing_pins_to_upgrade = {}
+
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified
     # (= default invocation)
     if not upgrade and os.path.exists(output_file.name):
@@ -293,13 +295,14 @@ def cli(
         )
 
         # Exclude packages from --upgrade-package/-P from the existing
-        # constraints
-        existing_pins = {
-            key_from_req(ireq.req): ireq
-            for ireq in ireqs
-            if is_pinned_requirement(ireq)
-            and key_from_req(ireq.req) not in upgrade_install_reqs
-        }
+        # constraints, and separately gather pins to be upgraded
+        existing_pins = {}
+        for ireq in filter(is_pinned_requirement, ireqs):
+            key = key_from_req(ireq.req)
+            if key in upgrade_install_reqs:
+                existing_pins_to_upgrade[key] = ireq
+            else:
+                existing_pins[key] = ireq
         repository = LocalRequirementsRepository(existing_pins, repository)
 
     ###
@@ -345,7 +348,10 @@ def cli(
         key_from_ireq(ireq) for ireq in constraints if not ireq.constraint
     }
 
-    constraints.extend(upgrade_install_reqs.values())
+    allowed_upgrades = primary_packages | set(existing_pins_to_upgrade)
+    constraints.extend(
+        ireq for key, ireq in upgrade_install_reqs.items() if key in allowed_upgrades
+    )
 
     # Filter out pip environment markers which do not match (PEP496)
     constraints = [

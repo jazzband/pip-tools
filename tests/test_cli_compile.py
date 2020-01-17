@@ -370,6 +370,22 @@ def test_upgrade_packages_option(pip_conf, runner):
     assert "small-fake-b==0.3" in out.stderr
 
 
+def test_upgrade_packages_option_irrelevant(pip_conf, runner):
+    """
+    piptools ignores --upgrade-package/-P items not already constrained.
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-a")
+    with open("requirements.txt", "w") as req_in:
+        req_in.write("small-fake-a==0.1")
+
+    out = runner.invoke(cli, ["--upgrade-package", "small-fake-b"])
+
+    assert out.exit_code == 0
+    assert "small-fake-a==0.1" in out.stderr.splitlines()
+    assert "small-fake-b==0.3" not in out.stderr
+
+
 def test_upgrade_packages_option_no_existing_file(pip_conf, runner):
     """
     piptools respects --upgrade-package/-P inline list when the output file
