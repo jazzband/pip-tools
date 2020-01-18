@@ -18,6 +18,16 @@ except ImportError:
         yield
 
 
+# Introduced in pip 20.0
+try:
+    from pip._internal.utils.temp_dir import global_tempdir_manager
+except ImportError:
+
+    @contextmanager
+    def global_tempdir_manager():
+        yield
+
+
 def do_import(module_path, subimport=None, old_path=None):
     old_path = old_path or module_path
     prefixes = ["pip._internal", "pip"]
@@ -50,7 +60,7 @@ url_to_path = do_import("utils.urls", "url_to_path", old_path="download")
 PackageFinder = do_import("index.package_finder", "PackageFinder", old_path="index")
 FormatControl = do_import("models.format_control", "FormatControl", old_path="index")
 InstallCommand = do_import("commands.install", "InstallCommand")
-Wheel = do_import("wheel", "Wheel")
+Wheel = do_import("models.wheel", "Wheel", old_path="wheel")
 cmdoptions = do_import("cli.cmdoptions", old_path="cmdoptions")
 get_installed_distributions = do_import(
     "utils.misc", "get_installed_distributions", old_path="utils"
@@ -96,3 +106,12 @@ def is_dir_url(link):
         return _is_dir_url(link)
 
     return link.is_existing_dir()
+
+
+def get_requirement_tracker():
+    if PIP_VERSION[:2] <= (19, 3):
+        return RequirementTracker()
+
+    from pip._internal.req import req_tracker
+
+    return req_tracker.get_requirement_tracker()
