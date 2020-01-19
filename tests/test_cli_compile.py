@@ -886,3 +886,36 @@ def test_options_in_requirements_file(runner, options):
 
     with open("requirements.txt") as reqs_txt:
         assert options in reqs_txt.read().splitlines()
+
+
+@pytest.mark.parametrize(
+    "current_package, upgraded_package",
+    (
+        pytest.param("small-fake-b==0.1", "small-fake-b==0.2", id="upgrade"),
+        pytest.param("small-fake-b==0.2", "small-fake-b==0.1", id="downgrade"),
+    ),
+)
+def test_upgrade_packages_option_subdependency(
+    pip_conf, runner, current_package, upgraded_package
+):
+    """
+    Test that pip-compile --upgrade-package/-P upgrades/dpwngrades subdependencies.
+    """
+
+    with open("requirements.in", "w") as reqs:
+        reqs.write("small-fake-with-unpinned-deps\n")
+
+    with open("requirements.txt", "w") as reqs:
+        reqs.write("small-fake-a==0.1\n")
+        reqs.write(current_package + "\n")
+        reqs.write("small-fake-with-unpinned-deps==0.1\n")
+
+    out = runner.invoke(
+        cli, ["--no-annotate", "--dry-run", "--upgrade-package", upgraded_package]
+    )
+
+    stderr_lines = out.stderr.splitlines()
+    assert "small-fake-a==0.1" in stderr_lines, "small-fake-a must keep its version"
+    assert (
+        upgraded_package in stderr_lines
+    ), "{} must be upgraded/downgraded to {}".format(current_package, upgraded_package)
