@@ -401,20 +401,30 @@ def test_upgrade_packages_option_no_existing_file(pip_conf, runner):
     assert "small-fake-b==0.3" in out.stderr
 
 
-def test_upgrade_packages_version_option(pip_conf, runner):
+@pytest.mark.parametrize(
+    "current_package, upgraded_package",
+    (
+        pytest.param("small-fake-b==0.1", "small-fake-b==0.3", id="upgrade"),
+        pytest.param("small-fake-b==0.3", "small-fake-b==0.1", id="downgrade"),
+    ),
+)
+def test_upgrade_packages_version_option(
+    pip_conf, runner, current_package, upgraded_package
+):
     """
     piptools respects --upgrade-package/-P inline list with specified versions.
     """
     with open("requirements.in", "w") as req_in:
         req_in.write("small-fake-a\nsmall-fake-b")
     with open("requirements.txt", "w") as req_in:
-        req_in.write("small-fake-a==0.1\nsmall-fake-b==0.1")
+        req_in.write("small-fake-a==0.1\n" + current_package)
 
-    out = runner.invoke(cli, ["-P", "small-fake-b==0.2"])
+    out = runner.invoke(cli, ["--no-annotate", "--upgrade-package", upgraded_package])
 
     assert out.exit_code == 0
-    assert "small-fake-a==0.1" in out.stderr
-    assert "small-fake-b==0.2" in out.stderr
+    stderr_lines = out.stderr.splitlines()
+    assert "small-fake-a==0.1" in stderr_lines
+    assert upgraded_package in stderr_lines
 
 
 def test_upgrade_packages_version_option_no_existing_file(pip_conf, runner):
