@@ -282,7 +282,7 @@ def cli(
         key_from_req(install_req.req): install_req for install_req in upgrade_reqs_gen
     }
 
-    existing_pins_to_upgrade = {}
+    existing_pins_to_upgrade = set()
 
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified
     # (= default invocation)
@@ -300,7 +300,7 @@ def cli(
         for ireq in filter(is_pinned_requirement, ireqs):
             key = key_from_req(ireq.req)
             if key in upgrade_install_reqs:
-                existing_pins_to_upgrade[key] = ireq
+                existing_pins_to_upgrade.add(key)
             else:
                 existing_pins[key] = ireq
         repository = LocalRequirementsRepository(existing_pins, repository)
@@ -348,7 +348,7 @@ def cli(
         key_from_ireq(ireq) for ireq in constraints if not ireq.constraint
     }
 
-    allowed_upgrades = primary_packages | set(existing_pins_to_upgrade)
+    allowed_upgrades = primary_packages | existing_pins_to_upgrade
     constraints.extend(
         ireq for key, ireq in upgrade_install_reqs.items() if key in allowed_upgrades
     )
