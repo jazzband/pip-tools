@@ -1,3 +1,15 @@
+# 4.4.0 (2020-01-21)
+
+Features:
+- Add `--cache-dir` option to `pip-compile`
+([#1022](https://github.com/jazzband/pip-tools/pull/1022)).  Thanks @richafrank
+- Add `pip>=20.0` support
+([#1024](https://github.com/jazzband/pip-tools/pull/1024)). Thanks @atugushev
+
+Bug Fixes:
+- Fix a bug where `pip-compile --upgrade-package` would upgrade those passed packages not already required according to the `*.in` and `*.txt` files
+([#1031](https://github.com/jazzband/pip-tools/pull/1031)). Thanks @AndydeCleyre
+
 # 4.3.0 (2019-11-25)
 
 Features:
