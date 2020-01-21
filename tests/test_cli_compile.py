@@ -899,6 +899,37 @@ def test_options_in_requirements_file(runner, options):
 
 
 @pytest.mark.parametrize(
+    "cli_options, expected_message",
+    (
+        pytest.param(
+            ["--index-url", "file:foo"],
+            "Was file:foo reachable?",
+            id="single index url",
+        ),
+        pytest.param(
+            ["--index-url", "file:foo", "--extra-index-url", "file:bar"],
+            "Were file:foo or file:bar reachable?",
+            id="multiple index urls",
+        ),
+    ),
+)
+def test_unreachable_index_urls(runner, cli_options, expected_message):
+    """
+    Test pip-compile raises an error if index URLs are not reachable.
+    """
+    with open("requirements.in", "w") as reqs_in:
+        reqs_in.write("some-package")
+
+    out = runner.invoke(cli, cli_options)
+
+    assert out.exit_code == 2, out
+
+    stderr_lines = out.stderr.splitlines()
+    assert "No versions found" in stderr_lines
+    assert expected_message in stderr_lines
+
+
+@pytest.mark.parametrize(
     "current_package, upgraded_package",
     (
         pytest.param("small-fake-b==0.1", "small-fake-b==0.2", id="upgrade"),
