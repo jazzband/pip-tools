@@ -323,6 +323,16 @@ def cli(
 
                 dist = run_setup(src_file)
                 tmpfile.write("\n".join(dist.install_requires))
+
+                # parse additional dependencies in extras_require
+                # which might come from parsing environment markers
+                additional_deps = []
+                for extra_name, extra_pkgs in dist.extras_require.items():
+                    if extra_name.startswith(":"):
+                        marker = extra_name[1:]
+                        for pkg in extra_pkgs:
+                            additional_deps.append("{} ; {}".format(pkg, marker))
+                tmpfile.write("\n".join(additional_deps))
             else:
                 tmpfile.write(sys.stdin.read())
             tmpfile.flush()
