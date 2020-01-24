@@ -960,3 +960,59 @@ def test_upgrade_packages_option_subdependency(
     assert (
         upgraded_package in stderr_lines
     ), "{} must be upgraded/downgraded to {}".format(current_package, upgraded_package)
+
+
+@pytest.mark.parametrize(
+    "input_opts, output_opts",
+    (
+        # Test that input options overwrite output options
+        pytest.param(
+            "--index-url https://index-url",
+            "--index-url https://another-index-url",
+            id="index url",
+        ),
+        pytest.param(
+            "--extra-index-url https://extra-index-url",
+            "--extra-index-url https://another-extra-index-url",
+            id="extra index url",
+        ),
+        pytest.param("--find-links dir", "--find-links another-dir", id="find links"),
+        pytest.param(
+            "--trusted-host hostname",
+            "--trusted-host another-hostname",
+            id="trusted host",
+        ),
+        pytest.param(
+            "--no-binary :package:", "--no-binary :another-package:", id="no binary"
+        ),
+        pytest.param(
+            "--only-binary :package:",
+            "--only-binary :another-package:",
+            id="only binary",
+        ),
+        # Test misc corner cases
+        pytest.param("", "--index-url https://index-url", id="empty input options"),
+        pytest.param(
+            "--index-url https://index-url",
+            (
+                "--index-url https://index-url\n"
+                "--extra-index-url https://another-extra-index-url"
+            ),
+            id="partially matched options",
+        ),
+    ),
+)
+def test_remove_outdated_options(runner, input_opts, output_opts):
+    """
+    Test that the options from the current requirements.txt wouldn't stay
+    after compile if they were removed from requirements.in file.
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write(input_opts)
+    with open("requirements.txt", "w") as req_txt:
+        req_txt.write(output_opts)
+
+    out = runner.invoke(cli, ["--no-header"])
+
+    assert out.exit_code == 0, out
+    assert out.stderr.strip() == input_opts
