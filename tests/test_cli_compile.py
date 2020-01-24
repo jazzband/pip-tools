@@ -370,6 +370,22 @@ def test_upgrade_packages_option(pip_conf, runner):
     assert "small-fake-b==0.3" in out.stderr
 
 
+def test_upgrade_packages_option_irrelevant(pip_conf, runner):
+    """
+    piptools ignores --upgrade-package/-P items not already constrained.
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-a")
+    with open("requirements.txt", "w") as req_in:
+        req_in.write("small-fake-a==0.1")
+
+    out = runner.invoke(cli, ["--upgrade-package", "small-fake-b"])
+
+    assert out.exit_code == 0
+    assert "small-fake-a==0.1" in out.stderr.splitlines()
+    assert "small-fake-b==0.3" not in out.stderr
+
+
 def test_upgrade_packages_option_no_existing_file(pip_conf, runner):
     """
     piptools respects --upgrade-package/-P inline list when the output file
@@ -385,20 +401,30 @@ def test_upgrade_packages_option_no_existing_file(pip_conf, runner):
     assert "small-fake-b==0.3" in out.stderr
 
 
-def test_upgrade_packages_version_option(pip_conf, runner):
+@pytest.mark.parametrize(
+    "current_package, upgraded_package",
+    (
+        pytest.param("small-fake-b==0.1", "small-fake-b==0.3", id="upgrade"),
+        pytest.param("small-fake-b==0.3", "small-fake-b==0.1", id="downgrade"),
+    ),
+)
+def test_upgrade_packages_version_option(
+    pip_conf, runner, current_package, upgraded_package
+):
     """
     piptools respects --upgrade-package/-P inline list with specified versions.
     """
     with open("requirements.in", "w") as req_in:
         req_in.write("small-fake-a\nsmall-fake-b")
     with open("requirements.txt", "w") as req_in:
-        req_in.write("small-fake-a==0.1\nsmall-fake-b==0.1")
+        req_in.write("small-fake-a==0.1\n" + current_package)
 
-    out = runner.invoke(cli, ["-P", "small-fake-b==0.2"])
+    out = runner.invoke(cli, ["--no-annotate", "--upgrade-package", upgraded_package])
 
     assert out.exit_code == 0
-    assert "small-fake-a==0.1" in out.stderr
-    assert "small-fake-b==0.2" in out.stderr
+    stderr_lines = out.stderr.splitlines()
+    assert "small-fake-a==0.1" in stderr_lines
+    assert upgraded_package in stderr_lines
 
 
 def test_upgrade_packages_version_option_no_existing_file(pip_conf, runner):
@@ -870,6 +896,70 @@ def test_options_in_requirements_file(runner, options):
 
     with open("requirements.txt") as reqs_txt:
         assert options in reqs_txt.read().splitlines()
+
+
+@pytest.mark.parametrize(
+    "cli_options, expected_message",
+    (
+        pytest.param(
+            ["--index-url", "file:foo"],
+            "Was file:foo reachable?",
+            id="single index url",
+        ),
+        pytest.param(
+            ["--index-url", "file:foo", "--extra-index-url", "file:bar"],
+            "Were file:foo or file:bar reachable?",
+            id="multiple index urls",
+        ),
+    ),
+)
+def test_unreachable_index_urls(runner, cli_options, expected_message):
+    """
+    Test pip-compile raises an error if index URLs are not reachable.
+    """
+    with open("requirements.in", "w") as reqs_in:
+        reqs_in.write("some-package")
+
+    out = runner.invoke(cli, cli_options)
+
+    assert out.exit_code == 2, out
+
+    stderr_lines = out.stderr.splitlines()
+    assert "No versions found" in stderr_lines
+    assert expected_message in stderr_lines
+
+
+@pytest.mark.parametrize(
+    "current_package, upgraded_package",
+    (
+        pytest.param("small-fake-b==0.1", "small-fake-b==0.2", id="upgrade"),
+        pytest.param("small-fake-b==0.2", "small-fake-b==0.1", id="downgrade"),
+    ),
+)
+def test_upgrade_packages_option_subdependency(
+    pip_conf, runner, current_package, upgraded_package
+):
+    """
+    Test that pip-compile --upgrade-package/-P upgrades/dpwngrades subdependencies.
+    """
+
+    with open("requirements.in", "w") as reqs:
+        reqs.write("small-fake-with-unpinned-deps\n")
+
+    with open("requirements.txt", "w") as reqs:
+        reqs.write("small-fake-a==0.1\n")
+        reqs.write(current_package + "\n")
+        reqs.write("small-fake-with-unpinned-deps==0.1\n")
+
+    out = runner.invoke(
+        cli, ["--no-annotate", "--dry-run", "--upgrade-package", upgraded_package]
+    )
+
+    stderr_lines = out.stderr.splitlines()
+    assert "small-fake-a==0.1" in stderr_lines, "small-fake-a must keep its version"
+    assert (
+        upgraded_package in stderr_lines
+    ), "{} must be upgraded/downgraded to {}".format(current_package, upgraded_package)
 
 
 @pytest.mark.parametrize(
