@@ -332,6 +332,17 @@ class Resolver(object):
         Editable requirements will never be looked up, as they may have
         changed at any time.
         """
+        # Pip does not resolve dependencies of constraints. We skip handling
+        # constraints here as well to prevent the cache from being polluted.
+        # Constraints that are later determined to be dependencies will be
+        # marked as non-constraints in later rounds by
+        # `combine_install_requirements`, and will be properly resolved.
+        # See https://github.com/pypa/pip/
+        # blob/6896dfcd831330c13e076a74624d95fa55ff53f4/src/pip/_internal/
+        # legacy_resolve.py#L325
+        if ireq.constraint:
+            return
+
         if ireq.editable or is_url_requirement(ireq):
             for dependency in self.repository.get_dependencies(ireq):
                 yield dependency
