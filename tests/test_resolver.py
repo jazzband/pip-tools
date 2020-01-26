@@ -258,6 +258,19 @@ def test_iter_dependencies(resolver, from_line):
         next(res._iter_dependencies(ireq))
 
 
+def test_iter_dependencies_results(resolver, from_line):
+    res = resolver([])
+
+    # Non-constraint
+    ireq = from_line("aiohttp==3.6.2")
+    assert next(res._iter_dependencies(ireq)).comes_from == ireq
+
+    # Constraint
+    constraint = from_line("aiohttp==3.6.2", constraint=True)
+    with pytest.raises(StopIteration):
+        next(res._iter_dependencies(constraint))
+
+
 def test_combine_install_requirements(from_line):
     celery30 = from_line("celery>3.0", comes_from="-r requirements.in")
     celery31 = from_line("celery==3.1.1", comes_from=from_line("fake-package"))
