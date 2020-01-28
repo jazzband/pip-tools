@@ -260,15 +260,15 @@ def test_iter_dependencies(resolver, from_line):
 
 def test_iter_dependencies_results(resolver, from_line):
     res = resolver([])
-
-    # Non-constraint
     ireq = from_line("aiohttp==3.6.2")
     assert next(res._iter_dependencies(ireq)).comes_from == ireq
 
-    # Constraint
-    constraint = from_line("aiohttp==3.6.2", constraint=True)
+
+def test_iter_dependencies_ignores_constraints(resolver, from_line):
+    res = resolver([])
+    ireq = from_line("aiohttp==3.6.2", constraint=True)
     with pytest.raises(StopIteration):
-        next(res._iter_dependencies(constraint))
+        next(res._iter_dependencies(ireq))
 
 
 def test_combine_install_requirements(from_line):
