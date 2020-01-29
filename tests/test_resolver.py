@@ -81,7 +81,7 @@ from piptools.resolver import combine_install_requirements
             # We must remove child dependencies from result if parent
             # is removed (e.g. vine from amqp>=2.0)
             # See: GH-370
-            # because of upated dependencies in the test index, we need to pin celery
+            # because of updated dependencies in the test index, we need to pin celery
             # in order to reproduce vine removal (because it was readded in later
             # releases)
             (
