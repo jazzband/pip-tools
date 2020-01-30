@@ -1018,7 +1018,7 @@ def test_remove_outdated_options(runner, input_opts, output_opts):
     assert out.stderr.strip() == input_opts
 
 
-def test_sub_dependencies_with_constraints(runner):
+def test_sub_dependencies_with_constraints(pip_conf, runner):
     # Write constraints file
     with open("constraints.txt", "w") as constraints_in:
         constraints_in.write("small-fake-a==0.1\n")
@@ -1029,14 +1029,11 @@ def test_sub_dependencies_with_constraints(runner):
         req_in.write("-c constraints.txt\n")
         req_in.write("small_fake_with_deps_and_sub_deps")  # require fake package
 
-    out = runner.invoke(cli, ["-f", MINIMAL_WHEELS_PATH])
+    out = runner.invoke(cli)
 
     assert out.exit_code == 0
 
-    # Check output of requirements.txt file
-    with open("requirements.txt") as req_out:
-        req_out_lines = set(req_out.read().splitlines())
-
+    req_out_lines = set(out.stderr.splitlines())
     assert {
         "small-fake-a==0.1         # via small-fake-with-unpinned-deps",
         "small-fake-b==0.2         # via small-fake-with-unpinned-deps",
