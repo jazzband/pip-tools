@@ -296,6 +296,19 @@ dev requirements only include a ``2.1`` version of Django because they were
 constrained. Now both compiled requirements files can be installed safely in
 the dev environment.
 
+To install requirements in production stage use:
+
+.. code-block:: bash
+
+    $ pip-sync
+
+You can install requirements in development stage by:
+
+.. code-block:: bash
+
+    $ pip-sync requirements.txt dev-requirements.txt
+
+
 Example usage for ``pip-sync``
 ==============================
 
