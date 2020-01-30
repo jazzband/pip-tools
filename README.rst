@@ -272,8 +272,8 @@ First, compile ``requirements.txt`` as usual:
     #
     #    pip-compile
     #
-    django==2.1.12
-    pytz==2019.2              # via django
+    django==2.1.15
+    pytz==2019.3              # via django
 
 Now compile the dev requirements and the ``requirements.txt`` file is used as
 a constraint:
@@ -287,8 +287,9 @@ a constraint:
     #
     #    pip-compile dev-requirements.in
     #
-    django-debug-toolbar==2.0
-    django==2.1.12            # via django-debug-toolbar
+    django-debug-toolbar==2.1
+    django==2.1.15            # via django-debug-toolbar
+    pytz==2019.3              # via django
     sqlparse==0.3.0           # via django-debug-toolbar
 
 As you can see above, even though a ``2.2`` release of Django is available, the
