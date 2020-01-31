@@ -1,3 +1,23 @@
+# 4.4.1 (2020-01-31)
+
+Bug Fixes:
+- Fix a bug where `pip-compile` would keep outdated options from `requirements.txt`
+([#1029](https://github.com/jazzband/pip-tools/pull/1029)). Thanks @atugushev
+- Fix the `No handlers could be found for logger "pip.*"` error by configuring the builtin logging module
+([#1035](https://github.com/jazzband/pip-tools/pull/1035)). Thanks @vphilippon
+- Fix a bug where dependencies of relevant constraints may be missing from output file
+([#1037](https://github.com/jazzband/pip-tools/pull/1037)). Thanks @jeevb
+- Upgrade the minimal version of `click` from `6.0` to `7.0` version in `setup.py`
+([#1039](https://github.com/jazzband/pip-tools/pull/1039)). Thanks @hramezani
+- Ensure that depcache considers the python implementation such that (for example) `cpython3.6` does not poison the results of `pypy3.6`
+([#1050](https://github.com/jazzband/pip-tools/pull/1050)). Thanks @asottile
+
+Improved Documentation:
+- Make the `README` more imperative about installing into a project's virtual environment to avoid confusion
+([#1023](https://github.com/jazzband/pip-tools/pull/1023)). Thanks @tekumara
+- Add a note to the `README` about how to install requirements on different stages to [Workflow for layered requirements](https://github.com/jazzband/pip-tools#workflow-for-layered-requirements) section
+([#1044](https://github.com/jazzband/pip-tools/pull/1044)). Thanks @hramezani
+
 # 4.4.0 (2020-01-21)
 
 Features:
