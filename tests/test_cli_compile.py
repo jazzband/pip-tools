@@ -10,7 +10,7 @@ from pytest import mark
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
 from .utils import invoke
 
-from piptools._compat.pip_compat import PIP_VERSION, path_to_url
+from piptools._compat.pip_compat import path_to_url
 from piptools.scripts.compile import cli
 
 
@@ -553,7 +553,6 @@ def test_generate_hashes_verbose(pip_conf, runner):
     assert expected_verbose_text in out.stderr
 
 
-@pytest.mark.skipif(PIP_VERSION < (9,), reason="needs pip 9 or greater")
 def test_filter_pip_markers(pip_conf, runner):
     """
     Check that pip-compile works with pip environment markers (PEP496)

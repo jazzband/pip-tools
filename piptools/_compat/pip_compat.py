@@ -2,30 +2,11 @@
 from __future__ import absolute_import
 
 import importlib
-from contextlib import contextmanager
 
 import pip
 from pip._vendor.packaging.version import parse as parse_version
 
 PIP_VERSION = tuple(map(int, parse_version(pip.__version__).base_version.split(".")))
-
-try:
-    from pip._internal.req.req_tracker import RequirementTracker
-except ImportError:
-
-    @contextmanager
-    def RequirementTracker():
-        yield
-
-
-# Introduced in pip 20.0
-try:
-    from pip._internal.utils.temp_dir import global_tempdir_manager
-except ImportError:
-
-    @contextmanager
-    def global_tempdir_manager():
-        yield
 
 
 def do_import(module_path, subimport=None, old_path=None):
@@ -72,47 +53,6 @@ Link = do_import("models.link", "Link", old_path="index")
 Session = do_import("_vendor.requests.sessions", "Session")
 Resolver = do_import("legacy_resolve", "Resolver", old_path="resolve")
 WheelCache = do_import("cache", "WheelCache", old_path="wheel")
+install_req_from_line = do_import("req.constructors", "install_req_from_line")
+install_req_from_editable = do_import("req.constructors", "install_req_from_editable")
 normalize_path = do_import("utils.misc", "normalize_path", old_path="utils")
-
-# pip 18.1 has refactored InstallRequirement constructors use by pip-tools.
-if PIP_VERSION < (18, 1):
-    install_req_from_line = InstallRequirement.from_line
-    install_req_from_editable = InstallRequirement.from_editable
-else:
-    install_req_from_line = do_import("req.constructors", "install_req_from_line")
-    install_req_from_editable = do_import(
-        "req.constructors", "install_req_from_editable"
-    )
-
-
-def is_vcs_url(link):
-    if PIP_VERSION < (19, 3):
-        _is_vcs_url = do_import("download", "is_vcs_url")
-        return _is_vcs_url(link)
-
-    return link.is_vcs
-
-
-def is_file_url(link):
-    if PIP_VERSION < (19, 3):
-        _is_file_url = do_import("download", "is_file_url")
-        return _is_file_url(link)
-
-    return link.is_file
-
-
-def is_dir_url(link):
-    if PIP_VERSION < (19, 3):
-        _is_dir_url = do_import("download", "is_dir_url")
-        return _is_dir_url(link)
-
-    return link.is_existing_dir()
-
-
-def get_requirement_tracker():
-    if PIP_VERSION[:2] <= (19, 3):
-        return RequirementTracker()
-
-    from pip._internal.req import req_tracker
-
-    return req_tracker.get_requirement_tracker()
