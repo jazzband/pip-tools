@@ -5,12 +5,12 @@ from textwrap import dedent
 
 import mock
 import pytest
+from pip._internal.utils.urls import path_to_url
 from pytest import mark
 
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
 from .utils import invoke
 
-from piptools._compat.pip_compat import path_to_url
 from piptools.scripts.compile import cli
 
 

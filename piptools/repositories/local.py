@@ -3,7 +3,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from contextlib import contextmanager
 
-from .._compat import FAVORITE_HASH
+from pip._internal.utils.hashes import FAVORITE_HASH
+
 from .base import BaseRepository
 
 from piptools.utils import as_tuple, key_from_ireq, make_install_requirement

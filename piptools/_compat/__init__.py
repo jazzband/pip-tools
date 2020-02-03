@@ -4,32 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import six
 
-from .pip_compat import (
-    DEV_PKGS,
-    FAVORITE_HASH,
-    PIP_VERSION,
-    FormatControl,
-    InstallationCandidate,
-    InstallCommand,
-    InstallRequirement,
-    Link,
-    PackageFinder,
-    PyPI,
-    RequirementSet,
-    Resolver,
-    Wheel,
-    WheelCache,
-    cmdoptions,
-    get_installed_distributions,
-    install_req_from_editable,
-    install_req_from_line,
-    normalize_path,
-    parse_requirements,
-    path_to_url,
-    stdlib_pkgs,
-    url_to_path,
-    user_cache_dir,
-)
+from .pip_compat import PIP_VERSION
 
 if six.PY2:
     from .tempfile import TemporaryDirectory

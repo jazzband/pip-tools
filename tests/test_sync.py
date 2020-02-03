@@ -5,10 +5,10 @@ from collections import Counter
 
 import mock
 import pytest
+from pip._internal.utils.urls import path_to_url
 
 from .constants import PACKAGES_PATH
 
-from piptools._compat import path_to_url
 from piptools.exceptions import IncompatibleRequirements
 from piptools.sync import dependency_tree, diff, merge, sync
 

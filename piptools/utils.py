@@ -7,9 +7,9 @@ from itertools import chain, groupby
 
 import six
 from click.utils import LazyFile
+from pip._internal.req.constructors import install_req_from_line
 from six.moves import shlex_quote
 
-from ._compat import install_req_from_line
 from .click import style
 
 UNSAFE_PACKAGES = {"setuptools", "distribute", "pip"}

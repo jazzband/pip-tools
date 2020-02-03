@@ -7,23 +7,19 @@ import os
 from contextlib import contextmanager
 from shutil import rmtree
 
+from pip._internal.cache import WheelCache
 from pip._internal.commands import create_command
+from pip._internal.models.index import PyPI
+from pip._internal.models.link import Link
+from pip._internal.models.wheel import Wheel
+from pip._internal.req import RequirementSet
 from pip._internal.req.req_tracker import get_requirement_tracker
+from pip._internal.utils.hashes import FAVORITE_HASH
+from pip._internal.utils.misc import normalize_path
 from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
+from pip._internal.utils.urls import path_to_url, url_to_path
 
-from .._compat import (
-    FAVORITE_HASH,
-    Link,
-    PyPI,
-    RequirementSet,
-    TemporaryDirectory,
-    Wheel,
-    WheelCache,
-    contextlib,
-    normalize_path,
-    path_to_url,
-    url_to_path,
-)
+from .._compat import TemporaryDirectory, contextlib
 from ..click import progressbar
 from ..exceptions import NoCandidateFound
 from ..logging import log

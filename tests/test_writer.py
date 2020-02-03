@@ -1,6 +1,6 @@
+from pip._internal.models.format_control import FormatControl
 from pytest import fixture, mark, raises
 
-from piptools._compat import FormatControl
 from piptools.scripts.compile import cli
 from piptools.utils import comment
 from piptools.writer import (

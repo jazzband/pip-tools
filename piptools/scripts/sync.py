@@ -4,8 +4,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os
 import sys
 
+from pip._internal.req.req_file import parse_requirements
+from pip._internal.utils.misc import get_installed_distributions
+
 from .. import click, sync
-from .._compat import get_installed_distributions, parse_requirements
 from ..exceptions import PipToolsError
 from ..logging import log
 from ..utils import flat_map
