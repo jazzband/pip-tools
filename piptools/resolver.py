@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import copy
 import os
+import zipimport
 from functools import partial
 from itertools import chain, count
 
@@ -19,6 +20,12 @@ from .utils import (
     key_from_ireq,
     key_from_req,
 )
+
+try:
+    import copyreg
+except ImportError:
+    import copy_reg as copyreg
+copyreg.pickle(zipimport.zipimporter, lambda x: (x.__class__, (x.archive,)))
 
 green = partial(click.style, fg="green")
 magenta = partial(click.style, fg="magenta")
