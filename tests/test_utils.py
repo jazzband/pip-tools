@@ -254,7 +254,7 @@ def test_force_text(value, expected_text):
         (["--annotate"], "pip-compile"),
         (["--index"], "pip-compile"),
         (["--max-rounds=10"], "pip-compile"),
-        (["--no-build-isolation"], "pip-compile"),
+        (["--build-isolation"], "pip-compile"),
         # Check options with multiple values
         (
             ["--find-links", "links1", "--find-links", "links2"],
