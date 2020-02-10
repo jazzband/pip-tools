@@ -10,7 +10,7 @@ from .._compat import PIP_VERSION, get_installed_distributions, parse_requiremen
 from ..exceptions import PipToolsError
 from ..logging import log
 from ..repositories import PyPIRepository
-from ..utils import flat_map
+from ..utils import create_install_command, flat_map
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 
@@ -106,15 +106,15 @@ def cli(
             log.error("ERROR: " + msg)
             sys.exit(2)
 
-    repository = PyPIRepository()
+    install_command = create_install_command()
+    options, _ = install_command.parse_args([])
+    session = install_command._build_session(options)
+    finder = install_command._build_package_finder(options=options, session=session)
 
     # Parse requirements file. Note, all options inside requirements file
     # will be collected by the finder.
     requirements = flat_map(
-        lambda src: parse_requirements(
-            src, finder=repository.finder, session=repository.session
-        ),
-        src_files,
+        lambda src: parse_requirements(src, finder=finder, session=session), src_files
     )
 
     try:
@@ -127,7 +127,7 @@ def cli(
     to_install, to_uninstall = sync.diff(requirements, installed_dists)
 
     install_flags = _compose_install_flags(
-        repository.finder,
+        finder,
         no_index=no_index,
         index_url=index_url,
         extra_index_url=extra_index_url,
