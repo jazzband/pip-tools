@@ -26,7 +26,7 @@ setup(
     package_data={},
     python_requires=">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*",
     setup_requires=["setuptools_scm"],
-    install_requires=["click>=6", "six"],
+    install_requires=["click>=7", "six"],
     zip_safe=False,
     entry_points={
         "console_scripts": [
@@ -48,6 +48,7 @@ setup(
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
         "Topic :: System :: Systems Administration",

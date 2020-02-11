@@ -81,7 +81,7 @@ from piptools.resolver import combine_install_requirements
             # We must remove child dependencies from result if parent
             # is removed (e.g. vine from amqp>=2.0)
             # See: GH-370
-            # because of upated dependencies in the test index, we need to pin celery
+            # because of updated dependencies in the test index, we need to pin celery
             # in order to reproduce vine removal (because it was readded in later
             # releases)
             (
@@ -172,6 +172,11 @@ from piptools.resolver import combine_install_requirements
                     "pytz==2016.4 (from celery==4.0.2)",
                 ],
             ),
+            # Check that dependencies of relevant constraints are resolved
+            (
+                ["aiohttp", ("yarl==1.4.2", True)],
+                ["aiohttp==3.6.2", "idna==2.8 (from yarl==1.4.2)", "yarl==1.4.2"],
+            ),
         ]
     ),
 )
@@ -250,6 +255,19 @@ def test_iter_dependencies(resolver, from_line):
     with pytest.raises(
         TypeError, match="Expected pinned or editable requirement, got django>=1.8"
     ):
+        next(res._iter_dependencies(ireq))
+
+
+def test_iter_dependencies_results(resolver, from_line):
+    res = resolver([])
+    ireq = from_line("aiohttp==3.6.2")
+    assert next(res._iter_dependencies(ireq)).comes_from == ireq
+
+
+def test_iter_dependencies_ignores_constraints(resolver, from_line):
+    res = resolver([])
+    ireq = from_line("aiohttp==3.6.2", constraint=True)
+    with pytest.raises(StopIteration):
         next(res._iter_dependencies(ireq))
 
 

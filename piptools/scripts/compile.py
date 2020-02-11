@@ -9,7 +9,9 @@ from click.utils import safecall
 
 from .. import click
 from .._compat import install_req_from_line, parse_requirements
+from ..cache import DependencyCache
 from ..exceptions import PipToolsError
+from ..locations import CACHE_DIR
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
@@ -172,6 +174,15 @@ pip_defaults = install_command.parser.get_default_values()
     default=True,
     help="Add the find-links option to generated file",
 )
+@click.option(
+    "--cache-dir",
+    help="Store the cache data in DIRECTORY.",
+    default=CACHE_DIR,
+    envvar="PIP_TOOLS_CACHE_DIR",
+    show_default=True,
+    show_envvar=True,
+    type=click.Path(file_okay=False, writable=True),
+)
 def cli(
     ctx,
     verbose,
@@ -198,6 +209,7 @@ def cli(
     max_rounds,
     build_isolation,
     emit_find_links,
+    cache_dir,
 ):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbosity = verbose - quiet
@@ -260,7 +272,9 @@ def cli(
         for host in trusted_host:
             pip_args.extend(["--trusted-host", host])
 
-    repository = PyPIRepository(pip_args, build_isolation=build_isolation)
+    repository = PyPIRepository(
+        pip_args, build_isolation=build_isolation, cache_dir=cache_dir
+    )
 
     # Parse all constraints coming from --upgrade-package/-P
     upgrade_reqs_gen = (install_req_from_line(pkg) for pkg in upgrade_packages)
@@ -268,24 +282,32 @@ def cli(
         key_from_req(install_req.req): install_req for install_req in upgrade_reqs_gen
     }
 
+    existing_pins_to_upgrade = set()
+
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified
     # (= default invocation)
     if not upgrade and os.path.exists(output_file.name):
+        # Use a temporary repository to ensure outdated(removed) options from
+        # existing requirements.txt wouldn't get into the current repository.
+        tmp_repository = PyPIRepository(
+            pip_args, build_isolation=build_isolation, cache_dir=cache_dir
+        )
         ireqs = parse_requirements(
             output_file.name,
-            finder=repository.finder,
-            session=repository.session,
-            options=repository.options,
+            finder=tmp_repository.finder,
+            session=tmp_repository.session,
+            options=tmp_repository.options,
         )
 
         # Exclude packages from --upgrade-package/-P from the existing
-        # constraints
-        existing_pins = {
-            key_from_req(ireq.req): ireq
-            for ireq in ireqs
-            if is_pinned_requirement(ireq)
-            and key_from_req(ireq.req) not in upgrade_install_reqs
-        }
+        # constraints, and separately gather pins to be upgraded
+        existing_pins = {}
+        for ireq in filter(is_pinned_requirement, ireqs):
+            key = key_from_req(ireq.req)
+            if key in upgrade_install_reqs:
+                existing_pins_to_upgrade.add(key)
+            else:
+                existing_pins[key] = ireq
         repository = LocalRequirementsRepository(existing_pins, repository)
 
     ###
@@ -331,7 +353,10 @@ def cli(
         key_from_ireq(ireq) for ireq in constraints if not ireq.constraint
     }
 
-    constraints.extend(upgrade_install_reqs.values())
+    allowed_upgrades = primary_packages | existing_pins_to_upgrade
+    constraints.extend(
+        ireq for key, ireq in upgrade_install_reqs.items() if key in allowed_upgrades
+    )
 
     # Filter out pip environment markers which do not match (PEP496)
     constraints = [
@@ -353,6 +378,7 @@ def cli(
             constraints,
             repository,
             prereleases=repository.finder.allow_all_prereleases or pre,
+            cache=DependencyCache(cache_dir),
             clear_caches=rebuild,
             allow_unsafe=allow_unsafe,
         )

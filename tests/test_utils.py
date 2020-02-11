@@ -348,10 +348,10 @@ def test_create_install_command():
         pytest.param(("example1.com", "example2.com:8080"), id="multiple hosts"),
     ],
 )
-def test_get_trusted_hosts(hosts):
+def test_get_trusted_hosts(hosts, tmpdir):
     """
     Test get_trusted_hosts(finder) returns a list of hosts.
     """
     pip_args = list(itertools.chain(*zip(["--trusted-host"] * len(hosts), hosts)))
-    repository = PyPIRepository(pip_args)
+    repository = PyPIRepository(pip_args, cache_dir=str(tmpdir / "pypi-repo"))
     assert tuple(get_trusted_hosts(repository.finder)) == hosts

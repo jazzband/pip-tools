@@ -8,7 +8,6 @@ from itertools import chain, count
 
 from . import click
 from ._compat import install_req_from_line
-from .cache import DependencyCache
 from .logging import log
 from .utils import (
     UNSAFE_PACKAGES,
@@ -95,7 +94,7 @@ class Resolver(object):
         self,
         constraints,
         repository,
-        cache=None,
+        cache,
         prereleases=False,
         clear_caches=False,
         allow_unsafe=False,
@@ -108,8 +107,6 @@ class Resolver(object):
         self.our_constraints = set(constraints)
         self.their_constraints = set()
         self.repository = repository
-        if cache is None:
-            cache = DependencyCache()  # pragma: no cover
         self.dependency_cache = cache
         self.prereleases = prereleases
         self.clear_caches = clear_caches
@@ -159,8 +156,8 @@ class Resolver(object):
                 raise RuntimeError(
                     "No stable configuration of concrete packages "
                     "could be found for the given constraints after "
-                    "%d rounds of resolving.\n"
-                    "This is likely a bug." % max_rounds
+                    "{max_rounds} rounds of resolving.\n"
+                    "This is likely a bug.".format(max_rounds=max_rounds)
                 )
 
             log.debug("")
@@ -335,6 +332,17 @@ class Resolver(object):
         Editable requirements will never be looked up, as they may have
         changed at any time.
         """
+        # Pip does not resolve dependencies of constraints. We skip handling
+        # constraints here as well to prevent the cache from being polluted.
+        # Constraints that are later determined to be dependencies will be
+        # marked as non-constraints in later rounds by
+        # `combine_install_requirements`, and will be properly resolved.
+        # See https://github.com/pypa/pip/
+        # blob/6896dfcd831330c13e076a74624d95fa55ff53f4/src/pip/_internal/
+        # legacy_resolve.py#L325
+        if ireq.constraint:
+            return
+
         if ireq.editable or is_url_requirement(ireq):
             for dependency in self.repository.get_dependencies(ireq):
                 yield dependency

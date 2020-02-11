@@ -2,12 +2,15 @@ import json
 import os
 from contextlib import contextmanager
 from functools import partial
+from textwrap import dedent
 
 import pytest
 from click.testing import CliRunner
 from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Requirement
 from pytest import fixture
+
+from .constants import MINIMAL_WHEELS_PATH
 
 from piptools._compat import (
     InstallationCandidate,
@@ -121,8 +124,11 @@ def repository():
 
 
 @fixture
-def pypi_repository():
-    return PyPIRepository(["--index-url", PyPIRepository.DEFAULT_INDEX_URL])
+def pypi_repository(tmpdir):
+    return PyPIRepository(
+        ["--index-url", PyPIRepository.DEFAULT_INDEX_URL],
+        cache_dir=str(tmpdir / "pypi-repo"),
+    )
 
 
 @fixture
@@ -164,3 +170,56 @@ def runner():
 def tmpdir_cwd(tmpdir):
     with tmpdir.as_cwd():
         yield tmpdir
+
+
+@pytest.fixture
+def make_pip_conf(tmpdir, monkeypatch):
+    created_paths = []
+
+    def _make_pip_conf(content):
+        pip_conf_file = "pip.conf" if os.name != "nt" else "pip.ini"
+        path = (tmpdir / pip_conf_file).strpath
+
+        with open(path, "w") as f:
+            f.write(content)
+
+        monkeypatch.setenv("PIP_CONFIG_FILE", path)
+
+        created_paths.append(path)
+        return path
+
+    try:
+        yield _make_pip_conf
+    finally:
+        for path in created_paths:
+            os.remove(path)
+
+
+@pytest.fixture
+def pip_conf(make_pip_conf):
+    return make_pip_conf(
+        dedent(
+            """\
+            [global]
+            no-index = true
+            find-links = {wheels_path}
+            """.format(
+                wheels_path=MINIMAL_WHEELS_PATH
+            )
+        )
+    )
+
+
+@pytest.fixture
+def pip_with_index_conf(make_pip_conf):
+    return make_pip_conf(
+        dedent(
+            """\
+            [global]
+            index-url = http://example.com
+            find-links = {wheels_path}
+            """.format(
+                wheels_path=MINIMAL_WHEELS_PATH
+            )
+        )
+    )
