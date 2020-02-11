@@ -3,4 +3,5 @@
   description: Automatically compile requirements.
   entry: pip-compile
   language: python
-  files: (^pyproject\.toml|requirements\.in|^setup\.(cfg|py))$
+  files: ^requirements\.(in|txt)$
+  pass_filenames: false
