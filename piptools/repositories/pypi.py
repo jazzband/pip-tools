@@ -24,6 +24,7 @@ from .._compat import (
     is_dir_url,
     is_file_url,
     is_vcs_url,
+    normalize_path,
     path_to_url,
     url_to_path,
 )
@@ -62,6 +63,8 @@ class PyPIRepository(BaseRepository):
         # and pre) are deferred to pip.
         self.command = create_install_command()
         self.options, _ = self.command.parse_args(pip_args)
+        if self.options.cache_dir:
+            self.options.cache_dir = normalize_path(self.options.cache_dir)
 
         self.session = self.command._build_session(self.options)
         self.finder = self.command._build_package_finder(
@@ -81,7 +84,7 @@ class PyPIRepository(BaseRepository):
 
         # Setup file paths
         self.freshen_build_caches()
-        self._cache_dir = cache_dir
+        self._cache_dir = normalize_path(cache_dir)
         self._download_dir = fs_str(os.path.join(self._cache_dir, "pkgs"))
         self._wheel_download_dir = fs_str(os.path.join(self._cache_dir, "wheels"))
 
