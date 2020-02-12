@@ -82,7 +82,9 @@ def test_format_requirement_annotation_with_hash(from_line, writer):
     reverse_dependencies = {"test": ["xyz"]}
     hashes = {ireqs[0]: {"FAKEHASH"}}
 
-    lines = writer._iter_lines(ireqs, reverse_dependencies=reverse_dependencies, hashes=hashes)
+    lines = writer._iter_lines(
+        ireqs, reverse_dependencies=reverse_dependencies, hashes=hashes
+    )
 
     expected_lines = (
         "test==1.2 \\\n    --hash=FAKEHASH \n    " + comment("# via xyz"),
