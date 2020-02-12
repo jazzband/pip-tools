@@ -247,8 +247,6 @@ class OutputWriter(object):
         if required_by:
             annotation = ", ".join(sorted(required_by))
             line = "{:24}{}{}".format(
-                line,
-                " \\\n    " if ireq_hashes else "  ",
-                comment("# via " + annotation),
+                line, " \n    " if ireq_hashes else "  ", comment("# via " + annotation)
             )
         return line
