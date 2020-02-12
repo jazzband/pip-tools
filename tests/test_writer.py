@@ -74,6 +74,23 @@ def test_format_requirement_annotation_lower_case(from_line, writer):
     ) == "test==1.2                 " + comment("# via xyz")
 
 
+def test_format_requirement_annotation_with_hash(from_line, writer):
+    writer.emit_header = False
+    writer.generate_hashes = True
+    writer.annotate = True
+    ireqs = [from_line("test==1.2")]
+    reverse_dependencies = {"test": ["xyz"]}
+    hashes = {ireqs[0]: {"FAKEHASH"}}
+
+    lines = writer._iter_lines(ireqs, reverse_dependencies=reverse_dependencies, hashes=hashes)
+
+    expected_lines = (
+        "test==1.2 \\\n    --hash=FAKEHASH \n    " + comment("# via xyz"),
+    )
+
+    assert tuple(lines) == expected_lines
+
+
 def test_format_requirement_not_for_primary(from_line, writer):
     "Primary packages should not get annotated."
     ireq = from_line("test==1.2")
