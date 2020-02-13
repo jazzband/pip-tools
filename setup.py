@@ -34,6 +34,7 @@ setup(
     zip_safe=False,
     entry_points={
         "console_scripts": [
+            "pip-check = piptools.scripts.check:cli",
             "pip-compile = piptools.scripts.compile:cli",
             "pip-sync = piptools.scripts.sync:cli",
         ]

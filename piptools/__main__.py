@@ -1,6 +1,6 @@
 import click
 
-from piptools.scripts import compile, sync
+from piptools.scripts import check, compile, sync
 
 
 @click.group()
@@ -8,6 +8,7 @@ def cli():
     pass
 
 
+cli.add_command(check.cli, "check")
 cli.add_command(compile.cli, "compile")
 cli.add_command(sync.cli, "sync")
 
