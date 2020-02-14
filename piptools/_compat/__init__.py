@@ -28,6 +28,7 @@ from .pip_compat import (
     is_dir_url,
     is_file_url,
     is_vcs_url,
+    normalize_path,
     parse_requirements,
     path_to_url,
     stdlib_pkgs,

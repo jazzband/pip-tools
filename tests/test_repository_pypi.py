@@ -1,8 +1,11 @@
+import os
+
 import mock
 import pytest
 
 from piptools._compat import PackageFinder
 from piptools._compat.pip_compat import PIP_VERSION, Link, Session, path_to_url
+from piptools.repositories import PyPIRepository
 from piptools.repositories.pypi import open_local_or_remote_file
 
 
@@ -176,3 +179,29 @@ def test_wheel_cache_cleanup_called(
     ireq = from_line("six==1.10.0")
     pypi_repository.get_dependencies(ireq)
     WheelCache.return_value.cleanup.assert_called_once_with()
+
+
+def test_relative_path_cache_dir_is_normalized(from_line):
+    relative_cache_dir = "pypi-repo-cache"
+    pypi_repository = PyPIRepository([], cache_dir=relative_cache_dir)
+
+    assert os.path.isabs(pypi_repository._cache_dir)
+    assert pypi_repository._cache_dir.endswith(relative_cache_dir)
+
+
+def test_relative_path_pip_cache_dir_is_normalized(from_line, tmpdir):
+    relative_cache_dir = "pip-cache"
+    pypi_repository = PyPIRepository(
+        ["--cache-dir", relative_cache_dir], cache_dir=str(tmpdir / "pypi-repo-cache")
+    )
+
+    assert os.path.isabs(pypi_repository.options.cache_dir)
+    assert pypi_repository.options.cache_dir.endswith(relative_cache_dir)
+
+
+def test_pip_cache_dir_is_empty(from_line, tmpdir):
+    pypi_repository = PyPIRepository(
+        ["--no-cache-dir"], cache_dir=str(tmpdir / "pypi-repo-cache")
+    )
+
+    assert not pypi_repository.options.cache_dir

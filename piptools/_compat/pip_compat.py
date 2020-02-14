@@ -72,6 +72,7 @@ Link = do_import("models.link", "Link", old_path="index")
 Session = do_import("_vendor.requests.sessions", "Session")
 Resolver = do_import("legacy_resolve", "Resolver", old_path="resolve")
 WheelCache = do_import("cache", "WheelCache", old_path="wheel")
+normalize_path = do_import("utils.misc", "normalize_path", old_path="utils")
 
 # pip 18.1 has refactored InstallRequirement constructors use by pip-tools.
 if PIP_VERSION < (18, 1):
