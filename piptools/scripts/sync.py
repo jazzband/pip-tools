@@ -6,11 +6,11 @@ import os
 import sys
 
 from .. import click, sync
-from .._compat import PIP_VERSION, get_installed_distributions, parse_requirements
+from .._compat import get_installed_distributions, parse_requirements
 from ..exceptions import PipToolsError
 from ..logging import log
 from ..repositories import PyPIRepository
-from ..utils import create_install_command, flat_map
+from ..utils import create_install_command, flat_map, get_trusted_hosts
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 
@@ -183,11 +183,7 @@ def _compose_install_flags(
         result.extend(["--extra-index-url", extra_index])
 
     # Build --trusted-hosts
-    if PIP_VERSION < (19, 2):
-        finder_trusted_hosts = (host for _, host, _ in finder.secure_origins)
-    else:
-        finder_trusted_hosts = finder.trusted_hosts
-    for host in itertools.chain(trusted_host or [], finder_trusted_hosts):
+    for host in itertools.chain(trusted_host or [], get_trusted_hosts(finder)):
         result.extend(["--trusted-host", host])
 
     # Build --find-links
