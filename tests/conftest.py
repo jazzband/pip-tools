@@ -25,6 +25,7 @@ from piptools.resolver import Resolver
 from piptools.utils import (
     as_tuple,
     is_url_requirement,
+    key_from_ireq,
     key_from_req,
     make_install_requirement,
 )
@@ -51,21 +52,18 @@ class FakeRepository(BaseRepository):
 
         versions = list(
             ireq.specifier.filter(
-                self.index[key_from_req(ireq.req)], prereleases=prereleases
+                self.index[key_from_ireq(ireq)], prereleases=prereleases
             )
         )
         if not versions:
             tried_versions = [
                 InstallationCandidate(ireq.name, version, "https://fake.url.foo")
-                for version in self.index[key_from_req(ireq.req)]
+                for version in self.index[key_from_ireq(ireq)]
             ]
             raise NoCandidateFound(ireq, tried_versions, ["https://fake.url.foo"])
         best_version = max(versions, key=Version)
         return make_install_requirement(
-            key_from_req(ireq.req),
-            best_version,
-            ireq.extras,
-            constraint=ireq.constraint,
+            key_from_ireq(ireq), best_version, ireq.extras, constraint=ireq.constraint
         )
 
     def get_dependencies(self, ireq):

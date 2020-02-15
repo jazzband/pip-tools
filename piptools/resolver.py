@@ -17,7 +17,6 @@ from .utils import (
     is_pinned_requirement,
     is_url_requirement,
     key_from_ireq,
-    key_from_req,
 )
 
 green = partial(click.style, fg="green")
@@ -31,7 +30,7 @@ class RequirementSummary(object):
 
     def __init__(self, ireq):
         self.req = ireq.req
-        self.key = key_from_req(ireq.req)
+        self.key = key_from_ireq(ireq)
         self.extras = str(sorted(ireq.extras))
         self.specifier = str(ireq.specifier)
 
@@ -274,12 +273,10 @@ class Resolver(object):
         if has_changed:
             log.debug("")
             log.debug("New dependencies found in this round:")
-            for new_dependency in sorted(diff, key=lambda req: key_from_req(req.req)):
+            for new_dependency in sorted(diff, key=key_from_ireq):
                 log.debug("  adding {}".format(new_dependency))
             log.debug("Removed dependencies in this round:")
-            for removed_dependency in sorted(
-                removed, key=lambda req: key_from_req(req.req)
-            ):
+            for removed_dependency in sorted(removed, key=key_from_ireq):
                 log.debug("  removing {}".format(removed_dependency))
 
         # Store the last round's results in the their_constraints
