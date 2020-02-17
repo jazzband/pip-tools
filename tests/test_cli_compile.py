@@ -856,6 +856,62 @@ def test_dry_run_doesnt_touch_output_file(
 
 
 @pytest.mark.parametrize(
+    "requirements_in, checksum",
+    [
+        (
+            "small-fake-a",
+            "ddc021cb85916175da3f7efa0043501be399f2bce1d3ae4b833cdcb348f0755b",
+        ),
+        (
+            "small-fake-b",
+            "ff69e9c25ac4dfa733c8a7b5c0035f080a2780e73bea363e21b9eb4d849fdc8d",
+        ),
+    ],
+)
+def test_lock_option(pip_conf, runner, requirements_in, checksum):
+    """
+    Tests pip-compile --lock adds lock information to requirements.txt
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write(requirements_in)
+
+    out = runner.invoke(cli, ["--lock"])
+
+    assert out.exit_code == 0, out.stderr
+    assert "# sha256:{}  requirements.in".format(checksum) in out.stderr.splitlines()
+
+
+def test_lock_option_stdin_input(pip_conf, runner):
+    """
+    Tests `pip-compile --lock -` raises an error
+    """
+    out = runner.invoke(cli, ["--lock", "-"], input="small-test-a\n")
+
+    assert out.exit_code == 2, out.stderr
+    assert "--lock does not support input from stdin"
+
+
+def test_locked_file_is_always_locked(pip_conf, runner):
+    """
+    Test pip-compile outputs lock information to requirements.txt if it has
+    lock information in it, even if the --lock option is not supplied.
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-b<0.2")
+
+    runner.invoke(cli, ["--lock"])
+
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-b<0.3")
+
+    out = runner.invoke(cli, ["--lock"])
+
+    assert (
+        "b6900a0b2d44e6f71810b530d6fbc0b345b7d5c2f2b0773a8f9f9304aa56b88f" in out.stderr
+    )
+
+
+@pytest.mark.parametrize(
     "empty_input_pkg, prior_output_pkg",
     [
         ("", ""),
