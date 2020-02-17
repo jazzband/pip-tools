@@ -7,6 +7,7 @@ from itertools import chain
 import six
 
 from .click import unstyle
+from .lock import generate_locks
 from .logging import log
 from .utils import (
     UNSAFE_PACKAGES,
@@ -67,6 +68,7 @@ class OutputWriter(object):
         allow_unsafe,
         find_links,
         emit_find_links,
+        emit_lock,
     ):
         self.src_files = src_files
         self.dst_file = dst_file
@@ -84,6 +86,7 @@ class OutputWriter(object):
         self.allow_unsafe = allow_unsafe
         self.find_links = find_links
         self.emit_find_links = emit_find_links
+        self.emit_lock = emit_lock
 
     def _sort_key(self, ireq):
         return (not ireq.editable, str(ireq.req).lower())
@@ -124,6 +127,16 @@ class OutputWriter(object):
             for find_link in dedup(self.find_links):
                 yield "--find-links {}".format(find_link)
 
+    def write_lock(self):
+        if self.emit_lock:
+            yield comment("# This file was locked against the following input files:")
+            yield comment("#")
+
+            for lock in generate_locks(*self.src_files).values():
+                yield comment("# {}".format(lock))
+
+            yield comment("#")
+
     def write_flags(self):
         emitted = False
         for line in chain(
@@ -151,6 +164,9 @@ class OutputWriter(object):
         yielded = False
 
         for line in self.write_header():
+            yield line
+            yielded = True
+        for line in self.write_lock():
             yield line
             yielded = True
         for line in self.write_flags():

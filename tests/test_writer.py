@@ -42,6 +42,7 @@ def writer(tmpdir_cwd):
             allow_unsafe=False,
             find_links=[],
             emit_find_links=True,
+            emit_lock=False,
         )
         yield writer
 
@@ -317,3 +318,32 @@ def test_write_find_links(writer, find_links, expected_lines):
     """
     writer.find_links = find_links
     assert list(writer.write_find_links()) == expected_lines
+
+
+def test_write_lock(writer):
+    """
+    Test write_lock method.
+    """
+    writer.emit_lock = True
+    expected = map(
+        comment,
+        [
+            "# This file was locked against the following input files:",
+            "#",
+            "# sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            "  src_file",
+            "# sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            "  src_file2",
+            "#",
+        ],
+    )
+    assert list(writer.write_lock()) == list(expected)
+
+
+def test_write_lock_no_emit_lock(writer):
+    """
+    There should be no locks if emit_lock is False
+    """
+    writer.emit_lock = False
+    with raises(StopIteration):
+        next(writer.write_lock())
