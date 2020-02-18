@@ -911,6 +911,100 @@ def test_locked_file_is_always_locked(pip_conf, runner):
     )
 
 
+def test_lock_skips_resolve_if_lock_up_to_date(pip_conf, runner):
+    """
+    Tests pip-compile --lock doesn't do dependency resolution or touch
+    requirements.txt if the input file has not changed since the lock.
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-a")
+
+    with open("requirements.txt", "w") as req_txt:
+        req_txt.write(
+            "# sha256:ddc021cb85916175da3f7efa0043501be399f2bce1d3ae4b833cdcb348f0755b"
+            "  requirements.in\n"
+        )
+        req_txt.write("small-fake-a==0.1")
+
+    before_compile_mtime = os.stat("requirements.txt").st_mtime
+
+    out = runner.invoke(cli, ["--lock"])
+
+    assert out.exit_code == 0, out.stderr
+    assert "small-fake-a" not in out.stderr
+    assert "locks are up-to-date" in out.stderr
+
+    # The package version must NOT be updated in the output file
+    with open("requirements.txt", "r") as req_txt:
+        assert "small-fake-a==0.1" in req_txt.read().splitlines()
+
+    # The output file must not be touched
+    after_compile_mtime = os.stat("requirements.txt").st_mtime
+    assert after_compile_mtime == before_compile_mtime
+
+
+def test_lock_option_does_not_skip_dependency_resolution_if_lock_not_up_to_date(
+    pip_conf, runner
+):
+    """
+    Tests pip-compile --lock does dependency resolution and updates
+    requirements.txt if the input file has changed since the lock.
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-b<0.3")
+
+    runner.invoke(cli, ["--lock"])
+
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-b<0.2")
+
+    out = runner.invoke(cli, ["--lock"])
+
+    assert out.exit_code == 0, out.stderr
+    assert (
+        "ecb4d0f00fe312b666652c46c39c108e6ae7f9ebbbef1ba5f415768d6445149a" in out.stderr
+    )
+    assert "small-fake-b==0.1" in out.stderr
+
+
+@pytest.mark.parametrize(
+    "add_options, expected_cli_output_package",
+    [
+        (["--upgrade"], "small-fake-b==0.3"),
+        (["--upgrade-package", "small-fake-b"], "small-fake-b==0.3"),
+        (["--upgrade-package", "small-fake-b==0.1"], "small-fake-b==0.1"),
+    ],
+)
+def test_lock_option_does_not_skip_dependency_resolution_if_upgrade_option(
+    pip_conf, runner, add_options, expected_cli_output_package
+):
+    """
+    Tests pip-compile --lock does dependency resolution and updates
+    requirements.txt if the --upgrade or --upgrade-package options are present,
+    even if the input file has not changed since the lock.
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-b")
+
+    runner.invoke(cli, ["--lock"])
+
+    # downgrade small-fake-b
+    with open("requirements.txt") as req_txt:
+        textlines = req_txt.read().splitlines()
+        textlines[-1] = "small-fake-b==0.2"
+
+    with open("requirements.txt", "w") as req_txt:
+        req_txt.write("\n".join(textlines))
+
+    out = runner.invoke(cli, ["--lock"] + add_options)
+
+    assert out.exit_code == 0, out.stderr
+    assert (
+        "ff69e9c25ac4dfa733c8a7b5c0035f080a2780e73bea363e21b9eb4d849fdc8d" in out.stderr
+    )
+    assert expected_cli_output_package in out.stderr
+
+
 @pytest.mark.parametrize(
     "empty_input_pkg, prior_output_pkg",
     [

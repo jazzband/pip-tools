@@ -14,7 +14,7 @@ from .. import click
 from ..cache import DependencyCache
 from ..exceptions import PipToolsError
 from ..locations import CACHE_DIR
-from ..lock import read_locks
+from ..lock import check, read_locks
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
@@ -181,6 +181,8 @@ pip_defaults = install_command.parser.get_default_values()
 @click.option(
     "--lock",
     help="Add input file locks to generated file. "
+    "If output file already exists and has a valid lock, "
+    "resolving dependencies is skipped.",
     is_flag=True,
     default=False,
 )
@@ -268,6 +270,12 @@ def cli(
                     output_file.name
                 )
             )
+
+    valid_lock = check(existing_locks)
+    if lock and not (upgrade or upgrade_packages):
+        if valid_lock:
+            log.info("locks are up-to-date, nothing to do :)")
+            sys.exit(0)
 
     ###
     # Setup
