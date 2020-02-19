@@ -2,6 +2,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
+import shlex
 import sys
 import tempfile
 
@@ -177,6 +178,7 @@ pip_defaults = install_command.parser.get_default_values()
     show_envvar=True,
     type=click.Path(file_okay=False, writable=True),
 )
+@click.option("--pip-args", help="Arguments to pass directly to the pip command.")
 def cli(
     ctx,
     verbose,
@@ -204,6 +206,7 @@ def cli(
     build_isolation,
     emit_find_links,
     cache_dir,
+    pip_args,
 ):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbosity = verbose - quiet
@@ -247,6 +250,7 @@ def cli(
     # Setup
     ###
 
+    right_args = shlex.split(pip_args or "")
     pip_args = []
     if find_links:
         for link in find_links:
@@ -268,6 +272,7 @@ def cli(
 
     if not build_isolation:
         pip_args.append("--no-build-isolation")
+    pip_args.extend(right_args)
 
     repository = PyPIRepository(pip_args, cache_dir=cache_dir)
 

@@ -265,6 +265,15 @@ def test_force_text(value, expected_text):
         (["-f", "συνδέσεις"], "pip-compile --find-links='συνδέσεις'"),
         (["-o", "my file.txt"], "pip-compile --output-file='my file.txt'"),
         (["-o", "απαιτήσεις.txt"], "pip-compile --output-file='απαιτήσεις.txt'"),
+        # Check '--pip-args' (forwarded) arguments
+        (
+            ["--pip-args", "--disable-pip-version-check"],
+            "pip-compile --pip-args='--disable-pip-version-check'",
+        ),
+        (
+            ["--pip-args", "--disable-pip-version-check --isolated"],
+            "pip-compile --pip-args='--disable-pip-version-check --isolated'",
+        ),
     ],
 )
 def test_get_compile_command(tmpdir_cwd, cli_args, expected_command):
@@ -273,6 +282,16 @@ def test_get_compile_command(tmpdir_cwd, cli_args, expected_command):
     """
     with compile_cli.make_context("pip-compile", cli_args) as ctx:
         assert get_compile_command(ctx) == expected_command
+
+
+def test_get_compile_command_escaped_filenames(tmpdir_cwd):
+    """
+    Test that get_compile_command output (re-)escapes ' -- '-escaped filenames.
+    """
+    with open("--requirements.in", "w"):
+        pass
+    with compile_cli.make_context("pip-compile", ["--", "--requirements.in"]) as ctx:
+        assert get_compile_command(ctx) == "pip-compile -- --requirements.in"
 
 
 @mark.parametrize(

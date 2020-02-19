@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import itertools
 import os
+import shlex
 import sys
 
 from pip._internal.commands import create_command
@@ -73,6 +74,7 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
     "the private key and the certificate in PEM format.",
 )
 @click.argument("src_files", required=False, type=click.Path(exists=True), nargs=-1)
+@click.option("--pip-args", help="Arguments to pass directly to pip install.")
 def cli(
     ask,
     dry_run,
@@ -87,6 +89,7 @@ def cli(
     cert,
     client_cert,
     src_files,
+    pip_args,
 ):
     """Synchronize virtual environment with requirements.txt."""
     if not src_files:
@@ -139,7 +142,7 @@ def cli(
         user_only=user_only,
         cert=cert,
         client_cert=client_cert,
-    )
+    ) + shlex.split(pip_args or "")
     sys.exit(
         sync.sync(
             to_install,
