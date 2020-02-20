@@ -1,3 +1,17 @@
+# 4.5.0 (2020-02-20)
+
+Features:
+- Primary requirements and VCS dependencies are now get annotated with any source `.in` files and reverse dependencies
+([#1058](https://github.com/jazzband/pip-tools/pull/1058)). Thanks @AndydeCleyre
+
+Bug Fixes:
+- Always use normalized path for cache directory as it is required in newer versions of `pip`
+([#1062](https://github.com/jazzband/pip-tools/pull/1062)). Thanks @kammala
+
+Improved Documentation:
+- Replace outdated link in the `README` with rationale for pinning
+([#1053](https://github.com/jazzband/pip-tools/pull/1053)). Thanks @m-aciek
+
 # 4.4.1 (2020-01-31)
 
 Bug Fixes:
