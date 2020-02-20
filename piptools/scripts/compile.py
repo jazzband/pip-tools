@@ -327,10 +327,14 @@ def cli(
 
                 dist = run_setup(src_file)
                 tmpfile.write("\n".join(dist.install_requires))
+                comes_from = "{name} ({filename})".format(
+                    name=dist.get_name(), filename=src_file
+                )
             else:
                 tmpfile.write(sys.stdin.read())
+                comes_from = "-r -"
             tmpfile.flush()
-            constraints.extend(
+            reqs = list(
                 parse_requirements(
                     tmpfile.name,
                     finder=repository.finder,
@@ -338,6 +342,9 @@ def cli(
                     options=repository.options,
                 )
             )
+            for req in reqs:
+                req.comes_from = comes_from
+            constraints.extend(reqs)
         else:
             constraints.extend(
                 parse_requirements(
@@ -396,33 +403,6 @@ def cli(
     # Output
     ##
 
-    # Compute reverse dependency annotations statically, from the
-    # dependency cache that the resolver has populated by now.
-    #
-    # TODO (1a): reverse deps for any editable package are lost
-    #            what SHOULD happen is that they are cached in memory, just
-    #            not persisted to disk!
-    #
-    # TODO (1b): perhaps it's easiest if the dependency cache has an API
-    #            that could take InstallRequirements directly, like:
-    #
-    #              cache.set(ireq, ...)
-    #
-    #            then, when ireq is editable, it would store in
-    #
-    #              editables[egg_name][link_without_fragment] = deps
-    #              editables['pip-tools']['git+...ols.git@future'] = {
-    #                  'click>=3.0', 'six'
-    #              }
-    #
-    #            otherwise:
-    #
-    #              self[as_name_version_tuple(ireq)] = {'click>=3.0', 'six'}
-    #
-    reverse_dependencies = None
-    if annotate:
-        reverse_dependencies = resolver.reverse_dependencies(results)
-
     writer = OutputWriter(
         src_files,
         output_file,
@@ -444,8 +424,6 @@ def cli(
     writer.write(
         results=results,
         unsafe_requirements=resolver.unsafe_constraints,
-        reverse_dependencies=reverse_dependencies,
-        primary_packages=primary_packages,
         markers={
             key_from_ireq(ireq): ireq.markers for ireq in constraints if ireq.markers
         },

@@ -49,54 +49,48 @@ def writer(tmpdir_cwd):
 def test_format_requirement_annotation_editable(from_editable, writer):
     # Annotations are printed as comments at a fixed column
     ireq = from_editable("git+git://fake.org/x/y.git#egg=y")
-    reverse_dependencies = {"y": ["xyz"]}
+    ireq.comes_from = "xyz"
 
     assert writer._format_requirement(
-        ireq, reverse_dependencies, primary_packages=[]
+        ireq
     ) == "-e git+git://fake.org/x/y.git#egg=y  " + comment("# via xyz")
 
 
 def test_format_requirement_annotation(from_line, writer):
     ireq = from_line("test==1.2")
-    reverse_dependencies = {"test": ["xyz"]}
+    ireq.comes_from = "xyz"
 
-    assert writer._format_requirement(
-        ireq, reverse_dependencies, primary_packages=[]
-    ) == "test==1.2                 " + comment("# via xyz")
+    assert writer._format_requirement(ireq) == "test==1.2                 " + comment(
+        "# via xyz"
+    )
 
 
 def test_format_requirement_annotation_lower_case(from_line, writer):
     ireq = from_line("Test==1.2")
-    reverse_dependencies = {"test": ["xyz"]}
+    ireq.comes_from = "xyz"
 
-    assert writer._format_requirement(
-        ireq, reverse_dependencies, primary_packages=[]
-    ) == "test==1.2                 " + comment("# via xyz")
-
-
-def test_format_requirement_not_for_primary(from_line, writer):
-    "Primary packages should not get annotated."
-    ireq = from_line("test==1.2")
-    reverse_dependencies = {"test": ["xyz"]}
-
-    assert (
-        writer._format_requirement(
-            ireq, reverse_dependencies, primary_packages=["test"]
-        )
-        == "test==1.2"
+    assert writer._format_requirement(ireq) == "test==1.2                 " + comment(
+        "# via xyz"
     )
 
 
-def test_format_requirement_not_for_primary_lower_case(from_line, writer):
-    "Primary packages should not get annotated."
-    ireq = from_line("Test==1.2")
-    reverse_dependencies = {"test": ["xyz"]}
+def test_format_requirement_for_primary(from_line, writer):
+    "Primary packages should get annotated."
+    ireq = from_line("test==1.2")
+    ireq.comes_from = "xyz"
 
-    assert (
-        writer._format_requirement(
-            ireq, reverse_dependencies, primary_packages=["test"]
-        )
-        == "test==1.2"
+    assert writer._format_requirement(ireq) == "test==1.2                 " + comment(
+        "# via xyz"
+    )
+
+
+def test_format_requirement_for_primary_lower_case(from_line, writer):
+    "Primary packages should get annotated."
+    ireq = from_line("Test==1.2")
+    ireq.comes_from = "xyz"
+
+    assert writer._format_requirement(ireq) == "test==1.2                 " + comment(
+        "# via xyz"
     )
 
 
@@ -105,11 +99,8 @@ def test_format_requirement_environment_marker(from_line, writer):
     ireq = from_line(
         'test ; python_version == "2.7" and platform_python_implementation == "CPython"'
     )
-    reverse_dependencies = set()
 
-    result = writer._format_requirement(
-        ireq, reverse_dependencies, primary_packages=["test"], marker=ireq.markers
-    )
+    result = writer._format_requirement(ireq, marker=ireq.markers)
     assert (
         result == 'test ; python_version == "2.7" and '
         'platform_python_implementation == "CPython"'

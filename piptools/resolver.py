@@ -318,6 +318,8 @@ class Resolver(object):
             )
         )
         best_match.comes_from = ireq.comes_from
+        if hasattr(ireq, "_source_ireqs"):
+            best_match._source_ireqs = ireq._source_ireqs
         return best_match
 
     def _iter_dependencies(self, ireq):
