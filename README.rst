@@ -69,8 +69,8 @@ interfere.
 Requirements from ``setup.py``
 ------------------------------
 
-Suppose you have a Flask project, and want to pin it for production.
-If you have a ``setup.py`` with ``install_requires=['Flask']``, then run
+Suppose you have a Django project, and want to pin it for production.
+If you have a ``setup.py`` with ``install_requires=['django']``, then run
 ``pip-compile`` without any arguments:
 
 .. code-block:: bash
@@ -82,14 +82,12 @@ If you have a ``setup.py`` with ``install_requires=['Flask']``, then run
     #
     #    pip-compile
     #
-    click==7.0                # via flask
-    flask==1.1.1              # via my_flask_project (setup.py)
-    itsdangerous==1.1.0       # via flask
-    jinja2==2.11.1            # via flask
-    markupsafe==1.1.1         # via jinja2
-    werkzeug==1.0.0           # via flask
+    asgiref==3.2.3            # via django
+    django==3.0.3             # via my_django_project (setup.py)
+    pytz==2019.3              # via django
+    sqlparse==0.3.0           # via django
 
-``pip-compile`` will produce your ``requirements.txt``, with all the Flask
+``pip-compile`` will produce your ``requirements.txt``, with all the Django
 dependencies (and all underlying dependencies) pinned.  You should put
 ``requirements.txt`` under version control.
 
@@ -97,12 +95,12 @@ Without ``setup.py``
 --------------------
 
 If you don't use ``setup.py`` (`it's easy to write one`_), you can create a
-``requirements.in`` file to declare the Flask dependency:
+``requirements.in`` file to declare the Django dependency:
 
 .. code-block:: ini
 
     # requirements.in
-    Flask
+    django
 
 Now, run ``pip-compile requirements.in``:
 
@@ -115,14 +113,12 @@ Now, run ``pip-compile requirements.in``:
     #
     #    pip-compile requirements.in
     #
-    click==7.0                # via flask
-    flask==1.1.1              # via -r requirements.in (line 1)
-    itsdangerous==1.1.0       # via flask
-    jinja2==2.11.1            # via flask
-    markupsafe==1.1.1         # via jinja2
-    werkzeug==1.0.0           # via flask
+    asgiref==3.2.3            # via django
+    django==3.0.3             # via -r requirements.in (line 1)
+    pytz==2019.3              # via django
+    sqlparse==0.3.0           # via django
 
-And it will produce your ``requirements.txt``, with all the Flask dependencies
+And it will produce your ``requirements.txt``, with all the Django dependencies
 (and all underlying dependencies) pinned.  You should put both
 ``requirements.in`` and ``requirements.txt`` under version control.
 
@@ -143,61 +139,22 @@ version 8.0, ``pip-compile`` offers ``--generate-hashes`` flag:
     #
     #    pip-compile --generate-hashes requirements.in
     #
-    click==7.0 \
-        --hash=sha256:2335065e6395b9e67ca716de5f7526736bfa6ceead690adf616d925bdc622b13 \
-        --hash=sha256:5b94b49521f6456670fdb30cd82a4eca9412788a93fa6dd6df72c94d5a8ff2d7 \
-        # via flask
-    flask==1.1.1 \
-        --hash=sha256:13f9f196f330c7c2c5d7a5cf91af894110ca0215ac051b5844701f2bfd934d52 \
-        --hash=sha256:45eb5a6fd193d6cf7e0cf5d8a5b31f83d5faae0293695626f539a823e93b13f6 \
+    asgiref==3.2.3 \
+        --hash=sha256:7e06d934a7718bf3975acbf87780ba678957b87c7adc056f13b6215d610695a0 \
+        --hash=sha256:ea448f92fc35a0ef4b1508f53a04c4670255a3f33d22a81c8fc9c872036adbe5 \
+        # via django
+    django==3.0.3 \
+        --hash=sha256:2f1ba1db8648484dd5c238fb62504777b7ad090c81c5f1fd8d5eb5ec21b5f283 \
+        --hash=sha256:c91c91a7ad6ef67a874a4f76f58ba534f9208412692a840e1d125eb5c279cb0a \
         # via -r requirements.in (line 1)
-    itsdangerous==1.1.0 \
-        --hash=sha256:321b033d07f2a4136d3ec762eac9f16a10ccd60f53c0c91af90217ace7ba1f19 \
-        --hash=sha256:b12271b2047cb23eeb98c8b5622e2e5c5e9abd9784a153e9d8ef9cb4dd09d749 \
-        # via flask
-    jinja2==2.11.1 \
-        --hash=sha256:93187ffbc7808079673ef52771baa950426fd664d3aad1d0fa3e95644360e250 \
-        --hash=sha256:b0eaf100007721b5c16c1fc1eecb87409464edc10469ddc9a22a27a99123be49 \
-        # via flask
-    markupsafe==1.1.1 \
-        --hash=sha256:00bc623926325b26bb9605ae9eae8a215691f33cae5df11ca5424f06f2d1f473 \
-        --hash=sha256:09027a7803a62ca78792ad89403b1b7a73a01c8cb65909cd876f7fcebd79b161 \
-        --hash=sha256:09c4b7f37d6c648cb13f9230d847adf22f8171b1ccc4d5682398e77f40309235 \
-        --hash=sha256:1027c282dad077d0bae18be6794e6b6b8c91d58ed8a8d89a89d59693b9131db5 \
-        --hash=sha256:13d3144e1e340870b25e7b10b98d779608c02016d5184cfb9927a9f10c689f42 \
-        --hash=sha256:24982cc2533820871eba85ba648cd53d8623687ff11cbb805be4ff7b4c971aff \
-        --hash=sha256:29872e92839765e546828bb7754a68c418d927cd064fd4708fab9fe9c8bb116b \
-        --hash=sha256:43a55c2930bbc139570ac2452adf3d70cdbb3cfe5912c71cdce1c2c6bbd9c5d1 \
-        --hash=sha256:46c99d2de99945ec5cb54f23c8cd5689f6d7177305ebff350a58ce5f8de1669e \
-        --hash=sha256:500d4957e52ddc3351cabf489e79c91c17f6e0899158447047588650b5e69183 \
-        --hash=sha256:535f6fc4d397c1563d08b88e485c3496cf5784e927af890fb3c3aac7f933ec66 \
-        --hash=sha256:596510de112c685489095da617b5bcbbac7dd6384aeebeda4df6025d0256a81b \
-        --hash=sha256:62fe6c95e3ec8a7fad637b7f3d372c15ec1caa01ab47926cfdf7a75b40e0eac1 \
-        --hash=sha256:6788b695d50a51edb699cb55e35487e430fa21f1ed838122d722e0ff0ac5ba15 \
-        --hash=sha256:6dd73240d2af64df90aa7c4e7481e23825ea70af4b4922f8ede5b9e35f78a3b1 \
-        --hash=sha256:717ba8fe3ae9cc0006d7c451f0bb265ee07739daf76355d06366154ee68d221e \
-        --hash=sha256:79855e1c5b8da654cf486b830bd42c06e8780cea587384cf6545b7d9ac013a0b \
-        --hash=sha256:7c1699dfe0cf8ff607dbdcc1e9b9af1755371f92a68f706051cc8c37d447c905 \
-        --hash=sha256:88e5fcfb52ee7b911e8bb6d6aa2fd21fbecc674eadd44118a9cc3863f938e735 \
-        --hash=sha256:8defac2f2ccd6805ebf65f5eeb132adcf2ab57aa11fdf4c0dd5169a004710e7d \
-        --hash=sha256:98c7086708b163d425c67c7a91bad6e466bb99d797aa64f965e9d25c12111a5e \
-        --hash=sha256:9add70b36c5666a2ed02b43b335fe19002ee5235efd4b8a89bfcf9005bebac0d \
-        --hash=sha256:9bf40443012702a1d2070043cb6291650a0841ece432556f784f004937f0f32c \
-        --hash=sha256:ade5e387d2ad0d7ebf59146cc00c8044acbd863725f887353a10df825fc8ae21 \
-        --hash=sha256:b00c1de48212e4cc9603895652c5c410df699856a2853135b3967591e4beebc2 \
-        --hash=sha256:b1282f8c00509d99fef04d8ba936b156d419be841854fe901d8ae224c59f0be5 \
-        --hash=sha256:b2051432115498d3562c084a49bba65d97cf251f5a331c64a12ee7e04dacc51b \
-        --hash=sha256:ba59edeaa2fc6114428f1637ffff42da1e311e29382d81b339c1817d37ec93c6 \
-        --hash=sha256:c8716a48d94b06bb3b2524c2b77e055fb313aeb4ea620c8dd03a105574ba704f \
-        --hash=sha256:cd5df75523866410809ca100dc9681e301e3c27567cf498077e8551b6d20e42f \
-        --hash=sha256:cdb132fc825c38e1aeec2c8aa9338310d29d337bebbd7baa06889d09a60a1fa2 \
-        --hash=sha256:e249096428b3ae81b08327a63a485ad0878de3fb939049038579ac0ef61e17e7 \
-        --hash=sha256:e8313f01ba26fbbe36c7be1966a7b7424942f670f38e666995b88d012765b9be \
-        # via jinja2
-    werkzeug==1.0.0 \
-        --hash=sha256:169ba8a33788476292d04186ab33b01d6add475033dfc07215e6d219cc077096 \
-        --hash=sha256:6dc65cf9091cf750012f56f2cad759fa9e879f511b5ff8685e456b4e3bf90d16 \
-        # via flask
+    pytz==2019.3 \
+        --hash=sha256:1c557d7d0e871de1f5ccd5833f60fb2550652da6be2693c1e02300743d21500d \
+        --hash=sha256:b02c06db6cf09c12dd25137e563b31700d3b80fcc4ad23abb7a315f2789819be \
+        # via django
+    sqlparse==0.3.0 \
+        --hash=sha256:40afe6b8d4b1117e7dff5504d7a8ce07d9a1b15aeeade8a2d10f130a834f8177 \
+        --hash=sha256:7c3dca29c022744e95b547e867cee89f4fce4373f3549ccd8797d8eb52cdb873 \
+        # via django
 
 Updating requirements
 ---------------------
@@ -209,14 +166,14 @@ To update a specific package to the latest or a specific version use the
 
 .. code-block:: bash
 
-    # only update the flask package
-    $ pip-compile --upgrade-package flask
+    # only update the django package
+    $ pip-compile --upgrade-package django
 
-    # update both the flask and requests packages
-    $ pip-compile --upgrade-package flask --upgrade-package requests
+    # update both the django and requests packages
+    $ pip-compile --upgrade-package django --upgrade-package requests
 
-    # update the flask package to the latest, and requests to v2.0.0
-    $ pip-compile --upgrade-package flask --upgrade-package requests==2.0.0
+    # update the django package to the latest, and requests to v2.0.0
+    $ pip-compile --upgrade-package django --upgrade-package requests==2.0.0
 
 You can combine ``--upgrade`` and ``--upgrade-package`` in one command, to
 provide constraints on the allowed upgrades. For example to upgrade all
@@ -231,13 +188,13 @@ Output File
 
 To output the pinned requirements in a filename other than
 ``requirements.txt``, use ``--output-file``. This might be useful for compiling
-multiple files, for example with different constraints on flask to test a
+multiple files, for example with different constraints on django to test a
 library with both versions using `tox <https://tox.readthedocs.io/en/latest/>`__:
 
 .. code-block:: bash
 
-    $ pip-compile --upgrade-package 'flask<1.0' --output-file requirements-flask0x.txt
-    $ pip-compile --upgrade-package 'flask<2.0' --output-file requirements-flask1x.txt
+    $ pip-compile --upgrade-package 'django<1.0' --output-file requirements-django0x.txt
+    $ pip-compile --upgrade-package 'django<2.0' --output-file requirements-django1x.txt
 
 Or to output to standard output, use ``--output-file=-``:
 
@@ -263,12 +220,10 @@ generated at the top of requirements files by setting the
     #
     #    ./pipcompilewrapper
     #
-    click==7.0                # via flask
-    flask==1.1.1              # via -r requirements.in (line 1)
-    itsdangerous==1.1.0       # via flask
-    jinja2==2.11.1            # via flask
-    markupsafe==1.1.1         # via jinja2
-    werkzeug==1.0.0           # via flask
+    asgiref==3.2.3            # via django
+    django==3.0.3             # via -r requirements.in (line 1)
+    pytz==2019.3              # via django
+    sqlparse==0.3.0           # via django
 
 Workflow for layered requirements
 ---------------------------------
