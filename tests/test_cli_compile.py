@@ -662,7 +662,7 @@ def test_multiple_input_files_without_output_file(runner):
         (
             "--annotate",
             "small-fake-a==0.1         "
-            "# via -c constraints.txt (line 1), small-fake-with-deps\n",
+            "# via -c constraints.txt, small-fake-with-deps\n",
         ),
         ("--no-annotate", "small-fake-a==0.1\n"),
     ],

@@ -114,7 +114,7 @@ Now, run ``pip-compile requirements.in``:
     #    pip-compile requirements.in
     #
     asgiref==3.2.3            # via django
-    django==3.0.3             # via -r requirements.in (line 1)
+    django==3.0.3             # via -r requirements.in
     pytz==2019.3              # via django
     sqlparse==0.3.0           # via django
 
@@ -146,7 +146,7 @@ version 8.0, ``pip-compile`` offers ``--generate-hashes`` flag:
     django==3.0.3 \
         --hash=sha256:2f1ba1db8648484dd5c238fb62504777b7ad090c81c5f1fd8d5eb5ec21b5f283 \
         --hash=sha256:c91c91a7ad6ef67a874a4f76f58ba534f9208412692a840e1d125eb5c279cb0a \
-        # via -r requirements.in (line 1)
+        # via -r requirements.in
     pytz==2019.3 \
         --hash=sha256:1c557d7d0e871de1f5ccd5833f60fb2550652da6be2693c1e02300743d21500d \
         --hash=sha256:b02c06db6cf09c12dd25137e563b31700d3b80fcc4ad23abb7a315f2789819be \
@@ -221,7 +221,7 @@ generated at the top of requirements files by setting the
     #    ./pipcompilewrapper
     #
     asgiref==3.2.3            # via django
-    django==3.0.3             # via -r requirements.in (line 1)
+    django==3.0.3             # via -r requirements.in
     pytz==2019.3              # via django
     sqlparse==0.3.0           # via django
 
@@ -262,7 +262,7 @@ First, compile ``requirements.txt`` as usual:
     #
     #    pip-compile
     #
-    django==2.1.15            # via -r requirements.in (line 1)
+    django==2.1.15            # via -r requirements.in
     pytz==2019.3              # via django
 
 
@@ -278,9 +278,9 @@ a constraint:
     #
     #    pip-compile dev-requirements.in
     #
-    django-debug-toolbar==2.2  # via -r dev-requirements.in (line 2)
-    django==2.1.15            # via -c requirements.txt (line 7), django-debug-toolbar
-    pytz==2019.3              # via -c requirements.txt (line 8), django
+    django-debug-toolbar==2.2  # via -r dev-requirements.in
+    django==2.1.15            # via -c requirements.txt, django-debug-toolbar
+    pytz==2019.3              # via -c requirements.txt, django
     sqlparse==0.3.0           # via django-debug-toolbar
 
 As you can see above, even though a ``2.2`` release of Django is available, the
