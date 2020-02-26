@@ -1,3 +1,13 @@
+# 4.5.1 (2020-02-26)
+
+Bug Fixes:
+- Strip line number annotations such as "(line XX)" from file requirements, to prevent diff noise when modifying input requirement files
+([#1075](https://github.com/jazzband/pip-tools/pull/1075)). Thanks @adamchainz
+
+Improved Documentation:
+- Updated `README` example outputs for primary requirement annotations
+([#1072](https://github.com/jazzband/pip-tools/pull/1072)). Thanks @richafrank
+
 # 4.5.0 (2020-02-20)
 
 Features:
