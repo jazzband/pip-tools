@@ -1,6 +1,7 @@
 from __future__ import unicode_literals
 
 import os
+import re
 from itertools import chain
 
 import six
@@ -38,9 +39,12 @@ MESSAGE_UNINSTALLABLE = (
 )
 
 
+strip_comes_from_line_re = re.compile(r" \(line \d+\)$")
+
+
 def _comes_from_as_string(ireq):
     if isinstance(ireq.comes_from, six.string_types):
-        return ireq.comes_from
+        return strip_comes_from_line_re.sub("", ireq.comes_from)
     return key_from_ireq(ireq.comes_from)
 
 
