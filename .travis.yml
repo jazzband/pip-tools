@@ -20,31 +20,12 @@ script:
   - tox
 
 stages:
-- baseline
 - test
 - name: deploy
   if: repo = jazzband/pip-tools AND tag IS present
 
 jobs:
-  exclude:
-    # Baseline jobs (included there/below).
-    - env: PIP=latest
-      python: "3.8"
-    - env: PIP=latest
-      python: "3.7"
-    - env: PIP=latest
-      python: "2.7"
-
   include:
-    # Baseline stage to abort early.
-    - stage: baseline
-      env: PIP=latest
-      python: "3.8"
-    - env: PIP=latest
-      python: "3.7"
-    - env: PIP=latest
-      python: "2.7"
-
     # QA checks.
     - env: TOXENV=checkqa
       python: 3.7
