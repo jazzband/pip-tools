@@ -57,6 +57,7 @@ class PyPIRepository(BaseRepository):
 
         self.options.build_isolation = build_isolation
         self.options.require_hashes = False
+        self.options.ignore_dependencies = False
 
         self.session = self.command._build_session(self.options)
         self.finder = self.command._build_package_finder(
@@ -141,7 +142,7 @@ class PyPIRepository(BaseRepository):
 
     def resolve_reqs(self, download_dir, ireq, wheel_cache):
         with get_requirement_tracker() as req_tracker, TempDirectory(
-            kind="req-tracker"
+            kind="resolved"
         ) as temp_dir:
             preparer = self.command.make_requirement_preparer(
                 temp_build_dir=temp_dir,
