@@ -17,12 +17,7 @@ from ..locations import CACHE_DIR
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
-from ..utils import (
-    UNSAFE_PACKAGES,
-    dedup,
-    is_pinned_requirement,
-    key_from_ireq,
-)
+from ..utils import UNSAFE_PACKAGES, dedup, is_pinned_requirement, key_from_ireq
 from ..writer import OutputWriter
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.in"
