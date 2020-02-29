@@ -7,7 +7,7 @@ from piptools.resolver import combine_install_requirements
 @pytest.mark.parametrize(
     ("input", "expected", "prereleases", "unsafe_constraints"),
     (
-        (tup + (False, set())[len(tup) - 2 :])  # noqa: E203
+        (tup + (False, set())[len(tup) - 2 :])
         for tup in [
             (["Django"], ["django==1.8"]),
             (
