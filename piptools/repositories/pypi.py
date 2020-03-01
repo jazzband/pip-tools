@@ -142,7 +142,7 @@ class PyPIRepository(BaseRepository):
 
     def resolve_reqs(self, download_dir, ireq, wheel_cache):
         with get_requirement_tracker() as req_tracker, TempDirectory(
-            kind="resolved"
+            kind="resolver"
         ) as temp_dir:
             preparer = self.command.make_requirement_preparer(
                 temp_build_dir=temp_dir,
