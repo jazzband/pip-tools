@@ -136,12 +136,6 @@ matrix:
 
 install:
     - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
-
-    # Temporary workaround to prevent tests failing.
-    # See GH-983 for the details.
-    # TODO remove this after tox>3.14.0 being released
-    - pip install "virtualenv>=16.0.0"
-
     - pip install tox
 
 build: false
