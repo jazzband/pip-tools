@@ -8,9 +8,9 @@ import tempfile
 from click.utils import safecall
 from pip._internal.commands import create_command
 from pip._internal.req.constructors import install_req_from_line
-from pip._internal.req.req_file import parse_requirements
 
 from .. import click
+from .._compat import parse_requirements
 from ..cache import DependencyCache
 from ..exceptions import PipToolsError
 from ..locations import CACHE_DIR

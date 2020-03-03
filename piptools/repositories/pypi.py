@@ -19,7 +19,7 @@ from pip._internal.utils.misc import normalize_path
 from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
 from pip._internal.utils.urls import path_to_url, url_to_path
 
-from .._compat import TemporaryDirectory, contextlib
+from .._compat import PIP_VERSION, TemporaryDirectory, contextlib
 from ..click import progressbar
 from ..exceptions import NoCandidateFound
 from ..logging import log
@@ -172,7 +172,8 @@ class PyPIRepository(BaseRepository):
             )
             results = resolver._resolve_one(reqset, ireq)
 
-            reqset.cleanup_files()
+            if PIP_VERSION[:2] <= (20, 0):
+                reqset.cleanup_files()
 
         return set(results)
 
@@ -208,21 +209,23 @@ class PyPIRepository(BaseRepository):
             if not os.path.isdir(self._wheel_download_dir):
                 os.makedirs(self._wheel_download_dir)
 
-            wheel_cache = WheelCache(self._cache_dir, self.options.format_control)
-            prev_tracker = os.environ.get("PIP_REQ_TRACKER")
-            try:
-                with global_tempdir_manager():
+            with global_tempdir_manager():
+                wheel_cache = WheelCache(self._cache_dir, self.options.format_control)
+                prev_tracker = os.environ.get("PIP_REQ_TRACKER")
+                try:
                     self._dependencies_cache[ireq] = self.resolve_reqs(
                         download_dir, ireq, wheel_cache
                     )
-            finally:
-                if "PIP_REQ_TRACKER" in os.environ:
-                    if prev_tracker:
-                        os.environ["PIP_REQ_TRACKER"] = prev_tracker
-                    else:
-                        del os.environ["PIP_REQ_TRACKER"]
+                finally:
+                    if "PIP_REQ_TRACKER" in os.environ:
+                        if prev_tracker:
+                            os.environ["PIP_REQ_TRACKER"] = prev_tracker
+                        else:
+                            del os.environ["PIP_REQ_TRACKER"]
 
-                wheel_cache.cleanup()
+                    if PIP_VERSION[:2] <= (20, 0):
+                        wheel_cache.cleanup()
+
         return self._dependencies_cache[ireq]
 
     def get_hashes(self, ireq):

@@ -10,6 +10,7 @@ from click.utils import LazyFile
 from pip._internal.req.constructors import install_req_from_line
 from six.moves import shlex_quote
 
+from ._compat import PIP_VERSION
 from .click import style
 
 UNSAFE_PACKAGES = {"setuptools", "distribute", "pip"}
@@ -278,7 +279,10 @@ def get_hashes_from_ireq(ireq):
     in the requirement options.
     """
     result = []
-    ireq_hashes = ireq.options.get("hashes", {})
+    if PIP_VERSION[:2] <= (20, 0):
+        ireq_hashes = ireq.options.get("hashes", {})
+    else:
+        ireq_hashes = ireq.hash_options
     for algorithm, hexdigests in ireq_hashes.items():
         for hash_ in hexdigests:
             result.append("{}:{}".format(algorithm, hash_))

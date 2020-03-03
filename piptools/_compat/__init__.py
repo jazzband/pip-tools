@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import six
 
-from .pip_compat import PIP_VERSION
+from .pip_compat import PIP_VERSION, parse_requirements
 
 if six.PY2:
     from .tempfile import TemporaryDirectory

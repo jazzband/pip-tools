@@ -5,6 +5,7 @@ from contextlib import contextmanager
 
 from pip._internal.utils.hashes import FAVORITE_HASH
 
+from .._compat import PIP_VERSION
 from .base import BaseRepository
 
 from piptools.utils import as_tuple, key_from_ireq, make_install_requirement
@@ -74,7 +75,10 @@ class LocalRequirementsRepository(BaseRepository):
         key = key_from_ireq(ireq)
         existing_pin = self.existing_pins.get(key)
         if existing_pin and ireq_satisfied_by_existing_pin(ireq, existing_pin):
-            hashes = existing_pin.options.get("hashes", {})
+            if PIP_VERSION[:2] <= (20, 0):
+                hashes = existing_pin.options.get("hashes", {})
+            else:
+                hashes = existing_pin.hash_options
             hexdigests = hashes.get(FAVORITE_HASH)
             if hexdigests:
                 return {
