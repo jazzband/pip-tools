@@ -4,8 +4,10 @@ import sys
 import tempfile
 from subprocess import check_call  # nosec
 
+from pip._internal.commands.freeze import DEV_PKGS
+from pip._internal.utils.compat import stdlib_pkgs
+
 from . import click
-from ._compat import DEV_PKGS, stdlib_pkgs
 from .exceptions import IncompatibleRequirements
 from .utils import (
     flat_map,

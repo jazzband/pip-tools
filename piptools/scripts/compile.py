@@ -6,30 +6,25 @@ import sys
 import tempfile
 
 from click.utils import safecall
+from pip._internal.commands import create_command
+from pip._internal.req.constructors import install_req_from_line
+from pip._internal.req.req_file import parse_requirements
 
 from .. import click
-from .._compat import install_req_from_line, parse_requirements
 from ..cache import DependencyCache
 from ..exceptions import PipToolsError
 from ..locations import CACHE_DIR
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
-from ..utils import (
-    UNSAFE_PACKAGES,
-    create_install_command,
-    dedup,
-    get_trusted_hosts,
-    is_pinned_requirement,
-    key_from_ireq,
-)
+from ..utils import UNSAFE_PACKAGES, dedup, is_pinned_requirement, key_from_ireq
 from ..writer import OutputWriter
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.in"
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 
 # Get default values of the pip's options (including options from pip.conf).
-install_command = create_install_command()
+install_command = create_command("install")
 pip_defaults = install_command.parser.get_default_values()
 
 
@@ -415,7 +410,7 @@ def cli(
         generate_hashes=generate_hashes,
         default_index_url=repository.DEFAULT_INDEX_URL,
         index_urls=repository.finder.index_urls,
-        trusted_hosts=get_trusted_hosts(repository.finder),
+        trusted_hosts=repository.finder.trusted_hosts,
         format_control=repository.finder.format_control,
         allow_unsafe=allow_unsafe,
         find_links=repository.finder.find_links,

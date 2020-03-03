@@ -6,8 +6,9 @@ import os
 from functools import partial
 from itertools import chain, count
 
+from pip._internal.req.constructors import install_req_from_line
+
 from . import click
-from ._compat import install_req_from_line
 from .logging import log
 from .utils import (
     UNSAFE_PACKAGES,
