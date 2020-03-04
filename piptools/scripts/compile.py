@@ -157,7 +157,7 @@ pip_defaults = install_command.parser.get_default_values()
 @click.option(
     "--build-isolation/--no-build-isolation",
     is_flag=True,
-    default=False,
+    default=True,
     help="Enable isolation when building a modern source distribution. "
     "Build dependencies specified by PEP 518 must be already installed "
     "if build isolation is disabled.",
