@@ -5,7 +5,7 @@ import pytest
 
 from .utils import invoke
 
-from piptools.scripts.sync import cli
+from piptools.scripts.sync import DEFAULT_REQUIREMENTS_FILE, cli
 
 
 def test_run_as_module_sync():
@@ -111,42 +111,65 @@ def test_merge_error(runner):
 
 
 @pytest.mark.parametrize(
-    ("cli_flags", "expected_install_flags"),
+    "install_flags",
     [
-        (["--find-links", "./libs"], ["-f", "./libs"]),
-        (["--no-index"], ["--no-index"]),
-        (["--index-url", "https://example.com"], ["-i", "https://example.com"]),
-        (
-            ["--extra-index-url", "https://foo", "--extra-index-url", "https://bar"],
-            ["--extra-index-url", "https://foo", "--extra-index-url", "https://bar"],
-        ),
-        (
-            ["--trusted-host", "https://foo", "--trusted-host", "https://bar"],
-            ["--trusted-host", "https://foo", "--trusted-host", "https://bar"],
-        ),
-        (
-            ["--extra-index-url", "https://foo", "--trusted-host", "https://bar"],
-            ["--extra-index-url", "https://foo", "--trusted-host", "https://bar"],
-        ),
-        (["--user"], ["--user"]),
-        (["--cert", "foo.crt"], ["--cert", "foo.crt"]),
-        (["--client-cert", "foo.pem"], ["--client-cert", "foo.pem"]),
+        ["--find-links", "./libs1", "--find-links", "./libs2"],
+        ["--no-index"],
+        ["--index-url", "https://example.com"],
+        ["--extra-index-url", "https://foo", "--extra-index-url", "https://bar"],
+        ["--trusted-host", "foo", "--trusted-host", "bar"],
+        ["--user"],
+        ["--cert", "foo.crt"],
+        ["--client-cert", "foo.pem"],
     ],
 )
 @mock.patch("piptools.sync.check_call")
-def test_pip_install_flags(check_call, cli_flags, expected_install_flags, runner):
+def test_pip_install_flags(check_call, install_flags, runner):
     """
     Test the cli flags have to be passed to the pip install command.
     """
     with open("requirements.txt", "w") as req_in:
         req_in.write("six==1.10.0")
 
-    runner.invoke(cli, cli_flags)
+    runner.invoke(cli, install_flags)
 
     call_args = [call[0][0] for call in check_call.call_args_list]
-    assert [args[6:] for args in call_args if args[3] == "install"] == [
-        expected_install_flags
-    ]
+    called_install_options = [args[6:] for args in call_args if args[3] == "install"]
+    assert called_install_options == [install_flags], "Called args: {}".format(
+        call_args
+    )
+
+
+@pytest.mark.parametrize(
+    "install_flags",
+    [
+        ["--no-index"],
+        ["--index-url", "https://example.com"],
+        ["--extra-index-url", "https://example.com"],
+        ["--find-links", "./libs1"],
+        ["--trusted-host", "example.com"],
+        ["--no-binary", ":all:"],
+        ["--only-binary", ":all:"],
+    ],
+)
+@mock.patch("piptools.sync.check_call")
+def test_pip_install_flags_in_requirements_file(check_call, runner, install_flags):
+    """
+    Test the options from requirements.txt file pass to the pip install command.
+    """
+    with open(DEFAULT_REQUIREMENTS_FILE, "w") as reqs:
+        reqs.write(" ".join(install_flags) + "\n")
+        reqs.write("six==1.10.0")
+
+    out = runner.invoke(cli)
+    assert out.exit_code == 0, out
+
+    # Make sure pip install command has expected options
+    call_args = [call[0][0] for call in check_call.call_args_list]
+    called_install_options = [args[6:] for args in call_args if args[3] == "install"]
+    assert called_install_options == [install_flags], "Called args: {}".format(
+        call_args
+    )
 
 
 @mock.patch("piptools.sync.check_call")
