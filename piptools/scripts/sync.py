@@ -5,6 +5,7 @@ import itertools
 import os
 import sys
 
+from pip._internal.commands import create_command
 from pip._internal.req.req_file import parse_requirements
 from pip._internal.utils.misc import get_installed_distributions
 
@@ -12,7 +13,7 @@ from .. import click, sync
 from ..exceptions import PipToolsError
 from ..logging import log
 from ..repositories import PyPIRepository
-from ..utils import create_install_command, flat_map, get_trusted_hosts
+from ..utils import flat_map
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 
@@ -108,7 +109,7 @@ def cli(
             log.error("ERROR: " + msg)
             sys.exit(2)
 
-    install_command = create_install_command()
+    install_command = create_command("install")
     options, _ = install_command.parse_args([])
     session = install_command._build_session(options)
     finder = install_command._build_package_finder(options=options, session=session)
@@ -185,7 +186,7 @@ def _compose_install_flags(
         result.extend(["--extra-index-url", extra_index])
 
     # Build --trusted-hosts
-    for host in itertools.chain(trusted_host or [], get_trusted_hosts(finder)):
+    for host in itertools.chain(trusted_host or [], finder.trusted_hosts):
         result.extend(["--trusted-host", host])
 
     # Build --find-links
