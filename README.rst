@@ -325,6 +325,19 @@ Sample ``.pre-commit-config.yaml``:
         hooks:
           - id: pip-compile
 
+You might want to customize ``pip-compile`` args by configuring ``args`` and/or ``files``, for example:
+
+.. code::
+
+    repos:
+      - repo: https://github.com/jazzband/pip-tools
+        rev: 4.2.0
+        hooks:
+          - id: pip-compile
+            files: ^requirements/production\.(in|txt)$
+            args: [--index-url=https://example.com, requirements/production.in]
+
+
 Example usage for ``pip-sync``
 ==============================
 
