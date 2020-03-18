@@ -317,7 +317,7 @@ You might use ``pip-compile`` as a hook for the `pre-commit <https://github.com/
 See `pre-commit docs <https://pre-commit.com/>`_ for instructions.
 Sample ``.pre-commit-config.yaml``:
 
-.. code::
+.. code-block:: yaml
 
     repos:
       - repo: https://github.com/jazzband/pip-tools
@@ -327,7 +327,7 @@ Sample ``.pre-commit-config.yaml``:
 
 You might want to customize ``pip-compile`` args by configuring ``args`` and/or ``files``, for example:
 
-.. code::
+.. code-block:: yaml
 
     repos:
       - repo: https://github.com/jazzband/pip-tools
