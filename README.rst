@@ -301,6 +301,34 @@ You can install requirements in development stage by:
     $ pip-sync requirements.txt dev-requirements.txt
 
 
+Version control integration
+---------------------------
+
+You might use ``pip-compile`` as a hook for the `pre-commit <https://github.com/pre-commit/pre-commit>`_.
+See `pre-commit docs <https://pre-commit.com/>`_ for instructions.
+Sample ``.pre-commit-config.yaml``:
+
+.. code-block:: yaml
+
+    repos:
+      - repo: https://github.com/jazzband/pip-tools
+        rev: 5.0.0
+        hooks:
+          - id: pip-compile
+
+You might want to customize ``pip-compile`` args by configuring ``args`` and/or ``files``, for example:
+
+.. code-block:: yaml
+
+    repos:
+      - repo: https://github.com/jazzband/pip-tools
+        rev: 5.0.0
+        hooks:
+          - id: pip-compile
+            files: ^requirements/production\.(in|txt)$
+            args: [--index-url=https://example.com, requirements/production.in]
+
+
 Example usage for ``pip-sync``
 ==============================
 
