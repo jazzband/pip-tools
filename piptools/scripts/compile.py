@@ -266,9 +266,10 @@ def cli(
         for host in trusted_host:
             pip_args.extend(["--trusted-host", host])
 
-    repository = PyPIRepository(
-        pip_args, build_isolation=build_isolation, cache_dir=cache_dir
-    )
+    if not build_isolation:
+        pip_args.append("--no-build-isolation")
+
+    repository = PyPIRepository(pip_args, cache_dir=cache_dir)
 
     # Parse all constraints coming from --upgrade-package/-P
     upgrade_reqs_gen = (install_req_from_line(pkg) for pkg in upgrade_packages)
@@ -283,9 +284,7 @@ def cli(
     if not upgrade and os.path.exists(output_file.name):
         # Use a temporary repository to ensure outdated(removed) options from
         # existing requirements.txt wouldn't get into the current repository.
-        tmp_repository = PyPIRepository(
-            pip_args, build_isolation=build_isolation, cache_dir=cache_dir
-        )
+        tmp_repository = PyPIRepository(pip_args, cache_dir=cache_dir)
         ireqs = parse_requirements(
             output_file.name,
             finder=tmp_repository.finder,

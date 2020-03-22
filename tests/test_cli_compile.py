@@ -721,22 +721,19 @@ def test_cert_option(parse_requirements, runner, option, attr, expected):
 @pytest.mark.parametrize(
     "option, expected", [("--build-isolation", True), ("--no-build-isolation", False)]
 )
-@mock.patch("piptools.scripts.compile.PyPIRepository")
-@mock.patch("piptools.scripts.compile.parse_requirements")  # prevent to parse
-def test_build_isolation_option(
-    parse_requirements, PyPIRepository, runner, option, expected
-):
+@mock.patch("piptools.scripts.compile.parse_requirements")
+def test_build_isolation_option(parse_requirements, runner, option, expected):
     """
     A value of the --build-isolation/--no-build-isolation flag
-    must be passed to the PyPIRepository.
+    must be passed to parse_requirements().
     """
     with open("requirements.in", "w"):
         pass
 
     runner.invoke(cli, [option])
 
-    # Ensure the build_isolation option in PyPIRepository has the expected value.
-    assert PyPIRepository.call_args.kwargs["build_isolation"] is expected
+    # Ensure the options in parse_requirements has the expected build_isolation option
+    assert parse_requirements.call_args.kwargs["options"].build_isolation is expected
 
 
 @pytest.mark.parametrize(
