@@ -60,7 +60,8 @@ def combine_install_requirements(ireqs):
     combined_ireq = copy.deepcopy(source_ireqs[0])
     for ireq in source_ireqs[1:]:
         # NOTE we may be losing some info on dropped reqs here
-        combined_ireq.req.specifier &= ireq.req.specifier
+        if combined_ireq.req is not None and ireq.req is not None:
+            combined_ireq.req.specifier &= ireq.req.specifier
         combined_ireq.constraint &= ireq.constraint
         # Return a sorted, de-duped tuple of extras
         combined_ireq.extras = tuple(
@@ -220,13 +221,6 @@ class Resolver(object):
 
         """
         for _, ireqs in full_groupby(constraints, key=key_from_ireq):
-            ireqs = list(ireqs)
-            editable_ireq = next((ireq for ireq in ireqs if ireq.editable), None)
-            if editable_ireq:
-                # ignore all the other specs: the editable one is the one that counts
-                yield editable_ireq
-                continue
-
             yield combine_install_requirements(ireqs)
 
     def _resolve_one_round(self):

@@ -219,6 +219,29 @@ def test_editable_package(pip_conf, runner):
     assert "small-fake-a==0.1" in out.stderr
 
 
+@pytest.mark.parametrize(("req_editable",), [(True,), (False,)])
+def test_editable_package_in_constraints(pip_conf, runner, req_editable):
+    """
+    piptools can compile an editable that appears in both primary requirements
+    and constraints
+    """
+    fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
+    fake_package_dir = path_to_url(fake_package_dir)
+
+    with open("constraints.txt", "w") as constraints_in:
+        constraints_in.write("-e " + fake_package_dir)
+
+    with open("requirements.in", "w") as req_in:
+        prefix = "-e " if req_editable else ""
+        req_in.write(prefix + fake_package_dir + "\n-c constraints.txt")
+
+    out = runner.invoke(cli, ["-n"])
+
+    assert out.exit_code == 0
+    assert fake_package_dir in out.stderr
+    assert "small-fake-a==0.1" in out.stderr
+
+
 @pytest.mark.network
 def test_editable_package_vcs(runner):
     vcs_package = (
