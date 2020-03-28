@@ -373,7 +373,7 @@ If you use multiple Python versions, you can run ``pip-sync`` as
 ``pythonX.Y -m piptools sync ...`` on other systems.
 
 **Note**: ``pip-sync`` will not upgrade or uninstall packaging tools like
-``setuptools``, ``pip``, or ``pip-tools`` itself. Use ``pip install --upgrade``
+``setuptools``, ``pip``, or ``pip-tools`` itself. Use ``python -m pip install --upgrade``
 to upgrade those packages.
 
 Should I commit ``requirements.in`` and ``requirements.txt`` to source control?
