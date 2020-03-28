@@ -88,8 +88,7 @@ If you have a ``setup.py`` with ``install_requires=['django']``, then run
     sqlparse==0.3.0           # via django
 
 ``pip-compile`` will produce your ``requirements.txt``, with all the Django
-dependencies (and all underlying dependencies) pinned.  You should put
-``requirements.txt`` under version control.
+dependencies (and all underlying dependencies) pinned.
 
 Without ``setup.py``
 --------------------
@@ -119,8 +118,7 @@ Now, run ``pip-compile requirements.in``:
     sqlparse==0.3.0           # via django
 
 And it will produce your ``requirements.txt``, with all the Django dependencies
-(and all underlying dependencies) pinned.  You should put both
-``requirements.in`` and ``requirements.txt`` under version control.
+(and all underlying dependencies) pinned.
 
 .. _it's easy to write one: https://packaging.python.org/guides/distributing-packages-using-setuptools/#configuring-your-project
 
@@ -377,6 +375,42 @@ If you use multiple Python versions, you can run ``pip-sync`` as
 **Note**: ``pip-sync`` will not upgrade or uninstall packaging tools like
 ``setuptools``, ``pip``, or ``pip-tools`` itself. Use ``pip install --upgrade``
 to upgrade those packages.
+
+Should I commit ``requirements.in`` and ``requirements.txt`` to source control?
+===============================================================================
+
+Generally, yes. If you want a reproducible environment installation available from your source control,
+then yes, you should commit both ``requirements.in`` and ``requirements.txt`` to source control.
+
+Note that if you are deploying on multiple Python environments (read the section below),
+then you must commit a seperate output file for each Python environment.
+We suggest to use the ``{env}-requirements.txt`` format
+(ex: ``win32-py2.7-requirements.txt``, ``macos-py3.6-requirements.txt``, etc.).
+
+
+Cross-environment usage of ``requirements.in``/``requirements.txt`` and ``pip-compile``
+=======================================================================================
+
+The dependencies of a package can change depending on the Python environment in which it
+is installed.  Here, we define a Python environment as the combination of Operating
+System, Python version (2.7, 3.6, etc.), and Python implementation (CPython, PyPy,
+etc.). For an exact definition, refer to the possible combinations of `PEP 508
+environment markers`_.
+
+As the resulting ``requirements.txt`` can differ for each environment, users must
+execute ``pip-compile`` **on each Python environment separately** to generate a
+``requirements.txt`` valid for each said environment.  The same ``requirements.in`` can
+be used as the source file for all environments, using `PEP 508 environment markers`_ as
+needed, the same way it would be done for regular ``pip`` cross-environment usage.
+
+If the generated ``requirements.txt`` remains exactly the same for all Python
+environments, then it can be used across Python environments safely. **But** users
+should be careful as any package update can introduce environment-dependant
+dependencies, making any newly generated ``requirements.txt`` environment-dependant too.
+As a general rule, it's advised that users should still always execute ``pip-compile``
+on each targeted Python environment to avoid issues.
+
+.. _PEP 508 environment markers: https://www.python.org/dev/peps/pep-0508/#environment-markers
 
 Other useful tools
 ==================
