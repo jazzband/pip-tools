@@ -3,6 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import contextlib
 import logging
+import sys
 
 from . import click
 
@@ -12,6 +13,8 @@ logging.basicConfig()
 
 
 class LogContext(object):
+    stream = sys.stderr
+
     def __init__(self, verbosity=0, indent_width=2):
         self.verbosity = verbosity
         self.current_indent = 0
