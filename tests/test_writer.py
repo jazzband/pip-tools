@@ -207,16 +207,20 @@ def test_write_format_controls(writer):
     Tests --no-binary/--only-binary options.
     """
 
+    # FormatControl actually expects sets, but we give it lists here to
+    # ensure that we are sorting them when writing.
     writer.format_control = FormatControl(
         no_binary=["psycopg2", "click"], only_binary=["pytz", "django"]
     )
     lines = list(writer.write_format_controls())
 
-    assert "--no-binary psycopg2" in lines
-    assert "--no-binary click" in lines
-
-    assert "--only-binary pytz" in lines
-    assert "--only-binary django" in lines
+    expected_lines = [
+        "--no-binary click",
+        "--no-binary psycopg2",
+        "--only-binary django",
+        "--only-binary pytz",
+    ]
+    assert lines == expected_lines
 
 
 @mark.parametrize(

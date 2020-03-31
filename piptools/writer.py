@@ -114,9 +114,9 @@ class OutputWriter(object):
                 yield "--trusted-host {}".format(trusted_host)
 
     def write_format_controls(self):
-        for nb in dedup(self.format_control.no_binary):
+        for nb in dedup(sorted(self.format_control.no_binary)):
             yield "--no-binary {}".format(nb)
-        for ob in dedup(self.format_control.only_binary):
+        for ob in dedup(sorted(self.format_control.only_binary)):
             yield "--only-binary {}".format(ob)
 
     def write_find_links(self):
