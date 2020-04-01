@@ -233,7 +233,7 @@ def lookup_table(values, key=None, keyval=None, unique=False, use_lists=False):
 
 def dedup(iterable):
     """Deduplicate an iterable object like iter(set(iterable)) but
-    order-reserved.
+    order-preserved.
     """
     return iter(OrderedDict.fromkeys(iterable))
 
