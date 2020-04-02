@@ -159,6 +159,28 @@ def test_iter_lines__hash_missing(writer, from_line):
     assert tuple(lines) == expected_lines
 
 
+def test_iter_lines__no_warn_if_only_unhashable_packages(writer, from_line):
+    """
+    There shouldn't be MESSAGE_UNHASHED_PACKAGE warning if there are only unhashable
+    packages. See GH-1101.
+    """
+    writer.allow_unsafe = False
+    writer.emit_header = False
+    ireqs = [
+        from_line("file:///unhashable-pkg1/#egg=unhashable-pkg1"),
+        from_line("file:///unhashable-pkg2/#egg=unhashable-pkg2"),
+    ]
+    hashes = {ireq: set() for ireq in ireqs}
+
+    lines = writer._iter_lines(ireqs, hashes=hashes)
+
+    expected_lines = (
+        "file:///unhashable-pkg1/#egg=unhashable-pkg1",
+        "file:///unhashable-pkg2/#egg=unhashable-pkg2",
+    )
+    assert tuple(lines) == expected_lines
+
+
 def test_write_header(writer):
     expected = map(
         comment,
