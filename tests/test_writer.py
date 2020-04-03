@@ -340,6 +340,25 @@ def test_write_lock(writer):
     assert list(writer.write_lock()) == list(expected)
 
 
+def test_write_lock_no_header(writer):
+    """
+    Test write_lock method with --no-header option.
+    """
+    writer.emit_lock = True
+    writer.emit_header = False
+    expected = map(
+        comment,
+        [
+            "# sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            "  src_file",
+            "# sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            "  src_file2",
+            "#",
+        ],
+    )
+    assert list(writer.write_lock()) == list(expected)
+
+
 def test_write_lock_no_emit_lock(writer):
     """
     There should be no locks if emit_lock is False

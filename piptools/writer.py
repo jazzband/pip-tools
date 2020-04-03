@@ -129,8 +129,11 @@ class OutputWriter(object):
 
     def write_lock(self):
         if self.emit_lock:
-            yield comment("# This file was locked against the following input files:")
-            yield comment("#")
+            if self.emit_header:
+                yield comment(
+                    "# This file was locked against the following input files:"
+                )
+                yield comment("#")
 
             for lock in generate_locks(*self.src_files).values():
                 yield comment("# {}".format(lock))
