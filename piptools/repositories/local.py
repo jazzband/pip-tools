@@ -17,7 +17,9 @@ def ireq_satisfied_by_existing_pin(ireq, existing_pin):
     previously encountered version pin.
     """
     version = next(iter(existing_pin.req.specifier)).version
-    return version in ireq.req.specifier
+    return ireq.req.specifier.contains(
+        version, prereleases=existing_pin.req.specifier.prereleases
+    )
 
 
 class LocalRequirementsRepository(BaseRepository):
