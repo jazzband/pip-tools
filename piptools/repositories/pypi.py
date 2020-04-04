@@ -46,7 +46,7 @@ class PyPIRepository(BaseRepository):
     changed/configured on the Finder.
     """
 
-    def __init__(self, pip_args, cache_dir, build_isolation=True):
+    def __init__(self, pip_args, cache_dir):
         # Use pip's parser for pip.conf management and defaults.
         # General options (find_links, index_url, extra_index_url, trusted_host,
         # and pre) are deferred to pip.
@@ -55,7 +55,6 @@ class PyPIRepository(BaseRepository):
         if self.options.cache_dir:
             self.options.cache_dir = normalize_path(self.options.cache_dir)
 
-        self.options.build_isolation = build_isolation
         self.options.require_hashes = False
         self.options.ignore_dependencies = False
 
