@@ -6,6 +6,7 @@ from pip._internal.models.link import Link
 from pip._internal.utils.urls import path_to_url
 from pip._vendor.requests import Session
 
+from piptools._compat import PIP_VERSION
 from piptools.repositories import PyPIRepository
 from piptools.repositories.pypi import open_local_or_remote_file
 
@@ -127,6 +128,7 @@ def test_pypirepo_source_dir_is_str(pypi_repository):
     assert isinstance(pypi_repository.source_dir, str)
 
 
+@pytest.mark.skipif(PIP_VERSION[:2] > (20, 0), reason="Refactored in pip==20.1")
 @mock.patch("piptools.repositories.pypi.PyPIRepository.resolve_reqs")  # to run offline
 @mock.patch("piptools.repositories.pypi.WheelCache")
 def test_wheel_cache_cleanup_called(

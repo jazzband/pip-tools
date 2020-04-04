@@ -3,20 +3,30 @@ environment:
       PYTHON: "C:\\Python36"
 
     matrix:
-        # TODO: add "PIP: 20.0" after pip==20.1 being released
+        # TODO: change "20.1" to "20.0" after pip==20.1 being released
 
+        - TOXENV: py27-pip20.1-coverage
+          PIP: 20.1
         - TOXENV: py27-piplatest-coverage
           PIP: latest
 
+        - TOXENV: py35-pip20.1
+          PIP: 20.1
         - TOXENV: py35-piplatest
           PIP: latest
 
+        - TOXENV: py36-pip20.1
+          PIP: 20.1
         - TOXENV: py36-piplatest
           PIP: latest
 
+        - TOXENV: py37-pip20.1
+          PIP: 20.1
         - TOXENV: py37-piplatest
           PIP: latest
 
+        - TOXENV: py38-pip20.1-coverage
+          PIP: 20.1
         - TOXENV: py38-piplatest-coverage
           PIP: latest
 
