@@ -1072,3 +1072,16 @@ def test_sub_dependencies_with_constraints(pip_conf, runner):
         "small-fake-with-deps-and-sub-deps==0.1",
         "small-fake-with-unpinned-deps==0.1",
     }.issubset(req_out_lines)
+
+
+def test_preserve_compiled_prerelease_version(pip_conf, runner):
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-a")
+
+    with open("requirements.txt", "w") as req_txt:
+        req_txt.write("small-fake-a==0.3b1")
+
+    out = runner.invoke(cli, ["--no-annotate", "--no-header"])
+
+    assert out.exit_code == 0, out
+    assert "small-fake-a==0.3b1" in out.stderr.splitlines()
