@@ -424,3 +424,17 @@ Other useful tools
 .. _pipdeptree: https://github.com/naiquevin/pipdeptree
 .. _requirements.txt.vim: https://github.com/raimon49/requirements.txt.vim
 .. _Python extension for VS Code: https://marketplace.visualstudio.com/items?itemName=ms-python.python
+
+Versions and compatibility
+==========================
+
+The table below summarizes the latest ``pip-tools`` versions with the required ``pip``
+versions.
+
++-----------+-----------------+
+| pip-tools | pip             |
++===========+=================+
+| 4.5.x     | 8.1.3 - 20.0.x  |
++-----------+-----------------+
+| 5.0.x     | 20.0.x - 20.1.x |
++-----------+-----------------+
