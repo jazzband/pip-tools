@@ -328,6 +328,10 @@ def get_compile_command(click_ctx):
         # Collect variadic args separately, they will be added
         # at the end of the command later
         if option.nargs < 0:
+            # These will necessarily be src_files
+            # Re-add click-stripped '--' if any start with '-'
+            if any(val.startswith("-") and val != "-" for val in value):
+                right_args.append("--")
             right_args.extend([shlex_quote(force_text(val)) for val in value])
             continue
 
@@ -366,10 +370,20 @@ def get_compile_command(click_ctx):
                 left_args.append(shlex_quote(arg))
             # Append to args the option with a value
             else:
-                left_args.append(
-                    "{option}={value}".format(
-                        option=option_long_name, value=shlex_quote(force_text(val))
+                if option.name == "pip_args":
+                    # shlex_quote would produce functional but noisily quoted results,
+                    # e.g. --pip-args='--cache-dir='"'"'/tmp/with spaces'"'"''
+                    # Instead, we try to get more legible quoting via repr:
+                    left_args.append(
+                        "{option}={value}".format(
+                            option=option_long_name, value=repr(fs_str(force_text(val)))
+                        )
                     )
-                )
+                else:
+                    left_args.append(
+                        "{option}={value}".format(
+                            option=option_long_name, value=shlex_quote(force_text(val))
+                        )
+                    )
 
     return " ".join(["pip-compile"] + sorted(left_args) + sorted(right_args))

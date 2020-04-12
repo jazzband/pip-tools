@@ -111,31 +111,52 @@ def test_merge_error(runner):
 
 
 @pytest.mark.parametrize(
-    "install_flags",
+    ("cli_flags", "expected_install_flags"),
     [
-        ["--find-links", "./libs1", "--find-links", "./libs2"],
-        ["--no-index"],
-        ["--index-url", "https://example.com"],
-        ["--extra-index-url", "https://foo", "--extra-index-url", "https://bar"],
-        ["--trusted-host", "foo", "--trusted-host", "bar"],
-        ["--user"],
-        ["--cert", "foo.crt"],
-        ["--client-cert", "foo.pem"],
+        (
+            ["--find-links", "./libs1", "--find-links", "./libs2"],
+            ["--find-links", "./libs1", "--find-links", "./libs2"],
+        ),
+        (["--no-index"], ["--no-index"]),
+        (
+            ["--index-url", "https://example.com"],
+            ["--index-url", "https://example.com"],
+        ),
+        (
+            ["--extra-index-url", "https://foo", "--extra-index-url", "https://bar"],
+            ["--extra-index-url", "https://foo", "--extra-index-url", "https://bar"],
+        ),
+        (
+            ["--trusted-host", "foo", "--trusted-host", "bar"],
+            ["--trusted-host", "foo", "--trusted-host", "bar"],
+        ),
+        (["--user"], ["--user"]),
+        (["--cert", "foo.crt"], ["--cert", "foo.crt"]),
+        (["--client-cert", "foo.pem"], ["--client-cert", "foo.pem"]),
+        (
+            ["--pip-args", "--no-cache-dir --no-deps --no-warn-script-location"],
+            ["--no-cache-dir", "--no-deps", "--no-warn-script-location"],
+        ),
+        (["--pip-args='--cache-dir=/tmp'"], ["--cache-dir=/tmp"]),
+        (
+            ["--pip-args=\"--cache-dir='/tmp/cache dir with spaces/'\""],
+            ["--cache-dir='/tmp/cache dir with spaces/'"],
+        ),
     ],
 )
 @mock.patch("piptools.sync.check_call")
-def test_pip_install_flags(check_call, install_flags, runner):
+def test_pip_install_flags(check_call, cli_flags, expected_install_flags, runner):
     """
     Test the cli flags have to be passed to the pip install command.
     """
     with open("requirements.txt", "w") as req_in:
         req_in.write("six==1.10.0")
 
-    runner.invoke(cli, install_flags)
+    runner.invoke(cli, cli_flags)
 
     call_args = [call[0][0] for call in check_call.call_args_list]
     called_install_options = [args[6:] for args in call_args if args[3] == "install"]
-    assert called_install_options == [install_flags], "Called args: {}".format(
+    assert called_install_options == [expected_install_flags], "Called args: {}".format(
         call_args
     )
 

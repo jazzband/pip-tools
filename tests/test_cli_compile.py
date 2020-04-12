@@ -730,7 +730,7 @@ def test_allow_unsafe_option(pip_conf, monkeypatch, runner, option, expected):
 @mock.patch("piptools.scripts.compile.parse_requirements")
 def test_cert_option(parse_requirements, runner, option, attr, expected):
     """
-    The options --cert and --client-crt have to be passed to the PyPIRepository.
+    The options --cert and --client-cert have to be passed to the PyPIRepository.
     """
     with open("requirements.in", "w"):
         pass
@@ -757,6 +757,20 @@ def test_build_isolation_option(parse_requirements, runner, option, expected):
 
     # Ensure the options in parse_requirements has the expected build_isolation option
     assert parse_requirements.call_args.kwargs["options"].build_isolation is expected
+
+
+@mock.patch("piptools.scripts.compile.PyPIRepository")
+def test_forwarded_args(PyPIRepository, runner):
+    """
+    Test the forwarded cli args (--pip-args 'arg...') are passed to the pip command.
+    """
+    with open("requirements.in", "w"):
+        pass
+
+    cli_args = ("--no-annotate", "--generate-hashes")
+    pip_args = ("--no-color", "--isolated", "--disable-pip-version-check")
+    runner.invoke(cli, cli_args + ("--pip-args", " ".join(pip_args)))
+    assert set(pip_args).issubset(set(PyPIRepository.call_args.args[0]))
 
 
 @pytest.mark.parametrize(
