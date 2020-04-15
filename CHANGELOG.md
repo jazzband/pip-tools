@@ -1,3 +1,37 @@
+# 5.0.0 (2020-04-16)
+
+Backwards Incompatible Changes:
+- `pip-tools` now requires `pip>=20.0` (previosly `8.1.x` - `20.0.x`). Windows users,
+  make sure to use `python -m pip install pip-tools` to avoid issues with `pip`
+  self-update from now on
+([#1055](https://github.com/jazzband/pip-tools/pull/1055)). Thanks @atugushev
+- `--build-isolation` option now set on by default for `pip-compile`
+([#1060](https://github.com/jazzband/pip-tools/pull/1060)). Thanks @hramezani
+
+Features:
+- Exclude requirements with non-matching markers from `pip-sync`
+([#927](https://github.com/jazzband/pip-tools/pull/927)). Thanks @AndydeCleyre
+- Add `pre-commit` hook for `pip-compile`
+([#976](https://github.com/jazzband/pip-tools/pull/976)). Thanks @atugushev
+- `pip-compile` and `pip-sync` now pass anything provided to the new `--pip-args` option on to `pip`
+([#1080](https://github.com/jazzband/pip-tools/pull/1080)). Thanks @AndydeCleyre
+- `pip-compile` output headers are now more accurate when `--` is used to escape filenames
+([#1080](https://github.com/jazzband/pip-tools/pull/1080)). Thanks @AndydeCleyre
+- Add `pip>=20.1` support
+([#1088](https://github.com/jazzband/pip-tools/pull/1088)). Thanks @atugushev
+
+Bug Fixes:
+- Fix a bug where editables that are both direct requirements and constraints wouldn't appear in `pip-compile` output
+([#1093](https://github.com/jazzband/pip-tools/pull/1093)). Thanks @richafrank
+- `pip-compile` now sorts format controls (`--no-binary/--only-binary`) to ensure consistent results
+([#1098](https://github.com/jazzband/pip-tools/pull/1098)). Thanks @richafrank
+
+Improved Documentation:
+- Add cross-environment usage documentation to `README`
+([#651](https://github.com/jazzband/pip-tools/pull/651)). Thanks @vphilippon
+- Add versions compatibility table to `README`
+([#1106](https://github.com/jazzband/pip-tools/pull/1106)). Thanks @atugushev
+
 # 4.5.1 (2020-02-26)
 
 Bug Fixes:
