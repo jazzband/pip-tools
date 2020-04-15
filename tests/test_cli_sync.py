@@ -93,21 +93,34 @@ def test_force_files_with_dot_in_extension(runner):
     assert out.exit_code == 0
 
 
-def test_merge_error(runner):
+@pytest.mark.parametrize(
+    ("req_lines", "should_raise"),
+    [
+        (["six>1.10.0", "six<1.10.0"], True),
+        (
+            ["six>1.10.0 ; python_version>='3.0'", "six<1.10.0 ; python_version<'3.0'"],
+            False,
+        ),
+    ],
+)
+def test_merge_error(req_lines, should_raise, runner):
     """
     Sync command should raise an error if there are merge errors.
+    It should not raise an error if otherwise incompatible requirements
+    are isolated by exclusive environment markers.
     """
     with open("requirements.txt", "w") as req_in:
-        req_in.write("six>1.10.0\n")
-
-        # Add incompatible package
-        req_in.write("six<1.10.0")
+        for line in req_lines:
+            req_in.write(line + "\n")
 
     with mock.patch("piptools.sync.check_call"):
         out = runner.invoke(cli, ["-n"])
 
-    assert out.exit_code == 2
-    assert "Incompatible requirements found" in out.stderr
+    if should_raise:
+        assert out.exit_code == 2
+        assert "Incompatible requirements found" in out.stderr
+    else:
+        assert out.exit_code == 0
 
 
 @pytest.mark.parametrize(
