@@ -9,8 +9,28 @@ import pytest
 from pip._internal.utils.urls import path_to_url
 
 from piptools.scripts.compile import cli
+from piptools.utils import COMPILE_EXCLUDE_OPTIONS
 
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
+
+
+@pytest.fixture(
+    autouse=True,
+    params=[
+        pytest.param("legacy", id="legacy resolver"),
+        pytest.param("backtracking", id="backtracking resolver"),
+    ],
+)
+def current_resolver(request, monkeypatch):
+    # Hide --resolver option from pip-compile header, so that we don't have to
+    # inject it every time to tests outputs.
+    exclude_options = COMPILE_EXCLUDE_OPTIONS | {"--resolver"}
+    monkeypatch.setattr("piptools.utils.COMPILE_EXCLUDE_OPTIONS", exclude_options)
+
+    # Setup given resolver name
+    resolver_name = request.param
+    monkeypatch.setenv("PIP_TOOLS_RESOLVER", resolver_name)
+    return resolver_name
 
 
 @pytest.fixture(autouse=True)
@@ -426,6 +446,14 @@ def test_editable_package_constraint_without_non_editable_duplicate(pip_conf, ru
     piptools keeps editable constraint,
     without also adding a duplicate "non-editable" requirement variation
     """
+
+    if current_resolver != "legacy":
+        pytest.skip(
+            "This test is actual only for legacy resolver. "
+            "Constraints refactored in 2020 resolver. "
+            "See https://github.com/pypa/pip/issues/9020 for details."
+        )
+
     fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_a")
     fake_package_dir = path_to_url(fake_package_dir)
     with open("constraints.txt", "w") as constraints:
@@ -451,6 +479,13 @@ def test_editable_package_in_constraints(pip_conf, runner, req_editable):
     piptools can compile an editable that appears in both primary requirements
     and constraints
     """
+    if current_resolver != "legacy":
+        pytest.skip(
+            "This test is actual only for legacy resolver. "
+            "Constraints refactored in 2020 resolver. "
+            "See https://github.com/pypa/pip/issues/9020 for details."
+        )
+
     fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
     fake_package_dir = path_to_url(fake_package_dir)
 
@@ -489,6 +524,9 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
     """
     piptools will not create an archive for a locally available editable requirement
     """
+    if current_resolver != "legacy":
+        pytest.skip("Test relevant to legacy resolver.")
+
     cache_dir = tmpdir.mkdir("cache_dir")
 
     fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
@@ -649,7 +687,7 @@ def test_relative_file_uri_package(pip_conf, runner):
 def test_direct_reference_with_extras(runner):
     with open("requirements.in", "w") as req_in:
         req_in.write(
-            "piptools[testing,coverage] @ git+https://github.com/jazzband/pip-tools@6.2.0"
+            "pip-tools[testing,coverage] @ git+https://github.com/jazzband/pip-tools@6.2.0"
         )
     out = runner.invoke(cli, ["-n", "--rebuild"])
     assert out.exit_code == 0
@@ -1022,6 +1060,9 @@ def test_bad_setup_file(runner):
 
 
 def test_no_candidates(pip_conf, runner):
+    if current_resolver != "legacy":
+        pytest.skip("Only legacy resolver throws this errors.")
+
     with open("requirements", "w") as req_in:
         req_in.write("small-fake-a>0.3b1,<0.3b2")
 
@@ -1032,6 +1073,9 @@ def test_no_candidates(pip_conf, runner):
 
 
 def test_no_candidates_pre(pip_conf, runner):
+    if current_resolver != "legacy":
+        pytest.skip("Only legacy resolver throws this errors.")
+
     with open("requirements", "w") as req_in:
         req_in.write("small-fake-a>0.3b1,<0.3b1")
 
@@ -1207,30 +1251,73 @@ def test_annotate_option(pip_conf, runner, options, expected):
 
     out = runner.invoke(cli, [*options, "-n", "--no-emit-find-links"])
 
+    assert out.exit_code == 0, out
     assert out.stderr == dedent(expected)
-    assert out.exit_code == 0
 
 
 @pytest.mark.parametrize(
     ("option", "expected"),
     (
-        ("--allow-unsafe", "small-fake-a==0.1"),
-        ("--no-allow-unsafe", "# small-fake-a"),
-        (None, "# small-fake-a"),
+        pytest.param(
+            "--allow-unsafe",
+            dedent(
+                """\
+                small-fake-a==0.1
+                small-fake-b==0.3
+                small-fake-with-deps==0.1
+                """
+            ),
+            id="allow all packages",
+        ),
+        pytest.param(
+            "--no-allow-unsafe",
+            dedent(
+                """\
+                small-fake-b==0.3
+
+                # The following packages are considered to be unsafe in a requirements file:
+                # small-fake-a
+                # small-fake-with-deps
+                """
+            ),
+            id="comment out small-fake-with-deps and its dependencies",
+        ),
+        pytest.param(
+            None,
+            dedent(
+                """\
+                small-fake-b==0.3
+
+                # The following packages are considered to be unsafe in a requirements file:
+                # small-fake-a
+                # small-fake-with-deps
+                """
+            ),
+            id="allow unsafe is default option",
+        ),
     ),
 )
 def test_allow_unsafe_option(pip_conf, monkeypatch, runner, option, expected):
     """
     Unsafe packages are printed as expected with and without --allow-unsafe.
     """
-    monkeypatch.setattr("piptools.resolver.UNSAFE_PACKAGES", {"small-fake-a"})
+    monkeypatch.setattr("piptools.resolver.UNSAFE_PACKAGES", {"small-fake-with-deps"})
     with open("requirements.in", "w") as req_in:
-        req_in.write(path_to_url(os.path.join(PACKAGES_PATH, "small_fake_with_deps")))
+        req_in.write("small-fake-b\n")
+        req_in.write("small-fake-with-deps")
 
-    out = runner.invoke(cli, ["--no-annotate", option] if option else [])
+    out = runner.invoke(
+        cli,
+        [
+            "--no-header",
+            "--no-emit-options",
+            "--no-annotate",
+            *([option] if option else []),
+        ],
+    )
 
-    assert expected in out.stderr.splitlines()
-    assert out.exit_code == 0
+    assert out.exit_code == 0, out
+    assert out.stderr == expected
 
 
 @pytest.mark.parametrize(
@@ -1491,6 +1578,9 @@ def test_unreachable_index_urls(runner, cli_options, expected_message):
     """
     Test pip-compile raises an error if index URLs are not reachable.
     """
+    if current_resolver != "legacy":
+        pytest.skip("Only legacy resolver throws this errors.")
+
     with open("requirements.in", "w") as reqs_in:
         reqs_in.write("some-package")
 
@@ -2138,3 +2228,23 @@ def test_cli_compile_strip_extras(runner, make_package, make_sdist, tmpdir):
     assert out.exit_code == 0, out
     assert "test-package-2==0.1" in out.stderr
     assert "[more]" not in out.stderr
+
+
+def test_resolution_failure(runner):
+    """Test resolution impossible for unknown package."""
+    with open("requirements.in", "w") as reqs_out:
+        reqs_out.write("unknown-package")
+
+    out = runner.invoke(cli)
+
+    assert out.exit_code != 0, out
+
+
+def test_resolver_reaches_max_rounds(runner):
+    """Test resolver reched max rounds and raises error."""
+    with open("requirements.in", "w") as reqs_out:
+        reqs_out.write("six")
+
+    out = runner.invoke(cli, ["--max-rounds", 0])
+
+    assert out.exit_code != 0, out

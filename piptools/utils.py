@@ -3,6 +3,7 @@ import copy
 import itertools
 import json
 import os
+import re
 import shlex
 import typing
 from typing import (
@@ -441,3 +442,43 @@ def get_sys_path_for_python_executable(python_executable: str) -> List[str]:
     assert isinstance(paths, list)
     assert all(isinstance(i, str) for i in paths)
     return [os.path.abspath(path) for path in paths]
+
+
+def remove_value(lst: List[_T], value: _T) -> List[_T]:
+    """
+    Returns new list without a given value.
+    """
+    return [item for item in lst if item != value]
+
+
+_strip_extras_re = re.compile(r"\[.+?\]")
+
+
+def strip_extras(name: str) -> str:
+    """Strip extras from package name, e.g. pytest[testing] -> pytest."""
+    return re.sub(_strip_extras_re, "", name)
+
+
+def copy_install_requirement(template: InstallRequirement) -> InstallRequirement:
+    """Make a copy of an ``InstallRequirement``."""
+    ireq = InstallRequirement(
+        req=copy.deepcopy(template.req),
+        comes_from=template.comes_from,
+        editable=template.editable,
+        link=template.link,
+        markers=template.markers,
+        use_pep517=template.use_pep517,
+        isolated=template.isolated,
+        install_options=template.install_options,
+        global_options=template.global_options,
+        hash_options=template.hash_options,
+        constraint=template.constraint,
+        extras=template.extras,
+        user_supplied=template.user_supplied,
+    )
+
+    # If the original_link was None, keep it so. Passing `link` as an
+    # argument to `InstallRequirement` sets it as the original_link:
+    ireq.original_link = template.original_link
+
+    return ireq

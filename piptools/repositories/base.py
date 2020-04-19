@@ -3,6 +3,7 @@ from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
 from typing import Iterator, Optional, Set
 
+from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.models.index import PyPI
 from pip._internal.network.session import PipSession
@@ -61,3 +62,8 @@ class BaseRepository(metaclass=ABCMeta):
     @abstractmethod
     def finder(self) -> PackageFinder:
         """Returns a package finder to interact with simple repository API (PEP 503)"""
+
+    @property
+    @abstractmethod
+    def command(self) -> InstallCommand:
+        """Return an install command."""

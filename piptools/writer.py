@@ -2,13 +2,25 @@ import os
 import re
 import sys
 from itertools import chain
-from typing import BinaryIO, Dict, Iterable, Iterator, List, Optional, Set, Tuple
+from typing import (
+    BinaryIO,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Union,
+    cast,
+)
 
 from click import unstyle
 from click.core import Context
 from pip._internal.models.format_control import FormatControl
 from pip._internal.req.req_install import InstallRequirement
 from pip._vendor.packaging.markers import Marker
+from pip._vendor.packaging.utils import canonicalize_name
 
 from .logging import log
 from .utils import (
@@ -18,6 +30,7 @@ from .utils import (
     format_requirement,
     get_compile_command,
     key_from_ireq,
+    strip_extras,
 )
 
 MESSAGE_UNHASHED_PACKAGE = comment(
@@ -45,10 +58,10 @@ MESSAGE_UNINSTALLABLE = (
 strip_comes_from_line_re = re.compile(r" \(line \d+\)$")
 
 
-def _comes_from_as_string(ireq: InstallRequirement) -> str:
-    if isinstance(ireq.comes_from, str):
-        return strip_comes_from_line_re.sub("", ireq.comes_from)
-    return key_from_ireq(ireq.comes_from)
+def _comes_from_as_string(comes_from: Union[str, InstallRequirement]) -> str:
+    if isinstance(comes_from, str):
+        return strip_comes_from_line_re.sub("", comes_from)
+    return cast(str, canonicalize_name(key_from_ireq(comes_from)))
 
 
 def annotation_style_split(required_by: Set[str]) -> str:
@@ -263,7 +276,7 @@ class OutputWriter:
 
         line = format_requirement(ireq, marker=marker, hashes=ireq_hashes)
         if self.strip_extras:
-            line = re.sub(r"\[.+?\]", "", line)
+            line = strip_extras(line)
 
         if not self.annotate:
             return line
@@ -272,12 +285,17 @@ class OutputWriter:
         required_by = set()
         if hasattr(ireq, "_source_ireqs"):
             required_by |= {
-                _comes_from_as_string(src_ireq)
+                _comes_from_as_string(src_ireq.comes_from)
                 for src_ireq in ireq._source_ireqs
                 if src_ireq.comes_from
             }
-        elif ireq.comes_from:
-            required_by.add(_comes_from_as_string(ireq))
+
+        if ireq.comes_from:
+            required_by.add(_comes_from_as_string(ireq.comes_from))
+
+        if hasattr(ireq, "_required_by"):
+            for name in ireq._required_by:
+                required_by.add(name)
 
         if required_by:
             if self.annotation_style == "split":
@@ -288,6 +306,8 @@ class OutputWriter:
                 sep = "\n    " if ireq_hashes else "  "
             else:  # pragma: no cover
                 raise ValueError("Invalid value for annotation style")
+            if self.strip_extras:
+                annotation = strip_extras(annotation)
             # 24 is one reasonable column size to use here, that we've used in the past
             lines = f"{line:24}{sep}{comment(annotation)}".splitlines()
             line = "\n".join(ln.rstrip() for ln in lines)

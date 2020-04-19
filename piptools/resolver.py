@@ -1,24 +1,53 @@
+import collections
 import copy
+from abc import ABCMeta, abstractmethod
 from functools import partial
 from itertools import chain, count, groupby
-from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple
+from typing import (
+    Any,
+    DefaultDict,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+)
 
 import click
+from pip._internal.cache import WheelCache
+from pip._internal.exceptions import DistributionNotFound
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
+from pip._internal.resolution.resolvelib.base import Candidate
+from pip._internal.resolution.resolvelib.candidates import ExtrasCandidate
+from pip._internal.resolution.resolvelib.resolver import Resolver
+from pip._internal.utils.logging import indent_log
+from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
+from pip._vendor.packaging.specifiers import SpecifierSet
+from pip._vendor.packaging.utils import canonicalize_name
+from pip._vendor.resolvelib.resolvers import ResolutionImpossible, Result
 
 from piptools.cache import DependencyCache
 from piptools.repositories.base import BaseRepository
 
-from ._compat.pip_compat import update_env_context_manager
+from ._compat import PIP_VERSION
+from ._compat.pip_compat import get_build_tracker, update_env_context_manager
+from .exceptions import PipToolsError
 from .logging import log
 from .utils import (
     UNSAFE_PACKAGES,
+    as_tuple,
+    copy_install_requirement,
     format_requirement,
     format_specifier,
     is_pinned_requirement,
     is_url_requirement,
     key_from_ireq,
+    key_from_req,
+    remove_value,
+    strip_extras,
 )
 
 green = partial(click.style, fg="green")
@@ -133,10 +162,55 @@ def combine_install_requirements(
     return combined_ireq
 
 
-class Resolver:
+class BaseResolver(metaclass=ABCMeta):
+    repository: BaseRepository
+    unsafe_constraints: Set[InstallRequirement]
+
+    @abstractmethod
+    def resolve(self, max_rounds: int) -> Set[InstallRequirement]:
+        """
+        Find concrete package versions for all the given InstallRequirements
+        and their recursive dependencies and return a set of pinned
+        ``InstallRequirement``'s.
+        """
+
+    def resolve_hashes(
+        self, ireqs: Set[InstallRequirement]
+    ) -> Dict[InstallRequirement, Set[str]]:
+        """Find acceptable hashes for all of the given ``InstallRequirement``s."""
+        log.debug("")
+        log.debug("Generating hashes:")
+        with self.repository.allow_all_wheels(), log.indentation():
+            return {ireq: self.repository.get_hashes(ireq) for ireq in ireqs}
+
+    def _filter_out_unsafe_constraints(
+        self,
+        ireqs: Set[InstallRequirement],
+        reverse_dependencies: Dict[str, Set[str]],
+    ) -> None:
+        """
+        Remove from a given set of ``InstallRequirement``'s unsafe constraints.
+
+        Reverse_dependencies is used to filter out packages that are only
+        required by unsafe packages. This logic is incomplete, as it would
+        fail to filter sub-sub-dependencies of unsafe packages. None of the
+        UNSAFE_PACKAGES currently have any dependencies at all (which makes
+        sense for installation tools) so this seems sufficient.
+        """
+        for req in ireqs.copy():
+            required_by = reverse_dependencies.get(req.name.lower(), set())
+            if req.name in UNSAFE_PACKAGES or (
+                required_by and all(name in UNSAFE_PACKAGES for name in required_by)
+            ):
+                self.unsafe_constraints.add(req)
+                ireqs.remove(req)
+
+
+class LegacyResolver(BaseResolver):
     def __init__(
         self,
         constraints: Iterable[InstallRequirement],
+        existing_constraints: Dict[str, InstallRequirement],
         repository: BaseRepository,
         cache: DependencyCache,
         prereleases: Optional[bool] = False,
@@ -157,28 +231,26 @@ class Resolver:
         self.allow_unsafe = allow_unsafe
         self.unsafe_constraints: Set[InstallRequirement] = set()
 
+        options = self.repository.options
+        if "legacy-resolver" not in options.deprecated_features_enabled:
+            raise PipToolsError("Legacy resolver deprecated feature must be enabled.")
+
+        # Make sure there is no enabled 2020-resolver
+        options.features_enabled = remove_value(
+            options.features_enabled, "2020-resolver"
+        )
+
     @property
     def constraints(self) -> Set[InstallRequirement]:
         return set(
             self._group_constraints(chain(self.our_constraints, self.their_constraints))
         )
 
-    def resolve_hashes(
-        self, ireqs: Set[InstallRequirement]
-    ) -> Dict[InstallRequirement, Set[str]]:
-        """
-        Finds acceptable hashes for all of the given InstallRequirements.
-        """
-        log.debug("")
-        log.debug("Generating hashes:")
-        with self.repository.allow_all_wheels(), log.indentation():
-            return {ireq: self.repository.get_hashes(ireq) for ireq in ireqs}
-
     def resolve(self, max_rounds: int = 10) -> Set[InstallRequirement]:
         """
-        Finds concrete package versions for all the given InstallRequirements
-        and their recursive dependencies.  The end result is a flat list of
-        (name, version) tuples.  (Or an editable package.)
+        Find concrete package versions for all the given InstallRequirements
+        and their recursive dependencies and return a set of pinned
+        ``InstallRequirement``'s.
 
         Resolves constraints one round at a time, until they don't change
         anymore.  Protects against infinite loops by breaking out after a max
@@ -216,21 +288,11 @@ class Resolver:
         results = {req for req in best_matches if not req.constraint}
 
         # Filter out unsafe requirements.
-        self.unsafe_constraints = set()
         if not self.allow_unsafe:
-            # reverse_dependencies is used to filter out packages that are only
-            # required by unsafe packages. This logic is incomplete, as it would
-            # fail to filter sub-sub-dependencies of unsafe packages. None of the
-            # UNSAFE_PACKAGES currently have any dependencies at all (which makes
-            # sense for installation tools) so this seems sufficient.
-            reverse_dependencies = self.reverse_dependencies(results)
-            for req in results.copy():
-                required_by = reverse_dependencies.get(req.name.lower(), set())
-                if req.name in UNSAFE_PACKAGES or (
-                    required_by and all(name in UNSAFE_PACKAGES for name in required_by)
-                ):
-                    self.unsafe_constraints.add(req)
-                    results.remove(req)
+            self._filter_out_unsafe_constraints(
+                ireqs=results,
+                reverse_dependencies=self.reverse_dependencies(results),
+            )
 
         return results
 
@@ -445,3 +507,290 @@ class Resolver:
             ireq for ireq in ireqs if not (ireq.editable or is_url_requirement(ireq))
         ]
         return self.dependency_cache.reverse_dependencies(non_editable)
+
+
+class BacktrackingResolver(BaseResolver):
+    """A wrapper for backtracking resolver."""
+
+    def __init__(
+        self,
+        constraints: Iterable[InstallRequirement],
+        existing_constraints: Dict[str, InstallRequirement],
+        repository: BaseRepository,
+        allow_unsafe: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        self.constraints = list(constraints)
+        self.repository = repository
+        self.allow_unsafe = allow_unsafe
+
+        options = self.options = self.repository.options
+        self.session = self.repository.session
+        self.finder = self.repository.finder
+        self.command = self.repository.command
+        self.unsafe_constraints: Set[InstallRequirement] = set()
+
+        self.existing_constraints = existing_constraints
+        self._constraints_map = {key_from_ireq(ireq): ireq for ireq in constraints}
+
+        # Make sure there is no enabled legacy resolver
+        options.deprecated_features_enabled = remove_value(
+            options.deprecated_features_enabled, "legacy-resolver"
+        )
+
+    def resolve(self, max_rounds: int = 10) -> Set[InstallRequirement]:
+        """
+        Find concrete package versions for all the given InstallRequirements
+        and their recursive dependencies and return a set of pinned
+        ``InstallRequirement``'s.
+        """
+        with update_env_context_manager(
+            PIP_EXISTS_ACTION="i"
+        ), get_build_tracker() as build_tracker, global_tempdir_manager(), indent_log():
+            # Mark direct/primary/user_supplied packages
+            for ireq in self.constraints:
+                ireq.user_supplied = True
+
+            # Pass compiled requirements from `requirements.txt`
+            # as constraints to resolver
+            compatible_existing_constraints: Dict[str, InstallRequirement] = {}
+            for ireq in self.existing_constraints.values():
+                # Skip if the compiled install requirement conflicts with
+                # the primary install requirement.
+                primary_ireq = self._constraints_map.get(key_from_ireq(ireq))
+                if primary_ireq is not None:
+                    _, version, _ = as_tuple(ireq)
+                    prereleases = ireq.specifier.prereleases
+                    if not primary_ireq.specifier.contains(version, prereleases):
+                        continue
+
+                ireq.extras = set()  # pip does not support extras in constraints
+                ireq.constraint = True
+                ireq.user_supplied = False
+                compatible_existing_constraints[key_from_ireq(ireq)] = ireq
+
+            wheel_cache = WheelCache(
+                self.options.cache_dir, self.options.format_control
+            )
+
+            temp_dir = TempDirectory(
+                delete=not self.options.no_clean,
+                kind="resolve",
+                globally_managed=True,
+            )
+
+            preparer_kwargs = {
+                "temp_build_dir": temp_dir,
+                "options": self.options,
+                "session": self.session,
+                "finder": self.finder,
+                "use_user_site": False,
+            }
+
+            if PIP_VERSION[:2] <= (22, 0):
+                preparer_kwargs["req_tracker"] = build_tracker
+            else:
+                preparer_kwargs["build_tracker"] = build_tracker
+
+            preparer = self.command.make_requirement_preparer(**preparer_kwargs)
+
+            resolver = self.command.make_resolver(
+                preparer=preparer,
+                finder=self.finder,
+                options=self.options,
+                wheel_cache=wheel_cache,
+                use_user_site=False,
+                ignore_installed=True,
+                ignore_requires_python=False,
+                force_reinstall=False,
+                use_pep517=self.options.use_pep517,
+                upgrade_strategy="to-satisfy-only",
+            )
+
+            self.command.trace_basic_info(self.finder)
+
+            for current_round in count(start=1):  # pragma: no branch
+                if current_round > max_rounds:
+                    raise RuntimeError(
+                        "No stable configuration of concrete packages "
+                        "could be found for the given constraints after "
+                        f"{max_rounds} rounds of resolving.\n"
+                        "This is likely a bug."
+                    )
+
+                log.debug("")
+                log.debug(magenta(f"{f'ROUND {current_round}':^60}"))
+
+                is_resolved = self._do_resolve(
+                    resolver=resolver,
+                    compatible_existing_constraints=compatible_existing_constraints,
+                )
+                if is_resolved:
+                    break
+
+        resolver_result = resolver._result
+        assert isinstance(resolver_result, Result)
+
+        # Get reverse requirements from the resolver result graph.
+        reverse_dependencies = self._get_reverse_dependencies(resolver_result)
+
+        # Prepare set of install requirements from resolver result.
+        result_ireqs = self._get_install_requirements(
+            resolver_result=resolver_result,
+            reverse_dependencies=reverse_dependencies,
+        )
+
+        # Filter out unsafe requirements.
+        if not self.allow_unsafe:
+            self._filter_out_unsafe_constraints(
+                ireqs=result_ireqs,
+                reverse_dependencies=reverse_dependencies,
+            )
+
+        return result_ireqs
+
+    def _do_resolve(
+        self,
+        resolver: Resolver,
+        compatible_existing_constraints: Dict[str, InstallRequirement],
+    ) -> bool:
+        """
+        Return true on successful resolution, otherwise remove problematic
+        requirements from existing constraints and return false.
+        """
+        try:
+            resolver.resolve(
+                root_reqs=self.constraints
+                + list(compatible_existing_constraints.values()),
+                check_supported_wheels=not self.options.target_dir,
+            )
+        except DistributionNotFound as e:
+            cause_exc = e.__cause__
+            if cause_exc is None:
+                raise
+
+            if not isinstance(cause_exc, ResolutionImpossible):
+                raise
+
+            # Collect all incompatible install requirement names
+            cause_ireq_names = {
+                key_from_req(cause.requirement) for cause in cause_exc.causes
+            }
+
+            # Looks like resolution is impossible, try to fix
+            for cause_ireq_name in cause_ireq_names:
+                # Find the cause requirement in existing requirements,
+                # otherwise raise error
+                cause_existing_ireq = compatible_existing_constraints.get(
+                    cause_ireq_name
+                )
+                if cause_existing_ireq is None:
+                    raise
+
+                # Remove existing incompatible constraint that causes error
+                log.warning(
+                    f"Discarding {cause_existing_ireq} to proceed the resolution"
+                )
+                del compatible_existing_constraints[cause_ireq_name]
+
+            return False
+
+        return True
+
+    def _get_install_requirements(
+        self,
+        resolver_result: Result,
+        reverse_dependencies: Dict[str, Set[str]],
+    ) -> Set[InstallRequirement]:
+        """Return a set of install requirements from resolver results."""
+        result_ireqs: Dict[str, InstallRequirement] = {}
+
+        # Transform candidates to install requirements
+        resolved_candidates = tuple(resolver_result.mapping.values())
+        for candidate in resolved_candidates:
+            ireq = self._get_install_requirement_from_candidate(
+                candidate=candidate,
+                reverse_dependencies=reverse_dependencies,
+            )
+            if ireq is None:
+                continue
+
+            project_name = canonicalize_name(candidate.project_name)
+            result_ireqs[project_name] = ireq
+
+        # Merge extras to install requirements
+        extras_candidates = (
+            candidate
+            for candidate in resolved_candidates
+            if isinstance(candidate, ExtrasCandidate)
+        )
+        for extras_candidate in extras_candidates:
+            project_name = canonicalize_name(extras_candidate.project_name)
+            ireq = result_ireqs[project_name]
+            ireq.extras |= extras_candidate.extras
+            ireq.req.extras |= extras_candidate.extras
+
+        return set(result_ireqs.values())
+
+    @staticmethod
+    def _get_reverse_dependencies(
+        resolver_result: Result,
+    ) -> Dict[str, Set[str]]:
+        reverse_dependencies: DefaultDict[str, Set[str]] = collections.defaultdict(set)
+
+        for candidate in resolver_result.mapping.values():
+            stripped_name = strip_extras(canonicalize_name(candidate.name))
+
+            for parent_name in resolver_result.graph.iter_parents(candidate.name):
+                # Skip root dependency which is always None
+                if parent_name is None:
+                    continue
+
+                # Skip a dependency that equals to the candidate. This could be
+                # the dependency with extras.
+                stripped_parent_name = strip_extras(canonicalize_name(parent_name))
+                if stripped_name == stripped_parent_name:
+                    continue
+
+                reverse_dependencies[stripped_name].add(stripped_parent_name)
+
+        return dict(reverse_dependencies)
+
+    def _get_install_requirement_from_candidate(
+        self, candidate: Candidate, reverse_dependencies: Dict[str, Set[str]]
+    ) -> Optional[InstallRequirement]:
+        ireq = candidate.get_install_requirement()
+        if ireq is None:
+            return None
+
+        # Determine a pin operator
+        version_pin_operator = "=="
+        version_as_str = str(candidate.version)
+        for specifier in ireq.specifier:
+            if specifier.operator == "===" and specifier.version == version_as_str:
+                version_pin_operator = "==="
+                break
+
+        # Prepare pinned install requirement. Copy it from candidate's install
+        # requirement so that it could be mutated later.
+        pinned_ireq = copy_install_requirement(ireq)
+
+        # Canonicalize name
+        assert ireq.name is not None
+        pinned_ireq.req.name = canonicalize_name(ireq.name)
+
+        # Pin requirement to a resolved version
+        pinned_ireq.req.specifier = SpecifierSet(
+            f"{version_pin_operator}{candidate.version}"
+        )
+
+        # Save reverse dependencies for annotation
+        ireq_key = key_from_ireq(ireq)
+        pinned_ireq._required_by = reverse_dependencies.get(ireq_key, set())
+
+        # Save source for annotation
+        source_ireq = self._constraints_map.get(ireq_key)
+        if source_ireq is not None and ireq_key not in self.existing_constraints:
+            pinned_ireq._source_ireqs = [source_ireq]
+
+        return pinned_ireq
