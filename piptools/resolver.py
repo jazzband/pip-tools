@@ -131,7 +131,7 @@ class Resolver(object):
         """
         log.debug("")
         log.debug("Generating hashes:")
-        with self.repository.allow_all_wheels():
+        with self.repository.allow_all_wheels(), log.indentation():
             return {ireq: self.repository.get_hashes(ireq) for ireq in ireqs}
 
     def resolve(self, max_rounds=10):
@@ -238,20 +238,23 @@ class Resolver(object):
         constraints = sorted(self.constraints, key=key_from_ireq)
 
         log.debug("Current constraints:")
-        for constraint in constraints:
-            log.debug("  {}".format(constraint))
+        with log.indentation():
+            for constraint in constraints:
+                log.debug(str(constraint))
 
         log.debug("")
         log.debug("Finding the best candidates:")
-        best_matches = {self.get_best_match(ireq) for ireq in constraints}
+        with log.indentation():
+            best_matches = {self.get_best_match(ireq) for ireq in constraints}
 
         # Find the new set of secondary dependencies
         log.debug("")
         log.debug("Finding secondary dependencies:")
 
         their_constraints = []
-        for best_match in best_matches:
-            their_constraints.extend(self._iter_dependencies(best_match))
+        with log.indentation():
+            for best_match in best_matches:
+                their_constraints.extend(self._iter_dependencies(best_match))
         # Grouping constraints to make clean diff between rounds
         theirs = set(self._group_constraints(sorted(their_constraints, key=str)))
 
@@ -268,11 +271,13 @@ class Resolver(object):
         if has_changed:
             log.debug("")
             log.debug("New dependencies found in this round:")
-            for new_dependency in sorted(diff, key=key_from_ireq):
-                log.debug("  adding {}".format(new_dependency))
+            with log.indentation():
+                for new_dependency in sorted(diff, key=key_from_ireq):
+                    log.debug("adding {}".format(new_dependency))
             log.debug("Removed dependencies in this round:")
-            for removed_dependency in sorted(removed, key=key_from_ireq):
-                log.debug("  removing {}".format(removed_dependency))
+            with log.indentation():
+                for removed_dependency in sorted(removed, key=key_from_ireq):
+                    log.debug("removing {}".format(removed_dependency))
 
         # Store the last round's results in the their_constraints
         self.their_constraints = theirs
@@ -308,7 +313,7 @@ class Resolver(object):
 
         # Format the best match
         log.debug(
-            "  found candidate {} (constraint was {})".format(
+            "found candidate {} (constraint was {})".format(
                 format_requirement(best_match), format_specifier(ireq)
             )
         )
@@ -352,9 +357,7 @@ class Resolver(object):
         # from there
         if ireq not in self.dependency_cache:
             log.debug(
-                "  {} not in cache, need to check index".format(
-                    format_requirement(ireq)
-                ),
+                "{} not in cache, need to check index".format(format_requirement(ireq)),
                 fg="yellow",
             )
             dependencies = self.repository.get_dependencies(ireq)
@@ -363,7 +366,7 @@ class Resolver(object):
         # Example: ['Werkzeug>=0.9', 'Jinja2>=2.4']
         dependency_strings = self.dependency_cache[ireq]
         log.debug(
-            "  {:25} requires {}".format(
+            "{:25} requires {}".format(
                 format_requirement(ireq),
                 ", ".join(sorted(dependency_strings, key=lambda s: s.lower())) or "-",
             )

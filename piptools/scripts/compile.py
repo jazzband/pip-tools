@@ -369,14 +369,16 @@ def cli(
     ]
 
     log.debug("Using indexes:")
-    for index_url in dedup(repository.finder.index_urls):
-        log.debug("  {}".format(index_url))
+    with log.indentation():
+        for index_url in dedup(repository.finder.index_urls):
+            log.debug(index_url)
 
     if repository.finder.find_links:
         log.debug("")
         log.debug("Configuration:")
-        for find_link in dedup(repository.finder.find_links):
-            log.debug("  -f {}".format(find_link))
+        with log.indentation():
+            for find_link in dedup(repository.finder.find_links):
+                log.debug("-f {}".format(find_link))
 
     try:
         resolver = Resolver(

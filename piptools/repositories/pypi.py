@@ -267,14 +267,15 @@ class PyPIRepository(BaseRepository):
         )
         matching_candidates = candidates_by_version[matching_versions[0]]
 
-        log.debug("  {}".format(ireq.name))
+        log.debug(ireq.name)
 
-        return {
-            self._get_file_hash(candidate.link) for candidate in matching_candidates
-        }
+        with log.indentation():
+            return {
+                self._get_file_hash(candidate.link) for candidate in matching_candidates
+            }
 
     def _get_file_hash(self, link):
-        log.debug("    Hashing {}".format(link.url_without_fragment))
+        log.debug("Hashing {}".format(link.url_without_fragment))
         h = hashlib.new(FAVORITE_HASH)
         with open_local_or_remote_file(link, self.session) as f:
             # Chunks to iterate
@@ -283,7 +284,12 @@ class PyPIRepository(BaseRepository):
             # Choose a context manager depending on verbosity
             if log.verbosity >= 1:
                 iter_length = f.size / FILE_CHUNK_SIZE if f.size else None
-                context_manager = progressbar(chunks, length=iter_length, label="  ")
+                bar_template = "{prefix}[%(bar)s]  %(info)s".format(
+                    prefix=" " * log.current_indent
+                )
+                context_manager = progressbar(
+                    chunks, length=iter_length, bar_template=bar_template
+                )
             else:
                 context_manager = contextlib.nullcontext(chunks)
 
