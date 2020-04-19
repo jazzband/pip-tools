@@ -4,7 +4,7 @@ import mock
 import pytest
 from pip._internal.models.link import Link
 from pip._internal.utils.urls import path_to_url
-from pip._vendor.requests import Session
+from pip._vendor.requests import HTTPError, Session
 
 from piptools._compat import PIP_VERSION
 from piptools.repositories import PyPIRepository
@@ -166,3 +166,138 @@ def test_pip_cache_dir_is_empty(from_line, tmpdir):
     )
 
     assert not pypi_repository.options.cache_dir
+
+
+@pytest.mark.parametrize(
+    "project_data, expected_hashes",
+    (
+        pytest.param(
+            {"releases": {"0.1": [{"digests": {"sha256": "fake-hash"}}]}},
+            {"sha256:fake-hash"},
+            id="return single hash",
+        ),
+        pytest.param(
+            {
+                "releases": {
+                    "0.1": [
+                        {"digests": {"sha256": "fake-hash-number1"}},
+                        {"digests": {"sha256": "fake-hash-number2"}},
+                    ]
+                }
+            },
+            {"sha256:fake-hash-number1", "sha256:fake-hash-number2"},
+            id="return multiple hashes",
+        ),
+        pytest.param(None, None, id="not found project data"),
+        pytest.param({}, None, id="not found releases key"),
+        pytest.param({"releases": {}}, None, id="not found version"),
+        pytest.param({"releases": {"0.1": [{}]}}, None, id="not found digests"),
+        pytest.param(
+            {"releases": {"0.1": [{"digests": {}}]}}, None, id="digests are empty"
+        ),
+        pytest.param(
+            {"releases": {"0.1": [{"digests": {"md5": "fake-hash"}}]}},
+            None,
+            id="not found sha256 algo",
+        ),
+    ),
+)
+def test_get_hashes_from_pypi(from_line, tmpdir, project_data, expected_hashes):
+    """
+    Test PyPIRepository._get_hashes_from_pypi() returns expected hashes or None.
+    """
+
+    class MockPyPIRepository(PyPIRepository):
+        def _get_project(self, ireq):
+            return project_data
+
+    pypi_repository = MockPyPIRepository(
+        ["--no-cache-dir"], cache_dir=str(tmpdir / "pypi-repo-cache")
+    )
+    ireq = from_line("fake-package==0.1")
+
+    actual_hashes = pypi_repository._get_hashes_from_pypi(ireq)
+    assert actual_hashes == expected_hashes
+
+
+def test_get_project__returns_data(from_line, tmpdir, monkeypatch, pypi_repository):
+    """
+    Test PyPIRepository._get_project() returns expected project data.
+    """
+    expected_data = {"releases": {"0.1": [{"digests": {"sha256": "fake-hash"}}]}}
+
+    class MockResponse:
+        status_code = 200
+
+        @staticmethod
+        def json():
+            return expected_data
+
+    def mock_get(*args, **kwargs):
+        return MockResponse()
+
+    monkeypatch.setattr(pypi_repository.session, "get", mock_get)
+    ireq = from_line("fake-package==0.1")
+
+    actual_data = pypi_repository._get_project(ireq)
+    assert actual_data == expected_data
+
+
+def test_get_project__handles_http_error(
+    from_line, tmpdir, monkeypatch, pypi_repository
+):
+    """
+    Test PyPIRepository._get_project() returns None if HTTP error is raised.
+    """
+
+    def mock_get(*args, **kwargs):
+        raise HTTPError("test http error")
+
+    monkeypatch.setattr(pypi_repository.session, "get", mock_get)
+    ireq = from_line("fake-package==0.1")
+
+    actual_data = pypi_repository._get_project(ireq)
+    assert actual_data is None
+
+
+def test_get_project__handles_json_decode_error(
+    from_line, tmpdir, monkeypatch, pypi_repository
+):
+    """
+    Test PyPIRepository._get_project() returns None if JSON decode error is raised.
+    """
+
+    class MockResponse:
+        status_code = 200
+
+        @staticmethod
+        def json():
+            raise ValueError("test json error")
+
+    def mock_get(*args, **kwargs):
+        return MockResponse()
+
+    monkeypatch.setattr(pypi_repository.session, "get", mock_get)
+    ireq = from_line("fake-package==0.1")
+
+    actual_data = pypi_repository._get_project(ireq)
+    assert actual_data is None
+
+
+def test_get_project__handles_404(from_line, tmpdir, monkeypatch, pypi_repository):
+    """
+    Test PyPIRepository._get_project() returns None if PyPI
+    response's status code is 404.
+    """
+
+    class MockResponse:
+        status_code = 404
+
+    def mock_get(*args, **kwargs):
+        return MockResponse()
+
+    monkeypatch.setattr(pypi_repository.session, "get", mock_get)
+    ireq = from_line("fake-package==0.1")
+
+    actual_data = pypi_repository._get_project(ireq)
+    assert actual_data is None
