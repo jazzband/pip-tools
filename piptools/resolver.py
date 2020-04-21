@@ -56,6 +56,11 @@ def combine_install_requirements(ireqs):
     for ireq in ireqs:
         source_ireqs.extend(getattr(ireq, "_source_ireqs", [ireq]))
 
+    # TODO Find a way (and logic) to:
+    # - Have the ireq.req be set on editables so they end up grouped with non-editable
+    #   (previously a pip resolver side effect on don-deep-copied editable ireq).
+    # - Properly combine the editable and non-editable requirement for the same package.
+
     # deepcopy the accumulator so as to not modify the inputs
     combined_ireq = copy.deepcopy(source_ireqs[0])
     for ireq in source_ireqs[1:]:
@@ -67,6 +72,7 @@ def combine_install_requirements(ireqs):
         combined_ireq.extras = tuple(
             sorted(set(tuple(combined_ireq.extras) + tuple(ireq.extras)))
         )
+        # TODO propably "merge" editable attibutes here.
 
     # InstallRequirements objects are assumed to come from only one source, and
     # so they support only a single comes_from entry. This function breaks this
@@ -221,6 +227,7 @@ class Resolver(object):
 
         """
         for _, ireqs in full_groupby(constraints, key=key_from_ireq):
+            # TODO full_groupby has to group ediatble and non-editable ireqs somehow.
             yield combine_install_requirements(ireqs)
 
     def _resolve_one_round(self):
