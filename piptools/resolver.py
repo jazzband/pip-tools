@@ -117,12 +117,7 @@ class Resolver(object):
     @property
     def constraints(self):
         return set(
-            self._group_constraints(
-                chain(
-                    sorted(self.our_constraints, key=str),
-                    sorted(self.their_constraints, key=str),
-                )
-            )
+            self._group_constraints(chain(self.our_constraints, self.their_constraints))
         )
 
     def resolve_hashes(self, ireqs):
@@ -256,7 +251,7 @@ class Resolver(object):
             for best_match in best_matches:
                 their_constraints.extend(self._iter_dependencies(best_match))
         # Grouping constraints to make clean diff between rounds
-        theirs = set(self._group_constraints(sorted(their_constraints, key=str)))
+        theirs = set(self._group_constraints(their_constraints))
 
         # NOTE: We need to compare RequirementSummary objects, since
         # InstallRequirement does not define equality
