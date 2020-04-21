@@ -271,17 +271,17 @@ def test_iter_dependencies_ignores_constraints(resolver, from_line):
         next(res._iter_dependencies(ireq))
 
 
-def test_combine_install_requirements(from_line):
+def test_combine_install_requirements(repository, from_line):
     celery30 = from_line("celery>3.0", comes_from="-r requirements.in")
     celery31 = from_line("celery==3.1.1", comes_from=from_line("fake-package"))
     celery32 = from_line("celery<3.2")
 
-    combined = combine_install_requirements([celery30, celery31])
+    combined = combine_install_requirements(repository, [celery30, celery31])
     assert combined.comes_from == celery31.comes_from  # shortest string
     assert set(combined._source_ireqs) == {celery30, celery31}
     assert str(combined.req.specifier) == "==3.1.1,>3.0"
 
-    combined_all = combine_install_requirements([celery32, combined])
+    combined_all = combine_install_requirements(repository, [celery32, combined])
     assert combined_all.comes_from is None
     assert set(combined_all._source_ireqs) == {celery30, celery31, celery32}
     assert str(combined_all.req.specifier) == "<3.2,==3.1.1,>3.0"

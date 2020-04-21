@@ -178,6 +178,10 @@ class PyPIRepository(BaseRepository):
                 upgrade_strategy="to-satisfy-only",
             )
             results = resolver._resolve_one(reqset, ireq)
+            if not ireq.prepared:
+                # If still not prepared, e.g. a constraint, do enough to assign
+                # the ireq a name:
+                resolver._get_abstract_dist_for(ireq)
 
             if PIP_VERSION[:2] <= (20, 0):
                 reqset.cleanup_files()
@@ -234,6 +238,13 @@ class PyPIRepository(BaseRepository):
                         wheel_cache.cleanup()
 
         return self._dependencies_cache[ireq]
+
+    def copy_ireq_dependencies(self, source, dest):
+        try:
+            self._dependencies_cache[dest] = self._dependencies_cache[source]
+        except KeyError:
+            # `source` may not be in cache yet.
+            pass
 
     def _get_project(self, ireq):
         """
