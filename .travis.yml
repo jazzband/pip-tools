@@ -10,7 +10,7 @@ python:
 
 env:
   # NOTE: keep this in sync with envlist in tox.ini for tox-travis.
-  - PIP=20.1  # TODO: change to "20.0" after pip==20.1 being released
+  - PIP=20.0
   - PIP=latest
 
 cache: false
