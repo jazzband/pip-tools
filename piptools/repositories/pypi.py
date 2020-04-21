@@ -9,7 +9,7 @@ from shutil import rmtree
 
 from pip._internal.cache import WheelCache
 from pip._internal.commands import create_command
-from pip._internal.models.index import PyPI
+from pip._internal.models.index import PackageIndex, PyPI
 from pip._internal.models.link import Link
 from pip._internal.models.wheel import Wheel
 from pip._internal.req import RequirementSet
@@ -18,12 +18,14 @@ from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.misc import normalize_path
 from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
 from pip._internal.utils.urls import path_to_url, url_to_path
+from pip._vendor.requests import RequestException
 
 from .._compat import PIP_VERSION, TemporaryDirectory, contextlib
 from ..click import progressbar
 from ..exceptions import NoCandidateFound
 from ..logging import log
 from ..utils import (
+    as_tuple,
     fs_str,
     is_pinned_requirement,
     is_url_requirement,
@@ -227,6 +229,47 @@ class PyPIRepository(BaseRepository):
 
         return self._dependencies_cache[ireq]
 
+    def _get_project(self, ireq):
+        """
+        Return a dict of a project info from PyPI JSON API for a given
+        InstallRequirement. Return None on HTTP/JSON error or if a package
+        is not found on PyPI server.
+
+        API reference: https://warehouse.readthedocs.io/api-reference/json/
+        """
+        package_indexes = (
+            PackageIndex(url=index_url, file_storage_domain="")
+            for index_url in self.finder.search_scope.index_urls
+        )
+        for package_index in package_indexes:
+            url = "{url}/{name}/json".format(url=package_index.pypi_url, name=ireq.name)
+            try:
+                response = self.session.get(url)
+            except RequestException as e:
+                log.debug(
+                    "Fetch package info from PyPI failed: {url}: {e}".format(
+                        url=url, e=e
+                    )
+                )
+                continue
+
+            # Skip this PyPI server, because there is no package
+            # or JSON API might be not supported
+            if response.status_code == 404:
+                continue
+
+            try:
+                data = response.json()
+            except ValueError as e:
+                log.debug(
+                    "Cannot parse JSON response from PyPI: {url}: {e}".format(
+                        url=url, e=e
+                    )
+                )
+                continue
+            return data
+        return None
+
     def get_hashes(self, ireq):
         """
         Given an InstallRequirement, return a set of hashes that represent all
@@ -257,6 +300,50 @@ class PyPIRepository(BaseRepository):
         if not is_pinned_requirement(ireq):
             raise TypeError("Expected pinned requirement, got {}".format(ireq))
 
+        log.debug("{}".format(ireq.name))
+
+        with log.indentation():
+            hashes = self._get_hashes_from_pypi(ireq)
+            if hashes is None:
+                log.log("Couldn't get hashes from PyPI, fallback to hashing files")
+                return self._get_hashes_from_files(ireq)
+
+        return hashes
+
+    def _get_hashes_from_pypi(self, ireq):
+        """
+        Return a set of hashes from PyPI JSON API for a given InstallRequirement.
+        Return None if fetching data is failed or missing digests.
+        """
+        project = self._get_project(ireq)
+        if project is None:
+            return None
+
+        _, version, _ = as_tuple(ireq)
+
+        try:
+            release_files = project["releases"][version]
+        except KeyError:
+            log.debug("Missing release files on PyPI")
+            return None
+
+        try:
+            hashes = {
+                "{algo}:{digest}".format(
+                    algo=FAVORITE_HASH, digest=file_["digests"][FAVORITE_HASH]
+                )
+                for file_ in release_files
+            }
+        except KeyError:
+            log.debug("Missing digests of release files on PyPI")
+            return None
+
+        return hashes
+
+    def _get_hashes_from_files(self, ireq):
+        """
+        Return a set of hashes for all release files of a given InstallRequirement.
+        """
         # We need to get all of the candidates that match our current version
         # pin, these will represent all of the files that could possibly
         # satisfy this constraint.
@@ -267,12 +354,9 @@ class PyPIRepository(BaseRepository):
         )
         matching_candidates = candidates_by_version[matching_versions[0]]
 
-        log.debug(ireq.name)
-
-        with log.indentation():
-            return {
-                self._get_file_hash(candidate.link) for candidate in matching_candidates
-            }
+        return {
+            self._get_file_hash(candidate.link) for candidate in matching_candidates
+        }
 
     def _get_file_hash(self, link):
         log.debug("Hashing {}".format(link.url_without_fragment))
