@@ -13,9 +13,11 @@ if PIP_VERSION[:2] <= (20, 0):
     def install_req_from_parsed_requirement(req, **kwargs):
         return req
 
+    from pip._internal.utils.ui import BAR_TYPES
 
 else:
     from pip._internal.req.constructors import install_req_from_parsed_requirement
+    from pip._internal.cli.progress_bars import BAR_TYPES
 
 
 def parse_requirements(

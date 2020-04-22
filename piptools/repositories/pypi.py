@@ -3,6 +3,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import collections
 import hashlib
+import itertools
+import logging
 import os
 from contextlib import contextmanager
 from shutil import rmtree
@@ -15,12 +17,13 @@ from pip._internal.models.wheel import Wheel
 from pip._internal.req import RequirementSet
 from pip._internal.req.req_tracker import get_requirement_tracker
 from pip._internal.utils.hashes import FAVORITE_HASH
+from pip._internal.utils.logging import indent_log, setup_logging
 from pip._internal.utils.misc import normalize_path
 from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
 from pip._internal.utils.urls import path_to_url, url_to_path
 from pip._vendor.requests import RequestException
 
-from .._compat import PIP_VERSION, TemporaryDirectory, contextlib
+from .._compat import BAR_TYPES, PIP_VERSION, TemporaryDirectory, contextlib
 from ..click import progressbar
 from ..exceptions import NoCandidateFound
 from ..logging import log
@@ -81,6 +84,8 @@ class PyPIRepository(BaseRepository):
         self._cache_dir = normalize_path(cache_dir)
         self._download_dir = fs_str(os.path.join(self._cache_dir, "pkgs"))
         self._wheel_download_dir = fs_str(os.path.join(self._cache_dir, "wheels"))
+
+        self._setup_logging()
 
     def freshen_build_caches(self):
         """
@@ -144,7 +149,7 @@ class PyPIRepository(BaseRepository):
     def resolve_reqs(self, download_dir, ireq, wheel_cache):
         with get_requirement_tracker() as req_tracker, TempDirectory(
             kind="resolver"
-        ) as temp_dir:
+        ) as temp_dir, indent_log():
             preparer = self.command.make_requirement_preparer(
                 temp_build_dir=temp_dir,
                 options=self.options,
@@ -368,11 +373,17 @@ class PyPIRepository(BaseRepository):
             # Choose a context manager depending on verbosity
             if log.verbosity >= 1:
                 iter_length = f.size / FILE_CHUNK_SIZE if f.size else None
-                bar_template = "{prefix}[%(bar)s]  %(info)s".format(
+                bar_template = "{prefix}  |%(bar)s| %(info)s".format(
                     prefix=" " * log.current_indent
                 )
                 context_manager = progressbar(
-                    chunks, length=iter_length, bar_template=bar_template
+                    chunks,
+                    length=iter_length,
+                    # Make it look like default pip progress bar
+                    fill_char="█",
+                    empty_char=" ",
+                    bar_template=bar_template,
+                    width=32,
                 )
             else:
                 context_manager = contextlib.nullcontext(chunks)
@@ -414,6 +425,35 @@ class PyPIRepository(BaseRepository):
             Wheel.supported = original_wheel_supported
             Wheel.support_index_min = original_support_index_min
             self._available_candidates_cache = original_cache
+
+    def _setup_logging(self):
+        """
+        Setup pip's logger. Ensure pip is verbose same as pip-tools and sync
+        pip's log stream with LogContext.stream.
+        """
+        # Default pip's logger is noisy, so decrease it's verbosity
+        setup_logging(
+            verbosity=log.verbosity - 1,
+            no_color=self.options.no_color,
+            user_log_file=self.options.log,
+        )
+
+        # Sync pip's console handler stream with LogContext.stream
+        logger = logging.getLogger()
+        console_handlers = [
+            handler for handler in logger.handlers if handler.name == "console"
+        ]
+        if console_handlers:  # pragma: no branch
+            console_handlers[0].stream = log.stream
+        else:  # pragma: no cover
+            # There is always a console handler. This warning would be a signal that
+            # this block should be removed/revisited, because of pip possibly
+            # refactored-out logging config.
+            log.warning("Couldn't find a 'console' logging handler")
+
+        # Sync pip's progress bars stream with LogContext.stream
+        for bar_cls in itertools.chain(*BAR_TYPES.values()):
+            bar_cls.file = log.stream
 
 
 @contextmanager
