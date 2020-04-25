@@ -1,7 +1,9 @@
 import json
 import os
+import sys
 from contextlib import contextmanager
 from functools import partial
+from subprocess import check_call
 from textwrap import dedent
 
 import pytest
@@ -221,3 +223,82 @@ def pip_with_index_conf(make_pip_conf):
             )
         )
     )
+
+
+@pytest.fixture
+def make_package(tmp_path):
+    """
+    Make a package by a given name, version and list of required packages.
+    """
+
+    def _make_package(name, version="0.1", install_requires=None):
+        if install_requires is None:
+            install_requires = []
+
+        install_requires_str = "[{}]".format(
+            ",".join("{!r}".format(package) for package in install_requires)
+        )
+
+        package_dir = tmp_path / "packages" / name / version
+        package_dir.mkdir(parents=True)
+
+        setup_file = str(package_dir / "setup.py")
+        with open(setup_file, "w") as fp:
+            fp.write(
+                dedent(
+                    """\
+                    from setuptools import setup
+                    setup(
+                        name={name!r},
+                        version={version!r},
+                        install_requires={install_requires_str},
+                    )
+                    """.format(
+                        name=name,
+                        version=version,
+                        install_requires_str=install_requires_str,
+                    )
+                )
+            )
+        return package_dir
+
+    return _make_package
+
+
+@pytest.fixture
+def run_setup_file():
+    """
+    Run a setup.py file by a given package dir.
+    """
+
+    def _make_wheel(package_dir_path, *args):
+        setup_file = str(package_dir_path / "setup.py")
+        return check_call((sys.executable, setup_file) + args)  # nosec
+
+    return _make_wheel
+
+
+@pytest.fixture
+def make_wheel(run_setup_file):
+    """
+    Make a wheel distribution by a given package dir.
+    """
+
+    def _make_wheel(package_dir, dist_dir, *args):
+        return run_setup_file(
+            package_dir, "bdist_wheel", "--dist-dir", str(dist_dir), *args
+        )
+
+    return _make_wheel
+
+
+@pytest.fixture
+def make_sdist(run_setup_file):
+    """
+    Make a source distribution by a given package dir.
+    """
+
+    def _make_sdist(package_dir, dist_dir, *args):
+        return run_setup_file(package_dir, "sdist", "--dist-dir", str(dist_dir), *args)
+
+    return _make_sdist
