@@ -440,11 +440,10 @@ class PyPIRepository(BaseRepository):
 
         # Sync pip's console handler stream with LogContext.stream
         logger = logging.getLogger()
-        console_handlers = [
-            handler for handler in logger.handlers if handler.name == "console"
-        ]
-        if console_handlers:  # pragma: no branch
-            console_handlers[0].stream = log.stream
+        for handler in logger.handlers:
+            if handler.name == "console":  # pragma: no branch
+                handler.stream = log.stream
+                break
         else:  # pragma: no cover
             # There is always a console handler. This warning would be a signal that
             # this block should be removed/revisited, because of pip possibly
