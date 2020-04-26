@@ -242,6 +242,30 @@ def test_editable_package_without_non_editable_duplicate(pip_conf, runner):
     assert "small-fake-a==" not in out.stderr
 
 
+def test_editable_package_constraint_without_non_editable_duplicate(pip_conf, runner):
+    """
+    piptools keeps editable constraint,
+    without also adding a duplicate "non-editable" requirement variation
+    """
+    fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_a")
+    fake_package_dir = path_to_url(fake_package_dir)
+    with open("constraints.txt", "w") as constraints:
+        constraints.write("-e " + fake_package_dir)  # require editable fake package
+
+    with open("requirements.in", "w") as req_in:
+        req_in.write(
+            "-c constraints.txt"  # require editable fake package
+            "\nsmall_fake_with_unpinned_deps"  # This one also requires small_fake_a
+        )
+
+    out = runner.invoke(cli, ["-n"])
+
+    assert out.exit_code == 0
+    assert fake_package_dir in out.stderr
+    # Shouldn't include a non-editable small-fake-a==<version>.
+    assert "small-fake-a==" not in out.stderr
+
+
 @pytest.mark.parametrize(("req_editable",), [(True,), (False,)])
 def test_editable_package_in_constraints(pip_conf, runner, req_editable):
     """
