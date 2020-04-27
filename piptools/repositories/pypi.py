@@ -43,6 +43,7 @@ FileStream = collections.namedtuple("FileStream", "stream size")
 
 class PyPIRepository(BaseRepository):
     DEFAULT_INDEX_URL = PyPI.simple_url
+    HASHABLE_PACKAGE_TYPES = {"bdist_wheel", "sdist"}
 
     """
     The PyPIRepository will use the provided Finder instance to lookup
@@ -338,6 +339,7 @@ class PyPIRepository(BaseRepository):
                     algo=FAVORITE_HASH, digest=file_["digests"][FAVORITE_HASH]
                 )
                 for file_ in release_files
+                if file_["packagetype"] in self.HASHABLE_PACKAGE_TYPES
             }
         except KeyError:
             log.debug("Missing digests of release files on PyPI")

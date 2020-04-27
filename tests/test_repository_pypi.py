@@ -172,7 +172,16 @@ def test_pip_cache_dir_is_empty(from_line, tmpdir):
     "project_data, expected_hashes",
     (
         pytest.param(
-            {"releases": {"0.1": [{"digests": {"sha256": "fake-hash"}}]}},
+            {
+                "releases": {
+                    "0.1": [
+                        {
+                            "packagetype": "bdist_wheel",
+                            "digests": {"sha256": "fake-hash"},
+                        }
+                    ]
+                }
+            },
             {"sha256:fake-hash"},
             id="return single hash",
         ),
@@ -180,23 +189,59 @@ def test_pip_cache_dir_is_empty(from_line, tmpdir):
             {
                 "releases": {
                     "0.1": [
-                        {"digests": {"sha256": "fake-hash-number1"}},
-                        {"digests": {"sha256": "fake-hash-number2"}},
+                        {
+                            "packagetype": "bdist_wheel",
+                            "digests": {"sha256": "fake-hash-number1"},
+                        },
+                        {
+                            "packagetype": "sdist",
+                            "digests": {"sha256": "fake-hash-number2"},
+                        },
                     ]
                 }
             },
             {"sha256:fake-hash-number1", "sha256:fake-hash-number2"},
             id="return multiple hashes",
         ),
+        pytest.param(
+            {
+                "releases": {
+                    "0.1": [
+                        {
+                            "packagetype": "bdist_wheel",
+                            "digests": {"sha256": "fake-hash-number1"},
+                        },
+                        {
+                            "packagetype": "sdist",
+                            "digests": {"sha256": "fake-hash-number2"},
+                        },
+                        {
+                            "packagetype": "bdist_eggs",
+                            "digests": {"sha256": "fake-hash-number3"},
+                        },
+                    ]
+                }
+            },
+            {"sha256:fake-hash-number1", "sha256:fake-hash-number2"},
+            id="return only bdist_wheel and sdist hashes",
+        ),
         pytest.param(None, None, id="not found project data"),
         pytest.param({}, None, id="not found releases key"),
         pytest.param({"releases": {}}, None, id="not found version"),
         pytest.param({"releases": {"0.1": [{}]}}, None, id="not found digests"),
         pytest.param(
-            {"releases": {"0.1": [{"digests": {}}]}}, None, id="digests are empty"
+            {"releases": {"0.1": [{"packagetype": "bdist_wheel", "digests": {}}]}},
+            None,
+            id="digests are empty",
         ),
         pytest.param(
-            {"releases": {"0.1": [{"digests": {"md5": "fake-hash"}}]}},
+            {
+                "releases": {
+                    "0.1": [
+                        {"packagetype": "bdist_wheel", "digests": {"md5": "fake-hash"}}
+                    ]
+                }
+            },
             None,
             id="not found sha256 algo",
         ),
