@@ -1,3 +1,12 @@
+# 5.1.0 (2020-04-27)
+
+Features:
+- Show progress bar when downloading packages in `pip-compile` verbose mode
+([#949](https://github.com/jazzband/pip-tools/pull/949)). Thanks @atugushev
+- `pip-compile` now gets hashes from `PyPI` JSON API (if available) which significantly
+increases the speed of hashes generation
+([#1109](https://github.com/jazzband/pip-tools/pull/1109)). Thanks @atugushev
+
 # 5.0.0 (2020-04-16)
 
 Backwards Incompatible Changes:
