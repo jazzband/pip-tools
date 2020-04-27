@@ -179,6 +179,12 @@ pip_defaults = install_command.parser.get_default_values()
     type=click.Path(file_okay=False, writable=True),
 )
 @click.option("--pip-args", help="Arguments to pass directly to the pip command.")
+@click.option(
+    "--emit-options/--no-emit-options",
+    is_flag=True,
+    default=True,
+    help="Add options to generated file",
+)
 def cli(
     ctx,
     verbose,
@@ -207,6 +213,7 @@ def cli(
     emit_find_links,
     cache_dir,
     pip_args,
+    emit_options,
 ):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbosity = verbose - quiet
@@ -421,6 +428,7 @@ def cli(
         allow_unsafe=allow_unsafe,
         find_links=repository.finder.find_links,
         emit_find_links=emit_find_links,
+        emit_options=emit_options,
     )
     writer.write(
         results=results,

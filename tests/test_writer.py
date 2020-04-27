@@ -42,6 +42,7 @@ def writer(tmpdir_cwd):
             allow_unsafe=False,
             find_links=[],
             emit_find_links=True,
+            emit_options=True,
         )
         yield writer
 
@@ -222,6 +223,40 @@ def test_write_header_no_emit_header(writer):
 
     with raises(StopIteration):
         next(writer.write_header())
+
+
+def test_write_flags_emit_options(writer):
+    """
+    There should be options if emit_options is True
+    """
+    writer.emit_options = True
+    writer.index_urls = ["https://index-server"]
+    writer.find_links = ["links"]
+    writer.trusted_hosts = ["index-server"]
+    writer.format_control = FormatControl(no_binary=["flask"], only_binary=["django"])
+
+    assert tuple(writer.write_flags()) == (
+        "--index-url https://index-server",
+        "--find-links links",
+        "--trusted-host index-server",
+        "--no-binary flask",
+        "--only-binary django",
+        "",
+    )
+
+
+def test_write_flags_no_emit_options(writer):
+    """
+    There should not be options if emit_options is False
+    """
+    writer.emit_options = False
+    writer.index_urls = ["https://index-server"]
+    writer.find_links = ["links"]
+    writer.trusted_hosts = ["index-server"]
+    writer.format_control = FormatControl(no_binary=["flask"], only_binary=["django"])
+
+    with raises(StopIteration):
+        next(writer.write_flags())
 
 
 def test_write_format_controls(writer):

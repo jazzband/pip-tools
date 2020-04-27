@@ -67,6 +67,7 @@ class OutputWriter(object):
         allow_unsafe,
         find_links,
         emit_find_links,
+        emit_options,
     ):
         self.src_files = src_files
         self.dst_file = dst_file
@@ -84,6 +85,7 @@ class OutputWriter(object):
         self.allow_unsafe = allow_unsafe
         self.find_links = find_links
         self.emit_find_links = emit_find_links
+        self.emit_options = emit_options
 
     def _sort_key(self, ireq):
         return (not ireq.editable, str(ireq.req).lower())
@@ -125,6 +127,9 @@ class OutputWriter(object):
                 yield "--find-links {}".format(find_link)
 
     def write_flags(self):
+        if not self.emit_options:
+            return
+
         emitted = False
         for line in chain(
             self.write_index_options(),

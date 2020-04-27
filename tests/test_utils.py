@@ -249,8 +249,10 @@ def test_force_text(value, expected_text):
         (["--no-index"], "pip-compile --no-index"),
         (["--no-emit-trusted-host"], "pip-compile --no-emit-trusted-host"),
         (["--no-annotate"], "pip-compile --no-annotate"),
+        (["--no-emit-options"], "pip-compile --no-emit-options"),
         # Check that default values will be removed from the command
         (["--emit-trusted-host"], "pip-compile"),
+        (["--emit-options"], "pip-compile"),
         (["--annotate"], "pip-compile"),
         (["--index"], "pip-compile"),
         (["--max-rounds=10"], "pip-compile"),
