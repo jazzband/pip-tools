@@ -1,3 +1,9 @@
+# 5.1.1 (2020-05-01)
+
+Bug Fixes:
+- Fix a bug where `pip-compile` would generate hashes for `*.egg` files
+([#1122](https://github.com/jazzband/pip-tools/pull/1122)). Thanks @atugushev
+
 # 5.1.0 (2020-04-27)
 
 Features:
