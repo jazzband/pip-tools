@@ -5,33 +5,11 @@ on:
   push:
     branches:
       - master
+    tags:
 
 jobs:
-  qa:
-    name: QA
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        toxenv:
-          - checkqa
-          - readme
-    steps:
-      - uses: actions/checkout@master
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-      - name: Set PY
-        run: echo "::set-env name=PY::$(python -VV | sha256sum | cut -d' ' -f1)"
-      - uses: actions/cache@v1
-        with:
-          path: ~/.cache/pre-commit
-          key: pre-commit|${{ env.PY }}|${{ hashFiles('.pre-commit-config.yaml') }}
-      - name: Install tox
-        run: pip install tox
-      - name: Test ${{ matrix.toxenv }}
-        run: tox -e ${{ matrix.toxenv }}
-
-  cpython:
-    name: Test
+  test:
+    name: ${{ matrix.os }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
     runs-on: ${{ matrix.os }}-latest
     strategy:
       matrix:
@@ -39,14 +17,29 @@ jobs:
           - Ubuntu
           - Windows
         python-version:
+          - 3.8
           - 2.7
+          - pypy3
           - 3.5
           - 3.6
           - 3.7
-          - 3.8
+          - pypy2
         pip-version:
-          - "20.0"
           - "latest"
+          - "20.0"
+        exclude:
+          - os: Windows
+            python-version: pypy2
+          - os: Windows
+            python-version: pypy3
+          - pip-version: "20.0"
+            python-version: pypy2
+          - pip-version: "20.0"
+            python-version: pypy3
+    env:
+      PY_COLORS: 1
+      TOXENV: pip${{ matrix.pip-version }}-coverage
+      TOX_PARALLEL_NO_SPINNER: 1
     steps:
       - uses: actions/checkout@master
       - name: Set up Python ${{ matrix.python-version }}
@@ -55,36 +48,12 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install tox
         run: pip install tox
+      - name: Prepare test environment
+        run: tox --notest -p auto --parallel-live
       - name: Test pip ${{ matrix.pip-version }}
-        run: tox -e pip${{ matrix.pip-version }}-coverage
+        run: tox
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1.0.6
         with:
           file: ./coverage.xml
-          name: ${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.pip-version }}
-
-  pypy:
-    name: Test
-    runs-on: ${{ matrix.os }}-latest
-    strategy:
-      matrix:
-        os:
-          - Ubuntu
-          # TODO uncomment after test_realistic_complex_sub_dependencies being fixed
-          # - Windpws
-        python-version:
-          - pypy2
-          - pypy3
-        # Test pypy only with the latest pip version to reduce the number of jobs
-        pip-version:
-          - latest
-    steps:
-      - uses: actions/checkout@master
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install tox
-        run: pip install tox
-      - name: Test pip ${{ matrix.pip-version }}
-        run: tox -e pip${{ matrix.pip-version }}
+          name: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.pip-version }}
