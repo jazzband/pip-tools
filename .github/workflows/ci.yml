@@ -23,27 +23,12 @@ jobs:
         python-version:
           - 3.8
           - 2.7
-          - pypy3
           - 3.5
           - 3.6
           - 3.7
-          - pypy2
         pip-version:
           - "latest"
           - "20.0"
-        # Test pypy only with the latest pip version to reduce the number of jobs
-        exclude:
-          - pip-version: "20.0"
-            python-version: pypy2
-          - pip-version: "20.0"
-            python-version: pypy3
-          # TODO: fix test_realistic_complex_sub_dependencies test
-          #       and remove Windows exclusion
-          - os: Windows
-            python-version: pypy2
-          - os: Windows
-            python-version: pypy3
-
     env:
       PY_COLORS: 1
       TOXENV: pip${{ matrix.pip-version }}-coverage
