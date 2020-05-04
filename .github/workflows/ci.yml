@@ -6,6 +6,9 @@ on:
     branches:
       - master
     tags:
+  schedule:
+    # Run everyday at 03:53 UTC
+    - cron: 53 3 * * *
 
 jobs:
   test:
@@ -16,6 +19,7 @@ jobs:
         os:
           - Ubuntu
           - Windows
+          - MacOS
         python-version:
           - 3.8
           - 2.7
