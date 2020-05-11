@@ -95,13 +95,13 @@ def test_force_files_with_dot_in_extension(runner):
 
 @pytest.mark.parametrize(
     ("req_lines", "should_raise"),
-    [
+    (
         (["six>1.10.0", "six<1.10.0"], True),
         (
             ["six>1.10.0 ; python_version>='3.0'", "six<1.10.0 ; python_version<'3.0'"],
             False,
         ),
-    ],
+    ),
 )
 def test_merge_error(req_lines, should_raise, runner):
     """
@@ -125,7 +125,7 @@ def test_merge_error(req_lines, should_raise, runner):
 
 @pytest.mark.parametrize(
     ("cli_flags", "expected_install_flags"),
-    [
+    (
         (
             ["--find-links", "./libs1", "--find-links", "./libs2"],
             ["--find-links", "./libs1", "--find-links", "./libs2"],
@@ -155,7 +155,7 @@ def test_merge_error(req_lines, should_raise, runner):
             ["--pip-args=\"--cache-dir='/tmp/cache dir with spaces/'\""],
             ["--cache-dir='/tmp/cache dir with spaces/'"],
         ),
-    ],
+    ),
 )
 @mock.patch("piptools.sync.check_call")
 def test_pip_install_flags(check_call, cli_flags, expected_install_flags, runner):
@@ -176,7 +176,7 @@ def test_pip_install_flags(check_call, cli_flags, expected_install_flags, runner
 
 @pytest.mark.parametrize(
     "install_flags",
-    [
+    (
         ["--no-index"],
         ["--index-url", "https://example.com"],
         ["--extra-index-url", "https://example.com"],
@@ -184,7 +184,7 @@ def test_pip_install_flags(check_call, cli_flags, expected_install_flags, runner
         ["--trusted-host", "example.com"],
         ["--no-binary", ":all:"],
         ["--only-binary", ":all:"],
-    ],
+    ),
 )
 @mock.patch("piptools.sync.check_call")
 def test_pip_install_flags_in_requirements_file(check_call, runner, install_flags):

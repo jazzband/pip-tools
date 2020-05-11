@@ -61,7 +61,7 @@ def test_get_hashes_editable_empty_set(from_editable, pypi_repository):
     assert pypi_repository.get_hashes(ireq) == set()
 
 
-@pytest.mark.parametrize("content, content_length", [(b"foo", 3), (b"foobar", 6)])
+@pytest.mark.parametrize(("content", "content_length"), ((b"foo", 3), (b"foobar", 6)))
 def test_open_local_or_remote_file__local_file(tmp_path, content, content_length):
     """
     Test the `open_local_or_remote_file` returns a context manager to a FileStream
@@ -86,14 +86,15 @@ def test_open_local_or_remote_file__directory(tmpdir):
     link = Link(path_to_url(tmpdir.strpath))
     session = Session()
 
-    with pytest.raises(ValueError, match="Cannot open directory for read"):
-        with open_local_or_remote_file(link, session):
-            pass  # pragma: no cover
+    with pytest.raises(
+        ValueError, match="Cannot open directory for read"
+    ), open_local_or_remote_file(link, session):
+        pass  # pragma: no cover
 
 
 @pytest.mark.parametrize(
-    "content, content_length, expected_content_length",
-    [(b"foo", 3, 3), (b"bar", None, None), (b"kek", "invalid-content-length", None)],
+    ("content", "content_length", "expected_content_length"),
+    ((b"foo", 3, 3), (b"bar", None, None), (b"kek", "invalid-content-length", None)),
 )
 def test_open_local_or_remote_file__remote_file(
     tmp_path, content, content_length, expected_content_length
@@ -169,7 +170,7 @@ def test_pip_cache_dir_is_empty(from_line, tmpdir):
 
 
 @pytest.mark.parametrize(
-    "project_data, expected_hashes",
+    ("project_data", "expected_hashes"),
     (
         pytest.param(
             {
