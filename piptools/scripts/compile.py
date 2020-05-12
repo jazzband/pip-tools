@@ -9,6 +9,7 @@ import tempfile
 from click.utils import safecall
 from pip._internal.commands import create_command
 from pip._internal.req.constructors import install_req_from_line
+from pip._internal.utils.misc import redact_auth_from_url
 
 from .. import click
 from .._compat import parse_requirements
@@ -27,6 +28,7 @@ DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 # Get default values of the pip's options (including options from pip.conf).
 install_command = create_command("install")
 pip_defaults = install_command.parser.get_default_values()
+default_index_url = redact_auth_from_url(pip_defaults.index_url)
 
 
 @click.command()
@@ -63,7 +65,7 @@ pip_defaults = install_command.parser.get_default_values()
 @click.option(
     "-i",
     "--index-url",
-    help="Change index URL (defaults to {})".format(pip_defaults.index_url),
+    help="Change index URL (defaults to {})".format(default_index_url),
     envvar="PIP_INDEX_URL",
 )
 @click.option(
@@ -371,14 +373,14 @@ def cli(
     log.debug("Using indexes:")
     with log.indentation():
         for index_url in dedup(repository.finder.index_urls):
-            log.debug(index_url)
+            log.debug(redact_auth_from_url(index_url))
 
     if repository.finder.find_links:
         log.debug("")
-        log.debug("Configuration:")
+        log.debug("Using links:")
         with log.indentation():
             for find_link in dedup(repository.finder.find_links):
-                log.debug("-f {}".format(find_link))
+                log.debug(redact_auth_from_url(find_link))
 
     try:
         resolver = Resolver(
