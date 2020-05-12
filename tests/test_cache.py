@@ -3,7 +3,7 @@ from os import remove
 from shutil import rmtree
 from tempfile import NamedTemporaryFile
 
-from pytest import raises
+import pytest
 
 from piptools.cache import CorruptCacheError, DependencyCache, read_cache_file
 
@@ -36,7 +36,7 @@ def test_read_cache_file_not_json():
     A cache file that's not JSON should throw a corrupt cache error.
     """
     with _read_cache_file_helper("not json") as cache_file_name:
-        with raises(
+        with pytest.raises(
             CorruptCacheError,
             match="The dependency cache seems to have been corrupted.",
         ):
@@ -48,7 +48,7 @@ def test_read_cache_file_wrong_format():
     A cache file with a wrong "__format__" value should throw an assertion error.
     """
     with _read_cache_file_helper('{"__format__": 2}') as cache_file_name:
-        with raises(AssertionError):
+        with pytest.raises(AssertionError):
             read_cache_file(cache_file_name)
 
 

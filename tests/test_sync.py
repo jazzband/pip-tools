@@ -28,7 +28,7 @@ def mocked_tmp_req_file(mocked_tmp_file):
 
 @pytest.mark.parametrize(
     ("installed", "root", "expected"),
-    [
+    (
         ([], "pip-tools", []),
         ([("pip-tools==1", [])], "pip-tools", ["pip-tools"]),
         ([("pip-tools==1", []), ("django==1.7", [])], "pip-tools", ["pip-tools"]),
@@ -61,7 +61,7 @@ def mocked_tmp_req_file(mocked_tmp_file):
             "root",
             ["root", "child"],
         ),
-    ],
+    ),
 )
 def test_dependency_tree(fake_dist, installed, root, expected):
     installed = {
@@ -399,10 +399,10 @@ def test_sync_verbose(check_call, from_line):
 
 @pytest.mark.parametrize(
     ("to_install", "to_uninstall", "expected_message"),
-    [
+    (
         ({"django==1.8", "click==4.0"}, set(), "Would install:"),
         (set(), {"django==1.8", "click==4.0"}, "Would uninstall:"),
-    ],
+    ),
 )
 def test_sync_dry_run(runner, from_line, to_install, to_uninstall, expected_message):
     """
@@ -422,10 +422,10 @@ def test_sync_dry_run(runner, from_line, to_install, to_uninstall, expected_mess
 
 @pytest.mark.parametrize(
     ("to_install", "to_uninstall", "expected_message"),
-    [
+    (
         ({"django==1.8", "click==4.0"}, set(), "Would install:"),
         (set(), {"django==1.8", "click==4.0"}, "Would uninstall:"),
-    ],
+    ),
 )
 @mock.patch("piptools.sync.check_call")
 @mock.patch("piptools.sync.click.confirm", return_value=False)
@@ -450,7 +450,7 @@ def test_sync_ask_declined(
     check_call.assert_not_called()
 
 
-@pytest.mark.parametrize("dry_run", [True, False])
+@pytest.mark.parametrize("dry_run", (True, False))
 @mock.patch("piptools.sync.click.confirm")
 @mock.patch("piptools.sync.check_call")
 def test_sync_ask_accepted(check_call, confirm, from_line, dry_run):

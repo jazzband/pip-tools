@@ -14,6 +14,8 @@ repos:
     hooks:
     - id: flake8
       language_version: python3
+      additional_dependencies:
+      - flake8-pytest-style
   - repo: https://github.com/PyCQA/bandit
     rev: 1.6.0
     hooks:
