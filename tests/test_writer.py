@@ -31,7 +31,7 @@ def writer(tmpdir_cwd):
             click_ctx=ctx,
             dry_run=True,
             emit_header=True,
-            emit_index=True,
+            emit_index_url=True,
             emit_trusted_host=True,
             annotate=True,
             generate_hashes=False,
@@ -318,9 +318,10 @@ def test_write_index_options(writer, index_urls, expected_lines):
 
 def test_write_index_options_no_emit_index(writer):
     """
-    There should not be --index-url/--extra-index-url options if emit_index is False.
+    There should not be --index-url/--extra-index-url options
+    if emit_index_url is False.
     """
-    writer.emit_index = False
+    writer.emit_index_url = False
     with pytest.raises(StopIteration):
         next(writer.write_index_options())
 

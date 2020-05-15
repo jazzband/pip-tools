@@ -5,6 +5,7 @@ import os
 import shlex
 import sys
 import tempfile
+import warnings
 
 from click.utils import safecall
 from pip._internal.commands import create_command
@@ -94,8 +95,8 @@ pip_defaults = install_command.parser.get_default_values()
 @click.option(
     "--index/--no-index",
     is_flag=True,
-    default=True,
-    help="Add index URL to generated file",
+    default=None,
+    help="DEPRECATED: Add index URL to generated file",
 )
 @click.option(
     "--emit-trusted-host/--no-emit-trusted-host",
@@ -179,6 +180,12 @@ pip_defaults = install_command.parser.get_default_values()
     type=click.Path(file_okay=False, writable=True),
 )
 @click.option("--pip-args", help="Arguments to pass directly to the pip command.")
+@click.option(
+    "--emit-index-url/--no-emit-index-url",
+    is_flag=True,
+    default=True,
+    help="Add index URL to generated file",
+)
 def cli(
     ctx,
     verbose,
@@ -207,6 +214,7 @@ def cli(
     emit_find_links,
     cache_dir,
     pip_args,
+    emit_index_url,
 ):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbosity = verbose - quiet
@@ -245,6 +253,14 @@ def cli(
 
         # Close the file at the end of the context execution
         ctx.call_on_close(safecall(output_file.close_intelligently))
+
+    if index is not None:
+        warnings.warn(
+            "--index and --no-index are deprecated and will be removed "
+            "in future versions. Use --emit-index-url/--no-emit-index-url instead.",
+            category=FutureWarning,
+        )
+        emit_index_url = index
 
     ###
     # Setup
@@ -410,7 +426,7 @@ def cli(
         click_ctx=ctx,
         dry_run=dry_run,
         emit_header=header,
-        emit_index=index,
+        emit_index_url=emit_index_url,
         emit_trusted_host=emit_trusted_host,
         annotate=annotate,
         generate_hashes=generate_hashes,
