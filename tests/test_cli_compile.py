@@ -1,3 +1,4 @@
+import itertools
 import os
 import subprocess
 import sys
@@ -191,6 +192,25 @@ def test_index_option(runner, option, expected_output):
         )
 
     assert out.stderr.strip().splitlines() == expected_output
+
+
+@pytest.mark.parametrize(
+    "options",
+    itertools.product(
+        ("--index", "--no-index"), ("--emit-index-url", "--no-emit-index-url")
+    ),
+)
+def test_mutual_exclusive_index_options(runner, options):
+    with open("requirements.in", "w"):
+        pass
+
+    out = runner.invoke(cli, options)
+
+    assert out.exit_code == 2
+    assert (
+        "--index/--no-index and --emit-index-url/--no-emit-index-url "
+        "are mutual exclusive"
+    ) in out.stderr
 
 
 @pytest.mark.network

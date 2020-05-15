@@ -183,7 +183,7 @@ pip_defaults = install_command.parser.get_default_values()
 @click.option(
     "--emit-index-url/--no-emit-index-url",
     is_flag=True,
-    default=True,
+    default=None,
     help="Add index URL to generated file",
 )
 def cli(
@@ -254,13 +254,20 @@ def cli(
         # Close the file at the end of the context execution
         ctx.call_on_close(safecall(output_file.close_intelligently))
 
-    if index is not None:
+    if index is not None and emit_index_url is not None:
+        raise click.BadParameter(
+            "--index/--no-index and --emit-index-url/--no-emit-index-url "
+            "are mutual exclusive."
+        )
+    elif index is not None:
         warnings.warn(
             "--index and --no-index are deprecated and will be removed "
             "in future versions. Use --emit-index-url/--no-emit-index-url instead.",
             category=FutureWarning,
         )
         emit_index_url = index
+    elif emit_index_url is None:
+        emit_index_url = True
 
     ###
     # Setup
