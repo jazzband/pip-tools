@@ -15,6 +15,7 @@ from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Requirement
 
 from .constants import MINIMAL_WHEELS_PATH
+from .utils import looks_like_ci
 
 from piptools.cache import DependencyCache
 from piptools.exceptions import NoCandidateFound
@@ -106,7 +107,7 @@ class FakeInstalledDistribution(object):
 def pytest_collection_modifyitems(config, items):
     for item in items:
         # Mark network tests as flaky
-        if item.get_closest_marker("network") and "CI" in os.environ:
+        if item.get_closest_marker("network") and looks_like_ci():
             item.add_marker(pytest.mark.flaky(reruns=3, reruns_delay=2))
 
 
