@@ -246,12 +246,14 @@ def test_force_text(value, expected_text):
         (["--pre"], "pip-compile --pre"),
         (["--allow-unsafe"], "pip-compile --allow-unsafe"),
         # Check negative flags
+        (["--no-index"], "pip-compile --no-index"),
         (["--no-emit-index-url"], "pip-compile --no-emit-index-url"),
         (["--no-emit-trusted-host"], "pip-compile --no-emit-trusted-host"),
         (["--no-annotate"], "pip-compile --no-annotate"),
         # Check that default values will be removed from the command
         (["--emit-trusted-host"], "pip-compile"),
         (["--annotate"], "pip-compile"),
+        (["--index"], "pip-compile"),
         (["--emit-index-url"], "pip-compile"),
         (["--max-rounds=10"], "pip-compile"),
         (["--build-isolation"], "pip-compile"),
