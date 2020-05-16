@@ -7,6 +7,7 @@ import sys
 import tempfile
 import warnings
 
+from click import Command
 from click.utils import safecall
 from pip._internal.commands import create_command
 from pip._internal.req.constructors import install_req_from_line
@@ -30,7 +31,30 @@ install_command = create_command("install")
 pip_defaults = install_command.parser.get_default_values()
 
 
-@click.command()
+class CompileCommand(Command):
+    def __init__(self, *awrgs, **kwargs):
+        super(CompileCommand, self).__init__(*awrgs, **kwargs)
+        self._os_args = None
+
+    def parse_args(self, ctx, args):
+        """
+        Override `parse_args` to store args since click doesn't provide
+        this information in the context.
+        """
+        self._os_args = set(args)
+        return super(CompileCommand, self).parse_args(ctx, args)
+
+    def has_arg(self, arg_name):
+        """
+        Detect whether given arg name is present in the argument part of `sys.argv`.
+        """
+        command_options = {option.name: option for option in self.params}
+        option = command_options[arg_name]
+        args = set(option.opts + option.secondary_opts)
+        return bool(self._os_args & args)
+
+
+@click.command(cls=CompileCommand)
 @click.version_option()
 @click.pass_context
 @click.option("-v", "--verbose", count=True, help="Show more output")
@@ -95,7 +119,7 @@ pip_defaults = install_command.parser.get_default_values()
 @click.option(
     "--index/--no-index",
     is_flag=True,
-    default=None,
+    default=True,
     help="DEPRECATED: Add index URL to generated file",
 )
 @click.option(
@@ -183,7 +207,7 @@ pip_defaults = install_command.parser.get_default_values()
 @click.option(
     "--emit-index-url/--no-emit-index-url",
     is_flag=True,
-    default=None,
+    default=True,
     help="Add index URL to generated file",
 )
 def cli(
@@ -254,20 +278,18 @@ def cli(
         # Close the file at the end of the context execution
         ctx.call_on_close(safecall(output_file.close_intelligently))
 
-    if index is not None and emit_index_url is not None:
+    if cli.has_arg("index") and cli.has_arg("emit_index_url"):
         raise click.BadParameter(
             "--index/--no-index and --emit-index-url/--no-emit-index-url "
             "are mutual exclusive."
         )
-    elif index is not None:
+    elif cli.has_arg("index"):
         warnings.warn(
             "--index and --no-index are deprecated and will be removed "
             "in future versions. Use --emit-index-url/--no-emit-index-url instead.",
             category=FutureWarning,
         )
         emit_index_url = index
-    elif emit_index_url is None:
-        emit_index_url = True
 
     ###
     # Setup
