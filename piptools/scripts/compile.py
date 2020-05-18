@@ -25,10 +25,15 @@ from ..writer import OutputWriter
 DEFAULT_REQUIREMENTS_FILE = "requirements.in"
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 
-# Get default values of the pip's options (including options from pip.conf).
-install_command = create_command("install")
-pip_defaults = install_command.parser.get_default_values()
-default_index_url = redact_auth_from_url(pip_defaults.index_url)
+
+def _get_default_option(option_name):
+    """
+    Get default value of the pip's option (including option from pip.conf)
+    by a given option name.
+    """
+    install_command = create_command("install")
+    default_values = install_command.parser.get_default_values()
+    return getattr(default_values, option_name)
 
 
 @click.command()
@@ -65,7 +70,9 @@ default_index_url = redact_auth_from_url(pip_defaults.index_url)
 @click.option(
     "-i",
     "--index-url",
-    help="Change index URL (defaults to {})".format(default_index_url),
+    help="Change index URL (defaults to {index_url})".format(
+        index_url=redact_auth_from_url(_get_default_option("index_url"))
+    ),
     envvar="PIP_INDEX_URL",
 )
 @click.option(
