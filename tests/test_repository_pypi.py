@@ -347,3 +347,49 @@ def test_get_project__handles_404(from_line, tmpdir, monkeypatch, pypi_repositor
 
     actual_data = pypi_repository._get_project(ireq)
     assert actual_data is None
+
+
+def test_name_collision(from_line, pypi_repository, make_package, make_sdist, tmpdir):
+    """
+    Test to ensure we don't fail if there are multiple URL-based requirements
+    ending with the same filename where later ones depend on earlier, e.g.
+    https://git.example.com/requirement1/master.zip#egg=req_package_1
+    https://git.example.com/requirement2/master.zip#egg=req_package_2
+    In this case, if req_package_2 depends on req_package_1 we don't want to
+    fail due to issues such as caching the requirement based on filename.
+    """
+    packages = {
+        "test_package_1": make_package("test_package_1", version="0.1"),
+        "test_package_2": make_package(
+            "test_package_2", version="0.1", install_requires=["test-package-1"]
+        ),
+    }
+
+    for pkg_name, pkg in packages.items():
+        pkg_path = os.path.join(tmpdir, pkg_name)
+        os.mkdir(pkg_path)
+
+        make_sdist(pkg, pkg_path, "--formats=zip")
+
+        os.rename(
+            os.path.join(pkg_path, "{}-{}.zip".format(pkg_name, "0.1")),
+            os.path.join(pkg_path, "master.zip"),
+        )
+
+    name_collision_1 = (
+        "file://"
+        + str(os.path.join(tmpdir, "test_package_1", "master.zip"))
+        + "#egg=test_package_1"
+    )
+    ireq = from_line(name_collision_1)
+    pypi_repository.get_dependencies(ireq)
+
+    name_collision_2 = (
+        "file://"
+        + str(os.path.join(tmpdir, "test_package_2", "master.zip"))
+        + "#egg=test_package_2"
+    )
+    ireq = from_line(name_collision_2)
+    reqs = pypi_repository.get_dependencies(ireq)
+    assert len(reqs) == 1
+    assert reqs.pop().req.name == "test-package-1"
