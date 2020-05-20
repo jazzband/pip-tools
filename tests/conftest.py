@@ -228,7 +228,7 @@ def pip_with_index_conf(make_pip_conf):
 @pytest.fixture
 def make_package(tmp_path):
     """
-    Make a package by a given name, version and list of required packages.
+    Make a package from a given name, version and list of required packages.
     """
 
     def _make_package(name, version="0.1", install_requires=None):
@@ -268,7 +268,7 @@ def make_package(tmp_path):
 @pytest.fixture
 def run_setup_file():
     """
-    Run a setup.py file by a given package dir.
+    Run a setup.py file from a given package dir.
     """
 
     def _make_wheel(package_dir_path, *args):
@@ -281,7 +281,7 @@ def run_setup_file():
 @pytest.fixture
 def make_wheel(run_setup_file):
     """
-    Make a wheel distribution by a given package dir.
+    Make a wheel distribution from a given package dir.
     """
 
     def _make_wheel(package_dir, dist_dir, *args):
@@ -295,7 +295,7 @@ def make_wheel(run_setup_file):
 @pytest.fixture
 def make_sdist(run_setup_file):
     """
-    Make a source distribution by a given package dir.
+    Make a source distribution from a given package dir.
     """
 
     def _make_sdist(package_dir, dist_dir, *args):

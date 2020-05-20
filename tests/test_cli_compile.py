@@ -1144,7 +1144,7 @@ def test_prefer_binary_dist_even_there_is_source_dists(
 ):
     """
     Test pip-compile chooses a correct version of a package with a binary distribution
-    (despite a source dist is exist) when PIP_PREFER_BINARY environment variable is on
+    (despite a source dist existing) when PIP_PREFER_BINARY environment variable is on
     or off.
 
     Regression test for issue GH-1118.
