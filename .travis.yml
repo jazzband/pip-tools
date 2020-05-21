@@ -63,7 +63,7 @@ jobs:
           tags: true
           repo: jazzband/pip-tools
   allow_failures:
-    - python: 3.8-dev
+    - python: 3.9-dev
 
 after_success:
   - travis_retry pip install codecov coveralls
