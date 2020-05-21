@@ -107,7 +107,7 @@ def test_find_links_option(runner):
     out = runner.invoke(cli, ["-v", "-f", "./libs1", "-f", "./libs2"])
 
     # Check that find-links has been passed to pip
-    assert "Configuration:\n  -f ./libs1\n  -f ./libs2\n  -f ./libs3\n" in out.stderr
+    assert "Using links:\n  ./libs1\n  ./libs2\n  ./libs3\n" in out.stderr
 
     # Check that find-links has been written to a requirements.txt
     with open("requirements.txt", "r") as req_txt:
@@ -141,6 +141,30 @@ def test_extra_index_option(pip_with_index_conf, runner):
         "--extra-index-url http://extraindex1.com\n"
         "--extra-index-url http://extraindex2.com" in out.stderr
     )
+
+
+@pytest.mark.parametrize("option", ("--extra-index-url", "--find-links"))
+def test_redacted_urls_in_verbose_output(runner, option):
+    """
+    Test that URLs with sensitive data don't leak to the output.
+    """
+    with open("requirements.in", "w"):
+        pass
+
+    out = runner.invoke(
+        cli,
+        [
+            "--no-header",
+            "--no-index",
+            "--no-emit-find-links",
+            "--verbose",
+            option,
+            "http://username:password@example.com",
+        ],
+    )
+
+    assert "http://username:****@example.com" in out.stderr
+    assert "password" not in out.stderr
 
 
 def test_trusted_host(pip_conf, runner):
@@ -658,21 +682,37 @@ def test_no_candidates_pre(pip_conf, runner):
     assert "Tried pre-versions:" in out.stderr
 
 
-def test_default_index_url(pip_with_index_conf):
+@pytest.mark.parametrize(
+    ("url", "expected_url"),
+    (
+        pytest.param("https://example.com", "https://example.com", id="regular url"),
+        pytest.param(
+            "https://username:password@example.com",
+            "https://username:****@example.com",
+            id="url with credentials",
+        ),
+    ),
+)
+def test_default_index_url(make_pip_conf, url, expected_url):
+    """
+    Test help's output with default index URL.
+    """
+    make_pip_conf(
+        dedent(
+            """\
+            [global]
+            index-url = {url}
+            """.format(
+                url=url
+            )
+        )
+    )
+
     status, output = invoke([sys.executable, "-m", "piptools", "compile", "--help"])
     output = output.decode("utf-8")
 
-    # Click's subprocess output has \r\r\n line endings on win py27. Fix it.
-    output = output.replace("\r\r", "\r")
-
     assert status == 0
-    expected = (
-        "  -i, --index-url TEXT            Change index URL (defaults to"
-        + os.linesep
-        + "                                  http://example.com)"
-        + os.linesep
-    )
-    assert expected in output
+    assert expected_url in output
 
 
 def test_stdin_without_output_file(runner):
@@ -995,14 +1035,19 @@ def test_options_in_requirements_file(runner, options):
     ("cli_options", "expected_message"),
     (
         pytest.param(
-            ["--index-url", "file:foo"],
-            "Was file:foo reachable?",
+            ["--index-url", "scheme://foo"],
+            "Was scheme://foo reachable?",
             id="single index url",
         ),
         pytest.param(
-            ["--index-url", "file:foo", "--extra-index-url", "file:bar"],
-            "Were file:foo or file:bar reachable?",
+            ["--index-url", "scheme://foo", "--extra-index-url", "scheme://bar"],
+            "Were scheme://foo or scheme://bar reachable?",
             id="multiple index urls",
+        ),
+        pytest.param(
+            ["--index-url", "scheme://username:password@host"],
+            "Was scheme://username:****@host reachable?",
+            id="index url with credentials",
         ),
     ),
 )

@@ -274,6 +274,16 @@ def test_force_text(value, expected_text):
             ["--pip-args", "--disable-pip-version-check --isolated"],
             "pip-compile --pip-args='--disable-pip-version-check --isolated'",
         ),
+        pytest.param(
+            ["--extra-index-url", "https://username:password@example.com/"],
+            "pip-compile --extra-index-url='https://username:****@example.com/'",
+            id="redact password in index",
+        ),
+        pytest.param(
+            ["--find-links", "https://username:password@example.com/"],
+            "pip-compile --find-links='https://username:****@example.com/'",
+            id="redact password in link",
+        ),
     ),
 )
 def test_get_compile_command(tmpdir_cwd, cli_args, expected_command):
