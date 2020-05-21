@@ -1191,3 +1191,75 @@ def test_preserve_compiled_prerelease_version(pip_conf, runner):
 
     assert out.exit_code == 0, out
     assert "small-fake-a==0.3b1" in out.stderr.splitlines()
+
+
+def test_prefer_binary_dist(
+    pip_conf, make_package, make_sdist, make_wheel, tmpdir, runner
+):
+    """
+    Test pip-compile chooses a correct version of a package with
+    a binary distribution when PIP_PREFER_BINARY environment variable is on.
+    """
+    dists_dir = tmpdir / "dists"
+
+    # Make first-package==1.0 and wheels
+    first_package_v1 = make_package(name="first-package", version="1.0")
+    make_wheel(first_package_v1, dists_dir)
+
+    # Make first-package==2.0 and sdists
+    first_package_v2 = make_package(name="first-package", version="2.0")
+    make_sdist(first_package_v2, dists_dir)
+
+    # Make second-package==1.0 which depends on first-package, and wheels
+    second_package_v1 = make_package(
+        name="second-package", version="1.0", install_requires=["first-package"]
+    )
+    make_wheel(second_package_v1, dists_dir)
+
+    with open("requirements.in", "w") as req_in:
+        req_in.write("second-package")
+
+    out = runner.invoke(
+        cli,
+        ["--no-annotate", "--find-links", str(dists_dir)],
+        env={"PIP_PREFER_BINARY": "1"},
+    )
+
+    assert out.exit_code == 0, out
+    assert "first-package==1.0" in out.stderr.splitlines(), out.stderr
+    assert "second-package==1.0" in out.stderr.splitlines(), out.stderr
+
+
+@pytest.mark.parametrize("prefer_binary", (True, False))
+def test_prefer_binary_dist_even_there_is_source_dists(
+    pip_conf, make_package, make_sdist, make_wheel, tmpdir, runner, prefer_binary
+):
+    """
+    Test pip-compile chooses a correct version of a package with a binary distribution
+    (despite a source dist existing) when PIP_PREFER_BINARY environment variable is on
+    or off.
+
+    Regression test for issue GH-1118.
+    """
+    dists_dir = tmpdir / "dists"
+
+    # Make first version of package with only wheels
+    package_v1 = make_package(name="test-package", version="1.0")
+    make_wheel(package_v1, dists_dir)
+
+    # Make seconds version with wheels and sdists
+    package_v2 = make_package(name="test-package", version="2.0")
+    make_wheel(package_v2, dists_dir)
+    make_sdist(package_v2, dists_dir)
+
+    with open("requirements.in", "w") as req_in:
+        req_in.write("test-package")
+
+    out = runner.invoke(
+        cli,
+        ["--no-annotate", "--find-links", str(dists_dir)],
+        env={"PIP_PREFER_BINARY": str(int(prefer_binary))},
+    )
+
+    assert out.exit_code == 0, out
+    assert "test-package==2.0" in out.stderr.splitlines(), out.stderr
