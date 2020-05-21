@@ -28,7 +28,7 @@ def mocked_tmp_req_file(mocked_tmp_file):
 
 @pytest.mark.parametrize(
     ("installed", "root", "expected"),
-    [
+    (
         ([], "pip-tools", []),
         ([("pip-tools==1", [])], "pip-tools", ["pip-tools"]),
         ([("pip-tools==1", []), ("django==1.7", [])], "pip-tools", ["pip-tools"]),
@@ -61,7 +61,7 @@ def mocked_tmp_req_file(mocked_tmp_file):
             "root",
             ["root", "child"],
         ),
-    ],
+    ),
 )
 def test_dependency_tree(fake_dist, installed, root, expected):
     installed = {
@@ -376,13 +376,13 @@ def test_sync_requirement_file_with_hashes(
         mocked_tmp_req_file.write.assert_called_once_with(expected)
 
 
-@mock.patch("piptools.sync.click.echo")
-def test_sync_up_to_date(echo):
+def test_sync_up_to_date(runner):
     """
     Everything up-to-date should be printed.
     """
-    sync(set(), set(), verbose=True)
-    echo.assert_called_once_with("Everything up-to-date")
+    with runner.isolation() as (stdout, _):
+        sync(set(), set(), verbose=True)
+    assert stdout.getvalue().decode().splitlines() == ["Everything up-to-date"]
 
 
 @mock.patch("piptools.sync.check_call")
@@ -399,64 +399,58 @@ def test_sync_verbose(check_call, from_line):
 
 @pytest.mark.parametrize(
     ("to_install", "to_uninstall", "expected_message"),
-    [
+    (
         ({"django==1.8", "click==4.0"}, set(), "Would install:"),
         (set(), {"django==1.8", "click==4.0"}, "Would uninstall:"),
-    ],
+    ),
 )
-@mock.patch("piptools.sync.click.echo")
-def test_sync_dry_run(echo, from_line, to_install, to_uninstall, expected_message):
+def test_sync_dry_run(runner, from_line, to_install, to_uninstall, expected_message):
     """
     Sync with --dry-run option prints what's is going to be installed/uninstalled.
     """
     to_install = set(from_line(pkg) for pkg in to_install)
-    to_uninstall = set(from_line(pkg) for pkg in to_uninstall)
 
-    sync(to_install, to_uninstall, dry_run=True)
+    with runner.isolation() as (stdout, _):
+        sync(to_install, to_uninstall, dry_run=True)
 
-    expected_calls = [
-        mock.call(expected_message),
-        mock.call("  django==1.8"),
-        mock.call("  click==4.0"),
+    assert stdout.getvalue().decode().splitlines() == [
+        expected_message,
+        "  click==4.0",
+        "  django==1.8",
     ]
-    echo.assert_has_calls(expected_calls, any_order=True)
 
 
 @pytest.mark.parametrize(
     ("to_install", "to_uninstall", "expected_message"),
-    [
+    (
         ({"django==1.8", "click==4.0"}, set(), "Would install:"),
         (set(), {"django==1.8", "click==4.0"}, "Would uninstall:"),
-    ],
+    ),
 )
 @mock.patch("piptools.sync.check_call")
-@mock.patch("piptools.sync.click.confirm")
-@mock.patch("piptools.sync.click.echo")
+@mock.patch("piptools.sync.click.confirm", return_value=False)
 def test_sync_ask_declined(
-    echo, confirm, check_call, from_line, to_install, to_uninstall, expected_message
+    confirm, check_call, runner, from_line, to_install, to_uninstall, expected_message
 ):
     """
     Sync with --ask option does a dry run if the user declines
     """
-    confirm.return_value = False
 
     to_install = set(from_line(pkg) for pkg in to_install)
-    to_uninstall = set(from_line(pkg) for pkg in to_uninstall)
 
-    sync(to_install, to_uninstall, ask=True)
+    with runner.isolation() as (stdout, _):
+        sync(to_install, to_uninstall, ask=True)
 
-    expected_calls = [
-        mock.call(expected_message),
-        mock.call("  django==1.8"),
-        mock.call("  click==4.0"),
+    assert stdout.getvalue().decode().splitlines() == [
+        expected_message,
+        "  click==4.0",
+        "  django==1.8",
     ]
-    echo.assert_has_calls(expected_calls, any_order=True)
-
     confirm.assert_called_once_with("Would you like to proceed with these changes?")
     check_call.assert_not_called()
 
 
-@pytest.mark.parametrize("dry_run", [True, False])
+@pytest.mark.parametrize("dry_run", (True, False))
 @mock.patch("piptools.sync.click.confirm")
 @mock.patch("piptools.sync.check_call")
 def test_sync_ask_accepted(check_call, confirm, from_line, dry_run):

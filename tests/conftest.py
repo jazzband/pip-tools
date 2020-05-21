@@ -15,9 +15,9 @@ from pip._internal.req.constructors import (
 )
 from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Requirement
-from pytest import fixture
 
 from .constants import MINIMAL_WHEELS_PATH
+from .utils import looks_like_ci
 
 from piptools.cache import DependencyCache
 from piptools.exceptions import NoCandidateFound
@@ -109,21 +109,21 @@ class FakeInstalledDistribution(object):
 def pytest_collection_modifyitems(config, items):
     for item in items:
         # Mark network tests as flaky
-        if item.get_closest_marker("network") and "CI" in os.environ:
+        if item.get_closest_marker("network") and looks_like_ci():
             item.add_marker(pytest.mark.flaky(reruns=3, reruns_delay=2))
 
 
-@fixture
+@pytest.fixture
 def fake_dist():
     return FakeInstalledDistribution
 
 
-@fixture
+@pytest.fixture
 def repository():
     return FakeRepository()
 
 
-@fixture
+@pytest.fixture
 def pypi_repository(tmpdir):
     return PyPIRepository(
         ["--index-url", PyPIRepository.DEFAULT_INDEX_URL],
@@ -131,12 +131,12 @@ def pypi_repository(tmpdir):
     )
 
 
-@fixture
+@pytest.fixture
 def depcache(tmpdir):
     return DependencyCache(str(tmpdir / "dep-cache"))
 
 
-@fixture
+@pytest.fixture
 def resolver(depcache, repository):
     # TODO: It'd be nicer if Resolver instance could be set up and then
     #       use .resolve(...) on the specset, instead of passing it to
@@ -144,29 +144,29 @@ def resolver(depcache, repository):
     return partial(Resolver, repository=repository, cache=depcache)
 
 
-@fixture
+@pytest.fixture
 def base_resolver(depcache):
     return partial(Resolver, cache=depcache)
 
 
-@fixture
+@pytest.fixture
 def from_line():
     return install_req_from_line
 
 
-@fixture
+@pytest.fixture
 def from_editable():
     return install_req_from_editable
 
 
-@fixture
+@pytest.fixture
 def runner():
     cli_runner = CliRunner(mix_stderr=False)
     with cli_runner.isolated_filesystem():
         yield cli_runner
 
 
-@fixture
+@pytest.fixture
 def tmpdir_cwd(tmpdir):
     with tmpdir.as_cwd():
         yield tmpdir

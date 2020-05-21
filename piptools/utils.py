@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import sys
 from collections import OrderedDict
-from itertools import chain, groupby
+from itertools import chain
 
 import six
 from click.utils import LazyFile
@@ -142,11 +142,6 @@ def as_tuple(ireq):
     version = next(iter(ireq.specifier._specs))._spec[1]
     extras = tuple(sorted(ireq.extras))
     return name, version, extras
-
-
-def full_groupby(iterable, key=None):
-    """Like groupby(), but sorts the input on the group key first."""
-    return groupby(sorted(iterable, key=key), key=key)
 
 
 def flat_map(fn, collection):

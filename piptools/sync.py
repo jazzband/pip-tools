@@ -173,12 +173,12 @@ def sync(
     if dry_run:
         if to_uninstall:
             click.echo("Would uninstall:")
-            for pkg in to_uninstall:
+            for pkg in sorted(to_uninstall):
                 click.echo("  {}".format(pkg))
 
         if to_install:
             click.echo("Would install:")
-            for ireq in to_install:
+            for ireq in sorted(to_install, key=key_from_ireq):
                 click.echo("  {}".format(format_requirement(ireq)))
 
     if ask and click.confirm("Would you like to proceed with these changes?"):
