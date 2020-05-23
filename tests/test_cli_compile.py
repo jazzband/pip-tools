@@ -209,7 +209,7 @@ def test_mutual_exclusive_index_options(runner, options):
     assert out.exit_code == 2
     assert (
         "--index/--no-index and --emit-index-url/--no-emit-index-url "
-        "are mutual exclusive"
+        "are mutually exclusive"
     ) in out.stderr
 
 

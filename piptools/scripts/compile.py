@@ -43,7 +43,8 @@ class BaseCommand(Command):
 
     def has_arg(self, arg_name):
         """
-        Detect whether a given arg name is present in the argument part of `sys.argv`.
+        Detect whether a given arg name (including negative counterparts
+        to the arg, e.g. --no-arg) is present in the argument part of `sys.argv`.
         """
         command_options = {option.name: option for option in self.params}
         option = command_options[arg_name]
@@ -278,7 +279,7 @@ def cli(
     if cli.has_arg("index") and cli.has_arg("emit_index_url"):
         raise click.BadParameter(
             "--index/--no-index and --emit-index-url/--no-emit-index-url "
-            "are mutual exclusive."
+            "are mutually exclusive."
         )
     elif cli.has_arg("index"):
         warnings.warn(
