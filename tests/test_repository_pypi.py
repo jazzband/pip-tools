@@ -366,8 +366,7 @@ def test_name_collision(from_line, pypi_repository, make_package, make_sdist, tm
     }
 
     for pkg_name, pkg in packages.items():
-        pkg_path = os.path.join(tmpdir, pkg_name)
-        os.mkdir(pkg_path)
+        pkg_path = str(tmpdir / pkg_name)
 
         make_sdist(pkg, pkg_path, "--formats=zip")
 
@@ -376,20 +375,17 @@ def test_name_collision(from_line, pypi_repository, make_package, make_sdist, tm
             os.path.join(pkg_path, "master.zip"),
         )
 
-    name_collision_1 = (
-        "file://"
-        + str(os.path.join(tmpdir, "test_package_1", "master.zip"))
-        + "#egg=test_package_1"
+    name_collision_1 = "file://{dist_path}#egg=test_package_1".format(
+        dist_path=tmpdir / "test_package_1" / "master.zip"
     )
     ireq = from_line(name_collision_1)
-    pypi_repository.get_dependencies(ireq)
+    deps = pypi_repository.get_dependencies(ireq)
+    assert len(deps) == 0
 
-    name_collision_2 = (
-        "file://"
-        + str(os.path.join(tmpdir, "test_package_2", "master.zip"))
-        + "#egg=test_package_2"
+    name_collision_2 = "file://{dist_path}#egg=test_package_2".format(
+        dist_path=tmpdir / "test_package_2" / "master.zip"
     )
     ireq = from_line(name_collision_2)
-    reqs = pypi_repository.get_dependencies(ireq)
-    assert len(reqs) == 1
-    assert reqs.pop().req.name == "test-package-1"
+    deps = pypi_repository.get_dependencies(ireq)
+    assert len(deps) == 1
+    assert deps.pop().name == "test-package-1"
