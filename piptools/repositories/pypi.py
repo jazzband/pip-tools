@@ -378,7 +378,7 @@ class PyPIRepository(BaseRepository):
         }
 
     def _get_file_hash(self, link):
-        log.debug("Hashing {}".format(link.url_without_fragment))
+        log.debug("Hashing {}".format(link.show_url))
         h = hashlib.new(FAVORITE_HASH)
         with open_local_or_remote_file(link, self.session) as f:
             # Chunks to iterate
