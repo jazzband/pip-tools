@@ -31,22 +31,19 @@ install_command = create_command("install")
 pip_defaults = install_command.parser.get_default_values()
 
 
-class CompileCommand(Command):
-    def __init__(self, *awrgs, **kwargs):
-        super(CompileCommand, self).__init__(*awrgs, **kwargs)
-        self._os_args = None
+class BaseCommand(Command):
+    _os_args = None
 
     def parse_args(self, ctx, args):
         """
-        Override `parse_args` to store args since click doesn't provide
-        this information in the context.
+        Override base `parse_args` to store the argument part of `sys.argv`.
         """
         self._os_args = set(args)
-        return super(CompileCommand, self).parse_args(ctx, args)
+        return super(BaseCommand, self).parse_args(ctx, args)
 
     def has_arg(self, arg_name):
         """
-        Detect whether given arg name is present in the argument part of `sys.argv`.
+        Detect whether a given arg name is present in the argument part of `sys.argv`.
         """
         command_options = {option.name: option for option in self.params}
         option = command_options[arg_name]
@@ -54,7 +51,7 @@ class CompileCommand(Command):
         return bool(self._os_args & args)
 
 
-@click.command(cls=CompileCommand)
+@click.command(cls=BaseCommand)
 @click.version_option()
 @click.pass_context
 @click.option("-v", "--verbose", count=True, help="Show more output")
