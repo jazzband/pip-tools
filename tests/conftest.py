@@ -274,7 +274,7 @@ def run_setup_file():
     def _run_setup_file(package_dir_path, *args):
         setup_file = str(package_dir_path / "setup.py")
         return check_call(
-            (sys.executable, setup_file) + args, cwd=package_dir_path
+            (sys.executable, setup_file) + args, cwd=str(package_dir_path)
         )  # nosec
 
     return _run_setup_file
