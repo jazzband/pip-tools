@@ -123,15 +123,16 @@ class PyPIRepository(BaseRepository):
             return ireq  # return itself as the best match
 
         all_candidates = self.find_all_candidates(ireq.name)
-        candidates_by_version = lookup_table(
-            all_candidates, key=lambda c: c.version, unique=True
-        )
+        candidates_by_version = lookup_table(all_candidates, key=lambda c: c.version)
         matching_versions = ireq.specifier.filter(
             (candidate.version for candidate in all_candidates), prereleases=prereleases
         )
 
-        # Reuses pip's internal candidate sort key to sort
-        matching_candidates = [candidates_by_version[ver] for ver in matching_versions]
+        matching_candidates = list(
+            itertools.chain.from_iterable(
+                candidates_by_version[ver] for ver in matching_versions
+            )
+        )
         if not matching_candidates:
             raise NoCandidateFound(ireq, all_candidates, self.finder)
 
@@ -377,7 +378,7 @@ class PyPIRepository(BaseRepository):
         }
 
     def _get_file_hash(self, link):
-        log.debug("Hashing {}".format(link.url_without_fragment))
+        log.debug("Hashing {}".format(link.show_url))
         h = hashlib.new(FAVORITE_HASH)
         with open_local_or_remote_file(link, self.session) as f:
             # Chunks to iterate

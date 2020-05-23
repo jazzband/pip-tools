@@ -8,6 +8,8 @@ from itertools import chain
 import six
 from click.utils import LazyFile
 from pip._internal.req.constructors import install_req_from_line
+from pip._internal.utils.misc import redact_auth_from_url
+from pip._internal.vcs import is_url
 from six.moves import shlex_quote
 
 from ._compat import PIP_VERSION
@@ -365,6 +367,8 @@ def get_compile_command(click_ctx):
                 left_args.append(shlex_quote(arg))
             # Append to args the option with a value
             else:
+                if isinstance(val, six.string_types) and is_url(val):
+                    val = redact_auth_from_url(val)
                 if option.name == "pip_args":
                     # shlex_quote would produce functional but noisily quoted results,
                     # e.g. --pip-args='--cache-dir='"'"'/tmp/with spaces'"'"''

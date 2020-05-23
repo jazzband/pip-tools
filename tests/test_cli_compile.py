@@ -108,7 +108,7 @@ def test_find_links_option(runner):
     out = runner.invoke(cli, ["-v", "-f", "./libs1", "-f", "./libs2"])
 
     # Check that find-links has been passed to pip
-    assert "Configuration:\n  -f ./libs1\n  -f ./libs2\n  -f ./libs3\n" in out.stderr
+    assert "Using links:\n  ./libs1\n  ./libs2\n  ./libs3\n" in out.stderr
 
     # Check that find-links has been written to a requirements.txt
     with open("requirements.txt", "r") as req_txt:
@@ -142,6 +142,30 @@ def test_extra_index_option(pip_with_index_conf, runner):
         "--extra-index-url http://extraindex1.com\n"
         "--extra-index-url http://extraindex2.com" in out.stderr
     )
+
+
+@pytest.mark.parametrize("option", ("--extra-index-url", "--find-links"))
+def test_redacted_urls_in_verbose_output(runner, option):
+    """
+    Test that URLs with sensitive data don't leak to the output.
+    """
+    with open("requirements.in", "w"):
+        pass
+
+    out = runner.invoke(
+        cli,
+        [
+            "--no-header",
+            "--no-index",
+            "--no-emit-find-links",
+            "--verbose",
+            option,
+            "http://username:password@example.com",
+        ],
+    )
+
+    assert "http://username:****@example.com" in out.stderr
+    assert "password" not in out.stderr
 
 
 def test_trusted_host(pip_conf, runner):
@@ -703,21 +727,37 @@ def test_no_candidates_pre(pip_conf, runner):
     assert "Tried pre-versions:" in out.stderr
 
 
-def test_default_index_url(pip_with_index_conf):
+@pytest.mark.parametrize(
+    ("url", "expected_url"),
+    (
+        pytest.param("https://example.com", "https://example.com", id="regular url"),
+        pytest.param(
+            "https://username:password@example.com",
+            "https://username:****@example.com",
+            id="url with credentials",
+        ),
+    ),
+)
+def test_default_index_url(make_pip_conf, url, expected_url):
+    """
+    Test help's output with default index URL.
+    """
+    make_pip_conf(
+        dedent(
+            """\
+            [global]
+            index-url = {url}
+            """.format(
+                url=url
+            )
+        )
+    )
+
     status, output = invoke([sys.executable, "-m", "piptools", "compile", "--help"])
     output = output.decode("utf-8")
 
-    # Click's subprocess output has \r\r\n line endings on win py27. Fix it.
-    output = output.replace("\r\r", "\r")
-
     assert status == 0
-    expected = (
-        "  -i, --index-url TEXT            Change index URL (defaults to"
-        + os.linesep
-        + "                                  http://example.com)"
-        + os.linesep
-    )
-    assert expected in output
+    assert expected_url in output
 
 
 def test_stdin_without_output_file(runner):
@@ -1040,14 +1080,19 @@ def test_options_in_requirements_file(runner, options):
     ("cli_options", "expected_message"),
     (
         pytest.param(
-            ["--index-url", "file:foo"],
-            "Was file:foo reachable?",
+            ["--index-url", "scheme://foo"],
+            "Was scheme://foo reachable?",
             id="single index url",
         ),
         pytest.param(
-            ["--index-url", "file:foo", "--extra-index-url", "file:bar"],
-            "Were file:foo or file:bar reachable?",
+            ["--index-url", "scheme://foo", "--extra-index-url", "scheme://bar"],
+            "Were scheme://foo or scheme://bar reachable?",
             id="multiple index urls",
+        ),
+        pytest.param(
+            ["--index-url", "scheme://username:password@host"],
+            "Was scheme://username:****@host reachable?",
+            id="index url with credentials",
         ),
     ),
 )
@@ -1191,3 +1236,75 @@ def test_preserve_compiled_prerelease_version(pip_conf, runner):
 
     assert out.exit_code == 0, out
     assert "small-fake-a==0.3b1" in out.stderr.splitlines()
+
+
+def test_prefer_binary_dist(
+    pip_conf, make_package, make_sdist, make_wheel, tmpdir, runner
+):
+    """
+    Test pip-compile chooses a correct version of a package with
+    a binary distribution when PIP_PREFER_BINARY environment variable is on.
+    """
+    dists_dir = tmpdir / "dists"
+
+    # Make first-package==1.0 and wheels
+    first_package_v1 = make_package(name="first-package", version="1.0")
+    make_wheel(first_package_v1, dists_dir)
+
+    # Make first-package==2.0 and sdists
+    first_package_v2 = make_package(name="first-package", version="2.0")
+    make_sdist(first_package_v2, dists_dir)
+
+    # Make second-package==1.0 which depends on first-package, and wheels
+    second_package_v1 = make_package(
+        name="second-package", version="1.0", install_requires=["first-package"]
+    )
+    make_wheel(second_package_v1, dists_dir)
+
+    with open("requirements.in", "w") as req_in:
+        req_in.write("second-package")
+
+    out = runner.invoke(
+        cli,
+        ["--no-annotate", "--find-links", str(dists_dir)],
+        env={"PIP_PREFER_BINARY": "1"},
+    )
+
+    assert out.exit_code == 0, out
+    assert "first-package==1.0" in out.stderr.splitlines(), out.stderr
+    assert "second-package==1.0" in out.stderr.splitlines(), out.stderr
+
+
+@pytest.mark.parametrize("prefer_binary", (True, False))
+def test_prefer_binary_dist_even_there_is_source_dists(
+    pip_conf, make_package, make_sdist, make_wheel, tmpdir, runner, prefer_binary
+):
+    """
+    Test pip-compile chooses a correct version of a package with a binary distribution
+    (despite a source dist existing) when PIP_PREFER_BINARY environment variable is on
+    or off.
+
+    Regression test for issue GH-1118.
+    """
+    dists_dir = tmpdir / "dists"
+
+    # Make first version of package with only wheels
+    package_v1 = make_package(name="test-package", version="1.0")
+    make_wheel(package_v1, dists_dir)
+
+    # Make seconds version with wheels and sdists
+    package_v2 = make_package(name="test-package", version="2.0")
+    make_wheel(package_v2, dists_dir)
+    make_sdist(package_v2, dists_dir)
+
+    with open("requirements.in", "w") as req_in:
+        req_in.write("test-package")
+
+    out = runner.invoke(
+        cli,
+        ["--no-annotate", "--find-links", str(dists_dir)],
+        env={"PIP_PREFER_BINARY": str(int(prefer_binary))},
+    )
+
+    assert out.exit_code == 0, out
+    assert "test-package==2.0" in out.stderr.splitlines(), out.stderr
