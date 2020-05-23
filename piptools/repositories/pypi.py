@@ -43,6 +43,7 @@ FileStream = collections.namedtuple("FileStream", "stream size")
 
 class PyPIRepository(BaseRepository):
     DEFAULT_INDEX_URL = PyPI.simple_url
+    HASHABLE_PACKAGE_TYPES = {"bdist_wheel", "sdist"}
 
     """
     The PyPIRepository will use the provided Finder instance to lookup
@@ -122,15 +123,16 @@ class PyPIRepository(BaseRepository):
             return ireq  # return itself as the best match
 
         all_candidates = self.find_all_candidates(ireq.name)
-        candidates_by_version = lookup_table(
-            all_candidates, key=lambda c: c.version, unique=True
-        )
+        candidates_by_version = lookup_table(all_candidates, key=lambda c: c.version)
         matching_versions = ireq.specifier.filter(
             (candidate.version for candidate in all_candidates), prereleases=prereleases
         )
 
-        # Reuses pip's internal candidate sort key to sort
-        matching_candidates = [candidates_by_version[ver] for ver in matching_versions]
+        matching_candidates = list(
+            itertools.chain.from_iterable(
+                candidates_by_version[ver] for ver in matching_versions
+            )
+        )
         if not matching_candidates:
             raise NoCandidateFound(ireq, all_candidates, self.finder)
 
@@ -177,6 +179,10 @@ class PyPIRepository(BaseRepository):
                 upgrade_strategy="to-satisfy-only",
             )
             results = resolver._resolve_one(reqset, ireq)
+            if not ireq.prepared:
+                # If still not prepared, e.g. a constraint, do enough to assign
+                # the ireq a name:
+                resolver._get_abstract_dist_for(ireq)
 
             if PIP_VERSION[:2] <= (20, 0):
                 reqset.cleanup_files()
@@ -233,6 +239,13 @@ class PyPIRepository(BaseRepository):
                         wheel_cache.cleanup()
 
         return self._dependencies_cache[ireq]
+
+    def copy_ireq_dependencies(self, source, dest):
+        try:
+            self._dependencies_cache[dest] = self._dependencies_cache[source]
+        except KeyError:
+            # `source` may not be in cache yet.
+            pass
 
     def _get_project(self, ireq):
         """
@@ -338,6 +351,7 @@ class PyPIRepository(BaseRepository):
                     algo=FAVORITE_HASH, digest=file_["digests"][FAVORITE_HASH]
                 )
                 for file_ in release_files
+                if file_["packagetype"] in self.HASHABLE_PACKAGE_TYPES
             }
         except KeyError:
             log.debug("Missing digests of release files on PyPI")

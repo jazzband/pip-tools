@@ -1,3 +1,24 @@
+# 5.1.2 (2020-05-05)
+
+Bug Fixes:
+- Fix grouping of editables and non-editables requirements
+([1132](https://github.com/jazzband/pip-tools/pull/1132)). Thanks @richafrank
+
+# 5.1.1 (2020-05-01)
+
+Bug Fixes:
+- Fix a bug where `pip-compile` would generate hashes for `*.egg` files
+([#1122](https://github.com/jazzband/pip-tools/pull/1122)). Thanks @atugushev
+
+# 5.1.0 (2020-04-27)
+
+Features:
+- Show progress bar when downloading packages in `pip-compile` verbose mode
+([#949](https://github.com/jazzband/pip-tools/pull/949)). Thanks @atugushev
+- `pip-compile` now gets hashes from `PyPI` JSON API (if available) which significantly
+increases the speed of hashes generation
+([#1109](https://github.com/jazzband/pip-tools/pull/1109)). Thanks @atugushev
+
 # 5.0.0 (2020-04-16)
 
 Backwards Incompatible Changes:

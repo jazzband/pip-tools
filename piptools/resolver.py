@@ -4,7 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import copy
 import os
 from functools import partial
-from itertools import chain, count
+from itertools import chain, count, groupby
 
 from pip._internal.req.constructors import install_req_from_line
 
@@ -14,7 +14,6 @@ from .utils import (
     UNSAFE_PACKAGES,
     format_requirement,
     format_specifier,
-    full_groupby,
     is_pinned_requirement,
     is_url_requirement,
     key_from_ireq,
@@ -45,7 +44,7 @@ class RequirementSummary(object):
         return repr([self.key, self.specifier, self.extras])
 
 
-def combine_install_requirements(ireqs):
+def combine_install_requirements(repository, ireqs):
     """
     Return a single install requirement that reflects a combination of
     all the inputs.
@@ -56,12 +55,21 @@ def combine_install_requirements(ireqs):
     for ireq in ireqs:
         source_ireqs.extend(getattr(ireq, "_source_ireqs", [ireq]))
 
+    # Optimization. Don't bother with combination logic.
+    if len(source_ireqs) == 1:
+        return source_ireqs[0]
+
     # deepcopy the accumulator so as to not modify the inputs
     combined_ireq = copy.deepcopy(source_ireqs[0])
+    repository.copy_ireq_dependencies(source_ireqs[0], combined_ireq)
+
     for ireq in source_ireqs[1:]:
         # NOTE we may be losing some info on dropped reqs here
-        if combined_ireq.req is not None and ireq.req is not None:
-            combined_ireq.req.specifier &= ireq.req.specifier
+        combined_ireq.req.specifier &= ireq.req.specifier
+        if combined_ireq.constraint:
+            # We don't find dependencies for constraint ireqs, so copy them
+            # from non-constraints:
+            repository.copy_ireq_dependencies(ireq, combined_ireq)
         combined_ireq.constraint &= ireq.constraint
         # Return a sorted, de-duped tuple of extras
         combined_ireq.extras = tuple(
@@ -117,12 +125,7 @@ class Resolver(object):
     @property
     def constraints(self):
         return set(
-            self._group_constraints(
-                chain(
-                    sorted(self.our_constraints, key=str),
-                    sorted(self.their_constraints, key=str),
-                )
-            )
+            self._group_constraints(chain(self.our_constraints, self.their_constraints))
         )
 
     def resolve_hashes(self, ireqs):
@@ -220,8 +223,22 @@ class Resolver(object):
             flask~=0.7
 
         """
-        for _, ireqs in full_groupby(constraints, key=key_from_ireq):
-            yield combine_install_requirements(ireqs)
+        constraints = list(constraints)
+        for ireq in constraints:
+            if ireq.name is None:
+                # get_dependencies has side-effect of assigning name to ireq
+                # (so we can group by the name below).
+                self.repository.get_dependencies(ireq)
+
+        # Sort first by name, i.e. the groupby key. Then within each group,
+        # sort editables first.
+        # This way, we don't bother with combining editables, since the first
+        # ireq will be editable, if one exists.
+        for _, ireqs in groupby(
+            sorted(constraints, key=(lambda x: (key_from_ireq(x), not x.editable))),
+            key=key_from_ireq,
+        ):
+            yield combine_install_requirements(self.repository, ireqs)
 
     def _resolve_one_round(self):
         """
@@ -256,7 +273,7 @@ class Resolver(object):
             for best_match in best_matches:
                 their_constraints.extend(self._iter_dependencies(best_match))
         # Grouping constraints to make clean diff between rounds
-        theirs = set(self._group_constraints(sorted(their_constraints, key=str)))
+        theirs = set(self._group_constraints(their_constraints))
 
         # NOTE: We need to compare RequirementSummary objects, since
         # InstallRequirement does not define equality

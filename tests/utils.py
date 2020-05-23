@@ -1,3 +1,4 @@
+import os
 import subprocess
 
 
@@ -11,3 +12,11 @@ def invoke(command):
         status = error.returncode
 
     return status, output
+
+
+# NOTE: keep in sync with "passenv" in tox.ini
+CI_VARIABLES = {"CI", "GITHUB_ACTIONS"}
+
+
+def looks_like_ci():
+    return bool(set(os.environ.keys()) & CI_VARIABLES)

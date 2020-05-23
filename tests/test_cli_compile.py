@@ -6,7 +6,6 @@ from textwrap import dedent
 import mock
 import pytest
 from pip._internal.utils.urls import path_to_url
-from pytest import mark
 
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
 from .utils import invoke
@@ -15,7 +14,7 @@ from piptools.scripts.compile import cli
 
 
 @pytest.fixture(autouse=True)
-def temp_dep_cache(tmpdir, monkeypatch):
+def _temp_dep_cache(tmpdir, monkeypatch):
     monkeypatch.setenv("PIP_TOOLS_CACHE_DIR", str(tmpdir / "cache"))
 
 
@@ -66,8 +65,8 @@ def test_command_line_setuptools_read(pip_conf, runner):
 
 
 @pytest.mark.parametrize(
-    "options, expected_output_file",
-    [
+    ("options", "expected_output_file"),
+    (
         # For the `pip-compile` output file should be "requirements.txt"
         ([], "requirements.txt"),
         # For the `pip-compile --output-file=output.txt`
@@ -78,7 +77,7 @@ def test_command_line_setuptools_read(pip_conf, runner):
         # For the `pip-compile setup.py --output-file=output.txt`
         # output file should be "output.txt"
         (["setup.py", "--output-file", "output.txt"], "output.txt"),
-    ],
+    ),
 )
 def test_command_line_setuptools_output_file(
     pip_conf, runner, options, expected_output_file
@@ -108,7 +107,7 @@ def test_find_links_option(runner):
     out = runner.invoke(cli, ["-v", "-f", "./libs1", "-f", "./libs2"])
 
     # Check that find-links has been passed to pip
-    assert "Configuration:\n  -f ./libs1\n  -f ./libs2\n  -f ./libs3\n" in out.stderr
+    assert "Using links:\n  ./libs1\n  ./libs2\n  ./libs3\n" in out.stderr
 
     # Check that find-links has been written to a requirements.txt
     with open("requirements.txt", "r") as req_txt:
@@ -142,6 +141,30 @@ def test_extra_index_option(pip_with_index_conf, runner):
         "--extra-index-url http://extraindex1.com\n"
         "--extra-index-url http://extraindex2.com" in out.stderr
     )
+
+
+@pytest.mark.parametrize("option", ("--extra-index-url", "--find-links"))
+def test_redacted_urls_in_verbose_output(runner, option):
+    """
+    Test that URLs with sensitive data don't leak to the output.
+    """
+    with open("requirements.in", "w"):
+        pass
+
+    out = runner.invoke(
+        cli,
+        [
+            "--no-header",
+            "--no-index",
+            "--no-emit-find-links",
+            "--verbose",
+            option,
+            "http://username:password@example.com",
+        ],
+    )
+
+    assert "http://username:****@example.com" in out.stderr
+    assert "password" not in out.stderr
 
 
 def test_trusted_host(pip_conf, runner):
@@ -219,7 +242,54 @@ def test_editable_package(pip_conf, runner):
     assert "small-fake-a==0.1" in out.stderr
 
 
-@pytest.mark.parametrize(("req_editable",), [(True,), (False,)])
+def test_editable_package_without_non_editable_duplicate(pip_conf, runner):
+    """
+    piptools keeps editable requirement,
+    without also adding a duplicate "non-editable" requirement variation
+    """
+    fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_a")
+    fake_package_dir = path_to_url(fake_package_dir)
+    with open("requirements.in", "w") as req_in:
+        # small_fake_with_unpinned_deps also requires small_fake_a
+        req_in.write(
+            "-e "
+            + fake_package_dir
+            + "\nsmall_fake_with_unpinned_deps"  # require editable fake package
+        )
+
+    out = runner.invoke(cli, ["-n"])
+
+    assert out.exit_code == 0
+    assert fake_package_dir in out.stderr
+    # Shouldn't include a non-editable small-fake-a==<version>.
+    assert "small-fake-a==" not in out.stderr
+
+
+def test_editable_package_constraint_without_non_editable_duplicate(pip_conf, runner):
+    """
+    piptools keeps editable constraint,
+    without also adding a duplicate "non-editable" requirement variation
+    """
+    fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_a")
+    fake_package_dir = path_to_url(fake_package_dir)
+    with open("constraints.txt", "w") as constraints:
+        constraints.write("-e " + fake_package_dir)  # require editable fake package
+
+    with open("requirements.in", "w") as req_in:
+        req_in.write(
+            "-c constraints.txt"  # require editable fake package
+            "\nsmall_fake_with_unpinned_deps"  # This one also requires small_fake_a
+        )
+
+    out = runner.invoke(cli, ["-n"])
+
+    assert out.exit_code == 0
+    assert fake_package_dir in out.stderr
+    # Shouldn't include a non-editable small-fake-a==<version>.
+    assert "small-fake-a==" not in out.stderr
+
+
+@pytest.mark.parametrize("req_editable", ((True,), (False,)))
 def test_editable_package_in_constraints(pip_conf, runner, req_editable):
     """
     piptools can compile an editable that appears in both primary requirements
@@ -281,9 +351,9 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
     assert not os.listdir(os.path.join(str(cache_dir), "pkgs"))
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     ("line", "dependency"),
-    [
+    (
         # zip URL
         # use pip-tools version prior to its use of setuptools_scm,
         # which is incompatible with https: install
@@ -305,9 +375,9 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
             "899c16bb8bac419/pip_tools-3.6.1-py2.py3-none-any.whl",
             "\nclick==",
         ),
-    ],
+    ),
 )
-@mark.parametrize(("generate_hashes",), [(True,), (False,)])
+@pytest.mark.parametrize("generate_hashes", ((True,), (False,)))
 @pytest.mark.network
 def test_url_package(runner, line, dependency, generate_hashes):
     with open("requirements.in", "w") as req_in:
@@ -319,9 +389,9 @@ def test_url_package(runner, line, dependency, generate_hashes):
     assert dependency in out.stderr
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     ("line", "dependency", "rewritten_line"),
-    [
+    (
         # file:// wheel URL
         (
             path_to_url(
@@ -351,9 +421,9 @@ def test_url_package(runner, line, dependency, generate_hashes):
                 )
             ),
         ),
-    ],
+    ),
 )
-@mark.parametrize(("generate_hashes",), [(True,), (False,)])
+@pytest.mark.parametrize("generate_hashes", ((True,), (False,)))
 def test_local_url_package(
     pip_conf, runner, line, dependency, rewritten_line, generate_hashes
 ):
@@ -432,7 +502,7 @@ def test_upgrade_packages_option_no_existing_file(pip_conf, runner):
 
 
 @pytest.mark.parametrize(
-    "current_package, upgraded_package",
+    ("current_package", "upgraded_package"),
     (
         pytest.param("small-fake-b==0.1", "small-fake-b==0.3", id="upgrade"),
         pytest.param("small-fake-b==0.3", "small-fake-b==0.1", id="downgrade"),
@@ -612,21 +682,37 @@ def test_no_candidates_pre(pip_conf, runner):
     assert "Tried pre-versions:" in out.stderr
 
 
-def test_default_index_url(pip_with_index_conf):
+@pytest.mark.parametrize(
+    ("url", "expected_url"),
+    (
+        pytest.param("https://example.com", "https://example.com", id="regular url"),
+        pytest.param(
+            "https://username:password@example.com",
+            "https://username:****@example.com",
+            id="url with credentials",
+        ),
+    ),
+)
+def test_default_index_url(make_pip_conf, url, expected_url):
+    """
+    Test help's output with default index URL.
+    """
+    make_pip_conf(
+        dedent(
+            """\
+            [global]
+            index-url = {url}
+            """.format(
+                url=url
+            )
+        )
+    )
+
     status, output = invoke([sys.executable, "-m", "piptools", "compile", "--help"])
     output = output.decode("utf-8")
 
-    # Click's subprocess output has \r\r\n line endings on win py27. Fix it.
-    output = output.replace("\r\r", "\r")
-
     assert status == 0
-    expected = (
-        "  -i, --index-url TEXT            Change index URL (defaults to"
-        + os.linesep
-        + "                                  http://example.com)"
-        + os.linesep
-    )
-    assert expected in output
+    assert expected_url in output
 
 
 def test_stdin_without_output_file(runner):
@@ -679,15 +765,15 @@ def test_multiple_input_files_without_output_file(runner):
 
 
 @pytest.mark.parametrize(
-    "option, expected",
-    [
+    ("option", "expected"),
+    (
         (
             "--annotate",
             "small-fake-a==0.1         "
             "# via -c constraints.txt, small-fake-with-deps\n",
         ),
         ("--no-annotate", "small-fake-a==0.1\n"),
-    ],
+    ),
 )
 def test_annotate_option(pip_conf, runner, option, expected):
     """
@@ -706,8 +792,8 @@ def test_annotate_option(pip_conf, runner, option, expected):
 
 
 @pytest.mark.parametrize(
-    "option, expected",
-    [("--allow-unsafe", "small-fake-a==0.1"), (None, "# small-fake-a")],
+    ("option", "expected"),
+    (("--allow-unsafe", "small-fake-a==0.1"), (None, "# small-fake-a")),
 )
 def test_allow_unsafe_option(pip_conf, monkeypatch, runner, option, expected):
     """
@@ -724,8 +810,8 @@ def test_allow_unsafe_option(pip_conf, monkeypatch, runner, option, expected):
 
 
 @pytest.mark.parametrize(
-    "option, attr, expected",
-    [("--cert", "cert", "foo.crt"), ("--client-cert", "client_cert", "bar.pem")],
+    ("option", "attr", "expected"),
+    (("--cert", "cert", "foo.crt"), ("--client-cert", "client_cert", "bar.pem")),
 )
 @mock.patch("piptools.scripts.compile.parse_requirements")
 def test_cert_option(parse_requirements, runner, option, attr, expected):
@@ -742,7 +828,8 @@ def test_cert_option(parse_requirements, runner, option, attr, expected):
 
 
 @pytest.mark.parametrize(
-    "option, expected", [("--build-isolation", True), ("--no-build-isolation", False)]
+    ("option", "expected"),
+    (("--build-isolation", True), ("--no-build-isolation", False)),
 )
 @mock.patch("piptools.scripts.compile.parse_requirements")
 def test_build_isolation_option(parse_requirements, runner, option, expected):
@@ -774,15 +861,15 @@ def test_forwarded_args(PyPIRepository, runner):
 
 
 @pytest.mark.parametrize(
-    "cli_option, infile_option, expected_package",
-    [
+    ("cli_option", "infile_option", "expected_package"),
+    (
         # no --pre pip-compile should resolve to the last stable version
         (False, False, "small-fake-a==0.2"),
         # pip-compile --pre should resolve to the last pre-released version
         (True, False, "small-fake-a==0.3b1"),
         (False, True, "small-fake-a==0.3b1"),
         (True, True, "small-fake-a==0.3b1"),
-    ],
+    ),
 )
 def test_pre_option(pip_conf, runner, cli_option, infile_option, expected_package):
     """
@@ -801,14 +888,14 @@ def test_pre_option(pip_conf, runner, cli_option, infile_option, expected_packag
 
 @pytest.mark.parametrize(
     "add_options",
-    [
+    (
         [],
         ["--output-file", "requirements.txt"],
         ["--upgrade"],
         ["--upgrade", "--output-file", "requirements.txt"],
         ["--upgrade-package", "small-fake-a"],
         ["--upgrade-package", "small-fake-a", "--output-file", "requirements.txt"],
-    ],
+    ),
 )
 def test_dry_run_option(pip_conf, runner, add_options):
     """
@@ -825,8 +912,8 @@ def test_dry_run_option(pip_conf, runner, add_options):
 
 
 @pytest.mark.parametrize(
-    "add_options, expected_cli_output_package",
-    [
+    ("add_options", "expected_cli_output_package"),
+    (
         ([], "small-fake-a==0.1"),
         (["--output-file", "requirements.txt"], "small-fake-a==0.1"),
         (["--upgrade"], "small-fake-a==0.2"),
@@ -836,7 +923,7 @@ def test_dry_run_option(pip_conf, runner, add_options):
             ["--upgrade-package", "small-fake-a", "--output-file", "requirements.txt"],
             "small-fake-a==0.2",
         ),
-    ],
+    ),
 )
 def test_dry_run_doesnt_touch_output_file(
     pip_conf, runner, add_options, expected_cli_output_package
@@ -867,13 +954,13 @@ def test_dry_run_doesnt_touch_output_file(
 
 
 @pytest.mark.parametrize(
-    "empty_input_pkg, prior_output_pkg",
-    [
+    ("empty_input_pkg", "prior_output_pkg"),
+    (
         ("", ""),
         ("", "small-fake-a==0.1\n"),
         ("# Nothing to see here", ""),
         ("# Nothing to see here", "small-fake-a==0.1\n"),
-    ],
+    ),
 )
 def test_empty_input_file_no_header(runner, empty_input_pkg, prior_output_pkg):
     """
@@ -919,7 +1006,7 @@ def test_upgrade_package_doesnt_remove_annotation(pip_conf, runner):
 
 @pytest.mark.parametrize(
     "options",
-    [
+    (
         # TODO add --no-index support in OutputWriter
         # "--no-index",
         "--index-url https://example.com",
@@ -928,7 +1015,7 @@ def test_upgrade_package_doesnt_remove_annotation(pip_conf, runner):
         "--trusted-host example.com",
         "--no-binary :all:",
         "--only-binary :all:",
-    ],
+    ),
 )
 def test_options_in_requirements_file(runner, options):
     """
@@ -945,17 +1032,22 @@ def test_options_in_requirements_file(runner, options):
 
 
 @pytest.mark.parametrize(
-    "cli_options, expected_message",
+    ("cli_options", "expected_message"),
     (
         pytest.param(
-            ["--index-url", "file:foo"],
-            "Was file:foo reachable?",
+            ["--index-url", "scheme://foo"],
+            "Was scheme://foo reachable?",
             id="single index url",
         ),
         pytest.param(
-            ["--index-url", "file:foo", "--extra-index-url", "file:bar"],
-            "Were file:foo or file:bar reachable?",
+            ["--index-url", "scheme://foo", "--extra-index-url", "scheme://bar"],
+            "Were scheme://foo or scheme://bar reachable?",
             id="multiple index urls",
+        ),
+        pytest.param(
+            ["--index-url", "scheme://username:password@host"],
+            "Was scheme://username:****@host reachable?",
+            id="index url with credentials",
         ),
     ),
 )
@@ -976,7 +1068,7 @@ def test_unreachable_index_urls(runner, cli_options, expected_message):
 
 
 @pytest.mark.parametrize(
-    "current_package, upgraded_package",
+    ("current_package", "upgraded_package"),
     (
         pytest.param("small-fake-b==0.1", "small-fake-b==0.2", id="upgrade"),
         pytest.param("small-fake-b==0.2", "small-fake-b==0.1", id="downgrade"),
@@ -1009,7 +1101,7 @@ def test_upgrade_packages_option_subdependency(
 
 
 @pytest.mark.parametrize(
-    "input_opts, output_opts",
+    ("input_opts", "output_opts"),
     (
         # Test that input options overwrite output options
         pytest.param(
@@ -1099,3 +1191,75 @@ def test_preserve_compiled_prerelease_version(pip_conf, runner):
 
     assert out.exit_code == 0, out
     assert "small-fake-a==0.3b1" in out.stderr.splitlines()
+
+
+def test_prefer_binary_dist(
+    pip_conf, make_package, make_sdist, make_wheel, tmpdir, runner
+):
+    """
+    Test pip-compile chooses a correct version of a package with
+    a binary distribution when PIP_PREFER_BINARY environment variable is on.
+    """
+    dists_dir = tmpdir / "dists"
+
+    # Make first-package==1.0 and wheels
+    first_package_v1 = make_package(name="first-package", version="1.0")
+    make_wheel(first_package_v1, dists_dir)
+
+    # Make first-package==2.0 and sdists
+    first_package_v2 = make_package(name="first-package", version="2.0")
+    make_sdist(first_package_v2, dists_dir)
+
+    # Make second-package==1.0 which depends on first-package, and wheels
+    second_package_v1 = make_package(
+        name="second-package", version="1.0", install_requires=["first-package"]
+    )
+    make_wheel(second_package_v1, dists_dir)
+
+    with open("requirements.in", "w") as req_in:
+        req_in.write("second-package")
+
+    out = runner.invoke(
+        cli,
+        ["--no-annotate", "--find-links", str(dists_dir)],
+        env={"PIP_PREFER_BINARY": "1"},
+    )
+
+    assert out.exit_code == 0, out
+    assert "first-package==1.0" in out.stderr.splitlines(), out.stderr
+    assert "second-package==1.0" in out.stderr.splitlines(), out.stderr
+
+
+@pytest.mark.parametrize("prefer_binary", (True, False))
+def test_prefer_binary_dist_even_there_is_source_dists(
+    pip_conf, make_package, make_sdist, make_wheel, tmpdir, runner, prefer_binary
+):
+    """
+    Test pip-compile chooses a correct version of a package with a binary distribution
+    (despite a source dist existing) when PIP_PREFER_BINARY environment variable is on
+    or off.
+
+    Regression test for issue GH-1118.
+    """
+    dists_dir = tmpdir / "dists"
+
+    # Make first version of package with only wheels
+    package_v1 = make_package(name="test-package", version="1.0")
+    make_wheel(package_v1, dists_dir)
+
+    # Make seconds version with wheels and sdists
+    package_v2 = make_package(name="test-package", version="2.0")
+    make_wheel(package_v2, dists_dir)
+    make_sdist(package_v2, dists_dir)
+
+    with open("requirements.in", "w") as req_in:
+        req_in.write("test-package")
+
+    out = runner.invoke(
+        cli,
+        ["--no-annotate", "--find-links", str(dists_dir)],
+        env={"PIP_PREFER_BINARY": str(int(prefer_binary))},
+    )
+
+    assert out.exit_code == 0, out
+    assert "test-package==2.0" in out.stderr.splitlines(), out.stderr

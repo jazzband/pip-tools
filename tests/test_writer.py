@@ -1,5 +1,5 @@
+import pytest
 from pip._internal.models.format_control import FormatControl
-from pytest import fixture, mark, raises
 
 from piptools.scripts.compile import cli
 from piptools.utils import comment
@@ -11,7 +11,7 @@ from piptools.writer import (
 )
 
 
-@fixture
+@pytest.fixture
 def writer(tmpdir_cwd):
     with open("src_file", "w"), open("src_file2", "w"):
         pass
@@ -107,7 +107,7 @@ def test_format_requirement_environment_marker(from_line, writer):
     )
 
 
-@mark.parametrize(("allow_unsafe",), [(True,), (False,)])
+@pytest.mark.parametrize("allow_unsafe", ((True,), (False,)))
 def test_iter_lines__unsafe_dependencies(writer, from_line, allow_unsafe):
     writer.allow_unsafe = allow_unsafe
     writer.emit_header = False
@@ -220,7 +220,7 @@ def test_write_header_no_emit_header(writer):
     """
     writer.emit_header = False
 
-    with raises(StopIteration):
+    with pytest.raises(StopIteration):
         next(writer.write_header())
 
 
@@ -245,15 +245,15 @@ def test_write_format_controls(writer):
     assert lines == expected_lines
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     ("index_urls", "expected_lines"),
     (
         # No urls - no options
-        [[], []],
+        ([], []),
         # Single URL should be index-url
-        [["https://index-url.com"], ["--index-url https://index-url.com"]],
+        (["https://index-url.com"], ["--index-url https://index-url.com"]),
         # First URL should be index-url, the others should be extra-index-url
-        [
+        (
             [
                 "https://index-url1.com",
                 "https://index-url2.com",
@@ -264,10 +264,10 @@ def test_write_format_controls(writer):
                 "--extra-index-url https://index-url2.com",
                 "--extra-index-url https://index-url3.com",
             ],
-        ],
+        ),
         # If a first URL equals to the default URL, the the index url must not be set
         # and the others should be extra-index-url
-        [
+        (
             [
                 "https://default-index-url.com",
                 "https://index-url1.com",
@@ -277,10 +277,10 @@ def test_write_format_controls(writer):
                 "--extra-index-url https://index-url1.com",
                 "--extra-index-url https://index-url2.com",
             ],
-        ],
+        ),
         # Ignore URLs equal to the default index-url
         # (note: the previous case is exception)
-        [
+        (
             [
                 "https://index-url1.com",
                 "https://default-index-url.com",
@@ -290,11 +290,11 @@ def test_write_format_controls(writer):
                 "--index-url https://index-url1.com",
                 "--extra-index-url https://index-url2.com",
             ],
-        ],
+        ),
         # Ignore URLs equal to the default index-url
-        [["https://default-index-url.com", "https://default-index-url.com"], []],
+        (["https://default-index-url.com", "https://default-index-url.com"], []),
         # All URLs must be deduplicated
-        [
+        (
             [
                 "https://index-url1.com",
                 "https://index-url1.com",
@@ -304,7 +304,7 @@ def test_write_format_controls(writer):
                 "--index-url https://index-url1.com",
                 "--extra-index-url https://index-url2.com",
             ],
-        ],
+        ),
     ),
 )
 def test_write_index_options(writer, index_urls, expected_lines):
@@ -321,16 +321,16 @@ def test_write_index_options_no_emit_index(writer):
     There should not be --index-url/--extra-index-url options if emit_index is False.
     """
     writer.emit_index = False
-    with raises(StopIteration):
+    with pytest.raises(StopIteration):
         next(writer.write_index_options())
 
 
-@mark.parametrize(
-    "find_links, expected_lines",
+@pytest.mark.parametrize(
+    ("find_links", "expected_lines"),
     (
-        [[], []],
-        [["./foo"], ["--find-links ./foo"]],
-        [["./foo", "./bar"], ["--find-links ./foo", "--find-links ./bar"]],
+        ([], []),
+        (["./foo"], ["--find-links ./foo"]),
+        (["./foo", "./bar"], ["--find-links ./foo", "--find-links ./bar"]),
     ),
 )
 def test_write_find_links(writer, find_links, expected_lines):

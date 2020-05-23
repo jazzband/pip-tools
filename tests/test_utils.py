@@ -3,8 +3,8 @@ from __future__ import unicode_literals
 
 import os
 
+import pytest
 import six
-from pytest import mark, raises
 from six.moves import shlex_quote
 
 from piptools.scripts.compile import cli as compile_cli
@@ -116,7 +116,7 @@ def test_as_tuple(from_line):
     should_be_rejected = ["foo==1.*", "foo~=1.1,<1.5,>1.2", "foo"]
     for spec in should_be_rejected:
         ireq = from_line(spec)
-        with raises(TypeError):
+        with pytest.raises(TypeError):
             as_tuple(ireq)
 
 
@@ -147,9 +147,9 @@ def test_get_hashes_from_ireq(from_line):
     assert get_hashes_from_ireq(ireq) == expected
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     ("line", "expected"),
-    [
+    (
         ("django==1.8", True),
         ("django===1.8", True),
         ("django>1.8", False),
@@ -157,7 +157,7 @@ def test_get_hashes_from_ireq(from_line):
         ("django==1.*", False),
         ("file:///example.zip", False),
         ("https://example.com/example.zip", False),
-    ],
+    ),
 )
 def test_is_pinned_requirement(from_line, line, expected):
     ireq = from_line(line)
@@ -169,9 +169,9 @@ def test_is_pinned_requirement_editable(from_editable):
     assert not is_pinned_requirement(ireq)
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     ("line", "expected"),
-    [
+    (
         ("django==1.8", False),
         ("django", False),
         ("file:///example.zip", True),
@@ -180,7 +180,7 @@ def test_is_pinned_requirement_editable(from_editable):
         ("git+git://github.com/jazzband/pip-tools@master", True),
         ("../example.zip", True),
         ("/example.zip", True),
-    ],
+    ),
 )
 def test_is_url_requirement(from_line, line, expected):
     ireq = from_line(line)
@@ -203,22 +203,22 @@ def test_fs_str():
     assert isinstance(fs_str("whatever"), str)
 
 
-@mark.skipif(six.PY2, reason="Not supported in py2")
+@pytest.mark.skipif(six.PY2, reason="Not supported in py2")
 def test_fs_str_with_bytes():
-    with raises(AssertionError):
+    with pytest.raises(AssertionError):
         fs_str(b"whatever")
 
 
-@mark.parametrize(
-    "value, expected_text", [(None, ""), (42, "42"), ("foo", "foo"), ("bãr", "bãr")]
+@pytest.mark.parametrize(
+    ("value", "expected_text"), ((None, ""), (42, "42"), ("foo", "foo"), ("bãr", "bãr"))
 )
 def test_force_text(value, expected_text):
     assert force_text(value) == expected_text
 
 
-@mark.parametrize(
-    "cli_args, expected_command",
-    [
+@pytest.mark.parametrize(
+    ("cli_args", "expected_command"),
+    (
         # Check empty args
         ([], "pip-compile"),
         # Check all options which will be excluded from command
@@ -274,7 +274,17 @@ def test_force_text(value, expected_text):
             ["--pip-args", "--disable-pip-version-check --isolated"],
             "pip-compile --pip-args='--disable-pip-version-check --isolated'",
         ),
-    ],
+        pytest.param(
+            ["--extra-index-url", "https://username:password@example.com/"],
+            "pip-compile --extra-index-url='https://username:****@example.com/'",
+            id="redact password in index",
+        ),
+        pytest.param(
+            ["--find-links", "https://username:password@example.com/"],
+            "pip-compile --find-links='https://username:****@example.com/'",
+            id="redact password in link",
+        ),
+    ),
 )
 def test_get_compile_command(tmpdir_cwd, cli_args, expected_command):
     """
@@ -294,8 +304,8 @@ def test_get_compile_command_escaped_filenames(tmpdir_cwd):
         assert get_compile_command(ctx) == "pip-compile -- --requirements.in"
 
 
-@mark.parametrize(
-    "filename", ["requirements.in", "my requirements.in", "απαιτήσεις.txt"]
+@pytest.mark.parametrize(
+    "filename", ("requirements.in", "my requirements.in", "απαιτήσεις.txt")
 )
 def test_get_compile_command_with_files(tmpdir_cwd, filename):
     """
