@@ -271,19 +271,13 @@ def run_setup_file():
     Run a setup.py file from a given package dir.
     """
 
-    def _make_wheel(package_dir_path, *args):
-        old_dir = os.getcwd()
-        # Without changing the dir, manual runs of pytest in the pip-tools
-        # repo will result in sdists with unexpected content
-        os.chdir(package_dir_path)
-
+    def _run_setup_file(package_dir_path, *args):
         setup_file = str(package_dir_path / "setup.py")
-        result = check_call((sys.executable, setup_file) + args)  # nosec
+        return check_call(
+            (sys.executable, setup_file) + args, cwd=package_dir_path
+        )  # nosec
 
-        os.chdir(old_dir)
-        return result
-
-    return _make_wheel
+    return _run_setup_file
 
 
 @pytest.fixture
