@@ -39,8 +39,8 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install tox
-        run: pip install tox
+      - name: Install test dependencies
+        run: python -m pip install -U tox virtualenv
       - name: Prepare test environment
         run: tox --notest -p auto --parallel-live
       - name: Test pip ${{ matrix.pip-version }}
