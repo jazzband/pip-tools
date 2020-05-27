@@ -5,7 +5,9 @@ import os
 import shlex
 import sys
 import tempfile
+import warnings
 
+from click import Command
 from click.utils import safecall
 from pip._internal.commands import create_command
 from pip._internal.req.constructors import install_req_from_line
@@ -36,7 +38,28 @@ def _get_default_option(option_name):
     return getattr(default_values, option_name)
 
 
-@click.command()
+class BaseCommand(Command):
+    _os_args = None
+
+    def parse_args(self, ctx, args):
+        """
+        Override base `parse_args` to store the argument part of `sys.argv`.
+        """
+        self._os_args = set(args)
+        return super(BaseCommand, self).parse_args(ctx, args)
+
+    def has_arg(self, arg_name):
+        """
+        Detect whether a given arg name (including negative counterparts
+        to the arg, e.g. --no-arg) is present in the argument part of `sys.argv`.
+        """
+        command_options = {option.name: option for option in self.params}
+        option = command_options[arg_name]
+        args = set(option.opts + option.secondary_opts)
+        return bool(self._os_args & args)
+
+
+@click.command(cls=BaseCommand)
 @click.version_option()
 @click.pass_context
 @click.option("-v", "--verbose", count=True, help="Show more output")
@@ -104,7 +127,7 @@ def _get_default_option(option_name):
     "--index/--no-index",
     is_flag=True,
     default=True,
-    help="Add index URL to generated file",
+    help="DEPRECATED: Add index URL to generated file",
 )
 @click.option(
     "--emit-trusted-host/--no-emit-trusted-host",
@@ -188,6 +211,12 @@ def _get_default_option(option_name):
     type=click.Path(file_okay=False, writable=True),
 )
 @click.option("--pip-args", help="Arguments to pass directly to the pip command.")
+@click.option(
+    "--emit-index-url/--no-emit-index-url",
+    is_flag=True,
+    default=True,
+    help="Add index URL to generated file",
+)
 def cli(
     ctx,
     verbose,
@@ -216,6 +245,7 @@ def cli(
     emit_find_links,
     cache_dir,
     pip_args,
+    emit_index_url,
 ):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbosity = verbose - quiet
@@ -254,6 +284,19 @@ def cli(
 
         # Close the file at the end of the context execution
         ctx.call_on_close(safecall(output_file.close_intelligently))
+
+    if cli.has_arg("index") and cli.has_arg("emit_index_url"):
+        raise click.BadParameter(
+            "--index/--no-index and --emit-index-url/--no-emit-index-url "
+            "are mutually exclusive."
+        )
+    elif cli.has_arg("index"):
+        warnings.warn(
+            "--index and --no-index are deprecated and will be removed "
+            "in future versions. Use --emit-index-url/--no-emit-index-url instead.",
+            category=FutureWarning,
+        )
+        emit_index_url = index
 
     ###
     # Setup
@@ -419,7 +462,7 @@ def cli(
         click_ctx=ctx,
         dry_run=dry_run,
         emit_header=header,
-        emit_index=index,
+        emit_index_url=emit_index_url,
         emit_trusted_host=emit_trusted_host,
         annotate=annotate,
         generate_hashes=generate_hashes,

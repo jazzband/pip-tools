@@ -247,12 +247,14 @@ def test_force_text(value, expected_text):
         (["--allow-unsafe"], "pip-compile --allow-unsafe"),
         # Check negative flags
         (["--no-index"], "pip-compile --no-index"),
+        (["--no-emit-index-url"], "pip-compile --no-emit-index-url"),
         (["--no-emit-trusted-host"], "pip-compile --no-emit-trusted-host"),
         (["--no-annotate"], "pip-compile --no-annotate"),
         # Check that default values will be removed from the command
         (["--emit-trusted-host"], "pip-compile"),
         (["--annotate"], "pip-compile"),
         (["--index"], "pip-compile"),
+        (["--emit-index-url"], "pip-compile"),
         (["--max-rounds=10"], "pip-compile"),
         (["--build-isolation"], "pip-compile"),
         # Check options with multiple values
@@ -337,7 +339,7 @@ def test_get_compile_command_sort_args(tmpdir_cwd):
         pass
 
     args = [
-        "--no-index",
+        "--no-emit-index-url",
         "--no-emit-trusted-host",
         "--no-annotate",
         "setup.py",
@@ -350,6 +352,6 @@ def test_get_compile_command_sort_args(tmpdir_cwd):
     with compile_cli.make_context("pip-compile", args) as ctx:
         assert get_compile_command(ctx) == (
             "pip-compile --find-links=bar --find-links=foo "
-            "--no-annotate --no-emit-trusted-host --no-index "
+            "--no-annotate --no-emit-index-url --no-emit-trusted-host "
             "requirements.in setup.py"
         )

@@ -1,3 +1,4 @@
+import itertools
 import os
 import subprocess
 import sys
@@ -176,20 +177,64 @@ def test_trusted_host(pip_conf, runner):
     assert "--trusted-host example.com\n" "--trusted-host example2.com\n" in out.stderr
 
 
-def test_trusted_host_no_emit(pip_conf, runner):
+@pytest.mark.parametrize(
+    "options",
+    (
+        pytest.param(
+            ["--trusted-host", "example.com", "--no-emit-trusted-host"],
+            id="trusted host",
+        ),
+        pytest.param(
+            ["--find-links", "wheels", "--no-emit-find-links"], id="find links"
+        ),
+        pytest.param(
+            ["--index-url", "https://index-url", "--no-emit-index-url"], id="index url"
+        ),
+    ),
+)
+def test_all_no_emit_options(runner, options):
     with open("requirements.in", "w"):
         pass
-    out = runner.invoke(
-        cli, ["-v", "--trusted-host", "example.com", "--no-emit-trusted-host"]
-    )
-    assert "--trusted-host example.com" not in out.stderr
+    out = runner.invoke(cli, ["--no-header"] + options)
+    assert out.stderr.strip().splitlines() == []
 
 
-def test_find_links_no_emit(pip_conf, runner):
+@pytest.mark.parametrize(
+    ("option", "expected_output"),
+    (
+        pytest.param("--index", ["--index-url https://index-url"], id="index url"),
+        pytest.param("--no-index", [], id="no index"),
+    ),
+)
+def test_index_option(runner, option, expected_output):
     with open("requirements.in", "w"):
         pass
-    out = runner.invoke(cli, ["-v", "--no-emit-find-links"])
-    assert "--find-links" not in out.stderr
+
+    with pytest.warns(FutureWarning, match="--index and --no-index are deprecated"):
+        out = runner.invoke(
+            cli, ["--no-header", "--index-url", "https://index-url", option]
+        )
+
+    assert out.stderr.strip().splitlines() == expected_output
+
+
+@pytest.mark.parametrize(
+    "options",
+    itertools.product(
+        ("--index", "--no-index"), ("--emit-index-url", "--no-emit-index-url")
+    ),
+)
+def test_mutual_exclusive_index_options(runner, options):
+    with open("requirements.in", "w"):
+        pass
+
+    out = runner.invoke(cli, options)
+
+    assert out.exit_code == 2
+    assert (
+        "--index/--no-index and --emit-index-url/--no-emit-index-url "
+        "are mutually exclusive"
+    ) in out.stderr
 
 
 @pytest.mark.network

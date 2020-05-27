@@ -442,6 +442,15 @@ Other useful tools
 .. _requirements.txt.vim: https://github.com/raimon49/requirements.txt.vim
 .. _Python extension for VS Code: https://marketplace.visualstudio.com/items?itemName=ms-python.python
 
+
+Deprecations
+============
+
+This section lists ``pip-tools`` features that are currently deprecated.
+
+- ``--index/--no-index`` command-line options, use instead
+  ``--emit-index-url/--no-emit-index-url`` (since 5.2.0).
+
 Versions and compatibility
 ==========================
 
