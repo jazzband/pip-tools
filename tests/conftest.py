@@ -271,11 +271,13 @@ def run_setup_file():
     Run a setup.py file from a given package dir.
     """
 
-    def _make_wheel(package_dir_path, *args):
+    def _run_setup_file(package_dir_path, *args):
         setup_file = str(package_dir_path / "setup.py")
-        return check_call((sys.executable, setup_file) + args)  # nosec
+        return check_call(
+            (sys.executable, setup_file) + args, cwd=str(package_dir_path)
+        )  # nosec
 
-    return _make_wheel
+    return _run_setup_file
 
 
 @pytest.fixture
