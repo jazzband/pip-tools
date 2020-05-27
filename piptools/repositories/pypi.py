@@ -215,7 +215,7 @@ class PyPIRepository(BaseRepository):
                 # using git-checkout-index, which gets rid of the .git dir.
                 download_dir = None
             else:
-                download_dir = self._download_dir
+                download_dir = self._get_download_path(ireq)
                 if not os.path.isdir(download_dir):
                     os.makedirs(download_dir)
             if not os.path.isdir(self._wheel_download_dir):
@@ -288,6 +288,20 @@ class PyPIRepository(BaseRepository):
             return data
         return None
 
+    def _get_download_path(self, ireq):
+        """
+        Determine the download dir location in a way which avoids name
+        collisions.
+        """
+        if ireq.link:
+            salt = hashlib.sha224(ireq.link.url_without_fragment.encode()).hexdigest()
+            # Nest directories to avoid running out of top level dirs on some FS
+            # (see pypi _get_cache_path_parts, which inspired this)
+            salt = [salt[:2], salt[2:4], salt[4:6], salt[6:]]
+            return os.path.join(self._download_dir, *salt)
+        else:
+            return self._download_dir
+
     def get_hashes(self, ireq):
         """
         Given an InstallRequirement, return a set of hashes that represent all
@@ -308,7 +322,7 @@ class PyPIRepository(BaseRepository):
                 # Directly hash URL requirements.
                 # URL requirements may have been previously downloaded and cached
                 # locally by self.resolve_reqs()
-                cached_path = os.path.join(self._download_dir, link.filename)
+                cached_path = os.path.join(self._get_download_path(ireq), link.filename)
                 if os.path.exists(cached_path):
                     cached_link = Link(path_to_url(cached_path))
                 else:
