@@ -1,3 +1,30 @@
+# 5.2.0 (2020-05-27)
+
+Features:
+- Show basename of URLs when `pip-compile` generates hashes in a verbose mode 
+([1113](https://github.com/jazzband/pip-tools/pull/1113)). Thanks @atugushev
+- Add `--emit-index-url/--no-emit-index-url` options to `pip-compile`
+([1130](https://github.com/jazzband/pip-tools/pull/1130)). Thanks @atugushev
+
+Bug Fixes:
+- Fix a bug where `pip-compile` would ignore some of package versions when
+`PIP_PREFER_BINARY` is set on
+([1119](https://github.com/jazzband/pip-tools/pull/1119)). Thanks @atugushev
+- Fix leaked URLs with credentials in the debug output of `pip-compile`.
+([1146](https://github.com/jazzband/pip-tools/pull/1146)). Thanks @atugushev
+- Fix a bug where URL requirements would have name collisions
+([1149](https://github.com/jazzband/pip-tools/pull/1149)). Thanks @geokala
+
+Deprecations:
+- Deprecate `--index/--no-index` in favor of `--emit-index-url/--no-emit-index-url`
+options in `pip-compile`
+([1130](https://github.com/jazzband/pip-tools/pull/1130)). Thanks @atugushev
+
+Other Changes:
+
+- Switch to `setuptools` declarative syntax through `setup.cfg`
+([1141](https://github.com/jazzband/pip-tools/pull/1141)). Thanks @jdufresne
+
 # 5.1.2 (2020-05-05)
 
 Bug Fixes:
