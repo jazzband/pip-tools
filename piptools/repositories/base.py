@@ -45,6 +45,7 @@ class BaseRepository(object):
         Monkey patches pip.Wheel to allow wheels from all platforms and Python versions.
         """
 
+    @abstractmethod
     def copy_ireq_dependencies(self, source, dest):
         """
         Notifies the repository that `dest` is a copy of `source`, and so it
