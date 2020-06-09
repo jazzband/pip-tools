@@ -1308,3 +1308,28 @@ def test_prefer_binary_dist_even_there_is_source_dists(
 
     assert out.exit_code == 0, out
     assert "test-package==2.0" in out.stderr.splitlines(), out.stderr
+
+
+@pytest.mark.parametrize("output_content", ("small_fake_with_deps", ""))
+def test_duplicate_reqs_combined(pip_conf, runner, output_content):
+    """
+    Test pip-compile tracks dependencies properly when install requirements are
+    combined, especially when an output file already exists.
+
+    Regression test for issue GH-1154.
+    """
+    fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
+    fake_package_dir = path_to_url(fake_package_dir)
+    with open("requirements.in", "w") as req_in:
+        req_in.write(fake_package_dir + "\n")
+        req_in.write(fake_package_dir + "#egg=small_fake_with_deps\n")
+
+    if output_content:
+        with open("requirements.txt", "w") as reqs_out:
+            reqs_out.write(output_content)
+
+    out = runner.invoke(cli, [])
+
+    assert out.exit_code == 0, out
+    assert fake_package_dir in out.stderr
+    assert "small-fake-a==0.1" in out.stderr

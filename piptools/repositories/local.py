@@ -92,3 +92,6 @@ class LocalRequirementsRepository(BaseRepository):
     def allow_all_wheels(self):
         with self.repository.allow_all_wheels():
             yield
+
+    def copy_ireq_dependencies(self, source, dest):
+        self.repository.copy_ireq_dependencies(source, dest)
