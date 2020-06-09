@@ -1,3 +1,11 @@
+# 5.2.1 (2020-06-09)
+
+Bug Fixes:
+- Fix a bug where `pip-compile` would lose some dependencies on update
+a `requirements.txt`
+([1159](https://github.com/jazzband/pip-tools/pull/1159)). Thanks @richafrank
+
+
 # 5.2.0 (2020-05-27)
 
 Features:
