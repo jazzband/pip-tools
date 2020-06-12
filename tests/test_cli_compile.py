@@ -1310,26 +1310,38 @@ def test_prefer_binary_dist_even_there_is_source_dists(
     assert "test-package==2.0" in out.stderr.splitlines(), out.stderr
 
 
-@pytest.mark.parametrize("output_content", ("small_fake_with_deps", ""))
-def test_duplicate_reqs_combined(pip_conf, runner, output_content):
+@pytest.mark.parametrize("output_content", ("test-package-1==0.1", ""))
+def test_duplicate_reqs_combined(
+    pip_conf, make_package, make_sdist, tmpdir, runner, output_content
+):
     """
     Test pip-compile tracks dependencies properly when install requirements are
     combined, especially when an output file already exists.
 
     Regression test for issue GH-1154.
     """
-    fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
-    fake_package_dir = path_to_url(fake_package_dir)
-    with open("requirements.in", "w") as req_in:
-        req_in.write(fake_package_dir + "\n")
-        req_in.write(fake_package_dir + "#egg=small_fake_with_deps\n")
+    test_package_1 = make_package("test_package_1", version="0.1")
+    test_package_2 = make_package(
+        "test_package_2", version="0.1", install_requires=["test-package-1"]
+    )
+
+    dists_dir = tmpdir / "dists"
+
+    for pkg in (test_package_1, test_package_2):
+        make_sdist(pkg, dists_dir)
+
+    with open("requirements.in", "w") as reqs_in:
+        reqs_in.write("file:{source_path}\n".format(source_path=test_package_2))
+        reqs_in.write(
+            "file:{source_path}#egg=test-package-2\n".format(source_path=test_package_2)
+        )
 
     if output_content:
         with open("requirements.txt", "w") as reqs_out:
             reqs_out.write(output_content)
 
-    out = runner.invoke(cli, [])
+    out = runner.invoke(cli, ["--find-links", str(dists_dir)])
 
     assert out.exit_code == 0, out
-    assert fake_package_dir in out.stderr
-    assert "small-fake-a==0.1" in out.stderr
+    assert str(test_package_2) in out.stderr
+    assert "test-package-1==0.1" in out.stderr
