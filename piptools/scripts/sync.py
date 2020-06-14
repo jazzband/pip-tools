@@ -18,8 +18,10 @@ from ..utils import flat_map
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 
+CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 
-@click.command()
+
+@click.command(context_settings=CONTEXT_SETTINGS)
 @click.version_option()
 @click.option(
     "-a",
