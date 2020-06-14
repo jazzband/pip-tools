@@ -27,6 +27,8 @@ from ..writer import OutputWriter
 DEFAULT_REQUIREMENTS_FILE = "requirements.in"
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 
+CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
+
 
 def _get_default_option(option_name):
     """
@@ -59,7 +61,7 @@ class BaseCommand(Command):
         return bool(self._os_args & args)
 
 
-@click.command(cls=BaseCommand)
+@click.command(cls=BaseCommand, context_settings=CONTEXT_SETTINGS)
 @click.version_option()
 @click.pass_context
 @click.option("-v", "--verbose", count=True, help="Show more output")
