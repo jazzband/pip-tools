@@ -20,7 +20,7 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 
 
 
-@click.command(context_settings=CONTEXT_SETTINGS)
+@click.command(context_settings={"help_option_names": ("-h", "--help")})
 @click.version_option()
 @click.option(
     "-a",
