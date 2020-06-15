@@ -61,7 +61,9 @@ class BaseCommand(Command):
         return bool(self._os_args & args)
 
 
-@click.command(cls=BaseCommand, context_settings=CONTEXT_SETTINGS)
+@click.command(
+    cls=BaseCommand, context_settings={"help_option_names": ("-h", "--help")}
+)
 @click.version_option()
 @click.pass_context
 @click.option("-v", "--verbose", count=True, help="Show more output")
