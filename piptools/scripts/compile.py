@@ -27,8 +27,6 @@ from ..writer import OutputWriter
 DEFAULT_REQUIREMENTS_FILE = "requirements.in"
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 
-CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
-
 
 def _get_default_option(option_name):
     """
