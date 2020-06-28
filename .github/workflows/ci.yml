@@ -32,6 +32,7 @@ jobs:
         include:
           - os: Ubuntu
             python-version: 3.9-dev
+            pip-version: latest
 
     env:
       PY_COLORS: 1
@@ -50,7 +51,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Log python version info (${{ matrix.python-version }})
-        run: python --version --version && which python
+        run: python --version --version
       - name: Install test dependencies
         run: python -m pip install -U tox virtualenv
       - name: Prepare test environment
