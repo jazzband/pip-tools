@@ -19,7 +19,7 @@ jobs:
         os:
           - Ubuntu
           - Windows
-          - MacOS
+          - macOS
         python-version:
           - 3.8
           - 2.7
@@ -29,16 +29,29 @@ jobs:
         pip-version:
           - "latest"
           - "20.0"
+        include:
+          - os: Ubuntu
+            python-version: 3.9-dev
+            pip-version: latest
+
     env:
       PY_COLORS: 1
       TOXENV: pip${{ matrix.pip-version }}-coverage
       TOX_PARALLEL_NO_SPINNER: 1
     steps:
       - uses: actions/checkout@master
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }} from GitHub
+        if: "!endsWith(matrix.python-version, '-dev')"
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }} from deadsnakes
+        if: endsWith(matrix.python-version, '-dev')
+        uses: deadsnakes/action@v1.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Log python version info (${{ matrix.python-version }})
+        run: python --version --version
       - name: Install test dependencies
         run: python -m pip install -U tox virtualenv
       - name: Prepare test environment
