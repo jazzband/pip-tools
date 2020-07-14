@@ -7,6 +7,7 @@ import sys
 import tempfile
 import warnings
 
+import filelock
 from click import Command
 from click.utils import safecall
 from pip._internal.commands import create_command
@@ -328,162 +329,163 @@ def cli(
         pip_args.append("--no-build-isolation")
     pip_args.extend(right_args)
 
-    repository = PyPIRepository(pip_args, cache_dir=cache_dir)
+    with filelock.FileLock(os.path.join(cache_dir, ".lock")):
+        repository = PyPIRepository(pip_args, cache_dir=cache_dir)
 
-    # Parse all constraints coming from --upgrade-package/-P
-    upgrade_reqs_gen = (install_req_from_line(pkg) for pkg in upgrade_packages)
-    upgrade_install_reqs = {
-        key_from_ireq(install_req): install_req for install_req in upgrade_reqs_gen
-    }
+        # Parse all constraints coming from --upgrade-package/-P
+        upgrade_reqs_gen = (install_req_from_line(pkg) for pkg in upgrade_packages)
+        upgrade_install_reqs = {
+            key_from_ireq(install_req): install_req for install_req in upgrade_reqs_gen
+        }
 
-    existing_pins_to_upgrade = set()
+        existing_pins_to_upgrade = set()
 
-    # Proxy with a LocalRequirementsRepository if --upgrade is not specified
-    # (= default invocation)
-    if not upgrade and os.path.exists(output_file.name):
-        # Use a temporary repository to ensure outdated(removed) options from
-        # existing requirements.txt wouldn't get into the current repository.
-        tmp_repository = PyPIRepository(pip_args, cache_dir=cache_dir)
-        ireqs = parse_requirements(
-            output_file.name,
-            finder=tmp_repository.finder,
-            session=tmp_repository.session,
-            options=tmp_repository.options,
+        # Proxy with a LocalRequirementsRepository if --upgrade is not specified
+        # (= default invocation)
+        if not upgrade and os.path.exists(output_file.name):
+            # Use a temporary repository to ensure outdated(removed) options from
+            # existing requirements.txt wouldn't get into the current repository.
+            tmp_repository = PyPIRepository(pip_args, cache_dir=cache_dir)
+            ireqs = parse_requirements(
+                output_file.name,
+                finder=tmp_repository.finder,
+                session=tmp_repository.session,
+                options=tmp_repository.options,
+            )
+
+            # Exclude packages from --upgrade-package/-P from the existing
+            # constraints, and separately gather pins to be upgraded
+            existing_pins = {}
+            for ireq in filter(is_pinned_requirement, ireqs):
+                key = key_from_ireq(ireq)
+                if key in upgrade_install_reqs:
+                    existing_pins_to_upgrade.add(key)
+                else:
+                    existing_pins[key] = ireq
+            repository = LocalRequirementsRepository(existing_pins, repository)
+
+        ###
+        # Parsing/collecting initial requirements
+        ###
+
+        constraints = []
+        for src_file in src_files:
+            is_setup_file = os.path.basename(src_file) == "setup.py"
+            if is_setup_file or src_file == "-":
+                # pip requires filenames and not files. Since we want to support
+                # piping from stdin, we need to briefly save the input from stdin
+                # to a temporary file and have pip read that.  also used for
+                # reading requirements from install_requires in setup.py.
+                tmpfile = tempfile.NamedTemporaryFile(mode="wt", delete=False)
+                if is_setup_file:
+                    from distutils.core import run_setup
+
+                    dist = run_setup(src_file)
+                    tmpfile.write("\n".join(dist.install_requires))
+                    comes_from = "{name} ({filename})".format(
+                        name=dist.get_name(), filename=src_file
+                    )
+                else:
+                    tmpfile.write(sys.stdin.read())
+                    comes_from = "-r -"
+                tmpfile.flush()
+                reqs = list(
+                    parse_requirements(
+                        tmpfile.name,
+                        finder=repository.finder,
+                        session=repository.session,
+                        options=repository.options,
+                    )
+                )
+                for req in reqs:
+                    req.comes_from = comes_from
+                constraints.extend(reqs)
+            else:
+                constraints.extend(
+                    parse_requirements(
+                        src_file,
+                        finder=repository.finder,
+                        session=repository.session,
+                        options=repository.options,
+                    )
+                )
+
+        primary_packages = {
+            key_from_ireq(ireq) for ireq in constraints if not ireq.constraint
+        }
+
+        allowed_upgrades = primary_packages | existing_pins_to_upgrade
+        constraints.extend(
+            ireq for key, ireq in upgrade_install_reqs.items() if key in allowed_upgrades
         )
 
-        # Exclude packages from --upgrade-package/-P from the existing
-        # constraints, and separately gather pins to be upgraded
-        existing_pins = {}
-        for ireq in filter(is_pinned_requirement, ireqs):
-            key = key_from_ireq(ireq)
-            if key in upgrade_install_reqs:
-                existing_pins_to_upgrade.add(key)
-            else:
-                existing_pins[key] = ireq
-        repository = LocalRequirementsRepository(existing_pins, repository)
+        # Filter out pip environment markers which do not match (PEP496)
+        constraints = [
+            req for req in constraints if req.markers is None or req.markers.evaluate()
+        ]
 
-    ###
-    # Parsing/collecting initial requirements
-    ###
-
-    constraints = []
-    for src_file in src_files:
-        is_setup_file = os.path.basename(src_file) == "setup.py"
-        if is_setup_file or src_file == "-":
-            # pip requires filenames and not files. Since we want to support
-            # piping from stdin, we need to briefly save the input from stdin
-            # to a temporary file and have pip read that.  also used for
-            # reading requirements from install_requires in setup.py.
-            tmpfile = tempfile.NamedTemporaryFile(mode="wt", delete=False)
-            if is_setup_file:
-                from distutils.core import run_setup
-
-                dist = run_setup(src_file)
-                tmpfile.write("\n".join(dist.install_requires))
-                comes_from = "{name} ({filename})".format(
-                    name=dist.get_name(), filename=src_file
-                )
-            else:
-                tmpfile.write(sys.stdin.read())
-                comes_from = "-r -"
-            tmpfile.flush()
-            reqs = list(
-                parse_requirements(
-                    tmpfile.name,
-                    finder=repository.finder,
-                    session=repository.session,
-                    options=repository.options,
-                )
-            )
-            for req in reqs:
-                req.comes_from = comes_from
-            constraints.extend(reqs)
-        else:
-            constraints.extend(
-                parse_requirements(
-                    src_file,
-                    finder=repository.finder,
-                    session=repository.session,
-                    options=repository.options,
-                )
-            )
-
-    primary_packages = {
-        key_from_ireq(ireq) for ireq in constraints if not ireq.constraint
-    }
-
-    allowed_upgrades = primary_packages | existing_pins_to_upgrade
-    constraints.extend(
-        ireq for key, ireq in upgrade_install_reqs.items() if key in allowed_upgrades
-    )
-
-    # Filter out pip environment markers which do not match (PEP496)
-    constraints = [
-        req for req in constraints if req.markers is None or req.markers.evaluate()
-    ]
-
-    log.debug("Using indexes:")
-    with log.indentation():
-        for index_url in dedup(repository.finder.index_urls):
-            log.debug(redact_auth_from_url(index_url))
-
-    if repository.finder.find_links:
-        log.debug("")
-        log.debug("Using links:")
+        log.debug("Using indexes:")
         with log.indentation():
-            for find_link in dedup(repository.finder.find_links):
-                log.debug(redact_auth_from_url(find_link))
+            for index_url in dedup(repository.finder.index_urls):
+                log.debug(redact_auth_from_url(index_url))
 
-    try:
-        resolver = Resolver(
-            constraints,
-            repository,
-            prereleases=repository.finder.allow_all_prereleases or pre,
-            cache=DependencyCache(cache_dir),
-            clear_caches=rebuild,
+        if repository.finder.find_links:
+            log.debug("")
+            log.debug("Using links:")
+            with log.indentation():
+                for find_link in dedup(repository.finder.find_links):
+                    log.debug(redact_auth_from_url(find_link))
+
+        try:
+            resolver = Resolver(
+                constraints,
+                repository,
+                prereleases=repository.finder.allow_all_prereleases or pre,
+                cache=DependencyCache(cache_dir),
+                clear_caches=rebuild,
+                allow_unsafe=allow_unsafe,
+            )
+            results = resolver.resolve(max_rounds=max_rounds)
+            if generate_hashes:
+                hashes = resolver.resolve_hashes(results)
+            else:
+                hashes = None
+        except PipToolsError as e:
+            log.error(str(e))
+            sys.exit(2)
+
+        log.debug("")
+
+        ##
+        # Output
+        ##
+
+        writer = OutputWriter(
+            src_files,
+            output_file,
+            click_ctx=ctx,
+            dry_run=dry_run,
+            emit_header=header,
+            emit_index_url=emit_index_url,
+            emit_trusted_host=emit_trusted_host,
+            annotate=annotate,
+            generate_hashes=generate_hashes,
+            default_index_url=repository.DEFAULT_INDEX_URL,
+            index_urls=repository.finder.index_urls,
+            trusted_hosts=repository.finder.trusted_hosts,
+            format_control=repository.finder.format_control,
             allow_unsafe=allow_unsafe,
+            find_links=repository.finder.find_links,
+            emit_find_links=emit_find_links,
         )
-        results = resolver.resolve(max_rounds=max_rounds)
-        if generate_hashes:
-            hashes = resolver.resolve_hashes(results)
-        else:
-            hashes = None
-    except PipToolsError as e:
-        log.error(str(e))
-        sys.exit(2)
+        writer.write(
+            results=results,
+            unsafe_requirements=resolver.unsafe_constraints,
+            markers={
+                key_from_ireq(ireq): ireq.markers for ireq in constraints if ireq.markers
+            },
+            hashes=hashes,
+        )
 
-    log.debug("")
-
-    ##
-    # Output
-    ##
-
-    writer = OutputWriter(
-        src_files,
-        output_file,
-        click_ctx=ctx,
-        dry_run=dry_run,
-        emit_header=header,
-        emit_index_url=emit_index_url,
-        emit_trusted_host=emit_trusted_host,
-        annotate=annotate,
-        generate_hashes=generate_hashes,
-        default_index_url=repository.DEFAULT_INDEX_URL,
-        index_urls=repository.finder.index_urls,
-        trusted_hosts=repository.finder.trusted_hosts,
-        format_control=repository.finder.format_control,
-        allow_unsafe=allow_unsafe,
-        find_links=repository.finder.find_links,
-        emit_find_links=emit_find_links,
-    )
-    writer.write(
-        results=results,
-        unsafe_requirements=resolver.unsafe_constraints,
-        markers={
-            key_from_ireq(ireq): ireq.markers for ireq in constraints if ireq.markers
-        },
-        hashes=hashes,
-    )
-
-    if dry_run:
-        log.info("Dry-run, so nothing updated.")
+        if dry_run:
+            log.info("Dry-run, so nothing updated.")
