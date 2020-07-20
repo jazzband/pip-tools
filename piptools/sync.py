@@ -183,7 +183,7 @@ def sync(
             for ireq in sorted(to_install, key=key_from_ireq):
                 click.echo("  {}".format(format_requirement(ireq)))
 
-        exit_code = 2
+        exit_code = 1
 
     if ask and click.confirm("Would you like to proceed with these changes?"):
         dry_run = False
