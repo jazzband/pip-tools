@@ -242,4 +242,4 @@ def test_sync_dry_run_returns_non_zero_exit_code(runner):
 
     out = runner.invoke(cli, ["--dry-run"])
 
-    assert out.exit_code == 2
+    assert out.exit_code == 1
