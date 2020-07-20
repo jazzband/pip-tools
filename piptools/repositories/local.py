@@ -33,7 +33,8 @@ class LocalRequirementsRepository(BaseRepository):
     PyPI.  This keeps updates to the requirements.txt down to a minimum.
     """
 
-    def __init__(self, existing_pins, proxied_repository):
+    def __init__(self, existing_pins, proxied_repository, reuse_hashes=True):
+        self._reuse_hashes = reuse_hashes
         self.repository = proxied_repository
         self.existing_pins = existing_pins
 
@@ -74,8 +75,9 @@ class LocalRequirementsRepository(BaseRepository):
         return self.repository.get_dependencies(ireq)
 
     def get_hashes(self, ireq):
-        key = key_from_ireq(ireq)
-        existing_pin = self.existing_pins.get(key)
+        existing_pin = self._reuse_hashes and self.existing_pins.get(
+            key_from_ireq(ireq)
+        )
         if existing_pin and ireq_satisfied_by_existing_pin(ireq, existing_pin):
             if PIP_VERSION[:2] <= (20, 0):
                 hashes = existing_pin.options.get("hashes", {})
