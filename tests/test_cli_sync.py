@@ -120,7 +120,7 @@ def test_merge_error(req_lines, should_raise, runner):
         assert out.exit_code == 2
         assert "Incompatible requirements found" in out.stderr
     else:
-        assert out.exit_code == 2
+        assert out.exit_code == 1
 
 
 @pytest.mark.parametrize(
