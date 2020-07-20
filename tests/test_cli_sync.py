@@ -233,8 +233,7 @@ def test_sync_ask_accepted(check_call, runner):
     assert check_call.call_count == 2
 
 
-@mock.patch("piptools.sync.check_call")
-def test_sync_dry_run_returns_non_zero_exit_code(check_call, runner):
+def test_sync_dry_run_returns_non_zero_exit_code(runner):
     """
     Make sure non-zero exit code is returned when --dry-run is given.
     """
