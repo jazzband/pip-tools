@@ -120,7 +120,7 @@ def test_merge_error(req_lines, should_raise, runner):
         assert out.exit_code == 2
         assert "Incompatible requirements found" in out.stderr
     else:
-        assert out.exit_code == 0
+        assert out.exit_code == 1
 
 
 @pytest.mark.parametrize(
@@ -231,3 +231,15 @@ def test_sync_ask_accepted(check_call, runner):
     runner.invoke(cli, ["--ask", "--dry-run"], input="y\n")
 
     assert check_call.call_count == 2
+
+
+def test_sync_dry_run_returns_non_zero_exit_code(runner):
+    """
+    Make sure non-zero exit code is returned when --dry-run is given.
+    """
+    with open("requirements.txt", "w") as req_in:
+        req_in.write("small-fake-a==1.10.0")
+
+    out = runner.invoke(cli, ["--dry-run"])
+
+    assert out.exit_code == 1
