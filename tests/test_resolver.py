@@ -129,6 +129,18 @@ from piptools.resolver import combine_install_requirements
                     "werkzeug==0.10.4 (from flask==0.10.1)",
                 ],
             ),
+            # We shouldn't fail on invalid irrelevant pip constraints
+            # See: GH-1178
+            (
+                ["Flask", ("missing-dependency<1.0", True), ("itsdangerous", True)],
+                [
+                    "flask==0.10.1",
+                    "itsdangerous==0.24",
+                    "markupsafe==0.23 (from jinja2==2.7.3->flask==0.10.1)",
+                    "jinja2==2.7.3 (from flask==0.10.1)",
+                    "werkzeug==0.10.4 (from flask==0.10.1)",
+                ],
+            ),
             # Unsafe dependencies should be filtered
             (
                 ["setuptools==35.0.0", "anyjson==0.3.3"],

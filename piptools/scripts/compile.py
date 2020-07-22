@@ -184,6 +184,15 @@ class BaseCommand(Command):
     help="Generate pip 8 style hashes in the resulting requirements file.",
 )
 @click.option(
+    "--reuse-hashes/--no-reuse-hashes",
+    is_flag=True,
+    default=True,
+    help=(
+        "Improve the speed of --generate-hashes by reusing the hashes from an "
+        "existing output file."
+    ),
+)
+@click.option(
     "--max-rounds",
     default=10,
     help="Maximum number of rounds before resolving the requirements aborts.",
@@ -241,6 +250,7 @@ def cli(
     output_file,
     allow_unsafe,
     generate_hashes,
+    reuse_hashes,
     src_files,
     max_rounds,
     build_isolation,
@@ -360,7 +370,9 @@ def cli(
                 existing_pins_to_upgrade.add(key)
             else:
                 existing_pins[key] = ireq
-        repository = LocalRequirementsRepository(existing_pins, repository)
+        repository = LocalRequirementsRepository(
+            existing_pins, repository, reuse_hashes=reuse_hashes
+        )
 
     ###
     # Parsing/collecting initial requirements

@@ -323,6 +323,10 @@ class Resolver(object):
             # NOTE: it's much quicker to immediately return instead of
             # hitting the index server
             best_match = ireq
+        elif ireq.constraint:
+            # NOTE: This is not a requirement (yet) and does not need
+            # to be resolved
+            best_match = ireq
         else:
             best_match = self.repository.find_best_match(
                 ireq, prereleases=self.prereleases
