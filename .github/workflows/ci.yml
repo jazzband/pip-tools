@@ -28,6 +28,7 @@ jobs:
           - 3.7
         pip-version:
           - "latest"
+          - "20.2"  # TODO: update to 20.1 after pip-20.2 being released
           - "20.0"
         include:
           - os: Ubuntu

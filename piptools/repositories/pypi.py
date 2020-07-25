@@ -164,7 +164,10 @@ class PyPIRepository(BaseRepository):
             )
 
             reqset = RequirementSet()
-            ireq.is_direct = True
+            if PIP_VERSION[:2] <= (20, 1):
+                ireq.is_direct = True
+            else:
+                ireq.user_supplied = True
             reqset.add_requirement(ireq)
 
             resolver = self.command.make_resolver(
