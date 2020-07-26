@@ -9,6 +9,7 @@ Features:
 ([1172](https://github.com/jazzband/pip-tools/pull/1172)). Thanks @francisbrito
 - `pip-compile` now doesn't resolve constraints from `-c constraints.txt`that are not
 (yet) requirements
+ ([1175](https://github.com/jazzband/pip-tools/pull/1175)). Thanks @clslgrnc
 - Add `--reuse-hashes/--no-reuse-hashes` options to `pip-compile`
  ([1177](https://github.com/jazzband/pip-tools/pull/1177)). Thanks @graingert
 
