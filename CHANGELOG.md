@@ -1,3 +1,17 @@
+# 5.3.0 (2020-07-26)
+
+Features:
+- Add `-h` alias for `--help` option to `pip-sync` and `pip-compile`
+([1163](https://github.com/jazzband/pip-tools/pull/1163)). Thanks @jan25
+- Add `pip>=20.2` support
+([1168](https://github.com/jazzband/pip-tools/pull/1168)). Thanks @atugushev
+- `pip-sync` now exists with code `1` on `--dry-run`
+([1172](https://github.com/jazzband/pip-tools/pull/1172)). Thanks @francisbrito
+- `pip-compile` now doesn't resolve constraints from `-c constraints.txt`that are not
+(yet) requirements
+- Add `--reuse-hashes/--no-reuse-hashes` options to `pip-compile`
+ ([1177](https://github.com/jazzband/pip-tools/pull/1177)). Thanks @graingert
+
 # 5.2.1 (2020-06-09)
 
 Bug Fixes:
