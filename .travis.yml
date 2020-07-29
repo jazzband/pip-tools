@@ -11,8 +11,7 @@ python:
 env:
   # NOTE: keep this in sync with envlist in tox.ini for tox-travis.
   - PIP=latest
-  - PIP=20.2  # TODO: update to 20.1 after pip-20.2 being released
-  - PIP=20.0
+  - PIP=20.1
 
 cache: false
 install:

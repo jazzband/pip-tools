@@ -187,9 +187,6 @@ class PyPIRepository(BaseRepository):
                 # the ireq a name:
                 resolver._get_abstract_dist_for(ireq)
 
-            if PIP_VERSION[:2] <= (20, 0):
-                reqset.cleanup_files()
-
         return set(results)
 
     def get_dependencies(self, ireq):
@@ -237,9 +234,6 @@ class PyPIRepository(BaseRepository):
                             os.environ["PIP_REQ_TRACKER"] = prev_tracker
                         else:
                             del os.environ["PIP_REQ_TRACKER"]
-
-                    if PIP_VERSION[:2] <= (20, 0):
-                        wheel_cache.cleanup()
 
         return self._dependencies_cache[ireq]
 
