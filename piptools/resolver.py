@@ -31,17 +31,21 @@ class RequirementSummary(object):
     def __init__(self, ireq):
         self.req = ireq.req
         self.key = key_from_ireq(ireq)
-        self.extras = str(sorted(ireq.extras))
-        self.specifier = str(ireq.specifier)
+        self.extras = frozenset(ireq.extras)
+        self.specifier = ireq.specifier
 
     def __eq__(self, other):
-        return str(self) == str(other)
+        return (
+            self.key == other.key
+            and self.specifier == other.specifier
+            and self.extras == other.extras
+        )
 
     def __hash__(self):
-        return hash(str(self))
+        return hash((self.key, self.specifier, self.extras))
 
     def __str__(self):
-        return repr([self.key, self.specifier, self.extras])
+        return repr((self.key, str(self.specifier), sorted(self.extras)))
 
 
 def combine_install_requirements(repository, ireqs):
