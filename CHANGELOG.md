@@ -1,3 +1,10 @@
+# 5.3.1 (2020-07-31)
+
+Bug Fixes:
+- Fix `pip-20.2` compatibility issue that caused `pip-tools` to sometime fail to
+stabilize in a constant number of rounds
+([1194](https://github.com/jazzband/pip-tools/pull/1194)). Thanks @vphilippon
+
 # 5.3.0 (2020-07-26)
 
 Features:
