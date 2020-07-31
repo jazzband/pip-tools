@@ -2,7 +2,6 @@
 from __future__ import absolute_import
 
 import pip
-from pip._internal.cli.progress_bars import BAR_TYPES
 from pip._internal.req import parse_requirements as _parse_requirements
 from pip._internal.req.constructors import install_req_from_parsed_requirement
 from pip._vendor.packaging.version import parse as parse_version
