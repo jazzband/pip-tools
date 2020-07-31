@@ -1,7 +1,8 @@
 import pytest
 
+from piptools._compat import PIP_VERSION
 from piptools.exceptions import NoCandidateFound
-from piptools.resolver import combine_install_requirements
+from piptools.resolver import RequirementSummary, combine_install_requirements
 
 
 @pytest.mark.parametrize(
@@ -316,3 +317,127 @@ def test_compile_failure_shows_provenance(resolver, from_line):
         lines[-1].strip()
         == "celery==3.1.18 (from fake-piptools-test-with-pinned-deps==0.1)"
     )
+
+
+@pytest.mark.parametrize(
+    ("left_hand", "right_hand", "expected"),
+    (
+        ("test_package", "test_package", True),
+        ("test_package==1.2.3", "test_package==1.2.3", True),
+        ("test_package>=1.2.3", "test_package>=1.2.3", True),
+        pytest.param(
+            "test_package==1.2",
+            "test_package==1.2.0",
+            True,
+            marks=pytest.mark.skipif(
+                PIP_VERSION[:2] < (20, 2), reason="Required only for pip>=20.2"
+            ),
+        ),
+        pytest.param(
+            "test_package>=1.2",
+            "test_package>=1.2.0",
+            True,
+            marks=pytest.mark.skipif(
+                PIP_VERSION[:2] < (20, 2), reason="Required only for pip>=20.2"
+            ),
+        ),
+        ("test_package[foo,bar]==1.2", "test_package[bar,foo]==1.2", True),
+        ("test_package[foo,bar]>=1.2", "test_package[bar,foo]>=1.2", True),
+        pytest.param(
+            "test_package[foo,bar]==1.2",
+            "test_package[bar,foo]==1.2.0",
+            True,
+            marks=pytest.mark.skipif(
+                PIP_VERSION[:2] < (20, 2), reason="Required only for pip>=20.2"
+            ),
+        ),
+        pytest.param(
+            "test_package[foo,bar]>=1.2",
+            "test_package[bar,foo]>=1.2.0",
+            True,
+            marks=pytest.mark.skipif(
+                PIP_VERSION[:2] < (20, 2), reason="Required only for pip>=20.2"
+            ),
+        ),
+        ("test_package", "other_test_package", False),
+        ("test_package==1.2.3", "other_test_package==1.2.3", False),
+        ("test_package==1.2.3", "test_package==1.2.4", False),
+        ("test_package>=1.2.3", "test_package>=1.2.4", False),
+        ("test_package>=1.2.3", "test_package<=1.2.3", False),
+        ("test_package==1.2", "test_package==1.2.3", False),
+        ("test_package>=1.2", "test_package>=1.2.3", False),
+        ("test_package[foo]==1.2", "test_package[bar]==1.2.0", False),
+        ("test_package[foo]>=1.2", "test_package[bar]>=1.2.0", False),
+        ("test_package[foo,bar]>=1.2", "test_package[bar]>=1.2.0", False),
+        ("test_package[foo,bar]>=1.2", "test_package[bar,zee]>=1.2.0", False),
+    ),
+)
+def test_RequirementSummary_equality(from_line, left_hand, right_hand, expected):
+    """
+    RequirementSummary should report proper equality.
+    """
+    lh_summary = RequirementSummary(from_line(left_hand))
+    rh_summary = RequirementSummary(from_line(right_hand))
+    assert (lh_summary == rh_summary) is expected
+
+
+@pytest.mark.parametrize(
+    ("left_hand", "right_hand", "expected"),
+    (
+        ("test_package", "test_package", True),
+        ("test_package==1.2.3", "test_package==1.2.3", True),
+        ("test_package>=1.2.3", "test_package>=1.2.3", True),
+        pytest.param(
+            "test_package==1.2",
+            "test_package==1.2.0",
+            True,
+            marks=pytest.mark.skipif(
+                PIP_VERSION[:2] < (20, 2), reason="Required only for pip>=20.2"
+            ),
+        ),
+        pytest.param(
+            "test_package>=1.2",
+            "test_package>=1.2.0",
+            True,
+            marks=pytest.mark.skipif(
+                PIP_VERSION[:2] < (20, 2), reason="Required only for pip>=20.2"
+            ),
+        ),
+        ("test_package[foo,bar]==1.2", "test_package[bar,foo]==1.2", True),
+        ("test_package[foo,bar]>=1.2", "test_package[bar,foo]>=1.2", True),
+        pytest.param(
+            "test_package[foo,bar]==1.2",
+            "test_package[bar,foo]==1.2.0",
+            True,
+            marks=pytest.mark.skipif(
+                PIP_VERSION[:2] < (20, 2), reason="Required only for pip>=20.2"
+            ),
+        ),
+        pytest.param(
+            "test_package[foo,bar]>=1.2",
+            "test_package[bar,foo]>=1.2.0",
+            True,
+            marks=pytest.mark.skipif(
+                PIP_VERSION[:2] < (20, 2), reason="Required only for pip>=20.2"
+            ),
+        ),
+        ("test_package", "other_test_package", False),
+        ("test_package==1.2.3", "other_test_package==1.2.3", False),
+        ("test_package==1.2.3", "test_package==1.2.4", False),
+        ("test_package>=1.2.3", "test_package>=1.2.4", False),
+        ("test_package>=1.2.3", "test_package<=1.2.3", False),
+        ("test_package==1.2", "test_package==1.2.3", False),
+        ("test_package>=1.2", "test_package>=1.2.3", False),
+        ("test_package[foo]==1.2", "test_package[bar]==1.2.0", False),
+        ("test_package[foo]>=1.2", "test_package[bar]>=1.2.0", False),
+        ("test_package[foo,bar]>=1.2", "test_package[bar]>=1.2.0", False),
+        ("test_package[foo,bar]>=1.2", "test_package[bar,zee]>=1.2.0", False),
+    ),
+)
+def test_RequirementSummary_hash_equality(from_line, left_hand, right_hand, expected):
+    """
+    RequirementSummary hash for equivalent requirements should be equal.
+    """
+    lh_summary = RequirementSummary(from_line(left_hand))
+    rh_summary = RequirementSummary(from_line(right_hand))
+    assert (hash(lh_summary) == hash(rh_summary)) is expected
