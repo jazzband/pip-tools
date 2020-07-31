@@ -10,6 +10,7 @@ from contextlib import contextmanager
 from shutil import rmtree
 
 from pip._internal.cache import WheelCache
+from pip._internal.cli.progress_bars import BAR_TYPES
 from pip._internal.commands import create_command
 from pip._internal.models.index import PackageIndex, PyPI
 from pip._internal.models.link import Link
@@ -23,7 +24,7 @@ from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
 from pip._internal.utils.urls import path_to_url, url_to_path
 from pip._vendor.requests import RequestException
 
-from .._compat import BAR_TYPES, PIP_VERSION, TemporaryDirectory, contextlib
+from .._compat import PIP_VERSION, TemporaryDirectory, contextlib
 from ..click import progressbar
 from ..exceptions import NoCandidateFound
 from ..logging import log
@@ -187,9 +188,6 @@ class PyPIRepository(BaseRepository):
                 # the ireq a name:
                 resolver._get_abstract_dist_for(ireq)
 
-            if PIP_VERSION[:2] <= (20, 0):
-                reqset.cleanup_files()
-
         return set(results)
 
     def get_dependencies(self, ireq):
@@ -237,9 +235,6 @@ class PyPIRepository(BaseRepository):
                             os.environ["PIP_REQ_TRACKER"] = prev_tracker
                         else:
                             del os.environ["PIP_REQ_TRACKER"]
-
-                    if PIP_VERSION[:2] <= (20, 0):
-                        wheel_cache.cleanup()
 
         return self._dependencies_cache[ireq]
 

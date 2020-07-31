@@ -6,7 +6,6 @@ from pip._internal.models.link import Link
 from pip._internal.utils.urls import path_to_url
 from pip._vendor.requests import HTTPError, Session
 
-from piptools._compat import PIP_VERSION
 from piptools.repositories import PyPIRepository
 from piptools.repositories.pypi import open_local_or_remote_file
 
@@ -127,20 +126,6 @@ def test_pypirepo_build_dir_is_str(pypi_repository):
 
 def test_pypirepo_source_dir_is_str(pypi_repository):
     assert isinstance(pypi_repository.source_dir, str)
-
-
-@pytest.mark.skipif(PIP_VERSION[:2] > (20, 0), reason="Refactored in pip==20.1")
-@mock.patch("piptools.repositories.pypi.PyPIRepository.resolve_reqs")  # to run offline
-@mock.patch("piptools.repositories.pypi.WheelCache")
-def test_wheel_cache_cleanup_called(
-    WheelCache, resolve_reqs, pypi_repository, from_line
-):
-    """
-    Test WheelCache.cleanup() called once after dependency resolution.
-    """
-    ireq = from_line("six==1.10.0")
-    pypi_repository.get_dependencies(ireq)
-    WheelCache.return_value.cleanup.assert_called_once_with()
 
 
 def test_relative_path_cache_dir_is_normalized(from_line):
