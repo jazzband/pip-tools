@@ -2,9 +2,9 @@ import os
 
 import pytest
 
-from .constants import PACKAGES_PATH
-
 from piptools.repositories import PyPIRepository
+
+from .constants import PACKAGES_PATH
 
 
 class MockedPyPIRepository(PyPIRepository):
