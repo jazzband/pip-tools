@@ -2,10 +2,9 @@ import copy
 
 import pytest
 
-from tests.conftest import FakeRepository
-
 from piptools.repositories.local import LocalRequirementsRepository
 from piptools.utils import name_from_req
+from tests.conftest import FakeRepository
 
 EXPECTED = {"sha256:5e6071ee6e4c59e0d0408d366fe9b66781d2cf01be9a6e19a2433bb3c5336330"}
 

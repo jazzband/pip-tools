@@ -16,9 +16,6 @@ from pip._internal.req.constructors import (
 from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Requirement
 
-from .constants import MINIMAL_WHEELS_PATH
-from .utils import looks_like_ci
-
 from piptools.cache import DependencyCache
 from piptools.exceptions import NoCandidateFound
 from piptools.repositories import PyPIRepository
@@ -31,6 +28,9 @@ from piptools.utils import (
     key_from_req,
     make_install_requirement,
 )
+
+from .constants import MINIMAL_WHEELS_PATH
+from .utils import looks_like_ci
 
 
 class FakeRepository(BaseRepository):

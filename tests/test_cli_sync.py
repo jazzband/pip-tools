@@ -3,9 +3,9 @@ import sys
 import mock
 import pytest
 
-from .utils import invoke
-
 from piptools.scripts.sync import DEFAULT_REQUIREMENTS_FILE, cli
+
+from .utils import invoke
 
 
 def test_run_as_module_sync():

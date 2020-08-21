@@ -7,10 +7,10 @@ import mock
 import pytest
 from pip._internal.utils.urls import path_to_url
 
-from .constants import PACKAGES_PATH
-
 from piptools.exceptions import IncompatibleRequirements
 from piptools.sync import dependency_tree, diff, merge, sync
+
+from .constants import PACKAGES_PATH
 
 
 @pytest.fixture
