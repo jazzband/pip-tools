@@ -186,7 +186,10 @@ class PyPIRepository(BaseRepository):
             if not ireq.prepared:
                 # If still not prepared, e.g. a constraint, do enough to assign
                 # the ireq a name:
-                resolver._get_abstract_dist_for(ireq)
+                if PIP_VERSION[:2] <= (20, 2):
+                    resolver._get_abstract_dist_for(ireq)
+                else:
+                    resolver._get_dist_for(ireq)
 
         return set(results)
 
