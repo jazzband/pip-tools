@@ -5,9 +5,9 @@ from contextlib import contextmanager
 
 from pip._internal.utils.hashes import FAVORITE_HASH
 
-from .base import BaseRepository
-
 from piptools.utils import as_tuple, key_from_ireq, make_install_requirement
+
+from .base import BaseRepository
 
 
 def ireq_satisfied_by_existing_pin(ireq, existing_pin):
