@@ -85,7 +85,8 @@ class PyPIRepository(BaseRepository):
         self.freshen_build_caches()
         self._cache_dir = normalize_path(cache_dir)
         self._download_dir = fs_str(os.path.join(self._cache_dir, "pkgs"))
-        self._wheel_download_dir = fs_str(os.path.join(self._cache_dir, "wheels"))
+        if PIP_VERSION[:2] <= (20, 2):
+            self._wheel_download_dir = fs_str(os.path.join(self._cache_dir, "wheels"))
 
         self._setup_logging()
 
@@ -107,7 +108,8 @@ class PyPIRepository(BaseRepository):
 
     def clear_caches(self):
         rmtree(self._download_dir, ignore_errors=True)
-        rmtree(self._wheel_download_dir, ignore_errors=True)
+        if PIP_VERSION[:2] <= (20, 2):
+            rmtree(self._wheel_download_dir, ignore_errors=True)
 
     def find_all_candidates(self, req_name):
         if req_name not in self._available_candidates_cache:
@@ -153,7 +155,7 @@ class PyPIRepository(BaseRepository):
         with get_requirement_tracker() as req_tracker, TempDirectory(
             kind="resolver"
         ) as temp_dir, indent_log():
-            preparer = self.command.make_requirement_preparer(
+            preparer_kwargs = dict(
                 temp_build_dir=temp_dir,
                 options=self.options,
                 req_tracker=req_tracker,
@@ -161,8 +163,10 @@ class PyPIRepository(BaseRepository):
                 finder=self.finder,
                 use_user_site=False,
                 download_dir=download_dir,
-                wheel_download_dir=self._wheel_download_dir,
             )
+            if PIP_VERSION[:2] <= (20, 2):
+                preparer_kwargs["wheel_download_dir"] = self._wheel_download_dir
+            preparer = self.command.make_requirement_preparer(**preparer_kwargs)
 
             reqset = RequirementSet()
             if PIP_VERSION[:2] <= (20, 1):
@@ -222,7 +226,9 @@ class PyPIRepository(BaseRepository):
                 download_dir = self._get_download_path(ireq)
                 if not os.path.isdir(download_dir):
                     os.makedirs(download_dir)
-            if not os.path.isdir(self._wheel_download_dir):
+            if PIP_VERSION[:2] <= (20, 2) and not os.path.isdir(
+                self._wheel_download_dir
+            ):
                 os.makedirs(self._wheel_download_dir)
 
             with global_tempdir_manager():
