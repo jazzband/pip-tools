@@ -10,6 +10,9 @@ even when you've pinned them.  You do pin them, right? (In building your Python 
 .. image:: https://github.com/jazzband/pip-tools/raw/master/img/pip-tools-overview.png
    :alt: pip-tools overview for phase II
 
+.. |buildstatus-github| image:: https://github.com/jazzband/pip-tools/workflows/CI/badge.svg
+   :alt: GitHub CI build status
+   :target: https://github.com/jazzband/pip-tools/actions
 .. |buildstatus-travis| image:: https://img.shields.io/travis/jazzband/pip-tools/master.svg?logo=travis
    :alt: Travis CI build status
    :target: https://travis-ci.org/jazzband/pip-tools
