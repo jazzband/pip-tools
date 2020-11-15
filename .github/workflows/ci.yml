@@ -21,17 +21,18 @@ jobs:
           - Windows
           - macOS
         python-version:
-          - 3.8
+          - 3.9
           - 2.7
           - 3.5
           - 3.6
           - 3.7
+          - 3.8
         pip-version:
           - "latest"
           - "previous"
         include:
           - os: Ubuntu
-            python-version: 3.9-dev
+            python-version: 3.10-dev
             pip-version: latest
 
     env:
