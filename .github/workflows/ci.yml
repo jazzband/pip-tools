@@ -29,11 +29,10 @@ jobs:
         pip-version:
           - "latest"
           - "previous"
-# FIXME temporarily disabled, see https://github.com/jazzband/pip-tools/pull/1216/checks?check_run_id=1425393700
-#        include:
-#          - os: Ubuntu
-#            python-version: 3.9-dev
-#            pip-version: latest
+        include:
+          - os: Ubuntu
+            python-version: 3.9-dev
+            pip-version: latest
 
     env:
       PY_COLORS: 1
@@ -48,7 +47,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Set up Python ${{ matrix.python-version }} from deadsnakes
         if: endsWith(matrix.python-version, '-dev')
-        uses: deadsnakes/action@v1.0.0
+        uses: deadsnakes/action@v2.0.1
         with:
           python-version: ${{ matrix.python-version }}
       - name: Log python version info (${{ matrix.python-version }})
