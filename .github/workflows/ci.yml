@@ -28,7 +28,7 @@ jobs:
           - 3.7
         pip-version:
           - "latest"
-          - "20.1"
+          - "previous"
         include:
           - os: Ubuntu
             python-version: 3.9-dev
