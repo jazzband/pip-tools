@@ -1,4 +1,4 @@
-|jazzband| |pypi| |pyversions| |buildstatus-travis| |buildstatus-appveyor| |codecov|
+|jazzband| |pypi| |pyversions| |buildstatus-gha| |buildstatus-appveyor| |codecov|
 
 ==================================
 pip-tools = pip-compile + pip-sync
@@ -10,9 +10,9 @@ even when you've pinned them.  You do pin them, right? (In building your Python 
 .. image:: https://github.com/jazzband/pip-tools/raw/master/img/pip-tools-overview.png
    :alt: pip-tools overview for phase II
 
-.. |buildstatus-travis| image:: https://img.shields.io/travis/jazzband/pip-tools/master.svg?logo=travis
-   :alt: Travis CI build status
-   :target: https://travis-ci.org/jazzband/pip-tools
+.. |buildstatus-gha| image:: https://github.com/jazzband/pip-tools/workflows/CI/badge.svg
+   :alt: GitHub Actions build status
+   :target: https://github.com/jazzband/pip-tools/actions?query=workflow%3ACI
 .. |buildstatus-appveyor| image:: https://img.shields.io/appveyor/ci/jazzband/pip-tools/master.svg?logo=appveyor
    :alt: AppVeyor build status
    :target: https://ci.appveyor.com/project/jazzband/pip-tools
