@@ -196,7 +196,7 @@ def test_redacted_urls_in_verbose_output(runner, option):
         cli,
         [
             "--no-header",
-            "--no-index",
+            "--no-emit-index-url",
             "--no-emit-find-links",
             "--verbose",
             option,

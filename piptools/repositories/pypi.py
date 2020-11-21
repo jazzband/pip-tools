@@ -87,7 +87,8 @@ class PyPIRepository(BaseRepository):
         self._dependencies_cache = {}
 
         # Setup file paths
-        self.freshen_build_caches()
+        self._build_dir = None
+        self._source_dir = None
         self._cache_dir = normalize_path(cache_dir)
         self._download_dir = fs_str(os.path.join(self._cache_dir, "pkgs"))
         if PIP_VERSION[:2] <= (20, 2):
@@ -95,6 +96,7 @@ class PyPIRepository(BaseRepository):
 
         self._setup_logging()
 
+    @contextmanager
     def freshen_build_caches(self):
         """
         Start with fresh build/source caches.  Will remove any old build
@@ -102,14 +104,21 @@ class PyPIRepository(BaseRepository):
         """
         self._build_dir = TemporaryDirectory(fs_str("build"))
         self._source_dir = TemporaryDirectory(fs_str("source"))
+        try:
+            yield
+        finally:
+            self._build_dir.cleanup()
+            self._build_dir = None
+            self._source_dir.cleanup()
+            self._source_dir = None
 
     @property
     def build_dir(self):
-        return self._build_dir.name
+        return self._build_dir.name if self._build_dir else None
 
     @property
     def source_dir(self):
-        return self._source_dir.name
+        return self._source_dir.name if self._source_dir else None
 
     def clear_caches(self):
         rmtree(self._download_dir, ignore_errors=True)

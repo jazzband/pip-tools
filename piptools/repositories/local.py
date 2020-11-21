@@ -56,8 +56,10 @@ class LocalRequirementsRepository(BaseRepository):
     def clear_caches(self):
         self.repository.clear_caches()
 
+    @contextmanager
     def freshen_build_caches(self):
-        self.repository.freshen_build_caches()
+        with self.repository.freshen_build_caches():
+            yield
 
     def find_best_match(self, ireq, prereleases=None):
         key = key_from_ireq(ireq)
