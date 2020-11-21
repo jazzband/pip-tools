@@ -109,23 +109,30 @@ def test_open_local_or_remote_file__remote_file(
     response_file_path.write_bytes(content)
 
     mock_response = mock.Mock()
-    mock_response.raw = response_file_path.open("rb")
-    mock_response.headers = {"content-length": content_length}
+    with response_file_path.open("rb") as fp:
+        mock_response.raw = fp
+        mock_response.headers = {"content-length": content_length}
 
-    with mock.patch.object(session, "get", return_value=mock_response):
-        with open_local_or_remote_file(link, session) as file_stream:
-            assert file_stream.stream.read() == content
-            assert file_stream.size == expected_content_length
+        with mock.patch.object(session, "get", return_value=mock_response):
+            with open_local_or_remote_file(link, session) as file_stream:
+                assert file_stream.stream.read() == content
+                assert file_stream.size == expected_content_length
 
-    mock_response.close.assert_called_once()
+        mock_response.close.assert_called_once()
 
 
 def test_pypirepo_build_dir_is_str(pypi_repository):
-    assert isinstance(pypi_repository.build_dir, str)
+    assert pypi_repository.build_dir is None
+    with pypi_repository.freshen_build_caches():
+        assert isinstance(pypi_repository.build_dir, str)
+    assert pypi_repository.build_dir is None
 
 
 def test_pypirepo_source_dir_is_str(pypi_repository):
-    assert isinstance(pypi_repository.source_dir, str)
+    assert pypi_repository.source_dir is None
+    with pypi_repository.freshen_build_caches():
+        assert isinstance(pypi_repository.source_dir, str)
+    assert pypi_repository.source_dir is None
 
 
 def test_relative_path_cache_dir_is_normalized(from_line):
