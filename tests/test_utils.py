@@ -237,7 +237,6 @@ def test_name_from_req_with_project_name(from_line):
         (["--pre"], "pip-compile --pre"),
         (["--allow-unsafe"], "pip-compile --allow-unsafe"),
         # Check negative flags
-        (["--no-index"], "pip-compile --no-index"),
         (["--no-emit-index-url"], "pip-compile --no-emit-index-url"),
         (["--no-emit-trusted-host"], "pip-compile --no-emit-trusted-host"),
         (["--no-annotate"], "pip-compile --no-annotate"),
@@ -245,7 +244,6 @@ def test_name_from_req_with_project_name(from_line):
         # Check that default values will be removed from the command
         (["--emit-trusted-host"], "pip-compile"),
         (["--annotate"], "pip-compile"),
-        (["--index"], "pip-compile"),
         (["--emit-index-url"], "pip-compile"),
         (["--max-rounds=10"], "pip-compile"),
         (["--build-isolation"], "pip-compile"),

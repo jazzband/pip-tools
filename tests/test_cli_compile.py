@@ -1,4 +1,3 @@
-import itertools
 import os
 import subprocess
 import sys
@@ -256,39 +255,21 @@ def test_all_no_emit_options(runner, options):
 @pytest.mark.parametrize(
     ("option", "expected_output"),
     (
-        pytest.param("--index", ["--index-url https://index-url"], id="index url"),
-        pytest.param("--no-index", [], id="no index"),
+        pytest.param(
+            "--emit-index-url", ["--index-url https://index-url"], id="index url"
+        ),
+        pytest.param("--no-emit-index-url", [], id="no index"),
     ),
 )
-def test_index_option(runner, option, expected_output):
+def test_emit_index_url_option(runner, option, expected_output):
     with open("requirements.in", "w"):
         pass
 
-    with pytest.warns(FutureWarning, match="--index and --no-index are deprecated"):
-        out = runner.invoke(
-            cli, ["--no-header", "--index-url", "https://index-url", option]
-        )
+    out = runner.invoke(
+        cli, ["--no-header", "--index-url", "https://index-url", option]
+    )
 
     assert out.stderr.strip().splitlines() == expected_output
-
-
-@pytest.mark.parametrize(
-    "options",
-    itertools.product(
-        ("--index", "--no-index"), ("--emit-index-url", "--no-emit-index-url")
-    ),
-)
-def test_mutual_exclusive_index_options(runner, options):
-    with open("requirements.in", "w"):
-        pass
-
-    out = runner.invoke(cli, options)
-
-    assert out.exit_code == 2
-    assert (
-        "--index/--no-index and --emit-index-url/--no-emit-index-url "
-        "are mutually exclusive"
-    ) in out.stderr
 
 
 @pytest.mark.network
@@ -1243,8 +1224,6 @@ def test_upgrade_package_doesnt_remove_annotation(pip_conf, runner):
 @pytest.mark.parametrize(
     "options",
     (
-        # TODO add --no-index support in OutputWriter
-        # "--no-index",
         "--index-url https://example.com",
         "--extra-index-url https://example.com",
         "--find-links ./libs1",
