@@ -90,7 +90,6 @@ class BaseCommand(Command):
     "--find-links",
     multiple=True,
     help="Look for archives in this directory or on this HTML page",
-    envvar="PIP_FIND_LINKS",
 )
 @click.option(
     "-i",
@@ -98,13 +97,9 @@ class BaseCommand(Command):
     help="Change index URL (defaults to {index_url})".format(
         index_url=redact_auth_from_url(_get_default_option("index_url"))
     ),
-    envvar="PIP_INDEX_URL",
 )
 @click.option(
-    "--extra-index-url",
-    multiple=True,
-    help="Add additional index URL to search",
-    envvar="PIP_EXTRA_INDEX_URL",
+    "--extra-index-url", multiple=True, help="Add additional index URL to search"
 )
 @click.option("--cert", help="Path to alternate CA bundle.")
 @click.option(
@@ -115,7 +110,6 @@ class BaseCommand(Command):
 @click.option(
     "--trusted-host",
     multiple=True,
-    envvar="PIP_TRUSTED_HOST",
     help="Mark this host as trusted, even though it does not have "
     "valid or any HTTPS.",
 )
@@ -216,9 +210,7 @@ class BaseCommand(Command):
     "--cache-dir",
     help="Store the cache data in DIRECTORY.",
     default=CACHE_DIR,
-    envvar="PIP_TOOLS_CACHE_DIR",
     show_default=True,
-    show_envvar=True,
     type=click.Path(file_okay=False, writable=True),
 )
 @click.option("--pip-args", help="Arguments to pass directly to the pip command.")
