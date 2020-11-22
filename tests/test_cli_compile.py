@@ -174,7 +174,7 @@ def test_trusted_host(pip_conf, runner):
     out = runner.invoke(
         cli, ["-v", "--trusted-host", "example.com", "--trusted-host", "example2.com"]
     )
-    assert "--trusted-host example.com\n" "--trusted-host example2.com\n" in out.stderr
+    assert "--trusted-host example.com\n--trusted-host example2.com\n" in out.stderr
 
 
 @pytest.mark.parametrize(
@@ -696,9 +696,7 @@ def test_filter_pip_markers(pip_conf, runner):
     Check that pip-compile works with pip environment markers (PEP496)
     """
     with open("requirements", "w") as req_in:
-        req_in.write(
-            "small-fake-a==0.1\n" "unknown_package==0.1; python_version == '1'"
-        )
+        req_in.write("small-fake-a==0.1\nunknown_package==0.1; python_version == '1'")
 
     out = runner.invoke(cli, ["-n", "requirements"])
 
