@@ -54,7 +54,8 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
     is_flag=True,
     help="Ignore package index (only looking at --find-links URLs instead)",
 )
-@click.option("-q", "--quiet", default=False, is_flag=True, help="Give less output")
+@click.option("-v", "--verbose", count=True, help="Show more output")
+@click.option("-q", "--quiet", count=True, help="Give less output")
 @click.option(
     "--user", "user_only", is_flag=True, help="Restrict attention to user directory"
 )
@@ -75,6 +76,7 @@ def cli(
     extra_index_url,
     trusted_host,
     no_index,
+    verbose,
     quiet,
     user_only,
     cert,
@@ -83,6 +85,8 @@ def cli(
     pip_args,
 ):
     """Synchronize virtual environment with requirements.txt."""
+    log.verbosity = verbose - quiet
+
     if not src_files:
         if os.path.exists(DEFAULT_REQUIREMENTS_FILE):
             src_files = (DEFAULT_REQUIREMENTS_FILE,)
@@ -138,7 +142,6 @@ def cli(
         sync.sync(
             to_install,
             to_uninstall,
-            verbose=(not quiet),
             dry_run=dry_run,
             install_flags=install_flags,
             ask=ask,

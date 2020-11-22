@@ -272,15 +272,7 @@ def test_sync_install_temporary_requirement_file(
         to_install = {from_line("django==1.8")}
         sync(to_install, set())
         check_call.assert_called_once_with(
-            [
-                sys.executable,
-                "-m",
-                "pip",
-                "install",
-                "-r",
-                mocked_tmp_req_file.name,
-                "-q",
-            ]
+            [sys.executable, "-m", "pip", "install", "-r", mocked_tmp_req_file.name]
         )
 
 
@@ -381,7 +373,7 @@ def test_sync_up_to_date(runner):
     Everything up-to-date should be printed.
     """
     with runner.isolation() as (stdout, _):
-        sync(set(), set(), verbose=True)
+        sync(set(), set())
     assert stdout.getvalue().decode().splitlines() == ["Everything up-to-date"]
 
 
@@ -390,7 +382,7 @@ def test_sync_verbose(check_call, from_line):
     """
     The -q option has to be passed to every pip calls.
     """
-    sync({from_line("django==1.8")}, {from_line("click==4.0")}, verbose=True)
+    sync({from_line("django==1.8")}, {from_line("click==4.0")})
     assert check_call.call_count == 2
     for call in check_call.call_args_list:
         check_call_args = call[0][0]
@@ -473,5 +465,5 @@ def test_sync_uninstall_pip_command(check_call):
 
     sync(set(), to_uninstall)
     check_call.assert_called_once_with(
-        [sys.executable, "-m", "pip", "uninstall", "-y", "-q"] + sorted(to_uninstall)
+        [sys.executable, "-m", "pip", "uninstall", "-y"] + sorted(to_uninstall)
     )
