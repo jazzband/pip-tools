@@ -39,19 +39,10 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
     "--find-links",
     multiple=True,
     help="Look for archives in this directory or on this HTML page",
-    envvar="PIP_FIND_LINKS",
 )
+@click.option("-i", "--index-url", help="Change index URL (defaults to PyPI)")
 @click.option(
-    "-i",
-    "--index-url",
-    help="Change index URL (defaults to PyPI)",
-    envvar="PIP_INDEX_URL",
-)
-@click.option(
-    "--extra-index-url",
-    multiple=True,
-    help="Add additional index URL to search",
-    envvar="PIP_EXTRA_INDEX_URL",
+    "--extra-index-url", multiple=True, help="Add additional index URL to search"
 )
 @click.option(
     "--trusted-host",
