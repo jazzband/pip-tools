@@ -53,21 +53,21 @@ def test_format_requirement_annotation_editable(from_editable, writer):
 
     assert writer._format_requirement(
         ireq
-    ) == "-e git+git://fake.org/x/y.git#egg=y\n    " + comment("# via xyz")
+    ) == "-e git+git://fake.org/x/y.git#egg=y\n" + comment("    # via xyz")
 
 
 def test_format_requirement_annotation(from_line, writer):
     ireq = from_line("test==1.2")
     ireq.comes_from = "xyz"
 
-    assert writer._format_requirement(ireq) == "test==1.2\n    " + comment("# via xyz")
+    assert writer._format_requirement(ireq) == "test==1.2\n" + comment("    # via xyz")
 
 
 def test_format_requirement_annotation_lower_case(from_line, writer):
     ireq = from_line("Test==1.2")
     ireq.comes_from = "xyz"
 
-    assert writer._format_requirement(ireq) == "test==1.2\n    " + comment("# via xyz")
+    assert writer._format_requirement(ireq) == "test==1.2\n" + comment("    # via xyz")
 
 
 def test_format_requirement_for_primary(from_line, writer):
@@ -75,7 +75,7 @@ def test_format_requirement_for_primary(from_line, writer):
     ireq = from_line("test==1.2")
     ireq.comes_from = "xyz"
 
-    assert writer._format_requirement(ireq) == "test==1.2\n    " + comment("# via xyz")
+    assert writer._format_requirement(ireq) == "test==1.2\n" + comment("    # via xyz")
 
 
 def test_format_requirement_for_primary_lower_case(from_line, writer):
@@ -83,7 +83,7 @@ def test_format_requirement_for_primary_lower_case(from_line, writer):
     ireq = from_line("Test==1.2")
     ireq.comes_from = "xyz"
 
-    assert writer._format_requirement(ireq) == "test==1.2\n    " + comment("# via xyz")
+    assert writer._format_requirement(ireq) == "test==1.2\n" + comment("    # via xyz")
 
 
 def test_format_requirement_environment_marker(from_line, writer):
