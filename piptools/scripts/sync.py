@@ -185,15 +185,15 @@ def _compose_install_flags(
     else:
         result.append("--no-index")
 
-    for extra_index in extra_index_url or []:
+    for extra_index in extra_index_url:
         result.extend(["--extra-index-url", extra_index])
 
     # Build --trusted-hosts
-    for host in itertools.chain(trusted_host or [], finder.trusted_hosts):
+    for host in itertools.chain(trusted_host, finder.trusted_hosts):
         result.extend(["--trusted-host", host])
 
     # Build --find-links
-    for link in itertools.chain(find_links or [], finder.find_links):
+    for link in itertools.chain(find_links, finder.find_links):
         result.extend(["--find-links", link])
 
     # Build format controls --no-binary/--only-binary
