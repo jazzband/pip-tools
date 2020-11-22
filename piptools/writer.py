@@ -4,7 +4,7 @@ import os
 import re
 from itertools import chain
 
-import six
+from pip._vendor import six
 
 from .click import unstyle
 from .logging import log

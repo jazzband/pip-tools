@@ -2,7 +2,7 @@
 # flake8: noqa
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import six
+from pip._vendor import six
 
 from .pip_compat import PIP_VERSION, parse_requirements
 
