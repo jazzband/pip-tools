@@ -63,7 +63,8 @@ def test_command_line_setuptools_read(pip_conf, runner):
         #
         #    pip-compile --no-emit-find-links
         #
-        small-fake-a==0.1         # via fake-setuptools-a (setup.py)
+        small-fake-a==0.1
+            # via fake-setuptools-a (setup.py)
         """
     )
 
@@ -872,7 +873,8 @@ def test_stdin(pip_conf, runner):
         #
         #    pip-compile --no-emit-find-links --output-file=requirements.txt -
         #
-        small-fake-a==0.1         # via -r -
+        small-fake-a==0.1
+            # via -r -
         Dry-run, so nothing updated.
         """
     )
@@ -908,8 +910,10 @@ def test_multiple_input_files_without_output_file(runner):
             #
             #    pip-compile --no-emit-find-links
             #
-            small-fake-a==0.1         # via -c constraints.txt, small-fake-with-deps
-            small-fake-with-deps==0.1  # via -r requirements.in
+            small-fake-a==0.1
+                # via -c constraints.txt, small-fake-with-deps
+            small-fake-with-deps==0.1
+                # via -r requirements.in
             Dry-run, so nothing updated.
             """,
             id="annotate",
@@ -1162,8 +1166,10 @@ def test_upgrade_package_doesnt_remove_annotation(pip_conf, runner):
             #
             #    pip-compile --no-emit-find-links
             #
-            small-fake-a==0.1         # via small-fake-with-deps
-            small-fake-with-deps==0.1  # via -r requirements.in
+            small-fake-a==0.1
+                # via small-fake-with-deps
+            small-fake-with-deps==0.1
+                # via -r requirements.in
             """
         )
 
