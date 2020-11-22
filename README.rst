@@ -300,9 +300,13 @@ a constraint:
     django-debug-toolbar==2.2
         # via -r dev-requirements.in
     django==2.1.15
-        # via -c requirements.txt, django-debug-toolbar
+        # via
+        #   -c requirements.txt
+        #   django-debug-toolbar
     pytz==2019.3
-        # via -c requirements.txt, django
+        # via
+        #   -c requirements.txt
+        #   django
     sqlparse==0.3.0
         # via django-debug-toolbar
 
