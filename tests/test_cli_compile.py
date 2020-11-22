@@ -761,7 +761,7 @@ def test_generate_hashes_with_annotations(runner):
         #
         six==1.15.0 \\
             --hash=sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259 \\
-            --hash=sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced \\
+            --hash=sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced
             # via -r requirements.in
         """
     )
