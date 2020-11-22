@@ -315,9 +315,6 @@ def get_compile_command(click_ctx):
     for option_name, value in click_ctx.params.items():
         option = compile_options[option_name]
 
-        # Get the latest option name (usually it'll be a long name)
-        option_long_name = option.opts[-1]
-
         # Collect variadic args separately, they will be added
         # at the end of the command later
         if option.nargs < 0:
@@ -327,6 +324,9 @@ def get_compile_command(click_ctx):
                 right_args.append("--")
             right_args.extend([shlex_quote(force_text(val)) for val in value])
             continue
+
+        # Get the latest option name (usually it'll be a long name)
+        option_long_name = option.opts[-1]
 
         # Exclude one-off options (--upgrade/--upgrade-package/--rebuild/...)
         # or options that don't change compile behaviour (--verbose/--dry-run/...)
