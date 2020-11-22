@@ -316,23 +316,20 @@ def cli(
 
     right_args = shlex.split(pip_args or "")
     pip_args = []
-    if find_links:
-        for link in find_links:
-            pip_args.extend(["-f", link])
+    for link in find_links:
+        pip_args.extend(["-f", link])
     if index_url:
         pip_args.extend(["-i", index_url])
-    if extra_index_url:
-        for extra_index in extra_index_url:
-            pip_args.extend(["--extra-index-url", extra_index])
+    for extra_index in extra_index_url:
+        pip_args.extend(["--extra-index-url", extra_index])
     if cert:
         pip_args.extend(["--cert", cert])
     if client_cert:
         pip_args.extend(["--client-cert", client_cert])
     if pre:
         pip_args.extend(["--pre"])
-    if trusted_host:
-        for host in trusted_host:
-            pip_args.extend(["--trusted-host", host])
+    for host in trusted_host:
+        pip_args.extend(["--trusted-host", host])
 
     if not build_isolation:
         pip_args.append("--no-build-isolation")
