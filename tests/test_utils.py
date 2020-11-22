@@ -4,8 +4,8 @@ from __future__ import unicode_literals
 import os
 
 import pytest
-import six
-from six.moves import shlex_quote
+from pip._vendor import six
+from pip._vendor.six.moves import shlex_quote
 
 from piptools.scripts.compile import cli as compile_cli
 from piptools.utils import (

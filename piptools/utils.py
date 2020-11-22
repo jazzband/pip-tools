@@ -5,12 +5,12 @@ import sys
 from collections import OrderedDict
 from itertools import chain
 
-import six
 from click.utils import LazyFile
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 from pip._internal.vcs import is_url
-from six.moves import shlex_quote
+from pip._vendor import six
+from pip._vendor.six.moves import shlex_quote
 
 from .click import style
 
