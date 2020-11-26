@@ -118,6 +118,24 @@ def test_find_links_option(runner):
         )
 
 
+def test_find_links_envvar(monkeypatch, runner):
+    with open("requirements.in", "w") as req_in:
+        req_in.write("-f ./libs3")
+
+    monkeypatch.setenv("PIP_FIND_LINKS", "./libs1 ./libs2")
+    out = runner.invoke(cli, ["-v"])
+
+    # Check that find-links has been passed to pip
+    assert "Using links:\n  ./libs1\n  ./libs2\n  ./libs3\n" in out.stderr
+
+    # Check that find-links has been written to a requirements.txt
+    with open("requirements.txt", "r") as req_txt:
+        assert (
+            "--find-links ./libs1\n--find-links ./libs2\n--find-links ./libs3\n"
+            in req_txt.read()
+        )
+
+
 def test_extra_index_option(pip_with_index_conf, runner):
     with open("requirements.in", "w"):
         pass
@@ -144,6 +162,28 @@ def test_extra_index_option(pip_with_index_conf, runner):
     )
 
 
+def test_extra_index_envvar(monkeypatch, runner):
+    with open("requirements.in", "w"):
+        pass
+
+    monkeypatch.setenv("PIP_INDEX_URL", "http://example.com")
+    monkeypatch.setenv(
+        "PIP_EXTRA_INDEX_URL", "http://extraindex1.com http://extraindex2.com"
+    )
+    out = runner.invoke(cli, ["-v"])
+    assert (
+        "Using indexes:\n"
+        "  http://example.com\n"
+        "  http://extraindex1.com\n"
+        "  http://extraindex2.com" in out.stderr
+    )
+    assert (
+        "--index-url http://example.com\n"
+        "--extra-index-url http://extraindex1.com\n"
+        "--extra-index-url http://extraindex2.com" in out.stderr
+    )
+
+
 @pytest.mark.parametrize("option", ("--extra-index-url", "--find-links"))
 def test_redacted_urls_in_verbose_output(runner, option):
     """
@@ -156,7 +196,7 @@ def test_redacted_urls_in_verbose_output(runner, option):
         cli,
         [
             "--no-header",
-            "--no-index",
+            "--no-emit-index-url",
             "--no-emit-find-links",
             "--verbose",
             option,
@@ -168,13 +208,21 @@ def test_redacted_urls_in_verbose_output(runner, option):
     assert "password" not in out.stderr
 
 
-def test_trusted_host(pip_conf, runner):
+def test_trusted_host_option(pip_conf, runner):
     with open("requirements.in", "w"):
         pass
     out = runner.invoke(
         cli, ["-v", "--trusted-host", "example.com", "--trusted-host", "example2.com"]
     )
-    assert "--trusted-host example.com\n" "--trusted-host example2.com\n" in out.stderr
+    assert "--trusted-host example.com\n--trusted-host example2.com\n" in out.stderr
+
+
+def test_trusted_host_envvar(monkeypatch, pip_conf, runner):
+    with open("requirements.in", "w"):
+        pass
+    monkeypatch.setenv("PIP_TRUSTED_HOST", "example.com example2.com")
+    out = runner.invoke(cli, ["-v"])
+    assert "--trusted-host example.com\n--trusted-host example2.com\n" in out.stderr
 
 
 @pytest.mark.parametrize(
@@ -696,9 +744,7 @@ def test_filter_pip_markers(pip_conf, runner):
     Check that pip-compile works with pip environment markers (PEP496)
     """
     with open("requirements", "w") as req_in:
-        req_in.write(
-            "small-fake-a==0.1\n" "unknown_package==0.1; python_version == '1'"
-        )
+        req_in.write("small-fake-a==0.1\nunknown_package==0.1; python_version == '1'")
 
     out = runner.invoke(cli, ["-n", "requirements"])
 
