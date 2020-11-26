@@ -11,7 +11,7 @@ on:
 jobs:
   build:
     if: github.repository == 'jazzband/pip-tools'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
