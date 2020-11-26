@@ -1,4 +1,4 @@
-name: Deploy
+name: Release
 
 on:
   push:
@@ -18,18 +18,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Cache
-        uses: actions/cache@v2
-        with:
-          path: ~/.cache/pip
-          key: deploy-${{ hashFiles('**/setup.py') }}
-          restore-keys: |
-            deploy-
-
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: 3.9
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: release-${{ hashFiles('**/setup.py') }}
+          restore-keys: |
+            release-
 
       - name: Install dependencies
         run: |
@@ -42,10 +47,9 @@ jobs:
           python setup.py sdist --format=gztar bdist_wheel
           twine check dist/*
 
-      - name: Publish package to Jazzband
+      - name: Upload packages to Jazzband
         if: github.event.action == 'published'
         uses: pypa/gh-action-pypi-publish@master
-
         with:
           user: jazzband
           password: ${{ secrets.JAZZBAND_RELEASE_KEY }}
