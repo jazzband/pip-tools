@@ -79,10 +79,14 @@ If you have a ``setup.py`` with ``install_requires=['django']``, then run
     #
     #    pip-compile
     #
-    asgiref==3.2.3            # via django
-    django==3.0.3             # via my_django_project (setup.py)
-    pytz==2019.3              # via django
-    sqlparse==0.3.0           # via django
+    asgiref==3.2.3
+        # via django
+    django==3.0.3
+        # via my_django_project (setup.py)
+    pytz==2019.3
+        # via django
+    sqlparse==0.3.0
+        # via django
 
 ``pip-compile`` will produce your ``requirements.txt``, with all the Django
 dependencies (and all underlying dependencies) pinned.
@@ -109,10 +113,14 @@ Now, run ``pip-compile requirements.in``:
     #
     #    pip-compile requirements.in
     #
-    asgiref==3.2.3            # via django
-    django==3.0.3             # via -r requirements.in
-    pytz==2019.3              # via django
-    sqlparse==0.3.0           # via django
+    asgiref==3.2.3
+        # via django
+    django==3.0.3
+        # via -r requirements.in
+    pytz==2019.3
+        # via django
+    sqlparse==0.3.0
+        # via django
 
 And it will produce your ``requirements.txt``, with all the Django dependencies
 (and all underlying dependencies) pinned.
@@ -225,10 +233,14 @@ generated at the top of requirements files by setting the
     #
     #    ./pipcompilewrapper
     #
-    asgiref==3.2.3            # via django
-    django==3.0.3             # via -r requirements.in
-    pytz==2019.3              # via django
-    sqlparse==0.3.0           # via django
+    asgiref==3.2.3
+        # via django
+    django==3.0.3
+        # via -r requirements.in
+    pytz==2019.3
+        # via django
+    sqlparse==0.3.0
+        # via django
 
 Workflow for layered requirements
 ---------------------------------
@@ -267,8 +279,10 @@ First, compile ``requirements.txt`` as usual:
     #
     #    pip-compile
     #
-    django==2.1.15            # via -r requirements.in
-    pytz==2019.3              # via django
+    django==2.1.15
+        # via -r requirements.in
+    pytz==2019.3
+        # via django
 
 
 Now compile the dev requirements and the ``requirements.txt`` file is used as
@@ -283,10 +297,18 @@ a constraint:
     #
     #    pip-compile dev-requirements.in
     #
-    django-debug-toolbar==2.2  # via -r dev-requirements.in
-    django==2.1.15            # via -c requirements.txt, django-debug-toolbar
-    pytz==2019.3              # via -c requirements.txt, django
-    sqlparse==0.3.0           # via django-debug-toolbar
+    django-debug-toolbar==2.2
+        # via -r dev-requirements.in
+    django==2.1.15
+        # via
+        #   -c requirements.txt
+        #   django-debug-toolbar
+    pytz==2019.3
+        # via
+        #   -c requirements.txt
+        #   django
+    sqlparse==0.3.0
+        # via django-debug-toolbar
 
 As you can see above, even though a ``2.2`` release of Django is available, the
 dev requirements only include a ``2.1`` version of Django because they were
