@@ -456,10 +456,12 @@ Other useful tools
 
   * `requirements.txt.vim`_ for Vim.
   * `Python extension for VS Code`_ for VS Code.
+  * `pip-requirements.el`_ for Emacs.
 
 .. _pipdeptree: https://github.com/naiquevin/pipdeptree
 .. _requirements.txt.vim: https://github.com/raimon49/requirements.txt.vim
 .. _Python extension for VS Code: https://marketplace.visualstudio.com/items?itemName=ms-python.python
+.. _pip-requirements.el: https://github.com/Wilfred/pip-requirements.el
 
 
 Deprecations
