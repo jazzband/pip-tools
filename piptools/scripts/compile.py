@@ -164,11 +164,13 @@ class BaseCommand(Command):
     ),
 )
 @click.option(
-    "--allow-unsafe",
+    "--allow-unsafe/--no-allow-unsafe",
     is_flag=True,
-    default=False,
-    help="Pin packages considered unsafe: {}".format(
-        ", ".join(sorted(UNSAFE_PACKAGES))
+    default=None,
+    help=(
+        "Pin packages considered unsafe: {}. DEPRECATED: Future versions of "
+        "pip-tools will enable this behavior by default and the option will be "
+        "removed.".format(", ".join(sorted(UNSAFE_PACKAGES)))
     ),
 )
 @click.option(
@@ -301,6 +303,17 @@ def cli(
             category=FutureWarning,
         )
         emit_index_url = index
+
+    if allow_unsafe is None:
+        warnings.warn(
+            "In future versions of pip-tools, the --allow-unsafe behavior will "
+            "be used by default and the option will be removed. It is "
+            "recommended to pass the argument now to adapt projects to the "
+            "upcoming change. To suppress this warning pass either "
+            "--allow-unsafe or --no-allow-unsafe.",
+            category=FutureWarning,
+        )
+        allow_unsafe = False
 
     ###
     # Setup

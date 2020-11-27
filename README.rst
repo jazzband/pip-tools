@@ -472,6 +472,10 @@ This section lists ``pip-tools`` features that are currently deprecated.
 - ``--index/--no-index`` command-line options, use instead
   ``--emit-index-url/--no-emit-index-url`` (since 5.2.0).
 
+- In future versions, the ``--allow-unsafe`` behavior will be used by default
+  and the option will be removed. It is recommended to pass the argument now to
+  adapt projects to the upcoming change.
+
 Versions and compatibility
 ==========================
 
