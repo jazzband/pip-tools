@@ -21,7 +21,7 @@ from ..locations import CACHE_DIR
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
-from ..utils import UNSAFE_PACKAGES, dedup, is_pinned_requirement, key_from_ireq
+from ..utils import dedup, is_pinned_requirement, key_from_ireq
 from ..writer import OutputWriter
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.in"
@@ -164,16 +164,6 @@ class BaseCommand(Command):
     ),
 )
 @click.option(
-    "--allow-unsafe/--no-allow-unsafe",
-    is_flag=True,
-    default=None,
-    help=(
-        "Pin packages considered unsafe: {}. DEPRECATED: Future versions of "
-        "pip-tools will enable this behavior by default and the option will be "
-        "removed.".format(", ".join(sorted(UNSAFE_PACKAGES)))
-    ),
-)
-@click.option(
     "--generate-hashes",
     is_flag=True,
     default=False,
@@ -242,7 +232,6 @@ def cli(
     upgrade,
     upgrade_packages,
     output_file,
-    allow_unsafe,
     generate_hashes,
     reuse_hashes,
     src_files,
@@ -303,17 +292,6 @@ def cli(
             category=FutureWarning,
         )
         emit_index_url = index
-
-    if allow_unsafe is None:
-        warnings.warn(
-            "In future versions of pip-tools, the --allow-unsafe behavior will "
-            "be used by default and the option will be removed. It is "
-            "recommended to pass the argument now to adapt projects to the "
-            "upcoming change. To suppress this warning pass either "
-            "--allow-unsafe or --no-allow-unsafe.",
-            category=FutureWarning,
-        )
-        allow_unsafe = False
 
     ###
     # Setup
@@ -455,7 +433,6 @@ def cli(
             prereleases=repository.finder.allow_all_prereleases or pre,
             cache=DependencyCache(cache_dir),
             clear_caches=rebuild,
-            allow_unsafe=allow_unsafe,
         )
         results = resolver.resolve(max_rounds=max_rounds)
         if generate_hashes:
@@ -486,13 +463,11 @@ def cli(
         index_urls=repository.finder.index_urls,
         trusted_hosts=repository.finder.trusted_hosts,
         format_control=repository.finder.format_control,
-        allow_unsafe=allow_unsafe,
         find_links=repository.finder.find_links,
         emit_find_links=emit_find_links,
     )
     writer.write(
         results=results,
-        unsafe_requirements=resolver.unsafe_constraints,
         markers={
             key_from_ireq(ireq): ireq.markers for ireq in constraints if ireq.markers
         },

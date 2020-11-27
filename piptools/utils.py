@@ -14,7 +14,6 @@ from pip._vendor.six.moves import shlex_quote
 
 from .click import style
 
-UNSAFE_PACKAGES = {"setuptools", "distribute", "pip"}
 COMPILE_EXCLUDE_OPTIONS = {
     "--dry-run",
     "--quiet",

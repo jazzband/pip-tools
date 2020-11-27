@@ -6,9 +6,9 @@ from piptools.resolver import RequirementSummary, combine_install_requirements
 
 
 @pytest.mark.parametrize(
-    ("input", "expected", "prereleases", "unsafe_constraints"),
+    ("input", "expected", "prereleases"),
     (
-        (tup + (False, set())[len(tup) - 2 :])
+        (tup + (False,)[len(tup) - 2 :])
         for tup in [
             (["Django"], ["django==1.8"]),
             (
@@ -111,12 +111,14 @@ from piptools.resolver import RequirementSummary, combine_install_requirements
                     "pytz==2016.4 (from celery==3.1.18)",
                 ],
             ),
-            # Exclude package dependcy of setuptools as it is unsafe.
+            # Include setuptools too.
             (
                 ["html5lib"],
-                ["html5lib==0.999999999"],
+                [
+                    "html5lib==0.999999999",
+                    "setuptools==35.0.0 (from html5lib==0.999999999)",
+                ],
                 False,
-                {"setuptools==35.0.0 (from html5lib==0.999999999)"},
             ),
             # We shouldn't include irrelevant pip constraints
             # See: GH-471
@@ -142,31 +144,21 @@ from piptools.resolver import RequirementSummary, combine_install_requirements
                     "werkzeug==0.10.4 (from flask==0.10.1)",
                 ],
             ),
-            # Unsafe dependencies should be filtered
+            # setuptools dependency should be included.
             (
                 ["setuptools==35.0.0", "anyjson==0.3.3"],
-                ["anyjson==0.3.3"],
+                ["anyjson==0.3.3", "setuptools==35.0.0"],
                 False,
-                {"setuptools==35.0.0"},
             ),
             (
                 ["fake-piptools-test-with-unsafe-deps==0.1"],
-                ["fake-piptools-test-with-unsafe-deps==0.1"],
+                [
+                    "appdirs==1.4.9 (from setuptools==34.0.0->fake-piptools-test-with-unsafe-deps==0.1)",
+                    "fake-piptools-test-with-unsafe-deps==0.1",
+                    "packaging==16.8 (from setuptools==34.0.0->fake-piptools-test-with-unsafe-deps==0.1)",
+                    "setuptools==34.0.0 (from fake-piptools-test-with-unsafe-deps==0.1)",
+                ],
                 False,
-                {
-                    (
-                        "setuptools==34.0.0 (from "
-                        "fake-piptools-test-with-unsafe-deps==0.1)"
-                    ),
-                    (
-                        "appdirs==1.4.9 (from "
-                        "setuptools==34.0.0->fake-piptools-test-with-unsafe-deps==0.1)"
-                    ),
-                    (
-                        "packaging==16.8 (from "
-                        "setuptools==34.0.0->fake-piptools-test-with-unsafe-deps==0.1)"
-                    ),
-                },
             ),
             # Git URL requirement
             # See: GH-851
@@ -190,26 +182,6 @@ from piptools.resolver import RequirementSummary, combine_install_requirements
                 ["aiohttp", ("yarl==1.4.2", True)],
                 ["aiohttp==3.6.2", "idna==2.8 (from yarl==1.4.2)", "yarl==1.4.2"],
             ),
-        ]
-    ),
-)
-def test_resolver(
-    resolver, from_line, input, expected, prereleases, unsafe_constraints
-):
-    input = [line if isinstance(line, tuple) else (line, False) for line in input]
-    input = [from_line(req[0], constraint=req[1]) for req in input]
-    resolver = resolver(input, prereleases=prereleases)
-    output = resolver.resolve()
-    output = {str(line) for line in output}
-    assert output == {str(line) for line in expected}
-    assert {str(line) for line in resolver.unsafe_constraints} == unsafe_constraints
-
-
-@pytest.mark.parametrize(
-    ("input", "expected", "prereleases"),
-    (
-        (tup + (False,))[:3]
-        for tup in [
             (
                 ["setuptools==34.0.0"],
                 [
@@ -218,33 +190,14 @@ def test_resolver(
                     "setuptools==34.0.0",
                 ],
             ),
-            (
-                ["fake-piptools-test-with-unsafe-deps==0.1"],
-                [
-                    (
-                        "appdirs==1.4.9 (from "
-                        "setuptools==34.0.0->fake-piptools-test-with-unsafe-deps==0.1)"
-                    ),
-                    (
-                        "setuptools==34.0.0 "
-                        "(from fake-piptools-test-with-unsafe-deps==0.1)"
-                    ),
-                    (
-                        "packaging==16.8 (from "
-                        "setuptools==34.0.0->fake-piptools-test-with-unsafe-deps==0.1)"
-                    ),
-                    "fake-piptools-test-with-unsafe-deps==0.1",
-                ],
-            ),
         ]
     ),
 )
-def test_resolver__allows_unsafe_deps(
-    resolver, from_line, input, expected, prereleases
-):
+def test_resolver(resolver, from_line, input, expected, prereleases):
     input = [line if isinstance(line, tuple) else (line, False) for line in input]
     input = [from_line(req[0], constraint=req[1]) for req in input]
-    output = resolver(input, prereleases=prereleases, allow_unsafe=True).resolve()
+    resolver = resolver(input, prereleases=prereleases)
+    output = resolver.resolve()
     output = {str(line) for line in output}
     assert output == {str(line) for line in expected}
 

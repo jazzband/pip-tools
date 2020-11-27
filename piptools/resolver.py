@@ -11,7 +11,6 @@ from pip._internal.req.constructors import install_req_from_line
 from . import click
 from .logging import log
 from .utils import (
-    UNSAFE_PACKAGES,
     format_requirement,
     format_specifier,
     is_pinned_requirement,
@@ -104,13 +103,7 @@ def combine_install_requirements(repository, ireqs):
 
 class Resolver(object):
     def __init__(
-        self,
-        constraints,
-        repository,
-        cache,
-        prereleases=False,
-        clear_caches=False,
-        allow_unsafe=False,
+        self, constraints, repository, cache, prereleases=False, clear_caches=False
     ):
         """
         This class resolves a given set of constraints (a collection of
@@ -123,8 +116,6 @@ class Resolver(object):
         self.dependency_cache = cache
         self.prereleases = prereleases
         self.clear_caches = clear_caches
-        self.allow_unsafe = allow_unsafe
-        self.unsafe_constraints = set()
 
     @property
     def constraints(self):
@@ -189,26 +180,7 @@ class Resolver(object):
         del os.environ["PIP_EXISTS_ACTION"]
 
         # Only include hard requirements and not pip constraints
-        results = {req for req in best_matches if not req.constraint}
-
-        # Filter out unsafe requirements.
-        self.unsafe_constraints = set()
-        if not self.allow_unsafe:
-            # reverse_dependencies is used to filter out packages that are only
-            # required by unsafe packages. This logic is incomplete, as it would
-            # fail to filter sub-sub-dependencies of unsafe packages. None of the
-            # UNSAFE_PACKAGES currently have any dependencies at all (which makes
-            # sense for installation tools) so this seems sufficient.
-            reverse_dependencies = self.reverse_dependencies(results)
-            for req in results.copy():
-                required_by = reverse_dependencies.get(req.name.lower(), [])
-                if req.name in UNSAFE_PACKAGES or (
-                    required_by and all(name in UNSAFE_PACKAGES for name in required_by)
-                ):
-                    self.unsafe_constraints.add(req)
-                    results.remove(req)
-
-        return results
+        return {req for req in best_matches if not req.constraint}
 
     def _group_constraints(self, constraints):
         """
@@ -399,9 +371,3 @@ class Resolver(object):
             yield install_req_from_line(
                 dependency_string, constraint=ireq.constraint, comes_from=ireq
             )
-
-    def reverse_dependencies(self, ireqs):
-        non_editable = [
-            ireq for ireq in ireqs if not (ireq.editable or is_url_requirement(ireq))
-        ]
-        return self.dependency_cache.reverse_dependencies(non_editable)

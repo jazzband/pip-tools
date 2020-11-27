@@ -3,12 +3,7 @@ from pip._internal.models.format_control import FormatControl
 
 from piptools.scripts.compile import cli
 from piptools.utils import comment
-from piptools.writer import (
-    MESSAGE_UNHASHED_PACKAGE,
-    MESSAGE_UNSAFE_PACKAGES,
-    MESSAGE_UNSAFE_PACKAGES_UNPINNED,
-    OutputWriter,
-)
+from piptools.writer import MESSAGE_UNHASHED_PACKAGE, OutputWriter
 
 
 @pytest.fixture
@@ -39,7 +34,6 @@ def writer(tmpdir_cwd):
             index_urls=[],
             trusted_hosts=[],
             format_control=FormatControl(set(), set()),
-            allow_unsafe=False,
             find_links=[],
             emit_find_links=True,
         )
@@ -99,38 +93,26 @@ def test_format_requirement_environment_marker(from_line, writer):
     )
 
 
-@pytest.mark.parametrize("allow_unsafe", ((True,), (False,)))
-def test_iter_lines__unsafe_dependencies(writer, from_line, allow_unsafe):
-    writer.allow_unsafe = allow_unsafe
+def test_iter_lines__unsafe_dependencies(writer, from_line):
     writer.emit_header = False
 
     lines = writer._iter_lines(
-        [from_line("test==1.2")], [from_line("setuptools==1.10.0")]
+        [from_line("test==1.2"), from_line("setuptools==1.10.0")]
     )
 
-    expected_lines = (
-        "test==1.2",
-        "",
-        MESSAGE_UNSAFE_PACKAGES,
-        "setuptools==1.10.0" if allow_unsafe else comment("# setuptools"),
-    )
+    expected_lines = ("setuptools==1.10.0", "test==1.2")
     assert tuple(lines) == expected_lines
 
 
 def test_iter_lines__unsafe_with_hashes(writer, from_line):
-    writer.allow_unsafe = False
     writer.emit_header = False
-    ireqs = [from_line("test==1.2")]
-    unsafe_ireqs = [from_line("setuptools==1.10.0")]
-    hashes = {ireqs[0]: {"FAKEHASH"}, unsafe_ireqs[0]: set()}
+    ireqs = [from_line("test==1.2"), from_line("setuptools==1.10.0")]
+    hashes = {ireqs[0]: {"FAKEHASH1"}, ireqs[1]: {"FAKEHASH2"}}
 
-    lines = writer._iter_lines(ireqs, unsafe_ireqs, hashes=hashes)
-
+    lines = writer._iter_lines(ireqs, hashes=hashes)
     expected_lines = (
-        "test==1.2 \\\n    --hash=FAKEHASH",
-        "",
-        MESSAGE_UNSAFE_PACKAGES_UNPINNED,
-        comment("# setuptools"),
+        "setuptools==1.10.0 \\\n    --hash=FAKEHASH2",
+        "test==1.2 \\\n    --hash=FAKEHASH1",
     )
     assert tuple(lines) == expected_lines
 

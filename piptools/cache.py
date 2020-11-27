@@ -6,10 +6,8 @@ import os
 import platform
 import sys
 
-from pip._vendor.packaging.requirements import Requirement
-
 from .exceptions import PipToolsError
-from .utils import as_tuple, key_from_req, lookup_table
+from .utils import as_tuple
 
 _PEP425_PY_TAGS = {"cpython": "cp", "pypy": "pp", "ironpython": "ip", "jython": "jy"}
 
@@ -129,42 +127,3 @@ class DependencyCache(object):
         self.cache.setdefault(pkgname, {})
         self.cache[pkgname][pkgversion_and_extras] = values
         self.write_cache()
-
-    def reverse_dependencies(self, ireqs):
-        """
-        Returns a lookup table of reverse dependencies for all the given ireqs.
-
-        Since this is all static, it only works if the dependency cache
-        contains the complete data, otherwise you end up with a partial view.
-        This is typically no problem if you use this function after the entire
-        dependency tree is resolved.
-        """
-        ireqs_as_cache_values = [self.as_cache_key(ireq) for ireq in ireqs]
-        return self._reverse_dependencies(ireqs_as_cache_values)
-
-    def _reverse_dependencies(self, cache_keys):
-        """
-        Returns a lookup table of reverse dependencies for all the given cache keys.
-
-        Example input:
-
-            [('pep8', '1.5.7'),
-             ('flake8', '2.4.0'),
-             ('mccabe', '0.3'),
-             ('pyflakes', '0.8.1')]
-
-        Example output:
-
-            {'pep8': ['flake8'],
-             'flake8': [],
-             'mccabe': ['flake8'],
-             'pyflakes': ['flake8']}
-
-        """
-        # First, collect all the dependencies into a sequence of (parent, child)
-        # tuples, like [('flake8', 'pep8'), ('flake8', 'mccabe'), ...]
-        return lookup_table(
-            (key_from_req(Requirement(dep_name)), name)
-            for name, version_and_extras in cache_keys
-            for dep_name in self.cache[name][version_and_extras]
-        )

@@ -9,7 +9,6 @@ from pip._vendor import six
 from .click import unstyle
 from .logging import log
 from .utils import (
-    UNSAFE_PACKAGES,
     comment,
     dedup,
     format_requirement,
@@ -21,16 +20,6 @@ MESSAGE_UNHASHED_PACKAGE = comment(
     "# WARNING: pip install will require the following package to be hashed."
     "\n# Consider using a hashable URL like "
     "https://github.com/jazzband/pip-tools/archive/SOMECOMMIT.zip"
-)
-
-MESSAGE_UNSAFE_PACKAGES_UNPINNED = comment(
-    "# WARNING: The following packages were not pinned, but pip requires them to be"
-    "\n# pinned when the requirements file includes hashes. "
-    "Consider using the --allow-unsafe flag."
-)
-
-MESSAGE_UNSAFE_PACKAGES = comment(
-    "# The following packages are considered to be unsafe in a requirements file:"
 )
 
 MESSAGE_UNINSTALLABLE = (
@@ -64,7 +53,6 @@ class OutputWriter(object):
         index_urls,
         trusted_hosts,
         format_control,
-        allow_unsafe,
         find_links,
         emit_find_links,
     ):
@@ -81,7 +69,6 @@ class OutputWriter(object):
         self.index_urls = index_urls
         self.trusted_hosts = trusted_hosts
         self.format_control = format_control
-        self.allow_unsafe = allow_unsafe
         self.find_links = find_links
         self.emit_find_links = emit_find_links
 
@@ -137,9 +124,8 @@ class OutputWriter(object):
         if emitted:
             yield ""
 
-    def _iter_lines(self, results, unsafe_requirements=None, markers=None, hashes=None):
+    def _iter_lines(self, results, markers=None, hashes=None):
         # default values
-        unsafe_requirements = unsafe_requirements or []
         markers = markers or {}
         hashes = hashes or {}
 
@@ -157,15 +143,8 @@ class OutputWriter(object):
             yield line
             yielded = True
 
-        unsafe_requirements = (
-            {r for r in results if r.name in UNSAFE_PACKAGES}
-            if not unsafe_requirements
-            else unsafe_requirements
-        )
-        packages = {r for r in results if r.name not in UNSAFE_PACKAGES}
-
-        if packages:
-            packages = sorted(packages, key=self._sort_key)
+        if results:
+            packages = sorted(results, key=self._sort_key)
             for ireq in packages:
                 if has_hashes and not hashes.get(ireq):
                     yield MESSAGE_UNHASHED_PACKAGE
@@ -176,26 +155,6 @@ class OutputWriter(object):
                 yield line
             yielded = True
 
-        if unsafe_requirements:
-            unsafe_requirements = sorted(unsafe_requirements, key=self._sort_key)
-            yield ""
-            yielded = True
-            if has_hashes and not self.allow_unsafe:
-                yield MESSAGE_UNSAFE_PACKAGES_UNPINNED
-                warn_uninstallable = True
-            else:
-                yield MESSAGE_UNSAFE_PACKAGES
-
-            for ireq in unsafe_requirements:
-                ireq_key = key_from_ireq(ireq)
-                if not self.allow_unsafe:
-                    yield comment("# {}".format(ireq_key))
-                else:
-                    line = self._format_requirement(
-                        ireq, marker=markers.get(ireq_key), hashes=hashes
-                    )
-                    yield line
-
         # Yield even when there's no real content, so that blank files are written
         if not yielded:
             yield ""
@@ -203,9 +162,9 @@ class OutputWriter(object):
         if warn_uninstallable:
             log.warning(MESSAGE_UNINSTALLABLE)
 
-    def write(self, results, unsafe_requirements, markers, hashes):
+    def write(self, results, markers, hashes):
 
-        for line in self._iter_lines(results, unsafe_requirements, markers, hashes):
+        for line in self._iter_lines(results, markers, hashes):
             log.info(line)
             if not self.dry_run:
                 self.dst_file.write(unstyle(line).encode("utf-8"))
