@@ -334,7 +334,7 @@ def get_compile_command(click_ctx):
             continue
 
         # Skip options without a value
-        if option.default is None and not value:
+        if option.default is None and value is None:
             continue
 
         # Skip options with a default value
