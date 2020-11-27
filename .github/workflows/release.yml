@@ -1,4 +1,4 @@
-name: Deploy
+name: Release
 
 on:
   push:
@@ -11,20 +11,12 @@ on:
 jobs:
   build:
     if: github.repository == 'jazzband/pip-tools'
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-
-      - name: Cache
-        uses: actions/cache@v2
-        with:
-          path: ~/.cache/pip
-          key: deploy-${{ hashFiles('**/setup.py') }}
-          restore-keys: |
-            deploy-
 
       - name: Set up Python
         uses: actions/setup-python@v2
@@ -42,10 +34,9 @@ jobs:
           python setup.py sdist --format=gztar bdist_wheel
           twine check dist/*
 
-      - name: Publish package to Jazzband
+      - name: Upload packages to Jazzband
         if: github.event.action == 'published'
         uses: pypa/gh-action-pypi-publish@master
-
         with:
           user: jazzband
           password: ${{ secrets.JAZZBAND_RELEASE_KEY }}
