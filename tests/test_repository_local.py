@@ -9,12 +9,20 @@ from tests.conftest import FakeRepository
 EXPECTED = {"sha256:5e6071ee6e4c59e0d0408d366fe9b66781d2cf01be9a6e19a2433bb3c5336330"}
 
 
-def test_get_hashes_local_repository_cache_miss(pip_conf, from_line, pypi_repository):
+def test_get_hashes_local_repository_cache_miss(
+    capfd, pip_conf, from_line, pypi_repository
+):
     existing_pins = {}
     local_repository = LocalRequirementsRepository(existing_pins, pypi_repository)
     with local_repository.allow_all_wheels():
         hashes = local_repository.get_hashes(from_line("small-fake-a==0.1"))
         assert hashes == EXPECTED
+    captured = capfd.readouterr()
+    assert captured.out == ""
+    assert (
+        captured.err.strip()
+        == "Couldn't get hashes from PyPI, fallback to hashing files"
+    )
 
 
 def test_get_hashes_local_repository_cache_hit(from_line, repository):
@@ -37,7 +45,7 @@ NONSENSE = {"sha256:NONSENSE"}
     ("reuse_hashes", "expected"), ((True, NONSENSE), (False, EXPECTED))
 )
 def test_toggle_reuse_hashes_local_repository(
-    pip_conf, from_line, pypi_repository, reuse_hashes, expected
+    capfd, pip_conf, from_line, pypi_repository, reuse_hashes, expected
 ):
     # Create an install requirement with the hashes included in its options
     options = {"hashes": {"sha256": [entry.split(":")[1] for entry in NONSENSE]}}
@@ -49,6 +57,15 @@ def test_toggle_reuse_hashes_local_repository(
     )
     with local_repository.allow_all_wheels():
         assert local_repository.get_hashes(from_line("small-fake-a==0.1")) == expected
+    captured = capfd.readouterr()
+    assert captured.out == ""
+    if reuse_hashes:
+        assert captured.err == ""
+    else:
+        assert (
+            captured.err.strip()
+            == "Couldn't get hashes from PyPI, fallback to hashing files"
+        )
 
 
 class FakeRepositoryChecksForCopy(FakeRepository):
