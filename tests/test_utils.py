@@ -1,6 +1,7 @@
 # coding: utf-8
 from __future__ import unicode_literals
 
+import logging
 import os
 
 import pytest
@@ -178,13 +179,22 @@ def test_is_pinned_requirement_editable(from_editable):
         ("https://example.com/example.zip", True),
         ("https://example.com/example.zip#egg=example", True),
         ("git+git://github.com/jazzband/pip-tools@master", True),
-        ("../example.zip", True),
-        ("/example.zip", True),
     ),
 )
-def test_is_url_requirement(from_line, line, expected):
+def test_is_url_requirement(caplog, from_line, line, expected):
     ireq = from_line(line)
     assert is_url_requirement(ireq) is expected
+
+
+@pytest.mark.parametrize("line", ("../example.zip", "/example.zip"))
+def test_is_url_requirement_filename(caplog, from_line, line):
+    # Ignore warning:
+    #
+    #     Requirement '../example.zip' looks like a filename, but the file does
+    #     not exist
+    caplog.set_level(logging.ERROR, logger="pip")
+    ireq = from_line(line)
+    assert is_url_requirement(ireq) is True
 
 
 def test_name_from_req(from_line):

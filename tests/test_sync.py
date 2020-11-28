@@ -420,9 +420,8 @@ def test_sync_dry_run(runner, from_line, to_install, to_uninstall, expected_mess
     ),
 )
 @mock.patch("piptools.sync.check_call")
-@mock.patch("piptools.sync.click.confirm", return_value=False)
 def test_sync_ask_declined(
-    confirm, check_call, runner, from_line, to_install, to_uninstall, expected_message
+    check_call, runner, from_line, to_install, to_uninstall, expected_message
 ):
     """
     Sync with --ask option does a dry run if the user declines
@@ -430,33 +429,41 @@ def test_sync_ask_declined(
 
     to_install = set(from_line(pkg) for pkg in to_install)
 
-    with runner.isolation() as (stdout, _):
+    with runner.isolation("n\n") as (stdout, _):
         sync(to_install, to_uninstall, ask=True)
 
     assert stdout.getvalue().decode().splitlines() == [
         expected_message,
         "  click==4.0",
         "  django==1.8",
+        "Would you like to proceed with these changes? [y/N]: n",
     ]
-    confirm.assert_called_once_with("Would you like to proceed with these changes?")
     check_call.assert_not_called()
 
 
 @pytest.mark.parametrize("dry_run", (True, False))
-@mock.patch("piptools.sync.click.confirm")
 @mock.patch("piptools.sync.check_call")
-def test_sync_ask_accepted(check_call, confirm, from_line, dry_run):
+def test_sync_ask_accepted(check_call, runner, from_line, dry_run):
     """
     pip should be called as normal when the user confirms, even with dry_run
     """
-    confirm.return_value = True
 
-    sync(
-        {from_line("django==1.8")}, {from_line("click==4.0")}, ask=True, dry_run=dry_run
-    )
+    with runner.isolation("y\n") as (stdout, _):
+        sync(
+            {from_line("django==1.8")},
+            {from_line("click==4.0")},
+            ask=True,
+            dry_run=dry_run,
+        )
+
     assert check_call.call_count == 2
-
-    confirm.assert_called_once_with("Would you like to proceed with these changes?")
+    assert stdout.getvalue().decode().splitlines() == [
+        "Would uninstall:",
+        "  click==4.0",
+        "Would install:",
+        "  django==1.8",
+        "Would you like to proceed with these changes? [y/N]: y",
+    ]
 
 
 @mock.patch("piptools.sync.check_call")

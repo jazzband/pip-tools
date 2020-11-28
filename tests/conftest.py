@@ -1,9 +1,9 @@
 import json
 import os
+import subprocess
 import sys
 from contextlib import contextmanager
 from functools import partial
-from subprocess import check_call
 from textwrap import dedent
 
 import pytest
@@ -259,6 +259,9 @@ def make_package(tmp_path):
                     setup(
                         name={name!r},
                         version={version!r},
+                        author="pip-tools",
+                        author_email="pip-tools@localhost",
+                        url="https://github.com/jazzband/pip-tools",
                         install_requires={install_requires_str},
                     )
                     """.format(
@@ -268,6 +271,12 @@ def make_package(tmp_path):
                     )
                 )
             )
+
+        # Create a README to avoid setuptools warnings.
+        readme_file = str(package_dir / "README")
+        with open(readme_file, "w"):
+            pass
+
         return package_dir
 
     return _make_package
@@ -281,9 +290,12 @@ def run_setup_file():
 
     def _run_setup_file(package_dir_path, *args):
         setup_file = str(package_dir_path / "setup.py")
-        return check_call(
-            (sys.executable, setup_file) + args, cwd=str(package_dir_path)
-        )  # nosec
+        with open(os.devnull, "w") as fp:
+            return subprocess.check_call(
+                (sys.executable, setup_file) + args,
+                cwd=str(package_dir_path),
+                stdout=fp,
+            )  # nosec
 
     return _run_setup_file
 

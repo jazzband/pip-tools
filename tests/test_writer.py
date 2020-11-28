@@ -5,6 +5,7 @@ from piptools.scripts.compile import cli
 from piptools.utils import comment
 from piptools.writer import (
     MESSAGE_UNHASHED_PACKAGE,
+    MESSAGE_UNINSTALLABLE,
     MESSAGE_UNSAFE_PACKAGES,
     MESSAGE_UNSAFE_PACKAGES_UNPINNED,
     OutputWriter,
@@ -117,7 +118,7 @@ def test_iter_lines__unsafe_dependencies(writer, from_line, allow_unsafe):
     assert tuple(lines) == expected_lines
 
 
-def test_iter_lines__unsafe_with_hashes(writer, from_line):
+def test_iter_lines__unsafe_with_hashes(capfd, writer, from_line):
     writer.allow_unsafe = False
     writer.emit_header = False
     ireqs = [from_line("test==1.2")]
@@ -133,9 +134,12 @@ def test_iter_lines__unsafe_with_hashes(writer, from_line):
         comment("# setuptools"),
     )
     assert tuple(lines) == expected_lines
+    captured = capfd.readouterr()
+    assert captured.out == ""
+    assert captured.err.strip() == MESSAGE_UNINSTALLABLE
 
 
-def test_iter_lines__hash_missing(writer, from_line):
+def test_iter_lines__hash_missing(capfd, writer, from_line):
     writer.allow_unsafe = False
     writer.emit_header = False
     ireqs = [from_line("test==1.2"), from_line("file:///example/#egg=example")]
@@ -149,6 +153,9 @@ def test_iter_lines__hash_missing(writer, from_line):
         "test==1.2 \\\n    --hash=FAKEHASH",
     )
     assert tuple(lines) == expected_lines
+    captured = capfd.readouterr()
+    assert captured.out == ""
+    assert captured.err.strip() == MESSAGE_UNINSTALLABLE
 
 
 def test_iter_lines__no_warn_if_only_unhashable_packages(writer, from_line):

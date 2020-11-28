@@ -10,7 +10,7 @@ from piptools.repositories import PyPIRepository
 from piptools.repositories.pypi import open_local_or_remote_file
 
 
-def test_generate_hashes_all_platforms(pip_conf, from_line, pypi_repository):
+def test_generate_hashes_all_platforms(capfd, pip_conf, from_line, pypi_repository):
     expected = {
         "sha256:8d4d131cd05338e09f461ad784297efea3652e542c5fabe04a62358429a6175e",
         "sha256:ad05e1371eb99f257ca00f791b755deb22e752393eb8e75bc01d651715b02ea9",
@@ -20,6 +20,12 @@ def test_generate_hashes_all_platforms(pip_conf, from_line, pypi_repository):
     ireq = from_line("small-fake-multi-arch==0.1")
     with pypi_repository.allow_all_wheels():
         assert pypi_repository.get_hashes(ireq) == expected
+    captured = capfd.readouterr()
+    assert captured.out == ""
+    assert (
+        captured.err.strip()
+        == "Couldn't get hashes from PyPI, fallback to hashing files"
+    )
 
 
 @pytest.mark.network
