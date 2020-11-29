@@ -39,7 +39,7 @@ class CorruptCacheError(PipToolsError):
 
 
 def read_cache_file(cache_file_path):
-    with open(cache_file_path, "r") as cache_file:
+    with open(cache_file_path) as cache_file:
         try:
             doc = json.load(cache_file)
         except ValueError:

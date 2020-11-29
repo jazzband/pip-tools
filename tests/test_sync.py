@@ -400,7 +400,7 @@ def test_sync_dry_run(runner, from_line, to_install, to_uninstall, expected_mess
     """
     Sync with --dry-run option prints what's is going to be installed/uninstalled.
     """
-    to_install = set(from_line(pkg) for pkg in to_install)
+    to_install = {from_line(pkg) for pkg in to_install}
 
     with runner.isolation() as (stdout, _):
         sync(to_install, to_uninstall, dry_run=True)
@@ -427,7 +427,7 @@ def test_sync_ask_declined(
     Sync with --ask option does a dry run if the user declines
     """
 
-    to_install = set(from_line(pkg) for pkg in to_install)
+    to_install = {from_line(pkg) for pkg in to_install}
 
     with runner.isolation("n\n") as (stdout, _):
         sync(to_install, to_uninstall, ask=True)
