@@ -247,17 +247,9 @@ class PyPIRepository(BaseRepository):
 
             with global_tempdir_manager():
                 wheel_cache = WheelCache(self._cache_dir, self.options.format_control)
-                prev_tracker = os.environ.get("PIP_REQ_TRACKER")
-                try:
-                    self._dependencies_cache[ireq] = self.resolve_reqs(
-                        download_dir, ireq, wheel_cache
-                    )
-                finally:
-                    if "PIP_REQ_TRACKER" in os.environ:
-                        if prev_tracker:
-                            os.environ["PIP_REQ_TRACKER"] = prev_tracker
-                        else:
-                            del os.environ["PIP_REQ_TRACKER"]
+                self._dependencies_cache[ireq] = self.resolve_reqs(
+                    download_dir, ireq, wheel_cache
+                )
 
         return self._dependencies_cache[ireq]
 
