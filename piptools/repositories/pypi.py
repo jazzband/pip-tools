@@ -393,7 +393,7 @@ class PyPIRepository(BaseRepository):
         all_candidates = self.find_all_candidates(ireq.name)
         candidates_by_version = lookup_table(all_candidates, key=lambda c: c.version)
         matching_versions = list(
-            ireq.specifier.filter((candidate.version for candidate in all_candidates))
+            ireq.specifier.filter(candidate.version for candidate in all_candidates)
         )
         matching_candidates = candidates_by_version[matching_versions[0]]
 

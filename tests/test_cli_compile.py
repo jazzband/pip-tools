@@ -118,7 +118,7 @@ def test_find_links_option(runner):
     assert "Using links:\n  ./libs1\n  ./libs2\n  ./libs3\n" in out.stderr
 
     # Check that find-links has been written to a requirements.txt
-    with open("requirements.txt", "r") as req_txt:
+    with open("requirements.txt") as req_txt:
         assert (
             "--find-links ./libs1\n--find-links ./libs2\n--find-links ./libs3\n"
             in req_txt.read()
@@ -136,7 +136,7 @@ def test_find_links_envvar(monkeypatch, runner):
     assert "Using links:\n  ./libs1\n  ./libs2\n  ./libs3\n" in out.stderr
 
     # Check that find-links has been written to a requirements.txt
-    with open("requirements.txt", "r") as req_txt:
+    with open("requirements.txt") as req_txt:
         assert (
             "--find-links ./libs1\n--find-links ./libs2\n--find-links ./libs3\n"
             in req_txt.read()
@@ -1166,7 +1166,7 @@ def test_dry_run_doesnt_touch_output_file(
     assert expected_cli_output_package in out.stderr.splitlines()
 
     # The package version must NOT be updated in the output file
-    with open("requirements.txt", "r") as req_txt:
+    with open("requirements.txt") as req_txt:
         assert "small-fake-a==0.1" in req_txt.read().splitlines()
 
     # The output file must not be touched
@@ -1196,7 +1196,7 @@ def test_empty_input_file_no_header(runner, empty_input_pkg, prior_output_pkg):
 
     runner.invoke(cli, ["--no-header", "requirements.in"])
 
-    with open("requirements.txt", "r") as req_txt:
+    with open("requirements.txt") as req_txt:
         assert req_txt.read().strip() == ""
 
 
@@ -1218,7 +1218,7 @@ def test_upgrade_package_doesnt_remove_annotation(pip_conf, runner):
         )
 
     runner.invoke(cli, ["-P", "small-fake-a", "--no-emit-find-links"])
-    with open("requirements.txt", "r") as req_txt:
+    with open("requirements.txt") as req_txt:
         assert req_txt.read() == dedent(
             """\
             #

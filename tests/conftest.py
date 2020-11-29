@@ -35,10 +35,10 @@ from .utils import looks_like_ci
 
 class FakeRepository(BaseRepository):
     def __init__(self):
-        with open("tests/test_data/fake-index.json", "r") as f:
+        with open("tests/test_data/fake-index.json") as f:
             self.index = json.load(f)
 
-        with open("tests/test_data/fake-editables.json", "r") as f:
+        with open("tests/test_data/fake-editables.json") as f:
             self.editables = json.load(f)
 
     @contextmanager
