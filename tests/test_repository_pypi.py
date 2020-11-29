@@ -1,6 +1,6 @@
 import os
+from unittest import mock
 
-import mock
 import pytest
 from pip._internal.models.link import Link
 from pip._internal.utils.urls import path_to_url

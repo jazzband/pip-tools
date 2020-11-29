@@ -8,4 +8,4 @@ try:
     locale.setlocale(locale.LC_ALL, "")
 except locale.Error as e:  # pragma: no cover
     # setlocale can apparently crash if locale are uninitialized
-    secho("Ignoring error when setting locale: {}".format(e), fg="red")
+    secho(f"Ignoring error when setting locale: {e}", fg="red")

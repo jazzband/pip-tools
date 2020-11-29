@@ -3,6 +3,7 @@ repos:
     rev: 20.8b1
     hooks:
     - id: black
+      args: [--target-version=py36]
       language_version: python3
   - repo: https://github.com/PyCQA/isort
     rev: 5.6.4

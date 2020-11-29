@@ -3,15 +3,14 @@ import os
 import subprocess
 import sys
 from textwrap import dedent
+from unittest import mock
 
-import mock
 import pytest
 from pip._internal.utils.urls import path_to_url
 
 from piptools.scripts.compile import cli
 
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
-from .utils import invoke
 
 
 @pytest.fixture(autouse=True)
@@ -297,7 +296,7 @@ def test_realistic_complex_sub_dependencies(runner):
     wheels_dir = "wheels"
 
     # make a temporary wheel of a fake package
-    subprocess.check_output(
+    subprocess.run(
         [
             "pip",
             "wheel",
@@ -305,7 +304,8 @@ def test_realistic_complex_sub_dependencies(runner):
             "-w",
             wheels_dir,
             os.path.join(PACKAGES_PATH, "fake_with_deps", "."),
-        ]
+        ],
+        check=True,
     )
 
     with open("requirements.in", "w") as req_in:
@@ -319,13 +319,15 @@ def test_realistic_complex_sub_dependencies(runner):
 def test_run_as_module_compile():
     """piptools can be run as ``python -m piptools ...``."""
 
-    status, output = invoke([sys.executable, "-m", "piptools", "compile", "--help"])
+    result = subprocess.run(
+        [sys.executable, "-m", "piptools", "compile", "--help"],
+        stdout=subprocess.PIPE,
+        check=True,
+    )
 
     # Should have run pip-compile successfully.
-    output = output.decode("utf-8")
-    assert output.startswith("Usage:")
-    assert "Compiles requirements.txt from requirements.in" in output
-    assert status == 0
+    assert result.stdout.startswith(b"Usage:")
+    assert b"Compiles requirements.txt from requirements.in" in result.stdout
 
 
 def test_editable_package(pip_conf, runner):
@@ -701,7 +703,7 @@ def test_generate_hashes_with_editable(pip_conf, runner):
     small_fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
     small_fake_package_url = path_to_url(small_fake_package_dir)
     with open("requirements.in", "w") as fp:
-        fp.write("-e {}\n".format(small_fake_package_url))
+        fp.write(f"-e {small_fake_package_url}\n")
     out = runner.invoke(cli, ["--no-annotate", "--generate-hashes"])
     expected = (
         "-e {}\n"
@@ -860,10 +862,10 @@ def test_no_candidates_pre(pip_conf, runner):
 @pytest.mark.parametrize(
     ("url", "expected_url"),
     (
-        pytest.param("https://example.com", "https://example.com", id="regular url"),
+        pytest.param("https://example.com", b"https://example.com", id="regular url"),
         pytest.param(
             "https://username:password@example.com",
-            "https://username:****@example.com",
+            b"https://username:****@example.com",
             id="url with credentials",
         ),
     ),
@@ -883,11 +885,13 @@ def test_default_index_url(make_pip_conf, url, expected_url):
         )
     )
 
-    status, output = invoke([sys.executable, "-m", "piptools", "compile", "--help"])
-    output = output.decode("utf-8")
+    result = subprocess.run(
+        [sys.executable, "-m", "piptools", "compile", "--help"],
+        stdout=subprocess.PIPE,
+        check=True,
+    )
 
-    assert status == 0
-    assert expected_url in output
+    assert expected_url in result.stdout
 
 
 def test_stdin_without_output_file(runner):
@@ -1045,7 +1049,8 @@ def test_cert_option(parse_requirements, runner, option, attr, expected):
     runner.invoke(cli, [option, expected])
 
     # Ensure the options in parse_requirements has the expected option
-    assert getattr(parse_requirements.call_args.kwargs["options"], attr) == expected
+    args, kwargs = parse_requirements.call_args
+    assert getattr(kwargs["options"], attr) == expected
 
 
 @pytest.mark.parametrize(
@@ -1064,7 +1069,8 @@ def test_build_isolation_option(parse_requirements, runner, option, expected):
     runner.invoke(cli, [option])
 
     # Ensure the options in parse_requirements has the expected build_isolation option
-    assert parse_requirements.call_args.kwargs["options"].build_isolation is expected
+    args, kwargs = parse_requirements.call_args
+    assert kwargs["options"].build_isolation is expected
 
 
 @mock.patch("piptools.scripts.compile.PyPIRepository")
@@ -1078,7 +1084,8 @@ def test_forwarded_args(PyPIRepository, runner):
     cli_args = ("--no-annotate", "--generate-hashes")
     pip_args = ("--no-color", "--isolated", "--disable-pip-version-check")
     runner.invoke(cli, cli_args + ("--pip-args", " ".join(pip_args)))
-    assert set(pip_args).issubset(set(PyPIRepository.call_args.args[0]))
+    args, kwargs = PyPIRepository.call_args
+    assert set(pip_args).issubset(set(args[0]))
 
 
 @pytest.mark.parametrize(
@@ -1328,7 +1335,7 @@ def test_upgrade_packages_option_subdependency(
     assert "small-fake-a==0.1" in stderr_lines, "small-fake-a must keep its version"
     assert (
         upgraded_package in stderr_lines
-    ), "{} must be upgraded/downgraded to {}".format(current_package, upgraded_package)
+    ), f"{current_package} must be upgraded/downgraded to {upgraded_package}"
 
 
 @pytest.mark.parametrize(
@@ -1517,10 +1524,8 @@ def test_duplicate_reqs_combined(
         make_sdist(pkg, dists_dir)
 
     with open("requirements.in", "w") as reqs_in:
-        reqs_in.write("file:{source_path}\n".format(source_path=test_package_2))
-        reqs_in.write(
-            "file:{source_path}#egg=test-package-2\n".format(source_path=test_package_2)
-        )
+        reqs_in.write(f"file:{test_package_2}\n")
+        reqs_in.write(f"file:{test_package_2}#egg=test-package-2\n")
 
     if output_content:
         with open("requirements.txt", "w") as reqs_out:

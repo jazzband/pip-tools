@@ -1,6 +1,3 @@
-# coding: utf-8
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import copy
 from functools import partial
 from itertools import chain, count, groupby
@@ -23,7 +20,7 @@ green = partial(click.style, fg="green")
 magenta = partial(click.style, fg="magenta")
 
 
-class RequirementSummary(object):
+class RequirementSummary:
     """
     Summary of a requirement's properties for comparison purposes.
     """
@@ -102,7 +99,7 @@ def combine_install_requirements(repository, ireqs):
     return combined_ireq
 
 
-class Resolver(object):
+class Resolver:
     def __init__(
         self,
         constraints,
@@ -156,8 +153,7 @@ class Resolver(object):
             self.repository.clear_caches()
 
         # Ignore existing packages
-        # NOTE: str() wrapping necessary for Python 2/3 compat
-        with update_env_context_manager(PIP_EXISTS_ACTION=str("i")):
+        with update_env_context_manager(PIP_EXISTS_ACTION="i"):
             for current_round in count(start=1):  # pragma: no branch
                 if current_round > max_rounds:
                     raise RuntimeError(
@@ -168,7 +164,7 @@ class Resolver(object):
                     )
 
                 log.debug("")
-                log.debug(magenta("{:^60}".format("ROUND {}".format(current_round))))
+                log.debug(magenta("{:^60}".format(f"ROUND {current_round}")))
                 # If a package version (foo==2.0) was built in a previous round,
                 # and in this round a different version of foo needs to be built
                 # (i.e. foo==1.0), the directory will exist already, which will
@@ -291,11 +287,11 @@ class Resolver(object):
             log.debug("New dependencies found in this round:")
             with log.indentation():
                 for new_dependency in sorted(diff, key=key_from_ireq):
-                    log.debug("adding {}".format(new_dependency))
+                    log.debug(f"adding {new_dependency}")
             log.debug("Removed dependencies in this round:")
             with log.indentation():
                 for removed_dependency in sorted(removed, key=key_from_ireq):
-                    log.debug("removing {}".format(removed_dependency))
+                    log.debug(f"removing {removed_dependency}")
 
         # Store the last round's results in the their_constraints
         self.their_constraints = theirs
@@ -365,13 +361,10 @@ class Resolver(object):
             return
 
         if ireq.editable or is_url_requirement(ireq):
-            for dependency in self.repository.get_dependencies(ireq):
-                yield dependency
+            yield from self.repository.get_dependencies(ireq)
             return
         elif not is_pinned_requirement(ireq):
-            raise TypeError(
-                "Expected pinned or editable requirement, got {}".format(ireq)
-            )
+            raise TypeError(f"Expected pinned or editable requirement, got {ireq}")
 
         # Now, either get the dependencies from the dependency cache (for
         # speed), or reach out to the external repository to

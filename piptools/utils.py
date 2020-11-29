@@ -1,7 +1,4 @@
-# coding: utf-8
-from __future__ import absolute_import, division, print_function, unicode_literals
-
-import sys
+import shlex
 from collections import OrderedDict
 from itertools import chain
 
@@ -9,8 +6,6 @@ from click.utils import LazyFile
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 from pip._internal.vcs import is_url
-from pip._vendor import six
-from pip._vendor.six.moves import shlex_quote
 
 from .click import style
 
@@ -60,7 +55,7 @@ def make_install_requirement(name, version, extras, constraint=False):
         extras_string = "[{}]".format(",".join(sorted(extras)))
 
     return install_req_from_line(
-        str("{}{}=={}".format(name, extras_string, version)), constraint=constraint
+        str(f"{name}{extras_string}=={version}"), constraint=constraint
     )
 
 
@@ -78,18 +73,18 @@ def format_requirement(ireq, marker=None, hashes=None):
     in a less verbose way than using its `__str__` method.
     """
     if ireq.editable:
-        line = "-e {}".format(ireq.link.url)
+        line = f"-e {ireq.link.url}"
     elif is_url_requirement(ireq):
         line = ireq.link.url
     else:
         line = str(ireq.req).lower()
 
     if marker:
-        line = "{} ; {}".format(line, marker)
+        line = f"{line} ; {marker}"
 
     if hashes:
         for hash_ in sorted(hashes):
-            line += " \\\n    --hash={}".format(hash_)
+            line += f" \\\n    --hash={hash_}"
 
     return line
 
@@ -138,7 +133,7 @@ def as_tuple(ireq):
     the pinned InstallRequirement.
     """
     if not is_pinned_requirement(ireq):
-        raise TypeError("Expected a pinned InstallRequirement, got {}".format(ireq))
+        raise TypeError(f"Expected a pinned InstallRequirement, got {ireq}")
 
     name = key_from_ireq(ireq)
     version = next(iter(ireq.specifier)).version
@@ -246,29 +241,6 @@ def name_from_req(req):
         return req.name
 
 
-def fs_str(string):
-    """
-    Convert given string to a correctly encoded filesystem string.
-
-    On Python 2, if the input string is unicode, converts it to bytes
-    encoded with the filesystem encoding.
-
-    On Python 3 returns the string as is, since Python 3 uses unicode
-    paths and the input string shouldn't be bytes.
-
-    :type string: str|unicode
-    :rtype: str
-    """
-    if isinstance(string, str):
-        return string
-    if isinstance(string, bytes):
-        raise TypeError("fs_str() argument must not be bytes")
-    return string.encode(_fs_encoding)
-
-
-_fs_encoding = sys.getfilesystemencoding() or sys.getdefaultencoding()
-
-
 def get_hashes_from_ireq(ireq):
     """
     Given an InstallRequirement, return a list of string hashes in
@@ -278,7 +250,7 @@ def get_hashes_from_ireq(ireq):
     result = []
     for algorithm, hexdigests in ireq.hash_options.items():
         for hash_ in hexdigests:
-            result.append("{}:{}".format(algorithm, hash_))
+            result.append(f"{algorithm}:{hash_}")
     return result
 
 
@@ -288,8 +260,8 @@ def force_text(s):
     """
     if s is None:
         return ""
-    if not isinstance(s, six.string_types):
-        return six.text_type(s)
+    if not isinstance(s, str):
+        return str(s)
     return s
 
 
@@ -322,7 +294,7 @@ def get_compile_command(click_ctx):
             # Re-add click-stripped '--' if any start with '-'
             if any(val.startswith("-") and val != "-" for val in value):
                 right_args.append("--")
-            right_args.extend([shlex_quote(force_text(val)) for val in value])
+            right_args.extend([shlex.quote(force_text(val)) for val in value])
             continue
 
         # Get the latest option name (usually it'll be a long name)
@@ -360,24 +332,24 @@ def get_compile_command(click_ctx):
                 # There are no false-options, use true-option
                 else:
                     arg = option_long_name
-                left_args.append(shlex_quote(arg))
+                left_args.append(shlex.quote(arg))
             # Append to args the option with a value
             else:
-                if isinstance(val, six.string_types) and is_url(val):
+                if isinstance(val, str) and is_url(val):
                     val = redact_auth_from_url(val)
                 if option.name == "pip_args":
-                    # shlex_quote would produce functional but noisily quoted results,
+                    # shlex.quote() would produce functional but noisily quoted results,
                     # e.g. --pip-args='--cache-dir='"'"'/tmp/with spaces'"'"''
                     # Instead, we try to get more legible quoting via repr:
                     left_args.append(
                         "{option}={value}".format(
-                            option=option_long_name, value=repr(fs_str(force_text(val)))
+                            option=option_long_name, value=repr(val)
                         )
                     )
                 else:
                     left_args.append(
                         "{option}={value}".format(
-                            option=option_long_name, value=shlex_quote(force_text(val))
+                            option=option_long_name, value=shlex.quote(force_text(val))
                         )
                     )
 

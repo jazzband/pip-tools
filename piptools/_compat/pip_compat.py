@@ -1,6 +1,3 @@
-# -*- coding=utf-8 -*-
-from __future__ import absolute_import
-
 import pip
 from pip._internal.req import parse_requirements as _parse_requirements
 from pip._internal.req.constructors import install_req_from_parsed_requirement

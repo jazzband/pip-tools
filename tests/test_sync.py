@@ -2,8 +2,8 @@ import os
 import sys
 import tempfile
 from collections import Counter
+from unittest import mock
 
-import mock
 import pytest
 from pip._internal.utils.urls import path_to_url
 
@@ -173,9 +173,7 @@ def test_diff_should_install_with_markers(from_line):
     reqs = [from_line("subprocess32==3.2.7 ; python_version=='2.7'")]
 
     to_install, to_uninstall = diff(reqs, installed)
-    assert {str(x.req) for x in to_install} == (
-        {"subprocess32==3.2.7"} if sys.version.startswith("2.7") else set()
-    )
+    assert to_install == set()
     assert to_uninstall == set()
 
 
@@ -185,9 +183,7 @@ def test_diff_should_uninstall_with_markers(fake_dist, from_line):
 
     to_install, to_uninstall = diff(reqs, installed)
     assert to_install == set()
-    assert to_uninstall == (
-        set() if sys.version.startswith("2.7") else {"subprocess32"}
-    )
+    assert to_uninstall == {"subprocess32"}
 
 
 def test_diff_leave_packaging_packages_alone(fake_dist, from_line):
@@ -268,16 +264,17 @@ def test_diff_with_no_url_versions(fake_dist, from_line):
 def test_sync_install_temporary_requirement_file(
     from_line, from_editable, mocked_tmp_req_file
 ):
-    with mock.patch("piptools.sync.check_call") as check_call:
+    with mock.patch("piptools.sync.run") as run:
         to_install = {from_line("django==1.8")}
         sync(to_install, set())
-        check_call.assert_called_once_with(
-            [sys.executable, "-m", "pip", "install", "-r", mocked_tmp_req_file.name]
+        run.assert_called_once_with(
+            [sys.executable, "-m", "pip", "install", "-r", mocked_tmp_req_file.name],
+            check=True,
         )
 
 
 def test_temporary_requirement_file_deleted(from_line, from_editable, mocked_tmp_file):
-    with mock.patch("piptools.sync.check_call"):
+    with mock.patch("piptools.sync.run"):
         to_install = {from_line("django==1.8")}
 
         with mock.patch("os.unlink") as unlink:
@@ -287,7 +284,7 @@ def test_temporary_requirement_file_deleted(from_line, from_editable, mocked_tmp
 
 
 def test_sync_requirement_file(from_line, from_editable, mocked_tmp_req_file):
-    with mock.patch("piptools.sync.check_call"):
+    with mock.patch("piptools.sync.run"):
         to_install = {
             from_line("django==1.8"),
             from_editable("git+git://fake.org/x/y.git#egg=y"),
@@ -311,7 +308,7 @@ def test_sync_requirement_file(from_line, from_editable, mocked_tmp_req_file):
 def test_sync_requirement_file_with_hashes(
     from_line, from_editable, mocked_tmp_req_file
 ):
-    with mock.patch("piptools.sync.check_call"):
+    with mock.patch("piptools.sync.run"):
         to_install = {
             from_line(
                 "django==1.8",
@@ -377,16 +374,16 @@ def test_sync_up_to_date(runner):
     assert stdout.getvalue().decode().splitlines() == ["Everything up-to-date"]
 
 
-@mock.patch("piptools.sync.check_call")
-def test_sync_verbose(check_call, from_line):
+@mock.patch("piptools.sync.run")
+def test_sync_verbose(run, from_line):
     """
     The -q option has to be passed to every pip calls.
     """
     sync({from_line("django==1.8")}, {from_line("click==4.0")})
-    assert check_call.call_count == 2
-    for call in check_call.call_args_list:
-        check_call_args = call[0][0]
-        assert "-q" not in check_call_args
+    assert run.call_count == 2
+    for call in run.call_args_list:
+        run_args = call[0][0]
+        assert "-q" not in run_args
 
 
 @pytest.mark.parametrize(
@@ -419,9 +416,9 @@ def test_sync_dry_run(runner, from_line, to_install, to_uninstall, expected_mess
         (set(), {"django==1.8", "click==4.0"}, "Would uninstall:"),
     ),
 )
-@mock.patch("piptools.sync.check_call")
+@mock.patch("piptools.sync.run")
 def test_sync_ask_declined(
-    check_call, runner, from_line, to_install, to_uninstall, expected_message
+    run, runner, from_line, to_install, to_uninstall, expected_message
 ):
     """
     Sync with --ask option does a dry run if the user declines
@@ -438,12 +435,12 @@ def test_sync_ask_declined(
         "  django==1.8",
         "Would you like to proceed with these changes? [y/N]: n",
     ]
-    check_call.assert_not_called()
+    run.assert_not_called()
 
 
 @pytest.mark.parametrize("dry_run", (True, False))
-@mock.patch("piptools.sync.check_call")
-def test_sync_ask_accepted(check_call, runner, from_line, dry_run):
+@mock.patch("piptools.sync.run")
+def test_sync_ask_accepted(run, runner, from_line, dry_run):
     """
     pip should be called as normal when the user confirms, even with dry_run
     """
@@ -456,7 +453,7 @@ def test_sync_ask_accepted(check_call, runner, from_line, dry_run):
             dry_run=dry_run,
         )
 
-    assert check_call.call_count == 2
+    assert run.call_count == 2
     assert stdout.getvalue().decode().splitlines() == [
         "Would uninstall:",
         "  click==4.0",
@@ -466,11 +463,12 @@ def test_sync_ask_accepted(check_call, runner, from_line, dry_run):
     ]
 
 
-@mock.patch("piptools.sync.check_call")
-def test_sync_uninstall_pip_command(check_call):
+@mock.patch("piptools.sync.run")
+def test_sync_uninstall_pip_command(run):
     to_uninstall = ["six", "django", "pytz", "click"]
 
     sync(set(), to_uninstall)
-    check_call.assert_called_once_with(
-        [sys.executable, "-m", "pip", "uninstall", "-y"] + sorted(to_uninstall)
+    run.assert_called_once_with(
+        [sys.executable, "-m", "pip", "uninstall", "-y"] + sorted(to_uninstall),
+        check=True,
     )

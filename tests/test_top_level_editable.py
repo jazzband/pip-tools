@@ -14,7 +14,7 @@ class MockedPyPIRepository(PyPIRepository):
         if not ireq.editable:
             return set()
 
-        return super(MockedPyPIRepository, self).get_dependencies(ireq)
+        return super().get_dependencies(ireq)
 
 
 @pytest.fixture
