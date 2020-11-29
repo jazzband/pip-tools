@@ -70,7 +70,7 @@ def test_toggle_reuse_hashes_local_repository(
 
 class FakeRepositoryChecksForCopy(FakeRepository):
     def __init__(self):
-        super(FakeRepositoryChecksForCopy, self).__init__()
+        super().__init__()
         self.copied = []
 
     def copy_ireq_dependencies(self, source, dest):

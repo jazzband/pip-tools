@@ -1,6 +1,3 @@
-# coding: utf-8
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import contextlib
 import logging
 import sys
@@ -12,7 +9,7 @@ from . import click
 logging.basicConfig()
 
 
-class LogContext(object):
+class LogContext:
     stream = sys.stderr
 
     def __init__(self, verbosity=0, indent_width=2):

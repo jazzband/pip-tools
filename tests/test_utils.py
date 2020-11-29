@@ -1,12 +1,8 @@
-# coding: utf-8
-from __future__ import unicode_literals
-
 import logging
 import os
+import shlex
 
 import pytest
-from pip._vendor import six
-from pip._vendor.six.moves import shlex_quote
 
 from piptools.scripts.compile import cli as compile_cli
 from piptools.utils import (
@@ -16,7 +12,6 @@ from piptools.utils import (
     force_text,
     format_requirement,
     format_specifier,
-    fs_str,
     get_compile_command,
     get_hashes_from_ireq,
     is_pinned_requirement,
@@ -208,17 +203,6 @@ def test_name_from_req_with_project_name(from_line):
     assert name_from_req(ireq.req) == "bar"
 
 
-def test_fs_str():
-    assert fs_str("some path component/Something") == "some path component/Something"
-    assert isinstance(fs_str("whatever"), str)
-
-
-@pytest.mark.skipif(six.PY2, reason="Not supported in py2")
-def test_fs_str_with_bytes():
-    with pytest.raises(TypeError, match=r"^fs_str\(\) argument must not be bytes$"):
-        fs_str(b"whatever")
-
-
 @pytest.mark.parametrize(
     ("value", "expected_text"), ((None, ""), (42, "42"), ("foo", "foo"), ("bãr", "bãr"))
 )
@@ -336,7 +320,7 @@ def test_get_compile_command_with_files(tmpdir_cwd, filename):
         assert get_compile_command(
             ctx
         ) == "pip-compile --output-file=requirements.txt {src_file}".format(
-            src_file=shlex_quote(path)
+            src_file=shlex.quote(path)
         )
 
 

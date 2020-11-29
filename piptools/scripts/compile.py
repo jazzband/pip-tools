@@ -1,6 +1,3 @@
-# coding: utf-8
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os
 import shlex
 import sys
@@ -46,7 +43,7 @@ class BaseCommand(Command):
         Override base `parse_args` to store the argument part of `sys.argv`.
         """
         self._os_args = set(args)
-        return super(BaseCommand, self).parse_args(ctx, args)
+        return super().parse_args(ctx, args)
 
     def has_arg(self, arg_name):
         """

@@ -1,7 +1,6 @@
 import os
+import subprocess
 import sys
-
-from .utils import invoke
 
 
 def test_remove_legacy_cache_dir():
@@ -10,8 +9,8 @@ def test_remove_legacy_cache_dir():
     """
     os.mkdir(os.path.expanduser("~/.pip-tools"))
 
-    status, output = invoke([sys.executable, "-m", "piptools"])
+    result = subprocess.run(
+        [sys.executable, "-m", "piptools"], stdout=subprocess.PIPE, check=True
+    )
 
-    output = output.decode("utf-8")
-    assert output.startswith("Removing old cache dir")
-    assert status == 0
+    assert result.stdout.startswith(b"Removing old cache dir")

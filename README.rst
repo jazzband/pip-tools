@@ -421,7 +421,7 @@ then yes, you should commit both ``requirements.in`` and ``requirements.txt`` to
 Note that if you are deploying on multiple Python environments (read the section below),
 then you must commit a seperate output file for each Python environment.
 We suggest to use the ``{env}-requirements.txt`` format
-(ex: ``win32-py2.7-requirements.txt``, ``macos-py3.6-requirements.txt``, etc.).
+(ex: ``win32-py3.7-requirements.txt``, ``macos-py3.6-requirements.txt``, etc.).
 
 
 Cross-environment usage of ``requirements.in``/``requirements.txt`` and ``pip-compile``
@@ -429,7 +429,7 @@ Cross-environment usage of ``requirements.in``/``requirements.txt`` and ``pip-co
 
 The dependencies of a package can change depending on the Python environment in which it
 is installed.  Here, we define a Python environment as the combination of Operating
-System, Python version (2.7, 3.6, etc.), and Python implementation (CPython, PyPy,
+System, Python version (3.6, 3.7, etc.), and Python implementation (CPython, PyPy,
 etc.). For an exact definition, refer to the possible combinations of `PEP 508
 environment markers`_.
 
@@ -495,5 +495,5 @@ versions as the required ``pip`` versions.
 +---------------+----------------+----------------+
 | 5.5.0         | 20.1 - 20.3.*  | 2.7, 3.5 - 3.9 |
 +---------------+----------------+----------------+
-| 6.0.0         | 20.1 - 20.3.*  | 2.7, 3.6 - 3.9 |
+| 6.0.0         | 20.1 - 20.3.*  | 3.6 - 3.9      |
 +---------------+----------------+----------------+

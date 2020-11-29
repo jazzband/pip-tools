@@ -1,11 +1,9 @@
-# coding: utf-8
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import collections
 import hashlib
 import itertools
 import logging
 import os
+import tempfile
 from contextlib import contextmanager
 from shutil import rmtree
 
@@ -24,13 +22,12 @@ from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
 from pip._internal.utils.urls import path_to_url, url_to_path
 from pip._vendor.requests import RequestException
 
-from .._compat import PIP_VERSION, TemporaryDirectory, contextlib, makedirs
+from .._compat import PIP_VERSION, contextlib
 from ..click import progressbar
 from ..exceptions import NoCandidateFound
 from ..logging import log
 from ..utils import (
     as_tuple,
-    fs_str,
     is_pinned_requirement,
     is_url_requirement,
     lookup_table,
@@ -90,9 +87,9 @@ class PyPIRepository(BaseRepository):
         self._build_dir = None
         self._source_dir = None
         self._cache_dir = normalize_path(cache_dir)
-        self._download_dir = fs_str(os.path.join(self._cache_dir, "pkgs"))
+        self._download_dir = os.path.join(self._cache_dir, "pkgs")
         if PIP_VERSION[:2] <= (20, 2):
-            self._wheel_download_dir = fs_str(os.path.join(self._cache_dir, "wheels"))
+            self._wheel_download_dir = os.path.join(self._cache_dir, "wheels")
 
         self._setup_logging()
 
@@ -102,8 +99,8 @@ class PyPIRepository(BaseRepository):
         Start with fresh build/source caches.  Will remove any old build
         caches from disk automatically.
         """
-        self._build_dir = TemporaryDirectory(fs_str("build"))
-        self._source_dir = TemporaryDirectory(fs_str("source"))
+        self._build_dir = tempfile.TemporaryDirectory("build")
+        self._source_dir = tempfile.TemporaryDirectory("source")
         try:
             yield
         finally:
@@ -238,9 +235,9 @@ class PyPIRepository(BaseRepository):
                 download_dir = None
             else:
                 download_dir = self._get_download_path(ireq)
-                makedirs(download_dir, exist_ok=True)
+                os.makedirs(download_dir, exist_ok=True)
             if PIP_VERSION[:2] <= (20, 2):
-                makedirs(self._wheel_download_dir, exist_ok=True)
+                os.makedirs(self._wheel_download_dir, exist_ok=True)
 
             with global_tempdir_manager():
                 wheel_cache = WheelCache(self._cache_dir, self.options.format_control)
@@ -270,7 +267,7 @@ class PyPIRepository(BaseRepository):
             for index_url in self.finder.search_scope.index_urls
         )
         for package_index in package_indexes:
-            url = "{url}/{name}/json".format(url=package_index.pypi_url, name=ireq.name)
+            url = f"{package_index.pypi_url}/{ireq.name}/json"
             try:
                 response = self.session.get(url)
             except RequestException as e:
@@ -340,7 +337,7 @@ class PyPIRepository(BaseRepository):
                 return {self._get_file_hash(cached_link)}
 
         if not is_pinned_requirement(ireq):
-            raise TypeError("Expected pinned requirement, got {}".format(ireq))
+            raise TypeError(f"Expected pinned requirement, got {ireq}")
 
         log.debug(ireq.name)
 
@@ -402,7 +399,7 @@ class PyPIRepository(BaseRepository):
         }
 
     def _get_file_hash(self, link):
-        log.debug("Hashing {}".format(link.show_url))
+        log.debug(f"Hashing {link.show_url}")
         h = hashlib.new(FAVORITE_HASH)
         with open_local_or_remote_file(link, self.session) as f:
             # Chunks to iterate
@@ -509,7 +506,7 @@ def open_local_or_remote_file(link, session):
         # Local URL
         local_path = url_to_path(url)
         if os.path.isdir(local_path):
-            raise ValueError("Cannot open directory for read: {}".format(url))
+            raise ValueError(f"Cannot open directory for read: {url}")
         else:
             st = os.stat(local_path)
             with open(local_path, "rb") as local_file:

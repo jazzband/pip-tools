@@ -1,6 +1,3 @@
-# coding: utf-8
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 from contextlib import contextmanager
 
 from pip._internal.utils.hashes import FAVORITE_HASH

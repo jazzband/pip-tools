@@ -2,7 +2,7 @@ import collections
 import os
 import sys
 import tempfile
-from subprocess import check_call  # nosec
+from subprocess import run  # nosec
 
 from pip._internal.commands.freeze import DEV_PKGS
 from pip._internal.utils.compat import stdlib_pkgs
@@ -169,7 +169,7 @@ def sync(to_install, to_uninstall, dry_run=False, install_flags=None, ask=False)
         if to_uninstall:
             click.echo("Would uninstall:")
             for pkg in sorted(to_uninstall):
-                click.echo("  {}".format(pkg))
+                click.echo(f"  {pkg}")
 
         if to_install:
             click.echo("Would install:")
@@ -184,10 +184,11 @@ def sync(to_install, to_uninstall, dry_run=False, install_flags=None, ask=False)
 
     if not dry_run:
         if to_uninstall:
-            check_call(  # nosec
+            run(  # nosec
                 [sys.executable, "-m", "pip", "uninstall", "-y"]
                 + pip_flags
-                + sorted(to_uninstall)
+                + sorted(to_uninstall),
+                check=True,
             )
 
         if to_install:
@@ -205,10 +206,11 @@ def sync(to_install, to_uninstall, dry_run=False, install_flags=None, ask=False)
             tmp_req_file.close()
 
             try:
-                check_call(  # nosec
+                run(  # nosec
                     [sys.executable, "-m", "pip", "install", "-r", tmp_req_file.name]
                     + pip_flags
-                    + install_flags
+                    + install_flags,
+                    check=True,
                 )
             finally:
                 os.unlink(tmp_req_file.name)

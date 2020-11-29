@@ -1,7 +1,3 @@
-# coding: utf-8
-from __future__ import absolute_import, division, print_function, unicode_literals
-
-import errno
 import json
 import os
 import platform
@@ -9,7 +5,6 @@ import sys
 
 from pip._vendor.packaging.requirements import Requirement
 
-from ._compat import makedirs
 from .exceptions import PipToolsError
 from .utils import as_tuple, key_from_req, lookup_table
 
@@ -33,7 +28,7 @@ class CorruptCacheError(PipToolsError):
         lines = [
             "The dependency cache seems to have been corrupted.",
             "Inspect, or delete, the following file:",
-            "  {}".format(self.path),
+            f"  {self.path}",
         ]
         return os.linesep.join(lines)
 
@@ -51,7 +46,7 @@ def read_cache_file(cache_file_path):
         return doc["dependencies"]
 
 
-class DependencyCache(object):
+class DependencyCache:
     """
     Creates a new persistent dependency cache for the current Python version.
     The cache file is written to the appropriate user cache dir for the
@@ -64,8 +59,8 @@ class DependencyCache(object):
     """
 
     def __init__(self, cache_dir):
-        makedirs(cache_dir, exist_ok=True)
-        cache_filename = "depcache-{}.json".format(_implementation_name())
+        os.makedirs(cache_dir, exist_ok=True)
+        cache_filename = f"depcache-{_implementation_name()}.json"
 
         self._cache_file = os.path.join(cache_dir, cache_filename)
         self._cache = None
@@ -98,15 +93,13 @@ class DependencyCache(object):
             extras_string = ""
         else:
             extras_string = "[{}]".format(",".join(extras))
-        return name, "{}{}".format(version, extras_string)
+        return name, f"{version}{extras_string}"
 
     def read_cache(self):
         """Reads the cached contents into memory."""
         try:
             self._cache = read_cache_file(self._cache_file)
-        except IOError as e:
-            if e.errno != errno.ENOENT:
-                raise
+        except FileNotFoundError:
             self._cache = {}
 
     def write_cache(self):

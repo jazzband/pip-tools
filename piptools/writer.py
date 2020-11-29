@@ -1,10 +1,6 @@
-from __future__ import unicode_literals
-
 import os
 import re
 from itertools import chain
-
-from pip._vendor import six
 
 from .click import unstyle
 from .logging import log
@@ -43,12 +39,12 @@ strip_comes_from_line_re = re.compile(r" \(line \d+\)$")
 
 
 def _comes_from_as_string(ireq):
-    if isinstance(ireq.comes_from, six.string_types):
+    if isinstance(ireq.comes_from, str):
         return strip_comes_from_line_re.sub("", ireq.comes_from)
     return key_from_ireq(ireq.comes_from)
 
 
-class OutputWriter(object):
+class OutputWriter:
     def __init__(
         self,
         src_files,
@@ -97,7 +93,7 @@ class OutputWriter(object):
             compile_command = os.environ.get(
                 "CUSTOM_COMPILE_COMMAND"
             ) or get_compile_command(self.click_ctx)
-            yield comment("#    {}".format(compile_command))
+            yield comment(f"#    {compile_command}")
             yield comment("#")
 
     def write_index_options(self):
@@ -106,23 +102,23 @@ class OutputWriter(object):
                 if index_url.rstrip("/") == self.default_index_url:
                     continue
                 flag = "--index-url" if index == 0 else "--extra-index-url"
-                yield "{} {}".format(flag, index_url)
+                yield f"{flag} {index_url}"
 
     def write_trusted_hosts(self):
         if self.emit_trusted_host:
             for trusted_host in dedup(self.trusted_hosts):
-                yield "--trusted-host {}".format(trusted_host)
+                yield f"--trusted-host {trusted_host}"
 
     def write_format_controls(self):
         for nb in dedup(sorted(self.format_control.no_binary)):
-            yield "--no-binary {}".format(nb)
+            yield f"--no-binary {nb}"
         for ob in dedup(sorted(self.format_control.only_binary)):
-            yield "--only-binary {}".format(ob)
+            yield f"--only-binary {ob}"
 
     def write_find_links(self):
         if self.emit_find_links:
             for find_link in dedup(self.find_links):
-                yield "--find-links {}".format(find_link)
+                yield f"--find-links {find_link}"
 
     def write_flags(self):
         emitted = False
@@ -189,7 +185,7 @@ class OutputWriter(object):
             for ireq in unsafe_requirements:
                 ireq_key = key_from_ireq(ireq)
                 if not self.allow_unsafe:
-                    yield comment("# {}".format(ireq_key))
+                    yield comment(f"# {ireq_key}")
                 else:
                     line = self._format_requirement(
                         ireq, marker=markers.get(ireq_key), hashes=hashes
@@ -208,8 +204,8 @@ class OutputWriter(object):
         for line in self._iter_lines(results, unsafe_requirements, markers, hashes):
             log.info(line)
             if not self.dry_run:
-                self.dst_file.write(unstyle(line).encode("utf-8"))
-                self.dst_file.write(os.linesep.encode("utf-8"))
+                self.dst_file.write(unstyle(line).encode())
+                self.dst_file.write(os.linesep.encode())
 
     def _format_requirement(self, ireq, marker=None, hashes=None):
         ireq_hashes = (hashes if hashes is not None else {}).get(ireq)

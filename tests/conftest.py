@@ -97,7 +97,7 @@ class FakeRepository(BaseRepository):
         pass
 
 
-class FakeInstalledDistribution(object):
+class FakeInstalledDistribution:
     def __init__(self, line, deps=None):
         if deps is None:
             deps = []
@@ -244,7 +244,7 @@ def make_package(tmp_path):
             install_requires = []
 
         install_requires_str = "[{}]".format(
-            ",".join("{!r}".format(package) for package in install_requires)
+            ",".join(f"{package!r}" for package in install_requires)
         )
 
         package_dir = tmp_path / "packages" / name / version
@@ -290,12 +290,12 @@ def run_setup_file():
 
     def _run_setup_file(package_dir_path, *args):
         setup_file = str(package_dir_path / "setup.py")
-        with open(os.devnull, "w") as fp:
-            return subprocess.check_call(
-                (sys.executable, setup_file) + args,
-                cwd=str(package_dir_path),
-                stdout=fp,
-            )  # nosec
+        return subprocess.run(
+            (sys.executable, setup_file) + args,
+            cwd=str(package_dir_path),
+            stdout=subprocess.DEVNULL,
+            check=True,
+        )  # nosec
 
     return _run_setup_file
 
