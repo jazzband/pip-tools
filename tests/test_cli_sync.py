@@ -202,9 +202,7 @@ def test_pip_install_flags_in_requirements_file(run, runner, install_flags):
     # Make sure pip install command has expected options
     call_args = [call[0][0] for call in run.call_args_list]
     called_install_options = [args[6:] for args in call_args if args[3] == "install"]
-    assert called_install_options == [install_flags], "Called args: {}".format(
-        call_args
-    )
+    assert called_install_options == [install_flags], f"Called args: {call_args}"
 
 
 @mock.patch("piptools.sync.run")

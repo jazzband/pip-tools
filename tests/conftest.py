@@ -207,13 +207,11 @@ def make_pip_conf(tmpdir, monkeypatch):
 def pip_conf(make_pip_conf):
     return make_pip_conf(
         dedent(
-            """\
+            f"""\
             [global]
             no-index = true
-            find-links = {wheels_path}
-            """.format(
-                wheels_path=MINIMAL_WHEELS_PATH
-            )
+            find-links = {MINIMAL_WHEELS_PATH}
+            """
         )
     )
 
@@ -222,13 +220,11 @@ def pip_conf(make_pip_conf):
 def pip_with_index_conf(make_pip_conf):
     return make_pip_conf(
         dedent(
-            """\
+            f"""\
             [global]
             index-url = http://example.com
-            find-links = {wheels_path}
-            """.format(
-                wheels_path=MINIMAL_WHEELS_PATH
-            )
+            find-links = {MINIMAL_WHEELS_PATH}
+            """
         )
     )
 
@@ -254,7 +250,7 @@ def make_package(tmp_path):
         with open(setup_file, "w") as fp:
             fp.write(
                 dedent(
-                    """\
+                    f"""\
                     from setuptools import setup
                     setup(
                         name={name!r},
@@ -264,11 +260,7 @@ def make_package(tmp_path):
                         url="https://github.com/jazzband/pip-tools",
                         install_requires={install_requires_str},
                     )
-                    """.format(
-                        name=name,
-                        version=version,
-                        install_requires_str=install_requires_str,
-                    )
+                    """
                 )
             )
 

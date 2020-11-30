@@ -383,9 +383,7 @@ def cli(
 
                 dist = run_setup(src_file)
                 tmpfile.write("\n".join(dist.install_requires))
-                comes_from = "{name} ({filename})".format(
-                    name=dist.get_name(), filename=src_file
-                )
+                comes_from = f"{dist.get_name()} ({src_file})"
             else:
                 tmpfile.write(sys.stdin.read())
                 comes_from = "-r -"

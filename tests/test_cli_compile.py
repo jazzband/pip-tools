@@ -876,12 +876,10 @@ def test_default_index_url(make_pip_conf, url, expected_url):
     """
     make_pip_conf(
         dedent(
-            """\
+            f"""\
             [global]
             index-url = {url}
-            """.format(
-                url=url
-            )
+            """
         )
     )
 

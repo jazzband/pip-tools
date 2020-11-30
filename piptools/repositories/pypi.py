@@ -218,9 +218,7 @@ class PyPIRepository(BaseRepository):
             ireq.editable or is_url_requirement(ireq) or is_pinned_requirement(ireq)
         ):
             raise TypeError(
-                "Expected url, pinned or editable InstallRequirement, got {}".format(
-                    ireq
-                )
+                f"Expected url, pinned or editable InstallRequirement, got {ireq}"
             )
 
         if ireq not in self._dependencies_cache:
@@ -271,11 +269,7 @@ class PyPIRepository(BaseRepository):
             try:
                 response = self.session.get(url)
             except RequestException as e:
-                log.debug(
-                    "Fetch package info from PyPI failed: {url}: {e}".format(
-                        url=url, e=e
-                    )
-                )
+                log.debug(f"Fetch package info from PyPI failed: {url}: {e}")
                 continue
 
             # Skip this PyPI server, because there is no package
@@ -286,11 +280,7 @@ class PyPIRepository(BaseRepository):
             try:
                 data = response.json()
             except ValueError as e:
-                log.debug(
-                    "Cannot parse JSON response from PyPI: {url}: {e}".format(
-                        url=url, e=e
-                    )
-                )
+                log.debug(f"Cannot parse JSON response from PyPI: {url}: {e}")
                 continue
             return data
         return None
@@ -368,9 +358,7 @@ class PyPIRepository(BaseRepository):
 
         try:
             hashes = {
-                "{algo}:{digest}".format(
-                    algo=FAVORITE_HASH, digest=file_["digests"][FAVORITE_HASH]
-                )
+                f"{FAVORITE_HASH}:{file_['digests'][FAVORITE_HASH]}"
                 for file_ in release_files
                 if file_["packagetype"] in self.HASHABLE_PACKAGE_TYPES
             }
@@ -408,9 +396,7 @@ class PyPIRepository(BaseRepository):
             # Choose a context manager depending on verbosity
             if log.verbosity >= 1:
                 iter_length = f.size / FILE_CHUNK_SIZE if f.size else None
-                bar_template = "{prefix}  |%(bar)s| %(info)s".format(
-                    prefix=" " * log.current_indent
-                )
+                bar_template = f"{' ' * log.current_indent}  |%(bar)s| %(info)s"
                 context_manager = progressbar(
                     chunks,
                     length=iter_length,
