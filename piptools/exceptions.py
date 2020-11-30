@@ -25,7 +25,7 @@ class NoCandidateFound(PipToolsError):
         lines = [f"Could not find a version that matches {self.ireq}"]
 
         if versions:
-            lines.append("Tried: {}".format(", ".join(versions)))
+            lines.append(f"Tried: {', '.join(versions)}")
 
         if pre_versions:
             if self.finder.allow_all_prereleases:
@@ -33,7 +33,7 @@ class NoCandidateFound(PipToolsError):
             else:
                 line = "Skipped"
 
-            line += " pre-versions: {}".format(", ".join(pre_versions))
+            line += f" pre-versions: {', '.join(pre_versions)}"
             lines.append(line)
 
         if versions or pre_versions:

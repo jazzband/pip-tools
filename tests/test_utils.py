@@ -317,10 +317,9 @@ def test_get_compile_command_with_files(tmpdir_cwd, filename):
 
     args = [path, "--output-file", "requirements.txt"]
     with compile_cli.make_context("pip-compile", args) as ctx:
-        assert get_compile_command(
-            ctx
-        ) == "pip-compile --output-file=requirements.txt {src_file}".format(
-            src_file=shlex.quote(path)
+        assert (
+            get_compile_command(ctx)
+            == f"pip-compile --output-file=requirements.txt {shlex.quote(path)}"
         )
 
 

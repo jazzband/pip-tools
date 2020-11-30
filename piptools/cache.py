@@ -92,7 +92,7 @@ class DependencyCache:
         if not extras:
             extras_string = ""
         else:
-            extras_string = "[{}]".format(",".join(extras))
+            extras_string = f"[{','.join(extras)}]"
         return name, f"{version}{extras_string}"
 
     def read_cache(self):

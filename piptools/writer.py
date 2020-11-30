@@ -235,5 +235,5 @@ class OutputWriter:
                 for source in required_by:
                     annotation_lines.append("    #   " + source)
                 annotation = "\n".join(annotation_lines)
-            line = "{}\n{}".format(line, comment(annotation))
+            line = f"{line}\n{comment(annotation)}"
         return line

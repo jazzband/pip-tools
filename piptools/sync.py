@@ -174,7 +174,7 @@ def sync(to_install, to_uninstall, dry_run=False, install_flags=None, ask=False)
         if to_install:
             click.echo("Would install:")
             for ireq in sorted(to_install, key=key_from_ireq):
-                click.echo("  {}".format(format_requirement(ireq)))
+                click.echo(f"  {format_requirement(ireq)}")
 
         exit_code = 1
 

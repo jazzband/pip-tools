@@ -377,7 +377,7 @@ def test_name_collision(from_line, pypi_repository, make_package, make_sdist, tm
         make_sdist(pkg, pkg_path, "--formats=zip")
 
         os.rename(
-            os.path.join(pkg_path, "{}-{}.zip".format(pkg_name, "0.1")),
+            os.path.join(pkg_path, f"{pkg_name}-0.1.zip"),
             os.path.join(pkg_path, "master.zip"),
         )
 

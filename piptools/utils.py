@@ -52,7 +52,7 @@ def make_install_requirement(name, version, extras, constraint=False):
     extras_string = ""
     if extras:
         # Sort extras for stability
-        extras_string = "[{}]".format(",".join(sorted(extras)))
+        extras_string = f"[{','.join(sorted(extras))}]"
 
     return install_req_from_line(
         str(f"{name}{extras_string}=={version}"), constraint=constraint
@@ -341,16 +341,10 @@ def get_compile_command(click_ctx):
                     # shlex.quote() would produce functional but noisily quoted results,
                     # e.g. --pip-args='--cache-dir='"'"'/tmp/with spaces'"'"''
                     # Instead, we try to get more legible quoting via repr:
-                    left_args.append(
-                        "{option}={value}".format(
-                            option=option_long_name, value=repr(val)
-                        )
-                    )
+                    left_args.append(f"{option_long_name}={repr(val)}")
                 else:
                     left_args.append(
-                        "{option}={value}".format(
-                            option=option_long_name, value=shlex.quote(force_text(val))
-                        )
+                        f"{option_long_name}={shlex.quote(force_text(val))}"
                     )
 
     return " ".join(["pip-compile"] + sorted(left_args) + sorted(right_args))

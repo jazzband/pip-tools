@@ -164,7 +164,7 @@ class Resolver:
                     )
 
                 log.debug("")
-                log.debug(magenta("{:^60}".format(f"ROUND {current_round}")))
+                log.debug(magenta(f"{f'ROUND {current_round}':^60}"))
                 # If a package version (foo==2.0) was built in a previous round,
                 # and in this round a different version of foo needs to be built
                 # (i.e. foo==1.0), the directory will exist already, which will
@@ -372,7 +372,7 @@ class Resolver:
         # from there
         if ireq not in self.dependency_cache:
             log.debug(
-                "{} not in cache, need to check index".format(format_requirement(ireq)),
+                f"{format_requirement(ireq)} not in cache, need to check index",
                 fg="yellow",
             )
             dependencies = self.repository.get_dependencies(ireq)
