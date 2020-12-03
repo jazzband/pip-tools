@@ -61,7 +61,7 @@ jobs:
       - name: Test pip ${{ matrix.pip-version }}
         run: tox
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1.0.6
+        uses: codecov/codecov-action@v1.0.15
         with:
           file: ./coverage.xml
           name: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.pip-version }}
