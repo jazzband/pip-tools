@@ -414,11 +414,7 @@ def test_editable_package_in_constraints(pip_conf, runner, req_editable):
 
 @pytest.mark.network
 def test_editable_package_vcs(runner):
-    vcs_package = (
-        "git+git://github.com/jazzband/pip-tools@"
-        "f97e62ecb0d9b70965c8eff952c001d8e2722e94"
-        "#egg=pip-tools"
-    )
+    vcs_package = "git+git://github.com/jazzband/pip-tools@f97e62ecb0d9b70965c8eff952c001d8e2722e94#egg=pip-tools"  # noqa: E501
     with open("requirements.in", "w") as req_in:
         req_in.write("-e " + vcs_package)
     out = runner.invoke(cli, ["-n", "--rebuild"])
@@ -706,11 +702,9 @@ def test_generate_hashes_with_editable(pip_conf, runner):
     expected = (
         "-e {}\n"
         "small-fake-a==0.1 \\\n"
-        "    --hash=sha256:5e6071ee6e4c59e0d0408d366f"
-        "e9b66781d2cf01be9a6e19a2433bb3c5336330\n"
+        "    --hash=sha256:5e6071ee6e4c59e0d0408d366fe9b66781d2cf01be9a6e19a2433bb3c5336330\n"  # noqa: E501
         "small-fake-b==0.1 \\\n"
-        "    --hash=sha256:acdba8f8b8a816213c30d5310c"
-        "3fe296c0107b16ed452062f7f994a5672e3b3f\n"
+        "    --hash=sha256:acdba8f8b8a816213c30d5310c3fe296c0107b16ed452062f7f994a5672e3b3f\n"  # noqa: E501
     ).format(small_fake_package_url)
     assert out.exit_code == 0
     assert expected in out.stderr
@@ -720,15 +714,12 @@ def test_generate_hashes_with_editable(pip_conf, runner):
 def test_generate_hashes_with_url(runner):
     with open("requirements.in", "w") as fp:
         fp.write(
-            "https://github.com/jazzband/pip-tools/archive/"
-            "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3.zip#egg=pip-tools\n"
+            "https://github.com/jazzband/pip-tools/archive/7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3.zip#egg=pip-tools\n"  # noqa: E501
         )
     out = runner.invoke(cli, ["--no-annotate", "--generate-hashes"])
     expected = (
-        "https://github.com/jazzband/pip-tools/archive/"
-        "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3.zip#egg=pip-tools \\\n"
-        "    --hash=sha256:d24de92e18ad5bf291f25cfcdcf"
-        "0171be6fa70d01d0bef9eeda356b8549715e7\n"
+        "https://github.com/jazzband/pip-tools/archive/7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3.zip#egg=pip-tools \\\n"  # noqa: E501
+        "    --hash=sha256:d24de92e18ad5bf291f25cfcdcf0171be6fa70d01d0bef9eeda356b8549715e7\n"  # noqa: E501
     )
     assert out.exit_code == 0
     assert expected in out.stderr
@@ -764,7 +755,7 @@ def test_generate_hashes_with_annotations(runner):
             --hash=sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259 \\
             --hash=sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced
             # via -r requirements.in
-        """
+        """  # noqa: E501
     )
 
 
@@ -819,7 +810,7 @@ def test_generate_hashes_with_long_annotations(runner):
             # via
             #   -r requirements.in
             #   django-debug-toolbar
-        """
+        """  # noqa: E501
     )
 
 
