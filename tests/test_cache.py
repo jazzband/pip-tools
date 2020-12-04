@@ -48,7 +48,7 @@ def test_read_cache_file_wrong_format():
     A cache file with a wrong "__format__" value should throw an assertion error.
     """
     with _read_cache_file_helper('{"__format__": 2}') as cache_file_name:
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError, match=r"^Unknown cache file format$"):
             read_cache_file(cache_file_name)
 
 

@@ -215,7 +215,7 @@ def test_fs_str():
 
 @pytest.mark.skipif(six.PY2, reason="Not supported in py2")
 def test_fs_str_with_bytes():
-    with pytest.raises(AssertionError):
+    with pytest.raises(TypeError, match=r"^fs_str\(\) argument must not be bytes$"):
         fs_str(b"whatever")
 
 
