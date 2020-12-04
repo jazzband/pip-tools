@@ -118,7 +118,7 @@ def test_iter_lines__unsafe_dependencies(writer, from_line, allow_unsafe):
     assert tuple(lines) == expected_lines
 
 
-def test_iter_lines__unsafe_with_hashes(capfd, writer, from_line):
+def test_iter_lines__unsafe_with_hashes(capsys, writer, from_line):
     writer.allow_unsafe = False
     writer.emit_header = False
     ireqs = [from_line("test==1.2")]
@@ -134,12 +134,12 @@ def test_iter_lines__unsafe_with_hashes(capfd, writer, from_line):
         comment("# setuptools"),
     )
     assert tuple(lines) == expected_lines
-    captured = capfd.readouterr()
+    captured = capsys.readouterr()
     assert captured.out == ""
     assert captured.err.strip() == MESSAGE_UNINSTALLABLE
 
 
-def test_iter_lines__hash_missing(capfd, writer, from_line):
+def test_iter_lines__hash_missing(capsys, writer, from_line):
     writer.allow_unsafe = False
     writer.emit_header = False
     ireqs = [from_line("test==1.2"), from_line("file:///example/#egg=example")]
@@ -153,7 +153,7 @@ def test_iter_lines__hash_missing(capfd, writer, from_line):
         "test==1.2 \\\n    --hash=FAKEHASH",
     )
     assert tuple(lines) == expected_lines
-    captured = capfd.readouterr()
+    captured = capsys.readouterr()
     assert captured.out == ""
     assert captured.err.strip() == MESSAGE_UNINSTALLABLE
 
