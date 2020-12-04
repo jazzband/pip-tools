@@ -1010,7 +1010,11 @@ def test_annotate_option(pip_conf, runner, option, expected):
 
 @pytest.mark.parametrize(
     ("option", "expected"),
-    (("--allow-unsafe", "small-fake-a==0.1"), (None, "# small-fake-a")),
+    (
+        ("--allow-unsafe", "small-fake-a==0.1"),
+        ("--no-allow-unsafe", "# small-fake-a"),
+        (None, "# small-fake-a"),
+    ),
 )
 def test_allow_unsafe_option(pip_conf, monkeypatch, runner, option, expected):
     """

@@ -164,11 +164,16 @@ class BaseCommand(Command):
     ),
 )
 @click.option(
-    "--allow-unsafe",
+    "--allow-unsafe/--no-allow-unsafe",
     is_flag=True,
     default=False,
-    help="Pin packages considered unsafe: {}".format(
-        ", ".join(sorted(UNSAFE_PACKAGES))
+    help=(
+        "Pin packages considered unsafe: {}.\n\n"
+        "WARNING: Future versions of pip-tools will enable this behavior by default. "
+        "Use --no-allow-unsafe to keep the old behavior. It is recommended to pass the "
+        "--allow-unsafe now to adapt to the upcoming change.".format(
+            ", ".join(sorted(UNSAFE_PACKAGES))
+        )
     ),
 )
 @click.option(

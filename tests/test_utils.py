@@ -260,6 +260,7 @@ def test_force_text(value, expected_text):
         (["--no-emit-index-url"], "pip-compile --no-emit-index-url"),
         (["--no-emit-trusted-host"], "pip-compile --no-emit-trusted-host"),
         (["--no-annotate"], "pip-compile --no-annotate"),
+        (["--no-allow-unsafe"], "pip-compile"),
         # Check that default values will be removed from the command
         (["--emit-trusted-host"], "pip-compile"),
         (["--annotate"], "pip-compile"),
