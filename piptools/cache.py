@@ -37,7 +37,7 @@ def read_cache_file(cache_file_path):
     with open(cache_file_path) as cache_file:
         try:
             doc = json.load(cache_file)
-        except ValueError:
+        except json.JSONDecodeError:
             raise CorruptCacheError(cache_file_path)
 
         # Check version and load the contents
