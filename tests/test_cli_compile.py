@@ -249,7 +249,7 @@ def test_trusted_host_envvar(monkeypatch, pip_conf, runner):
 def test_all_no_emit_options(runner, options):
     with open("requirements.in", "w"):
         pass
-    out = runner.invoke(cli, ["--no-header"] + options)
+    out = runner.invoke(cli, ["--no-header", *options])
     assert out.stderr.strip().splitlines() == []
 
 
@@ -1081,7 +1081,7 @@ def test_forwarded_args(PyPIRepository, runner):
 
     cli_args = ("--no-annotate", "--generate-hashes")
     pip_args = ("--no-color", "--isolated", "--disable-pip-version-check")
-    runner.invoke(cli, cli_args + ("--pip-args", " ".join(pip_args)))
+    runner.invoke(cli, [*cli_args, "--pip-args", " ".join(pip_args)])
     args, kwargs = PyPIRepository.call_args
     assert set(pip_args).issubset(set(args[0]))
 
@@ -1130,7 +1130,7 @@ def test_dry_run_option(pip_conf, runner, add_options):
     with open("requirements.in", "w") as req_in:
         req_in.write("small-fake-a\n")
 
-    out = runner.invoke(cli, ["--no-annotate", "--dry-run"] + add_options)
+    out = runner.invoke(cli, ["--no-annotate", "--dry-run", *add_options])
 
     assert out.exit_code == 0, out.stderr
     assert "small-fake-a==0.2" in out.stderr.splitlines()
@@ -1165,7 +1165,7 @@ def test_dry_run_doesnt_touch_output_file(
 
     before_compile_mtime = os.stat("requirements.txt").st_mtime
 
-    out = runner.invoke(cli, ["--no-annotate", "--dry-run"] + add_options)
+    out = runner.invoke(cli, ["--no-annotate", "--dry-run", *add_options])
 
     assert out.exit_code == 0, out.stderr
     assert expected_cli_output_package in out.stderr.splitlines()

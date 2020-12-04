@@ -347,4 +347,4 @@ def get_compile_command(click_ctx):
                         f"{option_long_name}={shlex.quote(force_text(val))}"
                     )
 
-    return " ".join(["pip-compile"] + sorted(left_args) + sorted(right_args))
+    return " ".join(["pip-compile", *sorted(left_args), *sorted(right_args)])

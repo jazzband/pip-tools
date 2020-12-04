@@ -73,9 +73,7 @@ def combine_install_requirements(repository, ireqs):
             repository.copy_ireq_dependencies(ireq, combined_ireq)
         combined_ireq.constraint &= ireq.constraint
         # Return a sorted, de-duped tuple of extras
-        combined_ireq.extras = tuple(
-            sorted(set(tuple(combined_ireq.extras) + tuple(ireq.extras)))
-        )
+        combined_ireq.extras = tuple(sorted({*combined_ireq.extras, *ireq.extras}))
 
     # InstallRequirements objects are assumed to come from only one source, and
     # so they support only a single comes_from entry. This function breaks this

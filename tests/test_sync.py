@@ -469,6 +469,6 @@ def test_sync_uninstall_pip_command(run):
 
     sync(set(), to_uninstall)
     run.assert_called_once_with(
-        [sys.executable, "-m", "pip", "uninstall", "-y"] + sorted(to_uninstall),
+        [sys.executable, "-m", "pip", "uninstall", "-y", *sorted(to_uninstall)],
         check=True,
     )

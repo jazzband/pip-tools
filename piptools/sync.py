@@ -19,11 +19,15 @@ from .utils import (
     key_from_req,
 )
 
-PACKAGES_TO_IGNORE = (
-    ["-markerlib", "pip", "pip-tools", "pip-review", "pkg-resources"]
-    + list(stdlib_pkgs)
-    + list(DEV_PKGS)
-)
+PACKAGES_TO_IGNORE = [
+    "-markerlib",
+    "pip",
+    "pip-tools",
+    "pip-review",
+    "pkg-resources",
+    *stdlib_pkgs,
+    *DEV_PKGS,
+]
 
 
 def dependency_tree(installed_keys, root_key):
@@ -185,9 +189,15 @@ def sync(to_install, to_uninstall, dry_run=False, install_flags=None, ask=False)
     if not dry_run:
         if to_uninstall:
             run(  # nosec
-                [sys.executable, "-m", "pip", "uninstall", "-y"]
-                + pip_flags
-                + sorted(to_uninstall),
+                [
+                    sys.executable,
+                    "-m",
+                    "pip",
+                    "uninstall",
+                    "-y",
+                    *pip_flags,
+                    *sorted(to_uninstall),
+                ],
                 check=True,
             )
 
@@ -207,9 +217,16 @@ def sync(to_install, to_uninstall, dry_run=False, install_flags=None, ask=False)
 
             try:
                 run(  # nosec
-                    [sys.executable, "-m", "pip", "install", "-r", tmp_req_file.name]
-                    + pip_flags
-                    + install_flags,
+                    [
+                        sys.executable,
+                        "-m",
+                        "pip",
+                        "install",
+                        "-r",
+                        tmp_req_file.name,
+                        *pip_flags,
+                        *install_flags,
+                    ],
                     check=True,
                 )
             finally:
