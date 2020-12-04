@@ -1,3 +1,4 @@
+import io
 import os
 import sys
 import tempfile
@@ -365,13 +366,14 @@ def test_sync_requirement_file_with_hashes(
         mocked_tmp_req_file.write.assert_called_once_with(expected)
 
 
-def test_sync_up_to_date(runner):
+def test_sync_up_to_date(capsys, runner):
     """
     Everything up-to-date should be printed.
     """
-    with runner.isolation() as (stdout, _):
-        sync(set(), set())
-    assert stdout.getvalue().decode().splitlines() == ["Everything up-to-date"]
+    sync(set(), set())
+    captured = capsys.readouterr()
+    assert captured.out.splitlines() == ["Everything up-to-date"]
+    assert captured.err == ""
 
 
 @mock.patch("piptools.sync.run")
@@ -393,20 +395,21 @@ def test_sync_verbose(run, from_line):
         (set(), {"django==1.8", "click==4.0"}, "Would uninstall:"),
     ),
 )
-def test_sync_dry_run(runner, from_line, to_install, to_uninstall, expected_message):
+def test_sync_dry_run(
+    capsys, runner, from_line, to_install, to_uninstall, expected_message
+):
     """
     Sync with --dry-run option prints what's is going to be installed/uninstalled.
     """
     to_install = {from_line(pkg) for pkg in to_install}
-
-    with runner.isolation() as (stdout, _):
-        sync(to_install, to_uninstall, dry_run=True)
-
-    assert stdout.getvalue().decode().splitlines() == [
+    sync(to_install, to_uninstall, dry_run=True)
+    captured = capsys.readouterr()
+    assert captured.out.splitlines() == [
         expected_message,
         "  click==4.0",
         "  django==1.8",
     ]
+    captured.err == ""
 
 
 @pytest.mark.parametrize(
@@ -418,49 +421,51 @@ def test_sync_dry_run(runner, from_line, to_install, to_uninstall, expected_mess
 )
 @mock.patch("piptools.sync.run")
 def test_sync_ask_declined(
-    run, runner, from_line, to_install, to_uninstall, expected_message
+    run, monkeypatch, capsys, from_line, to_install, to_uninstall, expected_message
 ):
     """
     Sync with --ask option does a dry run if the user declines
     """
 
+    monkeypatch.setattr("sys.stdin", io.StringIO("n\n"))
     to_install = {from_line(pkg) for pkg in to_install}
+    sync(to_install, to_uninstall, ask=True)
 
-    with runner.isolation("n\n") as (stdout, _):
-        sync(to_install, to_uninstall, ask=True)
-
-    assert stdout.getvalue().decode().splitlines() == [
+    out, err = capsys.readouterr()
+    assert out.splitlines() == [
         expected_message,
         "  click==4.0",
         "  django==1.8",
-        "Would you like to proceed with these changes? [y/N]: n",
+        "Would you like to proceed with these changes? [y/N]: ",
     ]
+    assert err == ""
     run.assert_not_called()
 
 
 @pytest.mark.parametrize("dry_run", (True, False))
 @mock.patch("piptools.sync.run")
-def test_sync_ask_accepted(run, runner, from_line, dry_run):
+def test_sync_ask_accepted(run, monkeypatch, capsys, from_line, dry_run):
     """
     pip should be called as normal when the user confirms, even with dry_run
     """
-
-    with runner.isolation("y\n") as (stdout, _):
-        sync(
-            {from_line("django==1.8")},
-            {from_line("click==4.0")},
-            ask=True,
-            dry_run=dry_run,
-        )
+    monkeypatch.setattr("sys.stdin", io.StringIO("y\n"))
+    sync(
+        {from_line("django==1.8")},
+        {from_line("click==4.0")},
+        ask=True,
+        dry_run=dry_run,
+    )
 
     assert run.call_count == 2
-    assert stdout.getvalue().decode().splitlines() == [
+    out, err = capsys.readouterr()
+    assert out.splitlines() == [
         "Would uninstall:",
         "  click==4.0",
         "Would install:",
         "  django==1.8",
-        "Would you like to proceed with these changes? [y/N]: y",
+        "Would you like to proceed with these changes? [y/N]: ",
     ]
+    assert err == ""
 
 
 @mock.patch("piptools.sync.run")
