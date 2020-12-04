@@ -262,7 +262,7 @@ def fs_str(string):
     if isinstance(string, str):
         return string
     if isinstance(string, bytes):
-        raise AssertionError
+        raise TypeError("fs_str() argument must not be bytes")
     return string.encode(_fs_encoding)
 
 
