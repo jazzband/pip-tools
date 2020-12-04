@@ -1,3 +1,0 @@
-[bandit]
-exclude: tests,.tox,.eggs,.venv,.git
-skips: B101

@@ -284,7 +284,7 @@ def run_setup_file():
             cwd=str(package_dir_path),
             stdout=subprocess.DEVNULL,
             check=True,
-        )  # nosec
+        )
 
     return _run_setup_file
 

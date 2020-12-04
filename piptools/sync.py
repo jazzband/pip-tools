@@ -2,7 +2,7 @@ import collections
 import os
 import sys
 import tempfile
-from subprocess import run  # nosec
+from subprocess import run
 from typing import Deque, Dict, Iterable, List, Optional, Set, Tuple, ValuesView
 
 import click
@@ -202,7 +202,7 @@ def sync(
 
     if not dry_run:
         if to_uninstall:
-            run(  # nosec
+            run(
                 [
                     sys.executable,
                     "-m",
@@ -230,7 +230,7 @@ def sync(
             tmp_req_file.close()
 
             try:
-                run(  # nosec
+                run(
                     [
                         sys.executable,
                         "-m",
