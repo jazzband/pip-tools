@@ -431,14 +431,14 @@ def test_sync_ask_declined(
     to_install = {from_line(pkg) for pkg in to_install}
     sync(to_install, to_uninstall, ask=True)
 
-    out, err = capsys.readouterr()
-    assert out.splitlines() == [
+    captured = capsys.readouterr()
+    assert captured.out.splitlines() == [
         expected_message,
         "  click==4.0",
         "  django==1.8",
         "Would you like to proceed with these changes? [y/N]: ",
     ]
-    assert err == ""
+    assert captured.err == ""
     run.assert_not_called()
 
 
@@ -457,15 +457,15 @@ def test_sync_ask_accepted(run, monkeypatch, capsys, from_line, dry_run):
     )
 
     assert run.call_count == 2
-    out, err = capsys.readouterr()
-    assert out.splitlines() == [
+    captured = capsys.readouterr()
+    assert captured.out.splitlines() == [
         "Would uninstall:",
         "  click==4.0",
         "Would install:",
         "  django==1.8",
         "Would you like to proceed with these changes? [y/N]: ",
     ]
-    assert err == ""
+    assert captured.err == ""
 
 
 @mock.patch("piptools.sync.run")
