@@ -229,8 +229,8 @@ class PyPIRepository(BaseRepository):
         if ireq not in self._dependencies_cache:
             if ireq.editable and (ireq.source_dir and os.path.exists(ireq.source_dir)):
                 # No download_dir for locally available editable requirements.
-                # If a download_dir is passed, pip will  unnecessarely
-                # archive the entire source directory
+                # If a download_dir is passed, pip will unnecessarily archive
+                # the entire source directory
                 download_dir = None
             elif ireq.link and ireq.link.is_vcs:
                 # No download_dir for VCS sources.  This also works around pip
