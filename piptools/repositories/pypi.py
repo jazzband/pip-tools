@@ -86,7 +86,7 @@ class PyPIRepository(BaseRepository):
         # Setup file paths
         self._build_dir = None
         self._source_dir = None
-        self._cache_dir = normalize_path(cache_dir)
+        self._cache_dir = normalize_path(str(cache_dir))
         self._download_dir = os.path.join(self._cache_dir, "pkgs")
         if PIP_VERSION[:2] <= (20, 2):
             self._wheel_download_dir = os.path.join(self._cache_dir, "wheels")
