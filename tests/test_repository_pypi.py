@@ -160,7 +160,7 @@ def test_relative_path_cache_dir_is_normalized(from_line):
 def test_relative_path_pip_cache_dir_is_normalized(from_line, tmpdir):
     relative_cache_dir = "pip-cache"
     pypi_repository = PyPIRepository(
-        ["--cache-dir", relative_cache_dir], cache_dir=str(tmpdir / "pypi-repo-cache")
+        ["--cache-dir", relative_cache_dir], cache_dir=(tmpdir / "pypi-repo-cache")
     )
 
     assert os.path.isabs(pypi_repository.options.cache_dir)
@@ -169,7 +169,7 @@ def test_relative_path_pip_cache_dir_is_normalized(from_line, tmpdir):
 
 def test_pip_cache_dir_is_empty(from_line, tmpdir):
     pypi_repository = PyPIRepository(
-        ["--no-cache-dir"], cache_dir=str(tmpdir / "pypi-repo-cache")
+        ["--no-cache-dir"], cache_dir=(tmpdir / "pypi-repo-cache")
     )
 
     assert not pypi_repository.options.cache_dir
@@ -264,7 +264,7 @@ def test_get_hashes_from_pypi(from_line, tmpdir, project_data, expected_hashes):
             return project_data
 
     pypi_repository = MockPyPIRepository(
-        ["--no-cache-dir"], cache_dir=str(tmpdir / "pypi-repo-cache")
+        ["--no-cache-dir"], cache_dir=(tmpdir / "pypi-repo-cache")
     )
     ireq = from_line("fake-package==0.1")
 
@@ -372,7 +372,7 @@ def test_name_collision(from_line, pypi_repository, make_package, make_sdist, tm
     }
 
     for pkg_name, pkg in packages.items():
-        pkg_path = str(tmpdir / pkg_name)
+        pkg_path = tmpdir / pkg_name
 
         make_sdist(pkg, pkg_path, "--formats=zip")
 

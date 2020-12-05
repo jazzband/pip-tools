@@ -135,13 +135,13 @@ def repository():
 def pypi_repository(tmpdir):
     return PyPIRepository(
         ["--index-url", PyPIRepository.DEFAULT_INDEX_URL],
-        cache_dir=str(tmpdir / "pypi-repo"),
+        cache_dir=(tmpdir / "pypi-repo"),
     )
 
 
 @pytest.fixture
 def depcache(tmpdir):
-    return DependencyCache(str(tmpdir / "dep-cache"))
+    return DependencyCache(tmpdir / "dep-cache")
 
 
 @pytest.fixture
@@ -246,8 +246,7 @@ def make_package(tmp_path):
         package_dir = tmp_path / "packages" / name / version
         package_dir.mkdir(parents=True)
 
-        setup_file = str(package_dir / "setup.py")
-        with open(setup_file, "w") as fp:
+        with (package_dir / "setup.py").open("w") as fp:
             fp.write(
                 dedent(
                     f"""\
@@ -265,9 +264,7 @@ def make_package(tmp_path):
             )
 
         # Create a README to avoid setuptools warnings.
-        readme_file = str(package_dir / "README")
-        with open(readme_file, "w"):
-            pass
+        (package_dir / "README").touch()
 
         return package_dir
 
@@ -281,9 +278,9 @@ def run_setup_file():
     """
 
     def _run_setup_file(package_dir_path, *args):
-        setup_file = str(package_dir_path / "setup.py")
+        setup_file = package_dir_path / "setup.py"
         return subprocess.run(
-            [sys.executable, setup_file, *args],
+            [sys.executable, str(setup_file), *args],
             cwd=str(package_dir_path),
             stdout=subprocess.DEVNULL,
             check=True,
