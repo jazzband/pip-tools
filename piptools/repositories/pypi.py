@@ -24,7 +24,7 @@ from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
 from pip._internal.utils.urls import path_to_url, url_to_path
 from pip._vendor.requests import RequestException
 
-from .._compat import PIP_VERSION, TemporaryDirectory, contextlib
+from .._compat import PIP_VERSION, TemporaryDirectory, contextlib, makedirs
 from ..click import progressbar
 from ..exceptions import NoCandidateFound
 from ..logging import log
@@ -238,12 +238,9 @@ class PyPIRepository(BaseRepository):
                 download_dir = None
             else:
                 download_dir = self._get_download_path(ireq)
-                if not os.path.isdir(download_dir):
-                    os.makedirs(download_dir)
-            if PIP_VERSION[:2] <= (20, 2) and not os.path.isdir(
-                self._wheel_download_dir
-            ):
-                os.makedirs(self._wheel_download_dir)
+                makedirs(download_dir, exist_ok=True)
+            if PIP_VERSION[:2] <= (20, 2):
+                makedirs(self._wheel_download_dir, exist_ok=True)
 
             with global_tempdir_manager():
                 wheel_cache = WheelCache(self._cache_dir, self.options.format_control)

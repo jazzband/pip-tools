@@ -1,5 +1,6 @@
+import os
+import sys
 from contextlib import contextmanager
-from os import remove
 from shutil import rmtree
 from tempfile import NamedTemporaryFile
 
@@ -28,7 +29,7 @@ def _read_cache_file_helper(to_write):
 
     finally:
         # Delete the file on exit
-        remove(cache_file.name)
+        os.remove(cache_file.name)
 
 
 def test_read_cache_file_not_json():
@@ -60,6 +61,22 @@ def test_read_cache_file_successful():
         '{"__format__": 1, "dependencies": "success"}'
     ) as cache_file_name:
         assert "success" == read_cache_file(cache_file_name)
+
+
+def test_read_cache_does_not_exist(tmpdir):
+    cache = DependencyCache(cache_dir=str(tmpdir))
+    assert cache.cache == {}
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="os.fchmod() not available on Windows"
+)
+def test_read_cache_permission_error(tmpdir):
+    cache = DependencyCache(cache_dir=str(tmpdir))
+    with open(cache._cache_file, "w") as fp:
+        os.fchmod(fp.fileno(), 0o000)
+    with pytest.raises(IOError, match="Permission denied"):
+        cache.read_cache()
 
 
 def test_reverse_dependencies(from_line, tmpdir):
