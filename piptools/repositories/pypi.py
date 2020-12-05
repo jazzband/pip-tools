@@ -345,7 +345,7 @@ class PyPIRepository(BaseRepository):
         if not is_pinned_requirement(ireq):
             raise TypeError("Expected pinned requirement, got {}".format(ireq))
 
-        log.debug("{}".format(ireq.name))
+        log.debug(ireq.name)
 
         with log.indentation():
             hashes = self._get_hashes_from_pypi(ireq)
