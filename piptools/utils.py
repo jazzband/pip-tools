@@ -100,8 +100,8 @@ def format_specifier(ireq):
     InstallRequirements to the terminal.
     """
     # TODO: Ideally, this is carried over to the pip library itself
-    specs = ireq.specifier._specs if ireq.req is not None else []
-    specs = sorted(specs, key=lambda x: x._spec[1])
+    specs = ireq.specifier if ireq.req is not None else []
+    specs = sorted(specs, key=lambda x: x.version)
     return ",".join(str(s) for s in specs) or "<any>"
 
 
@@ -125,11 +125,11 @@ def is_pinned_requirement(ireq):
     if ireq.editable:
         return False
 
-    if ireq.req is None or len(ireq.specifier._specs) != 1:
+    if ireq.req is None or len(ireq.specifier) != 1:
         return False
 
-    op, version = next(iter(ireq.specifier._specs))._spec
-    return (op == "==" or op == "===") and not version.endswith(".*")
+    spec = next(iter(ireq.specifier))
+    return spec.operator in {"==", "==="} and not spec.version.endswith(".*")
 
 
 def as_tuple(ireq):
@@ -141,7 +141,7 @@ def as_tuple(ireq):
         raise TypeError("Expected a pinned InstallRequirement, got {}".format(ireq))
 
     name = key_from_ireq(ireq)
-    version = next(iter(ireq.specifier._specs))._spec[1]
+    version = next(iter(ireq.specifier)).version
     extras = tuple(sorted(ireq.extras))
     return name, version, extras
 
