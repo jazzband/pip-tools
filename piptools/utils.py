@@ -382,3 +382,17 @@ def get_compile_command(click_ctx):
                     )
 
     return " ".join(["pip-compile"] + sorted(left_args) + sorted(right_args))
+
+
+def format_suffixed_path(src_file, suffix):
+    """
+    Return a suffixed file path based on the source file path passed in.
+
+    :type src_file: str
+    :type suffix: str
+    :rtype: str
+    """
+    import os
+
+    name, ext = os.path.splitext(src_file)
+    return name + suffix + ext

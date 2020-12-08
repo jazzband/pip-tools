@@ -21,11 +21,13 @@ from ..locations import CACHE_DIR
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
-from ..utils import UNSAFE_PACKAGES, dedup, is_pinned_requirement, key_from_ireq
+from ..utils import (UNSAFE_PACKAGES, dedup, format_suffixed_path,
+                     is_pinned_requirement, key_from_ireq)
 from ..writer import OutputWriter
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.in"
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
+WHEELS_REQUIREMENTS_SUFFIX = '_wheels'
 
 
 def _get_default_option(option_name):
@@ -220,6 +222,12 @@ class BaseCommand(Command):
     default=True,
     help="Add index URL to generated file",
 )
+@click.option(
+    "--split-wheels",
+    is_flag=True,
+    default=False,
+    help="Split wheels into a separate requirement file",
+)
 def cli(
     ctx,
     verbose,
@@ -250,6 +258,7 @@ def cli(
     cache_dir,
     pip_args,
     emit_index_url,
+    split_wheels,
 ):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbosity = verbose - quiet
@@ -445,10 +454,7 @@ def cli(
             allow_unsafe=allow_unsafe,
         )
         results = resolver.resolve(max_rounds=max_rounds)
-        if generate_hashes:
-            hashes = resolver.resolve_hashes(results)
-        else:
-            hashes = None
+
     except PipToolsError as e:
         log.error(str(e))
         sys.exit(2)
@@ -477,14 +483,36 @@ def cli(
         find_links=repository.finder.find_links,
         emit_find_links=emit_find_links,
     )
-    writer.write(
-        results=results,
-        unsafe_requirements=resolver.unsafe_constraints,
-        markers={
-            key_from_ireq(ireq): ireq.markers for ireq in constraints if ireq.markers
-        },
-        hashes=hashes,
-    )
+    markers = {key_from_ireq(ireq): ireq.markers for ireq in constraints
+               if ireq.markers}
+
+    def write(results, output_file):
+        if generate_hashes:
+            try:
+                hashes = resolver.resolve_hashes(results)
+            except PipToolsError as e:
+                log.error(str(e))
+                sys.exit(2)
+        else:
+            hashes = None
+        writer.dst_file = output_file
+        writer.write(
+            results=results,
+            unsafe_requirements=resolver.unsafe_constraints,
+            markers=markers,
+            hashes=hashes,
+        )
+
+    if split_wheels:
+        results_wheels = set([result for result in results if result.is_wheel])
+        results -= results_wheels
+        wheels_output = click.open_file(
+            format_suffixed_path(output_file.name, WHEELS_REQUIREMENTS_SUFFIX),
+            "w+b", atomic=True, lazy=True)
+        ctx.call_on_close(safecall(wheels_output.close_intelligently))
+        write(results_wheels, wheels_output)
+
+    write(results, output_file)
 
     if dry_run:
         log.info("Dry-run, so nothing updated.")

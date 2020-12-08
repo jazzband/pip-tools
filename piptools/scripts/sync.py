@@ -14,9 +14,10 @@ from .._compat import parse_requirements
 from ..exceptions import PipToolsError
 from ..logging import log
 from ..repositories import PyPIRepository
-from ..utils import flat_map
+from ..utils import flat_map, format_suffixed_path
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
+WHEELS_REQUIREMENTS_SUFFIX = '_wheels'
 
 
 @click.command(context_settings={"help_option_names": ("-h", "--help")})
@@ -106,6 +107,16 @@ def cli(
         else:
             log.error("ERROR: " + msg)
             sys.exit(2)
+
+    # include the wheels requirements txt if we find any files with `_wheels`
+    # suffix
+    wheel_req_files = set()
+    for src_file in src_files:
+        wheel_src = format_suffixed_path(src_file, WHEELS_REQUIREMENTS_SUFFIX)
+        if os.path.exists(wheel_src):
+            wheel_req_files.add(wheel_src)
+    src_files = list(src_files)
+    src_files.extend(list(wheel_req_files))
 
     install_command = create_command("install")
     options, _ = install_command.parse_args([])

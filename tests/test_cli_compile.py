@@ -80,6 +80,12 @@ def test_command_line_setuptools_read(pip_conf, runner):
         # For the `pip-compile --output-file=output.txt`
         # output file should be "output.txt"
         (["--output-file", "output.txt"], "output.txt"),
+        # For the `pip-compile --split-wheels`
+        # output file should be "requirements.txt" nad "requirements_wheels.txt"
+        (["--split-wheels"], ["requirements.txt", "requirements_wheels.txt"]),
+        # For the `pip-compile --output-file=output.txt --split-wheels`
+        # output file should be "output.txt" and "output_wheels.txt"
+        (["--output-file", "output.txt", "--split-wheels"], ["output.txt", "output_wheels.txt"]),
         # For the `pip-compile setup.py` output file should be "requirements.txt"
         (["setup.py"], "requirements.txt"),
         # For the `pip-compile setup.py --output-file=output.txt`
@@ -105,7 +111,10 @@ def test_command_line_setuptools_output_file(
 
     out = runner.invoke(cli, options)
     assert out.exit_code == 0
-    assert os.path.exists(expected_output_file)
+    if not isinstance(expected_output_file, list):
+        expected_output_file = [expected_output_file]
+    for f in expected_output_file:
+        assert os.path.exists(f)
 
 
 def test_find_links_option(runner):
