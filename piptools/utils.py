@@ -1,7 +1,7 @@
 import shlex
 from collections import OrderedDict
 from itertools import chain
-from typing import Any, Iterable, Iterator, Optional, Set
+from typing import Callable, Iterable, Iterator, Optional, Set, Tuple, TypeVar
 
 import click
 from click.utils import LazyFile
@@ -10,6 +10,9 @@ from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 from pip._internal.vcs import is_url
 from pip._vendor.packaging.markers import Marker
+
+_T = TypeVar("_T")
+_S = TypeVar("_S")
 
 UNSAFE_PACKAGES = {"setuptools", "distribute", "pip"}
 COMPILE_EXCLUDE_OPTIONS = {
@@ -49,7 +52,9 @@ def comment(text: str) -> str:
     return click.style(text, fg="green")
 
 
-def make_install_requirement(name, version, extras, constraint=False):
+def make_install_requirement(
+    name: str, version: str, extras: Iterable[str], constraint: bool = False
+) -> InstallRequirement:
     # If no extras are specified, the extras string is blank
     extras_string = ""
     if extras:
@@ -106,7 +111,7 @@ def format_specifier(ireq):
     return ",".join(str(s) for s in specs) or "<any>"
 
 
-def is_pinned_requirement(ireq):
+def is_pinned_requirement(ireq: InstallRequirement) -> bool:
     """
     Returns whether an InstallRequirement is a "pinned" requirement.
 
@@ -133,7 +138,7 @@ def is_pinned_requirement(ireq):
     return spec.operator in {"==", "==="} and not spec.version.endswith(".*")
 
 
-def as_tuple(ireq):
+def as_tuple(ireq: InstallRequirement) -> Tuple[str, str, Tuple[str, ...]]:
     """
     Pulls out the (name: str, version:str, extras:(str)) tuple from
     the pinned InstallRequirement.
@@ -147,7 +152,9 @@ def as_tuple(ireq):
     return name, version, extras
 
 
-def flat_map(fn, collection):
+def flat_map(
+    fn: Callable[[_T], Iterable[_S]], collection: Iterable[_T]
+) -> Iterator[_S]:
     """Map a function over a collection and flatten the result by one-level"""
     return chain.from_iterable(map(fn, collection))
 
@@ -230,7 +237,7 @@ def lookup_table(values, key=None, keyval=None, unique=False, use_lists=False):
     return dict(lut)
 
 
-def dedup(iterable: Iterable[Any]) -> Iterator[Any]:
+def dedup(iterable: Iterable[_T]) -> Iterable[_T]:
     """Deduplicate an iterable object like iter(set(iterable)) but
     order-preserved.
     """
@@ -247,16 +254,16 @@ def name_from_req(req):
         return req.name
 
 
-def get_hashes_from_ireq(ireq):
+def get_hashes_from_ireq(ireq: InstallRequirement) -> Set[str]:
     """
-    Given an InstallRequirement, return a list of string hashes in
-    the format "{algorithm}:{hash}". Return an empty list if there are no hashes
-    in the requirement options.
+    Given an InstallRequirement, return a set of string hashes in the format
+    "{algorithm}:{hash}". Return an empty set if there are no hashes in the
+    requirement options.
     """
-    result = []
+    result = set()
     for algorithm, hexdigests in ireq.hash_options.items():
         for hash_ in hexdigests:
-            result.append(f"{algorithm}:{hash_}")
+            result.add(f"{algorithm}:{hash_}")
     return result
 
 

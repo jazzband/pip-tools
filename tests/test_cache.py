@@ -76,7 +76,7 @@ def test_read_cache_permission_error(tmpdir):
     with open(cache._cache_file, "w") as fp:
         os.fchmod(fp.fileno(), 0o000)
     with pytest.raises(IOError, match="Permission denied"):
-        cache.read_cache()
+        cache.cache
 
 
 def test_reverse_dependencies(from_line, tmpdir):

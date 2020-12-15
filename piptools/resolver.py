@@ -3,6 +3,7 @@ from functools import partial
 from itertools import chain, count, groupby
 
 import click
+from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.req.req_tracker import update_env_context_manager
 
@@ -25,23 +26,25 @@ class RequirementSummary:
     Summary of a requirement's properties for comparison purposes.
     """
 
-    def __init__(self, ireq):
+    def __init__(self, ireq: InstallRequirement):
         self.req = ireq.req
         self.key = key_from_ireq(ireq)
         self.extras = frozenset(ireq.extras)
         self.specifier = ireq.specifier
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, RequirementSummary):
+            return NotImplemented
         return (
             self.key == other.key
             and self.specifier == other.specifier
             and self.extras == other.extras
         )
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.key, self.specifier, self.extras))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return repr((self.key, str(self.specifier), sorted(self.extras)))
 
 
