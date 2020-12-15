@@ -43,7 +43,7 @@ def key_from_req(req):
     return key
 
 
-def comment(text):
+def comment(text: str) -> str:
     return style(text, fg="green")
 
 

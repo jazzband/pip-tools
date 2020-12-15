@@ -3,6 +3,7 @@ import shlex
 import sys
 import tempfile
 import warnings
+from typing import Any
 
 from click import Command
 from click.utils import safecall
@@ -25,7 +26,7 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.in"
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 
 
-def _get_default_option(option_name):
+def _get_default_option(option_name: str) -> Any:
     """
     Get default value of the pip's option (including option from pip.conf)
     by a given option name.
