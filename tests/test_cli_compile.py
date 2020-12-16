@@ -85,7 +85,10 @@ def test_command_line_setuptools_read(pip_conf, runner):
         (["--split-wheels"], ["requirements.txt", "requirements_wheels.txt"]),
         # For the `pip-compile --output-file=output.txt --split-wheels`
         # output file should be "output.txt" and "output_wheels.txt"
-        (["--output-file", "output.txt", "--split-wheels"], ["output.txt", "output_wheels.txt"]),
+        (
+            ["--output-file", "output.txt", "--split-wheels"],
+            ["output.txt", "output_wheels.txt"],
+        ),
         # For the `pip-compile setup.py` output file should be "requirements.txt"
         (["setup.py"], "requirements.txt"),
         # For the `pip-compile setup.py --output-file=output.txt`

@@ -17,7 +17,7 @@ from ..repositories import PyPIRepository
 from ..utils import flat_map, format_suffixed_path
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
-WHEELS_REQUIREMENTS_SUFFIX = '_wheels'
+WHEELS_REQUIREMENTS_SUFFIX = "_wheels"
 
 
 @click.command(context_settings={"help_option_names": ("-h", "--help")})

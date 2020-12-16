@@ -21,13 +21,18 @@ from ..locations import CACHE_DIR
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..resolver import Resolver
-from ..utils import (UNSAFE_PACKAGES, dedup, format_suffixed_path,
-                     is_pinned_requirement, key_from_ireq)
+from ..utils import (
+    UNSAFE_PACKAGES,
+    dedup,
+    format_suffixed_path,
+    is_pinned_requirement,
+    key_from_ireq,
+)
 from ..writer import OutputWriter
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.in"
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
-WHEELS_REQUIREMENTS_SUFFIX = '_wheels'
+WHEELS_REQUIREMENTS_SUFFIX = "_wheels"
 
 
 def _get_default_option(option_name):
@@ -483,8 +488,9 @@ def cli(
         find_links=repository.finder.find_links,
         emit_find_links=emit_find_links,
     )
-    markers = {key_from_ireq(ireq): ireq.markers for ireq in constraints
-               if ireq.markers}
+    markers = {
+        key_from_ireq(ireq): ireq.markers for ireq in constraints if ireq.markers
+    }
 
     def write(results, output_file):
         if generate_hashes:
@@ -508,7 +514,10 @@ def cli(
         results -= results_wheels
         wheels_output = click.open_file(
             format_suffixed_path(output_file.name, WHEELS_REQUIREMENTS_SUFFIX),
-            "w+b", atomic=True, lazy=True)
+            "w+b",
+            atomic=True,
+            lazy=True,
+        )
         ctx.call_on_close(safecall(wheels_output.close_intelligently))
         write(results_wheels, wheels_output)
 
