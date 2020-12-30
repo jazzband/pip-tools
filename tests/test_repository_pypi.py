@@ -66,6 +66,14 @@ def test_get_hashes_editable_empty_set(from_editable, pypi_repository):
     assert pypi_repository.get_hashes(ireq) == set()
 
 
+def test_get_hashes_unpinned_raises(from_line, pypi_repository):
+    # Under normal pip-tools usage, get_hashes() should never be called with an
+    # unpinned requirement. The TypeError represents a programming mistake.
+    ireq = from_line("django")
+    with pytest.raises(TypeError, match=r"^Expected pinned requirement, got django"):
+        pypi_repository.get_hashes(ireq)
+
+
 @pytest.mark.parametrize(("content", "content_length"), ((b"foo", 3), (b"foobar", 6)))
 def test_open_local_or_remote_file__local_file(tmp_path, content, content_length):
     """
