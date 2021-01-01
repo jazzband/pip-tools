@@ -16,7 +16,6 @@ jobs:
       matrix:
         toxenv:
           - checkqa
-          - mypy
           - readme
         python-version:
           - "3.x"
