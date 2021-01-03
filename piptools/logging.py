@@ -2,7 +2,7 @@ import contextlib
 import logging
 import sys
 
-from . import click
+import click
 
 # Initialise the builtin logging module for other component using it.
 # Ex: pip

@@ -2,10 +2,10 @@ import copy
 from functools import partial
 from itertools import chain, count, groupby
 
+import click
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.req.req_tracker import update_env_context_manager
 
-from . import click
 from .logging import log
 from .utils import (
     UNSAFE_PACKAGES,

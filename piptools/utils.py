@@ -2,12 +2,11 @@ import shlex
 from collections import OrderedDict
 from itertools import chain
 
+from click import style
 from click.utils import LazyFile
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 from pip._internal.vcs import is_url
-
-from .click import style
 
 UNSAFE_PACKAGES = {"setuptools", "distribute", "pip"}
 COMPILE_EXCLUDE_OPTIONS = {

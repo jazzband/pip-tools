@@ -7,6 +7,7 @@ import tempfile
 from contextlib import contextmanager
 from shutil import rmtree
 
+from click import progressbar
 from pip._internal.cache import WheelCache
 from pip._internal.cli.progress_bars import BAR_TYPES
 from pip._internal.commands import create_command
@@ -24,7 +25,6 @@ from pip._vendor import contextlib2
 from pip._vendor.requests import RequestException
 
 from .._compat import PIP_VERSION
-from ..click import progressbar
 from ..exceptions import NoCandidateFound
 from ..logging import log
 from ..utils import (
