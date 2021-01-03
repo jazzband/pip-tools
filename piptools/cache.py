@@ -12,8 +12,9 @@ _PEP425_PY_TAGS = {"cpython": "cp", "pypy": "pp", "ironpython": "ip", "jython": 
 
 
 def _implementation_name():
-    """similar to PEP 425, however the minor version is separated from the
-    major to differentation "3.10" and "31.0".
+    """
+    Similar to PEP 425, however the minor version is separated from the major to
+    differentiate "3.10" and "31.0".
     """
     implementation_name = platform.python_implementation().lower()
     implementation = _PEP425_PY_TAGS.get(implementation_name, "??")
