@@ -43,7 +43,7 @@ def key_from_req(req):
     return key
 
 
-def comment(text):
+def comment(text: str) -> str:
     return style(text, fg="green")
 
 
@@ -254,17 +254,6 @@ def get_hashes_from_ireq(ireq):
     return result
 
 
-def force_text(s):
-    """
-    Return a string representing `s`.
-    """
-    if s is None:
-        return ""
-    if not isinstance(s, str):
-        return str(s)
-    return s
-
-
 def get_compile_command(click_ctx):
     """
     Returns a normalized compile command depending on cli context.
@@ -294,7 +283,7 @@ def get_compile_command(click_ctx):
             # Re-add click-stripped '--' if any start with '-'
             if any(val.startswith("-") and val != "-" for val in value):
                 right_args.append("--")
-            right_args.extend([shlex.quote(force_text(val)) for val in value])
+            right_args.extend([shlex.quote(val) for val in value])
             continue
 
         # Get the latest option name (usually it'll be a long name)
@@ -343,8 +332,6 @@ def get_compile_command(click_ctx):
                     # Instead, we try to get more legible quoting via repr:
                     left_args.append(f"{option_long_name}={repr(val)}")
                 else:
-                    left_args.append(
-                        f"{option_long_name}={shlex.quote(force_text(val))}"
-                    )
+                    left_args.append(f"{option_long_name}={shlex.quote(str(val))}")
 
     return " ".join(["pip-compile", *sorted(left_args), *sorted(right_args)])

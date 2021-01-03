@@ -20,9 +20,10 @@ from pip._internal.utils.logging import indent_log, setup_logging
 from pip._internal.utils.misc import normalize_path
 from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
 from pip._internal.utils.urls import path_to_url, url_to_path
+from pip._vendor import contextlib2
 from pip._vendor.requests import RequestException
 
-from .._compat import PIP_VERSION, contextlib
+from .._compat import PIP_VERSION
 from ..click import progressbar
 from ..exceptions import NoCandidateFound
 from ..logging import log
@@ -407,7 +408,7 @@ class PyPIRepository(BaseRepository):
                     width=32,
                 )
             else:
-                context_manager = contextlib.nullcontext(chunks)
+                context_manager = contextlib2.nullcontext(chunks)
 
             # Iterate over the chosen context manager
             with context_manager as bar:
