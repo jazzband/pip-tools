@@ -31,3 +31,7 @@ repos:
     hooks:
     - id: bandit
       exclude: ^tests/
+  - repo: https://github.com/executablebooks/mdformat
+    rev: 0.5.3
+    hooks:
+    - id: mdformat
