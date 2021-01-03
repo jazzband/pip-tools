@@ -47,7 +47,6 @@ def _comes_from_as_string(ireq):
 class OutputWriter:
     def __init__(
         self,
-        src_files,
         dst_file,
         click_ctx,
         dry_run,
@@ -64,7 +63,6 @@ class OutputWriter:
         find_links,
         emit_find_links,
     ):
-        self.src_files = src_files
         self.dst_file = dst_file
         self.click_ctx = click_ctx
         self.dry_run = dry_run

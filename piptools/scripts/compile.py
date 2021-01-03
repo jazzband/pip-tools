@@ -461,7 +461,6 @@ def cli(
     ##
 
     writer = OutputWriter(
-        src_files,
         output_file,
         click_ctx=ctx,
         dry_run=dry_run,

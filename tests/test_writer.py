@@ -27,7 +27,6 @@ def writer(tmpdir_cwd):
 
     with cli.make_context("pip-compile", cli_args) as ctx:
         writer = OutputWriter(
-            src_files=["src_file", "src_file2"],
             dst_file=ctx.params["output_file"],
             click_ctx=ctx,
             dry_run=True,
