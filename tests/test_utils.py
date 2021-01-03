@@ -9,7 +9,6 @@ from piptools.utils import (
     as_tuple,
     dedup,
     flat_map,
-    force_text,
     format_requirement,
     format_specifier,
     get_compile_command,
@@ -201,13 +200,6 @@ def test_name_from_req_with_project_name(from_line):
     ireq = from_line("foo==1.8")
     ireq.req.project_name = "bar"
     assert name_from_req(ireq.req) == "bar"
-
-
-@pytest.mark.parametrize(
-    ("value", "expected_text"), ((None, ""), (42, "42"), ("foo", "foo"), ("bãr", "bãr"))
-)
-def test_force_text(value, expected_text):
-    assert force_text(value) == expected_text
 
 
 @pytest.mark.parametrize(

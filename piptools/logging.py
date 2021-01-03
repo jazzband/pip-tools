@@ -12,7 +12,7 @@ logging.basicConfig()
 class LogContext:
     stream = sys.stderr
 
-    def __init__(self, verbosity=0, indent_width=2):
+    def __init__(self, verbosity: int = 0, indent_width: int = 2):
         self.verbosity = verbosity
         self.current_indent = 0
         self._indent_width = indent_width
