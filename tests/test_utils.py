@@ -81,7 +81,7 @@ def test_format_requirement_ireq_with_hashes_and_markers(from_line):
     assert format_requirement(ireq, marker, hashes=ireq_hashes) == expected
 
 
-def test_format_specifier(from_line):
+def test_format_specifier(from_line, from_editable):
     ireq = from_line("foo")
     assert format_specifier(ireq) == "<any>"
 
@@ -92,6 +92,11 @@ def test_format_specifier(from_line):
     assert format_specifier(ireq) == "~=1.1,>1.2,<1.5"
     ireq = from_line("foo~=1.1,<1.5,>1.2")
     assert format_specifier(ireq) == "~=1.1,>1.2,<1.5"
+
+    ireq = from_editable("git+https://github.com/django/django.git#egg=django")
+    assert format_specifier(ireq) == "<any>"
+    ireq = from_editable("file:///home/user/package")
+    assert format_specifier(ireq) == "<any>"
 
 
 def test_as_tuple(from_line):
