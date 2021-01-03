@@ -2,7 +2,8 @@ import os
 import re
 from itertools import chain
 
-from .click import unstyle
+from click import unstyle
+
 from .logging import log
 from .utils import (
     UNSAFE_PACKAGES,

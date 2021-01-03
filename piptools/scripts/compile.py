@@ -5,13 +5,13 @@ import tempfile
 import warnings
 from typing import Any
 
+import click
 from click import Command
 from click.utils import safecall
 from pip._internal.commands import create_command
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 
-from .. import click
 from .._compat import parse_requirements
 from ..cache import DependencyCache
 from ..exceptions import PipToolsError

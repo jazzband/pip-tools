@@ -3,10 +3,11 @@ import os
 import shlex
 import sys
 
+import click
 from pip._internal.commands import create_command
 from pip._internal.utils.misc import get_installed_distributions
 
-from .. import click, sync
+from .. import sync
 from .._compat import parse_requirements
 from ..exceptions import PipToolsError
 from ..logging import log

@@ -1,6 +1,6 @@
 import locale
 
-from piptools.click import secho
+from click import secho
 
 # Needed for locale.getpreferredencoding(False) to work
 # in pip._internal.utils.encoding.auto_decode

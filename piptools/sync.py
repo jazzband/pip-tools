@@ -4,10 +4,10 @@ import sys
 import tempfile
 from subprocess import run  # nosec
 
+import click
 from pip._internal.commands.freeze import DEV_PKGS
 from pip._internal.utils.compat import stdlib_pkgs
 
-from . import click
 from .exceptions import IncompatibleRequirements
 from .logging import log
 from .utils import (
