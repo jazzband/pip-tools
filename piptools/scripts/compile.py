@@ -136,6 +136,12 @@ class BaseCommand(Command):
     help="Annotate results, indicating where dependencies come from",
 )
 @click.option(
+    "--split-annotate/--no-split-annotate",
+    is_flag=True,
+    default=False,
+    help="Split annotate result lines",
+)
+@click.option(
     "-U",
     "--upgrade",
     is_flag=True,
@@ -240,6 +246,7 @@ def cli(
     index,
     emit_trusted_host,
     annotate,
+    split_annotate,
     upgrade,
     upgrade_packages,
     output_file,
@@ -468,6 +475,7 @@ def cli(
         emit_index_url=emit_index_url,
         emit_trusted_host=emit_trusted_host,
         annotate=annotate,
+        split_annotate=split_annotate,
         generate_hashes=generate_hashes,
         default_index_url=repository.DEFAULT_INDEX_URL,
         index_urls=repository.finder.index_urls,

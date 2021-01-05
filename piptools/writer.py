@@ -55,6 +55,7 @@ class OutputWriter:
         emit_index_url,
         emit_trusted_host,
         annotate,
+        split_annotate,
         generate_hashes,
         default_index_url,
         index_urls,
@@ -71,6 +72,7 @@ class OutputWriter:
         self.emit_index_url = emit_index_url
         self.emit_trusted_host = emit_trusted_host
         self.annotate = annotate
+        self.split_annotate = split_annotate
         self.generate_hashes = generate_hashes
         self.default_index_url = default_index_url
         self.index_urls = index_urls
@@ -226,13 +228,17 @@ class OutputWriter:
             required_by.add(_comes_from_as_string(ireq))
         if required_by:
             required_by = sorted(required_by)
-            if len(required_by) == 1:
-                source = required_by[0]
-                annotation = "    # via " + source
-            else:
+            if self.split_annotate:
                 annotation_lines = ["    # via"]
                 for source in required_by:
                     annotation_lines.append("    #   " + source)
                 annotation = "\n".join(annotation_lines)
-            line = f"{line}\n{comment(annotation)}"
+                line = f"{line}\n{comment(annotation)}"
+            else:
+                annotation = ", ".join(required_by)
+                line = "{:24}{}{}".format(
+                    line,
+                    " \\\n    " if ireq_hashes else "  ",
+                    comment("# via " + annotation),
+                )
         return line
