@@ -12,8 +12,7 @@ from pip._internal.commands import create_command
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 
-from .._compat import parse_pipfile
-from .._compat import parse_requirements
+from .._compat import parse_pipfile, parse_requirements
 from ..cache import DependencyCache
 from ..exceptions import PipToolsError
 from ..locations import CACHE_DIR
@@ -224,6 +223,13 @@ class BaseCommand(Command):
     default=True,
     help="Add index URL to generated file",
 )
+@click.option(
+    "--pipfile-dev",
+    "--dev",
+    is_flag=True,
+    default=False,
+    help="Whether to include pipfile [dev-packages] section",
+)
 def cli(
     ctx,
     verbose,
@@ -254,6 +260,7 @@ def cli(
     cache_dir,
     pip_args,
     emit_index_url,
+    pipfile_dev,
 ):
     """Compiles requirements.txt from requirements.in specs."""
     log.verbosity = verbose - quiet
@@ -261,8 +268,8 @@ def cli(
     if len(src_files) == 0:
         if os.path.exists(DEFAULT_REQUIREMENTS_FILE):
             src_files = (DEFAULT_REQUIREMENTS_FILE,)
-        elif os.path.exists('Pipfile'):
-            src_files = ('Pipfile',)
+        elif os.path.exists("Pipfile"):
+            src_files = ("Pipfile",)
         elif os.path.exists("setup.py"):
             src_files = ("setup.py",)
         else:
@@ -278,7 +285,7 @@ def cli(
         if src_files == ("-",):
             raise click.BadParameter("--output-file is required if input is from stdin")
         # Use default requirements output file if there is a setup.py the source file
-        elif src_files == ("setup.py",) or src_files == ('Pipfile',):
+        elif src_files == ("setup.py",) or src_files == ("Pipfile",):
             file_name = DEFAULT_REQUIREMENTS_OUTPUT_FILE
         # An output file must be provided if there are multiple source files
         elif len(src_files) > 1:
@@ -376,7 +383,7 @@ def cli(
     constraints = []
     for src_file in src_files:
         is_setup_file = os.path.basename(src_file) == "setup.py"
-        is_pipfile = os.path.basename(src_file) == 'Pipfile'
+        is_pipfile = os.path.basename(src_file) == "Pipfile"
 
         if is_setup_file or src_file == "-":
             # pip requires filenames and not files. Since we want to support
@@ -407,10 +414,13 @@ def cli(
             constraints.extend(reqs)
 
         elif is_pipfile:
-            reqs = parse_pipfile(src_file,
-                                 finder=repository.finder,
-                                 session=repository.session,
-                                 options=repository.options)
+            reqs = parse_pipfile(
+                src_file,
+                finder=repository.finder,
+                session=repository.session,
+                options=repository.options,
+                pipfile_dev=pipfile_dev,
+            )
             constraints.extend(reqs)
 
         else:
