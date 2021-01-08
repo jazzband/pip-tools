@@ -13,7 +13,7 @@ from pip._internal.req.req_file import (
 )
 
 # noinspection PyUnresolvedReferences,PyPep8Naming
-from pipfile import __version__ as PIPFILE_VERSION
+from pipfile import __version__ as PIPFILE_VERSION  # noqa: F401
 from pipfile.api import PipfileParser
 
 from ..exceptions import IncompatibleRequirements
