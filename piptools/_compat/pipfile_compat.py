@@ -91,7 +91,9 @@ def _parse_requirement(line, filename=None, lineno=None):
     return ParsedLine(filename, lineno, args, Values(opts), False)
 
 
-def _parse_pipfile(filename, session, finder=None, options=None, constraint=False, pipfile_options=None):
+def _parse_pipfile(
+    filename, session, finder=None, options=None, constraint=False, pipfile_options=None
+):
     """
     :type filename: String
     :type session: PipSession
@@ -99,7 +101,7 @@ def _parse_pipfile(filename, session, finder=None, options=None, constraint=Fals
     :type options: Optional[optparse.Values]
     :type constraint: bool
     """
-    pipfile_dev = pipfile_options and pipfile_options.get('pipfile_dev', False)
+    pipfile_dev = pipfile_options and pipfile_options.get("pipfile_dev", False)
 
     parser = PipfileParser(filename)
     pipfile_contents = parser.parse()
@@ -117,7 +119,15 @@ def _parse_pipfile(filename, session, finder=None, options=None, constraint=Fals
 
 
 def parse_pipfile(
-    filename, session, finder=None, options=None, constraint=False, isolated=False, **pipfile_options
+    filename,
+    session,
+    finder=None,
+    options=None,
+    constraint=False,
+    isolated=False,
+    **pipfile_options,
 ):
-    for parsed_req in _parse_pipfile(filename, session, finder, options, constraint, pipfile_options):
+    for parsed_req in _parse_pipfile(
+        filename, session, finder, options, constraint, pipfile_options
+    ):
         yield install_req_from_parsed_requirement(parsed_req, isolated=isolated)
