@@ -92,3 +92,29 @@ def test_pipfile_requirement_environment_markers(pipfile_requirement, requiremen
     parsed_requirement = _handle_requirement(pipfile_requirement, filename=filename, lineno=line)
 
     assert requirement_to_dict(expected_requirement) == requirement_to_dict(parsed_requirement)
+
+
+@pytest.mark.parametrize(
+    "pipfile_requirement,requirement_as_text",
+    [
+        (('req_name', dict(file="/path/to/req.zip")), "/path/to/req.zip"),
+        (('req_name', dict(file="/path/to/req.whl")), "/path/to/req.whl"),
+        (('req_name', dict(git="https://github.com/nobody/nothing.git",
+                           ref='1.0')),
+         "git+https://github.com/nobody/nothing.git@1.0#egg=req_name"),
+        (('req_name', dict(git="git@github.com/nobody/nothing.git",
+                           ref='1.0')),
+         "git+git@github.com/nobody/nothing.git@1.0#egg=req_name"),
+    ]
+)
+def test_pipfile_requirement_noindex(pipfile_requirement, requirement_as_text):
+    line_parser = get_line_parser(None)
+
+    filename = "no file"
+    line = 0
+    args, opts = line_parser(requirement_as_text)
+
+    expected_requirement = handle_requirement_line(ParsedLine(filename, line, args, opts, False))
+    parsed_requirement = _handle_requirement(pipfile_requirement, filename=filename, lineno=line)
+
+    assert requirement_to_dict(expected_requirement) == requirement_to_dict(parsed_requirement)

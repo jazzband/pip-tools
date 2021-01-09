@@ -95,6 +95,13 @@ def _handle_requirement(line, options=None, filename=None, lineno=None):
             version=values['version'] if values.get('version', '*') != '*' else '',
             environment=";{}".format(",".join(values['markers'])) if values.get('markers') else '',
         )
+    elif 'file' in values:
+        args = values['file']
+    elif 'git' in values:
+        args = "git+{url}{ref}#egg={name}".format(
+            url=values['git'],
+            ref='@{}'.format(values['ref']) if values.get('ref') else '',
+            name=name)
 
     parsed_line = ParsedLine(filename, lineno, args, Values(opts), False)
     return handle_requirement_line(parsed_line, options)
