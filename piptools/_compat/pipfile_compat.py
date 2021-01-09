@@ -84,9 +84,16 @@ def _parse_requirement(line, filename=None, lineno=None):
     # set args/opts for the ParsedLine constructor below
     args, opts = None, None
     if isinstance(values, str):
-        args = name + values
+        args = name if values.strip() == "*" else name + values
     elif values.get("editable", False):
-        opts = dict(editables=["file://{}".format(os.path.abspath(values["path"]))])
+        opts = dict(editables=["{}".format(os.path.abspath(values["path"]))])
+    elif 'version' in values:
+        args = "{name}{extras}{version}{environment}".format(
+            name=name,
+            extras="[{}]".format(','.join(values['extras'])) if values.get('extras') else '',
+            version=values['version'] if values.get('version', '*') != '*' else '',
+            environment=";{}".format(",".join(values['markers'])) if values.get('markers') else '',
+        )
 
     return ParsedLine(filename, lineno, args, Values(opts), False)
 
