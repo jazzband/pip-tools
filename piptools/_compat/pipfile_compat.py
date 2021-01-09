@@ -13,6 +13,7 @@ from pip._internal.req.req_file import (
 )
 
 # noinspection PyUnresolvedReferences,PyPep8Naming
+from pip._internal.req.req_file import handle_requirement_line
 from pipfile import __version__ as PIPFILE_VERSION  # noqa: F401
 from pipfile.api import PipfileParser
 
@@ -77,7 +78,7 @@ def _handle_options(
         logger.debug("Unused options: %r", line)
 
 
-def _parse_requirement(line, filename=None, lineno=None):
+def _handle_requirement(line, options=None, filename=None, lineno=None):
     # A line is actually an item in a dictionary
     name, values = line
 
@@ -95,12 +96,11 @@ def _parse_requirement(line, filename=None, lineno=None):
             environment=";{}".format(",".join(values['markers'])) if values.get('markers') else '',
         )
 
-    return ParsedLine(filename, lineno, args, Values(opts), False)
+    parsed_line = ParsedLine(filename, lineno, args, Values(opts), False)
+    return handle_requirement_line(parsed_line, options)
 
 
-def _parse_pipfile(
-    filename, session, finder=None, options=None, constraint=False, pipfile_options=None
-):
+def _parse_pipfile(filename, session, finder=None, options=None, pipfile_options=None):
     """
     :type filename: String
     :type session: PipSession
@@ -119,10 +119,7 @@ def _parse_pipfile(
     groups = ("default", "develop") if pipfile_dev else ("default",)
     for group in groups:
         for line in pipfile_contents[group].items():
-            parsed_line = _parse_requirement(line, filename=filename)
-            yield handle_line(
-                parsed_line, options=options, finder=finder, session=session
-            )
+            yield _handle_requirement(line, filename=filename)
 
 
 def parse_pipfile(
