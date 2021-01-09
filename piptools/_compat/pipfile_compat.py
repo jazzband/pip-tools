@@ -8,12 +8,9 @@ from pip._internal.req.constructors import install_req_from_parsed_requirement
 from pip._internal.req.req_file import (
     ParsedLine,
     build_parser,
-    handle_line,
     handle_option_line,
+    handle_requirement_line,
 )
-
-# noinspection PyUnresolvedReferences,PyPep8Naming
-from pip._internal.req.req_file import handle_requirement_line
 from pipfile import __version__ as PIPFILE_VERSION  # noqa: F401
 from pipfile.api import PipfileParser
 
@@ -84,24 +81,35 @@ def _handle_requirement(line, options=None, filename=None, lineno=None):
 
     # set args/opts for the ParsedLine constructor below
     args, opts = None, None
+
     if isinstance(values, str):
         args = name if values.strip() == "*" else name + values
+
     elif values.get("editable", False):
         opts = dict(editables=["{}".format(os.path.abspath(values["path"]))])
-    elif 'version' in values:
+
+    elif "version" in values:
+        extras = (
+            "[{}]".format(",".join(values["extras"])) if values.get("extras") else ""
+        )
+        version = values["version"] if values.get("version", "*") != "*" else ""
+        env_markers = (
+            ";{}".format(",".join(values["markers"])) if values.get("markers") else ""
+        )
         args = "{name}{extras}{version}{environment}".format(
             name=name,
-            extras="[{}]".format(','.join(values['extras'])) if values.get('extras') else '',
-            version=values['version'] if values.get('version', '*') != '*' else '',
-            environment=";{}".format(",".join(values['markers'])) if values.get('markers') else '',
+            extras=extras,
+            version=version,
+            environment=env_markers,
         )
-    elif 'file' in values:
-        args = values['file']
-    elif 'git' in values:
-        args = "git+{url}{ref}#egg={name}".format(
-            url=values['git'],
-            ref='@{}'.format(values['ref']) if values.get('ref') else '',
-            name=name)
+
+    elif "file" in values:
+        args = values["file"]
+
+    elif "git" in values:
+        url = values["git"]
+        ref = "@{}".format(values["ref"]) if values.get("ref") else ""
+        args = f"git+{url}{ref}#egg={name}"
 
     parsed_line = ParsedLine(filename, lineno, args, Values(opts), False)
     return handle_requirement_line(parsed_line, options)
