@@ -165,11 +165,10 @@ def parse_pipfile(
     session,
     finder=None,
     options=None,
-    constraint=False,
     isolated=False,
     **pipfile_options,
 ):
     for parsed_req in _parse_pipfile(
-        filename, session, finder, options, constraint, pipfile_options
+        filename, session, finder, options, pipfile_options
     ):
         yield install_req_from_parsed_requirement(parsed_req, isolated=isolated)
