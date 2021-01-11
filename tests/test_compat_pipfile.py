@@ -1,11 +1,5 @@
-from optparse import Values
-
 import pytest
-from pip._internal.req.req_file import (
-    ParsedLine,
-    get_line_parser,
-    handle_requirement_line,
-)
+from pip._internal.req.req_file import ParsedRequirement
 
 from piptools._compat.pipfile_compat import _handle_requirement
 
@@ -25,13 +19,20 @@ def requirement_to_dict(requirement):
     ),
 )
 def test_pipfile_requirement(pipfile_requirement, requirement_as_text):
-    filename = "no file"
+    filename = "Pipfile"
     line = 0
-    expected_requirement = ParsedLine(
-        filename, line, requirement_as_text, Values(), False
+    comes_from = f"-r {filename} (line {line})"
+    line_source = f"line {line} of {filename}"
+
+    expected_requirement = ParsedRequirement(
+        requirement=requirement_as_text,
+        is_editable=False,
+        comes_from=comes_from,
+        constraint=False,
+        options={},
+        line_source=line_source,
     )
 
-    expected_requirement = handle_requirement_line(expected_requirement)
     parsed_requirement = _handle_requirement(
         pipfile_requirement, filename=filename, lineno=line
     )
@@ -43,18 +44,19 @@ def test_pipfile_requirement(pipfile_requirement, requirement_as_text):
 
 @pytest.mark.parametrize(
     ("pipfile_requirement", "requirement_as_text"),
-    ((("req_name", dict(editable=True, path="/path/to/req")), "-e /path/to/req"),),
+    ((("req_name", dict(editable=True, path="/path/to/req")), "/path/to/req"),),
 )
 def test_pipfile_requirement_editable(pipfile_requirement, requirement_as_text):
-    line_parser = get_line_parser(None)
-
-    filename = "no file"
+    filename = "Pipfile"
     line = 0
-    args, opts = line_parser(requirement_as_text)
-
-    expected_requirement = handle_requirement_line(
-        ParsedLine(filename, line, args, opts, False)
+    comes_from = f"-r {filename} (line {line})"
+    expected_requirement = ParsedRequirement(
+        requirement=requirement_as_text,
+        is_editable=True,
+        comes_from=comes_from,
+        constraint=False,
     )
+
     parsed_requirement = _handle_requirement(
         pipfile_requirement, filename=filename, lineno=line
     )
@@ -77,15 +79,20 @@ def test_pipfile_requirement_editable(pipfile_requirement, requirement_as_text):
     ),
 )
 def test_pipfile_requirement_extras(pipfile_requirement, requirement_as_text):
-    line_parser = get_line_parser(None)
-
-    filename = "no file"
+    filename = "Pipfile"
     line = 0
-    args, opts = line_parser(requirement_as_text)
+    comes_from = f"-r {filename} (line {line})"
+    line_source = f"line {line} of {filename}"
 
-    expected_requirement = handle_requirement_line(
-        ParsedLine(filename, line, args, opts, False)
+    expected_requirement = ParsedRequirement(
+        requirement=requirement_as_text,
+        is_editable=False,
+        comes_from=comes_from,
+        constraint=False,
+        options={},
+        line_source=line_source,
     )
+
     parsed_requirement = _handle_requirement(
         pipfile_requirement, filename=filename, lineno=line
     )
@@ -107,15 +114,20 @@ def test_pipfile_requirement_extras(pipfile_requirement, requirement_as_text):
 def test_pipfile_requirement_environment_markers(
     pipfile_requirement, requirement_as_text
 ):
-    line_parser = get_line_parser(None)
-
-    filename = "no file"
+    filename = "Pipfile"
     line = 0
-    args, opts = line_parser(requirement_as_text)
+    comes_from = f"-r {filename} (line {line})"
+    line_source = f"line {line} of {filename}"
 
-    expected_requirement = handle_requirement_line(
-        ParsedLine(filename, line, args, opts, False)
+    expected_requirement = ParsedRequirement(
+        requirement=requirement_as_text,
+        is_editable=False,
+        comes_from=comes_from,
+        constraint=False,
+        options={},
+        line_source=line_source,
     )
+
     parsed_requirement = _handle_requirement(
         pipfile_requirement, filename=filename, lineno=line
     )
@@ -141,15 +153,20 @@ def test_pipfile_requirement_environment_markers(
     ),
 )
 def test_pipfile_requirement_noindex(pipfile_requirement, requirement_as_text):
-    line_parser = get_line_parser(None)
-
-    filename = "no file"
+    filename = "Pipfile"
     line = 0
-    args, opts = line_parser(requirement_as_text)
+    comes_from = f"-r {filename} (line {line})"
+    line_source = f"line {line} of {filename}"
 
-    expected_requirement = handle_requirement_line(
-        ParsedLine(filename, line, args, opts, False)
+    expected_requirement = ParsedRequirement(
+        requirement=requirement_as_text,
+        is_editable=False,
+        comes_from=comes_from,
+        constraint=False,
+        options={},
+        line_source=line_source,
     )
+
     parsed_requirement = _handle_requirement(
         pipfile_requirement, filename=filename, lineno=line
     )
