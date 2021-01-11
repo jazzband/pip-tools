@@ -46,8 +46,12 @@ def test_pipfile_requirement(pipfile_requirement, requirement_as_text):
 
 @pytest.mark.parametrize(
     ("pipfile_requirement", "requirement_as_text"),
-    ((("req_name", dict(editable=True, path="/path/to/req")), os.path.join("/","path","to","req")),
-     ),
+    (
+        (
+            ("req_name", dict(editable=True, path="/path/to/req")),
+            os.path.abspath("/path/to/req"),
+        ),
+    ),
 )
 def test_pipfile_requirement_editable(pipfile_requirement, requirement_as_text):
     filename = "Pipfile"
