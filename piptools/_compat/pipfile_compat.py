@@ -15,6 +15,7 @@ from pipfile import __version__ as PIPFILE_VERSION  # noqa: F401
 from pipfile.api import PipfileParser
 
 from ..exceptions import IncompatibleRequirements
+from . import PIP_VERSION
 
 logger = logging.getLogger(__name__)
 
@@ -111,8 +112,30 @@ def _handle_requirement(line, options=None, filename=None, lineno=None):
         ref = "@{}".format(values["ref"]) if values.get("ref") else ""
         args = f"git+{url}{ref}#egg={name}"
 
-    parsed_line = ParsedLine(filename, lineno, args, Values(opts), False)
+    parsed_line = _build_parsed_line(filename, lineno, args, opts)
     return handle_requirement_line(parsed_line, options)
+
+
+def _build_parsed_line(filename, lineno, args, opts):
+    if PIP_VERSION < (20, 3):
+        parsed_line = ParsedLine(
+            filename=filename,
+            lineno=lineno,
+            comes_from=None,
+            args=args,
+            opts=Values(opts),
+            constraint=False,
+        )
+    else:
+        parsed_line = ParsedLine(
+            filename=filename,
+            lineno=lineno,
+            args=args,
+            opts=Values(opts),
+            constraint=False,
+        )
+
+    return parsed_line
 
 
 def _parse_pipfile(filename, session, finder=None, options=None, pipfile_options=None):
