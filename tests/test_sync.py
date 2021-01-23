@@ -409,7 +409,7 @@ def test_sync_dry_run(
         "  click==4.0",
         "  django==1.8",
     ]
-    captured.err == ""
+    assert captured.err == ""
 
 
 @pytest.mark.parametrize(
