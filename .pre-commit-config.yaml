@@ -30,4 +30,5 @@ repos:
     rev: 1.7.0
     hooks:
     - id: bandit
+      args: [--ini, .bandit]
       exclude: ^tests/

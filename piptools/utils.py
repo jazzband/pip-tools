@@ -1,12 +1,15 @@
 import shlex
 from collections import OrderedDict
 from itertools import chain
+from typing import Any, Iterable, Iterator, Optional, Set
 
-from click import style
+import click
 from click.utils import LazyFile
+from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 from pip._internal.vcs import is_url
+from pip._vendor.packaging.markers import Marker
 
 UNSAFE_PACKAGES = {"setuptools", "distribute", "pip"}
 COMPILE_EXCLUDE_OPTIONS = {
@@ -21,7 +24,7 @@ COMPILE_EXCLUDE_OPTIONS = {
 }
 
 
-def key_from_ireq(ireq):
+def key_from_ireq(ireq: InstallRequirement) -> str:
     """Get a standardized key for an InstallRequirement."""
     if ireq.req is None and ireq.link is not None:
         return str(ireq.link)
@@ -29,7 +32,7 @@ def key_from_ireq(ireq):
         return key_from_req(ireq.req)
 
 
-def key_from_req(req):
+def key_from_req(req: InstallRequirement) -> str:
     """Get an all-lowercase version of the requirement's name."""
     if hasattr(req, "key"):
         # from pkg_resources, such as installed dists for pip-sync
@@ -37,13 +40,13 @@ def key_from_req(req):
     else:
         # from packaging, such as install requirements from requirements.txt
         key = req.name
-
+    assert isinstance(key, str)
     key = key.replace("_", "-").lower()
     return key
 
 
 def comment(text: str) -> str:
-    return style(text, fg="green")
+    return click.style(text, fg="green")
 
 
 def make_install_requirement(name, version, extras, constraint=False):
@@ -58,7 +61,7 @@ def make_install_requirement(name, version, extras, constraint=False):
     )
 
 
-def is_url_requirement(ireq):
+def is_url_requirement(ireq: InstallRequirement) -> bool:
     """
     Return True if requirement was specified as a path or URL.
     ireq.original_link will have been set by InstallRequirement.__init__
@@ -66,7 +69,11 @@ def is_url_requirement(ireq):
     return bool(ireq.original_link)
 
 
-def format_requirement(ireq, marker=None, hashes=None):
+def format_requirement(
+    ireq: InstallRequirement,
+    marker: Optional[Marker] = None,
+    hashes: Optional[Set[str]] = None,
+) -> str:
     """
     Generic formatter for pretty printing InstallRequirements to the terminal
     in a less verbose way than using its `__str__` method.
@@ -223,7 +230,7 @@ def lookup_table(values, key=None, keyval=None, unique=False, use_lists=False):
     return dict(lut)
 
 
-def dedup(iterable):
+def dedup(iterable: Iterable[Any]) -> Iterator[Any]:
     """Deduplicate an iterable object like iter(set(iterable)) but
     order-preserved.
     """
@@ -253,7 +260,7 @@ def get_hashes_from_ireq(ireq):
     return result
 
 
-def get_compile_command(click_ctx):
+def get_compile_command(click_ctx: click.Context) -> str:
     """
     Returns a normalized compile command depending on cli context.
 
@@ -284,6 +291,8 @@ def get_compile_command(click_ctx):
                 right_args.append("--")
             right_args.extend([shlex.quote(val) for val in value])
             continue
+
+        assert isinstance(option, click.Option)
 
         # Get the latest option name (usually it'll be a long name)
         option_long_name = option.opts[-1]
