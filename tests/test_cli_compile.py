@@ -38,7 +38,17 @@ def test_command_line_overrides_pip_conf(pip_with_index_conf, runner):
     assert "Using indexes:\n  http://override.com" in out.stderr
 
 
-def test_command_line_setuptools_read(pip_conf, runner):
+def test_command_line_setuptools_read(make_pip_conf, runner):
+    make_pip_conf(
+        dedent(
+            f"""\
+            [global]
+            disable-pip-version-check = True
+            find-links = {MINIMAL_WHEELS_PATH}
+            """
+        )
+    )
+
     with open("setup.py", "w") as package:
         package.write(
             dedent(
@@ -86,11 +96,20 @@ def test_command_line_setuptools_read(pip_conf, runner):
     ),
 )
 def test_command_line_setuptools_output_file(
-    pip_conf, runner, options, expected_output_file
+    make_pip_conf, runner, options, expected_output_file
 ):
     """
     Test the output files for setup.py as a requirement file.
     """
+    make_pip_conf(
+        dedent(
+            f"""\
+            [global]
+            find-links = {MINIMAL_WHEELS_PATH}
+            """
+        )
+    )
+
     with open("setup.py", "w") as package:
         package.write(
             dedent(
