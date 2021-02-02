@@ -355,7 +355,7 @@ def cli(
                 req.comes_from = comes_from
             constraints.extend(reqs)
         elif is_setup_file:
-            dist = meta.load(".")
+            dist = meta.load(os.path.dirname(os.path.abspath(src_file)))
             comes_from = f"{dist.metadata.get_all('Name')[0]} ({src_file})"
             constraints.extend(
                 [
