@@ -386,7 +386,11 @@ def cli(
     constraints = [
         req
         for req in constraints
-        if req.markers is None or req.markers.evaluate(dict(extra=None))
+        if req.markers is None
+        # We explicitly set extra=None to filter out optional requirements
+        # since evaluating an extra marker with no environment raises UndefinedEnvironmentName
+        # (see https://packaging.pypa.io/en/latest/markers.html#usage)
+        or req.markers.evaluate(dict(extra=None))
     ]
 
     log.debug("Using indexes:")
