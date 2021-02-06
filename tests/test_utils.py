@@ -15,6 +15,7 @@ from piptools.utils import (
     get_hashes_from_ireq,
     is_pinned_requirement,
     is_url_requirement,
+    lookup_table,
     name_from_req,
 )
 
@@ -346,3 +347,26 @@ def test_get_compile_command_sort_args(tmpdir_cwd):
             "--no-annotate --no-emit-index-url --no-emit-trusted-host "
             "requirements.in setup.py"
         )
+
+
+@pytest.mark.parametrize(
+    ("values", "key"),
+    (
+        pytest.param(
+            ("foo", "bar", "baz", "qux", "quux"), lambda s: s[0], id="with key function"
+        ),
+        pytest.param(
+            (("f", "foo"), ("b", "bar"), ("b", "baz"), ("q", "qux"), ("q", "quux")),
+            None,
+            id="without key function",
+        ),
+    ),
+)
+def test_lookup_table(values, key):
+    expected = {"b": {"bar", "baz"}, "f": {"foo"}, "q": {"quux", "qux"}}
+    assert lookup_table(values, key) == expected
+
+
+def test_lookup_table_requires_key(values, key):
+    with pytest.raises(AssertionError, match="^key function must be specified$"):
+        assert lookup_table(("foo", "bar", "baz"))

@@ -1,7 +1,18 @@
+import collections
 import shlex
-from collections import OrderedDict
 from itertools import chain
-from typing import Any, Iterable, Iterator, Optional, Set, Tuple
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import click
 from click.utils import LazyFile
@@ -11,6 +22,9 @@ from pip._internal.utils.misc import redact_auth_from_url
 from pip._internal.vcs import is_url
 from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.specifiers import SpecifierSet
+
+_KT = TypeVar("_KT")
+_VT = TypeVar("_VT")
 
 UNSAFE_PACKAGES = {"setuptools", "distribute", "pip"}
 COMPILE_EXCLUDE_OPTIONS = {
@@ -155,81 +169,25 @@ def flat_map(fn, collection):
     return chain.from_iterable(map(fn, collection))
 
 
-def lookup_table(values, key=None, keyval=None, unique=False, use_lists=False):
+def lookup_table(
+    values: Iterable[Union[_VT, Tuple[_KT, _VT]]],
+    key: Optional[Callable[[_VT], _KT]] = None,
+) -> Dict[_KT, Set[_VT]]:
     """
     Builds a dict-based lookup table (index) elegantly.
-
-    Supports building normal and unique lookup tables.  For example:
-
-    >>> assert lookup_table(
-    ...     ['foo', 'bar', 'baz', 'qux', 'quux'], lambda s: s[0]) == {
-    ...     'b': {'bar', 'baz'},
-    ...     'f': {'foo'},
-    ...     'q': {'quux', 'qux'}
-    ... }
-
-    For key functions that uniquely identify values, set unique=True:
-
-    >>> assert lookup_table(
-    ...     ['foo', 'bar', 'baz', 'qux', 'quux'], lambda s: s[0],
-    ...     unique=True) == {
-    ...     'b': 'baz',
-    ...     'f': 'foo',
-    ...     'q': 'quux'
-    ... }
-
-    For the values represented as lists, set use_lists=True:
-
-    >>> assert lookup_table(
-    ...     ['foo', 'bar', 'baz', 'qux', 'quux'], lambda s: s[0],
-    ...     use_lists=True) == {
-    ...     'b': ['bar', 'baz'],
-    ...     'f': ['foo'],
-    ...     'q': ['qux', 'quux']
-    ... }
-
-    The values of the resulting lookup table will be lists, not sets.
-
-    For extra power, you can even change the values while building up the LUT.
-    To do so, use the `keyval` function instead of the `key` arg:
-
-    >>> assert lookup_table(
-    ...     ['foo', 'bar', 'baz', 'qux', 'quux'],
-    ...     keyval=lambda s: (s[0], s[1:])) == {
-    ...     'b': {'ar', 'az'},
-    ...     'f': {'oo'},
-    ...     'q': {'uux', 'ux'}
-    ... }
-
     """
-    if keyval is None:
-        if key is None:
 
-            def keyval(v):
-                return v
+    def keyval(v: Union[_VT, Tuple[_KT, _VT]]) -> Tuple[_KT, _VT]:
+        if isinstance(v, tuple):
+            return v[0], v[1]
 
-        else:
+        assert key is not None, "key function must be specified"
+        return key(v), v
 
-            def keyval(v):
-                return (key(v), v)
-
-    if unique:
-        return dict(keyval(v) for v in values)
-
-    lut = {}
+    lut: Dict[_KT, Set[_VT]] = collections.defaultdict(set)
     for value in values:
         k, v = keyval(value)
-        try:
-            s = lut[k]
-        except KeyError:
-            if use_lists:
-                s = lut[k] = list()
-            else:
-                s = lut[k] = set()
-        if use_lists:
-            s.append(v)
-        else:
-            s.add(v)
+        lut[k].add(v)
     return dict(lut)
 
 
@@ -237,7 +195,7 @@ def dedup(iterable: Iterable[Any]) -> Iterator[Any]:
     """Deduplicate an iterable object like iter(set(iterable)) but
     order-preserved.
     """
-    return iter(OrderedDict.fromkeys(iterable))
+    return iter(collections.OrderedDict.fromkeys(iterable))
 
 
 def name_from_req(req):
