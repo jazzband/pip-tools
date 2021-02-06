@@ -1,7 +1,7 @@
 import shlex
 from collections import OrderedDict
 from itertools import chain
-from typing import Any, Iterable, Iterator, Optional, Set
+from typing import Any, Iterable, Iterator, Optional, Set, Tuple
 
 import click
 from click.utils import LazyFile
@@ -10,6 +10,7 @@ from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 from pip._internal.vcs import is_url
 from pip._vendor.packaging.markers import Marker
+from pip._vendor.packaging.specifiers import SpecifierSet
 
 UNSAFE_PACKAGES = {"setuptools", "distribute", "pip"}
 COMPILE_EXCLUDE_OPTIONS = {
@@ -95,18 +96,20 @@ def format_requirement(
     return line
 
 
-def format_specifier(ireq):
+def format_specifier(ireq: InstallRequirement) -> str:
     """
     Generic formatter for pretty printing the specifier part of
     InstallRequirements to the terminal.
     """
     # TODO: Ideally, this is carried over to the pip library itself
-    specs = ireq.specifier if ireq.req is not None else []
-    specs = sorted(specs, key=lambda x: x.version)
+    specs = ireq.specifier if ireq.req is not None else SpecifierSet()
+    # FIXME: remove ignore type marker once the following issue get fixed
+    #        https://github.com/python/mypy/issues/9656
+    specs = sorted(specs, key=lambda x: x.version)  # type: ignore
     return ",".join(str(s) for s in specs) or "<any>"
 
 
-def is_pinned_requirement(ireq):
+def is_pinned_requirement(ireq: InstallRequirement) -> bool:
     """
     Returns whether an InstallRequirement is a "pinned" requirement.
 
@@ -133,7 +136,7 @@ def is_pinned_requirement(ireq):
     return spec.operator in {"==", "==="} and not spec.version.endswith(".*")
 
 
-def as_tuple(ireq):
+def as_tuple(ireq: InstallRequirement) -> Tuple[str, str, Tuple[str, ...]]:
     """
     Pulls out the (name: str, version:str, extras:(str)) tuple from
     the pinned InstallRequirement.

@@ -2,7 +2,9 @@ import json
 import os
 import platform
 import sys
+from typing import Dict, Sequence, Set, Tuple
 
+from pip._internal.req.req_install import InstallRequirement
 from pip._vendor.packaging.requirements import Requirement
 
 from .exceptions import PipToolsError
@@ -76,7 +78,7 @@ class DependencyCache:
             self.read_cache()
         return self._cache
 
-    def as_cache_key(self, ireq):
+    def as_cache_key(self, ireq: InstallRequirement) -> Tuple[str, str]:
         """
         Given a requirement, return its cache key. This behavior is a little weird
         in order to allow backwards compatibility with cache files. For a requirement
@@ -103,13 +105,13 @@ class DependencyCache:
         except FileNotFoundError:
             self._cache = {}
 
-    def write_cache(self):
+    def write_cache(self) -> None:
         """Writes the cache to disk as JSON."""
         doc = {"__format__": 1, "dependencies": self._cache}
         with open(self._cache_file, "w") as f:
             json.dump(doc, f, sort_keys=True)
 
-    def clear(self):
+    def clear(self) -> None:
         self._cache = {}
         self.write_cache()
 
@@ -127,7 +129,9 @@ class DependencyCache:
         self.cache[pkgname][pkgversion_and_extras] = values
         self.write_cache()
 
-    def reverse_dependencies(self, ireqs):
+    def reverse_dependencies(
+        self, ireqs: Sequence[InstallRequirement]
+    ) -> Dict[str, Set[str]]:
         """
         Returns a lookup table of reverse dependencies for all the given ireqs.
 
@@ -139,7 +143,9 @@ class DependencyCache:
         ireqs_as_cache_values = [self.as_cache_key(ireq) for ireq in ireqs]
         return self._reverse_dependencies(ireqs_as_cache_values)
 
-    def _reverse_dependencies(self, cache_keys):
+    def _reverse_dependencies(
+        self, cache_keys: Sequence[Tuple[str, str]]
+    ) -> Dict[str, Set[str]]:
         """
         Returns a lookup table of reverse dependencies for all the given cache keys.
 
