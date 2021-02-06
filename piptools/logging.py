@@ -1,6 +1,7 @@
 import contextlib
 import logging
 import sys
+from typing import Any
 
 import click
 
@@ -17,7 +18,7 @@ class LogContext:
         self.current_indent = 0
         self._indent_width = indent_width
 
-    def log(self, message, *args, **kwargs):
+    def log(self, message: str, *args: Any, **kwargs: Any) -> None:
         kwargs.setdefault("err", True)
         prefix = " " * self.current_indent
         click.secho(prefix + message, *args, **kwargs)
@@ -26,11 +27,11 @@ class LogContext:
         if self.verbosity >= 1:
             self.log(*args, **kwargs)
 
-    def info(self, *args, **kwargs):
+    def info(self, *args: Any, **kwargs: Any) -> None:
         if self.verbosity >= 0:
             self.log(*args, **kwargs)
 
-    def warning(self, *args, **kwargs):
+    def warning(self, *args: Any, **kwargs: Any) -> None:
         kwargs.setdefault("fg", "yellow")
         self.log(*args, **kwargs)
 
