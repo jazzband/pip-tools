@@ -15,7 +15,6 @@ jobs:
       fail-fast: false
       matrix:
         toxenv:
-          - checkqa
           - readme
         python-version:
           - "3.x"
