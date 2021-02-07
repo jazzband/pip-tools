@@ -1,15 +1,13 @@
-# coding: utf-8
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import itertools
 import os
 import shlex
 import sys
 
+import click
 from pip._internal.commands import create_command
 from pip._internal.utils.misc import get_installed_distributions
 
-from .. import click, sync
+from .. import sync
 from .._compat import parse_requirements
 from ..exceptions import PipToolsError
 from ..logging import log
@@ -127,17 +125,20 @@ def cli(
     installed_dists = get_installed_distributions(skip=[], user_only=user_only)
     to_install, to_uninstall = sync.diff(requirements, installed_dists)
 
-    install_flags = _compose_install_flags(
-        finder,
-        no_index=no_index,
-        index_url=index_url,
-        extra_index_url=extra_index_url,
-        trusted_host=trusted_host,
-        find_links=find_links,
-        user_only=user_only,
-        cert=cert,
-        client_cert=client_cert,
-    ) + shlex.split(pip_args or "")
+    install_flags = (
+        _compose_install_flags(
+            finder,
+            no_index=no_index,
+            index_url=index_url,
+            extra_index_url=extra_index_url,
+            trusted_host=trusted_host,
+            find_links=find_links,
+            user_only=user_only,
+            cert=cert,
+            client_cert=client_cert,
+        )
+        + shlex.split(pip_args or "")
+    )
     sys.exit(
         sync.sync(
             to_install,

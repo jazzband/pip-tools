@@ -1,14 +1,12 @@
-# coding: utf-8
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import copy
 from functools import partial
 from itertools import chain, count, groupby
 
+import click
+from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.req.req_tracker import update_env_context_manager
 
-from . import click
 from .logging import log
 from .utils import (
     UNSAFE_PACKAGES,
@@ -23,28 +21,30 @@ green = partial(click.style, fg="green")
 magenta = partial(click.style, fg="magenta")
 
 
-class RequirementSummary(object):
+class RequirementSummary:
     """
     Summary of a requirement's properties for comparison purposes.
     """
 
-    def __init__(self, ireq):
+    def __init__(self, ireq: InstallRequirement):
         self.req = ireq.req
         self.key = key_from_ireq(ireq)
         self.extras = frozenset(ireq.extras)
         self.specifier = ireq.specifier
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, RequirementSummary):
+            return NotImplemented
         return (
             self.key == other.key
             and self.specifier == other.specifier
             and self.extras == other.extras
         )
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.key, self.specifier, self.extras))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return repr((self.key, str(self.specifier), sorted(self.extras)))
 
 
@@ -76,9 +76,7 @@ def combine_install_requirements(repository, ireqs):
             repository.copy_ireq_dependencies(ireq, combined_ireq)
         combined_ireq.constraint &= ireq.constraint
         # Return a sorted, de-duped tuple of extras
-        combined_ireq.extras = tuple(
-            sorted(set(tuple(combined_ireq.extras) + tuple(ireq.extras)))
-        )
+        combined_ireq.extras = tuple(sorted({*combined_ireq.extras, *ireq.extras}))
 
     # InstallRequirements objects are assumed to come from only one source, and
     # so they support only a single comes_from entry. This function breaks this
@@ -102,7 +100,7 @@ def combine_install_requirements(repository, ireqs):
     return combined_ireq
 
 
-class Resolver(object):
+class Resolver:
     def __init__(
         self,
         constraints,
@@ -156,8 +154,7 @@ class Resolver(object):
             self.repository.clear_caches()
 
         # Ignore existing packages
-        # NOTE: str() wrapping necessary for Python 2/3 compat
-        with update_env_context_manager(PIP_EXISTS_ACTION=str("i")):
+        with update_env_context_manager(PIP_EXISTS_ACTION="i"):
             for current_round in count(start=1):  # pragma: no branch
                 if current_round > max_rounds:
                     raise RuntimeError(
@@ -168,7 +165,7 @@ class Resolver(object):
                     )
 
                 log.debug("")
-                log.debug(magenta("{:^60}".format("ROUND {}".format(current_round))))
+                log.debug(magenta(f"{f'ROUND {current_round}':^60}"))
                 # If a package version (foo==2.0) was built in a previous round,
                 # and in this round a different version of foo needs to be built
                 # (i.e. foo==1.0), the directory will exist already, which will
@@ -291,11 +288,11 @@ class Resolver(object):
             log.debug("New dependencies found in this round:")
             with log.indentation():
                 for new_dependency in sorted(diff, key=key_from_ireq):
-                    log.debug("adding {}".format(new_dependency))
+                    log.debug(f"adding {new_dependency}")
             log.debug("Removed dependencies in this round:")
             with log.indentation():
                 for removed_dependency in sorted(removed, key=key_from_ireq):
-                    log.debug("removing {}".format(removed_dependency))
+                    log.debug(f"removing {removed_dependency}")
 
         # Store the last round's results in the their_constraints
         self.their_constraints = theirs
@@ -365,13 +362,10 @@ class Resolver(object):
             return
 
         if ireq.editable or is_url_requirement(ireq):
-            for dependency in self.repository.get_dependencies(ireq):
-                yield dependency
+            yield from self.repository.get_dependencies(ireq)
             return
         elif not is_pinned_requirement(ireq):
-            raise TypeError(
-                "Expected pinned or editable requirement, got {}".format(ireq)
-            )
+            raise TypeError(f"Expected pinned or editable requirement, got {ireq}")
 
         # Now, either get the dependencies from the dependency cache (for
         # speed), or reach out to the external repository to
@@ -379,7 +373,7 @@ class Resolver(object):
         # from there
         if ireq not in self.dependency_cache:
             log.debug(
-                "{} not in cache, need to check index".format(format_requirement(ireq)),
+                f"{format_requirement(ireq)} not in cache, need to check index",
                 fg="yellow",
             )
             dependencies = self.repository.get_dependencies(ireq)

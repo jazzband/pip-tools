@@ -2,12 +2,15 @@ import collections
 import os
 import sys
 import tempfile
-from subprocess import check_call  # nosec
+from subprocess import run  # nosec
+from typing import Deque, Dict, Iterable, List, Optional, Set, Tuple, ValuesView
 
+import click
 from pip._internal.commands.freeze import DEV_PKGS
+from pip._internal.req import InstallRequirement
 from pip._internal.utils.compat import stdlib_pkgs
+from pip._vendor.packaging.requirements import Requirement
 
-from . import click
 from .exceptions import IncompatibleRequirements
 from .logging import log
 from .utils import (
@@ -19,14 +22,18 @@ from .utils import (
     key_from_req,
 )
 
-PACKAGES_TO_IGNORE = (
-    ["-markerlib", "pip", "pip-tools", "pip-review", "pkg-resources"]
-    + list(stdlib_pkgs)
-    + list(DEV_PKGS)
-)
+PACKAGES_TO_IGNORE = [
+    "-markerlib",
+    "pip",
+    "pip-tools",
+    "pip-review",
+    "pkg-resources",
+    *stdlib_pkgs,
+    *DEV_PKGS,
+]
 
 
-def dependency_tree(installed_keys, root_key):
+def dependency_tree(installed_keys: Dict[str, Requirement], root_key: str) -> Set[str]:
     """
     Calculate the dependency tree for the package `root_key` and return
     a collection of all its dependencies.  Uses a DFS traversal algorithm.
@@ -36,7 +43,7 @@ def dependency_tree(installed_keys, root_key):
     `root_key` should be the key to return the dependency tree for.
     """
     dependencies = set()
-    queue = collections.deque()
+    queue: Deque[Requirement] = collections.deque()
 
     if root_key in installed_keys:
         dep = installed_keys[root_key]
@@ -61,7 +68,7 @@ def dependency_tree(installed_keys, root_key):
     return dependencies
 
 
-def get_dists_to_ignore(installed):
+def get_dists_to_ignore(installed: Iterable[Requirement]) -> List[str]:
     """
     Returns a collection of package names to ignore when performing pip-sync,
     based on the currently installed environment.  For example, when pip-tools
@@ -76,8 +83,10 @@ def get_dists_to_ignore(installed):
     )
 
 
-def merge(requirements, ignore_conflicts):
-    by_key = {}
+def merge(
+    requirements: InstallRequirement, ignore_conflicts: bool
+) -> ValuesView[Tuple[str, InstallRequirement]]:
+    by_key: Dict[str, InstallRequirement] = {}
 
     for ireq in requirements:
         # Limitation: URL requirements are merged by precise string match, so
@@ -99,7 +108,7 @@ def merge(requirements, ignore_conflicts):
     return by_key.values()
 
 
-def diff_key_from_ireq(ireq):
+def diff_key_from_ireq(ireq: InstallRequirement) -> str:
     """
     Calculate a key for comparing a compiled requirement with installed modules.
     For URL requirements, only provide a useful key if the url includes
@@ -119,7 +128,10 @@ def diff_key_from_ireq(ireq):
     return key_from_ireq(ireq)
 
 
-def diff(compiled_requirements, installed_dists):
+def diff(
+    compiled_requirements: Iterable[InstallRequirement],
+    installed_dists: Iterable[Requirement],
+) -> Tuple[Set[InstallRequirement], Set[str]]:
     """
     Calculate which packages should be installed or uninstalled, given a set
     of compiled requirements and a list of currently installed modules.
@@ -148,7 +160,13 @@ def diff(compiled_requirements, installed_dists):
     return (to_install, to_uninstall)
 
 
-def sync(to_install, to_uninstall, dry_run=False, install_flags=None, ask=False):
+def sync(
+    to_install: List[InstallRequirement],
+    to_uninstall: List[InstallRequirement],
+    dry_run: bool = False,
+    install_flags: Optional[List[str]] = None,
+    ask: bool = False,
+) -> int:
     """
     Install and uninstalls the given sets of modules.
     """
@@ -169,12 +187,12 @@ def sync(to_install, to_uninstall, dry_run=False, install_flags=None, ask=False)
         if to_uninstall:
             click.echo("Would uninstall:")
             for pkg in sorted(to_uninstall):
-                click.echo("  {}".format(pkg))
+                click.echo(f"  {pkg}")
 
         if to_install:
             click.echo("Would install:")
             for ireq in sorted(to_install, key=key_from_ireq):
-                click.echo("  {}".format(format_requirement(ireq)))
+                click.echo(f"  {format_requirement(ireq)}")
 
         exit_code = 1
 
@@ -184,10 +202,17 @@ def sync(to_install, to_uninstall, dry_run=False, install_flags=None, ask=False)
 
     if not dry_run:
         if to_uninstall:
-            check_call(  # nosec
-                [sys.executable, "-m", "pip", "uninstall", "-y"]
-                + pip_flags
-                + sorted(to_uninstall)
+            run(  # nosec
+                [
+                    sys.executable,
+                    "-m",
+                    "pip",
+                    "uninstall",
+                    "-y",
+                    *pip_flags,
+                    *sorted(to_uninstall),
+                ],
+                check=True,
             )
 
         if to_install:
@@ -205,10 +230,18 @@ def sync(to_install, to_uninstall, dry_run=False, install_flags=None, ask=False)
             tmp_req_file.close()
 
             try:
-                check_call(  # nosec
-                    [sys.executable, "-m", "pip", "install", "-r", tmp_req_file.name]
-                    + pip_flags
-                    + install_flags
+                run(  # nosec
+                    [
+                        sys.executable,
+                        "-m",
+                        "pip",
+                        "install",
+                        "-r",
+                        tmp_req_file.name,
+                        *pip_flags,
+                        *install_flags,
+                    ],
+                    check=True,
                 )
             finally:
                 os.unlink(tmp_req_file.name)

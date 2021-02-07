@@ -18,8 +18,6 @@ jobs:
           - MacOS
         python-version:
           - 3.9
-          - 2.7
-          - 3.5
           - 3.6
           - 3.7
           - 3.8
@@ -55,7 +53,6 @@ jobs:
           # - Windows
         python-version:
           - pypy3
-          - pypy2
         pip-version:
           - latest
     env:

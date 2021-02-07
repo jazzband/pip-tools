@@ -35,10 +35,10 @@ from .utils import looks_like_ci
 
 class FakeRepository(BaseRepository):
     def __init__(self):
-        with open("tests/test_data/fake-index.json", "r") as f:
+        with open("tests/test_data/fake-index.json") as f:
             self.index = json.load(f)
 
-        with open("tests/test_data/fake-editables.json", "r") as f:
+        with open("tests/test_data/fake-editables.json") as f:
             self.editables = json.load(f)
 
     @contextmanager
@@ -97,7 +97,7 @@ class FakeRepository(BaseRepository):
         pass
 
 
-class FakeInstalledDistribution(object):
+class FakeInstalledDistribution:
     def __init__(self, line, deps=None):
         if deps is None:
             deps = []
@@ -135,13 +135,13 @@ def repository():
 def pypi_repository(tmpdir):
     return PyPIRepository(
         ["--index-url", PyPIRepository.DEFAULT_INDEX_URL],
-        cache_dir=str(tmpdir / "pypi-repo"),
+        cache_dir=(tmpdir / "pypi-repo"),
     )
 
 
 @pytest.fixture
 def depcache(tmpdir):
-    return DependencyCache(str(tmpdir / "dep-cache"))
+    return DependencyCache(tmpdir / "dep-cache")
 
 
 @pytest.fixture
@@ -207,13 +207,11 @@ def make_pip_conf(tmpdir, monkeypatch):
 def pip_conf(make_pip_conf):
     return make_pip_conf(
         dedent(
-            """\
+            f"""\
             [global]
             no-index = true
-            find-links = {wheels_path}
-            """.format(
-                wheels_path=MINIMAL_WHEELS_PATH
-            )
+            find-links = {MINIMAL_WHEELS_PATH}
+            """
         )
     )
 
@@ -222,13 +220,11 @@ def pip_conf(make_pip_conf):
 def pip_with_index_conf(make_pip_conf):
     return make_pip_conf(
         dedent(
-            """\
+            f"""\
             [global]
             index-url = http://example.com
-            find-links = {wheels_path}
-            """.format(
-                wheels_path=MINIMAL_WHEELS_PATH
-            )
+            find-links = {MINIMAL_WHEELS_PATH}
+            """
         )
     )
 
@@ -244,17 +240,16 @@ def make_package(tmp_path):
             install_requires = []
 
         install_requires_str = "[{}]".format(
-            ",".join("{!r}".format(package) for package in install_requires)
+            ",".join(f"{package!r}" for package in install_requires)
         )
 
         package_dir = tmp_path / "packages" / name / version
         package_dir.mkdir(parents=True)
 
-        setup_file = str(package_dir / "setup.py")
-        with open(setup_file, "w") as fp:
+        with (package_dir / "setup.py").open("w") as fp:
             fp.write(
                 dedent(
-                    """\
+                    f"""\
                     from setuptools import setup
                     setup(
                         name={name!r},
@@ -264,18 +259,12 @@ def make_package(tmp_path):
                         url="https://github.com/jazzband/pip-tools",
                         install_requires={install_requires_str},
                     )
-                    """.format(
-                        name=name,
-                        version=version,
-                        install_requires_str=install_requires_str,
-                    )
+                    """
                 )
             )
 
         # Create a README to avoid setuptools warnings.
-        readme_file = str(package_dir / "README")
-        with open(readme_file, "w"):
-            pass
+        (package_dir / "README").touch()
 
         return package_dir
 
@@ -289,13 +278,13 @@ def run_setup_file():
     """
 
     def _run_setup_file(package_dir_path, *args):
-        setup_file = str(package_dir_path / "setup.py")
-        with open(os.devnull, "w") as fp:
-            return subprocess.check_call(
-                (sys.executable, setup_file) + args,
-                cwd=str(package_dir_path),
-                stdout=fp,
-            )  # nosec
+        setup_file = package_dir_path / "setup.py"
+        return subprocess.run(
+            [sys.executable, str(setup_file), *args],
+            cwd=str(package_dir_path),
+            stdout=subprocess.DEVNULL,
+            check=True,
+        )  # nosec
 
     return _run_setup_file
 

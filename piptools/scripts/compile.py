@@ -1,19 +1,17 @@
-# coding: utf-8
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os
 import shlex
 import sys
 import tempfile
 import warnings
+from typing import Any
 
+import click
 from click import Command
 from click.utils import safecall
 from pip._internal.commands import create_command
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 
-from .. import click
 from .._compat import parse_requirements
 from ..cache import DependencyCache
 from ..exceptions import PipToolsError
@@ -28,7 +26,7 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.in"
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 
 
-def _get_default_option(option_name):
+def _get_default_option(option_name: str) -> Any:
     """
     Get default value of the pip's option (including option from pip.conf)
     by a given option name.
@@ -46,7 +44,7 @@ class BaseCommand(Command):
         Override base `parse_args` to store the argument part of `sys.argv`.
         """
         self._os_args = set(args)
-        return super(BaseCommand, self).parse_args(ctx, args)
+        return super().parse_args(ctx, args)
 
     def has_arg(self, arg_name):
         """
@@ -164,11 +162,16 @@ class BaseCommand(Command):
     ),
 )
 @click.option(
-    "--allow-unsafe",
+    "--allow-unsafe/--no-allow-unsafe",
     is_flag=True,
     default=False,
-    help="Pin packages considered unsafe: {}".format(
-        ", ".join(sorted(UNSAFE_PACKAGES))
+    help=(
+        "Pin packages considered unsafe: {}.\n\n"
+        "WARNING: Future versions of pip-tools will enable this behavior by default. "
+        "Use --no-allow-unsafe to keep the old behavior. It is recommended to pass the "
+        "--allow-unsafe now to adapt to the upcoming change.".format(
+            ", ".join(sorted(UNSAFE_PACKAGES))
+        )
     ),
 )
 @click.option(
@@ -381,9 +384,7 @@ def cli(
 
                 dist = run_setup(src_file)
                 tmpfile.write("\n".join(dist.install_requires))
-                comes_from = "{name} ({filename})".format(
-                    name=dist.get_name(), filename=src_file
-                )
+                comes_from = f"{dist.get_name()} ({src_file})"
             else:
                 tmpfile.write(sys.stdin.read())
                 comes_from = "-r -"
@@ -460,7 +461,6 @@ def cli(
     ##
 
     writer = OutputWriter(
-        src_files,
         output_file,
         click_ctx=ctx,
         dry_run=dry_run,

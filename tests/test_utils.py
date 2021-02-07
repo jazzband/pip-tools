@@ -1,22 +1,16 @@
-# coding: utf-8
-from __future__ import unicode_literals
-
 import logging
 import os
+import shlex
 
 import pytest
-from pip._vendor import six
-from pip._vendor.six.moves import shlex_quote
 
 from piptools.scripts.compile import cli as compile_cli
 from piptools.utils import (
     as_tuple,
     dedup,
     flat_map,
-    force_text,
     format_requirement,
     format_specifier,
-    fs_str,
     get_compile_command,
     get_hashes_from_ireq,
     is_pinned_requirement,
@@ -87,7 +81,7 @@ def test_format_requirement_ireq_with_hashes_and_markers(from_line):
     assert format_requirement(ireq, marker, hashes=ireq_hashes) == expected
 
 
-def test_format_specifier(from_line):
+def test_format_specifier(from_line, from_editable):
     ireq = from_line("foo")
     assert format_specifier(ireq) == "<any>"
 
@@ -98,6 +92,11 @@ def test_format_specifier(from_line):
     assert format_specifier(ireq) == "~=1.1,>1.2,<1.5"
     ireq = from_line("foo~=1.1,<1.5,>1.2")
     assert format_specifier(ireq) == "~=1.1,>1.2,<1.5"
+
+    ireq = from_editable("git+https://github.com/django/django.git#egg=django")
+    assert format_specifier(ireq) == "<any>"
+    ireq = from_editable("file:///home/user/package")
+    assert format_specifier(ireq) == "<any>"
 
 
 def test_as_tuple(from_line):
@@ -141,10 +140,10 @@ def test_get_hashes_from_ireq(from_line):
             }
         },
     )
-    expected = [
+    expected = {
         "sha256:d1d6729c85acea5423671382868627129432fba9a89ecbb248d8d1c7a9f01c67",
         "sha256:f5c056e8f62d45ba8215e5cb8f50dfccb198b4b9fbea8500674f3443e4689589",
-    ]
+    }
     assert get_hashes_from_ireq(ireq) == expected
 
 
@@ -208,24 +207,6 @@ def test_name_from_req_with_project_name(from_line):
     assert name_from_req(ireq.req) == "bar"
 
 
-def test_fs_str():
-    assert fs_str("some path component/Something") == "some path component/Something"
-    assert isinstance(fs_str("whatever"), str)
-
-
-@pytest.mark.skipif(six.PY2, reason="Not supported in py2")
-def test_fs_str_with_bytes():
-    with pytest.raises(AssertionError):
-        fs_str(b"whatever")
-
-
-@pytest.mark.parametrize(
-    ("value", "expected_text"), ((None, ""), (42, "42"), ("foo", "foo"), ("bãr", "bãr"))
-)
-def test_force_text(value, expected_text):
-    assert force_text(value) == expected_text
-
-
 @pytest.mark.parametrize(
     ("cli_args", "expected_command"),
     (
@@ -260,6 +241,7 @@ def test_force_text(value, expected_text):
         (["--no-emit-index-url"], "pip-compile --no-emit-index-url"),
         (["--no-emit-trusted-host"], "pip-compile --no-emit-trusted-host"),
         (["--no-annotate"], "pip-compile --no-annotate"),
+        (["--no-allow-unsafe"], "pip-compile"),
         # Check that default values will be removed from the command
         (["--emit-trusted-host"], "pip-compile"),
         (["--annotate"], "pip-compile"),
@@ -332,10 +314,9 @@ def test_get_compile_command_with_files(tmpdir_cwd, filename):
 
     args = [path, "--output-file", "requirements.txt"]
     with compile_cli.make_context("pip-compile", args) as ctx:
-        assert get_compile_command(
-            ctx
-        ) == "pip-compile --output-file=requirements.txt {src_file}".format(
-            src_file=shlex_quote(path)
+        assert (
+            get_compile_command(ctx)
+            == f"pip-compile --output-file=requirements.txt {shlex.quote(path)}"
         )
 
 

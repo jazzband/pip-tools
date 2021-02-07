@@ -1,14 +1,13 @@
-# coding: utf-8
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import collections
 import hashlib
 import itertools
 import logging
 import os
+import tempfile
 from contextlib import contextmanager
 from shutil import rmtree
 
+from click import progressbar
 from pip._internal.cache import WheelCache
 from pip._internal.cli.progress_bars import BAR_TYPES
 from pip._internal.commands import create_command
@@ -22,15 +21,14 @@ from pip._internal.utils.logging import indent_log, setup_logging
 from pip._internal.utils.misc import normalize_path
 from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
 from pip._internal.utils.urls import path_to_url, url_to_path
+from pip._vendor import contextlib2
 from pip._vendor.requests import RequestException
 
-from .._compat import PIP_VERSION, TemporaryDirectory, contextlib
-from ..click import progressbar
+from .._compat import PIP_VERSION
 from ..exceptions import NoCandidateFound
 from ..logging import log
 from ..utils import (
     as_tuple,
-    fs_str,
     is_pinned_requirement,
     is_url_requirement,
     lookup_table,
@@ -89,10 +87,10 @@ class PyPIRepository(BaseRepository):
         # Setup file paths
         self._build_dir = None
         self._source_dir = None
-        self._cache_dir = normalize_path(cache_dir)
-        self._download_dir = fs_str(os.path.join(self._cache_dir, "pkgs"))
+        self._cache_dir = normalize_path(str(cache_dir))
+        self._download_dir = os.path.join(self._cache_dir, "pkgs")
         if PIP_VERSION[:2] <= (20, 2):
-            self._wheel_download_dir = fs_str(os.path.join(self._cache_dir, "wheels"))
+            self._wheel_download_dir = os.path.join(self._cache_dir, "wheels")
 
         self._setup_logging()
 
@@ -102,8 +100,8 @@ class PyPIRepository(BaseRepository):
         Start with fresh build/source caches.  Will remove any old build
         caches from disk automatically.
         """
-        self._build_dir = TemporaryDirectory(fs_str("build"))
-        self._source_dir = TemporaryDirectory(fs_str("source"))
+        self._build_dir = tempfile.TemporaryDirectory("build")
+        self._source_dir = tempfile.TemporaryDirectory("source")
         try:
             yield
         finally:
@@ -221,16 +219,14 @@ class PyPIRepository(BaseRepository):
             ireq.editable or is_url_requirement(ireq) or is_pinned_requirement(ireq)
         ):
             raise TypeError(
-                "Expected url, pinned or editable InstallRequirement, got {}".format(
-                    ireq
-                )
+                f"Expected url, pinned or editable InstallRequirement, got {ireq}"
             )
 
         if ireq not in self._dependencies_cache:
             if ireq.editable and (ireq.source_dir and os.path.exists(ireq.source_dir)):
                 # No download_dir for locally available editable requirements.
-                # If a download_dir is passed, pip will  unnecessarely
-                # archive the entire source directory
+                # If a download_dir is passed, pip will unnecessarily archive
+                # the entire source directory
                 download_dir = None
             elif ireq.link and ireq.link.is_vcs:
                 # No download_dir for VCS sources.  This also works around pip
@@ -238,12 +234,9 @@ class PyPIRepository(BaseRepository):
                 download_dir = None
             else:
                 download_dir = self._get_download_path(ireq)
-                if not os.path.isdir(download_dir):
-                    os.makedirs(download_dir)
-            if PIP_VERSION[:2] <= (20, 2) and not os.path.isdir(
-                self._wheel_download_dir
-            ):
-                os.makedirs(self._wheel_download_dir)
+                os.makedirs(download_dir, exist_ok=True)
+            if PIP_VERSION[:2] <= (20, 2):
+                os.makedirs(self._wheel_download_dir, exist_ok=True)
 
             with global_tempdir_manager():
                 wheel_cache = WheelCache(self._cache_dir, self.options.format_control)
@@ -273,15 +266,11 @@ class PyPIRepository(BaseRepository):
             for index_url in self.finder.search_scope.index_urls
         )
         for package_index in package_indexes:
-            url = "{url}/{name}/json".format(url=package_index.pypi_url, name=ireq.name)
+            url = f"{package_index.pypi_url}/{ireq.name}/json"
             try:
                 response = self.session.get(url)
             except RequestException as e:
-                log.debug(
-                    "Fetch package info from PyPI failed: {url}: {e}".format(
-                        url=url, e=e
-                    )
-                )
+                log.debug(f"Fetch package info from PyPI failed: {url}: {e}")
                 continue
 
             # Skip this PyPI server, because there is no package
@@ -292,11 +281,7 @@ class PyPIRepository(BaseRepository):
             try:
                 data = response.json()
             except ValueError as e:
-                log.debug(
-                    "Cannot parse JSON response from PyPI: {url}: {e}".format(
-                        url=url, e=e
-                    )
-                )
+                log.debug(f"Cannot parse JSON response from PyPI: {url}: {e}")
                 continue
             return data
         return None
@@ -343,9 +328,9 @@ class PyPIRepository(BaseRepository):
                 return {self._get_file_hash(cached_link)}
 
         if not is_pinned_requirement(ireq):
-            raise TypeError("Expected pinned requirement, got {}".format(ireq))
+            raise TypeError(f"Expected pinned requirement, got {ireq}")
 
-        log.debug("{}".format(ireq.name))
+        log.debug(ireq.name)
 
         with log.indentation():
             hashes = self._get_hashes_from_pypi(ireq)
@@ -374,9 +359,7 @@ class PyPIRepository(BaseRepository):
 
         try:
             hashes = {
-                "{algo}:{digest}".format(
-                    algo=FAVORITE_HASH, digest=file_["digests"][FAVORITE_HASH]
-                )
+                f"{FAVORITE_HASH}:{file_['digests'][FAVORITE_HASH]}"
                 for file_ in release_files
                 if file_["packagetype"] in self.HASHABLE_PACKAGE_TYPES
             }
@@ -396,7 +379,7 @@ class PyPIRepository(BaseRepository):
         all_candidates = self.find_all_candidates(ireq.name)
         candidates_by_version = lookup_table(all_candidates, key=lambda c: c.version)
         matching_versions = list(
-            ireq.specifier.filter((candidate.version for candidate in all_candidates))
+            ireq.specifier.filter(candidate.version for candidate in all_candidates)
         )
         matching_candidates = candidates_by_version[matching_versions[0]]
 
@@ -405,7 +388,7 @@ class PyPIRepository(BaseRepository):
         }
 
     def _get_file_hash(self, link):
-        log.debug("Hashing {}".format(link.show_url))
+        log.debug(f"Hashing {link.show_url}")
         h = hashlib.new(FAVORITE_HASH)
         with open_local_or_remote_file(link, self.session) as f:
             # Chunks to iterate
@@ -414,9 +397,7 @@ class PyPIRepository(BaseRepository):
             # Choose a context manager depending on verbosity
             if log.verbosity >= 1:
                 iter_length = f.size / FILE_CHUNK_SIZE if f.size else None
-                bar_template = "{prefix}  |%(bar)s| %(info)s".format(
-                    prefix=" " * log.current_indent
-                )
+                bar_template = f"{' ' * log.current_indent}  |%(bar)s| %(info)s"
                 context_manager = progressbar(
                     chunks,
                     length=iter_length,
@@ -427,7 +408,7 @@ class PyPIRepository(BaseRepository):
                     width=32,
                 )
             else:
-                context_manager = contextlib.nullcontext(chunks)
+                context_manager = contextlib2.nullcontext(chunks)
 
             # Iterate over the chosen context manager
             with context_manager as bar:
@@ -512,7 +493,7 @@ def open_local_or_remote_file(link, session):
         # Local URL
         local_path = url_to_path(url)
         if os.path.isdir(local_path):
-            raise ValueError("Cannot open directory for read: {}".format(url))
+            raise ValueError(f"Cannot open directory for read: {url}")
         else:
             st = os.stat(local_path)
             with open(local_path, "rb") as local_file:
