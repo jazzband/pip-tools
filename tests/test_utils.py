@@ -367,6 +367,6 @@ def test_lookup_table(values, key):
     assert lookup_table(values, key) == expected
 
 
-def test_lookup_table_requires_key(values, key):
+def test_lookup_table_requires_key():
     with pytest.raises(AssertionError, match="^key function must be specified$"):
         assert lookup_table(("foo", "bar", "baz"))
