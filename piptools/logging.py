@@ -1,7 +1,7 @@
 import contextlib
 import logging
 import sys
-from typing import Any
+from typing import Any, Iterator
 
 import click
 
@@ -23,30 +23,30 @@ class LogContext:
         prefix = " " * self.current_indent
         click.secho(prefix + message, *args, **kwargs)
 
-    def debug(self, *args, **kwargs):
+    def debug(self, message: str, *args: Any, **kwargs: Any) -> None:
         if self.verbosity >= 1:
-            self.log(*args, **kwargs)
+            self.log(message, *args, **kwargs)
 
-    def info(self, *args: Any, **kwargs: Any) -> None:
+    def info(self, message: str, *args: Any, **kwargs: Any) -> None:
         if self.verbosity >= 0:
-            self.log(*args, **kwargs)
+            self.log(message, *args, **kwargs)
 
-    def warning(self, *args: Any, **kwargs: Any) -> None:
+    def warning(self, message: str, *args: Any, **kwargs: Any) -> None:
         kwargs.setdefault("fg", "yellow")
-        self.log(*args, **kwargs)
+        self.log(message, *args, **kwargs)
 
-    def error(self, *args, **kwargs):
+    def error(self, message: str, *args: Any, **kwargs: Any) -> None:
         kwargs.setdefault("fg", "red")
-        self.log(*args, **kwargs)
+        self.log(message, *args, **kwargs)
 
-    def _indent(self):
+    def _indent(self) -> None:
         self.current_indent += self._indent_width
 
-    def _dedent(self):
+    def _dedent(self) -> None:
         self.current_indent -= self._indent_width
 
     @contextlib.contextmanager
-    def indentation(self):
+    def indentation(self) -> Iterator[None]:
         """
         Increase indentation.
         """
