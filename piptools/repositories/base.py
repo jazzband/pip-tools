@@ -1,8 +1,8 @@
 from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
-from typing import Optional, Set
+from typing import Iterator, Optional, Set
 
-from pip._internal.req.req_install import InstallRequirement
+from pip._internal.req import InstallRequirement
 
 
 class BaseRepository(metaclass=ABCMeta):
@@ -11,7 +11,7 @@ class BaseRepository(metaclass=ABCMeta):
 
     @abstractmethod
     @contextmanager
-    def freshen_build_caches(self):
+    def freshen_build_caches(self) -> Iterator[None]:
         """Should start with fresh build/source caches."""
 
     @abstractmethod
@@ -41,7 +41,7 @@ class BaseRepository(metaclass=ABCMeta):
 
     @abstractmethod
     @contextmanager
-    def allow_all_wheels(self):
+    def allow_all_wheels(self) -> Iterator[None]:
         """
         Monkey patches pip.Wheel to allow wheels from all platforms and Python versions.
         """

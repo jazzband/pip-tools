@@ -2,7 +2,6 @@ import collections
 import itertools
 import shlex
 from typing import (
-    Any,
     Callable,
     Dict,
     Iterable,
@@ -25,6 +24,8 @@ from pip._vendor.packaging.specifiers import SpecifierSet
 
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
+_T = TypeVar("_T")
+_S = TypeVar("_S")
 
 UNSAFE_PACKAGES = {"setuptools", "distribute", "pip"}
 COMPILE_EXCLUDE_OPTIONS = {
@@ -64,7 +65,9 @@ def comment(text: str) -> str:
     return click.style(text, fg="green")
 
 
-def make_install_requirement(name, version, extras, constraint=False):
+def make_install_requirement(
+    name: str, version: str, extras: Iterable[str], constraint: bool = False
+) -> InstallRequirement:
     # If no extras are specified, the extras string is blank
     extras_string = ""
     if extras:
@@ -164,7 +167,9 @@ def as_tuple(ireq: InstallRequirement) -> Tuple[str, str, Tuple[str, ...]]:
     return name, version, extras
 
 
-def flat_map(fn, collection):
+def flat_map(
+    fn: Callable[[_T], Iterable[_S]], collection: Iterable[_T]
+) -> Iterator[_S]:
     """Map a function over a collection and flatten the result by one-level"""
     return itertools.chain.from_iterable(map(fn, collection))
 
@@ -196,7 +201,7 @@ def lookup_table(
     return dict(lut)
 
 
-def dedup(iterable: Iterable[Any]) -> Iterator[Any]:
+def dedup(iterable: Iterable[_T]) -> Iterable[_T]:
     """Deduplicate an iterable object like iter(set(iterable)) but
     order-preserved.
     """
@@ -213,16 +218,16 @@ def name_from_req(req):
         return req.name
 
 
-def get_hashes_from_ireq(ireq):
+def get_hashes_from_ireq(ireq: InstallRequirement) -> Set[str]:
     """
-    Given an InstallRequirement, return a list of string hashes in
-    the format "{algorithm}:{hash}". Return an empty list if there are no hashes
-    in the requirement options.
+    Given an InstallRequirement, return a set of string hashes in the format
+    "{algorithm}:{hash}". Return an empty set if there are no hashes in the
+    requirement options.
     """
-    result = []
+    result = set()
     for algorithm, hexdigests in ireq.hash_options.items():
         for hash_ in hexdigests:
-            result.append(f"{algorithm}:{hash_}")
+            result.add(f"{algorithm}:{hash_}")
     return result
 
 

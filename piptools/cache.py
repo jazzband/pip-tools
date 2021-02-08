@@ -2,18 +2,22 @@ import json
 import os
 import platform
 import sys
-from typing import Dict, Iterable, Sequence, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple, cast
 
-from pip._internal.req.req_install import InstallRequirement
+from pip._internal.req import InstallRequirement
 from pip._vendor.packaging.requirements import Requirement
 
 from .exceptions import PipToolsError
 from .utils import as_tuple, key_from_req, lookup_table
 
+CacheKey = Tuple[str, str]
+CacheLookup = Dict[str, List[str]]
+CacheDict = Dict[str, CacheLookup]
+
 _PEP425_PY_TAGS = {"cpython": "cp", "pypy": "pp", "ironpython": "ip", "jython": "jy"}
 
 
-def _implementation_name():
+def _implementation_name() -> str:
     """
     Similar to PEP 425, however the minor version is separated from the major to
     differentiate "3.10" and "31.0".
@@ -24,10 +28,10 @@ def _implementation_name():
 
 
 class CorruptCacheError(PipToolsError):
-    def __init__(self, path):
+    def __init__(self, path: str):
         self.path = path
 
-    def __str__(self):
+    def __str__(self) -> str:
         lines = [
             "The dependency cache seems to have been corrupted.",
             "Inspect, or delete, the following file:",
@@ -36,7 +40,7 @@ class CorruptCacheError(PipToolsError):
         return os.linesep.join(lines)
 
 
-def read_cache_file(cache_file_path):
+def read_cache_file(cache_file_path: str) -> CacheDict:
     with open(cache_file_path) as cache_file:
         try:
             doc = json.load(cache_file)
@@ -46,7 +50,7 @@ def read_cache_file(cache_file_path):
         # Check version and load the contents
         if doc["__format__"] != 1:
             raise ValueError("Unknown cache file format")
-        return doc["dependencies"]
+        return cast(CacheDict, doc["dependencies"])
 
 
 class DependencyCache:
@@ -61,24 +65,27 @@ class DependencyCache:
     Where X.Y indicates the Python version.
     """
 
-    def __init__(self, cache_dir):
+    def __init__(self, cache_dir: str):
         os.makedirs(cache_dir, exist_ok=True)
         cache_filename = f"depcache-{_implementation_name()}.json"
 
         self._cache_file = os.path.join(cache_dir, cache_filename)
-        self._cache = None
+        self._cache: Optional[CacheDict] = None
 
     @property
-    def cache(self):
+    def cache(self) -> CacheDict:
         """
         The dictionary that is the actual in-memory cache.  This property
         lazily loads the cache from disk.
         """
         if self._cache is None:
-            self.read_cache()
+            try:
+                self._cache = read_cache_file(self._cache_file)
+            except FileNotFoundError:
+                self._cache = {}
         return self._cache
 
-    def as_cache_key(self, ireq: InstallRequirement) -> Tuple[str, str]:
+    def as_cache_key(self, ireq: InstallRequirement) -> CacheKey:
         """
         Given a requirement, return its cache key. This behavior is a little weird
         in order to allow backwards compatibility with cache files. For a requirement
@@ -98,13 +105,6 @@ class DependencyCache:
             extras_string = f"[{','.join(extras)}]"
         return name, f"{version}{extras_string}"
 
-    def read_cache(self):
-        """Reads the cached contents into memory."""
-        try:
-            self._cache = read_cache_file(self._cache_file)
-        except FileNotFoundError:
-            self._cache = {}
-
     def write_cache(self) -> None:
         """Writes the cache to disk as JSON."""
         doc = {"__format__": 1, "dependencies": self._cache}
@@ -115,15 +115,15 @@ class DependencyCache:
         self._cache = {}
         self.write_cache()
 
-    def __contains__(self, ireq):
+    def __contains__(self, ireq: InstallRequirement) -> bool:
         pkgname, pkgversion_and_extras = self.as_cache_key(ireq)
         return pkgversion_and_extras in self.cache.get(pkgname, {})
 
-    def __getitem__(self, ireq):
+    def __getitem__(self, ireq: InstallRequirement) -> List[str]:
         pkgname, pkgversion_and_extras = self.as_cache_key(ireq)
         return self.cache[pkgname][pkgversion_and_extras]
 
-    def __setitem__(self, ireq, values):
+    def __setitem__(self, ireq: InstallRequirement, values: List[str]) -> None:
         pkgname, pkgversion_and_extras = self.as_cache_key(ireq)
         self.cache.setdefault(pkgname, {})
         self.cache[pkgname][pkgversion_and_extras] = values
