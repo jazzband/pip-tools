@@ -1,6 +1,6 @@
 import collections
+import itertools
 import shlex
-from itertools import chain
 from typing import (
     Any,
     Callable,
@@ -166,7 +166,7 @@ def as_tuple(ireq: InstallRequirement) -> Tuple[str, str, Tuple[str, ...]]:
 
 def flat_map(fn, collection):
     """Map a function over a collection and flatten the result by one-level"""
-    return chain.from_iterable(map(fn, collection))
+    return itertools.chain.from_iterable(map(fn, collection))
 
 
 def lookup_table(
@@ -176,6 +176,11 @@ def lookup_table(
     """
     Builds a dict-based lookup table (index) elegantly.
     """
+    values, values_to_validate = itertools.tee(values)
+    if key is None and any(not isinstance(v, tuple) for v in values_to_validate):
+        raise ValueError(
+            "The `key` function must be specified when the `values` are not empty."
+        )
 
     def keyval(v: Union[_VT, Tuple[_KT, _VT]]) -> Tuple[_KT, _VT]:
         if isinstance(v, tuple):

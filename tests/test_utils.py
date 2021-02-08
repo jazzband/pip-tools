@@ -353,12 +353,26 @@ def test_get_compile_command_sort_args(tmpdir_cwd):
     ("values", "key"),
     (
         pytest.param(
-            ("foo", "bar", "baz", "qux", "quux"), lambda s: s[0], id="with key function"
+            ("foo", "bar", "baz", "qux", "quux"),
+            lambda s: s[0],
+            id="with key function",
         ),
         pytest.param(
             (("f", "foo"), ("b", "bar"), ("b", "baz"), ("q", "qux"), ("q", "quux")),
             None,
             id="without key function",
+        ),
+        pytest.param(
+            iter(("foo", "bar", "baz", "qux", "quux")),
+            lambda s: s[0],
+            id="values as iterator with key function",
+        ),
+        pytest.param(
+            iter(
+                (("f", "foo"), ("b", "bar"), ("b", "baz"), ("q", "qux"), ("q", "quux"))
+            ),
+            None,
+            id="values as iterator without key function",
         ),
     ),
 )
@@ -367,6 +381,27 @@ def test_lookup_table(values, key):
     assert lookup_table(values, key) == expected
 
 
-def test_lookup_table_requires_key():
-    with pytest.raises(AssertionError, match="^key function must be specified$"):
-        assert lookup_table(("foo", "bar", "baz"))
+@pytest.mark.parametrize(
+    "values",
+    (
+        pytest.param(("foo", "bar", "baz"), id="values are not tuples"),
+        pytest.param((("f", "foo"), "b"), id="one of the values is not a tuple"),
+    ),
+)
+def test_lookup_table_requires_key(values):
+    with pytest.raises(
+        ValueError,
+        match=r"^The `key` function must be specified when the `values` are not empty\.$",
+    ):
+        assert lookup_table(values)
+
+
+@pytest.mark.parametrize(
+    "key",
+    (
+        pytest.param(lambda x: x, id="with key"),
+        pytest.param(None, id="without key"),
+    ),
+)
+def test_lookup_table_with_empty_values(key):
+    assert lookup_table((), key) == {}
