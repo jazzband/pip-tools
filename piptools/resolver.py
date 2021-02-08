@@ -110,7 +110,7 @@ def combine_install_requirements(
 class Resolver:
     def __init__(
         self,
-        constraints: List[InstallRequirement],
+        constraints: Iterable[InstallRequirement],
         repository: BaseRepository,
         cache: DependencyCache,
         prereleases: Optional[bool] = False,
@@ -406,7 +406,7 @@ class Resolver:
             )
 
     def reverse_dependencies(
-        self, ireqs: Set[InstallRequirement]
+        self, ireqs: Iterable[InstallRequirement]
     ) -> Dict[str, Set[str]]:
         non_editable = [
             ireq for ireq in ireqs if not (ireq.editable or is_url_requirement(ireq))

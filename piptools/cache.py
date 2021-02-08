@@ -2,7 +2,7 @@ import json
 import os
 import platform
 import sys
-from typing import Dict, Sequence, Set, Tuple
+from typing import Dict, Iterable, Sequence, Set, Tuple
 
 from pip._internal.req.req_install import InstallRequirement
 from pip._vendor.packaging.requirements import Requirement
@@ -130,7 +130,7 @@ class DependencyCache:
         self.write_cache()
 
     def reverse_dependencies(
-        self, ireqs: Sequence[InstallRequirement]
+        self, ireqs: Iterable[InstallRequirement]
     ) -> Dict[str, Set[str]]:
         """
         Returns a lookup table of reverse dependencies for all the given ireqs.
