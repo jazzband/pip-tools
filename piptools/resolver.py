@@ -37,13 +37,14 @@ class RequirementSummary:
         self.specifier = ireq.specifier
 
     def __eq__(self, other: object) -> bool:
-        if isinstance(other, self.__class__):
-            return (
-                self.key == other.key
-                and self.specifier == other.specifier
-                and self.extras == other.extras
-            )
-        return NotImplemented
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+
+        return (
+            self.key == other.key
+            and self.specifier == other.specifier
+            and self.extras == other.extras
+        )
 
     def __hash__(self) -> int:
         return hash((self.key, self.specifier, self.extras))
