@@ -19,8 +19,8 @@ class BaseRepository(metaclass=ABCMeta):
         self, ireq: InstallRequirement, prereleases: Optional[bool]
     ) -> InstallRequirement:
         """
-        Return a Version object that indicates the best match for the given
-        InstallRequirement according to the repository.
+        Returns a pinned InstallRequirement object that indicates the best match
+        for the given InstallRequirement according to the external repository.
         """
 
     @abstractmethod
