@@ -2,7 +2,7 @@ import json
 import os
 import platform
 import sys
-from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple, cast
+from typing import Dict, Iterable, List, Optional, Set, Tuple, cast
 
 from pip._internal.req import InstallRequirement
 from pip._vendor.packaging.requirements import Requirement
@@ -144,7 +144,7 @@ class DependencyCache:
         return self._reverse_dependencies(ireqs_as_cache_values)
 
     def _reverse_dependencies(
-        self, cache_keys: Sequence[Tuple[str, str]]
+        self, cache_keys: Iterable[Tuple[str, str]]
     ) -> Dict[str, Set[str]]:
         """
         Returns a lookup table of reverse dependencies for all the given cache keys.
