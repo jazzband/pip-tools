@@ -449,4 +449,4 @@ def test_requirement_summary_with_other_objects(from_line):
     """
     requirement_summary = RequirementSummary(from_line("test_package==1.2.3"))
     other_object = object()
-    assert (requirement_summary == other_object) is False
+    assert requirement_summary != other_object

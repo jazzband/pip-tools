@@ -1,4 +1,5 @@
 import logging
+import operator
 import os
 import shlex
 
@@ -354,7 +355,7 @@ def test_get_compile_command_sort_args(tmpdir_cwd):
     (
         pytest.param(
             ("foo", "bar", "baz", "qux", "quux"),
-            lambda s: s[0],
+            operator.itemgetter(0),
             id="with key function",
         ),
         pytest.param(
@@ -364,7 +365,7 @@ def test_get_compile_command_sort_args(tmpdir_cwd):
         ),
         pytest.param(
             iter(("foo", "bar", "baz", "qux", "quux")),
-            lambda s: s[0],
+            operator.itemgetter(0),
             id="values as iterator with key function",
         ),
         pytest.param(
@@ -393,7 +394,7 @@ def test_lookup_table_requires_key(values):
         ValueError,
         match=r"^The `key` function must be specified when the `values` are not empty\.$",
     ):
-        assert lookup_table(values)
+        lookup_table(values)
 
 
 @pytest.mark.parametrize(
