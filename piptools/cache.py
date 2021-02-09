@@ -2,7 +2,7 @@ import json
 import os
 import platform
 import sys
-from typing import Dict, List, Optional, Tuple, cast
+from typing import Dict, Iterable, List, Optional, Set, Tuple, cast
 
 from pip._internal.req import InstallRequirement
 from pip._vendor.packaging.requirements import Requirement
@@ -129,7 +129,9 @@ class DependencyCache:
         self.cache[pkgname][pkgversion_and_extras] = values
         self.write_cache()
 
-    def reverse_dependencies(self, ireqs):
+    def reverse_dependencies(
+        self, ireqs: Iterable[InstallRequirement]
+    ) -> Dict[str, Set[str]]:
         """
         Returns a lookup table of reverse dependencies for all the given ireqs.
 
@@ -141,7 +143,9 @@ class DependencyCache:
         ireqs_as_cache_values = [self.as_cache_key(ireq) for ireq in ireqs]
         return self._reverse_dependencies(ireqs_as_cache_values)
 
-    def _reverse_dependencies(self, cache_keys):
+    def _reverse_dependencies(
+        self, cache_keys: Iterable[Tuple[str, str]]
+    ) -> Dict[str, Set[str]]:
         """
         Returns a lookup table of reverse dependencies for all the given cache keys.
 

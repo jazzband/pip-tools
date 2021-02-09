@@ -441,3 +441,12 @@ def test_RequirementSummary_hash_equality(from_line, left_hand, right_hand, expe
     lh_summary = RequirementSummary(from_line(left_hand))
     rh_summary = RequirementSummary(from_line(right_hand))
     assert (hash(lh_summary) == hash(rh_summary)) is expected
+
+
+def test_requirement_summary_with_other_objects(from_line):
+    """
+    RequirementSummary should not be equal to any other object
+    """
+    requirement_summary = RequirementSummary(from_line("test_package==1.2.3"))
+    other_object = object()
+    assert requirement_summary != other_object

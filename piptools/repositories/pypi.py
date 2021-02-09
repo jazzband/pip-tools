@@ -131,8 +131,8 @@ class PyPIRepository(BaseRepository):
 
     def find_best_match(self, ireq, prereleases=None):
         """
-        Returns a Version object that indicates the best match for the given
-        InstallRequirement according to the external repository.
+        Returns a pinned InstallRequirement object that indicates the best match
+        for the given InstallRequirement according to the external repository.
         """
         if ireq.editable or is_url_requirement(ireq):
             return ireq  # return itself as the best match

@@ -1,9 +1,8 @@
 from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
-from typing import Iterator, Set
+from typing import Iterator, Optional, Set
 
 from pip._internal.req import InstallRequirement
-from pip._vendor.packaging.version import Version
 
 
 class BaseRepository(metaclass=ABCMeta):
@@ -16,10 +15,12 @@ class BaseRepository(metaclass=ABCMeta):
         """Should start with fresh build/source caches."""
 
     @abstractmethod
-    def find_best_match(self, ireq: InstallRequirement) -> Version:
+    def find_best_match(
+        self, ireq: InstallRequirement, prereleases: Optional[bool]
+    ) -> InstallRequirement:
         """
-        Return a Version object that indicates the best match for the given
-        InstallRequirement according to the repository.
+        Returns a pinned InstallRequirement object that indicates the best match
+        for the given InstallRequirement according to the external repository.
         """
 
     @abstractmethod
@@ -33,7 +34,7 @@ class BaseRepository(metaclass=ABCMeta):
     @abstractmethod
     def get_hashes(self, ireq: InstallRequirement) -> Set[str]:
         """
-        Given a pinned InstallRequire, returns a set of hashes that represent
+        Given a pinned InstallRequirement, returns a set of hashes that represent
         all of the files for a given requirement. It is not acceptable for an
         editable or unpinned requirement to be passed to this function.
         """
