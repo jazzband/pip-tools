@@ -1,10 +1,11 @@
 import os
 import re
 from itertools import chain
-from typing import BinaryIO, Dict, Iterator, List, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
 
 from click import unstyle
 from click.core import Context
+from click.utils import LazyFile
 from pip._internal.models.format_control import FormatControl
 from pip._internal.req.req_install import InstallRequirement
 from pip._vendor.packaging.markers import Marker
@@ -53,7 +54,7 @@ def _comes_from_as_string(ireq: InstallRequirement) -> str:
 class OutputWriter:
     def __init__(
         self,
-        dst_file: BinaryIO,
+        dst_file: LazyFile,
         click_ctx: Context,
         dry_run: bool,
         emit_header: bool,

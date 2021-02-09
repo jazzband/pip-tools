@@ -1,5 +1,7 @@
 from contextlib import contextmanager
+from typing import Mapping
 
+from pip._internal.req import InstallRequirement
 from pip._internal.utils.hashes import FAVORITE_HASH
 
 from piptools.utils import as_tuple, key_from_ireq, make_install_requirement
@@ -29,7 +31,12 @@ class LocalRequirementsRepository(BaseRepository):
     PyPI.  This keeps updates to the requirements.txt down to a minimum.
     """
 
-    def __init__(self, existing_pins, proxied_repository, reuse_hashes=True):
+    def __init__(
+        self,
+        existing_pins: Mapping[str, InstallRequirement],
+        proxied_repository: BaseRepository,
+        reuse_hashes: bool = True,
+    ):
         self._reuse_hashes = reuse_hashes
         self.repository = proxied_repository
         self.existing_pins = existing_pins

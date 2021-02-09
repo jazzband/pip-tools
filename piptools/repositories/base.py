@@ -1,11 +1,19 @@
+import optparse
 from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
 from typing import Iterator, Optional, Set
 
+from pip._internal.index.package_finder import PackageFinder
+from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement
 
 
 class BaseRepository(metaclass=ABCMeta):
+    DEFAULT_INDEX_URL: str
+    finder: PackageFinder
+    session: PipSession
+    options: optparse.Values
+
     def clear_caches(self) -> None:
         """Should clear any caches used by the implementation."""
 

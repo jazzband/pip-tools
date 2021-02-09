@@ -6,6 +6,7 @@ import os
 import tempfile
 from contextlib import contextmanager
 from shutil import rmtree
+from typing import Sequence
 
 from click import progressbar
 from pip._internal.cache import WheelCache
@@ -51,7 +52,7 @@ class PyPIRepository(BaseRepository):
     changed/configured on the Finder.
     """
 
-    def __init__(self, pip_args, cache_dir):
+    def __init__(self, pip_args: Sequence[str], cache_dir):
         # Use pip's parser for pip.conf management and defaults.
         # General options (find_links, index_url, extra_index_url, trusted_host,
         # and pre) are deferred to pip.
