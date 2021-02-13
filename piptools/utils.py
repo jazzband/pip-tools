@@ -21,6 +21,7 @@ from pip._internal.utils.misc import redact_auth_from_url
 from pip._internal.vcs import is_url
 from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.specifiers import SpecifierSet
+from pip._vendor.packaging.version import Version
 
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
@@ -66,16 +67,24 @@ def comment(text: str) -> str:
 
 
 def make_install_requirement(
-    name: str, version: str, extras: Iterable[str], constraint: bool = False
+    name: str, version: Version, ireq: InstallRequirement
 ) -> InstallRequirement:
     # If no extras are specified, the extras string is blank
     extras_string = ""
+    extras = ireq.extras
     if extras:
         # Sort extras for stability
         extras_string = f"[{','.join(sorted(extras))}]"
 
+    version_specifier = "=="
+    for specifier in ireq.specifier:
+        specifier_version = Version(specifier.version)
+        if specifier.operator == "===" and specifier_version == version:
+            version_specifier = "==="
+            break
+
     return install_req_from_line(
-        str(f"{name}{extras_string}=={version}"), constraint=constraint
+        str(f"{name}{extras_string}{version_specifier}{version}"), constraint=ireq.constraint
     )
 
 

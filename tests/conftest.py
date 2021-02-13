@@ -69,7 +69,7 @@ class FakeRepository(BaseRepository):
             raise NoCandidateFound(ireq, tried_versions, ["https://fake.url.foo"])
         best_version = max(versions, key=Version)
         return make_install_requirement(
-            key_from_ireq(ireq), best_version, ireq.extras, constraint=ireq.constraint
+            key_from_ireq(ireq), best_version, ireq
         )
 
     def get_dependencies(self, ireq):
