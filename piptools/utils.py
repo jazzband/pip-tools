@@ -67,7 +67,7 @@ def comment(text: str) -> str:
 
 
 def make_install_requirement(
-    name: str, version: Version, ireq: InstallRequirement
+    name: str, version: Union[str, Version], ireq: InstallRequirement
 ) -> InstallRequirement:
     # If no extras are specified, the extras string is blank
     extras_string = ""
@@ -78,8 +78,7 @@ def make_install_requirement(
 
     version_specifier = "=="
     for specifier in ireq.specifier:
-        specifier_version = Version(specifier.version)
-        if specifier.operator == "===" and specifier_version == version:
+        if specifier.operator == "===" and specifier.version == str(version):
             version_specifier = "==="
             break
 
