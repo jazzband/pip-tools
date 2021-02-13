@@ -84,7 +84,8 @@ def make_install_requirement(
             break
 
     return install_req_from_line(
-        str(f"{name}{extras_string}{version_specifier}{version}"), constraint=ireq.constraint
+        str(f"{name}{extras_string}{version_specifier}{version}"),
+        constraint=ireq.constraint,
     )
 
 
