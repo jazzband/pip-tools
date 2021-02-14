@@ -76,14 +76,15 @@ def make_install_requirement(
         # Sort extras for stability
         extras_string = f"[{','.join(sorted(extras))}]"
 
-    version_specifier = "=="
+    version_pin_operator = "=="
+    version_as_str = str(version)
     for specifier in ireq.specifier:
-        if specifier.operator == "===" and specifier.version == str(version):
-            version_specifier = "==="
+        if specifier.operator == "===" and specifier.version == version_as_str:
+            version_pin_operator = "==="
             break
 
     return install_req_from_line(
-        str(f"{name}{extras_string}{version_specifier}{version}"),
+        str(f"{name}{extras_string}{version_pin_operator}{version}"),
         constraint=ireq.constraint,
     )
 
