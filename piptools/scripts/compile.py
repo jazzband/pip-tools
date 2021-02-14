@@ -275,8 +275,10 @@ def cli(
         if src_files == ("-",):
             raise click.BadParameter("--output-file is required if input is from stdin")
         # Use default requirements output file if there is a setup.py the source file
-        elif src_files == ("setup.py",):
-            file_name = DEFAULT_REQUIREMENTS_OUTPUT_FILE
+        elif os.path.basename(src_files[0]) == "setup.py":
+            file_name = os.path.join(
+                os.path.dirname(src_files[0]), DEFAULT_REQUIREMENTS_OUTPUT_FILE
+            )
         # An output file must be provided if there are multiple source files
         elif len(src_files) > 1:
             raise click.BadParameter(

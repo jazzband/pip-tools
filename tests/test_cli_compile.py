@@ -107,6 +107,27 @@ def test_command_line_setuptools_output_file(
     assert os.path.exists(expected_output_file)
 
 
+def test_command_line_setuptools_nested_output_file(pip_conf, tmpdir, runner):
+    """
+    Test the output file for setup.py in nested folder as a requirement file.
+    """
+    proj_dir = tmpdir.mkdir("proj")
+
+    with open(os.path.join(str(proj_dir), "setup.py"), "w") as package:
+        package.write(
+            dedent(
+                """\
+                from setuptools import setup
+                setup(install_requires=[])
+                """
+            )
+        )
+
+    out = runner.invoke(cli, [str(proj_dir / "setup.py")])
+    assert out.exit_code == 0
+    assert (proj_dir / "requirements.txt").exists()
+
+
 def test_find_links_option(runner):
     with open("requirements.in", "w") as req_in:
         req_in.write("-f ./libs3")
