@@ -1558,24 +1558,29 @@ def test_duplicate_reqs_combined(
 
 
 @pytest.mark.network
-def test_triple_equal_pinned_depency_is_used(runner):
+def test_triple_equal_pinned_depency_is_used(runner, make_package, make_wheel, tmpdir):
     """
     Test that pip-compile properly emits the pinned requirement with ===
     torchvision 0.8.2 requires torch==1.7.1 which can resolve to versions with
     patches (e.g. torch 1.7.1+cu110), we want torch===1.7.1 without patches
     """
-    with open("requirements.in", "w") as reqs_in:
-        reqs_in.write("torch===1.7.1\n")
-        reqs_in.write("torchvision===0.8.2\n")
 
-    out = runner.invoke(
-        cli,
-        [
-            "--find-links",
-            "https://download.pytorch.org/whl/torch_stable.html",
-        ],
+    dists_dir = tmpdir / "dists"
+
+    test_package_1 = make_package("test_package_1", version="1.7.1")
+    make_wheel(test_package_1, dists_dir)
+
+    test_package_2 = make_package(
+        "test_package_2", version="0.8.2", install_requires=["test-package-1==1.7.1"]
     )
+    make_wheel(test_package_2, dists_dir)
+
+    with open("requirements.in", "w") as reqs_in:
+        reqs_in.write("test-package-1===1.7.1\n")
+        reqs_in.write("test-package-2===0.8.2\n")
+
+    out = runner.invoke(cli, ["--find-links", str(dists_dir)])
 
     assert out.exit_code == 0, out
-    assert "torch===1.7.1" in out.stderr
-    assert "torchvision===0.8.2" in out.stderr
+    assert "test-package-1===1.7.1" in out.stderr
+    assert "test-package-2===0.8.2" in out.stderr
