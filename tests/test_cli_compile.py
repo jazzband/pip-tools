@@ -1557,7 +1557,6 @@ def test_duplicate_reqs_combined(
     assert "test-package-1==0.1" in out.stderr
 
 
-@pytest.mark.network
 def test_triple_equal_pinned_depency_is_used(runner, make_package, make_wheel, tmpdir):
     """
     Test that pip-compile properly emits the pinned requirement with ===
