@@ -1576,6 +1576,26 @@ def test_triple_equal_pinned_dependency_is_used(
     )
     make_wheel(test_package_2, dists_dir)
 
+    # Case 1 ===
+    with open("requirements.in", "w") as reqs_in:
+        reqs_in.write("test-package-1===1.7.1\n")
+
+    out = runner.invoke(cli, ["--find-links", str(dists_dir)])
+
+    assert out.exit_code == 0, out
+    assert "test-package-1===1.7.1" in out.stderr
+
+    # Case 2 ==
+    with open("requirements.in", "w") as reqs_in:
+        reqs_in.write("test-package-1==1.7.1\n")
+
+    out = runner.invoke(cli, ["--find-links", str(dists_dir)])
+
+    assert out.exit_code == 0, out
+    assert "test-package-1==1.7.1" in out.stderr
+
+    # Case 3 test_package_1 pinned by user with ===
+    # but pinned by package with ==, prefer ===
     with open("requirements.in", "w") as reqs_in:
         reqs_in.write("test-package-1===1.7.1\n")
         reqs_in.write("test-package-2==0.8.2\n")
@@ -1585,3 +1605,26 @@ def test_triple_equal_pinned_dependency_is_used(
     assert out.exit_code == 0, out
     assert "test-package-1===1.7.1" in out.stderr
     assert "test-package-2==0.8.2" in out.stderr
+
+    # Case 4 test_package_1 pinned by user with ===
+    # but pinned by package with ==, prefer ===
+    # Different pin for test_package_2
+    with open("requirements.in", "w") as reqs_in:
+        reqs_in.write("test-package-1===1.7.1\n")
+        reqs_in.write("test-package-2===0.8.2\n")
+
+    out = runner.invoke(cli, ["--find-links", str(dists_dir)])
+
+    assert out.exit_code == 0, out
+    assert "test-package-1===1.7.1" in out.stderr
+    assert "test-package-2===0.8.2" in out.stderr
+
+    # Case 5 only package 2 pinned with ===
+    with open("requirements.in", "w") as reqs_in:
+        reqs_in.write("test-package-2===0.8.2\n")
+
+    out = runner.invoke(cli, ["--find-links", str(dists_dir)])
+
+    assert out.exit_code == 0, out
+    assert "test-package-1==1.7.1" in out.stderr
+    assert "test-package-2===0.8.2" in out.stderr
