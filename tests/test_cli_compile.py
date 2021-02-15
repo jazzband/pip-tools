@@ -1557,7 +1557,9 @@ def test_duplicate_reqs_combined(
     assert "test-package-1==0.1" in out.stderr
 
 
-def test_triple_equal_pinned_depency_is_used(runner, make_package, make_wheel, tmpdir):
+def test_triple_equal_pinned_dependency_is_used(
+    runner, make_package, make_wheel, tmpdir
+):
     """
     Test that pip-compile properly emits the pinned requirement with ===
     torchvision 0.8.2 requires torch==1.7.1 which can resolve to versions with
@@ -1576,10 +1578,10 @@ def test_triple_equal_pinned_depency_is_used(runner, make_package, make_wheel, t
 
     with open("requirements.in", "w") as reqs_in:
         reqs_in.write("test-package-1===1.7.1\n")
-        reqs_in.write("test-package-2===0.8.2\n")
+        reqs_in.write("test-package-2==0.8.2\n")
 
     out = runner.invoke(cli, ["--find-links", str(dists_dir)])
 
     assert out.exit_code == 0, out
     assert "test-package-1===1.7.1" in out.stderr
-    assert "test-package-2===0.8.2" in out.stderr
+    assert "test-package-2==0.8.2" in out.stderr
