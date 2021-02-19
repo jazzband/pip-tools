@@ -1557,8 +1557,44 @@ def test_duplicate_reqs_combined(
     assert "test-package-1==0.1" in out.stderr
 
 
+@pytest.mark.parametrize(
+    ("pkg2_install_requires", "req_in_content", "out_expected_content"),
+    (
+        pytest.param(
+            "",
+            ["test-package-1===0.1.0\n"],
+            ["test-package-1===0.1.0"],
+        ),
+        pytest.param(
+            "",
+            ["test-package-1==0.1.0\n"],
+            ["test-package-1==0.1.0"],
+        ),
+        pytest.param(
+            "test-package-1==0.1.0",
+            ["test-package-1===0.1.0\n", "test-package-2==0.1.0\n"],
+            ["test-package-1===0.1.0", "test-package-2==0.1.0"],
+        ),
+        pytest.param(
+            "test-package-1==0.1.0",
+            ["test-package-1===0.1.0\n", "test-package-2===0.1.0\n"],
+            ["test-package-1===0.1.0", "test-package-2===0.1.0"],
+        ),
+        pytest.param(
+            "test-package-1==0.1.0",
+            ["test-package-2===0.1.0\n"],
+            ["test-package-1==0.1.0", "test-package-2===0.1.0"],
+        ),
+    ),
+)
 def test_triple_equal_pinned_dependency_is_used(
-    runner, make_package, make_wheel, tmpdir
+    runner,
+    make_package,
+    make_wheel,
+    tmpdir,
+    pkg2_install_requires,
+    req_in_content,
+    out_expected_content,
 ):
     """
     Test that pip-compile properly emits the pinned requirement with ===
@@ -1568,63 +1604,20 @@ def test_triple_equal_pinned_dependency_is_used(
 
     dists_dir = tmpdir / "dists"
 
-    test_package_1 = make_package("test_package_1", version="1.7.1")
+    test_package_1 = make_package("test_package_1", version="0.1.0")
     make_wheel(test_package_1, dists_dir)
 
     test_package_2 = make_package(
-        "test_package_2", version="0.8.2", install_requires=["test-package-1==1.7.1"]
+        "test_package_2", version="0.1.0", install_requires=[pkg2_install_requires]
     )
     make_wheel(test_package_2, dists_dir)
 
-    # Case 1 ===
     with open("requirements.in", "w") as reqs_in:
-        reqs_in.write("test-package-1===1.7.1\n")
+        for line in req_in_content:
+            reqs_in.write(line)
 
     out = runner.invoke(cli, ["--find-links", str(dists_dir)])
 
     assert out.exit_code == 0, out
-    assert "test-package-1===1.7.1" in out.stderr
-
-    # Case 2 ==
-    with open("requirements.in", "w") as reqs_in:
-        reqs_in.write("test-package-1==1.7.1\n")
-
-    out = runner.invoke(cli, ["--find-links", str(dists_dir)])
-
-    assert out.exit_code == 0, out
-    assert "test-package-1==1.7.1" in out.stderr
-
-    # Case 3 test_package_1 pinned by user with ===
-    # but pinned by package with ==, prefer ===
-    with open("requirements.in", "w") as reqs_in:
-        reqs_in.write("test-package-1===1.7.1\n")
-        reqs_in.write("test-package-2==0.8.2\n")
-
-    out = runner.invoke(cli, ["--find-links", str(dists_dir)])
-
-    assert out.exit_code == 0, out
-    assert "test-package-1===1.7.1" in out.stderr
-    assert "test-package-2==0.8.2" in out.stderr
-
-    # Case 4 test_package_1 pinned by user with ===
-    # but pinned by package with ==, prefer ===
-    # Different pin for test_package_2
-    with open("requirements.in", "w") as reqs_in:
-        reqs_in.write("test-package-1===1.7.1\n")
-        reqs_in.write("test-package-2===0.8.2\n")
-
-    out = runner.invoke(cli, ["--find-links", str(dists_dir)])
-
-    assert out.exit_code == 0, out
-    assert "test-package-1===1.7.1" in out.stderr
-    assert "test-package-2===0.8.2" in out.stderr
-
-    # Case 5 only package 2 pinned with ===
-    with open("requirements.in", "w") as reqs_in:
-        reqs_in.write("test-package-2===0.8.2\n")
-
-    out = runner.invoke(cli, ["--find-links", str(dists_dir)])
-
-    assert out.exit_code == 0, out
-    assert "test-package-1==1.7.1" in out.stderr
-    assert "test-package-2===0.8.2" in out.stderr
+    for line in out_expected_content:
+        assert line in out.stderr
