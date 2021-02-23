@@ -276,7 +276,7 @@ def test_write_format_controls(writer):
                 "--extra-index-url https://index-url2.com",
             ],
         ),
-        # Ignore URLs equal to the default index-url
+        # Not ignore URLs equal to the default index-url
         # (note: the previous case is exception)
         (
             [
@@ -286,6 +286,7 @@ def test_write_format_controls(writer):
             ],
             [
                 "--index-url https://index-url1.com",
+                "--extra-index-url https://default-index-url.com",
                 "--extra-index-url https://index-url2.com",
             ],
         ),

@@ -103,7 +103,7 @@ class OutputWriter:
     def write_index_options(self) -> Iterator[str]:
         if self.emit_index_url:
             for index, index_url in enumerate(dedup(self.index_urls)):
-                if index_url.rstrip("/") == self.default_index_url:
+                if index == 0 and index_url.rstrip("/") == self.default_index_url:
                     continue
                 flag = "--index-url" if index == 0 else "--extra-index-url"
                 yield f"{flag} {index_url}"
