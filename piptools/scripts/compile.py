@@ -257,8 +257,6 @@ def cli(
     emit_index_url: bool,
 ) -> None:
     """Compiles requirements.txt from requirements.in specs."""
-    breakpoint()
-
     log.verbosity = verbose - quiet
 
     if len(src_files) == 0:
