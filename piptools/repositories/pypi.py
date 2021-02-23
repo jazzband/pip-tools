@@ -6,16 +6,17 @@ import os
 import tempfile
 from contextlib import contextmanager
 from shutil import rmtree
-from typing import Sequence
+from typing import Dict, List
 
 from click import progressbar
 from pip._internal.cache import WheelCache
 from pip._internal.cli.progress_bars import BAR_TYPES
 from pip._internal.commands import create_command
+from pip._internal.models.candidate import InstallationCandidate
 from pip._internal.models.index import PackageIndex, PyPI
 from pip._internal.models.link import Link
 from pip._internal.models.wheel import Wheel
-from pip._internal.req import RequirementSet
+from pip._internal.req import InstallRequirement, RequirementSet
 from pip._internal.req.req_tracker import get_requirement_tracker
 from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.logging import indent_log, setup_logging
@@ -52,7 +53,7 @@ class PyPIRepository(BaseRepository):
     changed/configured on the Finder.
     """
 
-    def __init__(self, pip_args: Sequence[str], cache_dir):
+    def __init__(self, pip_args: List[str], cache_dir: str) -> None:
         # Use pip's parser for pip.conf management and defaults.
         # General options (find_links, index_url, extra_index_url, trusted_host,
         # and pre) are deferred to pip.
@@ -78,12 +79,14 @@ class PyPIRepository(BaseRepository):
         # stores project_name => InstallationCandidate mappings for all
         # versions reported by PyPI, so we only have to ask once for each
         # project
-        self._available_candidates_cache = {}
+        self._available_candidates_cache: Dict[str, List[InstallationCandidate]] = {}
 
         # stores InstallRequirement => list(InstallRequirement) mappings
         # of all secondary dependencies for the given requirement, so we
         # only have to go to disk once for each requirement
-        self._dependencies_cache = {}
+        self._dependencies_cache: Dict[
+            InstallRequirement, List[InstallRequirement]
+        ] = {}
 
         # Setup file paths
         self._build_dir = None
@@ -449,7 +452,7 @@ class PyPIRepository(BaseRepository):
             Wheel.support_index_min = original_support_index_min
             self._available_candidates_cache = original_cache
 
-    def _setup_logging(self):
+    def _setup_logging(self) -> None:
         """
         Setup pip's logger. Ensure pip is verbose same as pip-tools and sync
         pip's log stream with LogContext.stream.
@@ -465,7 +468,7 @@ class PyPIRepository(BaseRepository):
         logger = logging.getLogger()
         for handler in logger.handlers:
             if handler.name == "console":  # pragma: no branch
-                handler.stream = log.stream
+                handler.stream = log.stream  # type: ignore[attr-defined]
                 break
         else:  # pragma: no cover
             # There is always a console handler. This warning would be a signal that

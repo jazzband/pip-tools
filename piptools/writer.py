@@ -1,7 +1,7 @@
 import os
 import re
 from itertools import chain
-from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
 from click import unstyle
 from click.core import Context
@@ -63,8 +63,8 @@ class OutputWriter:
         annotate: bool,
         generate_hashes: bool,
         default_index_url: str,
-        index_urls: Sequence[str],
-        trusted_hosts: Sequence[str],
+        index_urls: Iterable[str],
+        trusted_hosts: Iterable[str],
         format_control: FormatControl,
         allow_unsafe: bool,
         find_links: List[str],
@@ -219,8 +219,8 @@ class OutputWriter:
         for line in self._iter_lines(results, unsafe_requirements, markers, hashes):
             log.info(line)
             if not self.dry_run:
-                self.dst_file.write(unstyle(line).encode())
-                self.dst_file.write(os.linesep.encode())
+                self.dst_file.write(unstyle(line).encode())  # type: ignore[attr-defined]
+                self.dst_file.write(os.linesep.encode())  # type: ignore[attr-defined]
 
     def _format_requirement(
         self,

@@ -390,8 +390,8 @@ def cli(
                 from distutils.core import run_setup
 
                 dist = run_setup(src_file)
-                tmpfile.write("\n".join(dist.install_requires))  # type: ignore
-                comes_from = f"{dist.get_name()} ({src_file})"  # type: ignore
+                tmpfile.write("\n".join(dist.install_requires))  # type: ignore[attr-defined]
+                comes_from = f"{dist.get_name()} ({src_file})"  # type: ignore[attr-defined]
             else:
                 tmpfile.write(sys.stdin.read())
                 comes_from = "-r -"
