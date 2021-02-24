@@ -1564,26 +1564,31 @@ def test_duplicate_reqs_combined(
             "",
             ["test-package-1===0.1.0\n"],
             ["test-package-1===0.1.0"],
+            id="pin package with ===",
         ),
         pytest.param(
             "",
             ["test-package-1==0.1.0\n"],
             ["test-package-1==0.1.0"],
+            id="pin package with ==",
         ),
         pytest.param(
             "test-package-1==0.1.0",
             ["test-package-1===0.1.0\n", "test-package-2==0.1.0\n"],
             ["test-package-1===0.1.0", "test-package-2==0.1.0"],
+            id="dep === pin preferred over == pin, main package == pin",
         ),
         pytest.param(
             "test-package-1==0.1.0",
             ["test-package-1===0.1.0\n", "test-package-2===0.1.0\n"],
             ["test-package-1===0.1.0", "test-package-2===0.1.0"],
+            id="dep === pin preferred over == pin, main package === pin",
         ),
         pytest.param(
             "test-package-1==0.1.0",
             ["test-package-2===0.1.0\n"],
             ["test-package-1==0.1.0", "test-package-2===0.1.0"],
+            id="dep == pin conserved, main package === pin",
         ),
     ),
 )
