@@ -113,7 +113,7 @@ def test_command_line_setuptools_nested_output_file(pip_conf, tmpdir, runner):
     """
     proj_dir = tmpdir.mkdir("proj")
 
-    with open(os.path.join(str(proj_dir), "setup.py"), "w") as package:
+    with open(str(proj_dir / "setup.py"), "w") as package:
         package.write(
             dedent(
                 """\
