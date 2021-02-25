@@ -1555,3 +1555,74 @@ def test_duplicate_reqs_combined(
     assert out.exit_code == 0, out
     assert str(test_package_2) in out.stderr
     assert "test-package-1==0.1" in out.stderr
+
+
+@pytest.mark.parametrize(
+    ("pkg2_install_requires", "req_in_content", "out_expected_content"),
+    (
+        pytest.param(
+            "",
+            ["test-package-1===0.1.0\n"],
+            ["test-package-1===0.1.0"],
+            id="pin package with ===",
+        ),
+        pytest.param(
+            "",
+            ["test-package-1==0.1.0\n"],
+            ["test-package-1==0.1.0"],
+            id="pin package with ==",
+        ),
+        pytest.param(
+            "test-package-1==0.1.0",
+            ["test-package-1===0.1.0\n", "test-package-2==0.1.0\n"],
+            ["test-package-1===0.1.0", "test-package-2==0.1.0"],
+            id="dep === pin preferred over == pin, main package == pin",
+        ),
+        pytest.param(
+            "test-package-1==0.1.0",
+            ["test-package-1===0.1.0\n", "test-package-2===0.1.0\n"],
+            ["test-package-1===0.1.0", "test-package-2===0.1.0"],
+            id="dep === pin preferred over == pin, main package === pin",
+        ),
+        pytest.param(
+            "test-package-1==0.1.0",
+            ["test-package-2===0.1.0\n"],
+            ["test-package-1==0.1.0", "test-package-2===0.1.0"],
+            id="dep == pin conserved, main package === pin",
+        ),
+    ),
+)
+def test_triple_equal_pinned_dependency_is_used(
+    runner,
+    make_package,
+    make_wheel,
+    tmpdir,
+    pkg2_install_requires,
+    req_in_content,
+    out_expected_content,
+):
+    """
+    Test that pip-compile properly emits the pinned requirement with ===
+    torchvision 0.8.2 requires torch==1.7.1 which can resolve to versions with
+    patches (e.g. torch 1.7.1+cu110), we want torch===1.7.1 without patches
+    """
+
+    dists_dir = tmpdir / "dists"
+
+    test_package_1 = make_package("test_package_1", version="0.1.0")
+    make_wheel(test_package_1, dists_dir)
+
+    test_package_2 = make_package(
+        "test_package_2", version="0.1.0", install_requires=[pkg2_install_requires]
+    )
+    make_wheel(test_package_2, dists_dir)
+
+    with open("requirements.in", "w") as reqs_in:
+        for line in req_in_content:
+            reqs_in.write(line)
+
+    out = runner.invoke(cli, ["--find-links", str(dists_dir)])
+
+    assert out.exit_code == 0, out
+    for line in out_expected_content:
+        assert line in out.stderr
