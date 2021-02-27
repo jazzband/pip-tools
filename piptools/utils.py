@@ -1,11 +1,14 @@
 import collections
 import itertools
+import json
 import shlex
+import subprocess  # nosec
 from typing import (
     Callable,
     Dict,
     Iterable,
     Iterator,
+    List,
     Optional,
     Set,
     Tuple,
@@ -324,3 +327,16 @@ def get_compile_command(click_ctx: click.Context) -> str:
                     left_args.append(f"{option_long_name}={shlex.quote(str(val))}")
 
     return " ".join(["pip-compile", *sorted(left_args), *sorted(right_args)])
+
+
+def get_sys_path_for_python_executable(python_executable: str) -> List[str]:
+    """
+    Returns sys.path list for given python executable.
+    """
+    result = subprocess.check_output(  # nosec
+        [python_executable, "-c", "import sys;import json;print(json.dumps(sys.path))"]
+    )
+    paths = json.loads(result)
+    assert isinstance(paths, list)
+    assert all(isinstance(i, str) for i in paths)
+    return paths
