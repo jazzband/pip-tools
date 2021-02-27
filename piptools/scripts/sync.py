@@ -2,9 +2,12 @@ import itertools
 import os
 import shlex
 import sys
+from typing import List, Optional, Tuple, cast
 
 import click
 from pip._internal.commands import create_command
+from pip._internal.commands.install import InstallCommand
+from pip._internal.index.package_finder import PackageFinder
 from pip._internal.utils.misc import get_installed_distributions
 
 from .. import sync
@@ -66,22 +69,22 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 @click.argument("src_files", required=False, type=click.Path(exists=True), nargs=-1)
 @click.option("--pip-args", help="Arguments to pass directly to pip install.")
 def cli(
-    ask,
-    dry_run,
-    force,
-    find_links,
-    index_url,
-    extra_index_url,
-    trusted_host,
-    no_index,
-    verbose,
-    quiet,
-    user_only,
-    cert,
-    client_cert,
-    src_files,
-    pip_args,
-):
+    ask: bool,
+    dry_run: bool,
+    force: bool,
+    find_links: Tuple[str, ...],
+    index_url: Optional[str],
+    extra_index_url: Tuple[str, ...],
+    trusted_host: Tuple[str, ...],
+    no_index: bool,
+    verbose: int,
+    quiet: int,
+    user_only: bool,
+    cert: Optional[str],
+    client_cert: Optional[str],
+    src_files: Tuple[str, ...],
+    pip_args: Optional[str],
+) -> None:
     """Synchronize virtual environment with requirements.txt."""
     log.verbosity = verbose - quiet
 
@@ -105,7 +108,7 @@ def cli(
             log.error("ERROR: " + msg)
             sys.exit(2)
 
-    install_command = create_command("install")
+    install_command = cast(InstallCommand, create_command("install"))
     options, _ = install_command.parse_args([])
     session = install_command._build_session(options)
     finder = install_command._build_package_finder(options=options, session=session)
@@ -117,13 +120,13 @@ def cli(
     )
 
     try:
-        requirements = sync.merge(requirements, ignore_conflicts=force)
+        merged_requirements = sync.merge(requirements, ignore_conflicts=force)
     except PipToolsError as e:
         log.error(str(e))
         sys.exit(2)
 
     installed_dists = get_installed_distributions(skip=[], user_only=user_only)
-    to_install, to_uninstall = sync.diff(requirements, installed_dists)
+    to_install, to_uninstall = sync.diff(merged_requirements, installed_dists)
 
     install_flags = (
         _compose_install_flags(
@@ -151,16 +154,16 @@ def cli(
 
 
 def _compose_install_flags(
-    finder,
-    no_index=False,
-    index_url=None,
-    extra_index_url=None,
-    trusted_host=None,
-    find_links=None,
-    user_only=False,
-    cert=None,
-    client_cert=None,
-):
+    finder: PackageFinder,
+    no_index: bool,
+    index_url: Optional[str],
+    extra_index_url: Tuple[str, ...],
+    trusted_host: Tuple[str, ...],
+    find_links: Tuple[str, ...],
+    user_only: bool,
+    cert: Optional[str],
+    client_cert: Optional[str],
+) -> List[str]:
     """
     Compose install flags with the given finder and CLI options.
     """
@@ -169,7 +172,7 @@ def _compose_install_flags(
     # Build --index-url/--extra-index-url/--no-index
     if no_index:
         result.append("--no-index")
-    elif index_url:
+    elif index_url is not None:
         result.extend(["--index-url", index_url])
     elif finder.index_urls:
         finder_index_url = finder.index_urls[0]
@@ -203,10 +206,10 @@ def _compose_install_flags(
     if user_only:
         result.append("--user")
 
-    if cert:
+    if cert is not None:
         result.extend(["--cert", cert])
 
-    if client_cert:
+    if client_cert is not None:
         result.extend(["--client-cert", client_cert])
 
     return result

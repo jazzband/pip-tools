@@ -163,8 +163,7 @@ class PyPIRepository(BaseRepository):
         return make_install_requirement(
             best_candidate.name,
             best_candidate.version,
-            ireq.extras,
-            constraint=ireq.constraint,
+            ireq,
         )
 
     def resolve_reqs(self, download_dir, ireq, wheel_cache):
