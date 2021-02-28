@@ -218,16 +218,6 @@ def dedup(iterable: Iterable[_T]) -> Iterable[_T]:
     return iter(collections.OrderedDict.fromkeys(iterable))
 
 
-def name_from_req(req):
-    """Get the name of the requirement"""
-    if hasattr(req, "project_name"):
-        # from pkg_resources, such as installed dists for pip-sync
-        return req.project_name
-    else:
-        # from packaging, such as install requirements from requirements.txt
-        return req.name
-
-
 def get_hashes_from_ireq(ireq: InstallRequirement) -> Set[str]:
     """
     Given an InstallRequirement, return a set of string hashes in the format

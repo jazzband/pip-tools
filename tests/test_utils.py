@@ -17,7 +17,6 @@ from piptools.utils import (
     is_pinned_requirement,
     is_url_requirement,
     lookup_table,
-    name_from_req,
 )
 
 
@@ -196,17 +195,6 @@ def test_is_url_requirement_filename(caplog, from_line, line):
     caplog.set_level(logging.ERROR, logger="pip")
     ireq = from_line(line)
     assert is_url_requirement(ireq) is True
-
-
-def test_name_from_req(from_line):
-    ireq = from_line("django==1.8")
-    assert name_from_req(ireq.req) == "django"
-
-
-def test_name_from_req_with_project_name(from_line):
-    ireq = from_line("foo==1.8")
-    ireq.req.project_name = "bar"
-    assert name_from_req(ireq.req) == "bar"
 
 
 @pytest.mark.parametrize(
