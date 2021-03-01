@@ -126,6 +126,34 @@ def test_command_line_setuptools_nested_output_file(tmpdir, runner):
     assert (proj_dir / "requirements.txt").exists()
 
 
+@pytest.mark.network
+def test_setuptools_preserves_environment_markers(
+    runner, make_package, make_wheel, tmpdir
+):
+    dists_dir = tmpdir / "dists"
+
+    foo_dir = make_package(name="foo", version="1.0")
+    make_wheel(foo_dir, dists_dir)
+
+    bar_dir = make_package(
+        name="bar", version="2.0", install_requires=['foo ; python_version >= "1"']
+    )
+    out = runner.invoke(
+        cli,
+        [
+            str(bar_dir / "setup.py"),
+            "--no-header",
+            "--no-annotate",
+            "--no-emit-find-links",
+            "--find-links",
+            str(dists_dir),
+        ],
+    )
+
+    assert out.exit_code == 0, out.stderr
+    assert out.stderr == 'foo==1.0 ; python_version >= "1"\n'
+
+
 def test_find_links_option(runner):
     with open("requirements.in", "w") as req_in:
         req_in.write("-f ./libs3")
