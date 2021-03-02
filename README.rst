@@ -1,4 +1,4 @@
-|jazzband| |pypi| |pyversions| |buildstatus-gha| |codecov|
+|jazzband| |pypi| |pyversions| |pre-commit| |buildstatus-gha| |codecov|
 
 ==================================
 pip-tools = pip-compile + pip-sync
@@ -19,6 +19,9 @@ even when you've pinned them.  You do pin them, right? (In building your Python 
 .. |jazzband| image:: https://jazzband.co/static/img/badge.svg
    :alt: Jazzband
    :target: https://jazzband.co/
+.. |pre-commit| image:: https://results.pre-commit.ci/badge/github/jazzband/pip-tools/master.svg
+   :alt: pre-commit.ci status
+   :target: https://results.pre-commit.ci/latest/github/jazzband/pip-tools/master
 .. |pypi| image:: https://img.shields.io/pypi/v/pip-tools.svg
    :alt: PyPI version
    :target: https://pypi.org/project/pip-tools/

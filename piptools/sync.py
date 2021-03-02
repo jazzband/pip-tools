@@ -3,7 +3,17 @@ import os
 import sys
 import tempfile
 from subprocess import run  # nosec
-from typing import Deque, Dict, Iterable, List, Optional, Set, Tuple, ValuesView
+from typing import (
+    Deque,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Set,
+    Tuple,
+    ValuesView,
+)
 
 import click
 from pip._internal.commands.freeze import DEV_PKGS
@@ -33,7 +43,9 @@ PACKAGES_TO_IGNORE = [
 ]
 
 
-def dependency_tree(installed_keys: Dict[str, Requirement], root_key: str) -> Set[str]:
+def dependency_tree(
+    installed_keys: Mapping[str, Requirement], root_key: str
+) -> Set[str]:
     """
     Calculate the dependency tree for the package `root_key` and return
     a collection of all its dependencies.  Uses a DFS traversal algorithm.
@@ -84,8 +96,8 @@ def get_dists_to_ignore(installed: Iterable[Requirement]) -> List[str]:
 
 
 def merge(
-    requirements: InstallRequirement, ignore_conflicts: bool
-) -> ValuesView[Tuple[str, InstallRequirement]]:
+    requirements: Iterable[InstallRequirement], ignore_conflicts: bool
+) -> ValuesView[InstallRequirement]:
     by_key: Dict[str, InstallRequirement] = {}
 
     for ireq in requirements:
@@ -161,8 +173,8 @@ def diff(
 
 
 def sync(
-    to_install: List[InstallRequirement],
-    to_uninstall: List[InstallRequirement],
+    to_install: Iterable[InstallRequirement],
+    to_uninstall: Iterable[InstallRequirement],
     dry_run: bool = False,
     install_flags: Optional[List[str]] = None,
     ask: bool = False,
