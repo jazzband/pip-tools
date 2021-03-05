@@ -39,7 +39,16 @@ def test_command_line_overrides_pip_conf(pip_with_index_conf, runner):
 
 
 @pytest.mark.network
-def test_command_line_setuptools_read(runner):
+def test_command_line_setuptools_read(runner, make_pip_conf):
+    make_pip_conf(
+        dedent(
+            """\
+            [global]
+            disable-pip-version-check = True
+            """
+        )
+    )
+
     with open("setup.py", "w") as package:
         package.write(
             dedent(
@@ -128,8 +137,17 @@ def test_command_line_setuptools_nested_output_file(tmpdir, runner):
 
 @pytest.mark.network
 def test_setuptools_preserves_environment_markers(
-    runner, make_package, make_wheel, tmpdir
+    runner, make_package, make_wheel, make_pip_conf, tmpdir
 ):
+    make_pip_conf(
+        dedent(
+            """\
+            [global]
+            disable-pip-version-check = True
+            """
+        )
+    )
+
     dists_dir = tmpdir / "dists"
 
     foo_dir = make_package(name="foo", version="1.0")
