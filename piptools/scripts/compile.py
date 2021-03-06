@@ -7,8 +7,12 @@ from typing import Any
 import click
 from click.utils import safecall
 from pip._internal.commands import create_command
-from pip._internal.req.constructors import install_req_from_line
+from pip._internal.req.constructors import (
+    install_req_from_line,
+    install_req_from_req_string,
+)
 from pip._internal.utils.misc import redact_auth_from_url
+from pip._vendor.pep517 import meta
 
 from .._compat import parse_requirements
 from ..cache import DependencyCache
@@ -330,21 +334,14 @@ def cli(
     constraints = []
     for src_file in src_files:
         is_setup_file = os.path.basename(src_file) == "setup.py"
-        if is_setup_file or src_file == "-":
+        if src_file == "-":
             # pip requires filenames and not files. Since we want to support
             # piping from stdin, we need to briefly save the input from stdin
             # to a temporary file and have pip read that.  also used for
             # reading requirements from install_requires in setup.py.
             tmpfile = tempfile.NamedTemporaryFile(mode="wt", delete=False)
-            if is_setup_file:
-                from distutils.core import run_setup
-
-                dist = run_setup(src_file)
-                tmpfile.write("\n".join(dist.install_requires))
-                comes_from = f"{dist.get_name()} ({src_file})"
-            else:
-                tmpfile.write(sys.stdin.read())
-                comes_from = "-r -"
+            tmpfile.write(sys.stdin.read())
+            comes_from = "-r -"
             tmpfile.flush()
             reqs = list(
                 parse_requirements(
@@ -357,6 +354,15 @@ def cli(
             for req in reqs:
                 req.comes_from = comes_from
             constraints.extend(reqs)
+        elif is_setup_file:
+            dist = meta.load(os.path.dirname(os.path.abspath(src_file)))
+            comes_from = f"{dist.metadata.get_all('Name')[0]} ({src_file})"
+            constraints.extend(
+                [
+                    install_req_from_req_string(req, comes_from=comes_from)
+                    for req in dist.requires or []
+                ]
+            )
         else:
             constraints.extend(
                 parse_requirements(
@@ -378,7 +384,13 @@ def cli(
 
     # Filter out pip environment markers which do not match (PEP496)
     constraints = [
-        req for req in constraints if req.markers is None or req.markers.evaluate()
+        req
+        for req in constraints
+        if req.markers is None
+        # We explicitly set extra=None to filter out optional requirements
+        # since evaluating an extra marker with no environment raises UndefinedEnvironmentName
+        # (see https://packaging.pypa.io/en/latest/markers.html#usage)
+        or req.markers.evaluate({"extra": None})
     ]
 
     log.debug("Using indexes:")
