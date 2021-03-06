@@ -17,7 +17,6 @@ from piptools.utils import (
     is_pinned_requirement,
     is_url_requirement,
     lookup_table,
-    name_from_req,
 )
 
 
@@ -198,17 +197,6 @@ def test_is_url_requirement_filename(caplog, from_line, line):
     assert is_url_requirement(ireq) is True
 
 
-def test_name_from_req(from_line):
-    ireq = from_line("django==1.8")
-    assert name_from_req(ireq.req) == "django"
-
-
-def test_name_from_req_with_project_name(from_line):
-    ireq = from_line("foo==1.8")
-    ireq.req.project_name = "bar"
-    assert name_from_req(ireq.req) == "bar"
-
-
 @pytest.mark.parametrize(
     ("cli_args", "expected_command"),
     (
@@ -239,7 +227,6 @@ def test_name_from_req_with_project_name(from_line):
         (["--pre"], "pip-compile --pre"),
         (["--allow-unsafe"], "pip-compile --allow-unsafe"),
         # Check negative flags
-        (["--no-index"], "pip-compile --no-index"),
         (["--no-emit-index-url"], "pip-compile --no-emit-index-url"),
         (["--no-emit-trusted-host"], "pip-compile --no-emit-trusted-host"),
         (["--no-annotate"], "pip-compile --no-annotate"),
@@ -247,7 +234,6 @@ def test_name_from_req_with_project_name(from_line):
         # Check that default values will be removed from the command
         (["--emit-trusted-host"], "pip-compile"),
         (["--annotate"], "pip-compile"),
-        (["--index"], "pip-compile"),
         (["--emit-index-url"], "pip-compile"),
         (["--max-rounds=10"], "pip-compile"),
         (["--build-isolation"], "pip-compile"),
