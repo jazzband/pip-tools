@@ -6,7 +6,7 @@ import os
 import tempfile
 from contextlib import contextmanager
 from shutil import rmtree
-from typing import Dict, List
+from typing import Dict, List, cast
 
 from click import progressbar
 from pip._internal.cache import WheelCache
@@ -467,7 +467,8 @@ class PyPIRepository(BaseRepository):
         logger = logging.getLogger()
         for handler in logger.handlers:
             if handler.name == "console":  # pragma: no branch
-                handler.stream = log.stream  # type: ignore[attr-defined]
+                handler = cast(logging.StreamHandler, handler)
+                handler.stream = log.stream
                 break
         else:  # pragma: no cover
             # There is always a console handler. This warning would be a signal that
