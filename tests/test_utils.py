@@ -386,7 +386,7 @@ def test_lookup_table_requires_key(values):
 @pytest.mark.parametrize(
     "key",
     (
-        pytest.param(lambda x: x, id="with key"),
+        pytest.param(operator.itemgetter(0), id="with key"),
         pytest.param(None, id="without key"),
     ),
 )
