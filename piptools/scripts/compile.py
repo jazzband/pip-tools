@@ -2,7 +2,7 @@ import os
 import shlex
 import sys
 import tempfile
-from typing import Any, Optional, Tuple
+from typing import Any, BinaryIO, Optional, Tuple, cast
 
 import click
 from click.utils import LazyFile, safecall
@@ -432,7 +432,7 @@ def cli(
     ##
 
     writer = OutputWriter(
-        output_file,
+        cast(BinaryIO, output_file),
         click_ctx=ctx,
         dry_run=dry_run,
         emit_header=header,
