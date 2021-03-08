@@ -366,4 +366,4 @@ def test_lookup_table_from_tuples_with_empty_values():
 
 
 def test_lookup_table_with_empty_values():
-    assert lookup_table((), key=lambda x: x) == {}
+    assert lookup_table((), operator.itemgetter(0)) == {}
