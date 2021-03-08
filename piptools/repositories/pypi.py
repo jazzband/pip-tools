@@ -23,7 +23,7 @@ from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
 from pip._internal.utils.urls import path_to_url, url_to_path
 from pip._vendor.requests import RequestException
 
-from .._compat import PIP_VERSION, contextlib
+from .._compat import contextlib
 from ..exceptions import NoCandidateFound
 from ..logging import log
 from ..utils import (
@@ -55,11 +55,7 @@ class PyPIRepository(BaseRepository):
         # General options (find_links, index_url, extra_index_url, trusted_host,
         # and pre) are deferred to pip.
         self.command = create_command("install")
-        extra_pip_args = (
-            []
-            if PIP_VERSION[:2] <= (20, 2)
-            else ["--use-deprecated", "legacy-resolver"]
-        )
+        extra_pip_args = ["--use-deprecated", "legacy-resolver"]
         self.options, _ = self.command.parse_args(pip_args + extra_pip_args)
         if self.options.cache_dir:
             self.options.cache_dir = normalize_path(self.options.cache_dir)
@@ -88,8 +84,6 @@ class PyPIRepository(BaseRepository):
         self._source_dir = None
         self._cache_dir = normalize_path(str(cache_dir))
         self._download_dir = os.path.join(self._cache_dir, "pkgs")
-        if PIP_VERSION[:2] <= (20, 2):
-            self._wheel_download_dir = os.path.join(self._cache_dir, "wheels")
 
         self._setup_logging()
 
@@ -119,8 +113,6 @@ class PyPIRepository(BaseRepository):
 
     def clear_caches(self):
         rmtree(self._download_dir, ignore_errors=True)
-        if PIP_VERSION[:2] <= (20, 2):
-            rmtree(self._wheel_download_dir, ignore_errors=True)
 
     def find_all_candidates(self, req_name):
         if req_name not in self._available_candidates_cache:
@@ -174,15 +166,10 @@ class PyPIRepository(BaseRepository):
                 use_user_site=False,
                 download_dir=download_dir,
             )
-            if PIP_VERSION[:2] <= (20, 2):
-                preparer_kwargs["wheel_download_dir"] = self._wheel_download_dir
             preparer = self.command.make_requirement_preparer(**preparer_kwargs)
 
             reqset = RequirementSet()
-            if PIP_VERSION[:2] <= (20, 1):
-                ireq.is_direct = True
-            else:
-                ireq.user_supplied = True
+            ireq.user_supplied = True
             reqset.add_requirement(ireq)
 
             resolver = self.command.make_resolver(
@@ -200,10 +187,7 @@ class PyPIRepository(BaseRepository):
             if not ireq.prepared:
                 # If still not prepared, e.g. a constraint, do enough to assign
                 # the ireq a name:
-                if PIP_VERSION[:2] <= (20, 2):
-                    resolver._get_abstract_dist_for(ireq)
-                else:
-                    resolver._get_dist_for(ireq)
+                resolver._get_dist_for(ireq)
 
         return set(results)
 
@@ -233,8 +217,6 @@ class PyPIRepository(BaseRepository):
             else:
                 download_dir = self._get_download_path(ireq)
                 os.makedirs(download_dir, exist_ok=True)
-            if PIP_VERSION[:2] <= (20, 2):
-                os.makedirs(self._wheel_download_dir, exist_ok=True)
 
             with global_tempdir_manager():
                 wheel_cache = WheelCache(self._cache_dir, self.options.format_control)
