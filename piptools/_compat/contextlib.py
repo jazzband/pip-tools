@@ -16,10 +16,10 @@ class nullcontext:
     TODO: replace with `contextlib.nullcontext()` after Python 3.6 being dropped
     """
 
-    def __init__(self, enter_result: Optional[_T] = None) -> None:
+    def __init__(self, enter_result: _T) -> None:
         self.enter_result = enter_result
 
-    def __enter__(self) -> Optional[_T]:
+    def __enter__(self) -> _T:
         return self.enter_result
 
     def __exit__(
