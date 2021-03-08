@@ -6,22 +6,26 @@ import os
 import tempfile
 from contextlib import contextmanager
 from shutil import rmtree
+from typing import Any, ContextManager, Dict, Iterator, List, Optional, Set, cast
 
 from click import progressbar
 from pip._internal.cache import WheelCache
 from pip._internal.cli.progress_bars import BAR_TYPES
 from pip._internal.commands import create_command
+from pip._internal.models.candidate import InstallationCandidate
 from pip._internal.models.index import PackageIndex, PyPI
 from pip._internal.models.link import Link
 from pip._internal.models.wheel import Wheel
-from pip._internal.req import RequirementSet
+from pip._internal.req import InstallRequirement, RequirementSet
 from pip._internal.req.req_tracker import get_requirement_tracker
 from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.logging import indent_log, setup_logging
 from pip._internal.utils.misc import normalize_path
 from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
 from pip._internal.utils.urls import path_to_url, url_to_path
-from pip._vendor.requests import RequestException
+from pip._vendor.packaging.tags import Tag
+from pip._vendor.packaging.version import _BaseVersion
+from pip._vendor.requests import RequestException, Session
 
 from .._compat import contextlib
 from ..exceptions import NoCandidateFound
@@ -50,7 +54,7 @@ class PyPIRepository(BaseRepository):
     changed/configured on the Finder.
     """
 
-    def __init__(self, pip_args, cache_dir):
+    def __init__(self, pip_args: List[str], cache_dir: str):
         # Use pip's parser for pip.conf management and defaults.
         # General options (find_links, index_url, extra_index_url, trusted_host,
         # and pre) are deferred to pip.
@@ -72,23 +76,23 @@ class PyPIRepository(BaseRepository):
         # stores project_name => InstallationCandidate mappings for all
         # versions reported by PyPI, so we only have to ask once for each
         # project
-        self._available_candidates_cache = {}
+        self._available_candidates_cache: Dict[str, List[InstallationCandidate]] = {}
 
         # stores InstallRequirement => list(InstallRequirement) mappings
         # of all secondary dependencies for the given requirement, so we
         # only have to go to disk once for each requirement
-        self._dependencies_cache = {}
+        self._dependencies_cache: Dict[InstallRequirement, Set[InstallRequirement]] = {}
 
         # Setup file paths
-        self._build_dir = None
-        self._source_dir = None
+        self._build_dir: Optional[tempfile.TemporaryDirectory[str]] = None
+        self._source_dir: Optional[tempfile.TemporaryDirectory[str]] = None
         self._cache_dir = normalize_path(str(cache_dir))
         self._download_dir = os.path.join(self._cache_dir, "pkgs")
 
         self._setup_logging()
 
     @contextmanager
-    def freshen_build_caches(self):
+    def freshen_build_caches(self) -> Iterator[None]:
         """
         Start with fresh build/source caches.  Will remove any old build
         caches from disk automatically.
@@ -104,23 +108,25 @@ class PyPIRepository(BaseRepository):
             self._source_dir = None
 
     @property
-    def build_dir(self):
+    def build_dir(self) -> Optional[str]:
         return self._build_dir.name if self._build_dir else None
 
     @property
-    def source_dir(self):
+    def source_dir(self) -> Optional[str]:
         return self._source_dir.name if self._source_dir else None
 
-    def clear_caches(self):
+    def clear_caches(self) -> None:
         rmtree(self._download_dir, ignore_errors=True)
 
-    def find_all_candidates(self, req_name):
+    def find_all_candidates(self, req_name: str) -> List[InstallationCandidate]:
         if req_name not in self._available_candidates_cache:
             candidates = self.finder.find_all_candidates(req_name)
             self._available_candidates_cache[req_name] = candidates
         return self._available_candidates_cache[req_name]
 
-    def find_best_match(self, ireq, prereleases=None):
+    def find_best_match(
+        self, ireq: InstallRequirement, prereleases: Optional[bool] = None
+    ) -> InstallRequirement:
         """
         Returns a pinned InstallRequirement object that indicates the best match
         for the given InstallRequirement according to the external repository.
@@ -129,7 +135,7 @@ class PyPIRepository(BaseRepository):
             return ireq  # return itself as the best match
 
         all_candidates = self.find_all_candidates(ireq.name)
-        candidates_by_version = lookup_table(all_candidates, key=lambda c: c.version)
+        candidates_by_version = lookup_table(all_candidates, key=candidate_version)
         matching_versions = ireq.specifier.filter(
             (candidate.version for candidate in all_candidates), prereleases=prereleases
         )
@@ -153,7 +159,12 @@ class PyPIRepository(BaseRepository):
             ireq,
         )
 
-    def resolve_reqs(self, download_dir, ireq, wheel_cache):
+    def resolve_reqs(
+        self,
+        download_dir: Optional[str],
+        ireq: InstallRequirement,
+        wheel_cache: WheelCache,
+    ) -> Set[InstallationCandidate]:
         with get_requirement_tracker() as req_tracker, TempDirectory(
             kind="resolver"
         ) as temp_dir, indent_log():
@@ -191,7 +202,7 @@ class PyPIRepository(BaseRepository):
 
         return set(results)
 
-    def get_dependencies(self, ireq):
+    def get_dependencies(self, ireq: InstallRequirement) -> Set[InstallRequirement]:
         """
         Given a pinned, URL, or editable InstallRequirement, returns a set of
         dependencies (also InstallRequirements, but not necessarily pinned).
@@ -226,14 +237,16 @@ class PyPIRepository(BaseRepository):
 
         return self._dependencies_cache[ireq]
 
-    def copy_ireq_dependencies(self, source, dest):
+    def copy_ireq_dependencies(
+        self, source: InstallRequirement, dest: InstallRequirement
+    ) -> None:
         try:
             self._dependencies_cache[dest] = self._dependencies_cache[source]
         except KeyError:
             # `source` may not be in cache yet.
             pass
 
-    def _get_project(self, ireq):
+    def _get_project(self, ireq: InstallRequirement) -> Any:
         """
         Return a dict of a project info from PyPI JSON API for a given
         InstallRequirement. Return None on HTTP/JSON error or if a package
@@ -266,7 +279,7 @@ class PyPIRepository(BaseRepository):
             return data
         return None
 
-    def _get_download_path(self, ireq):
+    def _get_download_path(self, ireq: InstallRequirement) -> str:
         """
         Determine the download dir location in a way which avoids name
         collisions.
@@ -275,12 +288,13 @@ class PyPIRepository(BaseRepository):
             salt = hashlib.sha224(ireq.link.url_without_fragment.encode()).hexdigest()
             # Nest directories to avoid running out of top level dirs on some FS
             # (see pypi _get_cache_path_parts, which inspired this)
-            salt = [salt[:2], salt[2:4], salt[4:6], salt[6:]]
-            return os.path.join(self._download_dir, *salt)
+            return os.path.join(
+                self._download_dir, salt[:2], salt[2:4], salt[4:6], salt[6:]
+            )
         else:
             return self._download_dir
 
-    def get_hashes(self, ireq):
+    def get_hashes(self, ireq: InstallRequirement) -> Set[str]:
         """
         Given an InstallRequirement, return a set of hashes that represent all
         of the files for a given requirement. Unhashable requirements return an
@@ -320,7 +334,7 @@ class PyPIRepository(BaseRepository):
 
         return hashes
 
-    def _get_hashes_from_pypi(self, ireq):
+    def _get_hashes_from_pypi(self, ireq: InstallRequirement) -> Optional[Set[str]]:
         """
         Return a set of hashes from PyPI JSON API for a given InstallRequirement.
         Return None if fetching data is failed or missing digests.
@@ -349,7 +363,7 @@ class PyPIRepository(BaseRepository):
 
         return hashes
 
-    def _get_hashes_from_files(self, ireq):
+    def _get_hashes_from_files(self, ireq: InstallRequirement) -> Set[str]:
         """
         Return a set of hashes for all release files of a given InstallRequirement.
         """
@@ -357,7 +371,7 @@ class PyPIRepository(BaseRepository):
         # pin, these will represent all of the files that could possibly
         # satisfy this constraint.
         all_candidates = self.find_all_candidates(ireq.name)
-        candidates_by_version = lookup_table(all_candidates, key=lambda c: c.version)
+        candidates_by_version = lookup_table(all_candidates, key=candidate_version)
         matching_versions = list(
             ireq.specifier.filter(candidate.version for candidate in all_candidates)
         )
@@ -367,14 +381,15 @@ class PyPIRepository(BaseRepository):
             self._get_file_hash(candidate.link) for candidate in matching_candidates
         }
 
-    def _get_file_hash(self, link):
+    def _get_file_hash(self, link: Link) -> str:
         log.debug(f"Hashing {link.show_url}")
         h = hashlib.new(FAVORITE_HASH)
         with open_local_or_remote_file(link, self.session) as f:
             # Chunks to iterate
-            chunks = iter(lambda: f.stream.read(FILE_CHUNK_SIZE), b"")
+            chunks = iter(lambda: cast(bytes, f.stream.read(FILE_CHUNK_SIZE)), b"")
 
             # Choose a context manager depending on verbosity
+            context_manager: ContextManager[Iterator[bytes]]
             if log.verbosity >= 1:
                 iter_length = f.size / FILE_CHUNK_SIZE if f.size else None
                 bar_template = f"{' ' * log.current_indent}  |%(bar)s| %(info)s"
@@ -397,7 +412,7 @@ class PyPIRepository(BaseRepository):
         return ":".join([FAVORITE_HASH, h.hexdigest()])
 
     @contextmanager
-    def allow_all_wheels(self):
+    def allow_all_wheels(self) -> Iterator[None]:
         """
         Monkey patches pip.Wheel to allow wheels from all platforms and Python versions.
 
@@ -405,11 +420,11 @@ class PyPIRepository(BaseRepository):
         the previous non-patched calls will interfere.
         """
 
-        def _wheel_supported(self, tags=None):
+        def _wheel_supported(self: Wheel, tags: List[Tag]) -> bool:
             # Ignore current platform. Support everything.
             return True
 
-        def _wheel_support_index_min(self, tags=None):
+        def _wheel_support_index_min(self: Wheel, tags: List[Tag]) -> int:
             # All wheels are equal priority for sorting.
             return 0
 
@@ -428,7 +443,7 @@ class PyPIRepository(BaseRepository):
             Wheel.support_index_min = original_support_index_min
             self._available_candidates_cache = original_cache
 
-    def _setup_logging(self):
+    def _setup_logging(self) -> None:
         """
         Setup pip's logger. Ensure pip is verbose same as pip-tools and sync
         pip's log stream with LogContext.stream.
@@ -444,6 +459,7 @@ class PyPIRepository(BaseRepository):
         logger = logging.getLogger()
         for handler in logger.handlers:
             if handler.name == "console":  # pragma: no branch
+                assert isinstance(handler, logging.StreamHandler)
                 handler.stream = log.stream
                 break
         else:  # pragma: no cover
@@ -458,7 +474,7 @@ class PyPIRepository(BaseRepository):
 
 
 @contextmanager
-def open_local_or_remote_file(link, session):
+def open_local_or_remote_file(link: Link, session: Session) -> Iterator[FileStream]:
     """
     Open local or remote file for reading.
 
@@ -484,6 +500,7 @@ def open_local_or_remote_file(link, session):
         response = session.get(url, headers=headers, stream=True)
 
         # Content length must be int or None
+        content_length: Optional[int]
         try:
             content_length = int(response.headers["content-length"])
         except (ValueError, KeyError, TypeError):
@@ -493,3 +510,7 @@ def open_local_or_remote_file(link, session):
             yield FileStream(stream=response.raw, size=content_length)
         finally:
             response.close()
+
+
+def candidate_version(candidate: InstallationCandidate) -> _BaseVersion:
+    return candidate.version
