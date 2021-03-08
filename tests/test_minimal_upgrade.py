@@ -34,7 +34,7 @@ from piptools.utils import key_from_ireq
 )
 def test_no_upgrades(base_resolver, repository, from_line, input, pins, expected):
     input = [from_line(line) for line in input]
-    existing_pins = dict()
+    existing_pins = {}
     for line in pins:
         ireq = from_line(line)
         existing_pins[key_from_ireq(ireq)] = ireq
