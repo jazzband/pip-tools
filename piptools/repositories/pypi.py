@@ -4,7 +4,7 @@ import itertools
 import logging
 import os
 import tempfile
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from shutil import rmtree
 
 from click import progressbar
@@ -80,8 +80,8 @@ class PyPIRepository(BaseRepository):
         self._dependencies_cache = {}
 
         # Setup file paths
-        self._build_dir = None
-        self._source_dir = None
+        self.build_dir = None
+        self.source_dir = None
         self._cache_dir = normalize_path(str(cache_dir))
         self._download_dir = os.path.join(self._cache_dir, "pkgs")
 
@@ -93,23 +93,14 @@ class PyPIRepository(BaseRepository):
         Start with fresh build/source caches.  Will remove any old build
         caches from disk automatically.
         """
-        self._build_dir = tempfile.TemporaryDirectory("build")
-        self._source_dir = tempfile.TemporaryDirectory("source")
-        try:
-            yield
-        finally:
-            self._build_dir.cleanup()
-            self._build_dir = None
-            self._source_dir.cleanup()
-            self._source_dir = None
-
-    @property
-    def build_dir(self):
-        return self._build_dir.name if self._build_dir else None
-
-    @property
-    def source_dir(self):
-        return self._source_dir.name if self._source_dir else None
+        with ExitStack() as stack:
+            self.build_dir = stack.enter_context(tempfile.TemporaryDirectory("build"))
+            self.source_dir = stack.enter_context(tempfile.TemporaryDirectory("source"))
+            try:
+                yield
+            finally:
+                self.build_dir = None
+                self.source_dir = None
 
     def clear_caches(self):
         rmtree(self._download_dir, ignore_errors=True)

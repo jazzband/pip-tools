@@ -1,4 +1,5 @@
 import os
+import tempfile
 from unittest import mock
 
 import pytest
@@ -139,14 +140,43 @@ def test_pypirepo_build_dir_is_str(pypi_repository):
     assert pypi_repository.build_dir is None
     with pypi_repository.freshen_build_caches():
         assert isinstance(pypi_repository.build_dir, str)
+        path = pypi_repository.build_dir
+        assert os.path.isdir(path)
     assert pypi_repository.build_dir is None
+    assert not os.path.exists(path)
 
 
 def test_pypirepo_source_dir_is_str(pypi_repository):
     assert pypi_repository.source_dir is None
     with pypi_repository.freshen_build_caches():
         assert isinstance(pypi_repository.source_dir, str)
+        path = pypi_repository.source_dir
+        assert os.path.isdir(path)
     assert pypi_repository.source_dir is None
+    assert not os.path.exists(path)
+
+
+def test_pypirepo_build_dir_cleanup(pypi_repository):
+    orig = tempfile.TemporaryDirectory
+    temporary_directories = []
+
+    def temporary_directory_side_effect(suffix):
+        if suffix == "source":
+            raise OSError("source")
+
+        tmp = orig(suffix)
+        temporary_directories.append(tmp)
+        return tmp
+
+    with mock.patch(
+        "tempfile.TemporaryDirectory", side_effect=temporary_directory_side_effect
+    ):
+        with pytest.raises(OSError, match=r"^source$"):  # noqa: PT012
+            with pypi_repository.freshen_build_caches():
+                pass
+
+    assert len(temporary_directories) == 1
+    assert not os.path.exists(temporary_directories[0].name)
 
 
 def test_relative_path_cache_dir_is_normalized(from_line):
