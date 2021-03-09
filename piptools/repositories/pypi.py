@@ -3,7 +3,6 @@ import hashlib
 import itertools
 import logging
 import os
-import tempfile
 from contextlib import contextmanager
 from shutil import rmtree
 from typing import Any, ContextManager, Dict, Iterator, List, Optional, Set, cast
@@ -84,36 +83,10 @@ class PyPIRepository(BaseRepository):
         self._dependencies_cache: Dict[InstallRequirement, Set[InstallRequirement]] = {}
 
         # Setup file paths
-        self._build_dir: Optional[tempfile.TemporaryDirectory[str]] = None
-        self._source_dir: Optional[tempfile.TemporaryDirectory[str]] = None
         self._cache_dir = normalize_path(str(cache_dir))
         self._download_dir = os.path.join(self._cache_dir, "pkgs")
 
         self._setup_logging()
-
-    @contextmanager
-    def freshen_build_caches(self) -> Iterator[None]:
-        """
-        Start with fresh build/source caches.  Will remove any old build
-        caches from disk automatically.
-        """
-        self._build_dir = tempfile.TemporaryDirectory("build")
-        self._source_dir = tempfile.TemporaryDirectory("source")
-        try:
-            yield
-        finally:
-            self._build_dir.cleanup()
-            self._build_dir = None
-            self._source_dir.cleanup()
-            self._source_dir = None
-
-    @property
-    def build_dir(self) -> Optional[str]:
-        return self._build_dir.name if self._build_dir else None
-
-    @property
-    def source_dir(self) -> Optional[str]:
-        return self._source_dir.name if self._source_dir else None
 
     def clear_caches(self) -> None:
         rmtree(self._download_dir, ignore_errors=True)

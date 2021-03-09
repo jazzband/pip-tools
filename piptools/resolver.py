@@ -175,20 +175,14 @@ class Resolver:
 
                 log.debug("")
                 log.debug(magenta(f"{f'ROUND {current_round}':^60}"))
-                # If a package version (foo==2.0) was built in a previous round,
-                # and in this round a different version of foo needs to be built
-                # (i.e. foo==1.0), the directory will exist already, which will
-                # cause a pip build failure.  The trick is to start with a new
-                # build cache dir for every round, so this can never happen.
-                with self.repository.freshen_build_caches():
-                    has_changed, best_matches = self._resolve_one_round()
-                    log.debug("-" * 60)
-                    log.debug(
-                        "Result of round {}: {}".format(
-                            current_round,
-                            "not stable" if has_changed else "stable, done",
-                        )
+                has_changed, best_matches = self._resolve_one_round()
+                log.debug("-" * 60)
+                log.debug(
+                    "Result of round {}: {}".format(
+                        current_round,
+                        "not stable" if has_changed else "stable, done",
                     )
+                )
                 if not has_changed:
                     break
 
