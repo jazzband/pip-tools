@@ -1,6 +1,6 @@
 import optparse
 from contextlib import contextmanager
-from typing import Iterator, List, Mapping, Optional, Set, cast
+from typing import Iterator, Mapping, Optional, Set, cast
 
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.models.candidate import InstallationCandidate
@@ -50,8 +50,8 @@ class LocalRequirementsRepository(BaseRepository):
         self.existing_pins = existing_pins
 
     @property
-    def options(self) -> List[optparse.Option]:
-        return cast(List[optparse.Option], self.repository.options)
+    def options(self) -> optparse.Values:
+        return self.repository.options
 
     @property
     def finder(self) -> PackageFinder:
@@ -60,10 +60,6 @@ class LocalRequirementsRepository(BaseRepository):
     @property
     def session(self) -> Session:
         return self.repository.session
-
-    @property
-    def DEFAULT_INDEX_URL(self) -> str:
-        return cast(str, self.repository.DEFAULT_INDEX_URL)
 
     def clear_caches(self) -> None:
         self.repository.clear_caches()
