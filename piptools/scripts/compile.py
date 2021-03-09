@@ -2,15 +2,17 @@ import os
 import shlex
 import sys
 import tempfile
-import warnings
 from typing import Any
 
 import click
-from click import Command
 from click.utils import safecall
 from pip._internal.commands import create_command
-from pip._internal.req.constructors import install_req_from_line
+from pip._internal.req.constructors import (
+    install_req_from_line,
+    install_req_from_req_string,
+)
 from pip._internal.utils.misc import redact_auth_from_url
+from pip._vendor.pep517 import meta
 
 from .._compat import parse_requirements
 from ..cache import DependencyCache
@@ -36,30 +38,7 @@ def _get_default_option(option_name: str) -> Any:
     return getattr(default_values, option_name)
 
 
-class BaseCommand(Command):
-    _os_args = None
-
-    def parse_args(self, ctx, args):
-        """
-        Override base `parse_args` to store the argument part of `sys.argv`.
-        """
-        self._os_args = set(args)
-        return super().parse_args(ctx, args)
-
-    def has_arg(self, arg_name):
-        """
-        Detect whether a given arg name (including negative counterparts
-        to the arg, e.g. --no-arg) is present in the argument part of `sys.argv`.
-        """
-        command_options = {option.name: option for option in self.params}
-        option = command_options[arg_name]
-        args = set(option.opts + option.secondary_opts)
-        return bool(self._os_args & args)
-
-
-@click.command(
-    cls=BaseCommand, context_settings={"help_option_names": ("-h", "--help")}
-)
+@click.command(context_settings={"help_option_names": ("-h", "--help")})
 @click.version_option()
 @click.pass_context
 @click.option("-v", "--verbose", count=True, help="Show more output")
@@ -116,12 +95,6 @@ class BaseCommand(Command):
     is_flag=True,
     default=True,
     help="Add header to generated file",
-)
-@click.option(
-    "--index/--no-index",
-    is_flag=True,
-    default=True,
-    help="DEPRECATED: Add index URL to generated file",
 )
 @click.option(
     "--emit-trusted-host/--no-emit-trusted-host",
@@ -237,7 +210,6 @@ def cli(
     client_cert,
     trusted_host,
     header,
-    index,
     emit_trusted_host,
     annotate,
     upgrade,
@@ -293,19 +265,6 @@ def cli(
 
         # Close the file at the end of the context execution
         ctx.call_on_close(safecall(output_file.close_intelligently))
-
-    if cli.has_arg("index") and cli.has_arg("emit_index_url"):
-        raise click.BadParameter(
-            "--index/--no-index and --emit-index-url/--no-emit-index-url "
-            "are mutually exclusive."
-        )
-    elif cli.has_arg("index"):
-        warnings.warn(
-            "--index and --no-index are deprecated and will be removed "
-            "in future versions. Use --emit-index-url/--no-emit-index-url instead.",
-            category=FutureWarning,
-        )
-        emit_index_url = index
 
     ###
     # Setup
@@ -375,21 +334,14 @@ def cli(
     constraints = []
     for src_file in src_files:
         is_setup_file = os.path.basename(src_file) == "setup.py"
-        if is_setup_file or src_file == "-":
+        if src_file == "-":
             # pip requires filenames and not files. Since we want to support
             # piping from stdin, we need to briefly save the input from stdin
             # to a temporary file and have pip read that.  also used for
             # reading requirements from install_requires in setup.py.
             tmpfile = tempfile.NamedTemporaryFile(mode="wt", delete=False)
-            if is_setup_file:
-                from distutils.core import run_setup
-
-                dist = run_setup(src_file)
-                tmpfile.write("\n".join(dist.install_requires))
-                comes_from = f"{dist.get_name()} ({src_file})"
-            else:
-                tmpfile.write(sys.stdin.read())
-                comes_from = "-r -"
+            tmpfile.write(sys.stdin.read())
+            comes_from = "-r -"
             tmpfile.flush()
             reqs = list(
                 parse_requirements(
@@ -402,6 +354,15 @@ def cli(
             for req in reqs:
                 req.comes_from = comes_from
             constraints.extend(reqs)
+        elif is_setup_file:
+            dist = meta.load(os.path.dirname(os.path.abspath(src_file)))
+            comes_from = f"{dist.metadata.get_all('Name')[0]} ({src_file})"
+            constraints.extend(
+                [
+                    install_req_from_req_string(req, comes_from=comes_from)
+                    for req in dist.requires or []
+                ]
+            )
         else:
             constraints.extend(
                 parse_requirements(
@@ -423,7 +384,13 @@ def cli(
 
     # Filter out pip environment markers which do not match (PEP496)
     constraints = [
-        req for req in constraints if req.markers is None or req.markers.evaluate()
+        req
+        for req in constraints
+        if req.markers is None
+        # We explicitly set extra=None to filter out optional requirements
+        # since evaluating an extra marker with no environment raises UndefinedEnvironmentName
+        # (see https://packaging.pypa.io/en/latest/markers.html#usage)
+        or req.markers.evaluate({"extra": None})
     ]
 
     log.debug("Using indexes:")

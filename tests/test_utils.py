@@ -19,7 +19,7 @@ from piptools.utils import (
     is_pinned_requirement,
     is_url_requirement,
     lookup_table,
-    name_from_req,
+    lookup_table_from_tuples,
 )
 
 
@@ -200,17 +200,6 @@ def test_is_url_requirement_filename(caplog, from_line, line):
     assert is_url_requirement(ireq) is True
 
 
-def test_name_from_req(from_line):
-    ireq = from_line("django==1.8")
-    assert name_from_req(ireq.req) == "django"
-
-
-def test_name_from_req_with_project_name(from_line):
-    ireq = from_line("foo==1.8")
-    ireq.req.project_name = "bar"
-    assert name_from_req(ireq.req) == "bar"
-
-
 @pytest.mark.parametrize(
     ("cli_args", "expected_command"),
     (
@@ -241,7 +230,6 @@ def test_name_from_req_with_project_name(from_line):
         (["--pre"], "pip-compile --pre"),
         (["--allow-unsafe"], "pip-compile --allow-unsafe"),
         # Check negative flags
-        (["--no-index"], "pip-compile --no-index"),
         (["--no-emit-index-url"], "pip-compile --no-emit-index-url"),
         (["--no-emit-trusted-host"], "pip-compile --no-emit-trusted-host"),
         (["--no-annotate"], "pip-compile --no-annotate"),
@@ -249,7 +237,6 @@ def test_name_from_req_with_project_name(from_line):
         # Check that default values will be removed from the command
         (["--emit-trusted-host"], "pip-compile"),
         (["--annotate"], "pip-compile"),
-        (["--index"], "pip-compile"),
         (["--emit-index-url"], "pip-compile"),
         (["--max-rounds=10"], "pip-compile"),
         (["--build-isolation"], "pip-compile"),
@@ -353,30 +340,22 @@ def test_get_compile_command_sort_args(tmpdir_cwd):
 
 
 @pytest.mark.parametrize(
+    "tuples",
+    (
+        (("f", "foo"), ("b", "bar"), ("b", "baz"), ("q", "qux"), ("q", "quux")),
+        iter((("f", "foo"), ("b", "bar"), ("b", "baz"), ("q", "qux"), ("q", "quux"))),
+    ),
+)
+def test_lookup_table_from_tuples(tuples):
+    expected = {"b": {"bar", "baz"}, "f": {"foo"}, "q": {"quux", "qux"}}
+    assert lookup_table_from_tuples(tuples) == expected
+
+
+@pytest.mark.parametrize(
     ("values", "key"),
     (
-        pytest.param(
-            ("foo", "bar", "baz", "qux", "quux"),
-            operator.itemgetter(0),
-            id="with key function",
-        ),
-        pytest.param(
-            (("f", "foo"), ("b", "bar"), ("b", "baz"), ("q", "qux"), ("q", "quux")),
-            None,
-            id="without key function",
-        ),
-        pytest.param(
-            iter(("foo", "bar", "baz", "qux", "quux")),
-            operator.itemgetter(0),
-            id="values as iterator with key function",
-        ),
-        pytest.param(
-            iter(
-                (("f", "foo"), ("b", "bar"), ("b", "baz"), ("q", "qux"), ("q", "quux"))
-            ),
-            None,
-            id="values as iterator without key function",
-        ),
+        (("foo", "bar", "baz", "qux", "quux"), operator.itemgetter(0)),
+        (iter(("foo", "bar", "baz", "qux", "quux")), operator.itemgetter(0)),
     ),
 )
 def test_lookup_table(values, key):
@@ -384,30 +363,12 @@ def test_lookup_table(values, key):
     assert lookup_table(values, key) == expected
 
 
-@pytest.mark.parametrize(
-    "values",
-    (
-        pytest.param(("foo", "bar", "baz"), id="values are not tuples"),
-        pytest.param((("f", "foo"), "b"), id="one of the values is not a tuple"),
-    ),
-)
-def test_lookup_table_requires_key(values):
-    with pytest.raises(
-        ValueError,
-        match=r"^The `key` function must be specified when the `values` are not empty\.$",
-    ):
-        lookup_table(values)
+def test_lookup_table_from_tuples_with_empty_values():
+    assert lookup_table_from_tuples(()) == {}
 
 
-@pytest.mark.parametrize(
-    "key",
-    (
-        pytest.param(lambda x: x, id="with key"),
-        pytest.param(None, id="without key"),
-    ),
-)
-def test_lookup_table_with_empty_values(key):
-    assert lookup_table((), key) == {}
+def test_lookup_table_with_empty_values():
+    assert lookup_table((), operator.itemgetter(0)) == {}
 
 
 def test_get_sys_path_for_python_executable():

@@ -3,7 +3,7 @@ import copy
 import pytest
 
 from piptools.repositories.local import LocalRequirementsRepository
-from piptools.utils import name_from_req
+from piptools.utils import key_from_ireq
 from tests.conftest import FakeRepository
 
 EXPECTED = {"sha256:5e6071ee6e4c59e0d0408d366fe9b66781d2cf01be9a6e19a2433bb3c5336330"}
@@ -29,7 +29,7 @@ def test_get_hashes_local_repository_cache_hit(from_line, repository):
     # Create an install requirement with the hashes included in its options
     options = {"hashes": {"sha256": [entry.split(":")[1] for entry in EXPECTED]}}
     req = from_line("small-fake-a==0.1", options=options)
-    existing_pins = {name_from_req(req): req}
+    existing_pins = {key_from_ireq(req): req}
 
     # Use fake repository so that we know the hashes are coming from cache
     local_repository = LocalRequirementsRepository(existing_pins, repository)
@@ -50,7 +50,7 @@ def test_toggle_reuse_hashes_local_repository(
     # Create an install requirement with the hashes included in its options
     options = {"hashes": {"sha256": [entry.split(":")[1] for entry in NONSENSE]}}
     req = from_line("small-fake-a==0.1", options=options)
-    existing_pins = {name_from_req(req): req}
+    existing_pins = {key_from_ireq(req): req}
 
     local_repository = LocalRequirementsRepository(
         existing_pins, pypi_repository, reuse_hashes=reuse_hashes
