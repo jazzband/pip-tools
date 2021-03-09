@@ -61,14 +61,14 @@ class BaseRepository(metaclass=ABCMeta):
     @property
     @abstractmethod
     def options(self) -> optparse.Values:
-        pass
+        """Returns parsed pip options"""
 
     @property
     @abstractmethod
     def session(self) -> PipSession:
-        pass
+        """Returns a session to make requests"""
 
     @property
     @abstractmethod
     def finder(self) -> PackageFinder:
-        pass
+        """Returns a package finder to interact with simple repository API (PEP 503)"""

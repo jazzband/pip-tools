@@ -92,15 +92,15 @@ class FakeRepository(BaseRepository):
 
     @property
     def options(self):
-        pass
+        """Not used"""
 
     @property
     def session(self):
-        pass
+        """Not used"""
 
     @property
     def finder(self):
-        pass
+        """Not used"""
 
 
 class FakeInstalledDistribution:
