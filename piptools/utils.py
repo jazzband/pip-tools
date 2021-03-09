@@ -207,7 +207,7 @@ def dedup(iterable: Iterable[_T]) -> Iterable[_T]:
     """Deduplicate an iterable object like iter(set(iterable)) but
     order-preserved.
     """
-    return iter(collections.OrderedDict.fromkeys(iterable))
+    return iter(dict.fromkeys(iterable))
 
 
 def get_hashes_from_ireq(ireq: InstallRequirement) -> Set[str]:
