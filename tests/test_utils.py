@@ -373,4 +373,4 @@ def test_lookup_table_with_empty_values():
 
 def test_get_sys_path_for_python_executable():
     result = get_sys_path_for_python_executable(sys.executable)
-    assert result == [''] + sys.path
+    assert result == [""] + sys.path
