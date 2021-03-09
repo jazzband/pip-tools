@@ -90,6 +90,18 @@ class FakeRepository(BaseRepository):
         # No state to update.
         pass
 
+    @property
+    def options(self):
+        pass
+
+    @property
+    def session(self):
+        pass
+
+    @property
+    def finder(self):
+        pass
+
 
 class FakeInstalledDistribution:
     def __init__(self, line, deps=None):
