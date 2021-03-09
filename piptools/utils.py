@@ -331,7 +331,7 @@ def get_compile_command(click_ctx: click.Context) -> str:
 
 def get_sys_path_for_python_executable(python_executable: str) -> List[str]:
     """
-    Returns sys.path list for given python executable.
+    Returns sys.path list for the given python executable.
     """
     result = subprocess.check_output(  # nosec
         [python_executable, "-c", "import sys;import json;print(json.dumps(sys.path))"]

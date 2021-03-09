@@ -2,6 +2,7 @@ import logging
 import operator
 import os
 import shlex
+import sys
 
 import pytest
 
@@ -14,6 +15,7 @@ from piptools.utils import (
     format_specifier,
     get_compile_command,
     get_hashes_from_ireq,
+    get_sys_path_for_python_executable,
     is_pinned_requirement,
     is_url_requirement,
     lookup_table,
@@ -406,3 +408,8 @@ def test_lookup_table_requires_key(values):
 )
 def test_lookup_table_with_empty_values(key):
     assert lookup_table((), key) == {}
+
+
+def test_get_sys_path_for_python_executable():
+    result = get_sys_path_for_python_executable(sys.executable)
+    assert result == [''] + sys.path

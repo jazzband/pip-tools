@@ -242,3 +242,55 @@ def test_sync_dry_run_returns_non_zero_exit_code(runner):
     out = runner.invoke(cli, ["--dry-run"])
 
     assert out.exit_code == 1
+
+
+@mock.patch("piptools.scripts.sync.get_sys_path_for_python_executable")
+@mock.patch("piptools.scripts.sync.get_installed_distributions")
+@mock.patch("piptools.sync.run")
+def test_python_executable_option(run, get_installed_distributions, get_sys_path_for_python_executable, runner, fake_dist):
+    """
+    Make sure sync command can run with `--python-executable` option
+    """
+    with open("requirements.txt", "w") as req_in:
+        req_in.write("small-fake-a==1.10.0")
+
+    custom_executable = 'custom_executable'
+    with open(custom_executable, "w") as exec_file:
+        exec_file.write("")
+
+    sys_paths = ['', './']
+    get_sys_path_for_python_executable.return_value = sys_paths
+    get_installed_distributions.return_value = [fake_dist("django==1.8")]
+
+    runner.invoke(cli, ["--python-executable", custom_executable])
+
+    get_installed_distributions.assert_called_once_with(
+        skip=[],
+        user_only=False,
+        paths=sys_paths,
+        local_only=False
+    )
+
+    assert run.call_count == 2
+    fist_call, second_call = run.mock_calls
+    assert fist_call == mock.call([custom_executable, '-m', 'pip', 'uninstall', '-y', 'django'], check=True)
+    assert second_call.args[0][:-1] ==[custom_executable, '-m', 'pip', 'install', '-r']
+
+
+def test_invalid_python_executable(runner):
+    out = runner.invoke(cli, ["--python-executable", "/tmp/invalid_executable"])
+    assert out.exit_code == 2, out
+
+
+@mock.patch("piptools.sync.run")
+def test_default_python_executable_option(run, runner):
+    """
+    Make sure sys.executable is used when --python-executable is not provided
+    """
+    with open("requirements.txt", "w") as req_in:
+        req_in.write("small-fake-a==1.10.0")
+
+    runner.invoke(cli)
+
+    assert run.call_count == 2
+    assert run.mock_calls[1].args[0][:-1] == [sys.executable, '-m', 'pip', 'install', '-r']
