@@ -18,11 +18,6 @@ class BaseRepository(metaclass=ABCMeta):
         """Should clear any caches used by the implementation."""
 
     @abstractmethod
-    @contextmanager
-    def freshen_build_caches(self) -> Iterator[None]:
-        """Should start with fresh build/source caches."""
-
-    @abstractmethod
     def find_best_match(
         self, ireq: InstallRequirement, prereleases: Optional[bool]
     ) -> InstallRequirement:

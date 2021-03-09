@@ -184,31 +184,23 @@ def flat_map(
     return itertools.chain.from_iterable(map(fn, collection))
 
 
+def lookup_table_from_tuples(values: Iterable[Tuple[_KT, _VT]]) -> Dict[_KT, Set[_VT]]:
+    """
+    Builds a dict-based lookup table (index) elegantly.
+    """
+    lut: Dict[_KT, Set[_VT]] = collections.defaultdict(set)
+    for k, v in values:
+        lut[k].add(v)
+    return dict(lut)
+
+
 def lookup_table(
-    values: Iterable[Union[_VT, Tuple[_KT, _VT]]],
-    key: Optional[Callable[[_VT], _KT]] = None,
+    values: Iterable[_VT], key: Callable[[_VT], _KT]
 ) -> Dict[_KT, Set[_VT]]:
     """
     Builds a dict-based lookup table (index) elegantly.
     """
-    values, values_to_validate = itertools.tee(values)
-    if key is None and any(not isinstance(v, tuple) for v in values_to_validate):
-        raise ValueError(
-            "The `key` function must be specified when the `values` are not empty."
-        )
-
-    def keyval(v: Union[_VT, Tuple[_KT, _VT]]) -> Tuple[_KT, _VT]:
-        if isinstance(v, tuple):
-            return v[0], v[1]
-
-        assert key is not None, "key function must be specified"
-        return key(v), v
-
-    lut: Dict[_KT, Set[_VT]] = collections.defaultdict(set)
-    for value in values:
-        k, v = keyval(value)
-        lut[k].add(v)
-    return dict(lut)
+    return lookup_table_from_tuples((key(v), v) for v in values)
 
 
 def dedup(iterable: Iterable[_T]) -> Iterable[_T]:

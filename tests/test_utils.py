@@ -17,6 +17,7 @@ from piptools.utils import (
     is_pinned_requirement,
     is_url_requirement,
     lookup_table,
+    lookup_table_from_tuples,
 )
 
 
@@ -337,30 +338,22 @@ def test_get_compile_command_sort_args(tmpdir_cwd):
 
 
 @pytest.mark.parametrize(
+    "tuples",
+    (
+        (("f", "foo"), ("b", "bar"), ("b", "baz"), ("q", "qux"), ("q", "quux")),
+        iter((("f", "foo"), ("b", "bar"), ("b", "baz"), ("q", "qux"), ("q", "quux"))),
+    ),
+)
+def test_lookup_table_from_tuples(tuples):
+    expected = {"b": {"bar", "baz"}, "f": {"foo"}, "q": {"quux", "qux"}}
+    assert lookup_table_from_tuples(tuples) == expected
+
+
+@pytest.mark.parametrize(
     ("values", "key"),
     (
-        pytest.param(
-            ("foo", "bar", "baz", "qux", "quux"),
-            operator.itemgetter(0),
-            id="with key function",
-        ),
-        pytest.param(
-            (("f", "foo"), ("b", "bar"), ("b", "baz"), ("q", "qux"), ("q", "quux")),
-            None,
-            id="without key function",
-        ),
-        pytest.param(
-            iter(("foo", "bar", "baz", "qux", "quux")),
-            operator.itemgetter(0),
-            id="values as iterator with key function",
-        ),
-        pytest.param(
-            iter(
-                (("f", "foo"), ("b", "bar"), ("b", "baz"), ("q", "qux"), ("q", "quux"))
-            ),
-            None,
-            id="values as iterator without key function",
-        ),
+        (("foo", "bar", "baz", "qux", "quux"), operator.itemgetter(0)),
+        (iter(("foo", "bar", "baz", "qux", "quux")), operator.itemgetter(0)),
     ),
 )
 def test_lookup_table(values, key):
@@ -368,27 +361,9 @@ def test_lookup_table(values, key):
     assert lookup_table(values, key) == expected
 
 
-@pytest.mark.parametrize(
-    "values",
-    (
-        pytest.param(("foo", "bar", "baz"), id="values are not tuples"),
-        pytest.param((("f", "foo"), "b"), id="one of the values is not a tuple"),
-    ),
-)
-def test_lookup_table_requires_key(values):
-    with pytest.raises(
-        ValueError,
-        match=r"^The `key` function must be specified when the `values` are not empty\.$",
-    ):
-        lookup_table(values)
+def test_lookup_table_from_tuples_with_empty_values():
+    assert lookup_table_from_tuples(()) == {}
 
 
-@pytest.mark.parametrize(
-    "key",
-    (
-        pytest.param(lambda x: x, id="with key"),
-        pytest.param(None, id="without key"),
-    ),
-)
-def test_lookup_table_with_empty_values(key):
-    assert lookup_table((), key) == {}
+def test_lookup_table_with_empty_values():
+    assert lookup_table((), operator.itemgetter(0)) == {}

@@ -135,20 +135,6 @@ def test_open_local_or_remote_file__remote_file(
         mock_response.close.assert_called_once()
 
 
-def test_pypirepo_build_dir_is_str(pypi_repository):
-    assert pypi_repository.build_dir is None
-    with pypi_repository.freshen_build_caches():
-        assert isinstance(pypi_repository.build_dir, str)
-    assert pypi_repository.build_dir is None
-
-
-def test_pypirepo_source_dir_is_str(pypi_repository):
-    assert pypi_repository.source_dir is None
-    with pypi_repository.freshen_build_caches():
-        assert isinstance(pypi_repository.source_dir, str)
-    assert pypi_repository.source_dir is None
-
-
 def test_relative_path_cache_dir_is_normalized(from_line):
     relative_cache_dir = "pypi-repo-cache"
     pypi_repository = PyPIRepository([], cache_dir=relative_cache_dir)

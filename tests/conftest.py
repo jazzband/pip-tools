@@ -41,10 +41,6 @@ class FakeRepository(BaseRepository):
         with open("tests/test_data/fake-editables.json") as f:
             self.editables = json.load(f)
 
-    @contextmanager
-    def freshen_build_caches(self):
-        yield
-
     def get_hashes(self, ireq):
         # Some fake hashes
         return {

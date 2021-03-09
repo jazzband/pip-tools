@@ -8,7 +8,7 @@ from pip._internal.req import InstallRequirement
 from pip._vendor.packaging.requirements import Requirement
 
 from .exceptions import PipToolsError
-from .utils import as_tuple, key_from_req, lookup_table
+from .utils import as_tuple, key_from_req, lookup_table_from_tuples
 
 CacheKey = Tuple[str, str]
 CacheLookup = Dict[str, List[str]]
@@ -166,7 +166,7 @@ class DependencyCache:
         """
         # First, collect all the dependencies into a sequence of (parent, child)
         # tuples, like [('flake8', 'pep8'), ('flake8', 'mccabe'), ...]
-        return lookup_table(
+        return lookup_table_from_tuples(
             (key_from_req(Requirement(dep_name)), name)
             for name, version_and_extras in cache_keys
             for dep_name in self.cache[name][version_and_extras]
