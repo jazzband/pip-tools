@@ -68,11 +68,6 @@ class LocalRequirementsRepository(BaseRepository):
     def clear_caches(self) -> None:
         self.repository.clear_caches()
 
-    @contextmanager
-    def freshen_build_caches(self) -> Iterator[None]:
-        with self.repository.freshen_build_caches():
-            yield
-
     def find_best_match(
         self, ireq: InstallRequirement, prereleases: Optional[bool] = None
     ) -> InstallationCandidate:
