@@ -2,10 +2,10 @@ import os
 import shlex
 import sys
 import tempfile
-from typing import Any
+from typing import Any, BinaryIO, Optional, Tuple, cast
 
 import click
-from click.utils import safecall
+from click.utils import LazyFile, safecall
 from pip._internal.commands import create_command
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
@@ -17,6 +17,7 @@ from ..exceptions import PipToolsError
 from ..locations import CACHE_DIR
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
+from ..repositories.base import BaseRepository
 from ..resolver import Resolver
 from ..utils import UNSAFE_PACKAGES, dedup, is_pinned_requirement, key_from_ireq
 from ..writer import OutputWriter
@@ -186,7 +187,9 @@ def _get_default_option(option_name: str) -> Any:
     show_default=True,
     type=click.Path(file_okay=False, writable=True),
 )
-@click.option("--pip-args", help="Arguments to pass directly to the pip command.")
+@click.option(
+    "--pip-args", "pip_args_str", help="Arguments to pass directly to the pip command."
+)
 @click.option(
     "--emit-index-url/--no-emit-index-url",
     is_flag=True,
@@ -194,35 +197,35 @@ def _get_default_option(option_name: str) -> Any:
     help="Add index URL to generated file",
 )
 def cli(
-    ctx,
-    verbose,
-    quiet,
-    dry_run,
-    pre,
-    rebuild,
-    find_links,
-    index_url,
-    extra_index_url,
-    cert,
-    client_cert,
-    trusted_host,
-    header,
-    emit_trusted_host,
-    annotate,
-    upgrade,
-    upgrade_packages,
-    output_file,
-    allow_unsafe,
-    generate_hashes,
-    reuse_hashes,
-    src_files,
-    max_rounds,
-    build_isolation,
-    emit_find_links,
-    cache_dir,
-    pip_args,
-    emit_index_url,
-):
+    ctx: click.Context,
+    verbose: int,
+    quiet: int,
+    dry_run: bool,
+    pre: bool,
+    rebuild: bool,
+    find_links: Tuple[str],
+    index_url: str,
+    extra_index_url: Tuple[str],
+    cert: Optional[str],
+    client_cert: Optional[str],
+    trusted_host: Tuple[str],
+    header: bool,
+    emit_trusted_host: bool,
+    annotate: bool,
+    upgrade: bool,
+    upgrade_packages: Tuple[str],
+    output_file: Optional[LazyFile],
+    allow_unsafe: bool,
+    generate_hashes: bool,
+    reuse_hashes: bool,
+    src_files: Tuple[str],
+    max_rounds: int,
+    build_isolation: bool,
+    emit_find_links: bool,
+    cache_dir: str,
+    pip_args_str: Optional[str],
+    emit_index_url: bool,
+) -> None:
     """Compiles requirements.txt from requirements.in specs."""
     log.verbosity = verbose - quiet
 
@@ -261,13 +264,14 @@ def cli(
         output_file = click.open_file(file_name, "w+b", atomic=True, lazy=True)
 
         # Close the file at the end of the context execution
+        assert output_file is not None
         ctx.call_on_close(safecall(output_file.close_intelligently))
 
     ###
     # Setup
     ###
 
-    right_args = shlex.split(pip_args or "")
+    right_args = shlex.split(pip_args_str or "")
     pip_args = []
     for link in find_links:
         pip_args.extend(["-f", link])
@@ -288,6 +292,7 @@ def cli(
         pip_args.append("--no-build-isolation")
     pip_args.extend(right_args)
 
+    repository: BaseRepository
     repository = PyPIRepository(pip_args, cache_dir=cache_dir)
 
     # Parse all constraints coming from --upgrade-package/-P
@@ -412,10 +417,7 @@ def cli(
             allow_unsafe=allow_unsafe,
         )
         results = resolver.resolve(max_rounds=max_rounds)
-        if generate_hashes:
-            hashes = resolver.resolve_hashes(results)
-        else:
-            hashes = None
+        hashes = resolver.resolve_hashes(results) if generate_hashes else None
     except PipToolsError as e:
         log.error(str(e))
         sys.exit(2)
@@ -427,7 +429,7 @@ def cli(
     ##
 
     writer = OutputWriter(
-        output_file,
+        cast(BinaryIO, output_file),
         click_ctx=ctx,
         dry_run=dry_run,
         emit_header=header,

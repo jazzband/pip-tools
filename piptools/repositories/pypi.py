@@ -2,6 +2,7 @@ import collections
 import hashlib
 import itertools
 import logging
+import optparse
 import os
 from contextlib import contextmanager
 from shutil import rmtree
@@ -11,10 +12,13 @@ from click import progressbar
 from pip._internal.cache import WheelCache
 from pip._internal.cli.progress_bars import BAR_TYPES
 from pip._internal.commands import create_command
+from pip._internal.commands.install import InstallCommand
+from pip._internal.index.package_finder import PackageFinder
 from pip._internal.models.candidate import InstallationCandidate
-from pip._internal.models.index import PackageIndex, PyPI
+from pip._internal.models.index import PackageIndex
 from pip._internal.models.link import Link
 from pip._internal.models.wheel import Wheel
+from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement, RequirementSet
 from pip._internal.req.req_tracker import get_requirement_tracker
 from pip._internal.utils.hashes import FAVORITE_HASH
@@ -43,7 +47,6 @@ FileStream = collections.namedtuple("FileStream", "stream size")
 
 
 class PyPIRepository(BaseRepository):
-    DEFAULT_INDEX_URL = PyPI.simple_url
     HASHABLE_PACKAGE_TYPES = {"bdist_wheel", "sdist"}
 
     """
@@ -57,18 +60,19 @@ class PyPIRepository(BaseRepository):
         # Use pip's parser for pip.conf management and defaults.
         # General options (find_links, index_url, extra_index_url, trusted_host,
         # and pre) are deferred to pip.
-        self.command = create_command("install")
+        self.command: InstallCommand = create_command("install")
         extra_pip_args = ["--use-deprecated", "legacy-resolver"]
-        self.options, _ = self.command.parse_args(pip_args + extra_pip_args)
-        if self.options.cache_dir:
-            self.options.cache_dir = normalize_path(self.options.cache_dir)
 
-        self.options.require_hashes = False
-        self.options.ignore_dependencies = False
+        options, _ = self.command.parse_args(pip_args + extra_pip_args)
+        if options.cache_dir:
+            options.cache_dir = normalize_path(options.cache_dir)
+        options.require_hashes = False
+        options.ignore_dependencies = False
 
-        self.session = self.command._build_session(self.options)
-        self.finder = self.command._build_package_finder(
-            options=self.options, session=self.session
+        self._options: optparse.Values = options
+        self._session = self.command._build_session(options)
+        self._finder = self.command._build_package_finder(
+            options=options, session=self.session
         )
 
         # Caches
@@ -90,6 +94,18 @@ class PyPIRepository(BaseRepository):
 
     def clear_caches(self) -> None:
         rmtree(self._download_dir, ignore_errors=True)
+
+    @property
+    def options(self) -> optparse.Values:
+        return self._options
+
+    @property
+    def session(self) -> PipSession:
+        return self._session
+
+    @property
+    def finder(self) -> PackageFinder:
+        return self._finder
 
     def find_all_candidates(self, req_name: str) -> List[InstallationCandidate]:
         if req_name not in self._available_candidates_cache:

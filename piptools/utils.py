@@ -297,7 +297,7 @@ def get_compile_command(click_ctx: click.Context) -> str:
             else:
                 if isinstance(val, str) and is_url(val):
                     val = redact_auth_from_url(val)
-                if option.name == "pip_args":
+                if option.name == "pip_args_str":
                     # shlex.quote() would produce functional but noisily quoted results,
                     # e.g. --pip-args='--cache-dir='"'"'/tmp/with spaces'"'"''
                     # Instead, we try to get more legible quoting via repr:
