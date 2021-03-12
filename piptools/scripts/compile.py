@@ -7,10 +7,7 @@ from typing import Any, BinaryIO, Optional, Tuple, cast
 import click
 from click.utils import LazyFile, safecall
 from pip._internal.commands import create_command
-from pip._internal.req.constructors import (
-    install_req_from_line,
-    install_req_from_req_string,
-)
+from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 from pip._vendor.pep517 import meta
 
@@ -364,7 +361,7 @@ def cli(
             comes_from = f"{dist.metadata.get_all('Name')[0]} ({src_file})"
             constraints.extend(
                 [
-                    install_req_from_req_string(req, comes_from=comes_from)
+                    install_req_from_line(req, comes_from=comes_from)
                     for req in dist.requires or []
                 ]
             )

@@ -39,42 +39,48 @@ def test_command_line_overrides_pip_conf(pip_with_index_conf, runner):
 
 
 @pytest.mark.network
-def test_command_line_setuptools_read(runner, make_pip_conf):
-    make_pip_conf(
-        dedent(
-            """\
-            [global]
-            disable-pip-version-check = True
-            """
-        )
+@pytest.mark.parametrize(
+    ("install_requires", "expected_output"),
+    (
+        pytest.param("small-fake-a==0.1", "small-fake-a==0.1", id="regular"),
+        pytest.param(
+            "pip-tools @ https://github.com/jazzband/pip-tools/archive/7d86c8d3.zip",
+            "https://github.com/jazzband/pip-tools/archive/7d86c8d3.zip",
+            id="zip URL",
+        ),
+        pytest.param(
+            "pip-tools @ git+https://github.com/jazzband/pip-tools@7d86c8d3",
+            "git+https://github.com/jazzband/pip-tools@7d86c8d3",
+            id="scm URL",
+        ),
+        pytest.param(
+            "pip-tools @ https://files.pythonhosted.org/packages/06/96/"
+            "89872db07ae70770fba97205b0737c17ef013d0d1c790"
+            "899c16bb8bac419/pip_tools-3.6.1-py2.py3-none-any.whl",
+            "https://files.pythonhosted.org/packages/06/96/"
+            "89872db07ae70770fba97205b0737c17ef013d0d1c790"
+            "899c16bb8bac419/pip_tools-3.6.1-py2.py3-none-any.whl",
+            id="wheel URL",
+        ),
+    ),
+)
+def test_command_line_setuptools_read(
+    runner, make_pip_conf, make_package, install_requires, expected_output
+):
+    package_dir = make_package(
+        name="fake-setuptools-a",
+        install_requires=(install_requires,),
     )
 
-    with open("setup.py", "w") as package:
-        package.write(
-            dedent(
-                """\
-                from setuptools import setup
-                setup(
-                    name="fake-setuptools-a",
-                    install_requires=["small-fake-a==0.1"]
-                )
-                """
-            )
-        )
     out = runner.invoke(
         cli,
-        ["--no-header", "--no-emit-find-links", "--find-links", MINIMAL_WHEELS_PATH],
+        (str(package_dir / "setup.py"), "--find-links", MINIMAL_WHEELS_PATH),
     )
 
-    assert out.stderr == dedent(
-        """\
-        small-fake-a==0.1
-            # via fake-setuptools-a (setup.py)
-        """
-    )
+    assert expected_output in out.stderr.splitlines()
 
     # check that pip-compile generated a configuration file
-    assert os.path.exists("requirements.txt")
+    assert (package_dir / "requirements.txt").exists()
 
 
 @pytest.mark.network
