@@ -4,8 +4,6 @@ Backwards Incompatible Changes:
 
 - Remove support for EOL Python 3.5 and 2.7
   ([#1243](https://github.com/jazzband/pip-tools/pull/1243)). Thanks @jdufresne
-- Remove long deprecated cache dir `~/.pip-tools`
-  ([#1225](https://github.com/jazzband/pip-tools/pull/1225)). Thanks @jdufresne
 - Remove deprecated `--index/--no-index` option from `pip-compile`
   ([#1234](https://github.com/jazzband/pip-tools/pull/1234)). Thanks @jdufresne
 
