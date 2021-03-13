@@ -1,3 +1,36 @@
+# 6.0.0 (2020-03-12)
+
+Backwards Incompatible Changes:
+
+- Remove support for EOL Python 3.5 and 2.7
+  ([#1243](https://github.com/jazzband/pip-tools/pull/1243)). Thanks @jdufresne
+- Remove deprecated `--index/--no-index` option from `pip-compile`
+  ([#1234](https://github.com/jazzband/pip-tools/pull/1234)). Thanks @jdufresne
+
+Features:
+
+- Use `pep517` to parse dependencies metadata from `setup.py`
+  ([#1311](https://github.com/jazzband/pip-tools/pull/1311)). Thanks @astrojuanlu
+
+Bug Fixes:
+
+- Fix a bug where `pip-compile` with `setup.py` would not include dependencies
+  with environment markers
+  ([#1311](https://github.com/jazzband/pip-tools/pull/1311)). Thanks @astrojuanlu
+- Prefer `===` over `==` when generating `requirements.txt` if a dependency
+  was pinned with `===`
+  ([#1323](https://github.com/jazzband/pip-tools/pull/1323)). Thanks @IceTDrinker
+- Fix a bug where `pip-compile` with `setup.py` in nested folder would generate
+  `setup.txt` output file
+  ([#1324](https://github.com/jazzband/pip-tools/pull/1324)). Thanks @peymanslh
+- Write out default index when it is provided as `--extra-index-url`
+  ([#1325](https://github.com/jazzband/pip-tools/pull/1325)). Thanks @fahrradflucht
+
+Dependencies:
+
+- Bump `pip` minimum version to `>= 20.3`
+  ([#1340](https://github.com/jazzband/pip-tools/pull/1340)). Thanks @atugushev
+
 # 5.5.0 (2020-12-31)
 
 Features:
