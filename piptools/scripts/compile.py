@@ -6,10 +6,10 @@ from typing import Any, BinaryIO, Optional, Tuple, cast
 
 import click
 from click.utils import LazyFile, safecall
+from pep517 import meta
 from pip._internal.commands import create_command
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
-from pip._vendor.pep517 import meta
 
 from .._compat import parse_requirements
 from ..cache import DependencyCache
