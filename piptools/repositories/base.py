@@ -1,18 +1,19 @@
+import optparse
 from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
 from typing import Iterator, Optional, Set
 
+from pip._internal.index.package_finder import PackageFinder
+from pip._internal.models.index import PyPI
+from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement
 
 
 class BaseRepository(metaclass=ABCMeta):
+    DEFAULT_INDEX_URL = PyPI.simple_url
+
     def clear_caches(self) -> None:
         """Should clear any caches used by the implementation."""
-
-    @abstractmethod
-    @contextmanager
-    def freshen_build_caches(self) -> Iterator[None]:
-        """Should start with fresh build/source caches."""
 
     @abstractmethod
     def find_best_match(
@@ -56,3 +57,18 @@ class BaseRepository(metaclass=ABCMeta):
         it its name, we would lose track of those dependencies on combining
         that ireq with others.
         """
+
+    @property
+    @abstractmethod
+    def options(self) -> optparse.Values:
+        """Returns parsed pip options"""
+
+    @property
+    @abstractmethod
+    def session(self) -> PipSession:
+        """Returns a session to make requests"""
+
+    @property
+    @abstractmethod
+    def finder(self) -> PackageFinder:
+        """Returns a package finder to interact with simple repository API (PEP 503)"""

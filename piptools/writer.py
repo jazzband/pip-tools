@@ -1,7 +1,7 @@
 import os
 import re
 from itertools import chain
-from typing import BinaryIO, Dict, Iterator, List, Optional, Sequence, Set, Tuple
+from typing import BinaryIO, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
 from click import unstyle
 from click.core import Context
@@ -62,8 +62,8 @@ class OutputWriter:
         annotate: bool,
         generate_hashes: bool,
         default_index_url: str,
-        index_urls: Sequence[str],
-        trusted_hosts: Sequence[str],
+        index_urls: Iterable[str],
+        trusted_hosts: Iterable[str],
         format_control: FormatControl,
         allow_unsafe: bool,
         find_links: List[str],

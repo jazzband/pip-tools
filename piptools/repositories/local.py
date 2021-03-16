@@ -1,6 +1,6 @@
 import optparse
 from contextlib import contextmanager
-from typing import Dict, Iterator, List, Optional, Set, cast
+from typing import Iterator, Mapping, Optional, Set, cast
 
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.models.candidate import InstallationCandidate
@@ -41,7 +41,7 @@ class LocalRequirementsRepository(BaseRepository):
 
     def __init__(
         self,
-        existing_pins: Dict[str, InstallationCandidate],
+        existing_pins: Mapping[str, InstallationCandidate],
         proxied_repository: PyPIRepository,
         reuse_hashes: bool = True,
     ):
@@ -50,8 +50,8 @@ class LocalRequirementsRepository(BaseRepository):
         self.existing_pins = existing_pins
 
     @property
-    def options(self) -> List[optparse.Option]:
-        return cast(List[optparse.Option], self.repository.options)
+    def options(self) -> optparse.Values:
+        return self.repository.options
 
     @property
     def finder(self) -> PackageFinder:
@@ -61,17 +61,8 @@ class LocalRequirementsRepository(BaseRepository):
     def session(self) -> Session:
         return self.repository.session
 
-    @property
-    def DEFAULT_INDEX_URL(self) -> str:
-        return cast(str, self.repository.DEFAULT_INDEX_URL)
-
     def clear_caches(self) -> None:
         self.repository.clear_caches()
-
-    @contextmanager
-    def freshen_build_caches(self) -> Iterator[None]:
-        with self.repository.freshen_build_caches():
-            yield
 
     def find_best_match(
         self, ireq: InstallRequirement, prereleases: Optional[bool] = None

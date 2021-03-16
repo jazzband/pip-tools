@@ -210,7 +210,7 @@ def dedup(iterable: Iterable[_T]) -> Iterable[_T]:
     """Deduplicate an iterable object like iter(set(iterable)) but
     order-preserved.
     """
-    return iter(collections.OrderedDict.fromkeys(iterable))
+    return iter(dict.fromkeys(iterable))
 
 
 def get_hashes_from_ireq(ireq: InstallRequirement) -> Set[str]:
@@ -300,7 +300,7 @@ def get_compile_command(click_ctx: click.Context) -> str:
             else:
                 if isinstance(val, str) and is_url(val):
                     val = redact_auth_from_url(val)
-                if option.name == "pip_args":
+                if option.name == "pip_args_str":
                     # shlex.quote() would produce functional but noisily quoted results,
                     # e.g. --pip-args='--cache-dir='"'"'/tmp/with spaces'"'"''
                     # Instead, we try to get more legible quoting via repr:

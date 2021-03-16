@@ -1,4 +1,5 @@
 import json
+import optparse
 import os
 import subprocess
 import sys
@@ -8,7 +9,9 @@ from textwrap import dedent
 
 import pytest
 from click.testing import CliRunner
+from pip._internal.index.package_finder import PackageFinder
 from pip._internal.models.candidate import InstallationCandidate
+from pip._internal.network.session import PipSession
 from pip._internal.req.constructors import (
     install_req_from_editable,
     install_req_from_line,
@@ -40,10 +43,6 @@ class FakeRepository(BaseRepository):
 
         with open("tests/test_data/fake-editables.json") as f:
             self.editables = json.load(f)
-
-    @contextmanager
-    def freshen_build_caches(self):
-        yield
 
     def get_hashes(self, ireq):
         # Some fake hashes
@@ -93,6 +92,18 @@ class FakeRepository(BaseRepository):
     def copy_ireq_dependencies(self, source, dest):
         # No state to update.
         pass
+
+    @property
+    def options(self) -> optparse.Values:
+        """Not used"""
+
+    @property
+    def session(self) -> PipSession:
+        """Not used"""
+
+    @property
+    def finder(self) -> PackageFinder:
+        """Not used"""
 
 
 class FakeInstalledDistribution:
