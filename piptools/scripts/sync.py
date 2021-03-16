@@ -57,7 +57,7 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 )
 @click.option(
     "--python-executable",
-    help="Custom python executable if targeting an environment other than current",
+    help="Custom python executable path if targeting an environment other than current",
 )
 @click.option("-v", "--verbose", count=True, help="Show more output")
 @click.option("-q", "--quiet", count=True, help="Give less output")
@@ -113,11 +113,10 @@ def cli(
             log.error("ERROR: " + msg)
             sys.exit(2)
 
-    if python_executable is not None:
-        if not os.path.exists(python_executable):
-            msg = "Python executable {} not found"
-            log.error(msg.format(python_executable))
-            sys.exit(2)
+    if python_executable is not None and not os.path.exists(python_executable):
+        msg = "Python executable {} not found"
+        log.error(msg.format(python_executable))
+        sys.exit(2)
 
     install_command = cast(InstallCommand, create_command("install"))
     options, _ = install_command.parse_args([])
