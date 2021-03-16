@@ -1,6 +1,7 @@
 import collections
 import itertools
 import json
+import os
 import shlex
 import subprocess  # nosec
 from typing import (
@@ -321,4 +322,4 @@ def get_sys_path_for_python_executable(python_executable: str) -> List[str]:
     paths = json.loads(result)
     assert isinstance(paths, list)
     assert all(isinstance(i, str) for i in paths)
-    return paths
+    return [os.path.abspath(path) for path in paths]

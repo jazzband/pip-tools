@@ -373,4 +373,7 @@ def test_lookup_table_with_empty_values():
 
 def test_get_sys_path_for_python_executable():
     result = get_sys_path_for_python_executable(sys.executable)
-    assert result == [""] + sys.path
+    # not testing for equality, because pytest adds extra paths into current sys.path
+    for path in result:
+        assert path in sys.path
+
