@@ -275,11 +275,15 @@ def test_python_executable_option(
     )
 
     assert run.call_count == 2
-    fist_call, second_call = run.mock_calls
-    assert fist_call == mock.call(
-        [custom_executable, "-m", "pip", "uninstall", "-y", "django"], check=True
-    )
-    assert second_call.args[0][:-1] == [custom_executable, "-m", "pip", "install", "-r"]
+
+    call_args = [call[0][0] for call in run.call_args_list]
+    called_uninstall_options = [args for args in call_args if args[3] == "uninstall"]
+    called_install_options = [args[:-1] for args in call_args if args[3] == "install"]
+
+    assert called_uninstall_options == [
+        [custom_executable, "-m", "pip", "uninstall", "-y", "django"]
+    ]
+    assert called_install_options == [[custom_executable, "-m", "pip", "install", "-r"]]
 
 
 def test_invalid_python_executable(runner):
@@ -298,10 +302,15 @@ def test_default_python_executable_option(run, runner):
     runner.invoke(cli)
 
     assert run.call_count == 2
-    assert run.mock_calls[1].args[0][:-1] == [
-        sys.executable,
-        "-m",
-        "pip",
-        "install",
-        "-r",
+
+    call_args = [call[0][0] for call in run.call_args_list]
+    called_install_options = [args[:-1] for args in call_args if args[3] == "install"]
+    assert called_install_options == [
+        [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "-r",
+        ]
     ]
