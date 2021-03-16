@@ -287,6 +287,9 @@ def test_python_executable_option(
 
 
 def test_invalid_python_executable(runner):
+    with open("requirements.txt", "w") as req_in:
+        req_in.write("small-fake-a==1.10.0")
+
     out = runner.invoke(cli, ["--python-executable", "/tmp/invalid_executable"])
     assert out.exit_code == 2, out
 
