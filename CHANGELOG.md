@@ -1,3 +1,15 @@
+# 6.0.1 (2020-03-15)
+
+Bug Fixes:
+
+- Fixed a bug with undeclared dependency on `importlib-metadata` at Python 3.6
+  ([#1353](https://github.com/jazzband/pip-tools/pull/1353)). Thanks @atugushev
+
+Dependencies:
+
+- Add `pep517` dependency
+  ([#1353](https://github.com/jazzband/pip-tools/pull/1353)). Thanks @atugushev
+
 # 6.0.0 (2020-03-12)
 
 Backwards Incompatible Changes:
