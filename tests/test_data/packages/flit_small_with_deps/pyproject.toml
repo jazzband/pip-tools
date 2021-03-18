@@ -1,0 +1,18 @@
+
+# This section makes the project installable using pip.
+# https://www.python.org/dev/peps/pep-0517/
+[build-system]
+requires = ["flit_core >=2,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.metadata]
+module = "module"
+dist-name = "small_fake_with_deps"
+author = "Vincent Driessen"
+author-email = "me@nvie.com"
+
+requires = ["small-fake-a==0.1", "small-fake-b==0.2"]
+
+[tool.flit.metadata.requires-extra]
+dev  = ["small-fake-c==0.3", "small-fake-d==0.4"]
+test = ["small-fake-e==0.5", "small-fake-f==0.6"]

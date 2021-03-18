@@ -24,6 +24,7 @@ from ..writer import OutputWriter
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.in"
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
+METADATA_FILENAMES = frozenset({"setup.py", "pyproject.toml"})
 
 
 def _get_default_option(option_name: str) -> Any:
@@ -247,7 +248,7 @@ def cli(
         if src_files == ("-",):
             raise click.BadParameter("--output-file is required if input is from stdin")
         # Use default requirements output file if there is a setup.py the source file
-        elif os.path.basename(src_files[0]) == "setup.py":
+        elif os.path.basename(src_files[0]) in METADATA_FILENAMES:
             file_name = os.path.join(
                 os.path.dirname(src_files[0]), DEFAULT_REQUIREMENTS_OUTPUT_FILE
             )
@@ -335,7 +336,7 @@ def cli(
 
     constraints = []
     for src_file in src_files:
-        is_setup_file = os.path.basename(src_file) == "setup.py"
+        is_setup_file = os.path.basename(src_file) in METADATA_FILENAMES
         if src_file == "-":
             # pip requires filenames and not files. Since we want to support
             # piping from stdin, we need to briefly save the input from stdin

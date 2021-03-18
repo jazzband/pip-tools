@@ -1656,3 +1656,16 @@ def test_triple_equal_pinned_dependency_is_used(
     assert out.exit_code == 0, out
     for line in out_expected_content:
         assert line in out.stderr
+
+
+@pytest.mark.network
+def test_flit(runner):
+    path = os.path.join(PACKAGES_PATH, "flit_small_with_deps", "pyproject.toml")
+    out = runner.invoke(cli, ["-n", path])
+    assert out.exit_code == 0, out.stderr
+    assert "small-fake-a==0.1" in out.stderr
+    assert "small-fake-b==0.2" in out.stderr
+    assert "small-fake-c" not in out.stderr
+    assert "small-fake-d" not in out.stderr
+    assert "small-fake-e" not in out.stderr
+    assert "small-fake-f" not in out.stderr
