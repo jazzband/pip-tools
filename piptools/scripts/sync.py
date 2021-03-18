@@ -131,9 +131,7 @@ def cli(
         log.error(str(e))
         sys.exit(2)
 
-    paths = None
-    if python_executable:
-        paths = get_sys_path_for_python_executable(python_executable)
+    paths = None if python_executable is None else get_sys_path_for_python_executable(python_executable)
 
     installed_dists = get_installed_distributions(
         skip=[], user_only=user_only, paths=paths, local_only=python_executable is None
