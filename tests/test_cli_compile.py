@@ -1659,21 +1659,110 @@ def test_triple_equal_pinned_dependency_is_used(
 
 
 @pytest.mark.network
-def test_flit(runner):
-    path = os.path.join(PACKAGES_PATH, "flit_small_with_deps", "pyproject.toml")
-    out = runner.invoke(cli, ["-n", path])
-    assert out.exit_code == 0, out.stderr
-    assert "small-fake-a==0.1" in out.stderr
-    assert "small-fake-b==0.2" in out.stderr
-    assert "small-fake-c" not in out.stderr
-    assert "small-fake-d" not in out.stderr
-    assert "small-fake-e" not in out.stderr
-    assert "small-fake-f" not in out.stderr
+@pytest.mark.parametrize(
+    ("fname", "content"),
+    (
+        # setuptools
+        (
+            "setup.cfg",
+            """
+                [metadata]
+                name = sample_lib
+                author = Vincent Driessen
+                author_email = me@nvie.com
 
+                [options]
+                packages = find:
+                install_requires =
+                    small-fake-a==0.1
+                    small-fake-b==0.2
 
-@pytest.mark.network
-def test_setup_cfg(runner):
-    path = os.path.join(PACKAGES_PATH, "setup_cfg_small_with_deps", "setup.cfg")
+                [options.extras_require]
+                dev =
+                    small-fake-c==0.3
+                    small-fake-d==0.4
+                test =
+                    small-fake-e==0.5
+                    small-fake-f==0.6
+            """,
+        ),
+        (
+            "setup.py",
+            """
+                from setuptools import setup
+
+                setup(
+                    name="sample_lib",
+                    version=0.1,
+                    install_requires=["small-fake-a==0.1", "small-fake-b==0.2"],
+                    extras_require={
+                        "dev": ["small-fake-c==0.3", "small-fake-d==0.4"],
+                        "test": ["small-fake-e==0.5", "small-fake-f==0.6"],
+                    },
+                )
+            """,
+        ),
+        # flit
+        (
+            "pyproject.toml",
+            """
+                [build-system]
+                requires = ["flit_core >=2,<4"]
+                build-backend = "flit_core.buildapi"
+
+                [tool.flit.metadata]
+                module = "sample_lib"
+                author = "Vincent Driessen"
+                author-email = "me@nvie.com"
+
+                requires = ["small-fake-a==0.1", "small-fake-b==0.2"]
+
+                [tool.flit.metadata.requires-extra]
+                dev  = ["small-fake-c==0.3", "small-fake-d==0.4"]
+                test = ["small-fake-e==0.5", "small-fake-f==0.6"]
+            """,
+        ),
+        # poetry
+        (
+            "pyproject.toml",
+            """
+                [build-system]
+                requires = ["poetry_core>=1.0.0"]
+                build-backend = "poetry.core.masonry.api"
+
+                [tool.poetry]
+                name = "sample_lib"
+                version = "0.1.0"
+                description = ""
+                authors = ["Vincent Driessen <me@nvie.com>"]
+
+                [tool.poetry.dependencies]
+                python = "*"
+                small-fake-a = "0.1"
+                small-fake-b = "0.2"
+
+                small-fake-c = "0.3"
+                small-fake-d = "0.4"
+                small-fake-e = "0.5"
+                small-fake-f = "0.6"
+
+                [tool.poetry.extras]
+                dev  = ["small-fake-c", "small-fake-d"]
+                test = ["small-fake-e", "small-fake-f"]
+            """,
+        ),
+    ),
+)
+def test_input_formats(runner, tmpdir, fname, content):
+    path = os.path.join(tmpdir, "sample_lib")
+    os.mkdir(path)
+    path = os.path.join(tmpdir, "sample_lib", "__init__.py")
+    with open(path, "w") as stream:
+        stream.write("'example module'\n__version__ = '1.2.3'")
+    path = os.path.join(tmpdir, fname)
+    with open(path, "w") as stream:
+        stream.write(dedent(content))
+
     out = runner.invoke(cli, ["-n", path])
     assert out.exit_code == 0, out.stderr
     assert "small-fake-a==0.1" in out.stderr
