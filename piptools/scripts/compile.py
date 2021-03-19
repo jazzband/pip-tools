@@ -24,7 +24,7 @@ from ..writer import OutputWriter
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.in"
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
-METADATA_FILENAMES = frozenset({"setup.py", "pyproject.toml"})
+METADATA_FILENAMES = frozenset({"setup.py", "setup.cfg", "pyproject.toml"})
 
 
 def _get_default_option(option_name: str) -> Any:
