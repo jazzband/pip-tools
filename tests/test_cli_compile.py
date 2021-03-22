@@ -1662,8 +1662,7 @@ def test_triple_equal_pinned_dependency_is_used(
 @pytest.mark.parametrize(
     ("fname", "content"),
     (
-        # setuptools
-        (
+        pytest.param(
             "setup.cfg",
             """
                 [metadata]
@@ -1685,8 +1684,9 @@ def test_triple_equal_pinned_dependency_is_used(
                     small-fake-e==0.5
                     small-fake-f==0.6
             """,
+            id="setup.cfg",
         ),
-        (
+        pytest.param(
             "setup.py",
             """
                 from setuptools import setup
@@ -1701,9 +1701,9 @@ def test_triple_equal_pinned_dependency_is_used(
                     },
                 )
             """,
+            id="setup.py",
         ),
-        # flit
-        (
+        pytest.param(
             "pyproject.toml",
             """
                 [build-system]
@@ -1721,9 +1721,9 @@ def test_triple_equal_pinned_dependency_is_used(
                 dev  = ["small-fake-c==0.3", "small-fake-d==0.4"]
                 test = ["small-fake-e==0.5", "small-fake-f==0.6"]
             """,
+            id="flit",
         ),
-        # poetry
-        (
+        pytest.param(
             "pyproject.toml",
             """
                 [build-system]
@@ -1750,6 +1750,7 @@ def test_triple_equal_pinned_dependency_is_used(
                 dev  = ["small-fake-c", "small-fake-d"]
                 test = ["small-fake-e", "small-fake-f"]
             """,
+            id="poetry",
         ),
     ),
 )
