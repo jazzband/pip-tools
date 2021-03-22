@@ -1754,7 +1754,13 @@ def test_triple_equal_pinned_dependency_is_used(
         ),
     ),
 )
-def test_input_formats(runner, tmpdir, fname, content):
+def test_input_formats(make_package, make_wheel, runner, tmpdir, fname, content):
+    dists_path = os.path.join(tmpdir, "dists")
+    pkg = make_package("small-fake-a", version="0.1")
+    make_wheel(pkg, dists_path)
+    pkg = make_package("small-fake-b", version="0.2")
+    make_wheel(pkg, dists_path)
+
     path = os.path.join(tmpdir, "sample_lib")
     os.mkdir(path)
     path = os.path.join(tmpdir, "sample_lib", "__init__.py")
@@ -1764,7 +1770,7 @@ def test_input_formats(runner, tmpdir, fname, content):
     with open(path, "w") as stream:
         stream.write(dedent(content))
 
-    out = runner.invoke(cli, ["-n", path])
+    out = runner.invoke(cli, ["-n", "--find-links", dists_path, path])
     assert out.exit_code == 0, out.stderr
     assert "small-fake-a==0.1" in out.stderr
     assert "small-fake-b==0.2" in out.stderr
