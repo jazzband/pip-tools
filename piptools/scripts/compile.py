@@ -24,7 +24,7 @@ from ..utils import (
     dedup,
     is_pinned_requirement,
     key_from_ireq,
-    req_is_in_extras,
+    req_check_markers,
 )
 from ..writer import OutputWriter
 
@@ -398,8 +398,7 @@ def cli(
         ireq for key, ireq in upgrade_install_reqs.items() if key in allowed_upgrades
     )
 
-    # Filter out pip environment markers which do not match (PEP496)
-    constraints = [req for req in constraints if req_is_in_extras(req, extras=extras)]
+    constraints = [req for req in constraints if req_check_markers(req, extras=extras)]
 
     log.debug("Using indexes:")
     with log.indentation():

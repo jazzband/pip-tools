@@ -163,9 +163,10 @@ def is_pinned_requirement(ireq: InstallRequirement) -> bool:
     return spec.operator in {"==", "==="} and not spec.version.endswith(".*")
 
 
-def req_is_in_extras(ireq: InstallRequirement, extras: Tuple[str, ...]) -> bool:
+def req_check_markers(ireq: InstallRequirement, extras: Tuple[str, ...]) -> bool:
     """
-    Check if the requirement isn't extra or is included into extras to install.
+    1. Check if the environment markers match (PEP-496).
+    2. Check if the requirement isn't extra or is included into extras to install.
     """
     if not ireq.markers or ireq.markers.evaluate({"extra": None}):
         return True
