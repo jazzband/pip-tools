@@ -19,7 +19,13 @@ from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..repositories.base import BaseRepository
 from ..resolver import Resolver
-from ..utils import UNSAFE_PACKAGES, dedup, is_pinned_requirement, key_from_ireq
+from ..utils import (
+    UNSAFE_PACKAGES,
+    dedup,
+    is_pinned_requirement,
+    key_from_ireq,
+    req_is_in_extras,
+)
 from ..writer import OutputWriter
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.in"
@@ -60,6 +66,12 @@ def _get_default_option(option_name: str) -> Any:
     "--rebuild",
     is_flag=True,
     help="Clear any caches upfront, rebuild from scratch",
+)
+@click.option(
+    "-e",
+    "--extras",
+    multiple=True,
+    help="names of extras_require to install",
 )
 @click.option(
     "-f",
@@ -204,22 +216,23 @@ def cli(
     dry_run: bool,
     pre: bool,
     rebuild: bool,
-    find_links: Tuple[str],
+    extras: Tuple[str, ...],
+    find_links: Tuple[str, ...],
     index_url: str,
-    extra_index_url: Tuple[str],
+    extra_index_url: Tuple[str, ...],
     cert: Optional[str],
     client_cert: Optional[str],
-    trusted_host: Tuple[str],
+    trusted_host: Tuple[str, ...],
     header: bool,
     emit_trusted_host: bool,
     annotate: bool,
     upgrade: bool,
-    upgrade_packages: Tuple[str],
+    upgrade_packages: Tuple[str, ...],
     output_file: Optional[LazyFile],
     allow_unsafe: bool,
     generate_hashes: bool,
     reuse_hashes: bool,
-    src_files: Tuple[str],
+    src_files: Tuple[str, ...],
     max_rounds: int,
     build_isolation: bool,
     emit_find_links: bool,
@@ -386,15 +399,7 @@ def cli(
     )
 
     # Filter out pip environment markers which do not match (PEP496)
-    constraints = [
-        req
-        for req in constraints
-        if req.markers is None
-        # We explicitly set extra=None to filter out optional requirements
-        # since evaluating an extra marker with no environment raises UndefinedEnvironmentName
-        # (see https://packaging.pypa.io/en/latest/markers.html#usage)
-        or req.markers.evaluate({"extra": None})
-    ]
+    constraints = [req for req in constraints if req_is_in_extras(req, extras=extras)]
 
     log.debug("Using indexes:")
     with log.indentation():

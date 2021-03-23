@@ -325,10 +325,36 @@ def make_sdist(run_setup_file):
 
 
 @pytest.fixture
+def make_module(tmpdir):
+    """
+    Make a metadata file with the given name and content and a fake module.
+    """
+
+    def _make_module(fname, content):
+        path = os.path.join(tmpdir, "sample_lib")
+        os.mkdir(path)
+        path = os.path.join(tmpdir, "sample_lib", "__init__.py")
+        with open(path, "w") as stream:
+            stream.write("'example module'\n__version__ = '1.2.3'")
+        path = os.path.join(tmpdir, fname)
+        with open(path, "w") as stream:
+            stream.write(dedent(content))
+        return path
+
+    return _make_module
+
+
+@pytest.fixture
 def fake_dists(tmpdir, make_package, make_wheel):
     dists_path = os.path.join(tmpdir, "dists")
-    pkg = make_package("small-fake-a", version="0.1")
-    make_wheel(pkg, dists_path)
-    pkg = make_package("small-fake-b", version="0.2")
-    make_wheel(pkg, dists_path)
+    pkgs = [
+        make_package("small-fake-a", version="0.1"),
+        make_package("small-fake-b", version="0.2"),
+        make_package("small-fake-c", version="0.3"),
+        make_package("small-fake-d", version="0.4"),
+        make_package("small-fake-e", version="0.5"),
+        make_package("small-fake-f", version="0.6"),
+    ]
+    for pkg in pkgs:
+        make_wheel(pkg, dists_path)
     return dists_path

@@ -1754,21 +1754,41 @@ METADATA_TEST_CASES = (
 
 @pytest.mark.network
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
-def test_input_formats(fake_dists, runner, tmpdir, fname, content):
-    path = os.path.join(tmpdir, "sample_lib")
-    os.mkdir(path)
-    path = os.path.join(tmpdir, "sample_lib", "__init__.py")
-    with open(path, "w") as stream:
-        stream.write("'example module'\n__version__ = '1.2.3'")
-    path = os.path.join(tmpdir, fname)
-    with open(path, "w") as stream:
-        stream.write(dedent(content))
-
-    out = runner.invoke(cli, ["-n", "--find-links", fake_dists, path])
+def test_input_formats(fake_dists, runner, make_module, fname, content):
+    meta_path = make_module(fname=fname, content=content)
+    out = runner.invoke(cli, ["-n", "--find-links", fake_dists, meta_path])
     assert out.exit_code == 0, out.stderr
     assert "small-fake-a==0.1" in out.stderr
     assert "small-fake-b==0.2" in out.stderr
     assert "small-fake-c" not in out.stderr
     assert "small-fake-d" not in out.stderr
+    assert "small-fake-e" not in out.stderr
+    assert "small-fake-f" not in out.stderr
+
+
+@pytest.mark.network
+@pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
+def test_one_extra(fake_dists, runner, make_module, fname, content):
+    meta_path = make_module(fname=fname, content=content)
+    out = runner.invoke(cli, ["-n", "-e", "dev", "--find-links", fake_dists, meta_path])
+    assert out.exit_code == 0, out.stderr
+    assert "small-fake-a==0.1" in out.stderr
+    assert "small-fake-b==0.2" in out.stderr
+    assert "small-fake-c==0.3" in out.stderr
+    assert "small-fake-d==0.4" in out.stderr
+    assert "small-fake-e" not in out.stderr
+    assert "small-fake-f" not in out.stderr
+
+
+@pytest.mark.network
+@pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
+def test_multiple_extras(fake_dists, runner, make_module, fname, content):
+    meta_path = make_module(fname=fname, content=content)
+    out = runner.invoke(cli, ["-n", "-e", "dev", "--find-links", fake_dists, meta_path])
+    assert out.exit_code == 0, out.stderr
+    assert "small-fake-a==0.1" in out.stderr
+    assert "small-fake-b==0.2" in out.stderr
+    assert "small-fake-c==0.3" in out.stderr
+    assert "small-fake-d==0.4" in out.stderr
     assert "small-fake-e" not in out.stderr
     assert "small-fake-f" not in out.stderr
