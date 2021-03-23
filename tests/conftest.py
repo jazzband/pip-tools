@@ -322,3 +322,13 @@ def make_sdist(run_setup_file):
         return run_setup_file(package_dir, "sdist", "--dist-dir", str(dist_dir), *args)
 
     return _make_sdist
+
+
+@pytest.fixture
+def fake_dists(tmpdir, make_package, make_wheel):
+    dists_path = os.path.join(tmpdir, "dists")
+    pkg = make_package("small-fake-a", version="0.1")
+    make_wheel(pkg, dists_path)
+    pkg = make_package("small-fake-b", version="0.2")
+    make_wheel(pkg, dists_path)
+    return dists_path
