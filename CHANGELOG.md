@@ -1,3 +1,11 @@
+# 6.1.0 (2020-03-23)
+
+Features:
+
+- Add support for `pyproject.toml` or `setup.cfg` as input dependency file
+  (PEP-517) for `pip-compile`
+  ([#1356](https://github.com/jazzband/pip-tools/pull/1356)). Thanks @orsinium
+
 # 6.0.1 (2020-03-15)
 
 Bug Fixes:
