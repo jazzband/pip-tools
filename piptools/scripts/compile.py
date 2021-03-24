@@ -68,8 +68,8 @@ def _get_default_option(option_name: str) -> Any:
     help="Clear any caches upfront, rebuild from scratch",
 )
 @click.option(
-    "-e",
-    "--extras",
+    "--extra",
+    "extras",
     multiple=True,
     help="names of extras_require to install",
 )

@@ -1770,7 +1770,7 @@ def test_input_formats(fake_dists, runner, make_module, fname, content):
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
 def test_one_extra(fake_dists, runner, make_module, fname, content):
     meta_path = make_module(fname=fname, content=content)
-    out = runner.invoke(cli, ["-n", "-e", "dev", "--find-links", fake_dists, meta_path])
+    out = runner.invoke(cli, ["-n", "--extra", "dev", "--find-links", fake_dists, meta_path])
     assert out.exit_code == 0, out.stderr
     assert "small-fake-a==0.1" in out.stderr
     assert "small-fake-b==0.2" in out.stderr
@@ -1785,7 +1785,7 @@ def test_one_extra(fake_dists, runner, make_module, fname, content):
 def test_multiple_extras(fake_dists, runner, make_module, fname, content):
     meta_path = make_module(fname=fname, content=content)
     out = runner.invoke(
-        cli, ["-n", "-e", "dev", "-e", "test", "--find-links", fake_dists, meta_path]
+        cli, ["-n", "--extra", "dev", "--extra", "test", "--find-links", fake_dists, meta_path]
     )
     assert out.exit_code == 0, out.stderr
     assert "small-fake-a==0.1" in out.stderr
