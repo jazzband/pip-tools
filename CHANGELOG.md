@@ -1,4 +1,4 @@
-# 6.1.0 (2020-03-23)
+# 6.1.0 (2021-03-23)
 
 Features:
 
@@ -6,7 +6,7 @@ Features:
   (PEP-517) for `pip-compile`
   ([#1356](https://github.com/jazzband/pip-tools/pull/1356)). Thanks @orsinium
 
-# 6.0.1 (2020-03-15)
+# 6.0.1 (2021-03-15)
 
 Bug Fixes:
 
@@ -18,7 +18,7 @@ Dependencies:
 - Add `pep517` dependency
   ([#1353](https://github.com/jazzband/pip-tools/pull/1353)). Thanks @atugushev
 
-# 6.0.0 (2020-03-12)
+# 6.0.0 (2021-03-12)
 
 Backwards Incompatible Changes:
 
