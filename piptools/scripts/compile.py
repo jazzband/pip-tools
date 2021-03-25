@@ -185,7 +185,9 @@ def _get_default_option(option_name: str) -> Any:
     "--cache-dir",
     help="Store the cache data in DIRECTORY.",
     default=CACHE_DIR,
+    envvar="PIP_TOOLS_CACHE_DIR",
     show_default=True,
+    show_envvar=True,
     type=click.Path(file_okay=False, writable=True),
 )
 @click.option(
