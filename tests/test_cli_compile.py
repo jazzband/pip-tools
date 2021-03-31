@@ -1755,6 +1755,9 @@ METADATA_TEST_CASES = (
 @pytest.mark.network
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
 def test_input_formats(fake_dists, runner, make_module, fname, content):
+    """
+    Test different dependency formats as input file.
+    """
     meta_path = make_module(fname=fname, content=content)
     out = runner.invoke(cli, ["-n", "--find-links", fake_dists, meta_path])
     assert out.exit_code == 0, out.stderr
@@ -1769,6 +1772,9 @@ def test_input_formats(fake_dists, runner, make_module, fname, content):
 @pytest.mark.network
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
 def test_one_extra(fake_dists, runner, make_module, fname, content):
+    """
+    Test one `--extra` (dev) passed, other extras (test) must be ignored.
+    """
     meta_path = make_module(fname=fname, content=content)
     out = runner.invoke(
         cli, ["-n", "--extra", "dev", "--find-links", fake_dists, meta_path]
@@ -1785,6 +1791,9 @@ def test_one_extra(fake_dists, runner, make_module, fname, content):
 @pytest.mark.network
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
 def test_multiple_extras(fake_dists, runner, make_module, fname, content):
+    """
+    Test passing multiple `--extra` params.
+    """
     meta_path = make_module(fname=fname, content=content)
     out = runner.invoke(
         cli,
@@ -1809,6 +1818,9 @@ def test_multiple_extras(fake_dists, runner, make_module, fname, content):
 
 
 def test_extras_fail_with_requirements_in(runner, tmpdir):
+    """
+    Test that passing `--extra` with `requirements.in` input file fails.
+    """
     path = os.path.join(tmpdir, "requirements.in")
     with open(path, "w") as stream:
         stream.write("\n")

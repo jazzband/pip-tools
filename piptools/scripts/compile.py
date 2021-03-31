@@ -71,7 +71,7 @@ def _get_default_option(option_name: str) -> Any:
     "--extra",
     "extras",
     multiple=True,
-    help="names of extras_require to install",
+    help="Names of extras_require to install",
 )
 @click.option(
     "-f",

@@ -346,6 +346,9 @@ def make_module(tmpdir):
 
 @pytest.fixture
 def fake_dists(tmpdir, make_package, make_wheel):
+    """
+    Generate distribution packages `small-fake-{a..f}`
+    """
     dists_path = os.path.join(tmpdir, "dists")
     pkgs = [
         make_package("small-fake-a", version="0.1"),
