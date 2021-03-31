@@ -348,6 +348,7 @@ def cli(
     ###
 
     constraints = []
+    setup_file_found = False
     for src_file in src_files:
         is_setup_file = os.path.basename(src_file) in METADATA_FILENAMES
         if src_file == "-":
@@ -371,6 +372,7 @@ def cli(
                 req.comes_from = comes_from
             constraints.extend(reqs)
         elif is_setup_file:
+            setup_file_found = True
             dist = meta.load(os.path.dirname(os.path.abspath(src_file)))
             comes_from = f"{dist.metadata.get_all('Name')[0]} ({src_file})"
             constraints.extend(
@@ -388,6 +390,10 @@ def cli(
                     options=repository.options,
                 )
             )
+
+    if not setup_file_found:
+        msg = "--extra has effect only with setup.py and PEP-517 input formats"
+        raise click.BadParameter(msg)
 
     primary_packages = {
         key_from_ireq(ireq) for ireq in constraints if not ireq.constraint

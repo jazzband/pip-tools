@@ -1806,3 +1806,13 @@ def test_multiple_extras(fake_dists, runner, make_module, fname, content):
     assert "small-fake-d==0.4" in out.stderr
     assert "small-fake-e==0.5" in out.stderr
     assert "small-fake-f==0.6" in out.stderr
+
+
+def test_extras_fail_with_requirements_in(runner, tmpdir):
+    path = os.path.join(tmpdir, "requirements.in")
+    with open(path, "w") as stream:
+        stream.write("\n")
+    out = runner.invoke(cli, ["-n", "--extra", "something", path])
+    assert out.exit_code == 2
+    exp = "--extra has effect only with setup.py and PEP-517 input formats"
+    assert exp in out.stderr
