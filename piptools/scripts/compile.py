@@ -393,7 +393,7 @@ def cli(
                 )
             )
 
-    if not setup_file_found:
+    if extras and not setup_file_found:
         msg = "--extra has effect only with setup.py and PEP-517 input formats"
         raise click.BadParameter(msg)
 
