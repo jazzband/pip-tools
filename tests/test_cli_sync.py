@@ -1,8 +1,10 @@
+import os
 import subprocess
 import sys
 from unittest import mock
 
 import pytest
+from pip._vendor.packaging.version import Version
 
 from piptools.scripts.sync import DEFAULT_REQUIREMENTS_FILE, cli
 
@@ -244,6 +246,7 @@ def test_sync_dry_run_returns_non_zero_exit_code(runner):
     assert out.exit_code == 1
 
 
+@mock.patch("piptools.scripts.sync.get_pip_version_for_python_executable")
 @mock.patch("piptools.scripts.sync.get_sys_path_for_python_executable")
 @mock.patch("piptools.scripts.sync.get_installed_distributions")
 @mock.patch("piptools.sync.run")
@@ -251,6 +254,7 @@ def test_python_executable_option(
     run,
     get_installed_distributions,
     get_sys_path_for_python_executable,
+    get_pip_version_for_python_executable,
     runner,
     fake_dist,
 ):
@@ -260,13 +264,14 @@ def test_python_executable_option(
     with open("requirements.txt", "w") as req_in:
         req_in.write("small-fake-a==1.10.0")
 
-    custom_executable = "custom_executable"
+    custom_executable = os.path.abspath("custom_executable")
     with open(custom_executable, "w") as exec_file:
         exec_file.write("")
 
     sys_paths = ["", "./"]
     get_sys_path_for_python_executable.return_value = sys_paths
     get_installed_distributions.return_value = [fake_dist("django==1.8")]
+    get_pip_version_for_python_executable.return_value = Version("20.3")
 
     runner.invoke(cli, ["--python-executable", custom_executable])
 
@@ -289,8 +294,8 @@ def test_python_executable_option(
 @pytest.mark.parametrize(
     "python_executable",
     (
-        ["/tmp/invalid_executable"],
-        ["invalid_python"],
+        "/tmp/invalid_executable",
+        "invalid_python",
     ),
 )
 def test_invalid_python_executable(runner, python_executable):
@@ -299,6 +304,30 @@ def test_invalid_python_executable(runner, python_executable):
 
     out = runner.invoke(cli, ["--python-executable", python_executable])
     assert out.exit_code == 2, out
+    message = "Could not resolve '{}' as valid executable path or alias\n"
+    assert out.stderr == message.format(python_executable)
+
+
+@mock.patch("piptools.scripts.sync.get_pip_version_for_python_executable")
+def test_invalid_pip_version_in_python_executable(
+    get_pip_version_for_python_executable, runner
+):
+    with open("requirements.txt", "w") as req_in:
+        req_in.write("small-fake-a==1.10.0")
+
+    custom_executable = os.path.abspath("custom_executable")
+    with open(custom_executable, "w") as exec_file:
+        exec_file.write("")
+
+    get_pip_version_for_python_executable.return_value = Version("19.1")
+
+    out = runner.invoke(cli, ["--python-executable", custom_executable])
+    assert out.exit_code == 2, out
+    message = (
+        "Target python executable '{}' has pip version 19.1 installed. "
+        "20.3 or higher is required.\n"
+    )
+    assert out.stderr == message.format(custom_executable)
 
 
 @mock.patch("piptools.sync.run")
