@@ -268,6 +268,8 @@ def test_python_executable_option(
     with open(custom_executable, "w") as exec_file:
         exec_file.write("")
 
+    os.chmod(custom_executable, 0o700)
+
     sys_paths = ["", "./"]
     get_sys_path_for_python_executable.return_value = sys_paths
     get_installed_distributions.return_value = [fake_dist("django==1.8")]
@@ -318,6 +320,8 @@ def test_invalid_pip_version_in_python_executable(
     custom_executable = os.path.abspath("custom_executable")
     with open(custom_executable, "w") as exec_file:
         exec_file.write("")
+
+    os.chmod(custom_executable, 0o700)
 
     get_pip_version_for_python_executable.return_value = Version("19.1")
 

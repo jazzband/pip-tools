@@ -317,7 +317,7 @@ def get_pip_version_for_python_executable(python_executable: str) -> Version:
     Returns pip version for the given python executable.
     """
     str_version = subprocess.check_output(  # nosec
-        [python_executable, "-c", "import pip;print(pip.__version__)"], text=True
+        [python_executable, "-c", "import pip;print(pip.__version__)"], encoding='utf8'
     )
     return Version(str_version)
 
