@@ -1656,3 +1656,125 @@ def test_triple_equal_pinned_dependency_is_used(
     assert out.exit_code == 0, out
     for line in out_expected_content:
         assert line in out.stderr
+
+
+@pytest.mark.network
+@pytest.mark.parametrize(
+    ("fname", "content"),
+    (
+        pytest.param(
+            "setup.cfg",
+            """
+                [metadata]
+                name = sample_lib
+                author = Vincent Driessen
+                author_email = me@nvie.com
+
+                [options]
+                packages = find:
+                install_requires =
+                    small-fake-a==0.1
+                    small-fake-b==0.2
+
+                [options.extras_require]
+                dev =
+                    small-fake-c==0.3
+                    small-fake-d==0.4
+                test =
+                    small-fake-e==0.5
+                    small-fake-f==0.6
+            """,
+            id="setup.cfg",
+        ),
+        pytest.param(
+            "setup.py",
+            """
+                from setuptools import setup
+
+                setup(
+                    name="sample_lib",
+                    version=0.1,
+                    install_requires=["small-fake-a==0.1", "small-fake-b==0.2"],
+                    extras_require={
+                        "dev": ["small-fake-c==0.3", "small-fake-d==0.4"],
+                        "test": ["small-fake-e==0.5", "small-fake-f==0.6"],
+                    },
+                )
+            """,
+            id="setup.py",
+        ),
+        pytest.param(
+            "pyproject.toml",
+            """
+                [build-system]
+                requires = ["flit_core >=2,<4"]
+                build-backend = "flit_core.buildapi"
+
+                [tool.flit.metadata]
+                module = "sample_lib"
+                author = "Vincent Driessen"
+                author-email = "me@nvie.com"
+
+                requires = ["small-fake-a==0.1", "small-fake-b==0.2"]
+
+                [tool.flit.metadata.requires-extra]
+                dev  = ["small-fake-c==0.3", "small-fake-d==0.4"]
+                test = ["small-fake-e==0.5", "small-fake-f==0.6"]
+            """,
+            id="flit",
+        ),
+        pytest.param(
+            "pyproject.toml",
+            """
+                [build-system]
+                requires = ["poetry_core>=1.0.0"]
+                build-backend = "poetry.core.masonry.api"
+
+                [tool.poetry]
+                name = "sample_lib"
+                version = "0.1.0"
+                description = ""
+                authors = ["Vincent Driessen <me@nvie.com>"]
+
+                [tool.poetry.dependencies]
+                python = "*"
+                small-fake-a = "0.1"
+                small-fake-b = "0.2"
+
+                small-fake-c = "0.3"
+                small-fake-d = "0.4"
+                small-fake-e = "0.5"
+                small-fake-f = "0.6"
+
+                [tool.poetry.extras]
+                dev  = ["small-fake-c", "small-fake-d"]
+                test = ["small-fake-e", "small-fake-f"]
+            """,
+            id="poetry",
+        ),
+    ),
+)
+def test_input_formats(make_package, make_wheel, runner, tmpdir, fname, content):
+    dists_path = os.path.join(tmpdir, "dists")
+    pkg = make_package("small-fake-a", version="0.1")
+    make_wheel(pkg, dists_path)
+    pkg = make_package("small-fake-b", version="0.2")
+    make_wheel(pkg, dists_path)
+
+    path = os.path.join(tmpdir, "sample_lib")
+    os.mkdir(path)
+    path = os.path.join(tmpdir, "sample_lib", "__init__.py")
+    with open(path, "w") as stream:
+        stream.write("'example module'\n__version__ = '1.2.3'")
+    path = os.path.join(tmpdir, fname)
+    with open(path, "w") as stream:
+        stream.write(dedent(content))
+
+    out = runner.invoke(cli, ["-n", "--find-links", dists_path, path])
+    assert out.exit_code == 0, out.stderr
+    assert "small-fake-a==0.1" in out.stderr
+    assert "small-fake-b==0.2" in out.stderr
+    assert "small-fake-c" not in out.stderr
+    assert "small-fake-d" not in out.stderr
+    assert "small-fake-e" not in out.stderr
+    assert "small-fake-f" not in out.stderr
