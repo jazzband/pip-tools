@@ -1,6 +1,7 @@
 import itertools
 import os
 import shlex
+import shutil
 import sys
 from typing import List, Optional, Tuple, cast
 
@@ -9,15 +10,21 @@ from pip._internal.commands import create_command
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.utils.misc import get_installed_distributions
+from pip._vendor.packaging.version import Version
 
 from .. import sync
 from .._compat import parse_requirements
 from ..exceptions import PipToolsError
 from ..logging import log
 from ..repositories import PyPIRepository
-from ..utils import flat_map, get_sys_path_for_python_executable
+from ..utils import (
+    flat_map,
+    get_pip_version_for_python_executable,
+    get_sys_path_for_python_executable,
+)
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
+MIN_PIP_VERSION = Version("20.3")  # Should be in sync with version in setup.cfg
 
 
 @click.command(context_settings={"help_option_names": ("-h", "--help")})
@@ -57,7 +64,6 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 )
 @click.option(
     "--python-executable",
-    type=click.Path(exists=True),
     help="Custom python executable path if targeting an environment other than current",
 )
 @click.option("-v", "--verbose", count=True, help="Show more output")
@@ -112,6 +118,22 @@ def cli(
             log.warning("WARNING: " + msg)
         else:
             log.error("ERROR: " + msg)
+            sys.exit(2)
+
+    if python_executable:
+        resolved_python_executable = shutil.which(python_executable)
+        if resolved_python_executable is None:
+            msg = "Could not resolve '{}' as valid executable path or alias"
+            log.error(msg.format(python_executable))
+            sys.exit(2)
+
+        pip_version = get_pip_version_for_python_executable(python_executable)
+        if pip_version < MIN_PIP_VERSION:
+            msg = (
+                "Target python executable '{}' has pip version {} installed. "
+                "{} or higher is required."
+            )
+            log.error(msg.format(python_executable, pip_version, MIN_PIP_VERSION))
             sys.exit(2)
 
     install_command = cast(InstallCommand, create_command("install"))

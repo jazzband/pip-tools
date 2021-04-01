@@ -312,6 +312,16 @@ def get_compile_command(click_ctx: click.Context) -> str:
     return " ".join(["pip-compile", *sorted(left_args), *sorted(right_args)])
 
 
+def get_pip_version_for_python_executable(python_executable: str) -> Version:
+    """
+    Returns pip version for the given python executable.
+    """
+    str_version = subprocess.check_output(  # nosec
+        [python_executable, "-c", "import pip;print(pip.__version__)"], text=True
+    )
+    return Version(str_version)
+
+
 def get_sys_path_for_python_executable(python_executable: str) -> List[str]:
     """
     Returns sys.path list for the given python executable.

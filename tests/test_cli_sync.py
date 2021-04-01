@@ -286,11 +286,18 @@ def test_python_executable_option(
     assert called_install_options == [[custom_executable, "-m", "pip", "install", "-r"]]
 
 
-def test_invalid_python_executable(runner):
+@pytest.mark.parametrize(
+    "python_executable",
+    (
+        ["/tmp/invalid_executable"],
+        ["invalid_python"],
+    ),
+)
+def test_invalid_python_executable(runner, python_executable):
     with open("requirements.txt", "w") as req_in:
         req_in.write("small-fake-a==1.10.0")
 
-    out = runner.invoke(cli, ["--python-executable", "/tmp/invalid_executable"])
+    out = runner.invoke(cli, ["--python-executable", python_executable])
     assert out.exit_code == 2, out
 
 

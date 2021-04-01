@@ -4,7 +4,9 @@ import os
 import shlex
 import sys
 
+import pip
 import pytest
+from pip._vendor.packaging.version import Version
 
 from piptools.scripts.compile import cli as compile_cli
 from piptools.utils import (
@@ -15,6 +17,7 @@ from piptools.utils import (
     format_specifier,
     get_compile_command,
     get_hashes_from_ireq,
+    get_pip_version_for_python_executable,
     get_sys_path_for_python_executable,
     is_pinned_requirement,
     is_url_requirement,
@@ -369,6 +372,11 @@ def test_lookup_table_from_tuples_with_empty_values():
 
 def test_lookup_table_with_empty_values():
     assert lookup_table((), operator.itemgetter(0)) == {}
+
+
+def test_get_pip_version_for_python_executable():
+    result = get_pip_version_for_python_executable(sys.executable)
+    assert Version(pip.__version__) == result
 
 
 def test_get_sys_path_for_python_executable():
