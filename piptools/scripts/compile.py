@@ -2,12 +2,13 @@ import os
 import shlex
 import sys
 import tempfile
-from typing import Any, BinaryIO, Optional, Tuple, cast
+from typing import Any, BinaryIO, List, Optional, Tuple, cast
 
 import click
 from click.utils import LazyFile, safecall
 from pep517 import meta
 from pip._internal.commands import create_command
+from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 
@@ -19,13 +20,7 @@ from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..repositories.base import BaseRepository
 from ..resolver import Resolver
-from ..utils import (
-    UNSAFE_PACKAGES,
-    dedup,
-    is_pinned_requirement,
-    key_from_ireq,
-    req_check_markers,
-)
+from ..utils import UNSAFE_PACKAGES, dedup, is_pinned_requirement, key_from_ireq
 from ..writer import OutputWriter
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.in"
@@ -349,7 +344,7 @@ def cli(
     # Parsing/collecting initial requirements
     ###
 
-    constraints = []
+    constraints: List[InstallRequirement] = []
     setup_file_found = False
     for src_file in src_files:
         is_setup_file = os.path.basename(src_file) in METADATA_FILENAMES
@@ -406,7 +401,7 @@ def cli(
         ireq for key, ireq in upgrade_install_reqs.items() if key in allowed_upgrades
     )
 
-    constraints = [req for req in constraints if req_check_markers(req, extras=extras)]
+    constraints = [req for req in constraints if req.match_markers(extras)]
 
     log.debug("Using indexes:")
     with log.indentation():
