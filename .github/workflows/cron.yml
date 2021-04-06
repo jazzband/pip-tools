@@ -6,7 +6,7 @@ on:
     - cron: 0 0 * * *
 
 jobs:
-  master:
+  main:
     name: ${{ matrix.os }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
     runs-on: ${{ matrix.os }}-latest
     strategy:
@@ -22,7 +22,7 @@ jobs:
           - 3.7
           - 3.8
         pip-version:
-          - master
+          - main
     env:
       PY_COLORS: 1
       TOXENV: pip${{ matrix.pip-version }}
