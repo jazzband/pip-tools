@@ -1767,6 +1767,7 @@ def test_input_formats(fake_dists, runner, make_module, fname, content):
     assert "small-fake-d" not in out.stderr
     assert "small-fake-e" not in out.stderr
     assert "small-fake-f" not in out.stderr
+    assert "extra ==" not in out.stderr
 
 
 @pytest.mark.network
@@ -1786,6 +1787,7 @@ def test_one_extra(fake_dists, runner, make_module, fname, content):
     assert "small-fake-d==0.4" in out.stderr
     assert "small-fake-e" not in out.stderr
     assert "small-fake-f" not in out.stderr
+    assert "extra ==" not in out.stderr
 
 
 @pytest.mark.network
@@ -1815,6 +1817,7 @@ def test_multiple_extras(fake_dists, runner, make_module, fname, content):
     assert "small-fake-d==0.4" in out.stderr
     assert "small-fake-e==0.5" in out.stderr
     assert "small-fake-f==0.6" in out.stderr
+    assert "extra ==" not in out.stderr
 
 
 def test_extras_fail_with_requirements_in(runner, tmpdir):

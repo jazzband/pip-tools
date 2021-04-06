@@ -9,6 +9,7 @@ from piptools.scripts.compile import cli as compile_cli
 from piptools.utils import (
     as_tuple,
     dedup,
+    drop_extras,
     flat_map,
     format_requirement,
     format_specifier,
@@ -367,3 +368,54 @@ def test_lookup_table_from_tuples_with_empty_values():
 
 def test_lookup_table_with_empty_values():
     assert lookup_table((), operator.itemgetter(0)) == {}
+
+
+@pytest.mark.parametrize(
+    ("given", "expected"),
+    (
+        ("", None),
+        ("extra == 'dev'", None),
+        ("extra == 'dev' or extra == 'test'", None),
+        ("os_name == 'nt' and extra == 'dev'", "os_name == 'nt'"),
+        ("extra == 'dev' and os_name == 'nt'", "os_name == 'nt'"),
+        ("os_name == 'nt' or extra == 'dev'", "os_name == 'nt'"),
+        ("extra == 'dev' or os_name == 'nt'", "os_name == 'nt'"),
+        ("(extra == 'dev') or os_name == 'nt'", "os_name == 'nt'"),
+        ("os_name == 'nt' and (extra == 'dev' or extra == 'test')", "os_name == 'nt'"),
+        ("os_name == 'nt' or (extra == 'dev' or extra == 'test')", "os_name == 'nt'"),
+        ("(extra == 'dev' or extra == 'test') or os_name == 'nt'", "os_name == 'nt'"),
+        ("(extra == 'dev' or extra == 'test') and os_name == 'nt'", "os_name == 'nt'"),
+        (
+            "os_name == 'nt' or (os_name == 'unix' and extra == 'test')",
+            "os_name == 'nt' or os_name == 'unix'",
+        ),
+        (
+            "(os_name == 'unix' and extra == 'test') or os_name == 'nt'",
+            "os_name == 'unix' or os_name == 'nt'",
+        ),
+        (
+            "(os_name == 'unix' or extra == 'test') and os_name == 'nt'",
+            "os_name == 'unix' and os_name == 'nt'",
+        ),
+        (
+            "(os_name == 'unix' and extra == 'test' or python_version < '3.5')"
+            " or os_name == 'nt'",
+            "(os_name == 'unix' or python_version < '3.5') or os_name == 'nt'",
+        ),
+        (
+            "os_name == 'unix' and extra == 'test' or os_name == 'nt'",
+            "os_name == 'unix' or os_name == 'nt'",
+        ),
+        (
+            "os_name == 'unix' or extra == 'test' and os_name == 'nt'",
+            "os_name == 'unix' or os_name == 'nt'",
+        ),
+    ),
+)
+def test_drop_extras(from_line, given, expected):
+    ireq = from_line(f"test;{given}")
+    drop_extras(ireq)
+    if expected is None:
+        assert ireq.markers is None
+    else:
+        assert str(ireq.markers).replace("'", '"') == expected.replace("'", '"')
