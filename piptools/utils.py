@@ -230,8 +230,9 @@ def _drop_extras(markers: List[_T]) -> List[_T]:
         # sub-expression (inside braces)
         if isinstance(token, list):
             markers[i] = _drop_extras(token)  # type: ignore
-            if not markers[i]:
-                to_remove.append(i)
+            if markers[i]:
+                continue
+            to_remove.append(i)
             continue
         # test expression (like `extra == "dev"`)
         assert isinstance(token, tuple)

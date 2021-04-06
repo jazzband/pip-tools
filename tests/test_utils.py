@@ -398,6 +398,10 @@ def test_lookup_table_with_empty_values():
             "os_name == 'unix' and os_name == 'nt'",
         ),
         (
+            "(os_name == 'unix' or os_name == 'nt') and extra == 'dev'",
+            "os_name == 'unix' or os_name == 'nt'",
+        ),
+        (
             "(os_name == 'unix' and extra == 'test' or python_version < '3.5')"
             " or os_name == 'nt'",
             "(os_name == 'unix' or python_version < '3.5') or os_name == 'nt'",
