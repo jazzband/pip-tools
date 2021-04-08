@@ -1,4 +1,5 @@
 import os
+import sys
 from unittest import mock
 
 import pytest
@@ -381,3 +382,42 @@ def test_name_collision(from_line, pypi_repository, make_package, make_sdist, tm
     deps = pypi_repository.get_dependencies(ireq)
     assert len(deps) == 1
     assert deps.pop().name == "test-package-1"
+
+
+@pytest.mark.parametrize('pip_args, expected', [
+    ([], ''),
+    (["--python-version", "36"], "version_info='3.6'"),
+    (
+        ["--python-version", "36", "--platform", "darwin"],
+        "platforms=['darwin'] version_info='3.6'",
+    ),
+    (
+        ["--python-version", "36", "--platform", "darwin", "--abi", "cp36m", "--implementation", "cp"],
+        (
+            "platforms=['darwin'] version_info='3.6' abis=['cp36m'] "
+            "implementation='cp'"
+        ),
+    ),
+])
+def test_target_python_specification(pip_args, expected):
+    """
+    Test to verify that target python args passed via pip-args correctly specify the target_python
+    """
+    pypi_repository = PyPIRepository(pip_args, None)
+
+    actual = pypi_repository.target_python.format_given()
+    assert actual == expected
+
+
+def test_target_python_default_current_version():
+    """
+    Test to confirm that if no target python args are passed, defaults to current python version
+    """
+    pypi_repository = PyPIRepository([], None)
+    current_python_version = sys.version_info[:3]
+
+    assert pypi_repository.target_python._given_py_version_info is None
+    assert pypi_repository.target_python.py_version_info == current_python_version
+
+
+    
