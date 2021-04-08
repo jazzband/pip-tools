@@ -384,21 +384,33 @@ def test_name_collision(from_line, pypi_repository, make_package, make_sdist, tm
     assert deps.pop().name == "test-package-1"
 
 
-@pytest.mark.parametrize('pip_args, expected', [
-    ([], ''),
-    (["--python-version", "36"], "version_info='3.6'"),
+@pytest.mark.parametrize(
+    ("pip_args", "expected"),
     (
-        ["--python-version", "36", "--platform", "darwin"],
-        "platforms=['darwin'] version_info='3.6'",
-    ),
-    (
-        ["--python-version", "36", "--platform", "darwin", "--abi", "cp36m", "--implementation", "cp"],
+        ([], ""),
+        (["--python-version", "36"], "version_info='3.6'"),
         (
-            "platforms=['darwin'] version_info='3.6' abis=['cp36m'] "
-            "implementation='cp'"
+            ["--python-version", "36", "--platform", "darwin"],
+            "platforms=['darwin'] version_info='3.6'",
+        ),
+        (
+            [
+                "--python-version",
+                "36",
+                "--platform",
+                "darwin",
+                "--abi",
+                "cp36m",
+                "--implementation",
+                "cp",
+            ],
+            (
+                "platforms=['darwin'] version_info='3.6' abis=['cp36m'] "
+                "implementation='cp'"
+            ),
         ),
     ),
-])
+)
 def test_target_python_specification(pip_args, expected):
     """
     Test to verify that target python args passed via pip-args correctly specify the target_python
@@ -418,6 +430,3 @@ def test_target_python_default_current_version():
 
     assert pypi_repository.target_python._given_py_version_info is None
     assert pypi_repository.target_python.py_version_info == current_python_version
-
-
-    
