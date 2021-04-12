@@ -40,7 +40,7 @@ Similar to ``pip``, ``pip-tools`` must be installed in each of your project's
 .. code-block:: bash
 
     $ source /path/to/venv/bin/activate
-    (venv)$ python -m pip install pip-tools
+    (venv) $ python -m pip install pip-tools
 
 **Note**: all of the remaining example commands assume you've activated your
 project's virtual environment.
