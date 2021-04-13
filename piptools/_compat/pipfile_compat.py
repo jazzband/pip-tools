@@ -80,6 +80,18 @@ def _handle_requirement(line, options=None, filename=None, lineno=None):
     # A line is actually an item in a dictionary
     name, values = line
 
+    def _extract_from_values(values):
+        extras = values.get("extras")
+        extras_str = "[{}]".format(",".join(extras)) if extras else ""
+
+        version = values.get("version", "*")
+        version_str = version if version != "*" else ""
+
+        markers = values.get("markers")
+        env_markers = ";{}".format(",".join(markers)) if markers else ""
+
+        return extras_str, version_str, env_markers
+
     # set args/opts for the ParsedLine constructor below
     args, opts = None, None
 
@@ -87,16 +99,15 @@ def _handle_requirement(line, options=None, filename=None, lineno=None):
         args = name if values.strip() == "*" else name + values
 
     elif values.get("editable", False):
-        opts = dict(editables=["{}".format(os.path.abspath(values["path"]))])
+        path = os.path.abspath(values["path"])
+        extras, _, env_markers = _extract_from_values(values)
+        editable_path = "{path}{extras}{env}".format(
+            path=path, extras=extras, env=env_markers
+        )
+        opts = dict(editables=[editable_path])
 
     elif "version" in values:
-        extras = (
-            "[{}]".format(",".join(values["extras"])) if values.get("extras") else ""
-        )
-        version = values["version"] if values.get("version", "*") != "*" else ""
-        env_markers = (
-            ";{}".format(",".join(values["markers"])) if values.get("markers") else ""
-        )
+        extras, version, env_markers = _extract_from_values(values)
         args = "{name}{extras}{version}{environment}".format(
             name=name,
             extras=extras,
