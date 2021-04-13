@@ -51,6 +51,10 @@ def test_pipfile_requirement(pipfile_requirement, requirement_as_text):
             ("req_name", dict(editable=True, path="/path/to/req")),
             os.path.abspath("/path/to/req"),
         ),
+        (
+            ("req_name", dict(editable=True, path="/path/to/req", extras=["extra"])),
+            os.path.abspath("/path/to/req") + "[extra]",
+        ),
     ),
 )
 def test_pipfile_requirement_editable(pipfile_requirement, requirement_as_text):
