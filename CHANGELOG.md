@@ -5,6 +5,8 @@ Features:
 - Add support for `pyproject.toml` or `setup.cfg` as input dependency file
   (PEP-517) for `pip-compile`
   ([#1356](https://github.com/jazzband/pip-tools/pull/1356)). Thanks @orsinium
+- Add `pip-compile --extra` option to specify `extras_require` dependencies
+  ([#1363](https://github.com/jazzband/pip-tools/pull/1363)). Thanks @orsinium
 
 # 6.0.1 (2021-03-15)
 
