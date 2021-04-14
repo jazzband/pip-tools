@@ -1,3 +1,4 @@
+import os
 import pytest
 
 from piptools.exceptions import NoCandidateFound
@@ -19,6 +20,10 @@ from piptools.resolver import RequirementSummary, combine_install_requirements
                     "jinja2==2.7.3 (from flask==0.10.1)",
                     "werkzeug==0.10.4 (from flask==0.10.1)",
                 ],
+            ),
+            (
+                ["fake_package_a @ file://localhost/{}/tests/test_data/packages/fake_with_local_files/setup.py".format(os.getcwd())], 
+                ["fake_package_a@ file://localhost/{}/tests/test_data/packages/fake_with_local_files/setup.py from file://localhost/{}/tests/test_data/packages/fake_with_local_files/setup.py".format(os.getcwd(), os.getcwd())]
             ),
             (["Jinja2", "markupsafe"], ["jinja2==2.7.3", "markupsafe==0.23"]),
             # We should return a normal release version if prereleases is False

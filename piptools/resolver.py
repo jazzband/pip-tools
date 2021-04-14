@@ -85,6 +85,15 @@ def combine_install_requirements(
         # Return a sorted, de-duped tuple of extras
         combined_ireq.extras = tuple(sorted({*combined_ireq.extras, *ireq.extras}))
 
+        if ireq.link and combined_ireq.link is None:
+            combined_ireq.link = ireq.link
+
+        if ireq.local_file_path and combined_ireq.local_file_path is None:
+            combined_ireq.local_file_path = ireq.local_file_path
+
+        if ireq.original_link and combined_ireq.original_link is None:
+            combined_ireq.original_link = ireq.original_link
+
     # InstallRequirements objects are assumed to come from only one source, and
     # so they support only a single comes_from entry. This function breaks this
     # model. As a workaround, we deterministically choose a single source for
