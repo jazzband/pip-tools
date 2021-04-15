@@ -3,6 +3,7 @@ import pytest
 
 from piptools.exceptions import NoCandidateFound
 from piptools.resolver import RequirementSummary, combine_install_requirements
+from .constants import PACKAGES_PATH
 
 
 @pytest.mark.parametrize(
@@ -22,8 +23,17 @@ from piptools.resolver import RequirementSummary, combine_install_requirements
                 ],
             ),
             (
-                ["fake_package_a @ file://localhost/{}/tests/test_data/packages/fake_with_local_files/setup.py".format(os.getcwd())], 
-                ["fake_package_a@ file://localhost/{}/tests/test_data/packages/fake_with_local_files/setup.py from file://localhost/{}/tests/test_data/packages/fake_with_local_files/setup.py".format(os.getcwd(), os.getcwd())]
+                [
+                    "fake_package_a @ file://localhost/{}/fake_with_local_files/setup.py".format(
+                        os.path.join(PACKAGES_PATH)
+                    )
+                ], 
+                [
+                    "fake_package_a@ file://localhost/{}/fake_with_local_files/setup.py "\
+                        "from file://localhost/{}/fake_with_local_files/setup.py".format(
+                        os.path.join(PACKAGES_PATH), os.path.join(PACKAGES_PATH)
+                    )
+                ]
             ),
             (["Jinja2", "markupsafe"], ["jinja2==2.7.3", "markupsafe==0.23"]),
             # We should return a normal release version if prereleases is False
