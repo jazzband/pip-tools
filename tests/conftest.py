@@ -43,8 +43,11 @@ class FakeRepository(BaseRepository):
 
         with open("tests/test_data/fake-editables.json") as f:
             self.editables = json.load(f)
-            self.editables[eval(self.editables['func'])] = []
-            print(self.editables)
+            self.editables[
+                self.editables["fake_with_local_files"].format(
+                    os.path.join(PACKAGES_PATH)
+                )
+            ] = []
 
     def get_hashes(self, ireq):
         # Some fake hashes
