@@ -32,7 +32,7 @@ from piptools.utils import (
     make_install_requirement,
 )
 
-from .constants import MINIMAL_WHEELS_PATH
+from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
 from .utils import looks_like_ci
 
 
@@ -43,6 +43,8 @@ class FakeRepository(BaseRepository):
 
         with open("tests/test_data/fake-editables.json") as f:
             self.editables = json.load(f)
+            self.editables[eval(self.editables['func'])] = []
+            print(self.editables)
 
     def get_hashes(self, ireq):
         # Some fake hashes

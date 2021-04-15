@@ -1,5 +1,5 @@
 {
   "git+git://example.org/django.git#egg=django": [],
-  "git+https://github.com/celery/billiard#egg=billiard==3.5.9999": [], 
-  "file://localhost//src/piptools/tests/test_data/packages/fake_with_local_files/setup.py": []
+  "git+https://github.com/celery/billiard#egg=billiard==3.5.9999": [],
+  "func" : "\"file://localhost/{}/fake_with_local_files/setup.py\".format(os.path.join(PACKAGES_PATH))"
 }
