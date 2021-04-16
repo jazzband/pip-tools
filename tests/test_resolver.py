@@ -24,19 +24,6 @@ from .constants import PACKAGES_PATH
                     "werkzeug==0.10.4 (from flask==0.10.1)",
                 ],
             ),
-            (
-                [
-                    "fake_package_a @ file://localhost/{}/fake_with_local_files/setup.py".format(
-                        os.path.join(PACKAGES_PATH)
-                    )
-                ],
-                [
-                    "fake_package_a@ file://localhost/{}/fake_with_local_files/setup.py "
-                    "from file://localhost/{}/fake_with_local_files/setup.py".format(
-                        os.path.join(PACKAGES_PATH), os.path.join(PACKAGES_PATH)
-                    )
-                ],
-            ),
             (["Jinja2", "markupsafe"], ["jinja2==2.7.3", "markupsafe==0.23"]),
             # We should return a normal release version if prereleases is False
             (["SQLAlchemy"], ["sqlalchemy==0.9.9"]),
@@ -314,6 +301,35 @@ def test_combine_install_requirements(repository, from_line):
     assert combined_all.comes_from is None
     assert set(combined_all._source_ireqs) == {celery30, celery31, celery32}
     assert str(combined_all.req.specifier) == "<3.2,==3.1.1,>3.0"
+
+
+def test_combine_install_requirements_with_local_files(repository, from_line):
+    fake_package = from_line(
+        "fake_package_a @ file://localhost/{}/fake_with_local_files/setup.py".format(
+            os.path.join(PACKAGES_PATH)
+        ),
+        comes_from="-r requirements.in",
+    )
+    fake_package_name = from_line(
+        "fake_package_a==1.0.0", comes_from=from_line("fake_package_a")
+    )
+
+    combined_all = combine_install_requirements(
+        repository, [fake_package, fake_package_name]
+    )
+    assert str(combined_all.req.specifier) == "==1.0.0"
+    assert (
+        str(combined_all.link)
+        == "file://localhost//src/piptools/tests/test_data/packages/fake_with_local_files/setup.py"
+    )
+    assert (
+        str(combined_all.local_file_path)
+        == "//src/piptools/tests/test_data/packages/fake_with_local_files/setup.py"
+    )
+    assert (
+        str(combined_all.original_link)
+        == "file://localhost//src/piptools/tests/test_data/packages/fake_with_local_files/setup.py"
+    )
 
 
 def test_compile_failure_shows_provenance(resolver, from_line):
