@@ -325,7 +325,7 @@ def test_combine_install_requirements_with_local_files(repository, from_line):
     )
     assert (
         str(combined_all.local_file_path)
-        == f"/{os.path.join(PACKAGES_PATH)}fake_with_local_files/setup.py"
+        == f"/{os.path.join(PACKAGES_PATH)}/fake_with_local_files/setup.py"
     )
     assert str(
         combined_all.original_link
