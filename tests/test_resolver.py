@@ -318,17 +318,19 @@ def test_combine_install_requirements_with_local_files(repository, from_line):
         repository, [fake_package, fake_package_name]
     )
     assert str(combined_all.req.specifier) == "==1.0.0"
-    assert (
-        str(combined_all.link)
-        == "file://localhost//src/piptools/tests/test_data/packages/fake_with_local_files/setup.py"
+    assert str(
+        combined_all.link
+    ) == "file://localhost/{}/fake_with_local_files/setup.py".format(
+        os.path.join(PACKAGES_PATH)
     )
     assert (
         str(combined_all.local_file_path)
-        == "//src/piptools/tests/test_data/packages/fake_with_local_files/setup.py"
+        == f"/{os.path.join(PACKAGES_PATH)}fake_with_local_files/setup.py"
     )
-    assert (
-        str(combined_all.original_link)
-        == "file://localhost//src/piptools/tests/test_data/packages/fake_with_local_files/setup.py"
+    assert str(
+        combined_all.original_link
+    ) == "file://localhost/{}/fake_with_local_files/setup.py".format(
+        os.path.join(PACKAGES_PATH)
     )
 
 
