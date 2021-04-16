@@ -305,9 +305,8 @@ def test_combine_install_requirements(repository, from_line):
 
 def test_combine_install_requirements_with_local_files(repository, from_line):
     fake_package = from_line(
-        "fake_package_a @ file://localhost/{}/fake_with_local_files/setup.py".format(
-            os.path.join(PACKAGES_PATH)
-        ),
+        "fake_package_a @ file://localhost/"
+        + os.path.join(PACKAGES_PATH, "fake_with_local_files", "setup.py"),
         comes_from="-r requirements.in",
     )
     fake_package_name = from_line(
@@ -318,20 +317,9 @@ def test_combine_install_requirements_with_local_files(repository, from_line):
         repository, [fake_package, fake_package_name]
     )
     assert str(combined_all.req.specifier) == "==1.0.0"
-    assert str(
-        combined_all.link
-    ) == "file://localhost/{}/fake_with_local_files/setup.py".format(
-        os.path.join(PACKAGES_PATH)
-    )
-    assert (
-        str(combined_all.local_file_path)
-        == f"/{os.path.join(PACKAGES_PATH)}/fake_with_local_files/setup.py"
-    )
-    assert str(
-        combined_all.original_link
-    ) == "file://localhost/{}/fake_with_local_files/setup.py".format(
-        os.path.join(PACKAGES_PATH)
-    )
+    assert str(combined_all.link) == str(fake_package.link)
+    assert str(combined_all.local_file_path) == str(fake_package.local_file_path)
+    assert str(combined_all.original_link) == str(fake_package.original_link)
 
 
 def test_compile_failure_shows_provenance(resolver, from_line):
