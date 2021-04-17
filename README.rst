@@ -360,7 +360,7 @@ You might want to customize ``pip-compile`` args by configuring ``args`` and/or 
 
 If you have multiple requirement files make sure you create a hook for each file. 
 
-.. code-bloack:: yaml 
+.. code-block:: yaml 
 
     repos:
     -   repo: https://github.com/jazzband/pip-tools
