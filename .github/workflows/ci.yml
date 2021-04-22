@@ -52,30 +52,55 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Log python version info (${{ matrix.python-version }})
         run: python --version --version
-      - name: Pip cache
+
+      - name: Calculate cache metadata
+        id: cache-meta
+        shell: python
+        run: |
+          import hashlib
+          import subprocess
+          import sys
+
+          cache_dir_cmd = sys.executable, '-m', 'pip', 'cache', 'dir'
+          cache_dir = subprocess.check_output(
+              cache_dir_cmd,
+              universal_newlines=True,
+          ).strip()
+
+          version_hash = hashlib.sha512(sys.version.encode()).hexdigest()
+
+          print(
+              '::set-output name=pip-cache-dir:{cache_dir!s}'.
+              format(cache_dir=cache_dir)
+          )
+          print(
+              '::set-output name=python-version-hash:{version_hash!s}'.
+              format(version_hash=version_hash)
+          )
+          print(
+              "::set-output name=cache-key-pip-prefix:"
+              "${{ runner.os }}-py{version_hash!s}-pip-".
+              format(version_hash=version_hash)
+          )
+          print(
+              "::set-output name=pip-pip-cache-key-files:"
+              "${{ hashFiles('setup.cfg') }}-${{ hashFiles('setup.py') }}-"
+              "${{ hashFiles('tox.ini') }}-"
+              "${{ hashFiles('.pre-commit-config.yaml') }}".
+              format(version_hash=version_hash)
+          )
+      - name: pip cache
         uses: actions/cache@v2
         with:
-          path: >-
-            ${{
-              runner.os == 'Linux' &&
-              '~/.cache/pip'
-              || ''
-            }}${{
-              runner.os == 'macOS' &&
-              '~/Library/Caches/pip'
-              || ''
-            }}${{
-              runner.os == 'Windows' &&
-              '~\AppData\Local\pip\Cache'
-              || ''
-            }}
+          path: ${{ steps.cache-meta.outputs.pip-cache-dir }}
           key: >-
-            ${{ runner.os }}-pip-${{ hashFiles('setup.cfg') }}-${{
-            hashFiles('setup.py') }}-${{ hashFiles('tox.ini') }}-${{
-            hashFiles('.pre-commit-config.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-            ${{ runner.os }}-
+            ${{
+                steps.cache-meta.outputs.cache-key-pip-prefix
+            }}${{
+                steps.cache-meta.outputs.cache-key-files
+            }}
+          restore-keys: ${{ steps.cache-meta.outputs.cache-key-prefix }}
+
       - name: Install test dependencies
         run: python -m pip install -U tox virtualenv
       - name: Prepare test environment

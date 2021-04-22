@@ -28,37 +28,77 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Pip cache
+
+      - name: Calculate cache metadata
+        id: cache-meta
+        shell: python
+        run: |
+          import hashlib
+          import subprocess
+          import sys
+
+          cache_dir_cmd = sys.executable, '-m', 'pip', 'cache', 'dir'
+          cache_dir = subprocess.check_output(
+              cache_dir_cmd,
+              universal_newlines=True,
+          ).strip()
+
+          version_hash = hashlib.sha512(sys.version.encode()).hexdigest()
+
+          print(
+              '::set-output name=pip-cache-dir:{cache_dir!s}'.
+              format(cache_dir=cache_dir)
+          )
+          print('::set-output name=pre-commit-cache-dir:~/.cache/pre-commit')
+          print(
+              '::set-output name=python-version-hash:{version_hash!s}'.
+              format(version_hash=version_hash)
+          )
+          print(
+              "::set-output name=cache-key-pip-prefix:"
+              "${{ runner.os }}-py{version_hash!s}-pip-".
+              format(version_hash=version_hash)
+          )
+          print(
+              "::set-output name=cache-key-pre-commit-prefix:"
+              "${{ runner.os }}-py{version_hash!s}-pre-commit-".
+              format(version_hash=version_hash)
+          )
+          print(
+              "::set-output name=pip-cache-key-files:"
+              "${{ hashFiles('setup.cfg') }}-${{ hashFiles('setup.py') }}-"
+              "${{ hashFiles('tox.ini') }}-"
+              "${{ hashFiles('.pre-commit-config.yaml') }}".
+              format(version_hash=version_hash)
+          )
+          print(
+              "::set-output name=pre-commit-cache-key-files:"
+              "${{ hashFiles('.pre-commit-config.yaml') }}".
+              format(version_hash=version_hash)
+          )
+      - name: pip cache
         uses: actions/cache@v2
         with:
-          path: >-
-            ${{
-              runner.os == 'Linux' &&
-              '~/.cache/pip'
-              || ''
-            }}${{
-              runner.os == 'macOS' &&
-              '~/Library/Caches/pip'
-              || ''
-            }}${{
-              runner.os == 'Windows' &&
-              '~\AppData\Local\pip\Cache'
-              || ''
-            }}
+          path: ${{ steps.cache-meta.outputs.pip-cache-dir }}
           key: >-
-            ${{ runner.os }}-pip-${{ hashFiles('setup.cfg') }}-${{
-            hashFiles('setup.py') }}-${{ hashFiles('tox.ini') }}-${{
-            hashFiles('.pre-commit-config.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-            ${{ runner.os }}-
-      - name: Prepare cache key
-        id: cache-key
-        run: echo "::set-output name=sha-256::$(python -VV | sha256sum | cut -d' ' -f1)"
-      - uses: actions/cache@v1
+            ${{
+                steps.cache-meta.outputs.cache-key-pip-prefix
+            }}${{
+                steps.cache-meta.outputs.pip-cache-key-files
+            }}
+          restore-keys: ${{ steps.cache-meta.outputs.cache-key-prefix }}
+      - name: pre-commit cache
+        uses: actions/cache@v1
         with:
-          path: ~/.cache/pre-commit
-          key: pre-commit|${{ steps.cache-key.outputs.sha-256 }}|${{ hashFiles('.pre-commit-config.yaml') }}
+          path: ${{ steps.cache-meta.outputs.pre-commit-cache-dir }}
+          key: >-
+            ${{
+                steps.cache-meta.outputs.cache-key-pre-commit-prefix
+            }}${{
+                steps.cache-meta.outputs.pre-commit-cache-key-files
+            }}
+          restore-keys: ${{ steps.cache-meta.outputs.cache-key-pre-commit-prefix }}
+
       - name: Install tox
         run: pip install tox
       - name: Prepare test environment
