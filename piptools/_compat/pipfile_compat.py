@@ -17,11 +17,15 @@ from pip._internal.req.req_file import (
     handle_option_line,
     handle_requirement_line,
 )
-from pipfile import __version__ as PIPFILE_VERSION  # noqa: F401
+from pip._vendor.packaging.version import parse as parse_version
 from pipfile.api import PipfileParser
 
 from ..exceptions import IncompatibleRequirements
 from . import PIP_VERSION
+
+PIPFILE_VERSION = tuple(
+    map(int, parse_version(pipfile.__version__).base_version.split("."))
+)
 
 logger = logging.getLogger(__name__)
 
