@@ -1,3 +1,13 @@
+# 5.5.0+smule.1 (2020-03-26)
+
+This is a local fork of the upstream pip-tools repository. It adds the features described below, but should not be 
+pushed to upstream without following the process in [CONTRIBUTING](CONTRIBUTING.md). So far the maintainers have not 
+accepted this pull request
+
+Features:
+
+- Pipfile support ([#1301](https://github.com/jazzband/pip-tools/pull/1301))
+
 # 5.5.0 (2020-12-31)
 
 Features:
