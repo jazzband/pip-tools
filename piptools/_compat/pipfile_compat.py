@@ -1,9 +1,15 @@
 import logging
 import os
+import re
 import sys
+from collections import defaultdict
 from optparse import Values
 from urllib.parse import urlparse
 
+import jsonschema as jsonschema
+import numpy as np
+import pipfile
+import toml
 from pip._internal.req.constructors import install_req_from_parsed_requirement
 from pip._internal.req.req_file import (
     ParsedLine,
@@ -41,30 +47,21 @@ class ValuesFactory:
 
 
 def _handle_options(
-    line, filename=None, lineno=None, finder=None, options=None, session=None
+    line, filename=None, lineinfo=None, finder=None, options=None, session=None
 ):
     key, value = line
 
     if key == "sources":
         if len(value) == 0:
             opts = dict(no_index=True)
+            opts_values = ValuesFactory.build_values(opts)
+            handle_option_line(opts_values, filename, None, finder, options, session)
 
         else:
-            index_url = value[0]["url"]
-            extra_urls = [source["url"] for source in value[1:]]
-            trusted_hosts = [
-                urlparse(source["url"]).netloc
-                for source in value
-                if not source.get("verify_ssl", True)
-            ]
-            opts = dict(
-                index_url=index_url,
-                extra_index_urls=extra_urls,
-                trusted_hosts=trusted_hosts,
-            )
-
-        opts_values = ValuesFactory.build_values(opts)
-        handle_option_line(opts_values, filename, lineno, finder, options, session)
+            # Handle trusted hosts first
+            _handle_trusted_hosts(value, filename, lineinfo, finder, options, session)
+            # Do index URLs second because they overwrite with default values otherwise
+            _handle_sources(value, filename, lineinfo, finder, options, session)
 
     elif key == "requires":
         if "python_version" in value:
@@ -74,6 +71,24 @@ def _handle_options(
 
     else:
         logger.debug("Unused options: %r", line)
+
+
+def _handle_sources(sources, filename, lineinfo, finder, options, session):
+    opts = dict(
+        index_url=sources[0]["url"], extra_index_urls=[s["url"] for s in sources[1:]]
+    )
+    opts_values = ValuesFactory.build_values(opts)
+    handle_option_line(opts_values, filename, None, finder, options, session)
+
+
+def _handle_trusted_hosts(sources, filename, lineinfo, finder, options, session):
+    """ Handles each trusted host individually as if it were one line (mostly for better user feedback) """
+    for source in sources:
+        if not source.get("verify_ssl", True):
+            lineno = lineinfo["sources"].get(source["name"]) if lineinfo else None
+            opts = dict(trusted_hosts=[urlparse(source["url"]).netloc])
+            opts_values = ValuesFactory.build_values(opts)
+            handle_option_line(opts_values, filename, lineno, finder, options, session)
 
 
 def _handle_requirement(line, options=None, filename=None, lineno=None):
@@ -149,6 +164,124 @@ def _build_parsed_line(filename, lineno, args, opts):
     return parsed_line
 
 
+class PipfileParserExt(PipfileParser):
+    def build_lineinfo(self, parsed_data=None):
+        if parsed_data is None:
+            parsed_data = self.parse()
+
+        try:
+            return self._build_lineinfo(parsed_data)
+        except jsonschema.exceptions.ValidationError:
+            logger.warning(
+                "Failed to build line info from Pipfile. This is probably a developer bug.",
+                exc_info=True,
+            )
+            return dict(
+                sources=defaultdict(list),
+                default=defaultdict(list),
+                develop=defaultdict(list),
+            )
+
+    def _build_lineinfo(self, data):
+        self._validate_schema(data)
+
+        with open(self.filename, encoding="utf-8") as fh:
+            pipfile_contents = list(map(str.strip, fh.readlines()))
+
+        lineinfo = dict(requires={}, sources={}, default={}, develop={})
+
+        for index, s in enumerate(data["_meta"]["sources"]):
+            source_line = self.find_source(pipfile_contents, s)
+            lineinfo["sources"][s["name"]] = source_line
+
+        for index, r in enumerate(data["_meta"]["requires"].items()):
+            source_line = self.find_requires(pipfile_contents, r)
+            lineinfo["requires"][r] = source_line
+
+        # For packages, we do a regex split on each line. Preprocess that as a slight performance optimization
+        split_lines = [re.split(r"\s*=\s*", line) for line in pipfile_contents]
+
+        for index, r in enumerate(data["default"].items()):
+            name, source_line = self.find_package(split_lines, r)
+            lineinfo["default"][name] = source_line
+
+        for index, r in enumerate(data["develop"].items()):
+            name, source_line = self.find_package(split_lines, r)
+            lineinfo["develop"][name] = source_line
+
+        return lineinfo
+
+    @classmethod
+    def find_source(cls, pipfile_contents, source):
+        return min(
+            filter(
+                None,
+                (
+                    cls._find_key_value(pipfile_contents, k, v)
+                    for k, v in source.items()
+                ),
+            )
+        )
+
+    @classmethod
+    def find_requires(cls, pipfile_contents, requires):
+        return cls._find_key_value(pipfile_contents, *requires)
+
+    @classmethod
+    def _find_key_value(cls, pipfile_contents, key, value):
+        encoder = toml.TomlEncoder()
+        source_line = np.nonzero(
+            [
+                (key in line and encoder.dump_value(value) in line)
+                for line in pipfile_contents
+            ]
+        )[0]
+        return source_line[0] if source_line.size == 1 else None
+
+    @staticmethod
+    def find_package(pipfile_contents, requirement):
+        name, constraints = requirement
+        source_line = np.nonzero([name == line[0] for line in pipfile_contents])[0]
+        return name, source_line[0] if source_line.size == 1 else None
+
+    @staticmethod
+    def _validate_schema(data):
+        """
+        The PipfileParser class returns a data structure that this class consumes.
+        Make sure I still understand the right type of data before consuming it
+        """
+
+        schema = {
+            "type": "object",
+            "properties": {
+                "_meta": {
+                    "type": "object",
+                    "properties": {
+                        "requires": dict(type="object"),
+                        "sources": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": dict(type="string"),
+                                    "url": dict(type="string"),
+                                    "verify_ssl": dict(type="boolean"),
+                                },
+                                "required": ["url"],
+                            },
+                        },
+                    },
+                    "required": ["sources", "requires"],
+                },
+                # In this implementation, I only read object keys, so I don't care which properties exists or not
+                "default": dict(type="object"),
+                "develop": dict(type="object"),
+            },
+            "required": ["_meta", "default", "develop"],
+        }
+        jsonschema.validate(data, schema)
+
+
 def _parse_pipfile(filename, session, finder=None, options=None, pipfile_options=None):
     """
     :type filename: String
@@ -159,16 +292,18 @@ def _parse_pipfile(filename, session, finder=None, options=None, pipfile_options
     """
     pipfile_dev = pipfile_options and pipfile_options.get("pipfile_dev", False)
 
-    parser = PipfileParser(filename)
+    parser = PipfileParserExt(filename)
     pipfile_contents = parser.parse()
+    pipfile_lineinfo = parser.build_lineinfo(pipfile_contents)
 
     for line in pipfile_contents["_meta"].items():
-        _handle_options(line, filename, None, finder, options, session)
+        _handle_options(line, filename, pipfile_lineinfo, finder, options, session)
 
     groups = ("default", "develop") if pipfile_dev else ("default",)
     for group in groups:
         for line in pipfile_contents[group].items():
-            yield _handle_requirement(line, filename=filename)
+            lineno = pipfile_lineinfo[group].get(line[0])
+            yield _handle_requirement(line, filename=filename, lineno=lineno)
 
 
 def parse_pipfile(
