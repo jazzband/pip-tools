@@ -86,7 +86,9 @@ def _handle_sources(sources, filename, lineinfo, finder, options, session):
 
 
 def _handle_trusted_hosts(sources, filename, lineinfo, finder, options, session):
-    """ Handles each trusted host individually as if it were one line (mostly for better user feedback) """
+    """
+    Handles each trusted host individually as if it were one line (mostly for better user feedback)
+    """
     for source in sources:
         if not source.get("verify_ssl", True):
             lineno = lineinfo["sources"].get(source["name"]) if lineinfo else None
@@ -202,7 +204,7 @@ class PipfileParserExt(PipfileParser):
             source_line = self.find_requires(pipfile_contents, r)
             lineinfo["requires"][r] = source_line
 
-        # For packages, we do a regex split on each line. Preprocess that as a slight performance optimization
+        # For packages, we do a regex split on each line. Preprocess that as a slight optimization
         split_lines = [re.split(r"\s*=\s*", line) for line in pipfile_contents]
 
         for index, r in enumerate(data["default"].items()):
@@ -277,7 +279,7 @@ class PipfileParserExt(PipfileParser):
                     },
                     "required": ["sources", "requires"],
                 },
-                # In this implementation, I only read object keys, so I don't care which properties exists or not
+                # In this implementation, I only read object keys, so I don't care about properties
                 "default": dict(type="object"),
                 "develop": dict(type="object"),
             },
