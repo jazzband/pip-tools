@@ -32,6 +32,33 @@ def test_format_requirement_url(from_line):
     assert format_requirement(ireq) == "https://example.com/example.zip"
 
 
+def test_format_requirement_url_with_direct_link(from_line):
+    ireq = from_line("example @ https://example.com/example.zip")
+    assert format_requirement(ireq) == "example @ https://example.com/example.zip"
+
+
+def test_format_requirement_url_with_direct_link_is_lower_case(from_line):
+    ireq = from_line("https://example.com/example.zip#egg=Example")
+    assert ireq.name == "Example"
+    assert (
+        format_requirement(ireq)
+        == "example @ https://example.com/example.zip#egg=Example"
+    )
+
+
+def test_format_requirement_url_with_egg(from_line):
+    ireq = from_line("https://example.com/example.zip#egg=example")
+    assert (
+        format_requirement(ireq)
+        == "example @ https://example.com/example.zip#egg=example"
+    )
+
+
+def test_format_requirement_url_relative_path(from_line):
+    ireq = from_line("file:./vendor/package.zip")
+    assert format_requirement(ireq) == "file:./vendor/package.zip"
+
+
 def test_format_requirement_editable_vcs(from_editable):
     ireq = from_editable("git+git://fake.org/x/y.git#egg=y")
     assert format_requirement(ireq) == "-e git+git://fake.org/x/y.git#egg=y"

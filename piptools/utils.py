@@ -110,7 +110,14 @@ def format_requirement(
     if ireq.editable:
         line = f"-e {ireq.link.url}"
     elif is_url_requirement(ireq):
-        line = ireq.link.url
+        if not ireq.name:
+            line = ireq.link.url
+        elif ireq.link.url.startswith("file:./"):
+            # file:./ is a hack to use a relative path to a package
+            # Direct reference does not work for this, so only the URL is used
+            line = ireq.link.url
+        else:
+            line = f"{ireq.name.lower()} @ {ireq.link.url}"
     else:
         line = str(ireq.req).lower()
 
