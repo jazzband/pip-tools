@@ -116,6 +116,8 @@ def format_requirement(
             # file:./ is a hack to use a relative path to a package
             # Direct reference does not work for this, so only the URL is used
             line = ireq.link.url
+        elif "#" in ireq.link.url and "egg=" in ireq.link.url.rsplit("#", 1)[1]:
+            line = ireq.link.url
         else:
             line = f"{ireq.name.lower()} @ {ireq.link.url}"
     else:

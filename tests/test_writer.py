@@ -148,7 +148,7 @@ def test_iter_lines__hash_missing(capsys, writer, from_line):
 
     expected_lines = (
         MESSAGE_UNHASHED_PACKAGE,
-        "example @ file:///example/#egg=example",
+        "file:///example/#egg=example",
         "test==1.2 \\\n    --hash=FAKEHASH",
     )
     assert tuple(lines) == expected_lines
@@ -173,8 +173,8 @@ def test_iter_lines__no_warn_if_only_unhashable_packages(writer, from_line):
     lines = writer._iter_lines(ireqs, hashes=hashes)
 
     expected_lines = (
-        "unhashable-pkg1 @ file:///unhashable-pkg1/#egg=unhashable-pkg1",
-        "unhashable-pkg2 @ file:///unhashable-pkg2/#egg=unhashable-pkg2",
+        "file:///unhashable-pkg1/#egg=unhashable-pkg1",
+        "file:///unhashable-pkg2/#egg=unhashable-pkg2",
     )
     assert tuple(lines) == expected_lines
 

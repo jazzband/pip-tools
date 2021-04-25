@@ -27,36 +27,44 @@ def test_format_requirement(from_line):
     assert format_requirement(ireq) == "test==1.2"
 
 
-def test_format_requirement_url(from_line):
-    ireq = from_line("https://example.com/example.zip")
-    assert format_requirement(ireq) == "https://example.com/example.zip"
-
-
-def test_format_requirement_url_with_direct_link(from_line):
-    ireq = from_line("example @ https://example.com/example.zip")
-    assert format_requirement(ireq) == "example @ https://example.com/example.zip"
-
-
-def test_format_requirement_url_with_direct_link_is_lower_case(from_line):
-    ireq = from_line("https://example.com/example.zip#egg=Example")
-    assert ireq.name == "Example"
-    assert (
-        format_requirement(ireq)
-        == "example @ https://example.com/example.zip#egg=Example"
-    )
-
-
-def test_format_requirement_url_with_egg(from_line):
-    ireq = from_line("https://example.com/example.zip#egg=example")
-    assert (
-        format_requirement(ireq)
-        == "example @ https://example.com/example.zip#egg=example"
-    )
-
-
-def test_format_requirement_url_relative_path(from_line):
-    ireq = from_line("file:./vendor/package.zip")
-    assert format_requirement(ireq) == "file:./vendor/package.zip"
+@pytest.mark.parametrize(
+    ("line", "expected"),
+    (
+        pytest.param(
+            "https://example.com/example.zip",
+            "https://example.com/example.zip",
+            id="simple url",
+        ),
+        pytest.param(
+            "example @ https://example.com/example.zip",
+            "example @ https://example.com/example.zip",
+            id="direct reference",
+        ),
+        pytest.param(
+            "Example @ https://example.com/example.zip",
+            "example @ https://example.com/example.zip",
+            id="direct reference lower case",
+        ),
+        pytest.param(
+            "https://example.com/example.zip#egg=example",
+            "https://example.com/example.zip#egg=example",
+            id="url with egg",
+        ),
+        pytest.param(
+            "example @ https://example.com/example.zip?egg=test#subdirectory=project_a",
+            "example @ https://example.com/example.zip?egg=test#subdirectory=project_a",
+            id="egg as query",
+        ),
+        pytest.param(
+            "file:./vendor/package.zip#egg=example",
+            "file:./vendor/package.zip#egg=example",
+            id="relative path",
+        ),
+    ),
+)
+def test_format_requirement_url(from_line, line, expected):
+    ireq = from_line(line)
+    assert format_requirement(ireq) == expected
 
 
 def test_format_requirement_editable_vcs(from_editable):
