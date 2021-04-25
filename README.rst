@@ -377,6 +377,10 @@ If you have multiple requirement files make sure you create a hook for each file
             name: pip-compile requirements-lint.in
             args: [requirements-lint.in]
             files: ^requirements-lint\.(in|txt)$
+          - id: pip-compile
+            name: pip-compile requirements.txt
+            args: [requirements.txt]
+            files: ^requirements\.(in|txt)$
 
 
 Example usage for ``pip-sync``
