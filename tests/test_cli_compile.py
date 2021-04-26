@@ -384,7 +384,7 @@ def test_run_as_module_compile():
 
 
 def test_editable_package(pip_conf, runner):
-    """ piptools can compile an editable """
+    """piptools can compile an editable"""
     fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
     fake_package_dir = path_to_url(fake_package_dir)
     with open("requirements.in", "w") as req_in:
