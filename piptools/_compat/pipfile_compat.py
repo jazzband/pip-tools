@@ -236,12 +236,11 @@ class PipfileParserExt:
     @classmethod
     def _find_key_value(cls, pipfile_contents, key, value):
         encoder = toml.TomlEncoder()
-        source_line = np.nonzero(
-            [
-                (key in line and encoder.dump_value(value) in line)
-                for line in pipfile_contents
-            ]
-        )[0]
+        found = [
+            (key in line and encoder.dump_value(value) in line)
+            for line in pipfile_contents
+        ]
+        source_line = np.nonzero(found)[0]
         return source_line[0] if source_line.size == 1 else None
 
     @staticmethod
