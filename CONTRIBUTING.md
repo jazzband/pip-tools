@@ -69,7 +69,3 @@ To help keeping track of the releases and their changes, here's the current rele
 Please be mindful of other before and when performing a release, and use this access responsibly.
 
 Do not hesitate to ask questions if you have any before performing a release.
-
-```
-
-```
