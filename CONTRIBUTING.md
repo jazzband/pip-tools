@@ -15,7 +15,7 @@ using your current python version:
 
     tox --devenv .venv -e py
 
-Activate the virtual env:
+Activate the virtual environment:
 
     source ./.venv/bin/activate
 
