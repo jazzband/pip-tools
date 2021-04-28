@@ -8,18 +8,22 @@ and follow the [guidelines](https://jazzband.co/about/guidelines).
 
 Install tox:
 
-````console
+```console
 $ python -m pip install tox --user
-```\
+```
 
 Create a virtual environment, with `pip-tools` in development mode and its test dependencies,
 using your current python version:
 
-    tox --devenv .venv -e py
+```console
+$ tox --devenv .venv -e py
+```
 
 Activate the virtual environment:
 
-    source .venv/bin/activate
+```console
+$ source .venv/bin/activate
+```
 
 ## Project Contribution Guidelines
 
