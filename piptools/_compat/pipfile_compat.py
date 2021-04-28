@@ -170,10 +170,13 @@ def _build_parsed_line(filename, lineno, args, opts):
     return parsed_line
 
 
-class PipfileParserExt(PipfileParser):
+class PipfileParserExt:
+    def __init__(self, pipfile_parser):
+        self.parser = pipfile_parser
+
     def build_lineinfo(self, parsed_data=None):
         if parsed_data is None:
-            parsed_data = self.parse()
+            parsed_data = self.parser.parse()
 
         try:
             return self._build_lineinfo(parsed_data)
@@ -191,7 +194,7 @@ class PipfileParserExt(PipfileParser):
     def _build_lineinfo(self, data):
         self._validate_schema(data)
 
-        with open(self.filename, encoding="utf-8") as fh:
+        with open(self.parser.filename, encoding="utf-8") as fh:
             pipfile_contents = list(map(str.strip, fh.readlines()))
 
         lineinfo = dict(requires={}, sources={}, default={}, develop={})
@@ -298,9 +301,10 @@ def _parse_pipfile(filename, session, finder=None, options=None, pipfile_options
     """
     pipfile_dev = pipfile_options and pipfile_options.get("pipfile_dev", False)
 
-    parser = PipfileParserExt(filename)
+    parser = PipfileParser(filename)
+    lineinfo_parser = PipfileParserExt(parser)
     pipfile_contents = parser.parse()
-    pipfile_lineinfo = parser.build_lineinfo(pipfile_contents)
+    pipfile_lineinfo = lineinfo_parser.build_lineinfo(pipfile_contents)
 
     for line in pipfile_contents["_meta"].items():
         _handle_options(line, filename, pipfile_lineinfo, finder, options, session)
