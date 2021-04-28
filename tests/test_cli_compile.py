@@ -91,7 +91,7 @@ def test_command_line_pipfile_read(pip_conf, runner):
         --index-url https://pypi.python.org/simple
 
         small-fake-a==0.1
-            # via -r Pipfile (line None)
+            # via -r Pipfile
         """
 
     assert out.stderr == dedent(expected_output), "{} != {}".format(
@@ -121,7 +121,7 @@ def test_command_line_pipfile_dev(pip_conf, runner):
         --index-url https://pypi.python.org/simple
 
         small-fake-a==0.1
-            # via -r Pipfile (line None)
+            # via -r Pipfile
         """
     )
 
@@ -490,7 +490,7 @@ def test_editable_package_vcs(runner):
     with open("requirements.in", "w") as req_in:
         req_in.write("-e " + vcs_package)
     out = runner.invoke(cli, ["-n", "--rebuild"])
-    assert out.exit_code == 0
+    assert out.exit_code == 0, out.stderr
     assert vcs_package in out.stderr
     assert "click" in out.stderr  # dependency of pip-tools
 
