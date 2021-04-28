@@ -201,7 +201,8 @@ class PipfileParserExt:
 
         for index, s in enumerate(data["_meta"]["sources"]):
             source_line = self.find_source(pipfile_contents, s)
-            lineinfo["sources"][s["name"]] = source_line
+            if source_line:  # Sources may come from pip defaults
+                lineinfo["sources"][s["name"]] = source_line
 
         for index, r in enumerate(data["_meta"]["requires"].items()):
             source_line = self.find_requires(pipfile_contents, r)
@@ -222,15 +223,11 @@ class PipfileParserExt:
 
     @classmethod
     def find_source(cls, pipfile_contents, source):
-        return min(
-            filter(
-                None,
-                (
-                    cls._find_key_value(pipfile_contents, k, v)
-                    for k, v in source.items()
-                ),
-            )
+        source_candidates = (
+            cls._find_key_value(pipfile_contents, k, v) for k, v in source.items()
         )
+        source_candidates = list(filter(None, source_candidates))
+        return min(source_candidates) if source_candidates else None
 
     @classmethod
     def find_requires(cls, pipfile_contents, requires):
