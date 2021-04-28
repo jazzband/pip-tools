@@ -4,13 +4,27 @@ This is a [Jazzband](https://jazzband.co/) project. By contributing you agree
 to abide by the [Contributor Code of Conduct](https://jazzband.co/about/conduct)
 and follow the [guidelines](https://jazzband.co/about/guidelines).
 
+## Getting started
+
+Install tox:
+
+    pip install tox
+
+Create a virtual environment, with `pip-tools` in development mode and its test dependencies,
+using your current python version:
+
+    tox --devenv .venv -e py
+
+Activate the virtual env:
+
+    source ./.venv/bin/activate
+
 ## Project Contribution Guidelines
 
 Here are a few additional or emphasized guidelines to follow when contributing to pip-tools:
 
-- Install pip-tools in development mode and its test dependencies with `pip install -e .[testing]`.
 - Check with `tox -e checkqa` to see your changes are not breaking the style conventions.
-- Always provide tests for your changes.
+- Always provide tests for your changes, use `tox -e coverage` to run the tests with coverage reports.
 - Give a clear one-line description in the PR (that the maintainers can add to [CHANGELOG](CHANGELOG.md) afterwards).
 - Wait for the review of at least one other contributor before merging (even if you're a Jazzband member).
 - Before merging, assign the PR to a milestone for a version to help with the release process.
