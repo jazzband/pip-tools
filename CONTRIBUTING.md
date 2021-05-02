@@ -4,33 +4,11 @@ This is a [Jazzband](https://jazzband.co/) project. By contributing you agree
 to abide by the [Contributor Code of Conduct](https://jazzband.co/about/conduct)
 and follow the [guidelines](https://jazzband.co/about/guidelines).
 
-## Getting started
-
-Install tox:
-
-```console
-$ python -m pip install tox --user
-```
-
-Create a virtual environment, with `pip-tools` in development mode and its test dependencies,
-using your current python version:
-
-```console
-$ tox --devenv .venv -e py
-```
-
-Activate the virtual environment:
-
-```console
-$ source .venv/bin/activate
-```
-
 ## Project Contribution Guidelines
 
-Here are a few additional or emphasized guidelines to follow when contributing to pip-tools:
+Here are a few additional or emphasized guidelines to follow when contributing to `pip-tools`:
 
-- Check with `tox -e checkqa` to see your changes are not breaking the style conventions.
-- Always provide tests for your changes, use `tox -e coverage` to run the tests with coverage reports.
+- Always provide tests for your changes.
 - Give a clear one-line description in the PR (that the maintainers can add to [CHANGELOG](CHANGELOG.md) afterwards).
 - Wait for the review of at least one other contributor before merging (even if you're a Jazzband member).
 - Before merging, assign the PR to a milestone for a version to help with the release process.
@@ -39,6 +17,75 @@ The only exception to those guidelines is for trivial changes, such as
 documentation corrections or contributions that do not change pip-tools itself.
 
 Contributions following these guidelines are always welcomed, encouraged and appreciated.
+
+## Development Guidelines
+
+### Installation
+
+This project requires Python 3.6 or higher.
+
+At the project's root, create a virtual environment, using your current Python 3 version:
+
+```console
+$ python3 -m venv .venv
+```
+
+Activate the virtual environment:
+
+```console
+$ source .venv/bin/activate
+```
+
+Install `pip-tools` in development mode and its test dependencies:
+
+```console
+$ pip install -e .[testing]
+```
+
+If you are using `zsh`, you need to escape the brackets: `\[testing\]`.
+
+
+### Testing with pytest
+
+This project uses [pytest](https://docs.pytest.org/en/stable/contents.html) to run the tests.
+
+Inside your virtual environment, at the project's root, use:
+
+```console
+$ pytest
+```
+
+
+### Testing with tox
+
+This project uses [tox](https://tox.readthedocs.io/en/latest/) to test different environments.
+
+To install several Python versions, use [pyenv](https://github.com/pyenv/pyenv).
+To help `tox` find out which Python versions are installed, at the root of the project, declare the versions using
+`pyenv local  <version> <version2> ...`. For example:
+
+```console
+$ pyenv local 3.7.10 3.8.9 3.9.4
+```
+
+Inside your virtual environment, install `tox`:
+
+```console
+$ pip install tox
+```
+
+Prepare `tox` to use the Python versions:
+
+```console
+$ tox --notest -p auto --parallel-live
+```
+
+Run `tox` in parallel:
+
+```console
+$ tox -p auto
+```
+
 
 ## Project Release Process
 
