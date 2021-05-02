@@ -12,6 +12,7 @@ Here are a few additional or emphasized guidelines to follow when contributing t
   and [Real Python Tutorials](https://realpython.com)
 - Install pip-tools in development mode and its test dependencies with `pip install -e '.[testing]'`.
 - Check with `tox -e checkqa` to see your changes are not breaking the style conventions.
+- Always provide tests for your changes.
 - Give a clear one-line description in the PR (that the maintainers can add to [CHANGELOG](CHANGELOG.md) afterwards).
 - Wait for the review of at least one other contributor before merging (even if you're a Jazzband member).
 - Before merging, assign the PR to a milestone for a version to help with the release process.
