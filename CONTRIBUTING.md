@@ -44,7 +44,6 @@ $ pip install -e .[testing]
 
 If you are using `zsh`, you need to escape the brackets: `\[testing\]`.
 
-
 ### Testing with pytest
 
 This project uses [pytest](https://docs.pytest.org/en/stable/contents.html) to run the tests.
@@ -55,14 +54,13 @@ Inside your virtual environment, at the project's root, use:
 $ pytest
 ```
 
-
 ### Testing with tox
 
 This project uses [tox](https://tox.readthedocs.io/en/latest/) to test different environments.
 
 To install several Python versions, use [pyenv](https://github.com/pyenv/pyenv).
 To help `tox` find out which Python versions are installed, at the root of the project, declare the versions using
-`pyenv local  <version> <version2> ...`. For example:
+`pyenv local <version> <version2> ...`. For example:
 
 ```console
 $ pyenv local 3.7.10 3.8.9 3.9.4
@@ -85,7 +83,6 @@ Run `tox` in parallel:
 ```console
 $ tox -p auto
 ```
-
 
 ## Project Release Process
 
