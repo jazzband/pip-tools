@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/psf/black
-    rev: 21.4b0
+    rev: 21.5b1
     hooks:
       - id: black
         args: [--target-version=py36]
@@ -9,12 +9,12 @@ repos:
     hooks:
       - id: isort
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.13.0
+    rev: v2.15.0
     hooks:
       - id: pyupgrade
         args: [--py36-plus]
   - repo: https://github.com/PyCQA/flake8
-    rev: 3.9.1
+    rev: 3.9.2
     hooks:
       - id: flake8
         additional_dependencies:
@@ -33,6 +33,6 @@ repos:
         args: [--ini, .bandit]
         exclude: ^tests/
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v2.2.1
+    rev: v2.3.0
     hooks:
       - id: prettier
