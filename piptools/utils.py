@@ -3,7 +3,6 @@ import itertools
 import json
 import os
 import shlex
-import subprocess  # nosec
 from typing import (
     Callable,
     Dict,
@@ -26,6 +25,9 @@ from pip._internal.vcs import is_url
 from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.specifiers import SpecifierSet
 from pip._vendor.packaging.version import Version
+from pip._vendor.pkg_resources import get_distribution
+
+from piptools.subprocess_utils import run_python_snippet
 
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
@@ -363,12 +365,21 @@ def get_compile_command(click_ctx: click.Context) -> str:
     return " ".join(["pip-compile", *sorted(left_args), *sorted(right_args)])
 
 
+def get_required_pip_specification() -> SpecifierSet:
+    project_dist = get_distribution("pip-tools")
+    requirement = next((r for r in project_dist.requires() if r.name == "pip"), None)
+    assert (
+        requirement is not None
+    ), "'pip' is expected to be in the list of pip-tools requirements"
+    return requirement.specifier
+
+
 def get_pip_version_for_python_executable(python_executable: str) -> Version:
     """
     Returns pip version for the given python executable.
     """
-    str_version = subprocess.check_output(  # nosec
-        [python_executable, "-c", "import pip;print(pip.__version__)"], encoding="utf8"
+    str_version = run_python_snippet(
+        python_executable, "import pip;print(pip.__version__)"
     )
     return Version(str_version)
 
@@ -377,9 +388,10 @@ def get_sys_path_for_python_executable(python_executable: str) -> List[str]:
     """
     Returns sys.path list for the given python executable.
     """
-    result = subprocess.check_output(  # nosec
-        [python_executable, "-c", "import sys;import json;print(json.dumps(sys.path))"]
+    result = run_python_snippet(
+        python_executable, "import sys;import json;print(json.dumps(sys.path))"
     )
+
     paths = json.loads(result)
     assert isinstance(paths, list)
     assert all(isinstance(i, str) for i in paths)

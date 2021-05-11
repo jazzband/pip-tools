@@ -329,9 +329,9 @@ def test_invalid_pip_version_in_python_executable(
     assert out.exit_code == 2, out
     message = (
         "Target python executable '{}' has pip version 19.1 installed. "
-        "20.3 or higher is required.\n"
+        "Version"  # ">=20.3 is expected.\n" part is omitted
     )
-    assert out.stderr == message.format(custom_executable)
+    assert out.stderr.startswith(message.format(custom_executable))
 
 
 @mock.patch("piptools.sync.run")

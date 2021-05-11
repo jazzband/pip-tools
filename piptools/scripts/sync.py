@@ -10,7 +10,6 @@ from pip._internal.commands import create_command
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.utils.misc import get_installed_distributions
-from pip._vendor.packaging.version import Version
 
 from .. import sync
 from .._compat import parse_requirements
@@ -20,11 +19,11 @@ from ..repositories import PyPIRepository
 from ..utils import (
     flat_map,
     get_pip_version_for_python_executable,
+    get_required_pip_specification,
     get_sys_path_for_python_executable,
 )
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
-MIN_PIP_VERSION = Version("20.3")  # Should be in sync with version in setup.cfg
 
 
 @click.command(context_settings={"help_option_names": ("-h", "--help")})
@@ -127,13 +126,17 @@ def cli(
             log.error(msg.format(python_executable))
             sys.exit(2)
 
+        # Ensure that target python executable has the right version of pip installed
         pip_version = get_pip_version_for_python_executable(python_executable)
-        if pip_version < MIN_PIP_VERSION:
+        required_pip_specification = get_required_pip_specification()
+        if not required_pip_specification.contains(pip_version):
             msg = (
                 "Target python executable '{}' has pip version {} installed. "
-                "{} or higher is required."
+                "Version {} is expected."
             )
-            log.error(msg.format(python_executable, pip_version, MIN_PIP_VERSION))
+            log.error(
+                msg.format(python_executable, pip_version, required_pip_specification)
+            )
             sys.exit(2)
 
     install_command = cast(InstallCommand, create_command("install"))
