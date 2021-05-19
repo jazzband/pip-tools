@@ -45,7 +45,7 @@ def _get_default_option(option_name: str) -> Any:
 
 
 @click.command(context_settings={"help_option_names": ("-h", "--help")})
-@click.version_option()
+@click.version_option(package_name="pip-tools")
 @click.pass_context
 @click.option("-v", "--verbose", count=True, help="Show more output")
 @click.option("-q", "--quiet", count=True, help="Give less output")

@@ -21,7 +21,7 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 
 
 @click.command(context_settings={"help_option_names": ("-h", "--help")})
-@click.version_option()
+@click.version_option(package_name="pip-tools")
 @click.option(
     "-a",
     "--ask",
