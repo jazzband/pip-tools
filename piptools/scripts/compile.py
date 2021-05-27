@@ -12,7 +12,7 @@ from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 
-from .._compat import parse_requirements, IS_CLICK_VER_8_PLUS
+from .._compat import IS_CLICK_VER_8_PLUS, parse_requirements
 from ..cache import DependencyCache
 from ..exceptions import PipToolsError
 from ..locations import CACHE_DIR

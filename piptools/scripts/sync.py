@@ -11,7 +11,7 @@ from pip._internal.index.package_finder import PackageFinder
 from pip._internal.utils.misc import get_installed_distributions
 
 from .. import sync
-from .._compat import parse_requirements, IS_CLICK_VER_8_PLUS
+from .._compat import IS_CLICK_VER_8_PLUS, parse_requirements
 from ..exceptions import PipToolsError
 from ..logging import log
 from ..repositories import PyPIRepository
