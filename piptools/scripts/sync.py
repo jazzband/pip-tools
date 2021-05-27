@@ -21,7 +21,7 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 
 
 # TODO: drop click 7 and remove this block, pass directly to version_option
-if click.__version__.split(".")[0] == "7":
+if click.__version__[0] == "7":
     ver_kwargs = {}
 else:
     # this was introduced in click8 and if not passed would break this package
