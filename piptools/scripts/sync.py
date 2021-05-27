@@ -20,8 +20,16 @@ from ..utils import flat_map
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 
 
+# TODO: drop click 7 and remove this block, pass directly to version_option
+if click.__version__.split(".")[0] == "7":
+    ver_kwargs = {}
+else:
+    # this was introduced in click8 and if not passed would break this package
+    ver_kwargs = {"package_name": "pip-tools"}
+
+
 @click.command(context_settings={"help_option_names": ("-h", "--help")})
-@click.version_option(package_name="pip-tools")
+@click.version_option(**ver_kwargs)
 @click.option(
     "-a",
     "--ask",

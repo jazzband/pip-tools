@@ -33,6 +33,13 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.in"
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 METADATA_FILENAMES = frozenset({"setup.py", "setup.cfg", "pyproject.toml"})
 
+# TODO: drop click 7 and remove this block, pass directly to version_option
+if click.__version__.split(".")[0] == "7":
+    ver_kwargs = {}
+else:
+    # this was introduced in click8 and if not passed would break this package
+    ver_kwargs = {"package_name": "pip-tools"}
+
 
 def _get_default_option(option_name: str) -> Any:
     """
@@ -45,7 +52,7 @@ def _get_default_option(option_name: str) -> Any:
 
 
 @click.command(context_settings={"help_option_names": ("-h", "--help")})
-@click.version_option(package_name="pip-tools")
+@click.version_option(**ver_kwargs)
 @click.pass_context
 @click.option("-v", "--verbose", count=True, help="Show more output")
 @click.option("-q", "--quiet", count=True, help="Give less output")
