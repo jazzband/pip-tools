@@ -171,12 +171,15 @@ class PyPIRepository(BaseRepository):
         best_candidate_result = evaluator.compute_best_candidate(matching_candidates)
         best_candidate = best_candidate_result.best_candidate
 
-        # Turn the candidate into a pinned InstallRequirement
-        return _pip_api.create_install_requirement(
+        # Turn the candidate into a pinned InstallRequirement.
+        requirement = _pip_api.create_install_requirement(
             best_candidate.name,
             best_candidate.version,
             ireq,
         )
+        # retain copy of link to best candidate (useful when generating a single hash)
+        requirement.link = best_candidate.link
+        return requirement
 
     def resolve_reqs(
         self,
@@ -321,11 +324,18 @@ class PyPIRepository(BaseRepository):
         else:
             return self._download_dir
 
-    def get_hashes(self, ireq: InstallRequirement) -> set[str]:
+    def get_hashes(
+        self, ireq: InstallRequirement, single_hash: bool = False
+    ) -> set[str]:
         """
-        Given an InstallRequirement, return a set of hashes that represent all
-        of the files for a given requirement. Unhashable requirements return an
-        empty set. Unpinned requirements raise a TypeError.
+        Given a pinned InstallRequirement, return a set of hashes that can be used to verify the
+        file to install for the requirement. If single_hash is True, the set will only have the
+        hash for the best match file to install based on the current execution environment. When
+        False (the default), included hashes for all of the files for a given requirement.
+
+        Files that are unhashable are excluded from the returned set.
+
+        A TypeError is raised if the given requirement is editable or unpinned.
         """
 
         if ireq.link:
@@ -354,15 +364,26 @@ class PyPIRepository(BaseRepository):
         log.debug(ireq.name)
 
         with log.indentation():
-            return self._get_req_hashes(ireq)
+            return self._get_req_hashes(ireq, single_hash=single_hash)
 
-    def _get_req_hashes(self, ireq: InstallRequirement) -> set[str]:
+    def _get_req_hashes(
+        self, ireq: InstallRequirement, single_hash: bool = False
+    ) -> set[str]:
         """
         Collects the hashes for all candidates satisfying the given InstallRequirement. Computes
         the hashes for the candidates that don't have one reported by their index.
         """
-        matching_candidates = self._get_matching_candidates(ireq)
         pypi_hashes_by_link = self._get_hashes_from_pypi(ireq)
+        if single_hash:
+            log.debug("Filtering down to the best file")
+            best_candidate_link = self._best_candidate_link(ireq)
+            return {
+                pypi_hashes_by_link[best_candidate_link.url]
+                if best_candidate_link.url in pypi_hashes_by_link
+                else self._get_file_hash(best_candidate_link)
+            }
+
+        matching_candidates = self._get_matching_candidates(ireq)
         pypi_hashes = {
             pypi_hashes_by_link[candidate.link.url]
             for candidate in matching_candidates
@@ -449,6 +470,16 @@ class PyPIRepository(BaseRepository):
                 for chunk in bar:
                     h.update(chunk)
         return ":".join([FAVORITE_HASH, h.hexdigest()])
+
+    def _best_candidate_link(self, ireq: InstallRequirement) -> Link:
+        # link for best candidate is available if requirement was resolved. However, it needs to be
+        # retrieved if the version was pinned by the original constraints.
+        if ireq.link is None:
+            # find_best_match() returns InstallRequirement doesn't guarantee that link is set,
+            # but the function sets link. The early return cases (editable & url) would already
+            # have link set.
+            return _t.cast(Link, self.find_best_match(ireq).link)
+        return ireq.link
 
     @contextmanager
     def allow_all_wheels(self) -> Iterator[None]:
