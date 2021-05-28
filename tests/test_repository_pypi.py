@@ -3,6 +3,7 @@ from unittest import mock
 
 import pytest
 from pip._internal.models.link import Link
+from pip._internal.models.target_python import TargetPython
 from pip._internal.utils.urls import path_to_url
 from pip._vendor.requests import HTTPError, Session
 
@@ -20,6 +21,29 @@ def test_generate_hashes_all_platforms(capsys, pip_conf, from_line, pypi_reposit
     ireq = from_line("small-fake-multi-arch==0.1")
     with pypi_repository.allow_all_wheels():
         assert pypi_repository.get_hashes(ireq) == expected
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert (
+        captured.err.strip()
+        == "Couldn't get hashes from PyPI, fallback to hashing files"
+    )
+
+
+def test_generate_hashes_single_hash_filter(
+    capsys, tmpdir, monkeypatch, pip_conf, from_line, pypi_repository
+):
+    expected = {
+        "sha256:24afa5b317b302f356fd3fc3b1cfb0aad114d509cf635ea9566052424191b944",
+    }
+    # force a single platform so test case doesn't depend on the host platform
+    monkeypatch.setattr(
+        pypi_repository._finder,
+        "_target_python",
+        TargetPython(platforms=["manylinux1_x86_64"]),
+    )
+
+    ireq = from_line("small-fake-multi-arch==0.1")
+    assert pypi_repository.get_hashes(ireq, single_hash=True) == expected
     captured = capsys.readouterr()
     assert captured.out == ""
     assert (
@@ -254,7 +278,7 @@ def test_get_hashes_from_pypi(from_line, tmpdir, project_data, expected_hashes):
     )
     ireq = from_line("fake-package==0.1")
 
-    actual_hashes = pypi_repository._get_hashes_from_pypi(ireq)
+    actual_hashes = pypi_repository._get_hashes_from_pypi(ireq, single_hash=False)
     assert actual_hashes == expected_hashes
 
 
@@ -279,6 +303,148 @@ def test_get_project__returns_data(from_line, tmpdir, monkeypatch, pypi_reposito
 
     actual_data = pypi_repository._get_project(ireq)
     assert actual_data == expected_data
+
+
+@pytest.mark.parametrize(
+    ("project_data", "expected_hashes"),
+    (
+        pytest.param(
+            {
+                "releases": {
+                    "0.1": [
+                        {
+                            "packagetype": "bdist_wheel",
+                            "digests": {"sha256": "fake-hash"},
+                            "filename": "small_fake_multi_arch-0.1"
+                            "-py2.py3-none-manylinux1_x86_64.whl",
+                        }
+                    ]
+                }
+            },
+            {"sha256:fake-hash"},
+            id="return single hash (filename matches)",
+        ),
+        pytest.param(
+            {
+                "releases": {
+                    "0.1": [
+                        {
+                            "packagetype": "bdist_wheel",
+                            "digests": {"sha256": "fake-hash-number1"},
+                            "filename": "small_fake_multi_arch-0.1"
+                            "-py2.py3-none-manylinux1_x86_64.whl",
+                        },
+                        {
+                            "packagetype": "sdist",
+                            "digests": {"sha256": "fake-hash-number2"},
+                            "filename": "small_fake_multi_arch-0.1.tar.gz",
+                        },
+                    ]
+                }
+            },
+            {"sha256:fake-hash-number1"},
+            id="return single hash (wheel is best match)",
+        ),
+        pytest.param(None, None, id="not found project data"),
+        pytest.param({}, None, id="not found releases key"),
+        pytest.param({"releases": {}}, None, id="not found version"),
+        pytest.param({"releases": {"0.1": [{}]}}, None, id="not found digests"),
+        pytest.param(
+            {"releases": {"0.1": [{"packagetype": "bdist_wheel", "digests": {}}]}},
+            None,
+            id="digests are empty",
+        ),
+        pytest.param(
+            {
+                "releases": {
+                    "0.1": [
+                        {
+                            "packagetype": "bdist_wheel",
+                            "digests": {"md5": "fake-hash"},
+                            "filename": "small_fake_multi_arch-0.1.tar.gz",
+                        }
+                    ]
+                }
+            },
+            None,
+            id="filename different from best match",
+        ),
+        pytest.param(
+            {
+                "releases": {
+                    "0.1": [
+                        {"packagetype": "bdist_wheel", "digests": {"md5": "fake-hash"}}
+                    ]
+                }
+            },
+            None,
+            id="not found sha256 algo",
+        ),
+    ),
+)
+def test_get_hashes_from_pypi_single_hash(
+    from_line, pip_conf, pypi_repository, monkeypatch, project_data, expected_hashes
+):
+    """
+    Test PyPIRepository._get_hashes_from_pypi() with single_hash filtering returns expected hashes
+    or None.
+    """
+
+    def mock_get_project(_):
+        return project_data
+
+    monkeypatch.setattr(pypi_repository, "_get_project", mock_get_project)
+
+    # force a single platform so test case doesn't depend on the host platform
+    monkeypatch.setattr(
+        pypi_repository._finder,
+        "_target_python",
+        TargetPython(platforms=["manylinux1_x86_64"]),
+    )
+
+    ireq = from_line("small-fake-multi-arch==0.1")
+
+    actual_hashes = pypi_repository._get_hashes_from_pypi(ireq, single_hash=True)
+    assert actual_hashes == expected_hashes
+
+
+def test_get_hashes_from_pypi_single_hash_requirement_has_link(
+    from_line, pip_conf, pypi_repository, tmpdir, monkeypatch
+):
+    """
+    Test PyPIRepository._get_hashes_from_pypi() with single_hash filtering returns expected hashes
+    or None. When already link exists, just use project data.
+    """
+    fake_filename = "fake-file-name.whl"
+    expected_hashes = {"sha256:fake-hash"}
+
+    def mock_get_project(_):
+        return {
+            "releases": {
+                "0.1": [
+                    {
+                        "packagetype": "bdist_wheel",
+                        "digests": {"sha256": "fake-hash"},
+                        "filename": fake_filename,
+                    }
+                ]
+            }
+        }
+
+    monkeypatch.setattr(pypi_repository, "_get_project", mock_get_project)
+
+    # force a single platform so test case doesn't depend on the host platform
+    monkeypatch.setattr(
+        pypi_repository._finder,
+        "_target_python",
+        TargetPython(platforms=["manylinux1_x86_64"]),
+    )
+
+    ireq = from_line("small-fake-multi-arch==0.1")
+    ireq.link = Link(path_to_url(tmpdir / fake_filename))
+
+    actual_hashes = pypi_repository._get_hashes_from_pypi(ireq, single_hash=True)
+    assert actual_hashes == expected_hashes
 
 
 def test_get_project__handles_http_error(

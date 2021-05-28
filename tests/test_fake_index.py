@@ -86,4 +86,4 @@ def test_get_hashes(from_line, repository):
         "test:123",
         "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
     }
-    assert repository.get_hashes(ireq) == expected
+    assert repository.get_hashes(ireq, single_hash=False) == expected

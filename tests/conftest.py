@@ -44,12 +44,14 @@ class FakeRepository(BaseRepository):
         with open("tests/test_data/fake-editables.json") as f:
             self.editables = json.load(f)
 
-    def get_hashes(self, ireq):
+    def get_hashes(self, ireq, single_hash):
         # Some fake hashes
-        return {
-            "test:123",
+        hashes = {
             "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
         }
+        if not single_hash:
+            hashes.add("test:123")
+        return hashes
 
     def find_best_match(self, ireq, prereleases=False):
         if ireq.editable:
