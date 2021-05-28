@@ -166,6 +166,15 @@ def _get_default_option(option_name: str) -> Any:
     help="Generate pip 8 style hashes in the resulting requirements file.",
 )
 @click.option(
+    "--single-hash/--no-single-hash",
+    is_flag=True,
+    default=False,
+    help=(
+        "When generating hashes only include a hash for the best match file for the current"
+        "environment instead of hashes for every release file for the matching version."
+    ),
+)
+@click.option(
     "--reuse-hashes/--no-reuse-hashes",
     is_flag=True,
     default=True,
@@ -234,6 +243,7 @@ def cli(
     output_file: Optional[LazyFile],
     allow_unsafe: bool,
     generate_hashes: bool,
+    single_hash: bool,
     reuse_hashes: bool,
     src_files: Tuple[str, ...],
     max_rounds: int,
@@ -433,7 +443,11 @@ def cli(
             allow_unsafe=allow_unsafe,
         )
         results = resolver.resolve(max_rounds=max_rounds)
-        hashes = resolver.resolve_hashes(results) if generate_hashes else None
+        hashes = (
+            resolver.resolve_hashes(results, single_hash=single_hash)
+            if generate_hashes
+            else None
+        )
     except PipToolsError as e:
         log.error(str(e))
         sys.exit(2)

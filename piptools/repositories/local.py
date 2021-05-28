@@ -78,7 +78,9 @@ class LocalRequirementsRepository(BaseRepository):
     def get_dependencies(self, ireq: InstallRequirement) -> Set[InstallRequirement]:
         return self.repository.get_dependencies(ireq)
 
-    def get_hashes(self, ireq: InstallRequirement) -> Set[str]:
+    def get_hashes(
+        self, ireq: InstallRequirement, single_hash: bool = False
+    ) -> Set[str]:
         existing_pin = self._reuse_hashes and self.existing_pins.get(
             key_from_ireq(ireq)
         )
@@ -89,7 +91,7 @@ class LocalRequirementsRepository(BaseRepository):
                 return {
                     ":".join([FAVORITE_HASH, hexdigest]) for hexdigest in hexdigests
                 }
-        return self.repository.get_hashes(ireq)
+        return self.repository.get_hashes(ireq, single_hash)
 
     @contextmanager
     def allow_all_wheels(self) -> Iterator[None]:

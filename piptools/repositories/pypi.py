@@ -142,11 +142,14 @@ class PyPIRepository(BaseRepository):
         best_candidate = best_candidate_result.best_candidate
 
         # Turn the candidate into a pinned InstallRequirement
-        return make_install_requirement(
+        requirement = make_install_requirement(
             best_candidate.name,
             best_candidate.version,
             ireq,
         )
+        # retain copy of link to best candidate (useful when generating a single hash)
+        requirement.link = best_candidate.link
+        return requirement
 
     def resolve_reqs(
         self,
@@ -283,11 +286,18 @@ class PyPIRepository(BaseRepository):
         else:
             return self._download_dir
 
-    def get_hashes(self, ireq: InstallRequirement) -> Set[str]:
+    def get_hashes(
+        self, ireq: InstallRequirement, single_hash: bool = False
+    ) -> Set[str]:
         """
-        Given an InstallRequirement, return a set of hashes that represent all
-        of the files for a given requirement. Unhashable requirements return an
-        empty set. Unpinned requirements raise a TypeError.
+        Given a pinned InstallRequirement, return a set of hashes that can be used to verify the
+        file to install for the requirement. If single_hash is True, the set will only have the
+        hash for the best match file to install based on the current execution environment. When
+        False (the default), included hashes for all of the files for a given requirement.
+
+        Files that are unhashable are excluded from the returned set.
+
+        A TypeError is raised if the given requirement is editable or unpinned.
         """
 
         if ireq.link:
@@ -316,14 +326,16 @@ class PyPIRepository(BaseRepository):
         log.debug(ireq.name)
 
         with log.indentation():
-            hashes = self._get_hashes_from_pypi(ireq)
+            hashes = self._get_hashes_from_pypi(ireq, single_hash)
             if hashes is None:
                 log.log("Couldn't get hashes from PyPI, fallback to hashing files")
-                return self._get_hashes_from_files(ireq)
+                return self._get_hashes_from_files(ireq, single_hash)
 
         return hashes
 
-    def _get_hashes_from_pypi(self, ireq: InstallRequirement) -> Optional[Set[str]]:
+    def _get_hashes_from_pypi(
+        self, ireq: InstallRequirement, single_hash: bool
+    ) -> Optional[Set[str]]:
         """
         Return a set of hashes from PyPI JSON API for a given InstallRequirement.
         Return None if fetching data is failed or missing digests.
@@ -340,6 +352,21 @@ class PyPIRepository(BaseRepository):
             log.debug("Missing release files on PyPI")
             return None
 
+        if single_hash:
+            log.debug("Filtering down to the best file")
+            best_candidate_link = self._best_candidate_link(ireq)
+            for data in release_files:
+                try:
+                    if data["filename"] == best_candidate_link.filename:
+                        release_files = [data]
+                        break
+                except KeyError:
+                    log.debug("Missing filename of release files on PyPI")
+                    return None
+            else:
+                log.debug("No release data for best candidate file")
+                return None
+
         try:
             hashes = {
                 f"{FAVORITE_HASH}:{file_['digests'][FAVORITE_HASH]}"
@@ -352,10 +379,17 @@ class PyPIRepository(BaseRepository):
 
         return hashes
 
-    def _get_hashes_from_files(self, ireq: InstallRequirement) -> Set[str]:
+    def _get_hashes_from_files(
+        self, ireq: InstallRequirement, single_hash: bool
+    ) -> Set[str]:
         """
-        Return a set of hashes for all release files of a given InstallRequirement.
+        Return a set of hashes for release files of a given InstallRequirement.
+        The set can be restricited to just the best matching file.
         """
+        if single_hash:
+            log.debug("Filtering down to the best file")
+            return {self._get_file_hash(self._best_candidate_link(ireq))}
+
         # We need to get all of the candidates that match our current version
         # pin, these will represent all of the files that could possibly
         # satisfy this constraint.
@@ -399,6 +433,16 @@ class PyPIRepository(BaseRepository):
                 for chunk in bar:
                     h.update(chunk)
         return ":".join([FAVORITE_HASH, h.hexdigest()])
+
+    def _best_candidate_link(self, ireq: InstallRequirement) -> Link:
+        # link for best candidate is available if requirement was resolved. However, it needs to be
+        # retrieved if the version was pinned by the original constraints.
+        if ireq.link is None:
+            # find_best_match() returns InstallRequirement doesn't guarantee that link is set,
+            # but the function sets link. The early return cases (editable & url) would already
+            # have link set.
+            return cast(Link, self.find_best_match(ireq).link)
+        return ireq.link
 
     @contextmanager
     def allow_all_wheels(self) -> Iterator[None]:
