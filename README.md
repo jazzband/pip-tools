@@ -276,6 +276,10 @@ sqlparse==0.4.3 \
     # via django
 ```
 
+By default, this will include a hash for every release file available for the
+given version. This behavior can be changed to only include a hash for the best
+match file for the current environment with the `--single-hash` flag.
+
 ### Output File
 
 To output the pinned requirements in a filename other than
