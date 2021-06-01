@@ -16,6 +16,7 @@ jobs:
       matrix:
         toxenv:
           - readme
+          - checkqa
         python-version:
           - "3.x"
     env:
