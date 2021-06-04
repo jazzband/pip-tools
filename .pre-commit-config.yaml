@@ -25,7 +25,13 @@ repos:
       - id: mypy
         # Avoid error: Duplicate module named 'setup'
         # https://github.com/python/mypy/issues/4008
+        # Keep exclude in sync with mypy own excludes
         exclude: ^tests/test_data/
+        additional_dependencies:
+          - click==8.0.1
+          - pep517==0.10.0
+          - toml==0.10.2
+          - pip==20.3.4
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.0
     hooks:
