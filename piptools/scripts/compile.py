@@ -2,7 +2,7 @@ import os
 import shlex
 import sys
 import tempfile
-from typing import Any, BinaryIO, List, Optional, Tuple, cast
+from typing import IO, Any, BinaryIO, List, Optional, Tuple, Union, cast
 
 import click
 from click.utils import LazyFile, safecall
@@ -234,7 +234,7 @@ def cli(
     annotate: bool,
     upgrade: bool,
     upgrade_packages: Tuple[str, ...],
-    output_file: Optional[LazyFile],
+    output_file: Union[LazyFile, IO[Any], None],
     allow_unsafe: bool,
     generate_hashes: bool,
     reuse_hashes: bool,
@@ -285,7 +285,9 @@ def cli(
 
         # Close the file at the end of the context execution
         assert output_file is not None
-        ctx.call_on_close(safecall(output_file.close_intelligently))
+        # only LazyFile has close_intelligently, newer IO[Any] does not
+        if isinstance(output_file, LazyFile):  # pragma: no cover
+            ctx.call_on_close(safecall(output_file.close_intelligently))
 
     ###
     # Setup
