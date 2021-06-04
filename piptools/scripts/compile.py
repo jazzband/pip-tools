@@ -12,7 +12,7 @@ from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 
-from .._compat import parse_requirements
+from .._compat import IS_CLICK_VER_8_PLUS, parse_requirements
 from ..cache import DependencyCache
 from ..exceptions import PipToolsError
 from ..locations import CACHE_DIR
@@ -33,6 +33,9 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.in"
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 METADATA_FILENAMES = frozenset({"setup.py", "setup.cfg", "pyproject.toml"})
 
+# TODO: drop click 7 and remove this block, pass directly to version_option
+version_option_kwargs = {} if IS_CLICK_VER_8_PLUS else {"package_name": "pip-tools"}
+
 
 def _get_default_option(option_name: str) -> Any:
     """
@@ -45,7 +48,7 @@ def _get_default_option(option_name: str) -> Any:
 
 
 @click.command(context_settings={"help_option_names": ("-h", "--help")})
-@click.version_option()
+@click.version_option(**version_option_kwargs)
 @click.pass_context
 @click.option("-v", "--verbose", count=True, help="Show more output")
 @click.option("-q", "--quiet", count=True, help="Give less output")
