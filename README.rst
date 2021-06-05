@@ -368,7 +368,7 @@ If you have multiple requirement files make sure you create a hook for each file
         hooks:
           - id: pip-compile
             name: pip-compile setup.py
-            files: ^setup\.py$
+            files: ^(setup\.py|requirements\.txt)$
           - id: pip-compile
             name: pip-compile requirements-dev.in
             args: [requirements-dev.in]
