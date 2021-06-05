@@ -384,7 +384,7 @@ def test_run_as_module_compile():
 
 
 def test_editable_package(pip_conf, runner):
-    """ piptools can compile an editable """
+    """piptools can compile an editable"""
     fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
     fake_package_dir = path_to_url(fake_package_dir)
     with open("requirements.in", "w") as req_in:
@@ -1656,3 +1656,178 @@ def test_triple_equal_pinned_dependency_is_used(
     assert out.exit_code == 0, out
     for line in out_expected_content:
         assert line in out.stderr
+
+
+METADATA_TEST_CASES = (
+    pytest.param(
+        "setup.cfg",
+        """
+            [metadata]
+            name = sample_lib
+            author = Vincent Driessen
+            author_email = me@nvie.com
+
+            [options]
+            packages = find:
+            install_requires =
+                small-fake-a==0.1
+                small-fake-b==0.2
+
+            [options.extras_require]
+            dev =
+                small-fake-c==0.3
+                small-fake-d==0.4
+            test =
+                small-fake-e==0.5
+                small-fake-f==0.6
+        """,
+        id="setup.cfg",
+    ),
+    pytest.param(
+        "setup.py",
+        """
+            from setuptools import setup
+
+            setup(
+                name="sample_lib",
+                version=0.1,
+                install_requires=["small-fake-a==0.1", "small-fake-b==0.2"],
+                extras_require={
+                    "dev": ["small-fake-c==0.3", "small-fake-d==0.4"],
+                    "test": ["small-fake-e==0.5", "small-fake-f==0.6"],
+                },
+            )
+        """,
+        id="setup.py",
+    ),
+    pytest.param(
+        "pyproject.toml",
+        """
+            [build-system]
+            requires = ["flit_core >=2,<4"]
+            build-backend = "flit_core.buildapi"
+
+            [tool.flit.metadata]
+            module = "sample_lib"
+            author = "Vincent Driessen"
+            author-email = "me@nvie.com"
+
+            requires = ["small-fake-a==0.1", "small-fake-b==0.2"]
+
+            [tool.flit.metadata.requires-extra]
+            dev  = ["small-fake-c==0.3", "small-fake-d==0.4"]
+            test = ["small-fake-e==0.5", "small-fake-f==0.6"]
+        """,
+        id="flit",
+    ),
+    pytest.param(
+        "pyproject.toml",
+        """
+            [build-system]
+            requires = ["poetry_core>=1.0.0"]
+            build-backend = "poetry.core.masonry.api"
+
+            [tool.poetry]
+            name = "sample_lib"
+            version = "0.1.0"
+            description = ""
+            authors = ["Vincent Driessen <me@nvie.com>"]
+
+            [tool.poetry.dependencies]
+            python = "*"
+            small-fake-a = "0.1"
+            small-fake-b = "0.2"
+
+            small-fake-c = "0.3"
+            small-fake-d = "0.4"
+            small-fake-e = "0.5"
+            small-fake-f = "0.6"
+
+            [tool.poetry.extras]
+            dev  = ["small-fake-c", "small-fake-d"]
+            test = ["small-fake-e", "small-fake-f"]
+        """,
+        id="poetry",
+    ),
+)
+
+
+@pytest.mark.network
+@pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
+def test_input_formats(fake_dists, runner, make_module, fname, content):
+    """
+    Test different dependency formats as input file.
+    """
+    meta_path = make_module(fname=fname, content=content)
+    out = runner.invoke(cli, ["-n", "--find-links", fake_dists, meta_path])
+    assert out.exit_code == 0, out.stderr
+    assert "small-fake-a==0.1" in out.stderr
+    assert "small-fake-b==0.2" in out.stderr
+    assert "small-fake-c" not in out.stderr
+    assert "small-fake-d" not in out.stderr
+    assert "small-fake-e" not in out.stderr
+    assert "small-fake-f" not in out.stderr
+    assert "extra ==" not in out.stderr
+
+
+@pytest.mark.network
+@pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
+def test_one_extra(fake_dists, runner, make_module, fname, content):
+    """
+    Test one `--extra` (dev) passed, other extras (test) must be ignored.
+    """
+    meta_path = make_module(fname=fname, content=content)
+    out = runner.invoke(
+        cli, ["-n", "--extra", "dev", "--find-links", fake_dists, meta_path]
+    )
+    assert out.exit_code == 0, out.stderr
+    assert "small-fake-a==0.1" in out.stderr
+    assert "small-fake-b==0.2" in out.stderr
+    assert "small-fake-c==0.3" in out.stderr
+    assert "small-fake-d==0.4" in out.stderr
+    assert "small-fake-e" not in out.stderr
+    assert "small-fake-f" not in out.stderr
+    assert "extra ==" not in out.stderr
+
+
+@pytest.mark.network
+@pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
+def test_multiple_extras(fake_dists, runner, make_module, fname, content):
+    """
+    Test passing multiple `--extra` params.
+    """
+    meta_path = make_module(fname=fname, content=content)
+    out = runner.invoke(
+        cli,
+        [
+            "-n",
+            "--extra",
+            "dev",
+            "--extra",
+            "test",
+            "--find-links",
+            fake_dists,
+            meta_path,
+        ],
+    )
+    assert out.exit_code == 0, out.stderr
+    assert "small-fake-a==0.1" in out.stderr
+    assert "small-fake-b==0.2" in out.stderr
+    assert "small-fake-c==0.3" in out.stderr
+    assert "small-fake-d==0.4" in out.stderr
+    assert "small-fake-e==0.5" in out.stderr
+    assert "small-fake-f==0.6" in out.stderr
+    assert "extra ==" not in out.stderr
+
+
+def test_extras_fail_with_requirements_in(runner, tmpdir):
+    """
+    Test that passing `--extra` with `requirements.in` input file fails.
+    """
+    path = os.path.join(tmpdir, "requirements.in")
+    with open(path, "w") as stream:
+        stream.write("\n")
+    out = runner.invoke(cli, ["-n", "--extra", "something", path])
+    assert out.exit_code == 2
+    exp = "--extra has effect only with setup.py and PEP-517 input formats"
+    assert exp in out.stderr

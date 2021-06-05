@@ -6,6 +6,7 @@ from typing import (
     Dict,
     Iterable,
     Iterator,
+    List,
     Optional,
     Set,
     Tuple,
@@ -208,6 +209,57 @@ def dedup(iterable: Iterable[_T]) -> Iterable[_T]:
     order-preserved.
     """
     return iter(dict.fromkeys(iterable))
+
+
+def drop_extras(ireq: InstallRequirement) -> None:
+    """Remove "extra" markers (PEP-508) from requirement."""
+    if ireq.markers is None:
+        return
+    ireq.markers._markers = _drop_extras(ireq.markers._markers)
+    if not ireq.markers._markers:
+        ireq.markers = None
+
+
+def _drop_extras(markers: List[_T]) -> List[_T]:
+    # drop `extra` tokens
+    to_remove: List[int] = []
+    for i, token in enumerate(markers):
+        # operator (and/or)
+        if isinstance(token, str):
+            continue
+        # sub-expression (inside braces)
+        if isinstance(token, list):
+            markers[i] = _drop_extras(token)  # type: ignore
+            if markers[i]:
+                continue
+            to_remove.append(i)
+            continue
+        # test expression (like `extra == "dev"`)
+        assert isinstance(token, tuple)
+        if token[0].value == "extra":
+            to_remove.append(i)
+    for i in reversed(to_remove):
+        markers.pop(i)
+
+    # drop duplicate bool operators (and/or)
+    to_remove = []
+    for i, (token1, token2) in enumerate(zip(markers, markers[1:])):
+        if not isinstance(token1, str):
+            continue
+        if not isinstance(token2, str):
+            continue
+        if token1 == "and":
+            to_remove.append(i)
+        else:
+            to_remove.append(i + 1)
+    for i in reversed(to_remove):
+        markers.pop(i)
+    if markers and isinstance(markers[0], str):
+        markers.pop(0)
+    if markers and isinstance(markers[-1], str):
+        markers.pop(-1)
+
+    return markers
 
 
 def get_hashes_from_ireq(ireq: InstallRequirement) -> Set[str]:

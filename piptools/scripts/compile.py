@@ -2,16 +2,17 @@ import os
 import shlex
 import sys
 import tempfile
-from typing import Any, BinaryIO, Optional, Tuple, cast
+from typing import IO, Any, BinaryIO, List, Optional, Tuple, Union, cast
 
 import click
 from click.utils import LazyFile, safecall
+from pep517 import meta
 from pip._internal.commands import create_command
+from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
-from pip._vendor.pep517 import meta
 
-from .._compat import parse_requirements
+from .._compat import IS_CLICK_VER_8_PLUS, parse_requirements
 from ..cache import DependencyCache
 from ..exceptions import PipToolsError
 from ..locations import CACHE_DIR
@@ -19,11 +20,21 @@ from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..repositories.base import BaseRepository
 from ..resolver import Resolver
-from ..utils import UNSAFE_PACKAGES, dedup, is_pinned_requirement, key_from_ireq
+from ..utils import (
+    UNSAFE_PACKAGES,
+    dedup,
+    drop_extras,
+    is_pinned_requirement,
+    key_from_ireq,
+)
 from ..writer import OutputWriter
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.in"
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
+METADATA_FILENAMES = frozenset({"setup.py", "setup.cfg", "pyproject.toml"})
+
+# TODO: drop click 7 and remove this block, pass directly to version_option
+version_option_kwargs = {} if IS_CLICK_VER_8_PLUS else {"package_name": "pip-tools"}
 
 
 def _get_default_option(option_name: str) -> Any:
@@ -37,7 +48,7 @@ def _get_default_option(option_name: str) -> Any:
 
 
 @click.command(context_settings={"help_option_names": ("-h", "--help")})
-@click.version_option()
+@click.version_option(**version_option_kwargs)
 @click.pass_context
 @click.option("-v", "--verbose", count=True, help="Show more output")
 @click.option("-q", "--quiet", count=True, help="Give less output")
@@ -59,6 +70,12 @@ def _get_default_option(option_name: str) -> Any:
     "--rebuild",
     is_flag=True,
     help="Clear any caches upfront, rebuild from scratch",
+)
+@click.option(
+    "--extra",
+    "extras",
+    multiple=True,
+    help="Names of extras_require to install",
 )
 @click.option(
     "-f",
@@ -184,7 +201,9 @@ def _get_default_option(option_name: str) -> Any:
     "--cache-dir",
     help="Store the cache data in DIRECTORY.",
     default=CACHE_DIR,
+    envvar="PIP_TOOLS_CACHE_DIR",
     show_default=True,
+    show_envvar=True,
     type=click.Path(file_okay=False, writable=True),
 )
 @click.option(
@@ -203,22 +222,23 @@ def cli(
     dry_run: bool,
     pre: bool,
     rebuild: bool,
-    find_links: Tuple[str],
+    extras: Tuple[str, ...],
+    find_links: Tuple[str, ...],
     index_url: str,
-    extra_index_url: Tuple[str],
+    extra_index_url: Tuple[str, ...],
     cert: Optional[str],
     client_cert: Optional[str],
-    trusted_host: Tuple[str],
+    trusted_host: Tuple[str, ...],
     header: bool,
     emit_trusted_host: bool,
     annotate: bool,
     upgrade: bool,
-    upgrade_packages: Tuple[str],
-    output_file: Optional[LazyFile],
+    upgrade_packages: Tuple[str, ...],
+    output_file: Union[LazyFile, IO[Any], None],
     allow_unsafe: bool,
     generate_hashes: bool,
     reuse_hashes: bool,
-    src_files: Tuple[str],
+    src_files: Tuple[str, ...],
     max_rounds: int,
     build_isolation: bool,
     emit_find_links: bool,
@@ -247,7 +267,7 @@ def cli(
         if src_files == ("-",):
             raise click.BadParameter("--output-file is required if input is from stdin")
         # Use default requirements output file if there is a setup.py the source file
-        elif os.path.basename(src_files[0]) == "setup.py":
+        elif os.path.basename(src_files[0]) in METADATA_FILENAMES:
             file_name = os.path.join(
                 os.path.dirname(src_files[0]), DEFAULT_REQUIREMENTS_OUTPUT_FILE
             )
@@ -265,7 +285,9 @@ def cli(
 
         # Close the file at the end of the context execution
         assert output_file is not None
-        ctx.call_on_close(safecall(output_file.close_intelligently))
+        # only LazyFile has close_intelligently, newer IO[Any] does not
+        if isinstance(output_file, LazyFile):  # pragma: no cover
+            ctx.call_on_close(safecall(output_file.close_intelligently))
 
     ###
     # Setup
@@ -333,9 +355,10 @@ def cli(
     # Parsing/collecting initial requirements
     ###
 
-    constraints = []
+    constraints: List[InstallRequirement] = []
+    setup_file_found = False
     for src_file in src_files:
-        is_setup_file = os.path.basename(src_file) == "setup.py"
+        is_setup_file = os.path.basename(src_file) in METADATA_FILENAMES
         if src_file == "-":
             # pip requires filenames and not files. Since we want to support
             # piping from stdin, we need to briefly save the input from stdin
@@ -357,6 +380,7 @@ def cli(
                 req.comes_from = comes_from
             constraints.extend(reqs)
         elif is_setup_file:
+            setup_file_found = True
             dist = meta.load(os.path.dirname(os.path.abspath(src_file)))
             comes_from = f"{dist.metadata.get_all('Name')[0]} ({src_file})"
             constraints.extend(
@@ -375,6 +399,10 @@ def cli(
                 )
             )
 
+    if extras and not setup_file_found:
+        msg = "--extra has effect only with setup.py and PEP-517 input formats"
+        raise click.BadParameter(msg)
+
     primary_packages = {
         key_from_ireq(ireq) for ireq in constraints if not ireq.constraint
     }
@@ -384,16 +412,9 @@ def cli(
         ireq for key, ireq in upgrade_install_reqs.items() if key in allowed_upgrades
     )
 
-    # Filter out pip environment markers which do not match (PEP496)
-    constraints = [
-        req
-        for req in constraints
-        if req.markers is None
-        # We explicitly set extra=None to filter out optional requirements
-        # since evaluating an extra marker with no environment raises UndefinedEnvironmentName
-        # (see https://packaging.pypa.io/en/latest/markers.html#usage)
-        or req.markers.evaluate({"extra": None})
-    ]
+    constraints = [req for req in constraints if req.match_markers(extras)]
+    for req in constraints:
+        drop_extras(req)
 
     log.debug("Using indexes:")
     with log.indentation():

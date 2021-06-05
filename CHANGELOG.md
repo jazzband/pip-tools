@@ -1,4 +1,31 @@
-# 6.0.0 (2020-03-12)
+# 6.1.0 (2021-04-14)
+
+Features:
+
+- Add support for `pyproject.toml` or `setup.cfg` as input dependency file
+  (PEP-517) for `pip-compile`
+  ([#1356](https://github.com/jazzband/pip-tools/pull/1356)). Thanks @orsinium
+- Add `pip-compile --extra` option to specify `extras_require` dependencies
+  ([#1363](https://github.com/jazzband/pip-tools/pull/1363)). Thanks @orsinium
+
+Bug Fixes:
+
+- Restore ability to set compile cache with env var `PIP_TOOLS_CACHE_DIR`
+  ([#1368](https://github.com/jazzband/pip-tools/pull/1368)). Thanks @AndydeCleyre
+
+# 6.0.1 (2021-03-15)
+
+Bug Fixes:
+
+- Fixed a bug with undeclared dependency on `importlib-metadata` at Python 3.6
+  ([#1353](https://github.com/jazzband/pip-tools/pull/1353)). Thanks @atugushev
+
+Dependencies:
+
+- Add `pep517` dependency
+  ([#1353](https://github.com/jazzband/pip-tools/pull/1353)). Thanks @atugushev
+
+# 6.0.0 (2021-03-12)
 
 Backwards Incompatible Changes:
 
