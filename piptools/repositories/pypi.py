@@ -1,4 +1,3 @@
-import collections
 import hashlib
 import itertools
 import logging
@@ -6,7 +5,17 @@ import optparse
 import os
 from contextlib import contextmanager
 from shutil import rmtree
-from typing import Any, ContextManager, Dict, Iterator, List, Optional, Set, cast
+from typing import (
+    Any,
+    BinaryIO,
+    ContextManager,
+    Dict,
+    Iterator,
+    List,
+    NamedTuple,
+    Optional,
+    Set,
+)
 
 from click import progressbar
 from pip._internal.cache import WheelCache
@@ -43,7 +52,11 @@ from ..utils import (
 from .base import BaseRepository
 
 FILE_CHUNK_SIZE = 4096
-FileStream = collections.namedtuple("FileStream", "stream size")
+
+
+class FileStream(NamedTuple):
+    stream: BinaryIO
+    size: Optional[float]
 
 
 class PyPIRepository(BaseRepository):
@@ -375,12 +388,12 @@ class PyPIRepository(BaseRepository):
         h = hashlib.new(FAVORITE_HASH)
         with open_local_or_remote_file(link, self.session) as f:
             # Chunks to iterate
-            chunks = iter(lambda: cast(bytes, f.stream.read(FILE_CHUNK_SIZE)), b"")
+            chunks = iter(lambda: f.stream.read(FILE_CHUNK_SIZE), b"")
 
             # Choose a context manager depending on verbosity
             context_manager: ContextManager[Iterator[bytes]]
             if log.verbosity >= 1:
-                iter_length = f.size / FILE_CHUNK_SIZE if f.size else None
+                iter_length = int(f.size / FILE_CHUNK_SIZE) if f.size else None
                 bar_template = f"{' ' * log.current_indent}  |%(bar)s| %(info)s"
                 context_manager = progressbar(
                     chunks,
