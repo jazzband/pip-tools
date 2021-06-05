@@ -15,6 +15,7 @@ from typing import (
     NamedTuple,
     Optional,
     Set,
+    cast,
 )
 
 from click import progressbar
