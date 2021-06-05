@@ -30,7 +30,6 @@ even when you've pinned them.  You do pin them, right? (In building your Python 
    :target: https://pypi.org/project/pip-tools/
 .. _You do pin them, right?: http://nvie.com/posts/pin-your-packages/
 
-
 Installation
 ============
 
@@ -62,9 +61,11 @@ project so conditional dependencies that require a specific Python version,
 or other environment markers, resolve relative to your project's
 environment.
 
-**Note**: ensure you don't have ``requirements.txt`` if you compile
-``setup.py`` or ``requirements.in`` from scratch, otherwise, it might
-interfere.
+**Note**: If ``pip-compile`` finds an existing ``requirements.txt`` file that
+fulfils the dependencies then no changes will be made, even if updates are
+available. To compile from scratch, first delete the existing
+``requirements.txt`` file, or see `Updating requirements`_ for alternative
+approaches.
 
 Requirements from ``setup.py``
 ------------------------------
@@ -130,6 +131,42 @@ And it will produce your ``requirements.txt``, with all the Django dependencies
 
 .. _it's easy to write one: https://packaging.python.org/guides/distributing-packages-using-setuptools/#configuring-your-project
 
+.. _Updating requirements:
+
+Updating requirements
+---------------------
+
+``pip-compile`` generates a ``requirements.txt`` file using the latest versions
+that fulfil the dependencies of ``setup.py`` or ``requirements.in``.
+
+If ``pip-compile`` finds an existing ``requirements.txt`` file that fulfils the
+dependencies then no changes will be made, even if updates are available.
+
+To force ``pip-compile`` to update all packages in an existing
+``requirements.txt``, run ``pip-compile --upgrade``.
+
+To update a specific package to the latest or a specific version use the
+``--upgrade-package`` or ``-P`` flag:
+
+.. code-block:: bash
+
+    # only update the django package
+    $ pip-compile --upgrade-package django
+
+    # update both the django and requests packages
+    $ pip-compile --upgrade-package django --upgrade-package requests
+
+    # update the django package to the latest, and requests to v2.0.0
+    $ pip-compile --upgrade-package django --upgrade-package requests==2.0.0
+
+You can combine ``--upgrade`` and ``--upgrade-package`` in one command, to
+provide constraints on the allowed upgrades. For example to upgrade all
+packages whilst constraining requests to the latest version less than 3.0:
+
+.. code-block:: bash
+
+    $ pip-compile --upgrade --upgrade-package 'requests<3.0'
+
 Using hashes
 ------------
 
@@ -161,33 +198,6 @@ version 8.0, ``pip-compile`` offers ``--generate-hashes`` flag:
         --hash=sha256:40afe6b8d4b1117e7dff5504d7a8ce07d9a1b15aeeade8a2d10f130a834f8177 \
         --hash=sha256:7c3dca29c022744e95b547e867cee89f4fce4373f3549ccd8797d8eb52cdb873 \
         # via django
-
-Updating requirements
----------------------
-
-To update all packages, periodically re-run ``pip-compile --upgrade``.
-
-To update a specific package to the latest or a specific version use the
-``--upgrade-package`` or ``-P`` flag:
-
-.. code-block:: bash
-
-    # only update the django package
-    $ pip-compile --upgrade-package django
-
-    # update both the django and requests packages
-    $ pip-compile --upgrade-package django --upgrade-package requests
-
-    # update the django package to the latest, and requests to v2.0.0
-    $ pip-compile --upgrade-package django --upgrade-package requests==2.0.0
-
-You can combine ``--upgrade`` and ``--upgrade-package`` in one command, to
-provide constraints on the allowed upgrades. For example to upgrade all
-packages whilst constraining requests to the latest version less than 3.0:
-
-.. code-block:: bash
-
-    $ pip-compile --upgrade --upgrade-package 'requests<3.0'
 
 Output File
 -----------
