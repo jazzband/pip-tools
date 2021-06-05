@@ -12,9 +12,9 @@ jobs:
     name: ${{ matrix.toxenv }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         toxenv:
-          - checkqa
           - readme
         python-version:
           - "3.x"
@@ -28,6 +28,30 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Pip cache
+        uses: actions/cache@v2
+        with:
+          path: >-
+            ${{
+              runner.os == 'Linux' &&
+              '~/.cache/pip'
+              || ''
+            }}${{
+              runner.os == 'macOS' &&
+              '~/Library/Caches/pip'
+              || ''
+            }}${{
+              runner.os == 'Windows' &&
+              '~\AppData\Local\pip\Cache'
+              || ''
+            }}
+          key: >-
+            ${{ runner.os }}-pip-${{ hashFiles('setup.cfg') }}-${{
+            hashFiles('setup.py') }}-${{ hashFiles('tox.ini') }}-${{
+            hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
       - name: Prepare cache key
         id: cache-key
         run: echo "::set-output name=sha-256::$(python -VV | sha256sum | cut -d' ' -f1)"

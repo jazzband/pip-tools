@@ -20,6 +20,8 @@ build
 dist
 *.egg-info
 .coverage
+.coverage.*
+coverage.xml
 .cache
 
 # IDE
