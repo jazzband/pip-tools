@@ -1,5 +1,4 @@
 import copy
-from contextlib import nullcontext
 from functools import partial
 from itertools import chain, count, groupby
 from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple
@@ -12,6 +11,7 @@ from pip._internal.req.req_tracker import update_env_context_manager
 from piptools.cache import DependencyCache
 from piptools.repositories.base import BaseRepository
 
+from ._compat import contextlib
 from .logging import log
 from .utils import (
     UNSAFE_PACKAGES,
@@ -151,7 +151,9 @@ class Resolver:
         log.debug("")
         log.debug("Generating hashes:")
         allow_all_wheels = (
-            nullcontext() if single_hash else self.repository.allow_all_wheels()
+            contextlib.nullcontext(None)
+            if single_hash
+            else self.repository.allow_all_wheels()
         )
         with allow_all_wheels, log.indentation():
             return {

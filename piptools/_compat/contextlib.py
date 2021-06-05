@@ -1,11 +1,11 @@
 # Ported from python 3.7 contextlib.py
 from types import TracebackType
-from typing import Optional, Type, TypeVar
+from typing import ContextManager, Optional, Type, TypeVar
 
 _T = TypeVar("_T")
 
 
-class nullcontext:
+class nullcontext(ContextManager[_T]):
     """Context manager that does no additional processing.
     Used as a stand-in for a normal context manager, when a particular
     block of code is only sometimes used with a normal context manager:
