@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 from itertools import chain
 from typing import BinaryIO, Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
