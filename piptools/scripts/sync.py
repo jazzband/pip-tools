@@ -179,7 +179,7 @@ def cli(
     )
 
 
-def _validate_python_executable(python_executable: Optional[str]) -> None:
+def _validate_python_executable(python_executable: str) -> None:
     """
     Validates incoming python_executable argument passed to CLI.
     """
