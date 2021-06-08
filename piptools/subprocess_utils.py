@@ -13,6 +13,5 @@ def run_python_snippet(python_executable: str, code_to_run: str) -> str:
     return subprocess.check_output(  # nosec
         py_exec_cmd,
         shell=False,
-        text=True,
         universal_newlines=True,
     )
