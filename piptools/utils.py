@@ -366,6 +366,9 @@ def get_compile_command(click_ctx: click.Context) -> str:
 
 
 def get_required_pip_specification() -> SpecifierSet:
+    """
+    Returns pip version specifier requested by current pip-tools installation.
+    """
     project_dist = get_distribution("pip-tools")
     requirement = next((r for r in project_dist.requires() if r.name == "pip"), None)
     assert (

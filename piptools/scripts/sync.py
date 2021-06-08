@@ -66,7 +66,7 @@ version_option_kwargs = {} if IS_CLICK_VER_8_PLUS else {"package_name": "pip-too
 )
 @click.option(
     "--python-executable",
-    help="Custom python executable path if targeting an environment other than current",
+    help="Custom python executable path if targeting an environment other than current.",
 )
 @click.option("-v", "--verbose", count=True, help="Show more output")
 @click.option("-q", "--quiet", count=True, help="Give less output")
@@ -123,24 +123,7 @@ def cli(
             sys.exit(2)
 
     if python_executable:
-        resolved_python_executable = shutil.which(python_executable)
-        if resolved_python_executable is None:
-            msg = "Could not resolve '{}' as valid executable path or alias"
-            log.error(msg.format(python_executable))
-            sys.exit(2)
-
-        # Ensure that target python executable has the right version of pip installed
-        pip_version = get_pip_version_for_python_executable(python_executable)
-        required_pip_specification = get_required_pip_specification()
-        if not required_pip_specification.contains(pip_version):
-            msg = (
-                "Target python executable '{}' has pip version {} installed. "
-                "Version {} is expected."
-            )
-            log.error(
-                msg.format(python_executable, pip_version, required_pip_specification)
-            )
-            sys.exit(2)
+        _validate_python_executable(python_executable)
 
     install_command = cast(InstallCommand, create_command("install"))
     options, _ = install_command.parse_args([])
@@ -194,6 +177,28 @@ def cli(
             python_executable=python_executable,
         )
     )
+
+
+def _validate_python_executable(python_executable: Optional[str]) -> None:
+    """
+    Validates incoming python_executable argument passed to CLI.
+    """
+    resolved_python_executable = shutil.which(python_executable)
+    if resolved_python_executable is None:
+        msg = "Could not resolve '%s' as valid executable path or alias."
+        log.error(msg, python_executable)
+        sys.exit(2)
+
+    # Ensure that target python executable has the right version of pip installed
+    pip_version = get_pip_version_for_python_executable(python_executable)
+    required_pip_specification = get_required_pip_specification()
+    if not required_pip_specification.contains(pip_version):
+        msg = (
+            "Target python executable '%s' has pip version %s installed. "
+            "Version %s is expected."
+        )
+        log.error(msg, python_executable, pip_version, required_pip_specification)
+        sys.exit(2)
 
 
 def _compose_install_flags(

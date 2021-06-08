@@ -259,7 +259,7 @@ def test_python_executable_option(
     fake_dist,
 ):
     """
-    Make sure sync command can run with `--python-executable` option
+    Make sure sync command can run with `--python-executable` option.
     """
     with open("requirements.txt", "w") as req_in:
         req_in.write("small-fake-a==1.10.0")
@@ -337,7 +337,7 @@ def test_invalid_pip_version_in_python_executable(
 @mock.patch("piptools.sync.run")
 def test_default_python_executable_option(run, runner):
     """
-    Make sure sys.executable is used when --python-executable is not provided
+    Make sure sys.executable is used when --python-executable is not provided.
     """
     with open("requirements.txt", "w") as req_in:
         req_in.write("small-fake-a==1.10.0")
