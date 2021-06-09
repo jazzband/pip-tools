@@ -185,8 +185,8 @@ def _validate_python_executable(python_executable: str) -> None:
     """
     resolved_python_executable = shutil.which(python_executable)
     if resolved_python_executable is None:
-        msg = "Could not resolve '%s' as valid executable path or alias."
-        log.error(msg, python_executable)
+        msg = "Could not resolve '{}' as valid executable path or alias."
+        log.error(msg.format(python_executable))
         sys.exit(2)
 
     # Ensure that target python executable has the right version of pip installed
@@ -194,10 +194,12 @@ def _validate_python_executable(python_executable: str) -> None:
     required_pip_specification = get_required_pip_specification()
     if not required_pip_specification.contains(pip_version):
         msg = (
-            "Target python executable '%s' has pip version %s installed. "
-            "Version %s is expected."
+            "Target python executable '{}' has pip version {} installed. "
+            "Version {} is expected."
         )
-        log.error(msg, python_executable, pip_version, required_pip_specification)
+        log.error(
+            msg.format(python_executable, pip_version, required_pip_specification)
+        )
         sys.exit(2)
 
 

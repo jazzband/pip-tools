@@ -306,7 +306,7 @@ def test_invalid_python_executable(runner, python_executable):
 
     out = runner.invoke(cli, ["--python-executable", python_executable])
     assert out.exit_code == 2, out
-    message = "Could not resolve '{}' as valid executable path or alias\n"
+    message = "Could not resolve '{}' as valid executable path or alias.\n"
     assert out.stderr == message.format(python_executable)
 
 
