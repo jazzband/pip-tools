@@ -20,7 +20,7 @@ from ..utils import flat_map
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 
 # TODO: drop click 7 and remove this block, pass directly to version_option
-version_option_kwargs = {} if IS_CLICK_VER_8_PLUS else {"package_name": "pip-tools"}
+version_option_kwargs = {"package_name": "pip-tools"} if IS_CLICK_VER_8_PLUS else {}
 
 
 @click.command(context_settings={"help_option_names": ("-h", "--help")})

@@ -34,7 +34,7 @@ DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 METADATA_FILENAMES = frozenset({"setup.py", "setup.cfg", "pyproject.toml"})
 
 # TODO: drop click 7 and remove this block, pass directly to version_option
-version_option_kwargs = {} if IS_CLICK_VER_8_PLUS else {"package_name": "pip-tools"}
+version_option_kwargs = {"package_name": "pip-tools"} if IS_CLICK_VER_8_PLUS else {}
 
 
 def _get_default_option(option_name: str) -> Any:
