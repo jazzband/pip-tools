@@ -1,6 +1,6 @@
 import os
+from unittest import mock
 
-import mock
 import pytest
 from pip._internal.models.link import Link
 from pip._internal.utils.urls import path_to_url
@@ -10,7 +10,7 @@ from piptools.repositories import PyPIRepository
 from piptools.repositories.pypi import open_local_or_remote_file
 
 
-def test_generate_hashes_all_platforms(pip_conf, from_line, pypi_repository):
+def test_generate_hashes_all_platforms(capsys, pip_conf, from_line, pypi_repository):
     expected = {
         "sha256:8d4d131cd05338e09f461ad784297efea3652e542c5fabe04a62358429a6175e",
         "sha256:ad05e1371eb99f257ca00f791b755deb22e752393eb8e75bc01d651715b02ea9",
@@ -20,6 +20,12 @@ def test_generate_hashes_all_platforms(pip_conf, from_line, pypi_repository):
     ireq = from_line("small-fake-multi-arch==0.1")
     with pypi_repository.allow_all_wheels():
         assert pypi_repository.get_hashes(ireq) == expected
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert (
+        captured.err.strip()
+        == "Couldn't get hashes from PyPI, fallback to hashing files"
+    )
 
 
 @pytest.mark.network
@@ -58,6 +64,14 @@ def test_get_file_hash_without_interfering_with_each_other(from_line, pypi_repos
 def test_get_hashes_editable_empty_set(from_editable, pypi_repository):
     ireq = from_editable("git+https://github.com/django/django.git#egg=django")
     assert pypi_repository.get_hashes(ireq) == set()
+
+
+def test_get_hashes_unpinned_raises(from_line, pypi_repository):
+    # Under normal pip-tools usage, get_hashes() should never be called with an
+    # unpinned requirement. The TypeError represents a programming mistake.
+    ireq = from_line("django")
+    with pytest.raises(TypeError, match=r"^Expected pinned requirement, got django"):
+        pypi_repository.get_hashes(ireq)
 
 
 @pytest.mark.parametrize(("content", "content_length"), ((b"foo", 3), (b"foobar", 6)))
@@ -109,23 +123,16 @@ def test_open_local_or_remote_file__remote_file(
     response_file_path.write_bytes(content)
 
     mock_response = mock.Mock()
-    mock_response.raw = response_file_path.open("rb")
-    mock_response.headers = {"content-length": content_length}
+    with response_file_path.open("rb") as fp:
+        mock_response.raw = fp
+        mock_response.headers = {"content-length": content_length}
 
-    with mock.patch.object(session, "get", return_value=mock_response):
-        with open_local_or_remote_file(link, session) as file_stream:
-            assert file_stream.stream.read() == content
-            assert file_stream.size == expected_content_length
+        with mock.patch.object(session, "get", return_value=mock_response):
+            with open_local_or_remote_file(link, session) as file_stream:
+                assert file_stream.stream.read() == content
+                assert file_stream.size == expected_content_length
 
-    mock_response.close.assert_called_once()
-
-
-def test_pypirepo_build_dir_is_str(pypi_repository):
-    assert isinstance(pypi_repository.build_dir, str)
-
-
-def test_pypirepo_source_dir_is_str(pypi_repository):
-    assert isinstance(pypi_repository.source_dir, str)
+        mock_response.close.assert_called_once()
 
 
 def test_relative_path_cache_dir_is_normalized(from_line):
@@ -139,7 +146,7 @@ def test_relative_path_cache_dir_is_normalized(from_line):
 def test_relative_path_pip_cache_dir_is_normalized(from_line, tmpdir):
     relative_cache_dir = "pip-cache"
     pypi_repository = PyPIRepository(
-        ["--cache-dir", relative_cache_dir], cache_dir=str(tmpdir / "pypi-repo-cache")
+        ["--cache-dir", relative_cache_dir], cache_dir=(tmpdir / "pypi-repo-cache")
     )
 
     assert os.path.isabs(pypi_repository.options.cache_dir)
@@ -148,7 +155,7 @@ def test_relative_path_pip_cache_dir_is_normalized(from_line, tmpdir):
 
 def test_pip_cache_dir_is_empty(from_line, tmpdir):
     pypi_repository = PyPIRepository(
-        ["--no-cache-dir"], cache_dir=str(tmpdir / "pypi-repo-cache")
+        ["--no-cache-dir"], cache_dir=(tmpdir / "pypi-repo-cache")
     )
 
     assert not pypi_repository.options.cache_dir
@@ -243,7 +250,7 @@ def test_get_hashes_from_pypi(from_line, tmpdir, project_data, expected_hashes):
             return project_data
 
     pypi_repository = MockPyPIRepository(
-        ["--no-cache-dir"], cache_dir=str(tmpdir / "pypi-repo-cache")
+        ["--no-cache-dir"], cache_dir=(tmpdir / "pypi-repo-cache")
     )
     ireq = from_line("fake-package==0.1")
 
@@ -351,12 +358,12 @@ def test_name_collision(from_line, pypi_repository, make_package, make_sdist, tm
     }
 
     for pkg_name, pkg in packages.items():
-        pkg_path = str(tmpdir / pkg_name)
+        pkg_path = tmpdir / pkg_name
 
         make_sdist(pkg, pkg_path, "--formats=zip")
 
         os.rename(
-            os.path.join(pkg_path, "{}-{}.zip".format(pkg_name, "0.1")),
+            os.path.join(pkg_path, f"{pkg_name}-0.1.zip"),
             os.path.join(pkg_path, "master.zip"),
         )
 

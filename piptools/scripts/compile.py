@@ -1,34 +1,43 @@
-# coding: utf-8
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import os
 import shlex
 import sys
 import tempfile
-import warnings
+from typing import IO, Any, BinaryIO, List, Optional, Tuple, Union, cast
 
-from click import Command
-from click.utils import safecall
+import click
+from click.utils import LazyFile, safecall
+from pep517 import meta
 from pip._internal.commands import create_command
+from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 
-from .. import click
-from .._compat import parse_requirements
+from .._compat import IS_CLICK_VER_8_PLUS, parse_requirements
 from ..cache import DependencyCache
 from ..exceptions import PipToolsError
 from ..locations import CACHE_DIR
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
+from ..repositories.base import BaseRepository
 from ..resolver import Resolver
-from ..utils import UNSAFE_PACKAGES, dedup, is_pinned_requirement, key_from_ireq
+from ..utils import (
+    UNSAFE_PACKAGES,
+    dedup,
+    drop_extras,
+    is_pinned_requirement,
+    key_from_ireq,
+)
 from ..writer import OutputWriter
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.in"
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
+METADATA_FILENAMES = frozenset({"setup.py", "setup.cfg", "pyproject.toml"})
+
+# TODO: drop click 7 and remove this block, pass directly to version_option
+version_option_kwargs = {} if IS_CLICK_VER_8_PLUS else {"package_name": "pip-tools"}
 
 
-def _get_default_option(option_name):
+def _get_default_option(option_name: str) -> Any:
     """
     Get default value of the pip's option (including option from pip.conf)
     by a given option name.
@@ -38,31 +47,8 @@ def _get_default_option(option_name):
     return getattr(default_values, option_name)
 
 
-class BaseCommand(Command):
-    _os_args = None
-
-    def parse_args(self, ctx, args):
-        """
-        Override base `parse_args` to store the argument part of `sys.argv`.
-        """
-        self._os_args = set(args)
-        return super(BaseCommand, self).parse_args(ctx, args)
-
-    def has_arg(self, arg_name):
-        """
-        Detect whether a given arg name (including negative counterparts
-        to the arg, e.g. --no-arg) is present in the argument part of `sys.argv`.
-        """
-        command_options = {option.name: option for option in self.params}
-        option = command_options[arg_name]
-        args = set(option.opts + option.secondary_opts)
-        return bool(self._os_args & args)
-
-
-@click.command(
-    cls=BaseCommand, context_settings={"help_option_names": ("-h", "--help")}
-)
-@click.version_option()
+@click.command(context_settings={"help_option_names": ("-h", "--help")})
+@click.version_option(**version_option_kwargs)
 @click.pass_context
 @click.option("-v", "--verbose", count=True, help="Show more output")
 @click.option("-q", "--quiet", count=True, help="Give less output")
@@ -86,11 +72,16 @@ class BaseCommand(Command):
     help="Clear any caches upfront, rebuild from scratch",
 )
 @click.option(
+    "--extra",
+    "extras",
+    multiple=True,
+    help="Names of extras_require to install",
+)
+@click.option(
     "-f",
     "--find-links",
     multiple=True,
     help="Look for archives in this directory or on this HTML page",
-    envvar="PIP_FIND_LINKS",
 )
 @click.option(
     "-i",
@@ -98,13 +89,9 @@ class BaseCommand(Command):
     help="Change index URL (defaults to {index_url})".format(
         index_url=redact_auth_from_url(_get_default_option("index_url"))
     ),
-    envvar="PIP_INDEX_URL",
 )
 @click.option(
-    "--extra-index-url",
-    multiple=True,
-    help="Add additional index URL to search",
-    envvar="PIP_EXTRA_INDEX_URL",
+    "--extra-index-url", multiple=True, help="Add additional index URL to search"
 )
 @click.option("--cert", help="Path to alternate CA bundle.")
 @click.option(
@@ -115,7 +102,6 @@ class BaseCommand(Command):
 @click.option(
     "--trusted-host",
     multiple=True,
-    envvar="PIP_TRUSTED_HOST",
     help="Mark this host as trusted, even though it does not have "
     "valid or any HTTPS.",
 )
@@ -124,12 +110,6 @@ class BaseCommand(Command):
     is_flag=True,
     default=True,
     help="Add header to generated file",
-)
-@click.option(
-    "--index/--no-index",
-    is_flag=True,
-    default=True,
-    help="DEPRECATED: Add index URL to generated file",
 )
 @click.option(
     "--emit-trusted-host/--no-emit-trusted-host",
@@ -170,11 +150,16 @@ class BaseCommand(Command):
     ),
 )
 @click.option(
-    "--allow-unsafe",
+    "--allow-unsafe/--no-allow-unsafe",
     is_flag=True,
     default=False,
-    help="Pin packages considered unsafe: {}".format(
-        ", ".join(sorted(UNSAFE_PACKAGES))
+    help=(
+        "Pin packages considered unsafe: {}.\n\n"
+        "WARNING: Future versions of pip-tools will enable this behavior by default. "
+        "Use --no-allow-unsafe to keep the old behavior. It is recommended to pass the "
+        "--allow-unsafe now to adapt to the upcoming change.".format(
+            ", ".join(sorted(UNSAFE_PACKAGES))
+        )
     ),
 )
 @click.option(
@@ -221,7 +206,9 @@ class BaseCommand(Command):
     show_envvar=True,
     type=click.Path(file_okay=False, writable=True),
 )
-@click.option("--pip-args", help="Arguments to pass directly to the pip command.")
+@click.option(
+    "--pip-args", "pip_args_str", help="Arguments to pass directly to the pip command."
+)
 @click.option(
     "--emit-index-url/--no-emit-index-url",
     is_flag=True,
@@ -229,36 +216,36 @@ class BaseCommand(Command):
     help="Add index URL to generated file",
 )
 def cli(
-    ctx,
-    verbose,
-    quiet,
-    dry_run,
-    pre,
-    rebuild,
-    find_links,
-    index_url,
-    extra_index_url,
-    cert,
-    client_cert,
-    trusted_host,
-    header,
-    index,
-    emit_trusted_host,
-    annotate,
-    upgrade,
-    upgrade_packages,
-    output_file,
-    allow_unsafe,
-    generate_hashes,
-    reuse_hashes,
-    src_files,
-    max_rounds,
-    build_isolation,
-    emit_find_links,
-    cache_dir,
-    pip_args,
-    emit_index_url,
-):
+    ctx: click.Context,
+    verbose: int,
+    quiet: int,
+    dry_run: bool,
+    pre: bool,
+    rebuild: bool,
+    extras: Tuple[str, ...],
+    find_links: Tuple[str, ...],
+    index_url: str,
+    extra_index_url: Tuple[str, ...],
+    cert: Optional[str],
+    client_cert: Optional[str],
+    trusted_host: Tuple[str, ...],
+    header: bool,
+    emit_trusted_host: bool,
+    annotate: bool,
+    upgrade: bool,
+    upgrade_packages: Tuple[str, ...],
+    output_file: Union[LazyFile, IO[Any], None],
+    allow_unsafe: bool,
+    generate_hashes: bool,
+    reuse_hashes: bool,
+    src_files: Tuple[str, ...],
+    max_rounds: int,
+    build_isolation: bool,
+    emit_find_links: bool,
+    cache_dir: str,
+    pip_args_str: Optional[str],
+    emit_index_url: bool,
+) -> None:
     """Compiles requirements.txt from requirements.in specs."""
     log.verbosity = verbose - quiet
 
@@ -280,8 +267,10 @@ def cli(
         if src_files == ("-",):
             raise click.BadParameter("--output-file is required if input is from stdin")
         # Use default requirements output file if there is a setup.py the source file
-        elif src_files == ("setup.py",):
-            file_name = DEFAULT_REQUIREMENTS_OUTPUT_FILE
+        elif os.path.basename(src_files[0]) in METADATA_FILENAMES:
+            file_name = os.path.join(
+                os.path.dirname(src_files[0]), DEFAULT_REQUIREMENTS_OUTPUT_FILE
+            )
         # An output file must be provided if there are multiple source files
         elif len(src_files) > 1:
             raise click.BadParameter(
@@ -295,49 +284,37 @@ def cli(
         output_file = click.open_file(file_name, "w+b", atomic=True, lazy=True)
 
         # Close the file at the end of the context execution
-        ctx.call_on_close(safecall(output_file.close_intelligently))
-
-    if cli.has_arg("index") and cli.has_arg("emit_index_url"):
-        raise click.BadParameter(
-            "--index/--no-index and --emit-index-url/--no-emit-index-url "
-            "are mutually exclusive."
-        )
-    elif cli.has_arg("index"):
-        warnings.warn(
-            "--index and --no-index are deprecated and will be removed "
-            "in future versions. Use --emit-index-url/--no-emit-index-url instead.",
-            category=FutureWarning,
-        )
-        emit_index_url = index
+        assert output_file is not None
+        # only LazyFile has close_intelligently, newer IO[Any] does not
+        if isinstance(output_file, LazyFile):  # pragma: no cover
+            ctx.call_on_close(safecall(output_file.close_intelligently))
 
     ###
     # Setup
     ###
 
-    right_args = shlex.split(pip_args or "")
+    right_args = shlex.split(pip_args_str or "")
     pip_args = []
-    if find_links:
-        for link in find_links:
-            pip_args.extend(["-f", link])
+    for link in find_links:
+        pip_args.extend(["-f", link])
     if index_url:
         pip_args.extend(["-i", index_url])
-    if extra_index_url:
-        for extra_index in extra_index_url:
-            pip_args.extend(["--extra-index-url", extra_index])
+    for extra_index in extra_index_url:
+        pip_args.extend(["--extra-index-url", extra_index])
     if cert:
         pip_args.extend(["--cert", cert])
     if client_cert:
         pip_args.extend(["--client-cert", client_cert])
     if pre:
         pip_args.extend(["--pre"])
-    if trusted_host:
-        for host in trusted_host:
-            pip_args.extend(["--trusted-host", host])
+    for host in trusted_host:
+        pip_args.extend(["--trusted-host", host])
 
     if not build_isolation:
         pip_args.append("--no-build-isolation")
     pip_args.extend(right_args)
 
+    repository: BaseRepository
     repository = PyPIRepository(pip_args, cache_dir=cache_dir)
 
     # Parse all constraints coming from --upgrade-package/-P
@@ -378,26 +355,18 @@ def cli(
     # Parsing/collecting initial requirements
     ###
 
-    constraints = []
+    constraints: List[InstallRequirement] = []
+    setup_file_found = False
     for src_file in src_files:
-        is_setup_file = os.path.basename(src_file) == "setup.py"
-        if is_setup_file or src_file == "-":
+        is_setup_file = os.path.basename(src_file) in METADATA_FILENAMES
+        if src_file == "-":
             # pip requires filenames and not files. Since we want to support
             # piping from stdin, we need to briefly save the input from stdin
             # to a temporary file and have pip read that.  also used for
             # reading requirements from install_requires in setup.py.
             tmpfile = tempfile.NamedTemporaryFile(mode="wt", delete=False)
-            if is_setup_file:
-                from distutils.core import run_setup
-
-                dist = run_setup(src_file)
-                tmpfile.write("\n".join(dist.install_requires))
-                comes_from = "{name} ({filename})".format(
-                    name=dist.get_name(), filename=src_file
-                )
-            else:
-                tmpfile.write(sys.stdin.read())
-                comes_from = "-r -"
+            tmpfile.write(sys.stdin.read())
+            comes_from = "-r -"
             tmpfile.flush()
             reqs = list(
                 parse_requirements(
@@ -410,6 +379,16 @@ def cli(
             for req in reqs:
                 req.comes_from = comes_from
             constraints.extend(reqs)
+        elif is_setup_file:
+            setup_file_found = True
+            dist = meta.load(os.path.dirname(os.path.abspath(src_file)))
+            comes_from = f"{dist.metadata.get_all('Name')[0]} ({src_file})"
+            constraints.extend(
+                [
+                    install_req_from_line(req, comes_from=comes_from)
+                    for req in dist.requires or []
+                ]
+            )
         else:
             constraints.extend(
                 parse_requirements(
@@ -420,6 +399,10 @@ def cli(
                 )
             )
 
+    if extras and not setup_file_found:
+        msg = "--extra has effect only with setup.py and PEP-517 input formats"
+        raise click.BadParameter(msg)
+
     primary_packages = {
         key_from_ireq(ireq) for ireq in constraints if not ireq.constraint
     }
@@ -429,10 +412,9 @@ def cli(
         ireq for key, ireq in upgrade_install_reqs.items() if key in allowed_upgrades
     )
 
-    # Filter out pip environment markers which do not match (PEP496)
-    constraints = [
-        req for req in constraints if req.markers is None or req.markers.evaluate()
-    ]
+    constraints = [req for req in constraints if req.match_markers(extras)]
+    for req in constraints:
+        drop_extras(req)
 
     log.debug("Using indexes:")
     with log.indentation():
@@ -456,10 +438,7 @@ def cli(
             allow_unsafe=allow_unsafe,
         )
         results = resolver.resolve(max_rounds=max_rounds)
-        if generate_hashes:
-            hashes = resolver.resolve_hashes(results)
-        else:
-            hashes = None
+        hashes = resolver.resolve_hashes(results) if generate_hashes else None
     except PipToolsError as e:
         log.error(str(e))
         sys.exit(2)
@@ -471,8 +450,7 @@ def cli(
     ##
 
     writer = OutputWriter(
-        src_files,
-        output_file,
+        cast(BinaryIO, output_file),
         click_ctx=ctx,
         dry_run=dry_run,
         emit_header=header,

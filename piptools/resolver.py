@@ -1,14 +1,16 @@
-# coding: utf-8
-from __future__ import absolute_import, division, print_function, unicode_literals
-
 import copy
-import os
 from functools import partial
 from itertools import chain, count, groupby
+from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple
 
+import click
+from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
+from pip._internal.req.req_tracker import update_env_context_manager
 
-from . import click
+from piptools.cache import DependencyCache
+from piptools.repositories.base import BaseRepository
+
 from .logging import log
 from .utils import (
     UNSAFE_PACKAGES,
@@ -23,32 +25,37 @@ green = partial(click.style, fg="green")
 magenta = partial(click.style, fg="magenta")
 
 
-class RequirementSummary(object):
+class RequirementSummary:
     """
     Summary of a requirement's properties for comparison purposes.
     """
 
-    def __init__(self, ireq):
+    def __init__(self, ireq: InstallRequirement) -> None:
         self.req = ireq.req
         self.key = key_from_ireq(ireq)
         self.extras = frozenset(ireq.extras)
         self.specifier = ireq.specifier
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+
         return (
             self.key == other.key
             and self.specifier == other.specifier
             and self.extras == other.extras
         )
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.key, self.specifier, self.extras))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return repr((self.key, str(self.specifier), sorted(self.extras)))
 
 
-def combine_install_requirements(repository, ireqs):
+def combine_install_requirements(
+    repository: BaseRepository, ireqs: Iterable[InstallRequirement]
+) -> InstallRequirement:
     """
     Return a single install requirement that reflects a combination of
     all the inputs.
@@ -76,9 +83,7 @@ def combine_install_requirements(repository, ireqs):
             repository.copy_ireq_dependencies(ireq, combined_ireq)
         combined_ireq.constraint &= ireq.constraint
         # Return a sorted, de-duped tuple of extras
-        combined_ireq.extras = tuple(
-            sorted(set(tuple(combined_ireq.extras) + tuple(ireq.extras)))
-        )
+        combined_ireq.extras = tuple(sorted({*combined_ireq.extras, *ireq.extras}))
 
     # InstallRequirements objects are assumed to come from only one source, and
     # so they support only a single comes_from entry. This function breaks this
@@ -102,37 +107,39 @@ def combine_install_requirements(repository, ireqs):
     return combined_ireq
 
 
-class Resolver(object):
+class Resolver:
     def __init__(
         self,
-        constraints,
-        repository,
-        cache,
-        prereleases=False,
-        clear_caches=False,
-        allow_unsafe=False,
-    ):
+        constraints: Iterable[InstallRequirement],
+        repository: BaseRepository,
+        cache: DependencyCache,
+        prereleases: Optional[bool] = False,
+        clear_caches: bool = False,
+        allow_unsafe: bool = False,
+    ) -> None:
         """
         This class resolves a given set of constraints (a collection of
         InstallRequirement objects) by consulting the given Repository and the
         DependencyCache.
         """
         self.our_constraints = set(constraints)
-        self.their_constraints = set()
+        self.their_constraints: Set[InstallRequirement] = set()
         self.repository = repository
         self.dependency_cache = cache
         self.prereleases = prereleases
         self.clear_caches = clear_caches
         self.allow_unsafe = allow_unsafe
-        self.unsafe_constraints = set()
+        self.unsafe_constraints: Set[InstallRequirement] = set()
 
     @property
-    def constraints(self):
+    def constraints(self) -> Set[InstallRequirement]:
         return set(
             self._group_constraints(chain(self.our_constraints, self.their_constraints))
         )
 
-    def resolve_hashes(self, ireqs):
+    def resolve_hashes(
+        self, ireqs: Set[InstallRequirement]
+    ) -> Dict[InstallRequirement, Set[str]]:
         """
         Finds acceptable hashes for all of the given InstallRequirements.
         """
@@ -141,7 +148,7 @@ class Resolver(object):
         with self.repository.allow_all_wheels(), log.indentation():
             return {ireq: self.repository.get_hashes(ireq) for ireq in ireqs}
 
-    def resolve(self, max_rounds=10):
+    def resolve(self, max_rounds: int = 10) -> Set[InstallRequirement]:
         """
         Finds concrete package versions for all the given InstallRequirements
         and their recursive dependencies.  The end result is a flat list of
@@ -156,38 +163,28 @@ class Resolver(object):
             self.repository.clear_caches()
 
         # Ignore existing packages
-        os.environ[str("PIP_EXISTS_ACTION")] = str(
-            "i"
-        )  # NOTE: str() wrapping necessary for Python 2/3 compat
-        for current_round in count(start=1):  # pragma: no branch
-            if current_round > max_rounds:
-                raise RuntimeError(
-                    "No stable configuration of concrete packages "
-                    "could be found for the given constraints after "
-                    "{max_rounds} rounds of resolving.\n"
-                    "This is likely a bug.".format(max_rounds=max_rounds)
+        with update_env_context_manager(PIP_EXISTS_ACTION="i"):
+            for current_round in count(start=1):  # pragma: no branch
+                if current_round > max_rounds:
+                    raise RuntimeError(
+                        "No stable configuration of concrete packages "
+                        "could be found for the given constraints after "
+                        "{max_rounds} rounds of resolving.\n"
+                        "This is likely a bug.".format(max_rounds=max_rounds)
+                    )
+
+                log.debug("")
+                log.debug(magenta(f"{f'ROUND {current_round}':^60}"))
+                has_changed, best_matches = self._resolve_one_round()
+                log.debug("-" * 60)
+                log.debug(
+                    "Result of round {}: {}".format(
+                        current_round,
+                        "not stable" if has_changed else "stable, done",
+                    )
                 )
-
-            log.debug("")
-            log.debug(magenta("{:^60}".format("ROUND {}".format(current_round))))
-            has_changed, best_matches = self._resolve_one_round()
-            log.debug("-" * 60)
-            log.debug(
-                "Result of round {}: {}".format(
-                    current_round, "not stable" if has_changed else "stable, done"
-                )
-            )
-            if not has_changed:
-                break
-
-            # If a package version (foo==2.0) was built in a previous round,
-            # and in this round a different version of foo needs to be built
-            # (i.e. foo==1.0), the directory will exist already, which will
-            # cause a pip build failure.  The trick is to start with a new
-            # build cache dir for every round, so this can never happen.
-            self.repository.freshen_build_caches()
-
-        del os.environ["PIP_EXISTS_ACTION"]
+                if not has_changed:
+                    break
 
         # Only include hard requirements and not pip constraints
         results = {req for req in best_matches if not req.constraint}
@@ -202,7 +199,7 @@ class Resolver(object):
             # sense for installation tools) so this seems sufficient.
             reverse_dependencies = self.reverse_dependencies(results)
             for req in results.copy():
-                required_by = reverse_dependencies.get(req.name.lower(), [])
+                required_by = reverse_dependencies.get(req.name.lower(), set())
                 if req.name in UNSAFE_PACKAGES or (
                     required_by and all(name in UNSAFE_PACKAGES for name in required_by)
                 ):
@@ -211,7 +208,9 @@ class Resolver(object):
 
         return results
 
-    def _group_constraints(self, constraints):
+    def _group_constraints(
+        self, constraints: Iterable[InstallRequirement]
+    ) -> Iterator[InstallRequirement]:
         """
         Groups constraints (remember, InstallRequirements!) by their key name,
         and combining their SpecifierSets into a single InstallRequirement per
@@ -244,7 +243,7 @@ class Resolver(object):
         ):
             yield combine_install_requirements(self.repository, ireqs)
 
-    def _resolve_one_round(self):
+    def _resolve_one_round(self) -> Tuple[bool, Set[InstallRequirement]]:
         """
         Resolves one level of the current constraints, by finding the best
         match for each package in the repository and adding all requirements
@@ -272,7 +271,7 @@ class Resolver(object):
         log.debug("")
         log.debug("Finding secondary dependencies:")
 
-        their_constraints = []
+        their_constraints: List[InstallRequirement] = []
         with log.indentation():
             for best_match in best_matches:
                 their_constraints.extend(self._iter_dependencies(best_match))
@@ -294,17 +293,17 @@ class Resolver(object):
             log.debug("New dependencies found in this round:")
             with log.indentation():
                 for new_dependency in sorted(diff, key=key_from_ireq):
-                    log.debug("adding {}".format(new_dependency))
+                    log.debug(f"adding {new_dependency}")
             log.debug("Removed dependencies in this round:")
             with log.indentation():
                 for removed_dependency in sorted(removed, key=key_from_ireq):
-                    log.debug("removing {}".format(removed_dependency))
+                    log.debug(f"removing {removed_dependency}")
 
         # Store the last round's results in the their_constraints
         self.their_constraints = theirs
         return has_changed, best_matches
 
-    def get_best_match(self, ireq):
+    def get_best_match(self, ireq: InstallRequirement) -> InstallRequirement:
         """
         Returns a (pinned or editable) InstallRequirement, indicating the best
         match to use for the given InstallRequirement (in the form of an
@@ -347,7 +346,9 @@ class Resolver(object):
             best_match._source_ireqs = ireq._source_ireqs
         return best_match
 
-    def _iter_dependencies(self, ireq):
+    def _iter_dependencies(
+        self, ireq: InstallRequirement
+    ) -> Iterator[InstallRequirement]:
         """
         Given a pinned, url, or editable InstallRequirement, collects all the
         secondary dependencies for them, either by looking them up in a local
@@ -368,13 +369,10 @@ class Resolver(object):
             return
 
         if ireq.editable or is_url_requirement(ireq):
-            for dependency in self.repository.get_dependencies(ireq):
-                yield dependency
+            yield from self.repository.get_dependencies(ireq)
             return
         elif not is_pinned_requirement(ireq):
-            raise TypeError(
-                "Expected pinned or editable requirement, got {}".format(ireq)
-            )
+            raise TypeError(f"Expected pinned or editable requirement, got {ireq}")
 
         # Now, either get the dependencies from the dependency cache (for
         # speed), or reach out to the external repository to
@@ -382,7 +380,7 @@ class Resolver(object):
         # from there
         if ireq not in self.dependency_cache:
             log.debug(
-                "{} not in cache, need to check index".format(format_requirement(ireq)),
+                f"{format_requirement(ireq)} not in cache, need to check index",
                 fg="yellow",
             )
             dependencies = self.repository.get_dependencies(ireq)
@@ -401,7 +399,9 @@ class Resolver(object):
                 dependency_string, constraint=ireq.constraint, comes_from=ireq
             )
 
-    def reverse_dependencies(self, ireqs):
+    def reverse_dependencies(
+        self, ireqs: Iterable[InstallRequirement]
+    ) -> Dict[str, Set[str]]:
         non_editable = [
             ireq for ireq in ireqs if not (ireq.editable or is_url_requirement(ireq))
         ]

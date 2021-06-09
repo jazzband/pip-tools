@@ -5,6 +5,7 @@ from piptools.scripts.compile import cli
 from piptools.utils import comment
 from piptools.writer import (
     MESSAGE_UNHASHED_PACKAGE,
+    MESSAGE_UNINSTALLABLE,
     MESSAGE_UNSAFE_PACKAGES,
     MESSAGE_UNSAFE_PACKAGES_UNPINNED,
     OutputWriter,
@@ -26,7 +27,6 @@ def writer(tmpdir_cwd):
 
     with cli.make_context("pip-compile", cli_args) as ctx:
         writer = OutputWriter(
-            src_files=["src_file", "src_file2"],
             dst_file=ctx.params["output_file"],
             click_ctx=ctx,
             dry_run=True,
@@ -53,25 +53,21 @@ def test_format_requirement_annotation_editable(from_editable, writer):
 
     assert writer._format_requirement(
         ireq
-    ) == "-e git+git://fake.org/x/y.git#egg=y  " + comment("# via xyz")
+    ) == "-e git+git://fake.org/x/y.git#egg=y\n" + comment("    # via xyz")
 
 
 def test_format_requirement_annotation(from_line, writer):
     ireq = from_line("test==1.2")
     ireq.comes_from = "xyz"
 
-    assert writer._format_requirement(ireq) == "test==1.2                 " + comment(
-        "# via xyz"
-    )
+    assert writer._format_requirement(ireq) == "test==1.2\n" + comment("    # via xyz")
 
 
 def test_format_requirement_annotation_lower_case(from_line, writer):
     ireq = from_line("Test==1.2")
     ireq.comes_from = "xyz"
 
-    assert writer._format_requirement(ireq) == "test==1.2                 " + comment(
-        "# via xyz"
-    )
+    assert writer._format_requirement(ireq) == "test==1.2\n" + comment("    # via xyz")
 
 
 def test_format_requirement_for_primary(from_line, writer):
@@ -79,9 +75,7 @@ def test_format_requirement_for_primary(from_line, writer):
     ireq = from_line("test==1.2")
     ireq.comes_from = "xyz"
 
-    assert writer._format_requirement(ireq) == "test==1.2                 " + comment(
-        "# via xyz"
-    )
+    assert writer._format_requirement(ireq) == "test==1.2\n" + comment("    # via xyz")
 
 
 def test_format_requirement_for_primary_lower_case(from_line, writer):
@@ -89,9 +83,7 @@ def test_format_requirement_for_primary_lower_case(from_line, writer):
     ireq = from_line("Test==1.2")
     ireq.comes_from = "xyz"
 
-    assert writer._format_requirement(ireq) == "test==1.2                 " + comment(
-        "# via xyz"
-    )
+    assert writer._format_requirement(ireq) == "test==1.2\n" + comment("    # via xyz")
 
 
 def test_format_requirement_environment_marker(from_line, writer):
@@ -125,7 +117,7 @@ def test_iter_lines__unsafe_dependencies(writer, from_line, allow_unsafe):
     assert tuple(lines) == expected_lines
 
 
-def test_iter_lines__unsafe_with_hashes(writer, from_line):
+def test_iter_lines__unsafe_with_hashes(capsys, writer, from_line):
     writer.allow_unsafe = False
     writer.emit_header = False
     ireqs = [from_line("test==1.2")]
@@ -141,9 +133,12 @@ def test_iter_lines__unsafe_with_hashes(writer, from_line):
         comment("# setuptools"),
     )
     assert tuple(lines) == expected_lines
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err.strip() == MESSAGE_UNINSTALLABLE
 
 
-def test_iter_lines__hash_missing(writer, from_line):
+def test_iter_lines__hash_missing(capsys, writer, from_line):
     writer.allow_unsafe = False
     writer.emit_header = False
     ireqs = [from_line("test==1.2"), from_line("file:///example/#egg=example")]
@@ -157,6 +152,9 @@ def test_iter_lines__hash_missing(writer, from_line):
         "test==1.2 \\\n    --hash=FAKEHASH",
     )
     assert tuple(lines) == expected_lines
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err.strip() == MESSAGE_UNINSTALLABLE
 
 
 def test_iter_lines__no_warn_if_only_unhashable_packages(writer, from_line):
@@ -278,7 +276,7 @@ def test_write_format_controls(writer):
                 "--extra-index-url https://index-url2.com",
             ],
         ),
-        # Ignore URLs equal to the default index-url
+        # Not ignore URLs equal to the default index-url
         # (note: the previous case is exception)
         (
             [
@@ -288,6 +286,7 @@ def test_write_format_controls(writer):
             ],
             [
                 "--index-url https://index-url1.com",
+                "--extra-index-url https://default-index-url.com",
                 "--extra-index-url https://index-url2.com",
             ],
         ),

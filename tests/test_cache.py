@@ -1,5 +1,6 @@
+import os
+import sys
 from contextlib import contextmanager
-from os import remove
 from shutil import rmtree
 from tempfile import NamedTemporaryFile
 
@@ -28,7 +29,7 @@ def _read_cache_file_helper(to_write):
 
     finally:
         # Delete the file on exit
-        remove(cache_file.name)
+        os.remove(cache_file.name)
 
 
 def test_read_cache_file_not_json():
@@ -48,7 +49,7 @@ def test_read_cache_file_wrong_format():
     A cache file with a wrong "__format__" value should throw an assertion error.
     """
     with _read_cache_file_helper('{"__format__": 2}') as cache_file_name:
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError, match=r"^Unknown cache file format$"):
             read_cache_file(cache_file_name)
 
 
@@ -62,13 +63,26 @@ def test_read_cache_file_successful():
         assert "success" == read_cache_file(cache_file_name)
 
 
-def test_reverse_dependencies(from_line, tmpdir):
-    # Since this is a test, make a temporary directory. Converting to str from py.path.
-    tmp_dir_path = str(tmpdir)
+def test_read_cache_does_not_exist(tmpdir):
+    cache = DependencyCache(cache_dir=tmpdir)
+    assert cache.cache == {}
 
+
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="os.fchmod() not available on Windows"
+)
+def test_read_cache_permission_error(tmpdir):
+    cache = DependencyCache(cache_dir=tmpdir)
+    with open(cache._cache_file, "w") as fp:
+        os.fchmod(fp.fileno(), 0o000)
+    with pytest.raises(IOError, match="Permission denied"):
+        cache.cache
+
+
+def test_reverse_dependencies(from_line, tmpdir):
     # Create a cache object. The keys are packages, and the values are lists
     # of packages on which the keys depend.
-    cache = DependencyCache(cache_dir=tmp_dir_path)
+    cache = DependencyCache(cache_dir=tmpdir)
     cache[from_line("top==1.2")] = ["middle>=0.3", "bottom>=5.1.2"]
     cache[from_line("top[xtra]==1.2")] = ["middle>=0.3", "bottom>=5.1.2", "bonus==0.4"]
     cache[from_line("middle==0.4")] = ["bottom<6"]
@@ -104,4 +118,4 @@ def test_reverse_dependencies(from_line, tmpdir):
     }
 
     # Clean up our temp directory
-    rmtree(tmp_dir_path)
+    rmtree(tmpdir)

@@ -1,14 +1,17 @@
 import json
+import optparse
 import os
+import subprocess
 import sys
 from contextlib import contextmanager
 from functools import partial
-from subprocess import check_call
 from textwrap import dedent
 
 import pytest
 from click.testing import CliRunner
+from pip._internal.index.package_finder import PackageFinder
 from pip._internal.models.candidate import InstallationCandidate
+from pip._internal.network.session import PipSession
 from pip._internal.req.constructors import (
     install_req_from_editable,
     install_req_from_line,
@@ -35,10 +38,10 @@ from .utils import looks_like_ci
 
 class FakeRepository(BaseRepository):
     def __init__(self):
-        with open("tests/test_data/fake-index.json", "r") as f:
+        with open("tests/test_data/fake-index.json") as f:
             self.index = json.load(f)
 
-        with open("tests/test_data/fake-editables.json", "r") as f:
+        with open("tests/test_data/fake-editables.json") as f:
             self.editables = json.load(f)
 
     def get_hashes(self, ireq):
@@ -64,9 +67,7 @@ class FakeRepository(BaseRepository):
             ]
             raise NoCandidateFound(ireq, tried_versions, ["https://fake.url.foo"])
         best_version = max(versions, key=Version)
-        return make_install_requirement(
-            key_from_ireq(ireq), best_version, ireq.extras, constraint=ireq.constraint
-        )
+        return make_install_requirement(key_from_ireq(ireq), best_version, ireq)
 
     def get_dependencies(self, ireq):
         if ireq.editable or is_url_requirement(ireq):
@@ -92,8 +93,20 @@ class FakeRepository(BaseRepository):
         # No state to update.
         pass
 
+    @property
+    def options(self) -> optparse.Values:
+        """Not used"""
 
-class FakeInstalledDistribution(object):
+    @property
+    def session(self) -> PipSession:
+        """Not used"""
+
+    @property
+    def finder(self) -> PackageFinder:
+        """Not used"""
+
+
+class FakeInstalledDistribution:
     def __init__(self, line, deps=None):
         if deps is None:
             deps = []
@@ -131,13 +144,13 @@ def repository():
 def pypi_repository(tmpdir):
     return PyPIRepository(
         ["--index-url", PyPIRepository.DEFAULT_INDEX_URL],
-        cache_dir=str(tmpdir / "pypi-repo"),
+        cache_dir=(tmpdir / "pypi-repo"),
     )
 
 
 @pytest.fixture
 def depcache(tmpdir):
-    return DependencyCache(str(tmpdir / "dep-cache"))
+    return DependencyCache(tmpdir / "dep-cache")
 
 
 @pytest.fixture
@@ -203,13 +216,11 @@ def make_pip_conf(tmpdir, monkeypatch):
 def pip_conf(make_pip_conf):
     return make_pip_conf(
         dedent(
-            """\
+            f"""\
             [global]
             no-index = true
-            find-links = {wheels_path}
-            """.format(
-                wheels_path=MINIMAL_WHEELS_PATH
-            )
+            find-links = {MINIMAL_WHEELS_PATH}
+            """
         )
     )
 
@@ -218,13 +229,11 @@ def pip_conf(make_pip_conf):
 def pip_with_index_conf(make_pip_conf):
     return make_pip_conf(
         dedent(
-            """\
+            f"""\
             [global]
             index-url = http://example.com
-            find-links = {wheels_path}
-            """.format(
-                wheels_path=MINIMAL_WHEELS_PATH
-            )
+            find-links = {MINIMAL_WHEELS_PATH}
+            """
         )
     )
 
@@ -240,30 +249,32 @@ def make_package(tmp_path):
             install_requires = []
 
         install_requires_str = "[{}]".format(
-            ",".join("{!r}".format(package) for package in install_requires)
+            ",".join(f"{package!r}" for package in install_requires)
         )
 
         package_dir = tmp_path / "packages" / name / version
         package_dir.mkdir(parents=True)
 
-        setup_file = str(package_dir / "setup.py")
-        with open(setup_file, "w") as fp:
+        with (package_dir / "setup.py").open("w") as fp:
             fp.write(
                 dedent(
-                    """\
+                    f"""\
                     from setuptools import setup
                     setup(
                         name={name!r},
                         version={version!r},
+                        author="pip-tools",
+                        author_email="pip-tools@localhost",
+                        url="https://github.com/jazzband/pip-tools",
                         install_requires={install_requires_str},
                     )
-                    """.format(
-                        name=name,
-                        version=version,
-                        install_requires_str=install_requires_str,
-                    )
+                    """
                 )
             )
+
+        # Create a README to avoid setuptools warnings.
+        (package_dir / "README").touch()
+
         return package_dir
 
     return _make_package
@@ -276,9 +287,12 @@ def run_setup_file():
     """
 
     def _run_setup_file(package_dir_path, *args):
-        setup_file = str(package_dir_path / "setup.py")
-        return check_call(
-            (sys.executable, setup_file) + args, cwd=str(package_dir_path)
+        setup_file = package_dir_path / "setup.py"
+        return subprocess.run(
+            [sys.executable, str(setup_file), *args],
+            cwd=str(package_dir_path),
+            stdout=subprocess.DEVNULL,
+            check=True,
         )  # nosec
 
     return _run_setup_file
@@ -308,3 +322,42 @@ def make_sdist(run_setup_file):
         return run_setup_file(package_dir, "sdist", "--dist-dir", str(dist_dir), *args)
 
     return _make_sdist
+
+
+@pytest.fixture
+def make_module(tmpdir):
+    """
+    Make a metadata file with the given name and content and a fake module.
+    """
+
+    def _make_module(fname, content):
+        path = os.path.join(tmpdir, "sample_lib")
+        os.mkdir(path)
+        path = os.path.join(tmpdir, "sample_lib", "__init__.py")
+        with open(path, "w") as stream:
+            stream.write("'example module'\n__version__ = '1.2.3'")
+        path = os.path.join(tmpdir, fname)
+        with open(path, "w") as stream:
+            stream.write(dedent(content))
+        return path
+
+    return _make_module
+
+
+@pytest.fixture
+def fake_dists(tmpdir, make_package, make_wheel):
+    """
+    Generate distribution packages `small-fake-{a..f}`
+    """
+    dists_path = os.path.join(tmpdir, "dists")
+    pkgs = [
+        make_package("small-fake-a", version="0.1"),
+        make_package("small-fake-b", version="0.2"),
+        make_package("small-fake-c", version="0.3"),
+        make_package("small-fake-d", version="0.4"),
+        make_package("small-fake-e", version="0.5"),
+        make_package("small-fake-f", version="0.6"),
+    ]
+    for pkg in pkgs:
+        make_wheel(pkg, dists_path)
+    return dists_path
