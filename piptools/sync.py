@@ -1,7 +1,9 @@
 import collections
+import json
 import os
 import sys
 import tempfile
+from pathlib import Path
 from subprocess import run  # nosec
 from typing import (
     Deque,
@@ -9,6 +11,7 @@ from typing import (
     Iterable,
     List,
     Mapping,
+    NamedTuple,
     Optional,
     Set,
     Tuple,
@@ -17,9 +20,14 @@ from typing import (
 
 import click
 from pip._internal.commands.freeze import DEV_PKGS
+from pip._internal.locations import get_src_prefix
+from pip._internal.operations.prepare import unpack_vcs_link
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.compat import stdlib_pkgs
-from pip._vendor.packaging.requirements import Requirement
+from pip._internal.utils.parallel import map_multithread
+from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
+from pip._internal.vcs import vcs
+from pip._vendor.pkg_resources import Distribution, WorkingSet
 
 from .exceptions import IncompatibleRequirements
 from .logging import log
@@ -42,9 +50,11 @@ PACKAGES_TO_IGNORE = [
     *DEV_PKGS,
 ]
 
+VCS_INFO_METADATA_FILE_NAME = "PIP_TOOLS_VCS_INFO"
+
 
 def dependency_tree(
-    installed_keys: Mapping[str, Requirement], root_key: str
+    installed_keys: Mapping[str, Distribution], root_key: str
 ) -> Set[str]:
     """
     Calculate the dependency tree for the package `root_key` and return
@@ -55,7 +65,7 @@ def dependency_tree(
     `root_key` should be the key to return the dependency tree for.
     """
     dependencies = set()
-    queue: Deque[Requirement] = collections.deque()
+    queue: Deque[Distribution] = collections.deque()
 
     if root_key in installed_keys:
         dep = installed_keys[root_key]
@@ -80,7 +90,7 @@ def dependency_tree(
     return dependencies
 
 
-def get_dists_to_ignore(installed: Iterable[Requirement]) -> List[str]:
+def get_dists_to_ignore(installed: Iterable[Distribution]) -> List[str]:
     """
     Returns a collection of package names to ignore when performing pip-sync,
     based on the currently installed environment.  For example, when pip-tools
@@ -89,9 +99,9 @@ def get_dists_to_ignore(installed: Iterable[Requirement]) -> List[str]:
     locally, click should also be installed/uninstalled depending on the given
     requirements.
     """
-    installed_keys = {key_from_req(r): r for r in installed}
+    installed_keys = {key_from_req(d): d for d in installed}
     return list(
-        flat_map(lambda req: dependency_tree(installed_keys, req), PACKAGES_TO_IGNORE)
+        flat_map(lambda dist: dependency_tree(installed_keys, dist), PACKAGES_TO_IGNORE)
     )
 
 
@@ -140,9 +150,201 @@ def diff_key_from_ireq(ireq: InstallRequirement) -> str:
     return key_from_ireq(ireq)
 
 
+class VcsInfo(NamedTuple):
+    """Stores relevant information about a VCS installation.
+
+    Used to determine if two VCS installations are/would be equivalent,
+    since things like version aren't reliable for VCS because the version
+    may be the same across two different commits.
+
+    Can be converted to/from a string using the `serialize` and `deserialize` methods.
+    """
+
+    url: str
+    revision: str
+
+    @classmethod
+    def deserialize(cls, serialized: str) -> "VcsInfo":
+        return VcsInfo(**json.loads(serialized))
+
+    def serialize(self) -> str:
+        return json.dumps(self._asdict())
+
+
+def _reload_installed_distributions_by_key() -> Mapping[str, Distribution]:
+    """
+    Reload `site` to pick up new `sys.path` entries from newly installed packages,
+    then create a new `WorkingSet` to see all those packages. The `site` reload is
+    particularly important for newly installed editable packages.
+    """
+    import site
+    from importlib import reload
+
+    reload(site)
+    ws = WorkingSet()
+    return ws.by_key  # type: ignore[no-any-return]
+
+
+def _write_vcs_infos_to_env_where_relevant(
+    installed: Iterable[InstallRequirement],
+) -> None:
+    """Munge installed VCS packages to have VCS info.
+
+    For each VCS ireq, will write a special metadata file to the installed
+    distribution containing the VCS information about the package. This information
+    can be read with the corresponding `_read_vcs_info_from_env` method and used to
+    determine whether or not a VCS package actually needs to be reinstalled. In the
+    case of non-editable distributions, this will also update the `RECORD` file so it
+    knows about the newly written metadata file.
+
+    Note that this will (re)fetch VCS information from the given ireq, since by
+    definition the information is not stored in the installed package (otherwise
+    there'd be no need to do this).
+
+    Runs each given ireq in parallel.
+    """
+    installed_distributions_by_key = _reload_installed_distributions_by_key()
+
+    def write_vcs_info_to_env_if_relevant(ireq: InstallRequirement) -> None:
+        vcs_info = _fetch_vcs_info_for_ireq(ireq)
+        if vcs_info is None:
+            # Nothing to write
+            return
+
+        dist = installed_distributions_by_key.get(key_from_ireq(ireq))
+        if dist is None:
+            # Not actually installed (shouldn't happen?)
+            return
+
+        # Actually write the metadata file
+        vcs_info_path = Path(
+            dist._provider._get_metadata_path(VCS_INFO_METADATA_FILE_NAME)
+        )
+        vcs_info_path.write_text(vcs_info.serialize())
+
+        # Update the RECORD file if present (eg for non-editable installs).
+        record_path = Path(dist._provider._get_metadata_path("RECORD"))
+        if not record_path.is_file():
+            return
+        record_entry = vcs_info_path.relative_to(record_path.parents[1])
+        record_contents = record_path.read_text()
+        if str(record_entry) not in record_contents:
+            record_contents = (
+                record_contents.rstrip(os.linesep)
+                + f"{os.linesep}{record_entry},,{os.linesep}"
+            )
+            record_path.write_text(record_contents)
+
+    with global_tempdir_manager():
+        map_multithread(func=write_vcs_info_to_env_if_relevant, iterable=installed)
+
+
+def _read_vcs_info_from_env(dist: Optional[Distribution]) -> Optional[VcsInfo]:
+    """Read VCS info for the given installed package.
+
+    Will read and return VCS info from the special metadata file written by
+    `_write_vcs_infos_to_env_where_relevant`. If the package isn't installed,
+    doesn't have VCS info written in it, or the VCS info can't be deserialized
+    properly this will return None.
+    """
+    if dist is None:
+        # Not installed in local env
+        return None
+
+    vcs_info_path = Path(dist._provider._get_metadata_path(VCS_INFO_METADATA_FILE_NAME))
+    if not vcs_info_path.is_file():
+        # Couldn't find special metadata file
+        return None
+
+    try:
+        return VcsInfo.deserialize(vcs_info_path.read_text())
+    except TypeError:
+        # Eg if the format changes since it's last been serialized
+        return None
+
+
+def _fetch_vcs_info_for_ireq(ireq: InstallRequirement) -> Optional[VcsInfo]:
+    """Calculate VCS info for a given ireq.
+
+    Will go through the steps to prepare the ireq for installation (namely clone it
+    down/update any existing clones) and fetch the revision from that prepared
+    location to calculate the VCS info. Will return None for non-VCS ireqs.
+
+    Expects a pip global tempdir manager to be active.
+    """
+    if ireq.link is None or not ireq.link.is_vcs:
+        return None
+
+    # Setup the ireq's source directory
+    if ireq.editable:
+        ireq.ensure_has_source_dir(get_src_prefix())
+        ireq.update_editable()
+    else:
+        build_dir = TempDirectory(delete=True, kind="install", globally_managed=True)
+        ireq.ensure_has_source_dir(
+            build_dir.path, autodelete=True, parallel_builds=True
+        )
+        unpack_vcs_link(ireq.link, ireq.source_dir)
+
+    # Get the revision from the package.
+    vcs_backend = vcs.get_backend_for_scheme(ireq.link.scheme)
+    assert vcs_backend is not None
+    revision = vcs_backend.get_revision(ireq.source_dir)
+
+    return VcsInfo(url=ireq.link.url, revision=revision)
+
+
+def _ignore_same_revision_vcs_packages(
+    to_install: Set[InstallRequirement],
+    to_uninstall: Set[str],
+    installed_dists: Iterable[Distribution],
+) -> None:
+    """Filter out VCS packages that are reinstalled at the same revision.
+
+    This finds VCS packages that are in both `to_install` and `to_uninstall` and have
+    matching VCS info and removes them from both sets, so that we can have faster no-op
+    syncs by avoiding the unnecessary reinstall.
+
+    Processes packages in parallel.
+    """
+    installed_dists_by_key = {key_from_req(d): d for d in installed_dists}
+
+    def get_pairs_to_ignore(
+        ireq: InstallRequirement,
+    ) -> Optional[Tuple[InstallRequirement, str]]:
+        # Find uninstall+reinstall pairs where they share a name...
+        key = key_from_ireq(ireq)
+        if key not in to_uninstall:
+            return None
+        # ...and uninstall has VCS info...
+        installed_dist = installed_dists_by_key.get(key)
+        existing_vcs_info = _read_vcs_info_from_env(installed_dist)
+        if existing_vcs_info is None:
+            return None
+        # ...and install has matching VCS info.
+        new_vcs_info = _fetch_vcs_info_for_ireq(ireq)
+        if new_vcs_info != existing_vcs_info:
+            return None
+
+        return ireq, key
+
+    with global_tempdir_manager():
+        to_ignore = [
+            pair
+            for pair in map_multithread(
+                func=get_pairs_to_ignore, iterable=to_install, chunksize=1
+            )
+            if pair is not None
+        ]
+
+    for ignore_install, ignore_uninstall in to_ignore:
+        to_install.remove(ignore_install)
+        to_uninstall.remove(ignore_uninstall)
+
+
 def diff(
     compiled_requirements: Iterable[InstallRequirement],
-    installed_dists: Iterable[Requirement],
+    installed_dists: Iterable[Distribution],
 ) -> Tuple[Set[InstallRequirement], Set[str]]:
     """
     Calculate which packages should be installed or uninstalled, given a set
@@ -168,6 +370,8 @@ def diff(
 
     # Make sure to not uninstall any packages that should be ignored
     to_uninstall -= set(pkgs_to_ignore)
+
+    _ignore_same_revision_vcs_packages(to_install, to_uninstall, installed_dists)
 
     return (to_install, to_uninstall)
 
@@ -260,5 +464,7 @@ def sync(
                 )
             finally:
                 os.unlink(tmp_req_file.name)
+
+            _write_vcs_infos_to_env_where_relevant(to_install)
 
     return exit_code

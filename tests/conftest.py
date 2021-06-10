@@ -1,23 +1,30 @@
 import json
 import optparse
 import os
+import shlex
 import subprocess
 import sys
 from contextlib import contextmanager
 from functools import partial
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from textwrap import dedent
+from typing import Any, Iterable, NamedTuple, Optional, Tuple
 
 import pytest
 from click.testing import CliRunner
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.models.candidate import InstallationCandidate
 from pip._internal.network.session import PipSession
+from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import (
     install_req_from_editable,
     install_req_from_line,
 )
+from pip._internal.utils.urls import path_to_url
 from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Requirement
+from typing_extensions import Protocol
 
 from piptools.cache import DependencyCache
 from piptools.exceptions import NoCandidateFound
@@ -106,8 +113,28 @@ class FakeRepository(BaseRepository):
         """Not used"""
 
 
+class FakeMetadataProvider(NamedTuple):
+    files_dir: Path
+
+    def _get_metadata_path(self, name: str) -> str:
+        """Method relied upon by sync implementation"""
+        return str(self.files_dir / name)
+
+    def read_metadata(self, name: str) -> Optional[str]:
+        path = self.files_dir / name
+        if path.is_file():
+            return path.read_text()
+        else:
+            return None
+
+    def write_metadata(self, name: str, content: str) -> None:
+        (self.files_dir / name).write_text(content)
+
+
 class FakeInstalledDistribution:
-    def __init__(self, line, deps=None):
+    def __init__(
+        self, line: str, deps: Optional[Iterable[str]], provider: FakeMetadataProvider
+    ):
         if deps is None:
             deps = []
         self.deps = [Requirement.parse(d) for d in deps]
@@ -118,6 +145,11 @@ class FakeInstalledDistribution:
         self.specifier = self.req.specifier
 
         self.version = line.split("==")[1]
+        self._provider = provider
+
+    @property
+    def provider(self) -> FakeMetadataProvider:
+        return self._provider
 
     def requires(self):
         return self.deps
@@ -130,9 +162,24 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(pytest.mark.flaky(reruns=3, reruns_delay=2))
 
 
+class FakeDistFunc(Protocol):
+    def __call__(
+        self, line: str, deps: Optional[Iterable[str]] = ...
+    ) -> FakeInstalledDistribution:
+        ...
+
+
 @pytest.fixture
 def fake_dist():
-    return FakeInstalledDistribution
+    with TemporaryDirectory() as metadata_dir:
+
+        def make_fake_dist(
+            line: str, deps: Optional[Iterable[str]] = None
+        ) -> FakeInstalledDistribution:
+            provider = FakeMetadataProvider(Path(metadata_dir))
+            return FakeInstalledDistribution(line, deps, provider)
+
+        yield make_fake_dist
 
 
 @pytest.fixture
@@ -366,3 +413,61 @@ def fake_dists(tmpdir, make_package, make_wheel):
     for pkg in pkgs:
         make_wheel(pkg, dists_path)
     return dists_path
+
+
+class SmallFakeVcsIreqFunc(Protocol):
+    def __call__(self, is_vcs: bool) -> Tuple[InstallRequirement, str]:
+        ...
+
+
+@pytest.fixture(params=[True, False])
+def small_fake_vcs_ireq(request, from_editable, from_line):
+    """Creates a VCS repo with a package in its root.
+
+    Fixture is a function which takes arguments and returns an ireq and the current
+    revision of the VCS repo.
+
+    The returned ireq is controlled by the arguments, and can either be a VCS ireq or
+    not (eg with `git+` or just a bare `file:`) and can be editable or not.
+    """
+    editable = request.param
+    with TemporaryDirectory() as repo_dir, TemporaryDirectory() as source_dir:
+
+        def git(cmd: str, **kwargs: Any) -> subprocess.CompletedProcess:
+            """Helper to run git commands in the temp repo."""
+            args = shlex.split(cmd)
+            return subprocess.run(["git"] + args, cwd=repo_dir, check=True, **kwargs)
+
+        def make_small_fake_vcs_ireq(is_vcs: bool) -> Tuple[InstallRequirement, str]:
+            # Setup git repo with simple setup.py file and a single commit.
+            (Path(repo_dir) / "setup.py").write_text(
+                "from setuptools import setup\n"
+                "\n"
+                "setup(name='small_fake_vcs', version=0.1)\n"
+            )
+            git("init .")
+            git("config user.email ''")
+            git("config user.name 'tests'")
+            git("add setup.py")
+            git("commit -m 'initial commit'")
+            revision = (
+                git("rev-parse HEAD", stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                .stdout.decode()
+                .rstrip()
+            )
+
+            # Construct ireq
+            file_url = path_to_url(repo_dir)
+            if is_vcs:
+                ireq_str = f"git+{file_url}#egg=small-fake-vcs"
+            else:
+                ireq_str = f"{file_url}#egg=small-fake-vcs"
+            if editable:
+                ireq = from_editable(ireq_str)
+            else:
+                ireq = from_line(ireq_str)
+            ireq.source_dir = os.path.join(source_dir, "repo")
+
+            return ireq, revision
+
+        yield make_small_fake_vcs_ireq

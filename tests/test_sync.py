@@ -3,14 +3,22 @@ import os
 import sys
 import tempfile
 from collections import Counter
+from typing import Optional
 from unittest import mock
 
 import pytest
 from pip._internal.utils.urls import path_to_url
 
 from piptools.exceptions import IncompatibleRequirements
-from piptools.sync import dependency_tree, diff, merge, sync
+from piptools.sync import (
+    VCS_INFO_METADATA_FILE_NAME,
+    dependency_tree,
+    diff,
+    merge,
+    sync,
+)
 
+from .conftest import FakeDistFunc, SmallFakeVcsIreqFunc
 from .constants import PACKAGES_PATH
 
 
@@ -223,6 +231,58 @@ def test_diff_leave_piptools_alone(fake_dist, from_line):
     to_install, to_uninstall = diff(reqs, installed)
     assert to_install == set()
     assert to_uninstall == {"foobar"}
+
+
+def test_diff_vcs_noops_for_same_vcs_info(
+    small_fake_vcs_ireq: SmallFakeVcsIreqFunc,
+    fake_dist: FakeDistFunc,
+) -> None:
+    ireq, revision = small_fake_vcs_ireq(is_vcs=True)
+    dist = fake_dist("small-fake-vcs==0.1")
+    dist.provider.write_metadata(
+        VCS_INFO_METADATA_FILE_NAME,
+        f'{{"url": "{ireq.link.url}", "revision": "{revision}"}}',
+    )
+
+    to_install, to_uninstall = diff([ireq], [dist])
+
+    assert to_install == set()
+    assert to_uninstall == set()
+
+
+@pytest.mark.parametrize(  # type: ignore[misc] # Untyped decorator
+    ("to_install_is_vcs", "installed_vcs_info_template"),
+    (
+        pytest.param(
+            True, '{{"url": "fake-url", "revision": "{rev}"}}', id="different-url"
+        ),
+        pytest.param(
+            True, '{{"url": "{url}", "revision": "fake-rev"}}', id="different-revision"
+        ),
+        pytest.param(True, None, id="non-vcs-installed"),
+        pytest.param(
+            False, '{{"url": "{url}", "revision": "{rev}"}}', id="non-vcs-to-install"
+        ),
+    ),
+)
+def test_diff_vcs_reinstalls_for_different_vcs_info(
+    small_fake_vcs_ireq: SmallFakeVcsIreqFunc,
+    fake_dist: FakeDistFunc,
+    to_install_is_vcs: bool,
+    installed_vcs_info_template: Optional[str],
+) -> None:
+    ireq, revision = small_fake_vcs_ireq(is_vcs=to_install_is_vcs)
+    dist = fake_dist("small-fake-vcs==0.1")
+    if installed_vcs_info_template is not None:
+        dist.provider.write_metadata(
+            VCS_INFO_METADATA_FILE_NAME,
+            installed_vcs_info_template.format(url=ireq.link.url, rev=revision),
+        )
+
+    to_install, to_uninstall = diff([ireq], [dist])
+
+    assert to_install == {ireq}
+    assert to_uninstall == {"small-fake-vcs"}
 
 
 def test_diff_with_editable(fake_dist, from_editable):
@@ -477,3 +537,38 @@ def test_sync_uninstall_pip_command(run):
         [sys.executable, "-m", "pip", "uninstall", "-y", *sorted(to_uninstall)],
         check=True,
     )
+
+
+def test_sync_vcs_writes_vcs_info(
+    small_fake_vcs_ireq: SmallFakeVcsIreqFunc,
+    fake_dist: FakeDistFunc,
+) -> None:
+    ireq, revision = small_fake_vcs_ireq(is_vcs=True)
+    dist = fake_dist("small-fake-vcs==0.1")
+
+    with mock.patch("piptools.sync.run"), mock.patch(
+        "piptools.sync._reload_installed_distributions_by_key",
+        return_value={"small-fake-vcs": dist},
+    ):
+        sync({ireq}, set())
+
+    assert (
+        dist.provider.read_metadata(VCS_INFO_METADATA_FILE_NAME)
+        == f'{{"url": "{ireq.link.url}", "revision": "{revision}"}}'
+    )
+
+
+def test_sync_non_vcs_does_not_write_vcs_info(
+    small_fake_vcs_ireq: SmallFakeVcsIreqFunc,
+    fake_dist: FakeDistFunc,
+) -> None:
+    ireq, revision = small_fake_vcs_ireq(is_vcs=False)
+    dist = fake_dist("small-fake-vcs==0.1")
+
+    with mock.patch("piptools.sync.run"), mock.patch(
+        "piptools.sync._reload_installed_distributions_by_key",
+        return_value={"small-fake-vcs": dist},
+    ):
+        sync({ireq}, set())
+
+    assert dist.provider.read_metadata(VCS_INFO_METADATA_FILE_NAME) is None
