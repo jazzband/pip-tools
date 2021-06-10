@@ -192,7 +192,7 @@ def _validate_python_executable(python_executable: str) -> None:
     # Ensure that target python executable has the right version of pip installed
     pip_version = get_pip_version_for_python_executable(python_executable)
     required_pip_specification = get_required_pip_specification()
-    if not required_pip_specification.contains(pip_version):
+    if not required_pip_specification.contains(pip_version, prereleases=True):
         msg = (
             "Target python executable '{}' has pip version {} installed. "
             "Version {} is expected."

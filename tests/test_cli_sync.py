@@ -246,15 +246,9 @@ def test_sync_dry_run_returns_non_zero_exit_code(runner):
     assert out.exit_code == 1
 
 
-@mock.patch("piptools.scripts.sync.get_pip_version_for_python_executable")
-@mock.patch("piptools.scripts.sync.get_sys_path_for_python_executable")
-@mock.patch("piptools.scripts.sync.get_installed_distributions")
 @mock.patch("piptools.sync.run")
 def test_python_executable_option(
     run,
-    get_installed_distributions,
-    get_sys_path_for_python_executable,
-    get_pip_version_for_python_executable,
     runner,
     fake_dist,
 ):
@@ -264,31 +258,22 @@ def test_python_executable_option(
     with open("requirements.txt", "w") as req_in:
         req_in.write("small-fake-a==1.10.0")
 
-    custom_executable = os.path.abspath("custom_executable")
-    with open(custom_executable, "w") as exec_file:
-        exec_file.write("")
+    custom_executable = os.path.abspath(sys.executable)
 
     os.chmod(custom_executable, 0o700)
 
-    sys_paths = ["", "./"]
-    get_sys_path_for_python_executable.return_value = sys_paths
-    get_installed_distributions.return_value = [fake_dist("django==1.8")]
-    get_pip_version_for_python_executable.return_value = Version("20.3")
-
     runner.invoke(cli, ["--python-executable", custom_executable])
-
-    get_installed_distributions.assert_called_once_with(
-        skip=[], user_only=False, paths=sys_paths, local_only=False
-    )
 
     assert run.call_count == 2
 
     call_args = [call[0][0] for call in run.call_args_list]
-    called_uninstall_options = [args for args in call_args if args[3] == "uninstall"]
+    called_uninstall_options = [
+        args[:5] for args in call_args if args[3] == "uninstall"
+    ]
     called_install_options = [args[:-1] for args in call_args if args[3] == "install"]
 
     assert called_uninstall_options == [
-        [custom_executable, "-m", "pip", "uninstall", "-y", "django"]
+        [custom_executable, "-m", "pip", "uninstall", "-y"]
     ]
     assert called_install_options == [[custom_executable, "-m", "pip", "install", "-r"]]
 

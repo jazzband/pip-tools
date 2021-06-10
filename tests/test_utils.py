@@ -437,6 +437,7 @@ def test_get_pip_version_for_python_executable():
 
 def test_get_sys_path_for_python_executable():
     result = get_sys_path_for_python_executable(sys.executable)
+    assert result, "get_sys_path_for_python_executable should not return empty result"
     # not testing for equality, because pytest adds extra paths into current sys.path
     for path in result:
         assert path in sys.path

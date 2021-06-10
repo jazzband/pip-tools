@@ -370,7 +370,9 @@ def get_required_pip_specification() -> SpecifierSet:
     Returns pip version specifier requested by current pip-tools installation.
     """
     project_dist = get_distribution("pip-tools")
-    requirement = next((r for r in project_dist.requires() if r.name == "pip"), None)
+    requirement = next(
+        (r for r in project_dist.requires() if r.name == "pip"), None
+    )  # pragma: no cover
     assert (
         requirement is not None
     ), "'pip' is expected to be in the list of pip-tools requirements"
