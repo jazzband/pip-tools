@@ -373,7 +373,7 @@ If you have multiple requirement files make sure you create a hook for each file
 .. code-block:: yaml 
 
     repos:
-    -   repo: https://github.com/jazzband/pip-tools
+      - repo: https://github.com/jazzband/pip-tools
         rev: 5.3.1
         hooks:
           - id: pip-compile
