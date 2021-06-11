@@ -34,7 +34,7 @@ DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 METADATA_FILENAMES = frozenset({"setup.py", "setup.cfg", "pyproject.toml"})
 
 # TODO: drop click 7 and remove this block, pass directly to version_option
-version_option_kwargs = {} if IS_CLICK_VER_8_PLUS else {"package_name": "pip-tools"}
+version_option_kwargs = {"package_name": "pip-tools"} if IS_CLICK_VER_8_PLUS else {}
 
 
 def _get_default_option(option_name: str) -> Any:
@@ -163,6 +163,12 @@ def _get_default_option(option_name: str) -> Any:
     ),
 )
 @click.option(
+    "--strip-extras",
+    is_flag=True,
+    default=False,
+    help="Assure output file is constraints compatible, avoiding use of extras.",
+)
+@click.option(
     "--generate-hashes",
     is_flag=True,
     default=False,
@@ -236,6 +242,7 @@ def cli(
     upgrade_packages: Tuple[str, ...],
     output_file: Union[LazyFile, IO[Any], None],
     allow_unsafe: bool,
+    strip_extras: bool,
     generate_hashes: bool,
     reuse_hashes: bool,
     src_files: Tuple[str, ...],
@@ -457,6 +464,7 @@ def cli(
         emit_index_url=emit_index_url,
         emit_trusted_host=emit_trusted_host,
         annotate=annotate,
+        strip_extras=strip_extras,
         generate_hashes=generate_hashes,
         default_index_url=repository.DEFAULT_INDEX_URL,
         index_urls=repository.finder.index_urls,
