@@ -1837,3 +1837,29 @@ def test_extras_fail_with_requirements_in(runner, tmpdir):
     assert out.exit_code == 2
     exp = "--extra has effect only with setup.py and PEP-517 input formats"
     assert exp in out.stderr
+
+
+def test_cli_compile_strip_extras(runner, make_package, make_sdist, tmpdir):
+    """
+    Assures that --strip-extras removes mention of extras from output.
+    """
+    test_package_1 = make_package(
+        "test_package_1", version="0.1", extras_require={"more": "test_package_2"}
+    )
+    test_package_2 = make_package(
+        "test_package_2",
+        version="0.1",
+    )
+    dists_dir = tmpdir / "dists"
+
+    for pkg in (test_package_1, test_package_2):
+        make_sdist(pkg, dists_dir)
+
+    with open("requirements.in", "w") as reqs_out:
+        reqs_out.write("test_package_1[more]")
+
+    out = runner.invoke(cli, ["--strip-extras", "--find-links", str(dists_dir)])
+
+    assert out.exit_code == 0, out
+    assert "test-package-2==0.1" in out.stderr
+    assert "[more]" not in out.stderr

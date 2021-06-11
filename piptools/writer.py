@@ -61,6 +61,7 @@ class OutputWriter:
         emit_index_url: bool,
         emit_trusted_host: bool,
         annotate: bool,
+        strip_extras: bool,
         generate_hashes: bool,
         default_index_url: str,
         index_urls: Iterable[str],
@@ -77,6 +78,7 @@ class OutputWriter:
         self.emit_index_url = emit_index_url
         self.emit_trusted_host = emit_trusted_host
         self.annotate = annotate
+        self.strip_extras = strip_extras
         self.generate_hashes = generate_hashes
         self.default_index_url = default_index_url
         self.index_urls = index_urls
@@ -234,6 +236,8 @@ class OutputWriter:
         ireq_hashes = (hashes if hashes is not None else {}).get(ireq)
 
         line = format_requirement(ireq, marker=marker, hashes=ireq_hashes)
+        if self.strip_extras:
+            line = re.sub(r"\[.+?\]", "", line)
 
         if not self.annotate:
             return line
