@@ -5,8 +5,8 @@ on:
     # branches to consider in the event; optional, defaults to all
     branches:
       - master
-      - 'releases/**'
-      - 'stable/**'
+      - "releases/**"
+      - "stable/**"
 
 jobs:
   update_release_draft:

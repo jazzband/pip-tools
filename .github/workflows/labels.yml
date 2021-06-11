@@ -14,8 +14,8 @@ jobs:
       - name: Verify PR label action
         uses: jesusvasquez333/verify-pr-label-action@v1.4.0
         with:
-          github-token: '${{ secrets.GITHUB_TOKEN }}'
-          valid-labels: 'bug, enhancement, feature, refactoring, major, deprecated, skip-changelog'
-          invalid-labels: 'help wanted, invalid, feedback-needed, incomplete'
-          pull-request-number: '${{ github.event.pull_request.number }}'
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+          valid-labels: "bug, enhancement, feature, refactoring, major, deprecated, skip-changelog"
+          invalid-labels: "help wanted, invalid, feedback-needed, incomplete"
+          pull-request-number: "${{ github.event.pull_request.number }}"
           disable-reviews: true
