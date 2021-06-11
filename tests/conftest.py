@@ -244,9 +244,13 @@ def make_package(tmp_path):
     Make a package from a given name, version and list of required packages.
     """
 
-    def _make_package(name, version="0.1", install_requires=None):
+    def _make_package(name, version="0.1", install_requires=None, extras_require=None):
+
         if install_requires is None:
             install_requires = []
+
+        if extras_require is None:
+            extras_require = dict()
 
         install_requires_str = "[{}]".format(
             ",".join(f"{package!r}" for package in install_requires)
@@ -267,6 +271,7 @@ def make_package(tmp_path):
                         author_email="pip-tools@localhost",
                         url="https://github.com/jazzband/pip-tools",
                         install_requires={install_requires_str},
+                        extras_require={extras_require},
                     )
                     """
                 )
