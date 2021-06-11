@@ -372,7 +372,7 @@ def get_required_pip_specification() -> SpecifierSet:
     project_dist = get_distribution("pip-tools")
     requirement = next(
         (r for r in project_dist.requires() if r.name == "pip"), None
-    )  # pragma: no branch
+    )  # pragma: no cover
     assert (
         requirement is not None
     ), "'pip' is expected to be in the list of pip-tools requirements"

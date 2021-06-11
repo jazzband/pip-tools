@@ -306,8 +306,6 @@ def test_invalid_pip_version_in_python_executable(
     with open(custom_executable, "w") as exec_file:
         exec_file.write("")
 
-    os.chmod(custom_executable, 0o700)
-
     get_pip_version_for_python_executable.return_value = Version("19.1")
 
     out = runner.invoke(cli, ["--python-executable", custom_executable])
