@@ -260,8 +260,6 @@ def test_python_executable_option(
 
     custom_executable = os.path.abspath(sys.executable)
 
-    os.chmod(custom_executable, 0o700)
-
     runner.invoke(cli, ["--python-executable", custom_executable])
 
     assert run.call_count == 2
@@ -305,6 +303,8 @@ def test_invalid_pip_version_in_python_executable(
     custom_executable = os.path.abspath("custom_executable")
     with open(custom_executable, "w") as exec_file:
         exec_file.write("")
+
+    os.chmod(custom_executable, 0o700)
 
     get_pip_version_for_python_executable.return_value = Version("19.1")
 
