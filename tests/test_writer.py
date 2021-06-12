@@ -352,12 +352,14 @@ def test_write_order(writer, from_line):
     """
     writer.emit_header = False
 
-    lines = writer._iter_lines([
-        from_line("package_a==0.1"),
-        from_line("package-b==2.3.4"),
-        from_line("package==5.6"),
-        from_line("package2==7.8.9"),
-    ])
+    lines = writer._iter_lines(
+        [
+            from_line("package_a==0.1"),
+            from_line("package-b==2.3.4"),
+            from_line("package==5.6"),
+            from_line("package2==7.8.9"),
+        ]
+    )
     expected_lines = [
         "package==5.6",
         "package_a==0.1",
