@@ -89,7 +89,7 @@ class OutputWriter:
         self.emit_find_links = emit_find_links
 
     def _sort_key(self, ireq: InstallRequirement) -> Tuple[bool, str]:
-        return (not ireq.editable, str(ireq.req).lower())
+        return (not ireq.editable, key_from_ireq(ireq))
 
     def write_header(self) -> Iterator[str]:
         if self.emit_header:
