@@ -372,6 +372,30 @@ You might want to customize ``pip-compile`` args by configuring ``args`` and/or 
             files: ^requirements/production\.(in|txt)$
             args: [--index-url=https://example.com, requirements/production.in]
 
+If you have multiple requirement files make sure you create a hook for each file. 
+
+.. code-block:: yaml 
+
+    repos:
+      - repo: https://github.com/jazzband/pip-tools
+        rev: 5.3.1
+        hooks:
+          - id: pip-compile
+            name: pip-compile setup.py
+            files: ^(setup\.py|requirements\.txt)$
+          - id: pip-compile
+            name: pip-compile requirements-dev.in
+            args: [requirements-dev.in]
+            files: ^requirements-dev\.(in|txt)$
+          - id: pip-compile
+            name: pip-compile requirements-lint.in
+            args: [requirements-lint.in]
+            files: ^requirements-lint\.(in|txt)$
+          - id: pip-compile
+            name: pip-compile requirements.txt
+            args: [requirements.txt]
+            files: ^requirements\.(in|txt)$
+
 
 Example usage for ``pip-sync``
 ==============================

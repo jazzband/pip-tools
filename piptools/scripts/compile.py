@@ -163,6 +163,12 @@ def _get_default_option(option_name: str) -> Any:
     ),
 )
 @click.option(
+    "--strip-extras",
+    is_flag=True,
+    default=False,
+    help="Assure output file is constraints compatible, avoiding use of extras.",
+)
+@click.option(
     "--generate-hashes",
     is_flag=True,
     default=False,
@@ -245,6 +251,7 @@ def cli(
     upgrade_packages: Tuple[str, ...],
     output_file: Union[LazyFile, IO[Any], None],
     allow_unsafe: bool,
+    strip_extras: bool,
     generate_hashes: bool,
     single_hash: bool,
     reuse_hashes: bool,
@@ -471,6 +478,7 @@ def cli(
         emit_index_url=emit_index_url,
         emit_trusted_host=emit_trusted_host,
         annotate=annotate,
+        strip_extras=strip_extras,
         generate_hashes=generate_hashes,
         default_index_url=repository.DEFAULT_INDEX_URL,
         index_urls=repository.finder.index_urls,
