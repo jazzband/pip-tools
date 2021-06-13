@@ -2,8 +2,11 @@ import logging
 import operator
 import os
 import shlex
+import sys
 
+import pip
 import pytest
+from pip._vendor.packaging.version import Version
 
 from piptools.scripts.compile import cli as compile_cli
 from piptools.utils import (
@@ -15,6 +18,8 @@ from piptools.utils import (
     format_specifier,
     get_compile_command,
     get_hashes_from_ireq,
+    get_pip_version_for_python_executable,
+    get_sys_path_for_python_executable,
     is_pinned_requirement,
     is_url_requirement,
     lookup_table,
@@ -423,3 +428,16 @@ def test_drop_extras(from_line, given, expected):
         assert ireq.markers is None
     else:
         assert str(ireq.markers).replace("'", '"') == expected.replace("'", '"')
+
+
+def test_get_pip_version_for_python_executable():
+    result = get_pip_version_for_python_executable(sys.executable)
+    assert Version(pip.__version__) == result
+
+
+def test_get_sys_path_for_python_executable():
+    result = get_sys_path_for_python_executable(sys.executable)
+    assert result, "get_sys_path_for_python_executable should not return empty result"
+    # not testing for equality, because pytest adds extra paths into current sys.path
+    for path in result:
+        assert path in sys.path
