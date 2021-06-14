@@ -1,19 +1,28 @@
 # Format and labels used aim to match those used by Ansible project
 categories:
-  - title: "Major Changes"
+  - title: "Backwards Incompatible Changes"
     labels:
-      - "major" # c6476b
-  - title: "Minor Changes"
+      - "backwards incompatible"
+
+  - title: "Features"
     labels:
-      - "feature" # 006b75
-      - "enhancement" # ededed
-      - "refactoring"
-  - title: "Bugfixes"
+      - "feature"
+      - "enhancement"
+      # usually combined with enhancement (avoid double listing)
+      - "deprecation"
+
+  - title: "Bug Fixes"
     labels:
-      - "bug" # fbca04
-  - title: "Deprecations"
+      - "bug"
+      - "bug fix"
+
+  - title: "Other Changes"
     labels:
-      - "deprecated" # fef2c0
+      - "dependency"
+      - "docs"
+      - "trivial"
+      - "maintenance"
+
 exclude-labels:
   - "skip-changelog"
 template: |
