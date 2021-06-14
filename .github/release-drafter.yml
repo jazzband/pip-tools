@@ -1,4 +1,3 @@
-# Format and labels used aim to match those used by Ansible project
 categories:
   - title: "Backwards Incompatible Changes"
     labels:
