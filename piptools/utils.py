@@ -1,5 +1,7 @@
 import collections
 import itertools
+import json
+import os
 import shlex
 from typing import (
     Callable,
@@ -23,6 +25,9 @@ from pip._internal.vcs import is_url
 from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.specifiers import SpecifierSet
 from pip._vendor.packaging.version import Version
+from pip._vendor.pkg_resources import get_distribution
+
+from piptools.subprocess_utils import run_python_snippet
 
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
@@ -358,3 +363,41 @@ def get_compile_command(click_ctx: click.Context) -> str:
                     left_args.append(f"{option_long_name}={shlex.quote(str(val))}")
 
     return " ".join(["pip-compile", *sorted(left_args), *sorted(right_args)])
+
+
+def get_required_pip_specification() -> SpecifierSet:
+    """
+    Returns pip version specifier requested by current pip-tools installation.
+    """
+    project_dist = get_distribution("pip-tools")
+    requirement = next(  # pragma: no branch
+        (r for r in project_dist.requires() if r.name == "pip"), None
+    )
+    assert (
+        requirement is not None
+    ), "'pip' is expected to be in the list of pip-tools requirements"
+    return requirement.specifier
+
+
+def get_pip_version_for_python_executable(python_executable: str) -> Version:
+    """
+    Returns pip version for the given python executable.
+    """
+    str_version = run_python_snippet(
+        python_executable, "import pip;print(pip.__version__)"
+    )
+    return Version(str_version)
+
+
+def get_sys_path_for_python_executable(python_executable: str) -> List[str]:
+    """
+    Returns sys.path list for the given python executable.
+    """
+    result = run_python_snippet(
+        python_executable, "import sys;import json;print(json.dumps(sys.path))"
+    )
+
+    paths = json.loads(result)
+    assert isinstance(paths, list)
+    assert all(isinstance(i, str) for i in paths)
+    return [os.path.abspath(path) for path in paths]
