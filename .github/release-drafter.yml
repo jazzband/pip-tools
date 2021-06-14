@@ -1,3 +1,6 @@
+name-template: "$RESOLVED_VERSION"
+tag-template: "$RESOLVED_VERSION"
+
 categories:
   - title: "Backwards Incompatible Changes"
     labels:
@@ -26,3 +29,22 @@ exclude-labels:
   - "skip-changelog"
 template: |
   $CHANGES
+
+version-resolver:
+  major:
+    labels:
+      - "backwards incompatible"
+  minor:
+    labels:
+      - "feature"
+      - "enhancement"
+      - "deprecation"
+  patch:
+    labels:
+      - "bug fix"
+      - "bug"
+      - "dependency"
+      - "docs"
+      - "maintenance"
+      - "trivial"
+  default: minor
