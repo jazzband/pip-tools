@@ -25,6 +25,7 @@ categories:
       - "trivial"
       - "maintenance"
 
+change-template: '- $TITLE (#$NUMBER) @$AUTHOR'
 exclude-labels:
   - "skip-changelog"
 template: |
