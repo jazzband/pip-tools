@@ -344,3 +344,24 @@ def test_write_find_links(writer, find_links, expected_lines):
     """
     writer.find_links = find_links
     assert list(writer.write_find_links()) == expected_lines
+
+
+def test_write_order(writer, from_line):
+    """
+    Order of packages should match that of `pip freeze`.
+    """
+    writer.emit_header = False
+
+    packages = [
+        from_line("package_a==0.1"),
+        from_line("Package-b==2.3.4"),
+        from_line("Package==5.6"),
+        from_line("package2==7.8.9"),
+    ]
+    expected_lines = [
+        "package==5.6",
+        "package_a==0.1",
+        "package-b==2.3.4",
+        "package2==7.8.9",
+    ]
+    assert list(writer._iter_lines(packages)) == expected_lines

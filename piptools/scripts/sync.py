@@ -1,6 +1,7 @@
 import itertools
 import os
 import shlex
+import shutil
 import sys
 from typing import List, Optional, Tuple, cast
 
@@ -15,7 +16,12 @@ from .._compat import IS_CLICK_VER_8_PLUS, parse_requirements
 from ..exceptions import PipToolsError
 from ..logging import log
 from ..repositories import PyPIRepository
-from ..utils import flat_map
+from ..utils import (
+    flat_map,
+    get_pip_version_for_python_executable,
+    get_required_pip_specification,
+    get_sys_path_for_python_executable,
+)
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 
@@ -58,6 +64,10 @@ version_option_kwargs = {"package_name": "pip-tools"} if IS_CLICK_VER_8_PLUS els
     is_flag=True,
     help="Ignore package index (only looking at --find-links URLs instead)",
 )
+@click.option(
+    "--python-executable",
+    help="Custom python executable path if targeting an environment other than current.",
+)
 @click.option("-v", "--verbose", count=True, help="Show more output")
 @click.option("-q", "--quiet", count=True, help="Give less output")
 @click.option(
@@ -80,6 +90,7 @@ def cli(
     extra_index_url: Tuple[str, ...],
     trusted_host: Tuple[str, ...],
     no_index: bool,
+    python_executable: Optional[str],
     verbose: int,
     quiet: int,
     user_only: bool,
@@ -111,6 +122,9 @@ def cli(
             log.error("ERROR: " + msg)
             sys.exit(2)
 
+    if python_executable:
+        _validate_python_executable(python_executable)
+
     install_command = cast(InstallCommand, create_command("install"))
     options, _ = install_command.parse_args([])
     session = install_command._build_session(options)
@@ -128,7 +142,15 @@ def cli(
         log.error(str(e))
         sys.exit(2)
 
-    installed_dists = get_installed_distributions(skip=[], user_only=user_only)
+    paths = (
+        None
+        if python_executable is None
+        else get_sys_path_for_python_executable(python_executable)
+    )
+
+    installed_dists = get_installed_distributions(
+        skip=[], user_only=user_only, paths=paths, local_only=python_executable is None
+    )
     to_install, to_uninstall = sync.diff(merged_requirements, installed_dists)
 
     install_flags = (
@@ -152,8 +174,33 @@ def cli(
             dry_run=dry_run,
             install_flags=install_flags,
             ask=ask,
+            python_executable=python_executable,
         )
     )
+
+
+def _validate_python_executable(python_executable: str) -> None:
+    """
+    Validates incoming python_executable argument passed to CLI.
+    """
+    resolved_python_executable = shutil.which(python_executable)
+    if resolved_python_executable is None:
+        msg = "Could not resolve '{}' as valid executable path or alias."
+        log.error(msg.format(python_executable))
+        sys.exit(2)
+
+    # Ensure that target python executable has the right version of pip installed
+    pip_version = get_pip_version_for_python_executable(python_executable)
+    required_pip_specification = get_required_pip_specification()
+    if not required_pip_specification.contains(pip_version, prereleases=True):
+        msg = (
+            "Target python executable '{}' has pip version {} installed. "
+            "Version {} is expected."
+        )
+        log.error(
+            msg.format(python_executable, pip_version, required_pip_specification)
+        )
+        sys.exit(2)
 
 
 def _compose_install_flags(
