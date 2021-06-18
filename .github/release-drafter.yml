@@ -25,7 +25,7 @@ categories:
       - "trivial"
       - "maintenance"
 
-change-template: "- $TITLE (#$NUMBER) @$AUTHOR"
+change-template: "- $TITLE ([#$NUMBER](https://github.com/jazzband/pip-tools/pull/$NUMBER)). Thanks @$AUTHOR"
 exclude-labels:
   - "skip-changelog"
 template: |
