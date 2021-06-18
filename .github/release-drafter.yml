@@ -28,6 +28,8 @@ categories:
 change-template: "- $TITLE ([#$NUMBER](https://github.com/jazzband/pip-tools/pull/$NUMBER)). Thanks @$AUTHOR"
 exclude-labels:
   - "skip-changelog"
+  - "maintenance"
+  - "trivial"
 template: |
   $CHANGES
 
@@ -46,6 +48,4 @@ version-resolver:
       - "bug"
       - "dependency"
       - "docs"
-      - "maintenance"
-      - "trivial"
   default: minor
