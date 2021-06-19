@@ -12,6 +12,8 @@ from piptools.scripts.compile import cli
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
 
 
+is_pypy = '__pypy__' in sys.builtin_module_names
+
 @pytest.fixture(autouse=True)
 def _temp_dep_cache(tmpdir, monkeypatch):
     monkeypatch.setenv("PIP_TOOLS_CACHE_DIR", str(tmpdir / "cache"))
@@ -1760,6 +1762,7 @@ METADATA_TEST_CASES = (
 
 @pytest.mark.network
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
+@pytest.mark.xfail(is_pypy, reason="https://github.com/jazzband/pip-tools/issues/1375")
 def test_input_formats(fake_dists, runner, make_module, fname, content):
     """
     Test different dependency formats as input file.
@@ -1778,6 +1781,7 @@ def test_input_formats(fake_dists, runner, make_module, fname, content):
 
 @pytest.mark.network
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
+@pytest.mark.xfail(is_pypy, reason="https://github.com/jazzband/pip-tools/issues/1375")
 def test_one_extra(fake_dists, runner, make_module, fname, content):
     """
     Test one `--extra` (dev) passed, other extras (test) must be ignored.
@@ -1798,6 +1802,7 @@ def test_one_extra(fake_dists, runner, make_module, fname, content):
 
 @pytest.mark.network
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
+@pytest.mark.xfail(is_pypy, reason="https://github.com/jazzband/pip-tools/issues/1375")
 def test_multiple_extras(fake_dists, runner, make_module, fname, content):
     """
     Test passing multiple `--extra` params.
