@@ -70,7 +70,7 @@ class OutputWriter:
         allow_unsafe: bool,
         find_links: List[str],
         emit_find_links: bool,
-        emit_options,
+        emit_options: bool,
     ) -> None:
         self.dst_file = dst_file
         self.click_ctx = click_ctx
