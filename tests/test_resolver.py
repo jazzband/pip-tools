@@ -1,7 +1,7 @@
 import pytest
 
 from piptools.exceptions import NoCandidateFound
-from piptools.resolver import combine_install_requirements
+from piptools.resolver import RequirementSummary, combine_install_requirements
 
 
 @pytest.mark.parametrize(
@@ -121,6 +121,18 @@ from piptools.resolver import combine_install_requirements
             # See: GH-471
             (
                 ["Flask", ("click", True), ("itsdangerous", True)],
+                [
+                    "flask==0.10.1",
+                    "itsdangerous==0.24",
+                    "markupsafe==0.23 (from jinja2==2.7.3->flask==0.10.1)",
+                    "jinja2==2.7.3 (from flask==0.10.1)",
+                    "werkzeug==0.10.4 (from flask==0.10.1)",
+                ],
+            ),
+            # We shouldn't fail on invalid irrelevant pip constraints
+            # See: GH-1178
+            (
+                ["Flask", ("missing-dependency<1.0", True), ("itsdangerous", True)],
                 [
                     "flask==0.10.1",
                     "itsdangerous==0.24",
@@ -271,17 +283,17 @@ def test_iter_dependencies_ignores_constraints(resolver, from_line):
         next(res._iter_dependencies(ireq))
 
 
-def test_combine_install_requirements(from_line):
+def test_combine_install_requirements(repository, from_line):
     celery30 = from_line("celery>3.0", comes_from="-r requirements.in")
     celery31 = from_line("celery==3.1.1", comes_from=from_line("fake-package"))
     celery32 = from_line("celery<3.2")
 
-    combined = combine_install_requirements([celery30, celery31])
+    combined = combine_install_requirements(repository, [celery30, celery31])
     assert combined.comes_from == celery31.comes_from  # shortest string
     assert set(combined._source_ireqs) == {celery30, celery31}
     assert str(combined.req.specifier) == "==3.1.1,>3.0"
 
-    combined_all = combine_install_requirements([celery32, combined])
+    combined_all = combine_install_requirements(repository, [celery32, combined])
     assert combined_all.comes_from is None
     assert set(combined_all._source_ireqs) == {celery30, celery31, celery32}
     assert str(combined_all.req.specifier) == "<3.2,==3.1.1,>3.0"
@@ -304,3 +316,80 @@ def test_compile_failure_shows_provenance(resolver, from_line):
         lines[-1].strip()
         == "celery==3.1.18 (from fake-piptools-test-with-pinned-deps==0.1)"
     )
+
+
+@pytest.mark.parametrize(
+    ("left_hand", "right_hand", "expected"),
+    (
+        ("test_package", "test_package", True),
+        ("test_package==1.2.3", "test_package==1.2.3", True),
+        ("test_package>=1.2.3", "test_package>=1.2.3", True),
+        ("test_package==1.2", "test_package==1.2.0", True),
+        ("test_package>=1.2", "test_package>=1.2.0", True),
+        ("test_package[foo,bar]==1.2", "test_package[bar,foo]==1.2", True),
+        ("test_package[foo,bar]>=1.2", "test_package[bar,foo]>=1.2", True),
+        ("test_package[foo,bar]==1.2", "test_package[bar,foo]==1.2.0", True),
+        ("test_package[foo,bar]>=1.2", "test_package[bar,foo]>=1.2.0", True),
+        ("test_package", "other_test_package", False),
+        ("test_package==1.2.3", "other_test_package==1.2.3", False),
+        ("test_package==1.2.3", "test_package==1.2.4", False),
+        ("test_package>=1.2.3", "test_package>=1.2.4", False),
+        ("test_package>=1.2.3", "test_package<=1.2.3", False),
+        ("test_package==1.2", "test_package==1.2.3", False),
+        ("test_package>=1.2", "test_package>=1.2.3", False),
+        ("test_package[foo]==1.2", "test_package[bar]==1.2.0", False),
+        ("test_package[foo]>=1.2", "test_package[bar]>=1.2.0", False),
+        ("test_package[foo,bar]>=1.2", "test_package[bar]>=1.2.0", False),
+        ("test_package[foo,bar]>=1.2", "test_package[bar,zee]>=1.2.0", False),
+    ),
+)
+def test_RequirementSummary_equality(from_line, left_hand, right_hand, expected):
+    """
+    RequirementSummary should report proper equality.
+    """
+    lh_summary = RequirementSummary(from_line(left_hand))
+    rh_summary = RequirementSummary(from_line(right_hand))
+    assert (lh_summary == rh_summary) is expected
+
+
+@pytest.mark.parametrize(
+    ("left_hand", "right_hand", "expected"),
+    (
+        ("test_package", "test_package", True),
+        ("test_package==1.2.3", "test_package==1.2.3", True),
+        ("test_package>=1.2.3", "test_package>=1.2.3", True),
+        ("test_package==1.2", "test_package==1.2.0", True),
+        ("test_package>=1.2", "test_package>=1.2.0", True),
+        ("test_package[foo,bar]==1.2", "test_package[bar,foo]==1.2", True),
+        ("test_package[foo,bar]>=1.2", "test_package[bar,foo]>=1.2", True),
+        ("test_package[foo,bar]==1.2", "test_package[bar,foo]==1.2.0", True),
+        ("test_package[foo,bar]>=1.2", "test_package[bar,foo]>=1.2.0", True),
+        ("test_package", "other_test_package", False),
+        ("test_package==1.2.3", "other_test_package==1.2.3", False),
+        ("test_package==1.2.3", "test_package==1.2.4", False),
+        ("test_package>=1.2.3", "test_package>=1.2.4", False),
+        ("test_package>=1.2.3", "test_package<=1.2.3", False),
+        ("test_package==1.2", "test_package==1.2.3", False),
+        ("test_package>=1.2", "test_package>=1.2.3", False),
+        ("test_package[foo]==1.2", "test_package[bar]==1.2.0", False),
+        ("test_package[foo]>=1.2", "test_package[bar]>=1.2.0", False),
+        ("test_package[foo,bar]>=1.2", "test_package[bar]>=1.2.0", False),
+        ("test_package[foo,bar]>=1.2", "test_package[bar,zee]>=1.2.0", False),
+    ),
+)
+def test_RequirementSummary_hash_equality(from_line, left_hand, right_hand, expected):
+    """
+    RequirementSummary hash for equivalent requirements should be equal.
+    """
+    lh_summary = RequirementSummary(from_line(left_hand))
+    rh_summary = RequirementSummary(from_line(right_hand))
+    assert (hash(lh_summary) == hash(rh_summary)) is expected
+
+
+def test_requirement_summary_with_other_objects(from_line):
+    """
+    RequirementSummary should not be equal to any other object
+    """
+    requirement_summary = RequirementSummary(from_line("test_package==1.2.3"))
+    other_object = object()
+    assert requirement_summary != other_object

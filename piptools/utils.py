@@ -1,17 +1,38 @@
-# coding: utf-8
-from __future__ import absolute_import, division, print_function, unicode_literals
+import collections
+import itertools
+import json
+import os
+import shlex
+from typing import (
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
-import sys
-from collections import OrderedDict
-from itertools import chain, groupby
-
-import six
+import click
 from click.utils import LazyFile
+from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
-from six.moves import shlex_quote
+from pip._internal.utils.misc import redact_auth_from_url
+from pip._internal.vcs import is_url
+from pip._vendor.packaging.markers import Marker
+from pip._vendor.packaging.specifiers import SpecifierSet
+from pip._vendor.packaging.version import Version
+from pip._vendor.pkg_resources import get_distribution
 
-from ._compat import PIP_VERSION
-from .click import style
+from piptools.subprocess_utils import run_python_snippet
+
+_KT = TypeVar("_KT")
+_VT = TypeVar("_VT")
+_T = TypeVar("_T")
+_S = TypeVar("_S")
 
 UNSAFE_PACKAGES = {"setuptools", "distribute", "pip"}
 COMPILE_EXCLUDE_OPTIONS = {
@@ -22,10 +43,11 @@ COMPILE_EXCLUDE_OPTIONS = {
     "--upgrade-package",
     "--verbose",
     "--cache-dir",
+    "--no-reuse-hashes",
 }
 
 
-def key_from_ireq(ireq):
+def key_from_ireq(ireq: InstallRequirement) -> str:
     """Get a standardized key for an InstallRequirement."""
     if ireq.req is None and ireq.link is not None:
         return str(ireq.link)
@@ -33,7 +55,7 @@ def key_from_ireq(ireq):
         return key_from_req(ireq.req)
 
 
-def key_from_req(req):
+def key_from_req(req: InstallRequirement) -> str:
     """Get an all-lowercase version of the requirement's name."""
     if hasattr(req, "key"):
         # from pkg_resources, such as installed dists for pip-sync
@@ -41,28 +63,39 @@ def key_from_req(req):
     else:
         # from packaging, such as install requirements from requirements.txt
         key = req.name
-
+    assert isinstance(key, str)
     key = key.replace("_", "-").lower()
     return key
 
 
-def comment(text):
-    return style(text, fg="green")
+def comment(text: str) -> str:
+    return click.style(text, fg="green")
 
 
-def make_install_requirement(name, version, extras, constraint=False):
+def make_install_requirement(
+    name: str, version: Union[str, Version], ireq: InstallRequirement
+) -> InstallRequirement:
     # If no extras are specified, the extras string is blank
     extras_string = ""
+    extras = ireq.extras
     if extras:
         # Sort extras for stability
-        extras_string = "[{}]".format(",".join(sorted(extras)))
+        extras_string = f"[{','.join(sorted(extras))}]"
+
+    version_pin_operator = "=="
+    version_as_str = str(version)
+    for specifier in ireq.specifier:
+        if specifier.operator == "===" and specifier.version == version_as_str:
+            version_pin_operator = "==="
+            break
 
     return install_req_from_line(
-        str("{}{}=={}".format(name, extras_string, version)), constraint=constraint
+        str(f"{name}{extras_string}{version_pin_operator}{version}"),
+        constraint=ireq.constraint,
     )
 
 
-def is_url_requirement(ireq):
+def is_url_requirement(ireq: InstallRequirement) -> bool:
     """
     Return True if requirement was specified as a path or URL.
     ireq.original_link will have been set by InstallRequirement.__init__
@@ -70,40 +103,46 @@ def is_url_requirement(ireq):
     return bool(ireq.original_link)
 
 
-def format_requirement(ireq, marker=None, hashes=None):
+def format_requirement(
+    ireq: InstallRequirement,
+    marker: Optional[Marker] = None,
+    hashes: Optional[Set[str]] = None,
+) -> str:
     """
     Generic formatter for pretty printing InstallRequirements to the terminal
     in a less verbose way than using its `__str__` method.
     """
     if ireq.editable:
-        line = "-e {}".format(ireq.link.url)
+        line = f"-e {ireq.link.url}"
     elif is_url_requirement(ireq):
         line = ireq.link.url
     else:
         line = str(ireq.req).lower()
 
     if marker:
-        line = "{} ; {}".format(line, marker)
+        line = f"{line} ; {marker}"
 
     if hashes:
         for hash_ in sorted(hashes):
-            line += " \\\n    --hash={}".format(hash_)
+            line += f" \\\n    --hash={hash_}"
 
     return line
 
 
-def format_specifier(ireq):
+def format_specifier(ireq: InstallRequirement) -> str:
     """
     Generic formatter for pretty printing the specifier part of
     InstallRequirements to the terminal.
     """
     # TODO: Ideally, this is carried over to the pip library itself
-    specs = ireq.specifier._specs if ireq.req is not None else []
-    specs = sorted(specs, key=lambda x: x._spec[1])
+    specs = ireq.specifier if ireq.req is not None else SpecifierSet()
+    # FIXME: remove ignore type marker once the following issue get fixed
+    #        https://github.com/python/mypy/issues/9656
+    specs = sorted(specs, key=lambda x: x.version)  # type: ignore
     return ",".join(str(s) for s in specs) or "<any>"
 
 
-def is_pinned_requirement(ireq):
+def is_pinned_requirement(ireq: InstallRequirement) -> bool:
     """
     Returns whether an InstallRequirement is a "pinned" requirement.
 
@@ -123,184 +162,125 @@ def is_pinned_requirement(ireq):
     if ireq.editable:
         return False
 
-    if ireq.req is None or len(ireq.specifier._specs) != 1:
+    if ireq.req is None or len(ireq.specifier) != 1:
         return False
 
-    op, version = next(iter(ireq.specifier._specs))._spec
-    return (op == "==" or op == "===") and not version.endswith(".*")
+    spec = next(iter(ireq.specifier))
+    return spec.operator in {"==", "==="} and not spec.version.endswith(".*")
 
 
-def as_tuple(ireq):
+def as_tuple(ireq: InstallRequirement) -> Tuple[str, str, Tuple[str, ...]]:
     """
     Pulls out the (name: str, version:str, extras:(str)) tuple from
     the pinned InstallRequirement.
     """
     if not is_pinned_requirement(ireq):
-        raise TypeError("Expected a pinned InstallRequirement, got {}".format(ireq))
+        raise TypeError(f"Expected a pinned InstallRequirement, got {ireq}")
 
     name = key_from_ireq(ireq)
-    version = next(iter(ireq.specifier._specs))._spec[1]
+    version = next(iter(ireq.specifier)).version
     extras = tuple(sorted(ireq.extras))
     return name, version, extras
 
 
-def full_groupby(iterable, key=None):
-    """Like groupby(), but sorts the input on the group key first."""
-    return groupby(sorted(iterable, key=key), key=key)
-
-
-def flat_map(fn, collection):
+def flat_map(
+    fn: Callable[[_T], Iterable[_S]], collection: Iterable[_T]
+) -> Iterator[_S]:
     """Map a function over a collection and flatten the result by one-level"""
-    return chain.from_iterable(map(fn, collection))
+    return itertools.chain.from_iterable(map(fn, collection))
 
 
-def lookup_table(values, key=None, keyval=None, unique=False, use_lists=False):
+def lookup_table_from_tuples(values: Iterable[Tuple[_KT, _VT]]) -> Dict[_KT, Set[_VT]]:
     """
     Builds a dict-based lookup table (index) elegantly.
-
-    Supports building normal and unique lookup tables.  For example:
-
-    >>> assert lookup_table(
-    ...     ['foo', 'bar', 'baz', 'qux', 'quux'], lambda s: s[0]) == {
-    ...     'b': {'bar', 'baz'},
-    ...     'f': {'foo'},
-    ...     'q': {'quux', 'qux'}
-    ... }
-
-    For key functions that uniquely identify values, set unique=True:
-
-    >>> assert lookup_table(
-    ...     ['foo', 'bar', 'baz', 'qux', 'quux'], lambda s: s[0],
-    ...     unique=True) == {
-    ...     'b': 'baz',
-    ...     'f': 'foo',
-    ...     'q': 'quux'
-    ... }
-
-    For the values represented as lists, set use_lists=True:
-
-    >>> assert lookup_table(
-    ...     ['foo', 'bar', 'baz', 'qux', 'quux'], lambda s: s[0],
-    ...     use_lists=True) == {
-    ...     'b': ['bar', 'baz'],
-    ...     'f': ['foo'],
-    ...     'q': ['qux', 'quux']
-    ... }
-
-    The values of the resulting lookup table will be lists, not sets.
-
-    For extra power, you can even change the values while building up the LUT.
-    To do so, use the `keyval` function instead of the `key` arg:
-
-    >>> assert lookup_table(
-    ...     ['foo', 'bar', 'baz', 'qux', 'quux'],
-    ...     keyval=lambda s: (s[0], s[1:])) == {
-    ...     'b': {'ar', 'az'},
-    ...     'f': {'oo'},
-    ...     'q': {'uux', 'ux'}
-    ... }
-
     """
-    if keyval is None:
-        if key is None:
-
-            def keyval(v):
-                return v
-
-        else:
-
-            def keyval(v):
-                return (key(v), v)
-
-    if unique:
-        return dict(keyval(v) for v in values)
-
-    lut = {}
-    for value in values:
-        k, v = keyval(value)
-        try:
-            s = lut[k]
-        except KeyError:
-            if use_lists:
-                s = lut[k] = list()
-            else:
-                s = lut[k] = set()
-        if use_lists:
-            s.append(v)
-        else:
-            s.add(v)
+    lut: Dict[_KT, Set[_VT]] = collections.defaultdict(set)
+    for k, v in values:
+        lut[k].add(v)
     return dict(lut)
 
 
-def dedup(iterable):
+def lookup_table(
+    values: Iterable[_VT], key: Callable[[_VT], _KT]
+) -> Dict[_KT, Set[_VT]]:
+    """
+    Builds a dict-based lookup table (index) elegantly.
+    """
+    return lookup_table_from_tuples((key(v), v) for v in values)
+
+
+def dedup(iterable: Iterable[_T]) -> Iterable[_T]:
     """Deduplicate an iterable object like iter(set(iterable)) but
     order-preserved.
     """
-    return iter(OrderedDict.fromkeys(iterable))
+    return iter(dict.fromkeys(iterable))
 
 
-def name_from_req(req):
-    """Get the name of the requirement"""
-    if hasattr(req, "project_name"):
-        # from pkg_resources, such as installed dists for pip-sync
-        return req.project_name
-    else:
-        # from packaging, such as install requirements from requirements.txt
-        return req.name
+def drop_extras(ireq: InstallRequirement) -> None:
+    """Remove "extra" markers (PEP-508) from requirement."""
+    if ireq.markers is None:
+        return
+    ireq.markers._markers = _drop_extras(ireq.markers._markers)
+    if not ireq.markers._markers:
+        ireq.markers = None
 
 
-def fs_str(string):
+def _drop_extras(markers: List[_T]) -> List[_T]:
+    # drop `extra` tokens
+    to_remove: List[int] = []
+    for i, token in enumerate(markers):
+        # operator (and/or)
+        if isinstance(token, str):
+            continue
+        # sub-expression (inside braces)
+        if isinstance(token, list):
+            markers[i] = _drop_extras(token)  # type: ignore
+            if markers[i]:
+                continue
+            to_remove.append(i)
+            continue
+        # test expression (like `extra == "dev"`)
+        assert isinstance(token, tuple)
+        if token[0].value == "extra":
+            to_remove.append(i)
+    for i in reversed(to_remove):
+        markers.pop(i)
+
+    # drop duplicate bool operators (and/or)
+    to_remove = []
+    for i, (token1, token2) in enumerate(zip(markers, markers[1:])):
+        if not isinstance(token1, str):
+            continue
+        if not isinstance(token2, str):
+            continue
+        if token1 == "and":
+            to_remove.append(i)
+        else:
+            to_remove.append(i + 1)
+    for i in reversed(to_remove):
+        markers.pop(i)
+    if markers and isinstance(markers[0], str):
+        markers.pop(0)
+    if markers and isinstance(markers[-1], str):
+        markers.pop(-1)
+
+    return markers
+
+
+def get_hashes_from_ireq(ireq: InstallRequirement) -> Set[str]:
     """
-    Convert given string to a correctly encoded filesystem string.
-
-    On Python 2, if the input string is unicode, converts it to bytes
-    encoded with the filesystem encoding.
-
-    On Python 3 returns the string as is, since Python 3 uses unicode
-    paths and the input string shouldn't be bytes.
-
-    :type string: str|unicode
-    :rtype: str
+    Given an InstallRequirement, return a set of string hashes in the format
+    "{algorithm}:{hash}". Return an empty set if there are no hashes in the
+    requirement options.
     """
-    if isinstance(string, str):
-        return string
-    if isinstance(string, bytes):
-        raise AssertionError
-    return string.encode(_fs_encoding)
-
-
-_fs_encoding = sys.getfilesystemencoding() or sys.getdefaultencoding()
-
-
-def get_hashes_from_ireq(ireq):
-    """
-    Given an InstallRequirement, return a list of string hashes in
-    the format "{algorithm}:{hash}". Return an empty list if there are no hashes
-    in the requirement options.
-    """
-    result = []
-    if PIP_VERSION[:2] <= (20, 0):
-        ireq_hashes = ireq.options.get("hashes", {})
-    else:
-        ireq_hashes = ireq.hash_options
-    for algorithm, hexdigests in ireq_hashes.items():
+    result = set()
+    for algorithm, hexdigests in ireq.hash_options.items():
         for hash_ in hexdigests:
-            result.append("{}:{}".format(algorithm, hash_))
+            result.add(f"{algorithm}:{hash_}")
     return result
 
 
-def force_text(s):
-    """
-    Return a string representing `s`.
-    """
-    if s is None:
-        return ""
-    if not isinstance(s, six.string_types):
-        return six.text_type(s)
-    return s
-
-
-def get_compile_command(click_ctx):
+def get_compile_command(click_ctx: click.Context) -> str:
     """
     Returns a normalized compile command depending on cli context.
 
@@ -322,9 +302,6 @@ def get_compile_command(click_ctx):
     for option_name, value in click_ctx.params.items():
         option = compile_options[option_name]
 
-        # Get the latest option name (usually it'll be a long name)
-        option_long_name = option.opts[-1]
-
         # Collect variadic args separately, they will be added
         # at the end of the command later
         if option.nargs < 0:
@@ -332,8 +309,13 @@ def get_compile_command(click_ctx):
             # Re-add click-stripped '--' if any start with '-'
             if any(val.startswith("-") and val != "-" for val in value):
                 right_args.append("--")
-            right_args.extend([shlex_quote(force_text(val)) for val in value])
+            right_args.extend([shlex.quote(val) for val in value])
             continue
+
+        assert isinstance(option, click.Option)
+
+        # Get the latest option name (usually it'll be a long name)
+        option_long_name = option.opts[-1]
 
         # Exclude one-off options (--upgrade/--upgrade-package/--rebuild/...)
         # or options that don't change compile behaviour (--verbose/--dry-run/...)
@@ -367,23 +349,55 @@ def get_compile_command(click_ctx):
                 # There are no false-options, use true-option
                 else:
                     arg = option_long_name
-                left_args.append(shlex_quote(arg))
+                left_args.append(shlex.quote(arg))
             # Append to args the option with a value
             else:
-                if option.name == "pip_args":
-                    # shlex_quote would produce functional but noisily quoted results,
+                if isinstance(val, str) and is_url(val):
+                    val = redact_auth_from_url(val)
+                if option.name == "pip_args_str":
+                    # shlex.quote() would produce functional but noisily quoted results,
                     # e.g. --pip-args='--cache-dir='"'"'/tmp/with spaces'"'"''
                     # Instead, we try to get more legible quoting via repr:
-                    left_args.append(
-                        "{option}={value}".format(
-                            option=option_long_name, value=repr(fs_str(force_text(val)))
-                        )
-                    )
+                    left_args.append(f"{option_long_name}={repr(val)}")
                 else:
-                    left_args.append(
-                        "{option}={value}".format(
-                            option=option_long_name, value=shlex_quote(force_text(val))
-                        )
-                    )
+                    left_args.append(f"{option_long_name}={shlex.quote(str(val))}")
 
-    return " ".join(["pip-compile"] + sorted(left_args) + sorted(right_args))
+    return " ".join(["pip-compile", *sorted(left_args), *sorted(right_args)])
+
+
+def get_required_pip_specification() -> SpecifierSet:
+    """
+    Returns pip version specifier requested by current pip-tools installation.
+    """
+    project_dist = get_distribution("pip-tools")
+    requirement = next(  # pragma: no branch
+        (r for r in project_dist.requires() if r.name == "pip"), None
+    )
+    assert (
+        requirement is not None
+    ), "'pip' is expected to be in the list of pip-tools requirements"
+    return requirement.specifier
+
+
+def get_pip_version_for_python_executable(python_executable: str) -> Version:
+    """
+    Returns pip version for the given python executable.
+    """
+    str_version = run_python_snippet(
+        python_executable, "import pip;print(pip.__version__)"
+    )
+    return Version(str_version)
+
+
+def get_sys_path_for_python_executable(python_executable: str) -> List[str]:
+    """
+    Returns sys.path list for the given python executable.
+    """
+    result = run_python_snippet(
+        python_executable, "import sys;import json;print(json.dumps(sys.path))"
+    )
+
+    paths = json.loads(result)
+    assert isinstance(paths, list)
+    assert all(isinstance(i, str) for i in paths)
+    return [os.path.abspath(path) for path in paths]

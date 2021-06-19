@@ -1,13 +1,8 @@
-import subprocess
+import os
+
+# NOTE: keep in sync with "passenv" in tox.ini
+CI_VARIABLES = {"CI", "GITHUB_ACTIONS"}
 
 
-def invoke(command):
-    """Invoke sub-process."""
-    try:
-        output = subprocess.check_output(command, stderr=subprocess.STDOUT)
-        status = 0
-    except subprocess.CalledProcessError as error:  # pragma: no cover
-        output = error.output
-        status = error.returncode
-
-    return status, output
+def looks_like_ci():
+    return bool(set(os.environ.keys()) & CI_VARIABLES)

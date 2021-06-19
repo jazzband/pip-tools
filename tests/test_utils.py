@@ -1,26 +1,29 @@
-# coding: utf-8
-from __future__ import unicode_literals
-
+import logging
+import operator
 import os
+import shlex
+import sys
 
-import six
-from pytest import mark, raises
-from six.moves import shlex_quote
+import pip
+import pytest
+from pip._vendor.packaging.version import Version
 
 from piptools.scripts.compile import cli as compile_cli
 from piptools.utils import (
     as_tuple,
     dedup,
+    drop_extras,
     flat_map,
-    force_text,
     format_requirement,
     format_specifier,
-    fs_str,
     get_compile_command,
     get_hashes_from_ireq,
+    get_pip_version_for_python_executable,
+    get_sys_path_for_python_executable,
     is_pinned_requirement,
     is_url_requirement,
-    name_from_req,
+    lookup_table,
+    lookup_table_from_tuples,
 )
 
 
@@ -86,7 +89,7 @@ def test_format_requirement_ireq_with_hashes_and_markers(from_line):
     assert format_requirement(ireq, marker, hashes=ireq_hashes) == expected
 
 
-def test_format_specifier(from_line):
+def test_format_specifier(from_line, from_editable):
     ireq = from_line("foo")
     assert format_specifier(ireq) == "<any>"
 
@@ -97,6 +100,11 @@ def test_format_specifier(from_line):
     assert format_specifier(ireq) == "~=1.1,>1.2,<1.5"
     ireq = from_line("foo~=1.1,<1.5,>1.2")
     assert format_specifier(ireq) == "~=1.1,>1.2,<1.5"
+
+    ireq = from_editable("git+https://github.com/django/django.git#egg=django")
+    assert format_specifier(ireq) == "<any>"
+    ireq = from_editable("file:///home/user/package")
+    assert format_specifier(ireq) == "<any>"
 
 
 def test_as_tuple(from_line):
@@ -116,7 +124,7 @@ def test_as_tuple(from_line):
     should_be_rejected = ["foo==1.*", "foo~=1.1,<1.5,>1.2", "foo"]
     for spec in should_be_rejected:
         ireq = from_line(spec)
-        with raises(TypeError):
+        with pytest.raises(TypeError):
             as_tuple(ireq)
 
 
@@ -140,16 +148,16 @@ def test_get_hashes_from_ireq(from_line):
             }
         },
     )
-    expected = [
+    expected = {
         "sha256:d1d6729c85acea5423671382868627129432fba9a89ecbb248d8d1c7a9f01c67",
         "sha256:f5c056e8f62d45ba8215e5cb8f50dfccb198b4b9fbea8500674f3443e4689589",
-    ]
+    }
     assert get_hashes_from_ireq(ireq) == expected
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     ("line", "expected"),
-    [
+    (
         ("django==1.8", True),
         ("django===1.8", True),
         ("django>1.8", False),
@@ -157,7 +165,7 @@ def test_get_hashes_from_ireq(from_line):
         ("django==1.*", False),
         ("file:///example.zip", False),
         ("https://example.com/example.zip", False),
-    ],
+    ),
 )
 def test_is_pinned_requirement(from_line, line, expected):
     ireq = from_line(line)
@@ -169,56 +177,36 @@ def test_is_pinned_requirement_editable(from_editable):
     assert not is_pinned_requirement(ireq)
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     ("line", "expected"),
-    [
+    (
         ("django==1.8", False),
         ("django", False),
         ("file:///example.zip", True),
         ("https://example.com/example.zip", True),
         ("https://example.com/example.zip#egg=example", True),
         ("git+git://github.com/jazzband/pip-tools@master", True),
-        ("../example.zip", True),
-        ("/example.zip", True),
-    ],
+    ),
 )
-def test_is_url_requirement(from_line, line, expected):
+def test_is_url_requirement(caplog, from_line, line, expected):
     ireq = from_line(line)
     assert is_url_requirement(ireq) is expected
 
 
-def test_name_from_req(from_line):
-    ireq = from_line("django==1.8")
-    assert name_from_req(ireq.req) == "django"
+@pytest.mark.parametrize("line", ("../example.zip", "/example.zip"))
+def test_is_url_requirement_filename(caplog, from_line, line):
+    # Ignore warning:
+    #
+    #     Requirement '../example.zip' looks like a filename, but the file does
+    #     not exist
+    caplog.set_level(logging.ERROR, logger="pip")
+    ireq = from_line(line)
+    assert is_url_requirement(ireq) is True
 
 
-def test_name_from_req_with_project_name(from_line):
-    ireq = from_line("foo==1.8")
-    ireq.req.project_name = "bar"
-    assert name_from_req(ireq.req) == "bar"
-
-
-def test_fs_str():
-    assert fs_str("some path component/Something") == "some path component/Something"
-    assert isinstance(fs_str("whatever"), str)
-
-
-@mark.skipif(six.PY2, reason="Not supported in py2")
-def test_fs_str_with_bytes():
-    with raises(AssertionError):
-        fs_str(b"whatever")
-
-
-@mark.parametrize(
-    "value, expected_text", [(None, ""), (42, "42"), ("foo", "foo"), ("bãr", "bãr")]
-)
-def test_force_text(value, expected_text):
-    assert force_text(value) == expected_text
-
-
-@mark.parametrize(
-    "cli_args, expected_command",
-    [
+@pytest.mark.parametrize(
+    ("cli_args", "expected_command"),
+    (
         # Check empty args
         ([], "pip-compile"),
         # Check all options which will be excluded from command
@@ -246,15 +234,16 @@ def test_force_text(value, expected_text):
         (["--pre"], "pip-compile --pre"),
         (["--allow-unsafe"], "pip-compile --allow-unsafe"),
         # Check negative flags
-        (["--no-index"], "pip-compile --no-index"),
+        (["--no-emit-index-url"], "pip-compile --no-emit-index-url"),
         (["--no-emit-trusted-host"], "pip-compile --no-emit-trusted-host"),
         (["--no-annotate"], "pip-compile --no-annotate"),
+        (["--no-allow-unsafe"], "pip-compile"),
         (["--no-emit-options"], "pip-compile --no-emit-options"),
         # Check that default values will be removed from the command
         (["--emit-trusted-host"], "pip-compile"),
         (["--emit-options"], "pip-compile"),
         (["--annotate"], "pip-compile"),
-        (["--index"], "pip-compile"),
+        (["--emit-index-url"], "pip-compile"),
         (["--max-rounds=10"], "pip-compile"),
         (["--build-isolation"], "pip-compile"),
         # Check options with multiple values
@@ -276,7 +265,17 @@ def test_force_text(value, expected_text):
             ["--pip-args", "--disable-pip-version-check --isolated"],
             "pip-compile --pip-args='--disable-pip-version-check --isolated'",
         ),
-    ],
+        pytest.param(
+            ["--extra-index-url", "https://username:password@example.com/"],
+            "pip-compile --extra-index-url='https://username:****@example.com/'",
+            id="redact password in index",
+        ),
+        pytest.param(
+            ["--find-links", "https://username:password@example.com/"],
+            "pip-compile --find-links='https://username:****@example.com/'",
+            id="redact password in link",
+        ),
+    ),
 )
 def test_get_compile_command(tmpdir_cwd, cli_args, expected_command):
     """
@@ -296,8 +295,8 @@ def test_get_compile_command_escaped_filenames(tmpdir_cwd):
         assert get_compile_command(ctx) == "pip-compile -- --requirements.in"
 
 
-@mark.parametrize(
-    "filename", ["requirements.in", "my requirements.in", "απαιτήσεις.txt"]
+@pytest.mark.parametrize(
+    "filename", ("requirements.in", "my requirements.in", "απαιτήσεις.txt")
 )
 def test_get_compile_command_with_files(tmpdir_cwd, filename):
     """
@@ -312,10 +311,9 @@ def test_get_compile_command_with_files(tmpdir_cwd, filename):
 
     args = [path, "--output-file", "requirements.txt"]
     with compile_cli.make_context("pip-compile", args) as ctx:
-        assert get_compile_command(
-            ctx
-        ) == "pip-compile --output-file=requirements.txt {src_file}".format(
-            src_file=shlex_quote(path)
+        assert (
+            get_compile_command(ctx)
+            == f"pip-compile --output-file=requirements.txt {shlex.quote(path)}"
         )
 
 
@@ -329,7 +327,7 @@ def test_get_compile_command_sort_args(tmpdir_cwd):
         pass
 
     args = [
-        "--no-index",
+        "--no-emit-index-url",
         "--no-emit-trusted-host",
         "--no-annotate",
         "setup.py",
@@ -342,6 +340,106 @@ def test_get_compile_command_sort_args(tmpdir_cwd):
     with compile_cli.make_context("pip-compile", args) as ctx:
         assert get_compile_command(ctx) == (
             "pip-compile --find-links=bar --find-links=foo "
-            "--no-annotate --no-emit-trusted-host --no-index "
+            "--no-annotate --no-emit-index-url --no-emit-trusted-host "
             "requirements.in setup.py"
         )
+
+
+@pytest.mark.parametrize(
+    "tuples",
+    (
+        (("f", "foo"), ("b", "bar"), ("b", "baz"), ("q", "qux"), ("q", "quux")),
+        iter((("f", "foo"), ("b", "bar"), ("b", "baz"), ("q", "qux"), ("q", "quux"))),
+    ),
+)
+def test_lookup_table_from_tuples(tuples):
+    expected = {"b": {"bar", "baz"}, "f": {"foo"}, "q": {"quux", "qux"}}
+    assert lookup_table_from_tuples(tuples) == expected
+
+
+@pytest.mark.parametrize(
+    ("values", "key"),
+    (
+        (("foo", "bar", "baz", "qux", "quux"), operator.itemgetter(0)),
+        (iter(("foo", "bar", "baz", "qux", "quux")), operator.itemgetter(0)),
+    ),
+)
+def test_lookup_table(values, key):
+    expected = {"b": {"bar", "baz"}, "f": {"foo"}, "q": {"quux", "qux"}}
+    assert lookup_table(values, key) == expected
+
+
+def test_lookup_table_from_tuples_with_empty_values():
+    assert lookup_table_from_tuples(()) == {}
+
+
+def test_lookup_table_with_empty_values():
+    assert lookup_table((), operator.itemgetter(0)) == {}
+
+
+@pytest.mark.parametrize(
+    ("given", "expected"),
+    (
+        ("", None),
+        ("extra == 'dev'", None),
+        ("extra == 'dev' or extra == 'test'", None),
+        ("os_name == 'nt' and extra == 'dev'", "os_name == 'nt'"),
+        ("extra == 'dev' and os_name == 'nt'", "os_name == 'nt'"),
+        ("os_name == 'nt' or extra == 'dev'", "os_name == 'nt'"),
+        ("extra == 'dev' or os_name == 'nt'", "os_name == 'nt'"),
+        ("(extra == 'dev') or os_name == 'nt'", "os_name == 'nt'"),
+        ("os_name == 'nt' and (extra == 'dev' or extra == 'test')", "os_name == 'nt'"),
+        ("os_name == 'nt' or (extra == 'dev' or extra == 'test')", "os_name == 'nt'"),
+        ("(extra == 'dev' or extra == 'test') or os_name == 'nt'", "os_name == 'nt'"),
+        ("(extra == 'dev' or extra == 'test') and os_name == 'nt'", "os_name == 'nt'"),
+        (
+            "os_name == 'nt' or (os_name == 'unix' and extra == 'test')",
+            "os_name == 'nt' or os_name == 'unix'",
+        ),
+        (
+            "(os_name == 'unix' and extra == 'test') or os_name == 'nt'",
+            "os_name == 'unix' or os_name == 'nt'",
+        ),
+        (
+            "(os_name == 'unix' or extra == 'test') and os_name == 'nt'",
+            "os_name == 'unix' and os_name == 'nt'",
+        ),
+        (
+            "(os_name == 'unix' or os_name == 'nt') and extra == 'dev'",
+            "os_name == 'unix' or os_name == 'nt'",
+        ),
+        (
+            "(os_name == 'unix' and extra == 'test' or python_version < '3.5')"
+            " or os_name == 'nt'",
+            "(os_name == 'unix' or python_version < '3.5') or os_name == 'nt'",
+        ),
+        (
+            "os_name == 'unix' and extra == 'test' or os_name == 'nt'",
+            "os_name == 'unix' or os_name == 'nt'",
+        ),
+        (
+            "os_name == 'unix' or extra == 'test' and os_name == 'nt'",
+            "os_name == 'unix' or os_name == 'nt'",
+        ),
+    ),
+)
+def test_drop_extras(from_line, given, expected):
+    ireq = from_line(f"test;{given}")
+    drop_extras(ireq)
+    if expected is None:
+        assert ireq.markers is None
+    else:
+        assert str(ireq.markers).replace("'", '"') == expected.replace("'", '"')
+
+
+def test_get_pip_version_for_python_executable():
+    result = get_pip_version_for_python_executable(sys.executable)
+    assert Version(pip.__version__) == result
+
+
+def test_get_sys_path_for_python_executable():
+    result = get_sys_path_for_python_executable(sys.executable)
+    assert result, "get_sys_path_for_python_executable should not return empty result"
+    # not testing for equality, because pytest adds extra paths into current sys.path
+    for path in result:
+        assert path in sys.path
