@@ -11,8 +11,8 @@ from piptools.scripts.compile import cli
 
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
 
+is_pypy = "__pypy__" in sys.builtin_module_names
 
-is_pypy = '__pypy__' in sys.builtin_module_names
 
 @pytest.fixture(autouse=True)
 def _temp_dep_cache(tmpdir, monkeypatch):
