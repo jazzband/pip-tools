@@ -2,7 +2,7 @@ import os
 import shlex
 import sys
 import tempfile
-from typing import Any, BinaryIO, List, Optional, Tuple, cast
+from typing import IO, Any, BinaryIO, List, Optional, Tuple, Union, cast
 
 import click
 from click.utils import LazyFile, safecall
@@ -12,7 +12,7 @@ from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 
-from .._compat import parse_requirements
+from .._compat import IS_CLICK_VER_8_PLUS, parse_requirements
 from ..cache import DependencyCache
 from ..exceptions import PipToolsError
 from ..locations import CACHE_DIR
@@ -33,6 +33,9 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.in"
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 METADATA_FILENAMES = frozenset({"setup.py", "setup.cfg", "pyproject.toml"})
 
+# TODO: drop click 7 and remove this block, pass directly to version_option
+version_option_kwargs = {"package_name": "pip-tools"} if IS_CLICK_VER_8_PLUS else {}
+
 
 def _get_default_option(option_name: str) -> Any:
     """
@@ -45,7 +48,7 @@ def _get_default_option(option_name: str) -> Any:
 
 
 @click.command(context_settings={"help_option_names": ("-h", "--help")})
-@click.version_option()
+@click.version_option(**version_option_kwargs)
 @click.pass_context
 @click.option("-v", "--verbose", count=True, help="Show more output")
 @click.option("-q", "--quiet", count=True, help="Give less output")
@@ -160,6 +163,12 @@ def _get_default_option(option_name: str) -> Any:
     ),
 )
 @click.option(
+    "--strip-extras",
+    is_flag=True,
+    default=False,
+    help="Assure output file is constraints compatible, avoiding use of extras.",
+)
+@click.option(
     "--generate-hashes",
     is_flag=True,
     default=False,
@@ -212,6 +221,12 @@ def _get_default_option(option_name: str) -> Any:
     default=True,
     help="Add index URL to generated file",
 )
+@click.option(
+    "--emit-options/--no-emit-options",
+    is_flag=True,
+    default=True,
+    help="Add options to generated file",
+)
 def cli(
     ctx: click.Context,
     verbose: int,
@@ -231,8 +246,9 @@ def cli(
     annotate: bool,
     upgrade: bool,
     upgrade_packages: Tuple[str, ...],
-    output_file: Optional[LazyFile],
+    output_file: Union[LazyFile, IO[Any], None],
     allow_unsafe: bool,
+    strip_extras: bool,
     generate_hashes: bool,
     reuse_hashes: bool,
     src_files: Tuple[str, ...],
@@ -242,6 +258,7 @@ def cli(
     cache_dir: str,
     pip_args_str: Optional[str],
     emit_index_url: bool,
+    emit_options: bool,
 ) -> None:
     """Compiles requirements.txt from requirements.in specs."""
     log.verbosity = verbose - quiet
@@ -282,7 +299,9 @@ def cli(
 
         # Close the file at the end of the context execution
         assert output_file is not None
-        ctx.call_on_close(safecall(output_file.close_intelligently))
+        # only LazyFile has close_intelligently, newer IO[Any] does not
+        if isinstance(output_file, LazyFile):  # pragma: no cover
+            ctx.call_on_close(safecall(output_file.close_intelligently))
 
     ###
     # Setup
@@ -452,6 +471,7 @@ def cli(
         emit_index_url=emit_index_url,
         emit_trusted_host=emit_trusted_host,
         annotate=annotate,
+        strip_extras=strip_extras,
         generate_hashes=generate_hashes,
         default_index_url=repository.DEFAULT_INDEX_URL,
         index_urls=repository.finder.index_urls,
@@ -460,6 +480,7 @@ def cli(
         allow_unsafe=allow_unsafe,
         find_links=repository.finder.find_links,
         emit_find_links=emit_find_links,
+        emit_options=emit_options,
     )
     writer.write(
         results=results,

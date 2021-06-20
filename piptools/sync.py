@@ -178,11 +178,14 @@ def sync(
     dry_run: bool = False,
     install_flags: Optional[List[str]] = None,
     ask: bool = False,
+    python_executable: Optional[str] = None,
 ) -> int:
     """
     Install and uninstalls the given sets of modules.
     """
     exit_code = 0
+
+    python_executable = python_executable or sys.executable
 
     if not to_uninstall and not to_install:
         log.info("Everything up-to-date", err=False)
@@ -216,7 +219,7 @@ def sync(
         if to_uninstall:
             run(  # nosec
                 [
-                    sys.executable,
+                    python_executable,
                     "-m",
                     "pip",
                     "uninstall",
@@ -244,7 +247,7 @@ def sync(
             try:
                 run(  # nosec
                     [
-                        sys.executable,
+                        python_executable,
                         "-m",
                         "pip",
                         "install",
