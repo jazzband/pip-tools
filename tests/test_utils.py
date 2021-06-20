@@ -238,8 +238,10 @@ def test_is_url_requirement_filename(caplog, from_line, line):
         (["--no-emit-trusted-host"], "pip-compile --no-emit-trusted-host"),
         (["--no-annotate"], "pip-compile --no-annotate"),
         (["--no-allow-unsafe"], "pip-compile"),
+        (["--no-emit-options"], "pip-compile --no-emit-options"),
         # Check that default values will be removed from the command
         (["--emit-trusted-host"], "pip-compile"),
+        (["--emit-options"], "pip-compile"),
         (["--annotate"], "pip-compile"),
         (["--emit-index-url"], "pip-compile"),
         (["--max-rounds=10"], "pip-compile"),
