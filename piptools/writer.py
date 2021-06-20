@@ -70,6 +70,7 @@ class OutputWriter:
         allow_unsafe: bool,
         find_links: List[str],
         emit_find_links: bool,
+        emit_options: bool,
     ) -> None:
         self.dst_file = dst_file
         self.click_ctx = click_ctx
@@ -87,6 +88,7 @@ class OutputWriter:
         self.allow_unsafe = allow_unsafe
         self.find_links = find_links
         self.emit_find_links = emit_find_links
+        self.emit_options = emit_options
 
     def _sort_key(self, ireq: InstallRequirement) -> Tuple[bool, str]:
         return (not ireq.editable, key_from_ireq(ireq))
@@ -131,6 +133,8 @@ class OutputWriter:
                 yield f"--find-links {find_link}"
 
     def write_flags(self) -> Iterator[str]:
+        if not self.emit_options:
+            return
         emitted = False
         for line in chain(
             self.write_index_options(),

@@ -45,6 +45,7 @@ def writer(tmpdir_cwd):
             find_links=[],
             emit_find_links=True,
             strip_extras=False,
+            emit_options=True,
         )
         yield writer
 
@@ -225,6 +226,37 @@ def test_write_header_no_emit_header(writer):
 
     with pytest.raises(StopIteration):
         next(writer.write_header())
+
+
+@pytest.mark.parametrize(
+    ("emit_options", "expected_flags"),
+    (
+        pytest.param(
+            True,
+            (
+                "--index-url https://index-server",
+                "--find-links links",
+                "--trusted-host index-server",
+                "--no-binary flask",
+                "--only-binary django",
+                "",
+            ),
+            id="on",
+        ),
+        pytest.param(False, (), id="off"),
+    ),
+)
+def test_write_flags_emit_options(writer, emit_options, expected_flags):
+    """
+    There should be options if emit_options is True
+    """
+    writer.emit_options = emit_options
+    writer.index_urls = ["https://index-server"]
+    writer.find_links = ["links"]
+    writer.trusted_hosts = ["index-server"]
+    writer.format_control = FormatControl(no_binary=["flask"], only_binary=["django"])
+
+    assert tuple(writer.write_flags()) == expected_flags
 
 
 def test_write_format_controls(writer):

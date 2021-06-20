@@ -221,6 +221,12 @@ def _get_default_option(option_name: str) -> Any:
     default=True,
     help="Add index URL to generated file",
 )
+@click.option(
+    "--emit-options/--no-emit-options",
+    is_flag=True,
+    default=True,
+    help="Add options to generated file",
+)
 def cli(
     ctx: click.Context,
     verbose: int,
@@ -252,6 +258,7 @@ def cli(
     cache_dir: str,
     pip_args_str: Optional[str],
     emit_index_url: bool,
+    emit_options: bool,
 ) -> None:
     """Compiles requirements.txt from requirements.in specs."""
     log.verbosity = verbose - quiet
@@ -473,6 +480,7 @@ def cli(
         allow_unsafe=allow_unsafe,
         find_links=repository.finder.find_links,
         emit_find_links=emit_find_links,
+        emit_options=emit_options,
     )
     writer.write(
         results=results,
