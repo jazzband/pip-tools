@@ -2,9 +2,9 @@
 
 Features:
 
-- Add support for `pyproject.toml` or `setup.cfg` as input dependency file
-  (PEP-517) for `pip-compile`
-  ([#1356](https://github.com/jazzband/pip-tools/pull/1356)). Thanks @orsinium
+- Add support for `pyproject.toml` or `setup.cfg` as input dependency file (PEP-517) for
+  `pip-compile` ([#1356](https://github.com/jazzband/pip-tools/pull/1356)). Thanks
+  @orsinium
 - Add `pip-compile --extra` option to specify `extras_require` dependencies
   ([#1363](https://github.com/jazzband/pip-tools/pull/1363)). Thanks @orsinium
 
@@ -22,8 +22,8 @@ Bug Fixes:
 
 Dependencies:
 
-- Add `pep517` dependency
-  ([#1353](https://github.com/jazzband/pip-tools/pull/1353)). Thanks @atugushev
+- Add `pep517` dependency ([#1353](https://github.com/jazzband/pip-tools/pull/1353)).
+  Thanks @atugushev
 
 # 6.0.0 (2021-03-12)
 
@@ -41,15 +41,15 @@ Features:
 
 Bug Fixes:
 
-- Fix a bug where `pip-compile` with `setup.py` would not include dependencies
-  with environment markers
-  ([#1311](https://github.com/jazzband/pip-tools/pull/1311)). Thanks @astrojuanlu
-- Prefer `===` over `==` when generating `requirements.txt` if a dependency
-  was pinned with `===`
-  ([#1323](https://github.com/jazzband/pip-tools/pull/1323)). Thanks @IceTDrinker
+- Fix a bug where `pip-compile` with `setup.py` would not include dependencies with
+  environment markers ([#1311](https://github.com/jazzband/pip-tools/pull/1311)). Thanks
+  @astrojuanlu
+- Prefer `===` over `==` when generating `requirements.txt` if a dependency was pinned
+  with `===` ([#1323](https://github.com/jazzband/pip-tools/pull/1323)). Thanks
+  @IceTDrinker
 - Fix a bug where `pip-compile` with `setup.py` in nested folder would generate
-  `setup.txt` output file
-  ([#1324](https://github.com/jazzband/pip-tools/pull/1324)). Thanks @peymanslh
+  `setup.txt` output file ([#1324](https://github.com/jazzband/pip-tools/pull/1324)).
+  Thanks @peymanslh
 - Write out default index when it is provided as `--extra-index-url`
   ([#1325](https://github.com/jazzband/pip-tools/pull/1325)). Thanks @fahrradflucht
 
@@ -62,8 +62,8 @@ Dependencies:
 
 Features:
 
-- Add Python 3.9 support
-  ([1222](https://github.com/jazzband/pip-tools/pull/1222)). Thanks @jdufresne
+- Add Python 3.9 support ([1222](https://github.com/jazzband/pip-tools/pull/1222)).
+  Thanks @jdufresne
 - Improve formatting of long "via" annotations
   ([1237](https://github.com/jazzband/pip-tools/pull/1237)). Thanks @jdufresne
 - Add `--verbose` and `--quiet` options to `pip-sync`
@@ -73,8 +73,8 @@ Features:
 
 Bug Fixes:
 
-- Restore `PIP_EXISTS_ACTION` environment variable to its previous state
-  when resolve dependencies in `pip-compile`
+- Restore `PIP_EXISTS_ACTION` environment variable to its previous state when resolve
+  dependencies in `pip-compile`
   ([1255](https://github.com/jazzband/pip-tools/pull/1255)). Thanks @jdufresne
 
 Dependencies:
@@ -93,15 +93,16 @@ Improved Documentation:
 
 Features:
 
-- Add `pip>=20.3` support
-  ([1216](https://github.com/jazzband/pip-tools/pull/1216)). Thanks @atugushev and @AndydeCleyre
+- Add `pip>=20.3` support ([1216](https://github.com/jazzband/pip-tools/pull/1216)).
+  Thanks @atugushev and @AndydeCleyre
 - Exclude `--no-reuse-hashes` option from «command to run» header
   ([1197](https://github.com/jazzband/pip-tools/pull/1197)). Thanks @graingert
 
 Dependencies:
 
 - Bump `pip` minimum version to `>= 20.1`
-  ([1191](https://github.com/jazzband/pip-tools/pull/1191)). Thanks @atugushev and @AndydeCleyre
+  ([1191](https://github.com/jazzband/pip-tools/pull/1191)). Thanks @atugushev and
+  @AndydeCleyre
 
 # 5.3.1 (2020-07-31)
 
@@ -117,13 +118,13 @@ Features:
 
 - Add `-h` alias for `--help` option to `pip-sync` and `pip-compile`
   ([1163](https://github.com/jazzband/pip-tools/pull/1163)). Thanks @jan25
-- Add `pip>=20.2` support
-  ([1168](https://github.com/jazzband/pip-tools/pull/1168)). Thanks @atugushev
+- Add `pip>=20.2` support ([1168](https://github.com/jazzband/pip-tools/pull/1168)).
+  Thanks @atugushev
 - `pip-sync` now exists with code `1` on `--dry-run`
   ([1172](https://github.com/jazzband/pip-tools/pull/1172)). Thanks @francisbrito
 - `pip-compile` now doesn't resolve constraints from `-c constraints.txt`that are not
-  (yet) requirements
-  ([1175](https://github.com/jazzband/pip-tools/pull/1175)). Thanks @clslgrnc
+  (yet) requirements ([1175](https://github.com/jazzband/pip-tools/pull/1175)). Thanks
+  @clslgrnc
 - Add `--reuse-hashes/--no-reuse-hashes` options to `pip-compile`
   ([1177](https://github.com/jazzband/pip-tools/pull/1177)). Thanks @graingert
 
@@ -131,9 +132,9 @@ Features:
 
 Bug Fixes:
 
-- Fix a bug where `pip-compile` would lose some dependencies on update
-  a `requirements.txt`
-  ([1159](https://github.com/jazzband/pip-tools/pull/1159)). Thanks @richafrank
+- Fix a bug where `pip-compile` would lose some dependencies on update a
+  `requirements.txt` ([1159](https://github.com/jazzband/pip-tools/pull/1159)). Thanks
+  @richafrank
 
 # 5.2.0 (2020-05-27)
 
@@ -157,8 +158,8 @@ Bug Fixes:
 Deprecations:
 
 - Deprecate `--index/--no-index` in favor of `--emit-index-url/--no-emit-index-url`
-  options in `pip-compile`
-  ([1130](https://github.com/jazzband/pip-tools/pull/1130)). Thanks @atugushev
+  options in `pip-compile` ([1130](https://github.com/jazzband/pip-tools/pull/1130)).
+  Thanks @atugushev
 
 Other Changes:
 
@@ -195,8 +196,8 @@ Backwards Incompatible Changes:
 
 - `pip-tools` now requires `pip>=20.0` (previosly `8.1.x` - `20.0.x`). Windows users,
   make sure to use `python -m pip install pip-tools` to avoid issues with `pip`
-  self-update from now on
-  ([#1055](https://github.com/jazzband/pip-tools/pull/1055)). Thanks @atugushev
+  self-update from now on ([#1055](https://github.com/jazzband/pip-tools/pull/1055)).
+  Thanks @atugushev
 - `--build-isolation` option now set on by default for `pip-compile`
   ([#1060](https://github.com/jazzband/pip-tools/pull/1060)). Thanks @hramezani
 
@@ -206,19 +207,23 @@ Features:
   ([#927](https://github.com/jazzband/pip-tools/pull/927)). Thanks @AndydeCleyre
 - Add `pre-commit` hook for `pip-compile`
   ([#976](https://github.com/jazzband/pip-tools/pull/976)). Thanks @atugushev
-- `pip-compile` and `pip-sync` now pass anything provided to the new `--pip-args` option on to `pip`
-  ([#1080](https://github.com/jazzband/pip-tools/pull/1080)). Thanks @AndydeCleyre
-- `pip-compile` output headers are now more accurate when `--` is used to escape filenames
-  ([#1080](https://github.com/jazzband/pip-tools/pull/1080)). Thanks @AndydeCleyre
-- Add `pip>=20.1` support
-  ([#1088](https://github.com/jazzband/pip-tools/pull/1088)). Thanks @atugushev
+- `pip-compile` and `pip-sync` now pass anything provided to the new `--pip-args` option
+  on to `pip` ([#1080](https://github.com/jazzband/pip-tools/pull/1080)). Thanks
+  @AndydeCleyre
+- `pip-compile` output headers are now more accurate when `--` is used to escape
+  filenames ([#1080](https://github.com/jazzband/pip-tools/pull/1080)). Thanks
+  @AndydeCleyre
+- Add `pip>=20.1` support ([#1088](https://github.com/jazzband/pip-tools/pull/1088)).
+  Thanks @atugushev
 
 Bug Fixes:
 
-- Fix a bug where editables that are both direct requirements and constraints wouldn't appear in `pip-compile` output
+- Fix a bug where editables that are both direct requirements and constraints wouldn't
+  appear in `pip-compile` output
   ([#1093](https://github.com/jazzband/pip-tools/pull/1093)). Thanks @richafrank
-- `pip-compile` now sorts format controls (`--no-binary/--only-binary`) to ensure consistent results
-  ([#1098](https://github.com/jazzband/pip-tools/pull/1098)). Thanks @richafrank
+- `pip-compile` now sorts format controls (`--no-binary/--only-binary`) to ensure
+  consistent results ([#1098](https://github.com/jazzband/pip-tools/pull/1098)). Thanks
+  @richafrank
 
 Improved Documentation:
 
@@ -231,7 +236,8 @@ Improved Documentation:
 
 Bug Fixes:
 
-- Strip line number annotations such as "(line XX)" from file requirements, to prevent diff noise when modifying input requirement files
+- Strip line number annotations such as "(line XX)" from file requirements, to prevent
+  diff noise when modifying input requirement files
   ([#1075](https://github.com/jazzband/pip-tools/pull/1075)). Thanks @adamchainz
 
 Improved Documentation:
@@ -243,13 +249,14 @@ Improved Documentation:
 
 Features:
 
-- Primary requirements and VCS dependencies are now get annotated with any source `.in` files and reverse dependencies
+- Primary requirements and VCS dependencies are now get annotated with any source `.in`
+  files and reverse dependencies
   ([#1058](https://github.com/jazzband/pip-tools/pull/1058)). Thanks @AndydeCleyre
 
 Bug Fixes:
 
-- Always use normalized path for cache directory as it is required in newer versions of `pip`
-  ([#1062](https://github.com/jazzband/pip-tools/pull/1062)). Thanks @kammala
+- Always use normalized path for cache directory as it is required in newer versions of
+  `pip` ([#1062](https://github.com/jazzband/pip-tools/pull/1062)). Thanks @kammala
 
 Improved Documentation:
 
@@ -262,21 +269,25 @@ Bug Fixes:
 
 - Fix a bug where `pip-compile` would keep outdated options from `requirements.txt`
   ([#1029](https://github.com/jazzband/pip-tools/pull/1029)). Thanks @atugushev
-- Fix the `No handlers could be found for logger "pip.*"` error by configuring the builtin logging module
-  ([#1035](https://github.com/jazzband/pip-tools/pull/1035)). Thanks @vphilippon
+- Fix the `No handlers could be found for logger "pip.*"` error by configuring the
+  builtin logging module ([#1035](https://github.com/jazzband/pip-tools/pull/1035)).
+  Thanks @vphilippon
 - Fix a bug where dependencies of relevant constraints may be missing from output file
   ([#1037](https://github.com/jazzband/pip-tools/pull/1037)). Thanks @jeevb
 - Upgrade the minimal version of `click` from `6.0` to `7.0` version in `setup.py`
   ([#1039](https://github.com/jazzband/pip-tools/pull/1039)). Thanks @hramezani
-- Ensure that depcache considers the python implementation such that (for example) `cpython3.6` does not poison the results of `pypy3.6`
+- Ensure that depcache considers the python implementation such that (for example)
+  `cpython3.6` does not poison the results of `pypy3.6`
   ([#1050](https://github.com/jazzband/pip-tools/pull/1050)). Thanks @asottile
 
 Improved Documentation:
 
-- Make the `README` more imperative about installing into a project's virtual environment to avoid confusion
+- Make the `README` more imperative about installing into a project's virtual
+  environment to avoid confusion
   ([#1023](https://github.com/jazzband/pip-tools/pull/1023)). Thanks @tekumara
-- Add a note to the `README` about how to install requirements on different stages to [Workflow for layered requirements](https://github.com/jazzband/pip-tools#workflow-for-layered-requirements) section
-  ([#1044](https://github.com/jazzband/pip-tools/pull/1044)). Thanks @hramezani
+- Add a note to the `README` about how to install requirements on different stages to
+  [Workflow for layered requirements](https://github.com/jazzband/pip-tools#workflow-for-layered-requirements)
+  section ([#1044](https://github.com/jazzband/pip-tools/pull/1044)). Thanks @hramezani
 
 # 4.4.0 (2020-01-21)
 
@@ -284,35 +295,39 @@ Features:
 
 - Add `--cache-dir` option to `pip-compile`
   ([#1022](https://github.com/jazzband/pip-tools/pull/1022)). Thanks @richafrank
-- Add `pip>=20.0` support
-  ([#1024](https://github.com/jazzband/pip-tools/pull/1024)). Thanks @atugushev
+- Add `pip>=20.0` support ([#1024](https://github.com/jazzband/pip-tools/pull/1024)).
+  Thanks @atugushev
 
 Bug Fixes:
 
-- Fix a bug where `pip-compile --upgrade-package` would upgrade those passed packages not already required according to the `*.in` and `*.txt` files
+- Fix a bug where `pip-compile --upgrade-package` would upgrade those passed packages
+  not already required according to the `*.in` and `*.txt` files
   ([#1031](https://github.com/jazzband/pip-tools/pull/1031)). Thanks @AndydeCleyre
 
 # 4.3.0 (2019-11-25)
 
 Features:
 
-- Add Python 3.8 support
-  ([#956](https://github.com/jazzband/pip-tools/pull/956)). Thanks @hramezani
+- Add Python 3.8 support ([#956](https://github.com/jazzband/pip-tools/pull/956)).
+  Thanks @hramezani
 - Unpin commented out unsafe packages in `requirements.txt`
   ([#975](https://github.com/jazzband/pip-tools/pull/975)). Thanks @atugushev
 
 Bug Fixes:
 
-- Fix `pip-compile` doesn't copy `--trusted-host` from `requirements.in` to `requirements.txt`
-  ([#964](https://github.com/jazzband/pip-tools/pull/964)). Thanks @atugushev
+- Fix `pip-compile` doesn't copy `--trusted-host` from `requirements.in` to
+  `requirements.txt` ([#964](https://github.com/jazzband/pip-tools/pull/964)). Thanks
+  @atugushev
 - Add compatibility with `pip>=20.0`
-  ([#953](https://github.com/jazzband/pip-tools/pull/953) and [#978](https://github.com/jazzband/pip-tools/pull/978)). Thanks @atugushev
+  ([#953](https://github.com/jazzband/pip-tools/pull/953) and
+  [#978](https://github.com/jazzband/pip-tools/pull/978)). Thanks @atugushev
 - Fix a bug where the resolver wouldn't clean up the ephemeral wheel cache
   ([#968](https://github.com/jazzband/pip-tools/pull/968)). Thanks @atugushev
 
 Improved Documentation:
 
-- Add a note to `README` about `requirements.txt` file, which would possibly interfere if you're compiling from scratch
+- Add a note to `README` about `requirements.txt` file, which would possibly interfere
+  if you're compiling from scratch
   ([#959](https://github.com/jazzband/pip-tools/pull/959)). Thanks @hramezani
 
 # 4.2.0 (2019-10-12)
@@ -325,9 +340,14 @@ Features:
 Bug Fixes:
 
 - Add compatibility with `pip>=19.3`
-  ([#864](https://github.com/jazzband/pip-tools/pull/864), [#904](https://github.com/jazzband/pip-tools/pull/904), [#910](https://github.com/jazzband/pip-tools/pull/910), [#912](https://github.com/jazzband/pip-tools/pull/912) and [#915](https://github.com/jazzband/pip-tools/pull/915)). Thanks @atugushev
-- Ensure `pip-compile --no-header <blank requirements.in>` creates/overwrites `requirements.txt`
-  ([#909](https://github.com/jazzband/pip-tools/pull/909)). Thanks @AndydeCleyre
+  ([#864](https://github.com/jazzband/pip-tools/pull/864),
+  [#904](https://github.com/jazzband/pip-tools/pull/904),
+  [#910](https://github.com/jazzband/pip-tools/pull/910),
+  [#912](https://github.com/jazzband/pip-tools/pull/912) and
+  [#915](https://github.com/jazzband/pip-tools/pull/915)). Thanks @atugushev
+- Ensure `pip-compile --no-header <blank requirements.in>` creates/overwrites
+  `requirements.txt` ([#909](https://github.com/jazzband/pip-tools/pull/909)). Thanks
+  @AndydeCleyre
 - Fix `pip-compile --upgrade-package` removes «via» annotation
   ([#931](https://github.com/jazzband/pip-tools/pull/931)). Thanks @hramezani
 
@@ -345,8 +365,9 @@ Features:
 
 Bug Fixes:
 
-- Prevent `--dry-run` log message from being printed with `--quiet` option in `pip-compile`
-  ([#861](https://github.com/jazzband/pip-tools/pull/861)). Thanks @ddormer
+- Prevent `--dry-run` log message from being printed with `--quiet` option in
+  `pip-compile` ([#861](https://github.com/jazzband/pip-tools/pull/861)). Thanks
+  @ddormer
 - Fix resolution of requirements from Git URLs without `-e`
   ([#879](https://github.com/jazzband/pip-tools/pull/879)). Thanks @andersk
 
@@ -374,7 +395,8 @@ Bug Fixes:
 - Output all logging to stderr instead of stdout
   ([#834](https://github.com/jazzband/pip-tools/pull/834)). Thanks @georgek
 - Fix output file update with `--dry-run` option in `pip-compile`
-  ([#842](https://github.com/jazzband/pip-tools/pull/842)). Thanks @shipmints and @atugushev
+  ([#842](https://github.com/jazzband/pip-tools/pull/842)). Thanks @shipmints and
+  @atugushev
 
 # 3.8.0 (2019-06-06)
 
@@ -406,8 +428,8 @@ Features:
   ([#793](https://github.com/jazzband/pip-tools/pull/793)). Thanks @estan and @atugushev
 - Normalize «command to run» in `pip-compile` headers
   ([#800](https://github.com/jazzband/pip-tools/pull/800)). Thanks @atugushev
-- Support URLs as packages
-  ([#807](https://github.com/jazzband/pip-tools/pull/807)). Thanks @jcushman, @nim65s and @toejough
+- Support URLs as packages ([#807](https://github.com/jazzband/pip-tools/pull/807)).
+  Thanks @jcushman, @nim65s and @toejough
 
 Bug Fixes:
 
@@ -480,8 +502,8 @@ Bug Fixes:
 
 Features:
 
-- Added support of `pip` 19.0
-  ([#715](https://github.com/jazzband/pip-tools/pull/715)). Thanks @atugushev
+- Added support of `pip` 19.0 ([#715](https://github.com/jazzband/pip-tools/pull/715)).
+  Thanks @atugushev
 - Add `--allow-unsafe` to update instructions in the generated `requirements.txt`
   ([#708](https://github.com/jazzband/pip-tools/pull/708)). Thanks @richafrank
 
@@ -494,23 +516,26 @@ Bug Fixes:
 
 Features:
 
-- Apply version constraints specified with package upgrade option (`-P, --upgrade-package`)
-  ([#694](https://github.com/jazzband/pip-tools/pull/694)). Thanks @richafrank
+- Apply version constraints specified with package upgrade option
+  (`-P, --upgrade-package`) ([#694](https://github.com/jazzband/pip-tools/pull/694)).
+  Thanks @richafrank
 
 # 3.1.0 (2018-10-05)
 
 Features:
 
-- Added support of `pip` 18.1
-  ([#689](https://github.com/jazzband/pip-tools/pull/689)). Thanks @vphilippon
+- Added support of `pip` 18.1 ([#689](https://github.com/jazzband/pip-tools/pull/689)).
+  Thanks @vphilippon
 
 # 3.0.0 (2018-09-24)
 
 Major changes:
 
-- Update `pip-tools` for native `pip` 8, 9, 10 and 18 compatibility, un-vendoring `pip` to use the user-installed `pip`
-  ([#657](https://github.com/jazzband/pip-tools/pull/657) and [#672](https://github.com/jazzband/pip-tools/pull/672)).
-  Thanks to @techalchemy, @suutari, @tysonclugg and @vphilippon for contributing on this.
+- Update `pip-tools` for native `pip` 8, 9, 10 and 18 compatibility, un-vendoring `pip`
+  to use the user-installed `pip`
+  ([#657](https://github.com/jazzband/pip-tools/pull/657) and
+  [#672](https://github.com/jazzband/pip-tools/pull/672)). Thanks to @techalchemy,
+  @suutari, @tysonclugg and @vphilippon for contributing on this.
 
 Features:
 
@@ -528,7 +553,8 @@ Bug Fixes:
 
 Bug Fixes:
 
-- Added missing package data from vendored pip, such as missing cacert.pem file. Thanks @vphilippon
+- Added missing package data from vendored pip, such as missing cacert.pem file. Thanks
+  @vphilippon
 
 # 2.0.0 (2018-04-15)
 
@@ -539,8 +565,9 @@ Major changes:
 
 Features:
 
-- Improved the speed of pip-compile --generate-hashes by caching the hashes from an existing output file
-  ([#641](https://github.com/jazzband/pip-tools/pull/641)). Thanks @justicz
+- Improved the speed of pip-compile --generate-hashes by caching the hashes from an
+  existing output file ([#641](https://github.com/jazzband/pip-tools/pull/641)). Thanks
+  @justicz
 - Added a `pip-sync --user` option to restrict attention to user-local directory
   ([#642](https://github.com/jazzband/pip-tools/pull/642)). Thanks @jbergknoff-10e
 - Removed the hard dependency on setuptools
@@ -548,103 +575,136 @@ Features:
 
 Bug fixes:
 
-- The pip environment markers on top-level requirements in the source file (requirements.in)
-  are now properly handled and will only be processed in the right environment
-  ([#647](https://github.com/jazzband/pip-tools/pull/647)). Thanks @JoergRittinger
+- The pip environment markers on top-level requirements in the source file
+  (requirements.in) are now properly handled and will only be processed in the right
+  environment ([#647](https://github.com/jazzband/pip-tools/pull/647)). Thanks
+  @JoergRittinger
 
 # 1.11.0 (2017-11-30)
 
 Features:
 
-- Allow editable packages in requirements.in with `pip-compile --generate-hashes` ([#524](https://github.com/jazzband/pip-tools/pull/524)). Thanks @jdufresne
-- Allow for CA bundles with `pip-compile --cert` ([#612](https://github.com/jazzband/pip-tools/pull/612)). Thanks @khwilson
-- Improved `pip-compile` duration with large locally available editable requirement by skipping a copy to the cache
-  ([#583](https://github.com/jazzband/pip-tools/pull/583)). Thanks @costypetrisor
-- Slightly improved the `NoCandidateFound` error message on potential causes ([#614](https://github.com/jazzband/pip-tools/pull/614)). Thanks @vphilippon
+- Allow editable packages in requirements.in with `pip-compile --generate-hashes`
+  ([#524](https://github.com/jazzband/pip-tools/pull/524)). Thanks @jdufresne
+- Allow for CA bundles with `pip-compile --cert`
+  ([#612](https://github.com/jazzband/pip-tools/pull/612)). Thanks @khwilson
+- Improved `pip-compile` duration with large locally available editable requirement by
+  skipping a copy to the cache ([#583](https://github.com/jazzband/pip-tools/pull/583)).
+  Thanks @costypetrisor
+- Slightly improved the `NoCandidateFound` error message on potential causes
+  ([#614](https://github.com/jazzband/pip-tools/pull/614)). Thanks @vphilippon
 
 Bug Fixes:
 
-- Add `-markerlib` to the list of `PACKAGES_TO_IGNORE` of `pip-sync` ([#613](https://github.com/jazzband/pip-tools/pull/613)).
+- Add `-markerlib` to the list of `PACKAGES_TO_IGNORE` of `pip-sync`
+  ([#613](https://github.com/jazzband/pip-tools/pull/613)).
 
 # 1.10.2 (2017-11-22)
 
 Bug Fixes:
 
-- Fixed bug causing dependencies from invalid wheels for the current platform to be included ([#571](https://github.com/jazzband/pip-tools/pull/571)).
-- `pip-sync` will respect environment markers in the requirements.txt ([600](https://github.com/jazzband/pip-tools/pull/600)). Thanks @hazmat345
+- Fixed bug causing dependencies from invalid wheels for the current platform to be
+  included ([#571](https://github.com/jazzband/pip-tools/pull/571)).
+- `pip-sync` will respect environment markers in the requirements.txt
+  ([600](https://github.com/jazzband/pip-tools/pull/600)). Thanks @hazmat345
 - Converted the ReadMe to have a nice description rendering on PyPI. Thanks @bittner
 
 # 1.10.1 (2017-09-27)
 
 Bug Fixes:
 
-- Fixed bug breaking `pip-sync` on Python 3, raising `TypeError: '<' not supported between instances of 'InstallRequirement' and 'InstallRequirement'` ([#570](https://github.com/jazzband/pip-tools/pull/570)).
+- Fixed bug breaking `pip-sync` on Python 3, raising
+  `TypeError: '<' not supported between instances of 'InstallRequirement' and 'InstallRequirement'`
+  ([#570](https://github.com/jazzband/pip-tools/pull/570)).
 
 # 1.10.0 (2017-09-27)
 
 Features:
 
-- `--generate-hashes` now generates hashes for all wheels,
-  not only wheels for the currently running platform ([#520](https://github.com/jazzband/pip-tools/pull/520)). Thanks @jdufresne
+- `--generate-hashes` now generates hashes for all wheels, not only wheels for the
+  currently running platform ([#520](https://github.com/jazzband/pip-tools/pull/520)).
+  Thanks @jdufresne
 - Added a `-q`/`--quiet` argument to the pip-sync command to reduce log output.
 
 Bug Fixes:
 
-- Fixed bug where unsafe packages would get pinned in generated requirements files
-  when `--allow-unsafe` was not set. ([#517](https://github.com/jazzband/pip-tools/pull/517)). Thanks @dschaller
-- Fixed bug where editable PyPI dependencies would have a `download_dir` and be exposed to `git-checkout-index`,
-  (thus losing their VCS directory) and `python setup.py egg_info` fails. ([#385](https://github.com/jazzband/pip-tools/pull/385#) and [#538](https://github.com/jazzband/pip-tools/pull/538)). Thanks @blueyed and @dfee
-- Fixed bug where some primary dependencies were annotated with "via" info comments. ([#542](https://github.com/jazzband/pip-tools/pull/542)). Thanks @quantus
-- Fixed bug where pkg-resources would be removed by pip-sync in Ubuntu. ([#555](https://github.com/jazzband/pip-tools/pull/555)). Thanks @cemsbr
-- Fixed bug where the resolver would sometime not stabilize on requirements specifying extras. ([#566](https://github.com/jazzband/pip-tools/pull/566)). Thanks @vphilippon
-- Fixed an unicode encoding error when distribution package contains non-ASCII file names ([#567](https://github.com/jazzband/pip-tools/pull/567)). Thanks @suutari
-- Fixed package hashing doing unnecessary unpacking ([#557](https://github.com/jazzband/pip-tools/pull/557)). Thanks @suutari-ai
+- Fixed bug where unsafe packages would get pinned in generated requirements files when
+  `--allow-unsafe` was not set.
+  ([#517](https://github.com/jazzband/pip-tools/pull/517)). Thanks @dschaller
+- Fixed bug where editable PyPI dependencies would have a `download_dir` and be exposed
+  to `git-checkout-index`, (thus losing their VCS directory) and
+  `python setup.py egg_info` fails.
+  ([#385](https://github.com/jazzband/pip-tools/pull/385#) and
+  [#538](https://github.com/jazzband/pip-tools/pull/538)). Thanks @blueyed and @dfee
+- Fixed bug where some primary dependencies were annotated with "via" info comments.
+  ([#542](https://github.com/jazzband/pip-tools/pull/542)). Thanks @quantus
+- Fixed bug where pkg-resources would be removed by pip-sync in Ubuntu.
+  ([#555](https://github.com/jazzband/pip-tools/pull/555)). Thanks @cemsbr
+- Fixed bug where the resolver would sometime not stabilize on requirements specifying
+  extras. ([#566](https://github.com/jazzband/pip-tools/pull/566)). Thanks @vphilippon
+- Fixed an unicode encoding error when distribution package contains non-ASCII file
+  names ([#567](https://github.com/jazzband/pip-tools/pull/567)). Thanks @suutari
+- Fixed package hashing doing unnecessary unpacking
+  ([#557](https://github.com/jazzband/pip-tools/pull/557)). Thanks @suutari-ai
 
 # 1.9.0 (2017-04-12)
 
 Features:
 
-- Added ability to read requirements from `setup.py` instead of just `requirements.in` ([#418](https://github.com/jazzband/pip-tools/pull/418)). Thanks to @tysonclugg and @majuscule.
-- Added a `--max-rounds` argument to the pip-compile command to allow for solving large requirement sets ([#472](https://github.com/jazzband/pip-tools/pull/472)). Thanks @derek-miller.
-- Exclude unsafe packages' dependencies when `--allow-unsafe` is not in use ([#441](https://github.com/jazzband/pip-tools/pull/441)). Thanks @jdufresne.
-- Exclude irrelevant pip constraints ([#471](https://github.com/jazzband/pip-tools/pull/471)). Thanks @derek-miller.
-- Allow control over emitting trusted-host to the compiled requirements. ([#448](https://github.com/jazzband/pip-tools/pull/448)). Thanks @tonyseek.
-- Allow running as a Python module (#[461](https://github.com/jazzband/pip-tools/pull/461)). Thanks @AndreLouisCaron.
-- Preserve environment markers in generated requirements.txt. ([#460](https://github.com/jazzband/pip-tools/pull/460)). Thanks @barrywhart.
+- Added ability to read requirements from `setup.py` instead of just `requirements.in`
+  ([#418](https://github.com/jazzband/pip-tools/pull/418)). Thanks to @tysonclugg and
+  @majuscule.
+- Added a `--max-rounds` argument to the pip-compile command to allow for solving large
+  requirement sets ([#472](https://github.com/jazzband/pip-tools/pull/472)). Thanks
+  @derek-miller.
+- Exclude unsafe packages' dependencies when `--allow-unsafe` is not in use
+  ([#441](https://github.com/jazzband/pip-tools/pull/441)). Thanks @jdufresne.
+- Exclude irrelevant pip constraints
+  ([#471](https://github.com/jazzband/pip-tools/pull/471)). Thanks @derek-miller.
+- Allow control over emitting trusted-host to the compiled requirements.
+  ([#448](https://github.com/jazzband/pip-tools/pull/448)). Thanks @tonyseek.
+- Allow running as a Python module
+  (#[461](https://github.com/jazzband/pip-tools/pull/461)). Thanks @AndreLouisCaron.
+- Preserve environment markers in generated requirements.txt.
+  ([#460](https://github.com/jazzband/pip-tools/pull/460)). Thanks @barrywhart.
 
 Bug Fixes:
 
-- Fixed the --upgrade-package option to respect the given package list to update ([#491](https://github.com/jazzband/pip-tools/pull/491)).
-- Fixed the default output file name when the source file has no extension ([#488](https://github.com/jazzband/pip-tools/pull/488)). Thanks @vphilippon
+- Fixed the --upgrade-package option to respect the given package list to update
+  ([#491](https://github.com/jazzband/pip-tools/pull/491)).
+- Fixed the default output file name when the source file has no extension
+  ([#488](https://github.com/jazzband/pip-tools/pull/488)). Thanks @vphilippon
 - Fixed crash on editable requirements introduced in 1.8.2.
-- Fixed duplicated --trusted-host, --extra-index-url and --index-url in the generated requirements.
+- Fixed duplicated --trusted-host, --extra-index-url and --index-url in the generated
+  requirements.
 
 # 1.8.2 (2017-03-28)
 
-- Regression fix: editable reqs were loosing their dependencies after first round ([#476](https://github.com/jazzband/pip-tools/pull/476))
-  Thanks @mattlong
-- Remove duplicate index urls in generated requirements.txt ([#468](https://github.com/jazzband/pip-tools/pull/468))
-  Thanks @majuscule
+- Regression fix: editable reqs were loosing their dependencies after first round
+  ([#476](https://github.com/jazzband/pip-tools/pull/476)) Thanks @mattlong
+- Remove duplicate index urls in generated requirements.txt
+  ([#468](https://github.com/jazzband/pip-tools/pull/468)) Thanks @majuscule
 
 # 1.8.1 (2017-03-22)
 
 - Recalculate secondary dependencies between rounds (#378)
-- Calculated dependencies could be left with wrong candidates when
-  toplevel requirements happen to be also pinned in sub-dependencies (#450)
+- Calculated dependencies could be left with wrong candidates when toplevel requirements
+  happen to be also pinned in sub-dependencies (#450)
 - Fix duplicate entries that could happen in generated requirements.txt (#427)
 - Gracefully report invalid pip version (#457)
-- Fix capitalization in the generated requirements.txt, packages will always be lowercased (#452)
+- Fix capitalization in the generated requirements.txt, packages will always be
+  lowercased (#452)
 
 # 1.8.0 (2016-11-17)
 
-- Adds support for upgrading individual packages with a new option
-  `--upgrade-package`. To upgrade a _specific_ package to the latest or
-  a specific version use `--upgrade-package <pkg>`. To upgrade all packages,
-  you can still use `pip-compile --upgrade`. (#409)
-- Adds support for pinning dependencies even further by including the hashes
-  found on PyPI at compilation time, which will be re-checked when dependencies
-  are installed at installation time. This adds protection against packages
-  that are tampered with. (#383)
+- Adds support for upgrading individual packages with a new option `--upgrade-package`.
+  To upgrade a _specific_ package to the latest or a specific version use
+  `--upgrade-package <pkg>`. To upgrade all packages, you can still use
+  `pip-compile --upgrade`. (#409)
+- Adds support for pinning dependencies even further by including the hashes found on
+  PyPI at compilation time, which will be re-checked when dependencies are installed at
+  installation time. This adds protection against packages that are tampered with.
+  (#383)
 - Improve support for extras, like `hypothesis[django]`
 - Drop support for pip < 8
 
@@ -654,8 +714,7 @@ Bug Fixes:
 
 # 1.7.0 (2016-07-06)
 
-- Add compatibility with pip >= 8.1.2 (#374)
-  Thanks so much, @jmbowman!
+- Add compatibility with pip >= 8.1.2 (#374) Thanks so much, @jmbowman!
 
 # 1.6.5 (2016-05-11)
 
@@ -663,8 +722,7 @@ Bug Fixes:
 
 # 1.6.4 (2016-05-03)
 
-- Incorporate fix for atomic file saving behaviour on the Windows platform
-  (see #351)
+- Incorporate fix for atomic file saving behaviour on the Windows platform (see #351)
 
 # 1.6.3 (2016-05-02)
 
@@ -679,8 +737,8 @@ Bug Fixes:
 
 Minor changes:
 
-- pip-sync now supports being invoked from within and outside an activated
-  virtualenv (see #317)
+- pip-sync now supports being invoked from within and outside an activated virtualenv
+  (see #317)
 - pip-compile: support -U as a shorthand for --upgrade
 - pip-compile: support pip's --no-binary and --binary-only flags
 
@@ -692,11 +750,11 @@ Fixes:
 
 Major change:
 
-- pip-compile will by default try to fulfill package specs by looking at
-  a previously compiled output file first, before checking PyPI. This means
-  pip-compile will only update the requirements.txt when it absolutely has to.
-  To get the old behaviour (picking the latest version of all packages from
-  PyPI), use the new `--upgrade` option.
+- pip-compile will by default try to fulfill package specs by looking at a previously
+  compiled output file first, before checking PyPI. This means pip-compile will only
+  update the requirements.txt when it absolutely has to. To get the old behaviour
+  (picking the latest version of all packages from PyPI), use the new `--upgrade`
+  option.
 
 Minor changes:
 
@@ -707,24 +765,24 @@ Minor changes:
 
 - Add support for pip >= 8
 - Drop support for pip < 7
-- Fix bug where `pip-sync` fails to uninstall packages if you're using the
-  `--no-index` (or other) flags
+- Fix bug where `pip-sync` fails to uninstall packages if you're using the `--no-index`
+  (or other) flags
 
 # 1.4.5 (2016-01-20)
 
-- Add `--no-index` flag to `pip-compile` to avoid emitting `--index-url` into
-  the output (useful if you have configured a different index in your global
-  ~/.pip/pip.conf, for example)
-- Fix: ignore stdlib backport packages, like `argparse`, when listing which
-  packages will be installed/uninstalled (#286)
+- Add `--no-index` flag to `pip-compile` to avoid emitting `--index-url` into the output
+  (useful if you have configured a different index in your global ~/.pip/pip.conf, for
+  example)
+- Fix: ignore stdlib backport packages, like `argparse`, when listing which packages
+  will be installed/uninstalled (#286)
 - Fix pip-sync failed uninstalling packages when using `--find-links` (#298)
 - Explicitly error when pip-tools is used with pip 8.0+ (for now)
 
 # 1.4.4 (2016-01-11)
 
-- Fix: unintended change in behaviour where packages installed by `pip-sync`
-  could accidentally get upgraded under certain conditions, even though the
-  requirements.txt would dictate otherwise (see #290)
+- Fix: unintended change in behaviour where packages installed by `pip-sync` could
+  accidentally get upgraded under certain conditions, even though the requirements.txt
+  would dictate otherwise (see #290)
 
 # 1.4.3 (2016-01-06)
 
