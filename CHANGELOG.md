@@ -1,6 +1,6 @@
 # 6.2.0 (2021-06-21)
 
-## Features
+Features:
 
 - Add `--emit-options/--no-emit-options` flags to `pip-compile`
   ([#1123](https://github.com/jazzband/pip-tools/pull/1123)). Thanks @atugushev
@@ -9,7 +9,7 @@
 - Log which python version was used during compile
   ([#828](https://github.com/jazzband/pip-tools/pull/828)). Thanks @graingert
 
-## Bug Fixes
+Bug Fixes:
 
 - Fix `pip-compile` package ordering
   ([#1419](https://github.com/jazzband/pip-tools/pull/1419)). Thanks @adamsol
@@ -20,7 +20,7 @@
 - Pass `package_name` explicitly in `click.version_option` decorators for compatibility with `click>=8.0`
   ([#1400](https://github.com/jazzband/pip-tools/pull/1400)). Thanks @nicoa
 
-## Other Changes
+Other Changes:
 
 - Document updating requirements with `pre-commit` hooks
   ([#1387](https://github.com/jazzband/pip-tools/pull/1387)). Thanks @microcat49
