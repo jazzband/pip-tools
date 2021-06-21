@@ -115,14 +115,16 @@ def format_requirement(
     if ireq.editable:
         line = f"-e {ireq.link.url}"
     elif is_url_requirement(ireq):
+        # if the requirement has no name then it's just a URL
         if not ireq.name:
             line = ireq.link.url
-        elif ireq.link.url.startswith("file:./"):
-            # file:./ is a hack to use a relative path to a package
-            # Direct reference does not work for this, so only the URL is used
+        # if it starts with "file:", PEP508 does not support direct reference
+        elif ireq.link.url.startswith("file:"):
             line = ireq.link.url
+        # if egg is after # then it's not a direct reference
         elif "#" in ireq.link.url and "egg=" in ireq.link.url.rsplit("#", 1)[1]:
             line = ireq.link.url
+        # otherwise, it's a direct reference
         else:
             line = f"{ireq.name.lower()} @ {ireq.link.url}"
     else:

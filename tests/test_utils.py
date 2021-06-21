@@ -48,22 +48,32 @@ def test_format_requirement(from_line):
         pytest.param(
             "Example @ https://example.com/example.zip",
             "example @ https://example.com/example.zip",
-            id="direct reference lower case",
+            id="direct reference lowered case",
         ),
         pytest.param(
+            "exemple @ https://example.com/example.zip#egg=example",
             "https://example.com/example.zip#egg=example",
-            "https://example.com/example.zip#egg=example",
-            id="url with egg",
+            id="url with egg after #",
         ),
         pytest.param(
             "example @ https://example.com/example.zip?egg=test#subdirectory=project_a",
             "example @ https://example.com/example.zip?egg=test#subdirectory=project_a",
-            id="egg as query",
+            id="url without egg after #",
         ),
         pytest.param(
-            "file:./vendor/package.zip#egg=example",
-            "file:./vendor/package.zip#egg=example",
+            "file:./vendor/package.zip",
+            "file:./vendor/package.zip",
             id="relative path",
+        ),
+        pytest.param(
+            "file:vendor/package.zip",
+            "file:vendor/package.zip",
+            id="relative path",
+        ),
+        pytest.param(
+            "file:///vendor/package.zip",
+            "file:///vendor/package.zip",
+            id="full path",
         ),
     ),
 )
