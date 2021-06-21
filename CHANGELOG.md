@@ -13,12 +13,13 @@ Bug Fixes:
 
 - Fix `pip-compile` package ordering
   ([#1419](https://github.com/jazzband/pip-tools/pull/1419)). Thanks @adamsol
-- Add `--strip-extras` option to `pip-compile` for producing constraint compatible output
-  ([#1404](https://github.com/jazzband/pip-tools/pull/1404)). Thanks @ssbarnea
+- Add `--strip-extras` option to `pip-compile` for producing constraint compatible
+  output ([#1404](https://github.com/jazzband/pip-tools/pull/1404)). Thanks @ssbarnea
 - Fix `click` v7 `version_option` compatibility
   ([#1410](https://github.com/jazzband/pip-tools/pull/1410)). Thanks @FuegoFro
-- Pass `package_name` explicitly in `click.version_option` decorators for compatibility with `click>=8.0`
-  ([#1400](https://github.com/jazzband/pip-tools/pull/1400)). Thanks @nicoa
+- Pass `package_name` explicitly in `click.version_option` decorators for compatibility
+  with `click>=8.0` ([#1400](https://github.com/jazzband/pip-tools/pull/1400)). Thanks
+  @nicoa
 
 Other Changes:
 
