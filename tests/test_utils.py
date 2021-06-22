@@ -51,14 +51,19 @@ def test_format_requirement(from_line):
             id="direct reference lowered case",
         ),
         pytest.param(
-            "exemple @ https://example.com/example.zip#egg=example",
+            "example @ https://example.com/example.zip#egg=example",
             "https://example.com/example.zip#egg=example",
-            id="url with egg after #",
+            id="url with egg in fragment",
+        ),
+        pytest.param(
+            "example @ https://example.com/example.zip#subdirectory=test&egg=example",
+            "https://example.com/example.zip#subdirectory=test&egg=example",
+            id="url with subdirectory and egg in fragment",
         ),
         pytest.param(
             "example @ https://example.com/example.zip?egg=test#subdirectory=project_a",
             "example @ https://example.com/example.zip?egg=test#subdirectory=project_a",
-            id="url without egg after #",
+            id="url with egg in query",
         ),
         pytest.param(
             "file:./vendor/package.zip",
@@ -71,9 +76,24 @@ def test_format_requirement(from_line):
             id="relative path",
         ),
         pytest.param(
+            "file:vendor/package.zip#egg=example",
+            "file:vendor/package.zip#egg=example",
+            id="relative path with egg",
+        ),
+        pytest.param(
             "file:///vendor/package.zip",
             "file:///vendor/package.zip",
-            id="full path",
+            id="full path without direct reference",
+        ),
+        pytest.param(
+            "package @ file:///vendor/package.zip",
+            "package @ file:///vendor/package.zip",
+            id="full path with direct reference",
+        ),
+        pytest.param(
+            "package @ file:///vendor/package.zip#egg=example",
+            "file:///vendor/package.zip#egg=example",
+            id="full path with direct reference and egg",
         ),
     ),
 )

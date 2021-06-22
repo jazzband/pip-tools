@@ -15,6 +15,7 @@ from typing import (
     TypeVar,
     Union,
 )
+from urllib.parse import urlparse
 
 import click
 from click.utils import LazyFile
@@ -118,15 +119,13 @@ def format_requirement(
         # if the requirement has no name then it's just a URL
         if not ireq.name:
             line = ireq.link.url
-        # if it starts with "file:", PEP508 does not support direct reference
-        elif ireq.link.url.startswith("file:"):
-            line = ireq.link.url
-        # if egg is after # then it's not a direct reference
-        elif "#" in ireq.link.url and "egg=" in ireq.link.url.rsplit("#", 1)[1]:
-            line = ireq.link.url
-        # otherwise, it's a direct reference
+        # otherwise parse the URL
         else:
-            line = f"{ireq.name.lower()} @ {ireq.link.url}"
+            parsed_url = urlparse(ireq.link.url)
+            if "egg=" in parsed_url.fragment:
+                line = ireq.link.url
+            else:
+                line = f"{ireq.name.lower()} @ {ireq.link.url}"
     else:
         line = str(ireq.req).lower()
 
