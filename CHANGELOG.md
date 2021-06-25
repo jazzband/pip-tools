@@ -1,3 +1,37 @@
+# 6.2.0 (2021-06-22)
+
+Features:
+
+- Add `--emit-options/--no-emit-options` flags to `pip-compile`
+  ([#1123](https://github.com/jazzband/pip-tools/pull/1123)). Thanks @atugushev
+- Add `--python-executable` option for `pip-sync`
+  ([#1333](https://github.com/jazzband/pip-tools/pull/1333)). Thanks @MaratFM
+- Log which python version was used during compile
+  ([#828](https://github.com/jazzband/pip-tools/pull/828)). Thanks @graingert
+
+Bug Fixes:
+
+- Fix `pip-compile` package ordering
+  ([#1419](https://github.com/jazzband/pip-tools/pull/1419)). Thanks @adamsol
+- Add `--strip-extras` option to `pip-compile` for producing constraint compatible
+  output ([#1404](https://github.com/jazzband/pip-tools/pull/1404)). Thanks @ssbarnea
+- Fix `click` v7 `version_option` compatibility
+  ([#1410](https://github.com/jazzband/pip-tools/pull/1410)). Thanks @FuegoFro
+- Pass `package_name` explicitly in `click.version_option` decorators for compatibility
+  with `click>=8.0` ([#1400](https://github.com/jazzband/pip-tools/pull/1400)). Thanks
+  @nicoa
+
+Other Changes:
+
+- Document updating requirements with `pre-commit` hooks
+  ([#1387](https://github.com/jazzband/pip-tools/pull/1387)). Thanks @microcat49
+- Add `setuptools` and `wheel` dependencies to the `setup.cfg`
+  ([#889](https://github.com/jazzband/pip-tools/pull/889)). Thanks @jayvdb
+- Improve instructions for new contributors
+  ([#1394](https://github.com/jazzband/pip-tools/pull/1394)). Thanks @FlorentJeannot
+- Better explain role of existing `requirements.txt`
+  ([#1369](https://github.com/jazzband/pip-tools/pull/1369)). Thanks @mikepqr
+
 # 6.1.0 (2021-04-14)
 
 Features:
