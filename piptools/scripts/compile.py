@@ -125,7 +125,7 @@ def _get_default_option(option_name: str) -> Any:
 )
 @click.option(
     "-U",
-    "--upgrade",
+    "--upgrade/--no-upgrade",
     is_flag=True,
     default=False,
     help="Try to upgrade all dependencies to their latest versions",
