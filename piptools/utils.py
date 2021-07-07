@@ -15,7 +15,6 @@ from typing import (
     TypeVar,
     Union,
 )
-from urllib.parse import urlparse
 
 import click
 from click.utils import LazyFile
@@ -116,16 +115,14 @@ def format_requirement(
     if ireq.editable:
         line = f"-e {ireq.link.url}"
     elif is_url_requirement(ireq):
-        # if the requirement has no name then it's just a URL
-        if not ireq.name:
-            line = ireq.link.url
-        # otherwise parse the URL
+        if ireq.name:
+            line = (
+                ireq.link.url
+                if ireq.link.egg_fragment
+                else f"{ireq.name.lower()} @ {ireq.link.url}"
+            )
         else:
-            parsed_url = urlparse(ireq.link.url)
-            if "egg=" in parsed_url.fragment:
-                line = ireq.link.url
-            else:
-                line = f"{ireq.name.lower()} @ {ireq.link.url}"
+            line = ireq.link.url
     else:
         line = str(ireq.req).lower()
 
