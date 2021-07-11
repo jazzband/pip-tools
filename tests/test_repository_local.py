@@ -69,7 +69,8 @@ def test_toggle_reuse_hashes_local_repository(
 
 
 @pytest.mark.parametrize(
-    ("single_hash", "expected"), ((True, EXPECTED), (False, NONSENSE | {"sha256:NONSENSE2"}))
+    ("single_hash", "expected"),
+    ((True, EXPECTED), (False, NONSENSE | {"sha256:NONSENSE2"})),
 )
 def test_single_hash__previous_multiple_hashes__ignore_previous(
     capsys, pip_conf, from_line, pypi_repository, single_hash, expected
