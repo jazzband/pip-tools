@@ -68,6 +68,29 @@ def test_toggle_reuse_hashes_local_repository(
         )
 
 
+@pytest.mark.parametrize(
+    ("single_hash", "expected"), ((True, EXPECTED), (False, NONSENSE | {"sha256:NONSENSE2"}))
+)
+def test_single_hash__previous_multiple_hashes__ignore_previous(
+    capsys, pip_conf, from_line, pypi_repository, single_hash, expected
+):
+    # Create an install requirement with the hashes included in its options
+    options = {"hashes": {"sha256": ["NONSENSE", "NONSENSE2"]}}
+    req = from_line("small-fake-a==0.1", options=options)
+    existing_pins = {key_from_ireq(req): req}
+
+    local_repository = LocalRequirementsRepository(
+        existing_pins, pypi_repository, reuse_hashes=True
+    )
+    with local_repository.allow_all_wheels():
+        assert (
+            local_repository.get_hashes(
+                from_line("small-fake-a==0.1"), single_hash=single_hash
+            )
+            == expected
+        )
+
+
 class FakeRepositoryChecksForCopy(FakeRepository):
     def __init__(self):
         super().__init__()

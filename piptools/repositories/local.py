@@ -87,7 +87,8 @@ class LocalRequirementsRepository(BaseRepository):
         if existing_pin and ireq_satisfied_by_existing_pin(ireq, existing_pin):
             hashes = existing_pin.hash_options
             hexdigests = hashes.get(FAVORITE_HASH)
-            if hexdigests:
+            # ignore multiple hashes from existing pip when doing single hash
+            if hexdigests and (not single_hash or len(hexdigests) == 1):
                 return {
                     ":".join([FAVORITE_HASH, hexdigest]) for hexdigest in hexdigests
                 }
