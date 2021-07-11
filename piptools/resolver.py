@@ -524,7 +524,7 @@ class BacktrackingResolver(BaseResolver):
         repository: BaseRepository,
         allow_unsafe: bool = False,
         unsafe_packages: set[str] | None = None,
-        **kwargs: _t.Any,
+        **kwargs: object,
     ) -> None:
         self.constraints = list(constraints)
         self.repository = repository

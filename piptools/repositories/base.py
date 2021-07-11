@@ -30,7 +30,7 @@ class BaseRepository(metaclass=ABCMeta):
     @abstractmethod
     def get_dependencies(self, ireq: InstallRequirement) -> set[InstallRequirement]:
         """
-        Given a pinned, URL, or editable InstallRequirement, returns a set of
+        Given a pinned, URL, or editable ``InstallRequirement``, returns a set of
         dependencies (also InstallRequirements, but not necessarily pinned).
         They indicate the secondary dependencies for the given requirement.
         """
@@ -40,7 +40,7 @@ class BaseRepository(metaclass=ABCMeta):
         self, ireq: InstallRequirement, single_hash: bool = False
     ) -> set[str]:
         """
-        Given a pinned InstallRequirement, return a set of hashes that can be used to verify the
+        Given a pinned ``InstallRequirement``, return a set of hashes that can be used to verify the
         file to install for the requirement. If single_hash is True, the set will only have the
         hash for the best match file to install based on the current execution environment. When
         False (the default), included hashes for all of the files for a given requirement.
