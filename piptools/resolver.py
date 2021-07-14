@@ -76,11 +76,12 @@ def combine_install_requirements(
 
     for ireq in source_ireqs[1:]:
         # NOTE we may be losing some info on dropped reqs here
-        combined_ireq.req.specifier &= ireq.req.specifier
-        if combined_ireq.constraint:
-            # We don't find dependencies for constraint ireqs, so copy them
-            # from non-constraints:
-            repository.copy_ireq_dependencies(ireq, combined_ireq)
+        if combined_ireq.req is not None and ireq.req is not None:
+            combined_ireq.req.specifier &= ireq.req.specifier
+            if combined_ireq.constraint:
+                # We don't find dependencies for constraint ireqs, so copy them
+                # from non-constraints:
+                repository.copy_ireq_dependencies(ireq, combined_ireq)
         combined_ireq.constraint &= ireq.constraint
         # Return a sorted, de-duped tuple of extras
         combined_ireq.extras = tuple(sorted({*combined_ireq.extras, *ireq.extras}))
@@ -227,11 +228,6 @@ class Resolver:
 
         """
         constraints = list(constraints)
-        for ireq in constraints:
-            if ireq.name is None:
-                # get_dependencies has side-effect of assigning name to ireq
-                # (so we can group by the name below).
-                self.repository.get_dependencies(ireq)
 
         # Sort first by name, i.e. the groupby key. Then within each group,
         # sort editables first.
