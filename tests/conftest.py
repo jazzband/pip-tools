@@ -449,7 +449,7 @@ def small_fake_vcs_ireq(request, from_editable, from_line):
     not (eg with `git+` or just a bare `file:`) and can be editable or not.
     """
     editable = request.param == "editable"
-    with _permissive_temp_dir() as repo_dir, TemporaryDirectory() as source_dir:
+    with _permissive_temp_dir() as repo_dir, _permissive_temp_dir() as source_dir:
 
         def git(cmd: str, **kwargs: Any) -> subprocess.CompletedProcess:
             """Helper to run git commands in the temp repo."""
