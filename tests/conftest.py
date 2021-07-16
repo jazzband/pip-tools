@@ -2,14 +2,15 @@ import json
 import optparse
 import os
 import shlex
+import shutil
 import subprocess
 import sys
 from contextlib import contextmanager
 from functools import partial
 from pathlib import Path
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, mkdtemp
 from textwrap import dedent
-from typing import Any, Iterable, NamedTuple, Optional, Tuple
+from typing import Any, Iterable, Iterator, NamedTuple, Optional, Tuple
 
 import pytest
 from click.testing import CliRunner
@@ -420,7 +421,21 @@ class SmallFakeVcsIreqFunc(Protocol):
         ...
 
 
-@pytest.fixture(params=[True, False])
+@contextmanager
+def _permissive_temp_dir() -> Iterator[str]:
+    """
+    We can't always use TemporaryDirectory because that relies on shutil.rmtree to
+    cleanup which sometimes fails on Windows for Pythons before 3.8. In this case,
+    we want to ignore that failure so we don't prevent tests from passing in CI.
+    """
+    temp_dir = mkdtemp()
+    try:
+        yield temp_dir
+    finally:
+        shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+@pytest.fixture(params=["editable", "non-editable"])
 def small_fake_vcs_ireq(request, from_editable, from_line):
     """Creates a VCS repo with a package in its root.
 
@@ -430,8 +445,8 @@ def small_fake_vcs_ireq(request, from_editable, from_line):
     The returned ireq is controlled by the arguments, and can either be a VCS ireq or
     not (eg with `git+` or just a bare `file:`) and can be editable or not.
     """
-    editable = request.param
-    with TemporaryDirectory() as repo_dir, TemporaryDirectory() as source_dir:
+    editable = request.param == "editable"
+    with _permissive_temp_dir() as repo_dir, TemporaryDirectory() as source_dir:
 
         def git(cmd: str, **kwargs: Any) -> subprocess.CompletedProcess:
             """Helper to run git commands in the temp repo."""
