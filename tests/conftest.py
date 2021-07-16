@@ -432,7 +432,10 @@ def _permissive_temp_dir() -> Iterator[str]:
     try:
         yield temp_dir
     finally:
-        shutil.rmtree(temp_dir, ignore_errors=True)
+        try:
+            shutil.rmtree(temp_dir)
+        except PermissionError:
+            pass
 
 
 @pytest.fixture(params=["editable", "non-editable"])
