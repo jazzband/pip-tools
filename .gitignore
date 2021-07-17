@@ -31,3 +31,6 @@ coverage.xml
 requirements.in
 requirements.txt
 .eggs/
+
+# OS
+.DS_Store
