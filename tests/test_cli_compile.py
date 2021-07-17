@@ -1,6 +1,8 @@
 import os
+import shutil
 import subprocess
 import sys
+from pathlib import Path
 from textwrap import dedent
 from unittest import mock
 
@@ -47,19 +49,19 @@ def test_command_line_overrides_pip_conf(pip_with_index_conf, runner):
         pytest.param("small-fake-a==0.1", "small-fake-a==0.1", id="regular"),
         pytest.param(
             "pip-tools @ https://github.com/jazzband/pip-tools/archive/7d86c8d3.zip",
-            "https://github.com/jazzband/pip-tools/archive/7d86c8d3.zip",
+            "pip-tools @ https://github.com/jazzband/pip-tools/archive/7d86c8d3.zip",
             id="zip URL",
         ),
         pytest.param(
             "pip-tools @ git+https://github.com/jazzband/pip-tools@7d86c8d3",
-            "git+https://github.com/jazzband/pip-tools@7d86c8d3",
+            "pip-tools @ git+https://github.com/jazzband/pip-tools@7d86c8d3",
             id="scm URL",
         ),
         pytest.param(
             "pip-tools @ https://files.pythonhosted.org/packages/06/96/"
             "89872db07ae70770fba97205b0737c17ef013d0d1c790"
             "899c16bb8bac419/pip_tools-3.6.1-py2.py3-none-any.whl",
-            "https://files.pythonhosted.org/packages/06/96/"
+            "pip-tools @ https://files.pythonhosted.org/packages/06/96/"
             "89872db07ae70770fba97205b0737c17ef013d0d1c790"
             "899c16bb8bac419/pip_tools-3.6.1-py2.py3-none-any.whl",
             id="wheel URL",
@@ -532,6 +534,20 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
             "899c16bb8bac419/pip_tools-3.6.1-py2.py3-none-any.whl",
             "\nclick==",
         ),
+        (
+            "pytest-django @ git+git://github.com/pytest-dev/pytest-django"
+            "@21492afc88a19d4ca01cd0ac392a5325b14f95c7"
+            "#egg=pytest-django",
+            "git+git://github.com/pytest-dev/pytest-django"
+            "@21492afc88a19d4ca01cd0ac392a5325b14f95c7#egg=pytest-django",
+        ),
+        (
+            "git+git://github.com/open-telemetry/opentelemetry-python.git"
+            "@v1.3.0#subdirectory=opentelemetry-api"
+            "&egg=opentelemetry-api",
+            "git+git://github.com/open-telemetry/opentelemetry-python.git"
+            "@v1.3.0#subdirectory=opentelemetry-api",
+        ),
     ),
 )
 @pytest.mark.parametrize("generate_hashes", ((True,), (False,)))
@@ -594,6 +610,40 @@ def test_local_url_package(
     assert out.exit_code == 0
     assert rewritten_line in out.stderr
     assert dependency in out.stderr
+
+
+@pytest.mark.parametrize(
+    ("line", "dependency", "rewritten_line"),
+    (
+        pytest.param(
+            os.path.join(
+                MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
+            ),
+            "\nfile:small_fake_with_deps-0.1-py2.py3-none-any.whl",
+            "file:small_fake_with_deps-0.1-py2.py3-none-any.whl",
+            id="Relative URL",
+        ),
+        pytest.param(
+            os.path.join(
+                MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
+            ),
+            "\nsmall-fake-with-deps"
+            " @ file://{absolute_path}/small_fake_with_deps-0.1-py2.py3-none-any.whl",
+            "small-fake-with-deps"
+            " @ file://{absolute_path}/small_fake_with_deps-0.1-py2.py3-none-any.whl",
+            id="Relative URL",
+        ),
+    ),
+)
+def test_relative_url_package(pip_conf, runner, line, dependency, rewritten_line):
+    dependency = dependency.format(absolute_path=Path(".").absolute())
+    rewritten_line = rewritten_line.format(absolute_path=Path(".").absolute())
+    shutil.copy(line, ".")
+    with open("requirements.in", "w") as req_in:
+        req_in.write(dependency)
+    out = runner.invoke(cli, ["-n", "--rebuild"])
+    assert out.exit_code == 0
+    assert rewritten_line in out.stderr
 
 
 def test_input_file_without_extension(pip_conf, runner):
