@@ -590,10 +590,18 @@ def test_url_package(runner, line, dependency, generate_hashes):
             os.path.join(
                 MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
             ),
-            "\nsmall-fake-with-deps @ file://"
-            f"{os.path.join(MINIMAL_WHEELS_PATH, 'small_fake_with_deps-0.1-py2.py3-none-any.whl')}",
-            "\nsmall-fake-with-deps @ file://"
-            f"{os.path.join(MINIMAL_WHEELS_PATH, 'small_fake_with_deps-0.1-py2.py3-none-any.whl')}",
+            "\nsmall-fake-with-deps @ "
+            + path_to_url(
+                os.path.join(
+                    MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
+                )
+            ),
+            "\nsmall-fake-with-deps @ "
+            + path_to_url(
+                os.path.join(
+                    MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
+                )
+            ),
             id="Local project with absolute URI",
         ),
         pytest.param(
