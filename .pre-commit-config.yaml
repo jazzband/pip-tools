@@ -1,15 +1,15 @@
 repos:
   - repo: https://github.com/psf/black
-    rev: 21.6b0
+    rev: 21.7b0
     hooks:
       - id: black
         args: [--target-version=py36]
   - repo: https://github.com/PyCQA/isort
-    rev: 5.9.1
+    rev: 5.9.2
     hooks:
       - id: isort
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.19.4
+    rev: v2.23.0
     hooks:
       - id: pyupgrade
         args: [--py36-plus]

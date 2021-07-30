@@ -115,7 +115,14 @@ def format_requirement(
     if ireq.editable:
         line = f"-e {ireq.link.url}"
     elif is_url_requirement(ireq):
-        line = ireq.link.url
+        if ireq.name:
+            line = (
+                ireq.link.url
+                if ireq.link.egg_fragment
+                else f"{ireq.name.lower()} @ {ireq.link.url}"
+            )
+        else:
+            line = ireq.link.url
     else:
         line = str(ireq.req).lower()
 
