@@ -331,7 +331,7 @@ class PyPIRepository(BaseRepository):
         with log.indentation():
             hashes = self._get_hashes_from_pypi(ireq)
             if hashes is None:
-                log.log("Couldn't get hashes from PyPI, fallback to hashing files")
+                log.info("Couldn't get hashes from PyPI, fallback to hashing files")
                 return self._get_hashes_from_files(ireq)
 
         return hashes
