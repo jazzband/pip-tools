@@ -2,7 +2,6 @@ import os
 import shutil
 import subprocess
 import sys
-from pathlib import Path
 from textwrap import dedent
 from unittest import mock
 
@@ -513,40 +512,34 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
 @pytest.mark.parametrize(
     ("line", "dependency"),
     (
-        # zip URL
         # use pip-tools version prior to its use of setuptools_scm,
         # which is incompatible with https: install
-        (
+        pytest.param(
             "https://github.com/jazzband/pip-tools/archive/"
             "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3.zip",
             "\nclick==",
+            id="Zip URL",
         ),
-        # scm URL
-        (
+        pytest.param(
             "git+git://github.com/jazzband/pip-tools@"
             "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3",
             "\nclick==",
+            id="VCS URL",
         ),
-        # wheel URL
-        (
+        pytest.param(
             "https://files.pythonhosted.org/packages/06/96/"
             "89872db07ae70770fba97205b0737c17ef013d0d1c790"
             "899c16bb8bac419/pip_tools-3.6.1-py2.py3-none-any.whl",
             "\nclick==",
+            id="Wheel URL",
         ),
-        (
+        pytest.param(
             "pytest-django @ git+git://github.com/pytest-dev/pytest-django"
             "@21492afc88a19d4ca01cd0ac392a5325b14f95c7"
             "#egg=pytest-django",
             "pytest-django @ git+git://github.com/pytest-dev/pytest-django"
             "@21492afc88a19d4ca01cd0ac392a5325b14f95c7",
-        ),
-        (
-            "git+git://github.com/open-telemetry/opentelemetry-python.git"
-            "@v1.3.0#subdirectory=opentelemetry-api"
-            "&egg=opentelemetry-api",
-            "opentelemetry-api @ git+git://github.com/open-telemetry/opentelemetry-python.git"
-            "@v1.3.0#subdirectory=opentelemetry-api",
+            id="VCS with direct reference and egg",
         ),
     ),
 )
@@ -565,8 +558,7 @@ def test_url_package(runner, line, dependency, generate_hashes):
 @pytest.mark.parametrize(
     ("line", "dependency", "rewritten_line"),
     (
-        # file:// wheel URL
-        (
+        pytest.param(
             path_to_url(
                 os.path.join(
                     MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
@@ -574,16 +566,15 @@ def test_url_package(runner, line, dependency, generate_hashes):
             ),
             "\nsmall-fake-a==0.1",
             None,
+            id="Wheel URI",
         ),
-        # file:// directory
-        (
+        pytest.param(
             path_to_url(os.path.join(PACKAGES_PATH, "small_fake_with_deps")),
             "\nsmall-fake-a==0.1",
             None,
+            id="Local project URI",
         ),
-        # bare path
-        # will be rewritten to file:// URL
-        (
+        pytest.param(
             os.path.join(
                 MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
             ),
@@ -593,11 +584,41 @@ def test_url_package(runner, line, dependency, generate_hashes):
                     MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
                 )
             ),
+            id="Bare path to file URI",
+        ),
+        pytest.param(
+            os.path.join(
+                MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
+            ),
+            "\nsmall-fake-with-deps @ "
+            + path_to_url(
+                os.path.join(
+                    MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
+                )
+            ),
+            "\nsmall-fake-with-deps @ "
+            + path_to_url(
+                os.path.join(
+                    MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
+                )
+            ),
+            id="Local project with absolute URI",
+        ),
+        pytest.param(
+            path_to_url(os.path.join(PACKAGES_PATH, "small_fake_with_subdir"))
+            + "#subdirectory=subdir&egg=small_fake_a",
+            "small-fake-a @ "
+            + path_to_url(os.path.join(PACKAGES_PATH, "small_fake_with_subdir"))
+            + "#subdirectory=subdir",
+            "small-fake-a @ "
+            + path_to_url(os.path.join(PACKAGES_PATH, "small_fake_with_subdir"))
+            + "#subdirectory=subdir",
+            id="Local project with subdirectory",
         ),
     ),
 )
 @pytest.mark.parametrize("generate_hashes", ((True,), (False,)))
-def test_local_url_package(
+def test_local_file_uri_package(
     pip_conf, runner, line, dependency, rewritten_line, generate_hashes
 ):
     if rewritten_line is None:
@@ -612,38 +633,31 @@ def test_local_url_package(
     assert dependency in out.stderr
 
 
-@pytest.mark.parametrize(
-    ("line", "dependency", "rewritten_line"),
-    (
-        pytest.param(
-            os.path.join(
-                MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
-            ),
-            "\nfile:small_fake_with_deps-0.1-py2.py3-none-any.whl",
-            "file:small_fake_with_deps-0.1-py2.py3-none-any.whl",
-            id="Relative URL",
+def test_relative_file_uri_package(pip_conf, runner):
+    # Copy wheel into temp dir
+    shutil.copy(
+        os.path.join(
+            MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
         ),
-        pytest.param(
-            os.path.join(
-                MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
-            ),
-            "\nsmall-fake-with-deps"
-            " @ file://{absolute_path}/small_fake_with_deps-0.1-py2.py3-none-any.whl",
-            "small-fake-with-deps"
-            " @ file://{absolute_path}/small_fake_with_deps-0.1-py2.py3-none-any.whl",
-            id="Relative URL",
-        ),
-    ),
-)
-def test_relative_url_package(pip_conf, runner, line, dependency, rewritten_line):
-    dependency = dependency.format(absolute_path=Path(".").absolute())
-    rewritten_line = rewritten_line.format(absolute_path=Path(".").absolute())
-    shutil.copy(line, ".")
+        ".",
+    )
     with open("requirements.in", "w") as req_in:
-        req_in.write(dependency)
+        req_in.write("file:small_fake_with_deps-0.1-py2.py3-none-any.whl")
     out = runner.invoke(cli, ["-n", "--rebuild"])
     assert out.exit_code == 0
-    assert rewritten_line in out.stderr
+    assert "file:small_fake_with_deps-0.1-py2.py3-none-any.whl" in out.stderr
+
+
+def test_direct_reference_with_extras(runner):
+    with open("requirements.in", "w") as req_in:
+        req_in.write(
+            "piptools[testing,coverage] @ git+https://github.com/jazzband/pip-tools@6.2.0"
+        )
+    out = runner.invoke(cli, ["-n", "--rebuild"])
+    assert out.exit_code == 0
+    assert "pip-tools @ git+https://github.com/jazzband/pip-tools@6.2.0" in out.stderr
+    assert "pytest==" in out.stderr
+    assert "pytest-cov==" in out.stderr
 
 
 def test_input_file_without_extension(pip_conf, runner):
