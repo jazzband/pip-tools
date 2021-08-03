@@ -52,48 +52,72 @@ def test_format_requirement(from_line):
         ),
         pytest.param(
             "example @ https://example.com/example.zip#egg=example",
-            "https://example.com/example.zip#egg=example",
-            id="url with egg in fragment",
+            "example @ https://example.com/example.zip",
+            id="direct reference with egg in fragment",
         ),
         pytest.param(
             "example @ https://example.com/example.zip#subdirectory=test&egg=example",
-            "https://example.com/example.zip#subdirectory=test&egg=example",
-            id="url with subdirectory and egg in fragment",
+            "example @ https://example.com/example.zip#subdirectory=test",
+            id="direct reference with subdirectory and egg in fragment",
         ),
         pytest.param(
-            "example @ https://example.com/example.zip?egg=test#subdirectory=project_a",
-            "example @ https://example.com/example.zip?egg=test#subdirectory=project_a",
-            id="url with egg in query",
+            "example @ https://example.com/example.zip#subdirectory=test"
+            "&egg=example&sha1=594b7dd32bec37d8bf70a6ffa8866d30e93f3c42",
+            "example @ https://example.com/example.zip#subdirectory=test"
+            "&sha1=594b7dd32bec37d8bf70a6ffa8866d30e93f3c42",
+            id="direct reference with subdirectory, hash and egg in fragment",
+        ),
+        pytest.param(
+            "example @ https://example.com/example.zip?egg=test",
+            "example @ https://example.com/example.zip?egg=test",
+            id="direct reference with egg in query",
         ),
         pytest.param(
             "file:./vendor/package.zip",
             "file:./vendor/package.zip",
-            id="relative path",
+            id="file scheme relative path",
         ),
         pytest.param(
             "file:vendor/package.zip",
             "file:vendor/package.zip",
-            id="relative path",
+            id="file scheme relative path",
         ),
         pytest.param(
             "file:vendor/package.zip#egg=example",
             "file:vendor/package.zip#egg=example",
-            id="relative path with egg",
+            id="file scheme relative path with egg",
+        ),
+        pytest.param(
+            "file:./vendor/package.zip#egg=example",
+            "file:./vendor/package.zip#egg=example",
+            id="file scheme relative path with egg",
         ),
         pytest.param(
             "file:///vendor/package.zip",
             "file:///vendor/package.zip",
-            id="full path without direct reference",
+            id="file scheme absolute path without direct reference",
+        ),
+        pytest.param(
+            "file:///vendor/package.zip#egg=test",
+            "test @ file:///vendor/package.zip",
+            id="file scheme absolute path with egg",
         ),
         pytest.param(
             "package @ file:///vendor/package.zip",
             "package @ file:///vendor/package.zip",
-            id="full path with direct reference",
+            id="file scheme absolute path with direct reference",
         ),
         pytest.param(
             "package @ file:///vendor/package.zip#egg=example",
-            "file:///vendor/package.zip#egg=example",
-            id="full path with direct reference and egg",
+            "package @ file:///vendor/package.zip",
+            id="file scheme absolute path with direct reference and egg",
+        ),
+        pytest.param(
+            "package @ file:///vendor/package.zip#egg=example&subdirectory=test"
+            "&sha1=594b7dd32bec37d8bf70a6ffa8866d30e93f3c42",
+            "package @ file:///vendor/package.zip#subdirectory=test"
+            "&sha1=594b7dd32bec37d8bf70a6ffa8866d30e93f3c42",
+            id="full path with direct reference, egg, subdirectory and hash",
         ),
     ),
 )

@@ -23,10 +23,7 @@ def test_generate_hashes_all_platforms(capsys, pip_conf, from_line, pypi_reposit
         assert pypi_repository.get_hashes(ireq) == expected
     captured = capsys.readouterr()
     assert captured.out == ""
-    assert (
-        captured.err.strip()
-        == "Couldn't get hashes from PyPI, fallback to hashing files"
-    )
+    assert captured.err == ""
 
 
 def test_generate_hashes_single_hash_filter(

@@ -19,10 +19,7 @@ def test_get_hashes_local_repository_cache_miss(
         assert hashes == EXPECTED
     captured = capsys.readouterr()
     assert captured.out == ""
-    assert (
-        captured.err.strip()
-        == "Couldn't get hashes from PyPI, fallback to hashing files"
-    )
+    assert captured.err == ""
 
 
 def test_get_hashes_local_repository_cache_hit(from_line, repository):
@@ -59,13 +56,7 @@ def test_toggle_reuse_hashes_local_repository(
         assert local_repository.get_hashes(from_line("small-fake-a==0.1")) == expected
     captured = capsys.readouterr()
     assert captured.out == ""
-    if reuse_hashes:
-        assert captured.err == ""
-    else:
-        assert (
-            captured.err.strip()
-            == "Couldn't get hashes from PyPI, fallback to hashing files"
-        )
+    assert captured.err == ""
 
 
 @pytest.mark.parametrize(

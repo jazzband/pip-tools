@@ -18,6 +18,5 @@ setup(
         "SQLAlchemy!=0.9.5,<2.0.0,>=0.7.8,>=1.0.0",
         "python-memcached>=1.57,<2.0",
         "xmltodict<=0.11,>=0.4.6",
-        "requests @ git+git://github.com/psf/requests@v2.25.1",
     ],
 )

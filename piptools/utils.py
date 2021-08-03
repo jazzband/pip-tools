@@ -14,6 +14,7 @@ from typing import (
     Tuple,
     TypeVar,
     Union,
+    cast,
 )
 
 import click
@@ -115,14 +116,7 @@ def format_requirement(
     if ireq.editable:
         line = f"-e {ireq.link.url}"
     elif is_url_requirement(ireq):
-        if ireq.name:
-            line = (
-                ireq.link.url
-                if ireq.link.egg_fragment
-                else f"{ireq.name.lower()} @ {ireq.link.url}"
-            )
-        else:
-            line = ireq.link.url
+        line = _build_direct_reference_best_efforts(ireq)
     else:
         line = str(ireq.req).lower()
 
@@ -134,6 +128,38 @@ def format_requirement(
             line += f" \\\n    --hash={hash_}"
 
     return line
+
+
+def _build_direct_reference_best_efforts(ireq: InstallRequirement) -> str:
+    """
+    Returns a string of a direct reference URI, whenever possible.
+    See https://www.python.org/dev/peps/pep-0508/
+    """
+    # If the requirement has no name then we cannot build a direct reference.
+    if not ireq.name:
+        return cast(str, ireq.link.url)
+
+    # Look for a relative file path, the direct reference currently does not work with it.
+    if ireq.link.is_file and not ireq.link.path.startswith("/"):
+        return cast(str, ireq.link.url)
+
+    # If we get here then we have a requirement that supports direct reference.
+    # We need to remove the egg if it exists and keep the rest of the fragments.
+    direct_reference = f"{ireq.name.lower()} @ {ireq.link.url_without_fragment}"
+    fragments = []
+
+    # Check if there is any fragment to add to the URI.
+    if ireq.link.subdirectory_fragment:
+        fragments.append(f"subdirectory={ireq.link.subdirectory_fragment}")
+
+    if ireq.link.has_hash:
+        fragments.append(f"{ireq.link.hash_name}={ireq.link.hash}")
+
+    # Then add the fragments into the URI, if any.
+    if fragments:
+        direct_reference += f"#{'&'.join(fragments)}"
+
+    return direct_reference
 
 
 def format_specifier(ireq: InstallRequirement) -> str:
