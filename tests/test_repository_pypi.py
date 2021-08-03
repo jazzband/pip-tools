@@ -43,10 +43,7 @@ def test_generate_hashes_single_hash_filter(
     assert pypi_repository.get_hashes(ireq, single_hash=True) == expected
     captured = capsys.readouterr()
     assert captured.out == ""
-    assert (
-        captured.err.strip()
-        == "Couldn't get hashes from PyPI, fallback to hashing files"
-    )
+    assert captured.err == ""
 
 
 @pytest.mark.network
