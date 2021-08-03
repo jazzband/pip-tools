@@ -537,8 +537,8 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
             "pytest-django @ git+git://github.com/pytest-dev/pytest-django"
             "@21492afc88a19d4ca01cd0ac392a5325b14f95c7"
             "#egg=pytest-django",
-            "git+git://github.com/pytest-dev/pytest-django"
-            "@21492afc88a19d4ca01cd0ac392a5325b14f95c7#egg=pytest-django",
+            "pytest-django @ git+git://github.com/pytest-dev/pytest-django"
+            "@21492afc88a19d4ca01cd0ac392a5325b14f95c7",
             id="VCS with direct reference and egg",
         ),
     ),
@@ -607,9 +607,12 @@ def test_url_package(runner, line, dependency, generate_hashes):
         pytest.param(
             path_to_url(os.path.join(PACKAGES_PATH, "small_fake_with_subdir"))
             + "#subdirectory=subdir&egg=small_fake_a",
-            path_to_url(os.path.join(PACKAGES_PATH, "small_fake_with_subdir"))
-            + "#subdirectory=subdir&egg=small_fake_a",
-            None,
+            "small-fake-a @ "
+            + path_to_url(os.path.join(PACKAGES_PATH, "small_fake_with_subdir"))
+            + "#subdirectory=subdir",
+            "small-fake-a @ "
+            + path_to_url(os.path.join(PACKAGES_PATH, "small_fake_with_subdir"))
+            + "#subdirectory=subdir",
             id="Local project with subdirectory",
         ),
     ),
@@ -843,8 +846,8 @@ def test_generate_hashes_with_url(runner):
         )
     out = runner.invoke(cli, ["--no-annotate", "--generate-hashes"])
     expected = (
-        "https://github.com/jazzband/pip-tools/archive/"
-        "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3.zip#egg=pip-tools \\\n"
+        "pip-tools @ https://github.com/jazzband/pip-tools/archive/"
+        "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3.zip \\\n"
         "    --hash=sha256:d24de92e18ad5bf291f25cfcdcf"
         "0171be6fa70d01d0bef9eeda356b8549715e7\n"
     )
