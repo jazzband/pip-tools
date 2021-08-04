@@ -3,6 +3,7 @@ import copy
 import itertools
 import json
 import os
+import re
 import shlex
 import typing
 from typing import (
@@ -24,6 +25,7 @@ from click.utils import LazyFile
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
+from pip._internal.utils.urls import path_to_url
 from pip._internal.vcs import is_url
 from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.specifiers import SpecifierSet
@@ -107,25 +109,64 @@ def is_url_requirement(ireq: InstallRequirement) -> bool:
     return bool(ireq.original_link)
 
 
+def fragment_string(ireq: InstallRequirement, omit_egg: bool = False) -> str:
+    """
+    Return a string like "#egg=pkgname&subdirectory=folder", or "".
+    """
+    if ireq.link is None or not ireq.link._parsed_url.fragment:
+        return ""
+    fragment = f"#{ireq.link._parsed_url.fragment.replace(os.path.sep, '/')}"
+    if omit_egg:
+        fragment = re.sub(r"[#&]egg=[^#&]+", "", fragment).lstrip("#&")
+        if fragment:
+            fragment = f"#{fragment}"
+    return fragment
+
+
 def format_requirement(
     ireq: InstallRequirement,
     marker: Optional[Marker] = None,
     hashes: Optional[Set[str]] = None,
+    from_dir: Optional[str] = None,
 ) -> str:
     """
     Generic formatter for pretty printing InstallRequirements to the terminal
     in a less verbose way than using its `__str__` method.
     """
-    if ireq.editable:
-        line = f"-e {ireq.link.url}"
-    elif is_url_requirement(ireq):
-        line = _build_direct_reference_best_efforts(ireq)
-    else:
+    if not is_url_requirement(ireq):
         # Canonicalize the requirement name
         # https://packaging.pypa.io/en/latest/utils.html#packaging.utils.canonicalize_name
         req = copy.copy(ireq.req)
         req.name = canonicalize_name(req.name)
         line = str(req)
+    elif not ireq.link.is_file:
+        line = (
+            f"-e {ireq.link.url}"
+            if ireq.editable
+            else _build_direct_reference_best_efforts(ireq)
+        )
+        # pip doesn't support relative paths in git+file scheme urls,
+        # for which ireq.link.is_file == False
+    elif not from_dir:
+        line = (
+            f"-e {path_to_url(ireq.local_file_path)}"
+            if ireq.editable
+            else _build_direct_reference_best_efforts(ireq)
+        )
+    else:
+        try:
+            path_url = "file:" + os.path.relpath(
+                ireq.local_file_path, from_dir
+            ).replace(os.path.sep, "/")
+        except ValueError:
+            # On Windows, a relative path is not always possible (no common ancestor)
+            line = (
+                f"-e {path_to_url(ireq.local_file_path)}"
+                if ireq.editable
+                else _build_direct_reference_best_efforts(ireq)
+            )
+        else:
+            line = f"{'-e ' if ireq.editable else ''}{path_url}{fragment_string(ireq)}"
 
     if marker:
         line = f"{line} ; {marker}"
