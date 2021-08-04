@@ -5,7 +5,7 @@ import json
 import os
 import re
 import shlex
-import typing
+from contextlib import contextmanager
 from typing import (
     Callable,
     Dict,
@@ -61,9 +61,7 @@ def key_from_ireq(ireq: InstallRequirement) -> str:
         return key_from_req(ireq.req)
 
 
-def key_from_req(
-    req: typing.Union[InstallRequirement, Distribution, Requirement]
-) -> str:
+def key_from_req(req: Union[InstallRequirement, Distribution, Requirement]) -> str:
     """Get an all-lowercase version of the requirement's name."""
     if hasattr(req, "key"):
         # from pkg_resources, such as installed dists for pip-sync
@@ -348,6 +346,24 @@ def get_hashes_from_ireq(ireq: InstallRequirement) -> Set[str]:
         for hash_ in hexdigests:
             result.add(f"{algorithm}:{hash_}")
     return result
+
+
+@contextmanager
+def working_dir(folder: Optional[str]) -> Iterator[None]:
+    """Change the current directory within the context, then change it back."""
+    if folder is None:
+        yield
+    else:
+        try:
+            original_dir = os.getcwd()
+            # The os and pathlib modules are incapable of returning an absolute path to the
+            # current directory without also resolving symlinks, so this is the realpath.
+            # This can be avoided on some systems with, e.g. os.environ["PWD"], but we'll
+            # not go there if we don't have to.
+            os.chdir(os.path.abspath(folder))
+            yield
+        finally:
+            os.chdir(original_dir)
 
 
 def get_compile_command(click_ctx: click.Context) -> str:

@@ -25,6 +25,7 @@ from piptools.utils import (
     key_from_ireq,
     lookup_table,
     lookup_table_from_tuples,
+    working_dir,
 )
 
 
@@ -540,3 +541,22 @@ def test_get_sys_path_for_python_executable():
     # not testing for equality, because pytest adds extra paths into current sys.path
     for path in result:
         assert path in sys.path
+
+
+@pytest.mark.parametrize(
+    ("folder_name", "use_abspath"),
+    (("subfolder", True), ("subfolder", False), (None, False)),
+)
+def test_working_dir(tmpdir_cwd, folder_name, use_abspath):
+    if folder_name is not None:
+        os.mkdir(folder_name)
+        expected_within = os.path.abspath(folder_name)
+    else:
+        expected_within = tmpdir_cwd
+    if use_abspath:
+        folder_name = expected_within
+
+    with working_dir(folder_name):
+        assert os.getcwd() == expected_within
+
+    assert os.getcwd() == tmpdir_cwd
