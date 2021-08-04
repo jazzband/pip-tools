@@ -68,6 +68,20 @@ def test_format_requirement_annotation(from_line, writer):
     assert writer._format_requirement(ireq) == "test==1.2\n    " + comment("# via xyz")
 
 
+def test_format_requirement_annotation_source_ireqs(from_line, writer):
+    "Annotations credit an ireq's source_ireq's comes_from attribute."
+    ireq = from_line("test==1.2")
+    ireq.comes_from = "xyz"
+
+    ireq2 = from_line("testwithsrc==3.0")
+    ireq2._source_ireqs = [ireq]
+
+    assert (
+        writer._format_requirement(ireq2)
+        == f"testwithsrc==3.0\n{comment('    # via xyz')}"
+    )
+
+
 def test_format_requirement_annotation_lower_case(from_line, writer):
     ireq = from_line("Test==1.2")
     ireq.comes_from = "xyz"
