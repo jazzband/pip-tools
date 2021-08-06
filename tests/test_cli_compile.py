@@ -2,6 +2,7 @@ import os
 import shutil
 import subprocess
 import sys
+from contextlib import suppress
 from textwrap import dedent
 from unittest import mock
 
@@ -704,6 +705,68 @@ def test_direct_reference_with_extras(runner):
     assert "pip-tools @ git+https://github.com/jazzband/pip-tools@6.2.0" in out.stderr
     assert "pytest==" in out.stderr
     assert "pytest-cov==" in out.stderr
+
+
+@pytest.mark.parametrize("flags", (("--write-relative-to-output",), ()))
+def test_local_editable_vcs_package(runner, tmp_path, make_package, flags):
+    """
+    git+file urls are resolved to use absolute paths, and otherwise remain intact.
+    """
+    name = "fake-git-a"
+    version = "0.1"
+
+    run_dir = tmp_path / "working"
+    in_path = tmp_path / "requirements.in"
+    txt_path = tmp_path / "deep" / "requirements.txt"
+
+    run_dir.mkdir(parents=True, exist_ok=True)
+    txt_path.parent.mkdir(parents=True, exist_ok=True)
+
+    pkg_dir = make_package(name=name, version=version)
+    repo_dir = pkg_dir.parents[1]
+
+    with working_dir(repo_dir):
+        fragment = f"#egg={name}&subdirectory={os.path.relpath(pkg_dir)}"
+        for cmd in (
+            ["git", "init", "-q"],
+            ["git", "config", "user.name", "pip-tools"],
+            ["git", "config", "user.email", "pip-tools@example.com"],
+            ["git", "add", "-A"],
+            ["git", "commit", "-q", "-m", version],
+            ["git", "tag", version],
+        ):
+            subprocess.run(cmd, check=True)
+
+    line_abs = f"-e git+{path_to_url(repo_dir)}@{version}{fragment}".replace(
+        os.path.sep, "/"
+    )
+
+    with working_dir(run_dir):
+        line_rel = (
+            f"-e git+file:{os.path.relpath(repo_dir)}@{version}{fragment}".replace(
+                os.path.sep, "/"
+            )
+        )
+
+        in_path.write_text(line_abs)
+
+        out = runner.invoke(
+            cli, ["-o", os.path.relpath(txt_path), *flags, os.path.relpath(in_path)]
+        )
+
+        assert out.exit_code == 0
+        assert line_abs in out.stderr
+
+        in_path.write_text(line_rel)
+
+        with suppress(FileNotFoundError):
+            txt_path.unlink()
+        out = runner.invoke(
+            cli, ["-o", os.path.relpath(txt_path), *flags, os.path.relpath(in_path)]
+        )
+
+        assert out.exit_code == 0
+        assert line_abs in out.stderr
 
 
 def test_input_file_without_extension(pip_conf, runner):
