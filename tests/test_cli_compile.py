@@ -784,6 +784,43 @@ def test_input_file_without_extension(pip_conf, runner):
     assert os.path.exists("requirements.txt")
 
 
+def test_input_file_with_txt_extension(pip_conf, runner, tmp_path):
+    """
+    Compile an input file ending in .txt to a separate output file (*.txt.txt),
+    without overwriting the input file.
+    """
+    in_file = tmp_path / "requirements.txt"
+    content = "small-fake-a==0.1"
+
+    in_file.write_text(content)
+
+    out = runner.invoke(cli, [str(in_file)])
+
+    assert out.exit_code == 0
+    assert in_file.read_text().strip() == content
+    assert os.path.exists(f"{in_file}.txt")
+
+
+def test_input_file_without_extension_and_dotted_path(pip_conf, runner, tmp_path):
+    """
+    Compile a file without an extension, in a subdir with a dot,
+    into an input-adjacent file with .txt as the extension.
+    """
+    dotted_dir = tmp_path / "some.folder"
+    in_path = tmp_path / dotted_dir / "reqs"
+    txt_path = tmp_path / dotted_dir / "reqs.txt"
+
+    dotted_dir.mkdir(parents=True, exist_ok=True)
+
+    in_path.write_text("small-fake-a==0.1\n")
+
+    out = runner.invoke(cli, [str(in_path)])
+
+    assert out.exit_code == 0
+    assert "small-fake-a==0.1" in out.stderr
+    assert txt_path.exists()
+
+
 def test_upgrade_packages_option(pip_conf, runner):
     """
     piptools respects --upgrade-package/-P inline list.

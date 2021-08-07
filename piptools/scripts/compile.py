@@ -297,6 +297,8 @@ def cli(
                 ).format(DEFAULT_REQUIREMENTS_FILE)
             )
 
+    src_files = tuple(src if src == "-" else os.path.abspath(src) for src in src_files)
+
     if not output_file:
         # An output file must be provided for stdin
         if src_files == ("-",):
@@ -313,8 +315,9 @@ def cli(
             )
         # Otherwise derive the output file from the source file
         else:
-            base_name = src_files[0].rsplit(".", 1)[0]
-            file_name = base_name + ".txt"
+            file_name = os.path.splitext(src_files[0])[0] + ".txt"
+            if file_name == src_files[0]:
+                file_name += ".txt"
 
         output_file = click.open_file(file_name, "w+b", atomic=True, lazy=True)
 
