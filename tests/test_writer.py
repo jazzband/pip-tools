@@ -69,6 +69,23 @@ def test_format_requirement_annotation(from_line, writer):
     assert writer._format_requirement(ireq) == "test==1.2\n    " + comment("# via xyz")
 
 
+@pytest.mark.parametrize(
+    ("comes_from", "expected"),
+    (
+        ("xyz (z:/pyproject.toml)", "# via xyz (z:/pyproject.toml)"),
+        ("-r z:/pyproject.toml (line 1)", "# via -r z:/pyproject.toml"),
+    ),
+)
+def test_format_requirement_annotation_impossible_relative_path(
+    from_line, writer, comes_from, expected
+):
+    "A relative path can't be constructed across drives on a Windows filesystem."
+    ireq = from_line("test==1.2")
+    ireq.comes_from = comes_from
+
+    assert writer._format_requirement(ireq) == "test==1.2\n    " + comment(expected)
+
+
 def test_format_requirement_annotation_source_ireqs(from_line, writer):
     "Annotations credit an ireq's source_ireq's comes_from attribute."
     ireq = from_line("test==1.2")
@@ -79,7 +96,7 @@ def test_format_requirement_annotation_source_ireqs(from_line, writer):
 
     assert (
         writer._format_requirement(ireq2)
-        == f"testwithsrc==3.0\n{comment('    # via xyz')}"
+        == f"testwithsrc==3.0\n    {comment('# via xyz')}"
     )
 
 
