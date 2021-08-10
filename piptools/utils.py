@@ -25,7 +25,10 @@ import click
 from click.utils import LazyFile
 from pip._internal.models.link import Link
 from pip._internal.req import InstallRequirement
-from pip._internal.req.constructors import install_req_from_line
+from pip._internal.req.constructors import (
+    install_req_from_line,
+    install_req_from_link_and_ireq,
+)
 from pip._internal.utils.misc import redact_auth_from_url
 from pip._internal.utils.urls import path_to_url, url_to_path
 from pip._internal.vcs import is_url
@@ -407,24 +410,11 @@ def abs_ireq(
         yanked_reason=ireq.link.yanked_reason,
         cache_link_parsing=ireq.link.cache_link_parsing,
     )
-    a_ireq = InstallRequirement(
-        req=ireq.req,
-        comes_from=ireq.comes_from,
-        editable=ireq.editable,
-        link=abs_link,  # <--
-        markers=ireq.markers,
-        use_pep517=ireq.use_pep517,
-        isolated=ireq.isolated,
-        install_options=ireq.install_options,
-        global_options=ireq.global_options,
-        hash_options=ireq.hash_options,
-        constraint=ireq.constraint,
-        extras=ireq.extras,
-        user_supplied=ireq.user_supplied,
-    )
+
+    a_ireq = install_req_from_link_and_ireq(abs_link, ireq)
     if hasattr(ireq, "_source_ireqs"):
         a_ireq._source_ireqs = ireq._source_ireqs
-    a_ireq._was_relative = True  # <--
+    a_ireq._was_relative = True
 
     return a_ireq
 
