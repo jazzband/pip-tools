@@ -25,10 +25,7 @@ import click
 from click.utils import LazyFile
 from pip._internal.models.link import Link
 from pip._internal.req import InstallRequirement
-from pip._internal.req.constructors import (
-    install_req_from_line,
-    install_req_from_link_and_ireq,
-)
+from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 from pip._internal.utils.urls import path_to_url, url_to_path
 from pip._internal.vcs import is_url
@@ -541,3 +538,21 @@ def get_sys_path_for_python_executable(python_executable: str) -> List[str]:
     assert isinstance(paths, list)
     assert all(isinstance(i, str) for i in paths)
     return [os.path.abspath(path) for path in paths]
+
+
+def install_req_from_link_and_ireq(link, ireq):
+    # type: (Link, InstallRequirement) -> InstallRequirement
+    # After dropping support for pip < 21.1, we can instead:
+    # from pip._internal.req.constructors import install_req_from_link_and_ireq
+    return InstallRequirement(
+        req=ireq.req,
+        comes_from=ireq.comes_from,
+        editable=ireq.editable,
+        link=link,
+        markers=ireq.markers,
+        use_pep517=ireq.use_pep517,
+        isolated=ireq.isolated,
+        install_options=ireq.install_options,
+        global_options=ireq.global_options,
+        hash_options=ireq.hash_options,
+    )

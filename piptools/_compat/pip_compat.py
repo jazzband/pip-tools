@@ -9,14 +9,16 @@ from pip._internal.models.link import Link
 from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement
 from pip._internal.req import parse_requirements as _parse_requirements
-from pip._internal.req.constructors import (
-    install_req_from_link_and_ireq,
-    install_req_from_parsed_requirement,
-)
+from pip._internal.req.constructors import install_req_from_parsed_requirement
 from pip._vendor.packaging.version import parse as parse_version
 from pip._vendor.pkg_resources import Requirement
 
-from ..utils import abs_ireq, fragment_string, working_dir
+from ..utils import (
+    abs_ireq,
+    fragment_string,
+    install_req_from_link_and_ireq,
+    working_dir,
+)
 
 PIP_VERSION = tuple(map(int, parse_version(pip.__version__).base_version.split(".")))
 
