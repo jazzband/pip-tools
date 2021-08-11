@@ -540,15 +540,22 @@ def get_sys_path_for_python_executable(python_executable: str) -> List[str]:
     return [os.path.abspath(path) for path in paths]
 
 
-def install_req_from_link_and_ireq(link, ireq):
-    # type: (Link, InstallRequirement) -> InstallRequirement
-    # After dropping support for pip < 21.1, we can instead:
-    # from pip._internal.req.constructors import install_req_from_link_and_ireq
+def install_req_from_link_and_ireq(
+    link: Link, ireq: InstallRequirement
+) -> InstallRequirement:
+    if not ireq.extras and link._parsed_url.fragment.endswith("]"):
+        extras = tuple(
+            xtr.strip()
+            for xtr in link._parsed_url.fragment.rsplit("[", 1)[-1][:-1].split(",")
+        )
+    else:
+        extras = ()
     return InstallRequirement(
         req=ireq.req,
         comes_from=ireq.comes_from,
         editable=ireq.editable,
         link=link,
+        extras=extras,
         markers=ireq.markers,
         use_pep517=ireq.use_pep517,
         isolated=ireq.isolated,
