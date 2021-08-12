@@ -16,6 +16,8 @@ jobs:
       matrix:
         toxenv:
           - readme
+          - build-docs
+          - linkcheck-docs
         python-version:
           - "3.x"
     env:
