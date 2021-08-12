@@ -5,8 +5,8 @@
 # -- Project information -----------------------------------------------------
 
 project = "pip-tools"
-author = "Jazzband Contributors"
-copyright = f"2021, {author}"
+author = f"{project} Contributors"
+copyright = f"The {author}"
 
 
 # -- General configuration ---------------------------------------------------
