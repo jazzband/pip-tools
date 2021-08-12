@@ -719,6 +719,21 @@ def test_direct_reference_with_extras(runner):
     assert "pytest-cov==" in out.stderr
 
 
+def test_url_package_with_extras(runner):
+    with open("requirements.in", "w") as req_in:
+        req_in.write(
+            "git+https://github.com/jazzband/pip-tools@6.2.0#[testing,coverage]"
+        )
+    out = runner.invoke(cli, ["-n", "--rebuild"])
+    assert out.exit_code == 0
+    assert (
+        "pip-tools[coverage,testing] @ git+https://github.com/jazzband/pip-tools@6.2.0"
+        in out.stderr
+    )
+    assert "pytest==" in out.stderr
+    assert "pytest-cov==" in out.stderr
+
+
 @pytest.mark.parametrize("flags", (("--write-relative-to-output",), ()))
 def test_local_editable_vcs_package(runner, tmp_path, make_package, flags):
     """
