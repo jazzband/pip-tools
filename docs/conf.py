@@ -6,7 +6,7 @@
 
 project = "pip-tools"
 author = f"{project} Contributors"
-copyright = f"2012, {author}"
+copyright = f"The {author}"
 
 
 # -- General configuration ---------------------------------------------------
