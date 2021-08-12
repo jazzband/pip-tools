@@ -14,6 +14,8 @@ Welcome to pip-tools' documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   contributing.md
+
 
 Indices and tables
 ==================
