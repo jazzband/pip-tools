@@ -2365,3 +2365,16 @@ def test_cli_compile_strip_extras(runner, make_package, make_sdist, tmpdir):
     assert out.exit_code == 0, out
     assert "test-package-2==0.1" in out.stderr
     assert "[more]" not in out.stderr
+
+
+@pytest.mark.parametrize("extras", (("dev",), ("test",), ("dev", "test")))
+def test_local_file_uri_with_extras(pip_conf, runner, extras):
+    """
+    Test [extras] notation is included output.
+    """
+    uri = path_to_url(os.path.join(PACKAGES_PATH, "small_fake_with_extras"))
+    out = runner.invoke(
+        cli, ["--output-file", "-", "-"], input=f"{uri}#[{','.join(extras)}]"
+    )
+    assert out.exit_code == 0
+    assert f"small-fake-with-extras[{','.join(sorted(extras))}] @ " in out.stderr
