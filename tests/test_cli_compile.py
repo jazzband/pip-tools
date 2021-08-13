@@ -633,6 +633,64 @@ def test_local_file_uri_package(
     assert dependency in out.stderr
 
 
+@pytest.mark.parametrize(
+    ("line", "rewritten_line"),
+    (
+        pytest.param(
+            "./small_fake_a",
+            "file:small_fake_a",
+            id="relative path",
+        ),
+        pytest.param(
+            "./small_fake_with_extras[dev,test]",
+            "file:small_fake_with_extras#[dev,test]",
+            id="relative path with extras",
+        ),
+        pytest.param(
+            "./small_fake_a#egg=name",
+            "file:small_fake_a#egg=name",
+            id="relative path with egg",
+        ),
+        pytest.param(
+            "./small_fake_with_extras#egg=name[dev,test]",
+            "file:small_fake_with_extras#egg=name[dev,test]",
+            id="relative path with egg and extras",
+        ),
+        pytest.param(
+            f"{PACKAGES_PATH}/small_fake_a",
+            f"small-fake-a @ {path_to_url(PACKAGES_PATH)}/small_fake_a",
+            id="absolute path",
+        ),
+        pytest.param(
+            f"{PACKAGES_PATH}/small_fake_with_extras[dev,test]",
+            (
+                "small-fake-with-extras[dev,test] @ "
+                f"{path_to_url(PACKAGES_PATH)}/small_fake_with_extras"
+            ),
+            id="absolute path with extras",
+        ),
+        pytest.param(
+            f"{PACKAGES_PATH}/small_fake_a#egg=test",
+            f"small-fake-a @ {path_to_url(PACKAGES_PATH)}/small_fake_a",
+            id="absolute path with egg",
+        ),
+        pytest.param(
+            f"{PACKAGES_PATH}/small_fake_with_extras#egg=name[dev,test]",
+            (
+                "small-fake-with-extras[dev,test] @ "
+                f"{path_to_url(PACKAGES_PATH)}/small_fake_with_extras"
+            ),
+            id="absolute path with egg and extras",
+        ),
+    ),
+)
+def test_local_file_path_package(pip_conf, runner, line, rewritten_line):
+    with working_dir(PACKAGES_PATH):
+        out = runner.invoke(cli, ["--output-file", "-", "-"], input=line)
+    assert out.exit_code == 0
+    assert rewritten_line in out.stderr
+
+
 def test_relative_file_uri_package(pip_conf, runner):
     # Copy wheel into temp dir
     shutil.copy(
