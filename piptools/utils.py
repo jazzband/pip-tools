@@ -556,7 +556,7 @@ def install_req_from_link_and_ireq(
             for xtr in link._parsed_url.fragment.rsplit("[", 1)[-1][:-1].split(",")
         )
     else:
-        extras = ()
+        extras = tuple(ireq.extras)
     fresh_ireq = InstallRequirement(
         req=ireq.req,
         comes_from=ireq.comes_from,
