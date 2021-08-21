@@ -419,8 +419,6 @@ def abs_ireq(
     )
 
     a_ireq = install_req_from_link_and_ireq(abs_link, ireq)
-    if hasattr(ireq, "_source_ireqs"):
-        a_ireq._source_ireqs = ireq._source_ireqs
     a_ireq._was_relative = True
 
     return a_ireq
@@ -559,12 +557,13 @@ def install_req_from_link_and_ireq(
         )
     else:
         extras = ()
-    return InstallRequirement(
+    fresh_ireq = InstallRequirement(
         req=ireq.req,
         comes_from=ireq.comes_from,
         editable=ireq.editable,
         link=link,
         extras=extras,
+        constraint=ireq.constraint,
         markers=ireq.markers,
         use_pep517=ireq.use_pep517,
         isolated=ireq.isolated,
@@ -572,3 +571,6 @@ def install_req_from_link_and_ireq(
         global_options=ireq.global_options,
         hash_options=ireq.hash_options,
     )
+    if hasattr(ireq, "_source_ireqs"):
+        fresh_ireq._source_ireqs = ireq._source_ireqs
+    return fresh_ireq
