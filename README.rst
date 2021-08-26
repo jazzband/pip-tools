@@ -7,7 +7,7 @@ pip-tools = pip-compile + pip-sync
 A set of command line tools to help you keep your ``pip``-based packages fresh,
 even when you've pinned them.  You do pin them, right? (In building your Python application and its dependencies for production, you want to make sure that your builds are predictable and deterministic.)
 
-.. image:: https://github.com/jazzband/pip-tools/raw/master/img/pip-tools-overview.png
+.. image:: https://github.com/jazzband/pip-tools/raw/master/img/pip-tools-overview.svg
    :alt: pip-tools overview for phase II
 
 .. |buildstatus-gha| image:: https://github.com/jazzband/pip-tools/workflows/CI/badge.svg
