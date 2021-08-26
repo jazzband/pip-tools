@@ -320,7 +320,7 @@ Improved Documentation:
   environment to avoid confusion
   ([#1023](https://github.com/jazzband/pip-tools/pull/1023)). Thanks @tekumara
 - Add a note to the `README` about how to install requirements on different stages to
-  [Workflow for layered requirements](https://github.com/jazzband/pip-tools#workflow-for-layered-requirements)
+  [Workflow for layered requirements](https://pip-tools.rtfd.io/en/latest/#workflow-for-layered-requirements)
   section ([#1044](https://github.com/jazzband/pip-tools/pull/1044)). Thanks @hramezani
 
 # 4.4.0 (2020-01-21)
