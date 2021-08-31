@@ -15,6 +15,7 @@ Welcome to pip-tools' documentation!
    :caption: Contents:
 
    contributing.md
+   changelog.md
 
 
 Indices and tables
