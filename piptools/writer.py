@@ -277,13 +277,15 @@ class OutputWriter:
             required_by.add(_comes_from_as_string(ireq))
 
         if required_by:
-            annotation = {
-                "split": annotation_style_split,
-                "line": annotation_style_line,
-            }[self.annotation_style](required_by)
-            sep = {"split": "\n    ", "line": "\n    " if ireq_hashes else "  "}[
-                self.annotation_style
-            ]
+            if self.annotation_style == "split":
+                annotation = annotation_style_split(required_by)
+                sep = "\n    "
+            elif self.annotation_style == "line":
+                annotation = annotation_style_line(required_by)
+                sep = "\n    " if ireq_hashes else "  "
+            else:  # pragma: no cover
+                raise ValueError("Invalid value for annotation style")
+            # 24 is one reasonable column size to use here, that we've used in the past
             lines = f"{line:24}{sep}{comment(annotation)}".splitlines()
             line = "\n".join(ln.rstrip() for ln in lines)
 
