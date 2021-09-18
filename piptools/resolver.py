@@ -78,8 +78,7 @@ def combine_install_requirements(
         if combined_ireq.req is not None and ireq.req is not None:
             combined_ireq.req.specifier &= ireq.req.specifier
         combined_ireq.constraint &= ireq.constraint
-        # Return a sorted, de-duped tuple of extras
-        combined_ireq.extras = tuple(sorted({*combined_ireq.extras, *ireq.extras}))
+        combined_ireq.extras = {*combined_ireq.extras, *ireq.extras}
 
     # InstallRequirements objects are assumed to come from only one source, and
     # so they support only a single comes_from entry. This function breaks this
