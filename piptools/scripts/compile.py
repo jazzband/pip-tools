@@ -124,6 +124,12 @@ def _get_default_option(option_name: str) -> Any:
     help="Annotate results, indicating where dependencies come from",
 )
 @click.option(
+    "--annotation-style",
+    type=click.Choice(("line", "split")),
+    default="split",
+    help="Choose the format of annotation comments",
+)
+@click.option(
     "-U",
     "--upgrade/--no-upgrade",
     is_flag=True,
@@ -244,6 +250,7 @@ def cli(
     header: bool,
     emit_trusted_host: bool,
     annotate: bool,
+    annotation_style: str,
     upgrade: bool,
     upgrade_packages: Tuple[str, ...],
     output_file: Union[LazyFile, IO[Any], None],
@@ -471,6 +478,7 @@ def cli(
         emit_index_url=emit_index_url,
         emit_trusted_host=emit_trusted_host,
         annotate=annotate,
+        annotation_style=annotation_style,
         strip_extras=strip_extras,
         generate_hashes=generate_hashes,
         default_index_url=repository.DEFAULT_INDEX_URL,
