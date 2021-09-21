@@ -1,3 +1,21 @@
+## 6.3.0 (2021-09-21)
+
+Features:
+
+- Enable single-line annotations with `pip-compile --annotation-style=line`
+  ([#1477](https://github.com/jazzband/pip-tools/pull/1477)). Thanks @AndydeCleyre
+- Generate PEP 440 direct reference whenever possible
+  ([#1455](https://github.com/jazzband/pip-tools/pull/1455)). Thanks @FlorentJeannot
+- PEP 440 Direct Reference support
+  ([#1392](https://github.com/jazzband/pip-tools/pull/1392)). Thanks @FlorentJeannot
+
+Bug Fixes:
+
+- Change log level of hash message
+  ([#1460](https://github.com/jazzband/pip-tools/pull/1460)). Thanks @plannigan
+- Allow passing `--no-upgrade` option
+  ([#1438](https://github.com/jazzband/pip-tools/pull/1438)). Thanks @ssbarnea
+
 ## 6.2.0 (2021-06-22)
 
 Features:

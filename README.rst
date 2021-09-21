@@ -352,7 +352,7 @@ Sample ``.pre-commit-config.yaml``:
 
     repos:
       - repo: https://github.com/jazzband/pip-tools
-        rev: 5.0.0
+        rev: 6.3.0
         hooks:
           - id: pip-compile
 
@@ -362,7 +362,7 @@ You might want to customize ``pip-compile`` args by configuring ``args`` and/or 
 
     repos:
       - repo: https://github.com/jazzband/pip-tools
-        rev: 5.0.0
+        rev: 6.3.0
         hooks:
           - id: pip-compile
             files: ^requirements/production\.(in|txt)$
@@ -529,5 +529,5 @@ versions as the required ``pip`` versions.
 +---------------+----------------+----------------+
 | 5.5.0         | 20.1 - 20.3.*  | 2.7, 3.5 - 3.9 |
 +---------------+----------------+----------------+
-| 6.0.0         | 20.3+          | 3.6 - 3.9      |
+| 6.0.0+        | 20.3+          | 3.6 - 3.9      |
 +---------------+----------------+----------------+
