@@ -79,6 +79,8 @@ def combine_install_requirements(
             combined_ireq.req.specifier &= ireq.req.specifier
         combined_ireq.constraint &= ireq.constraint
         combined_ireq.extras = {*combined_ireq.extras, *ireq.extras}
+        if combined_ireq.req is not None:
+            combined_ireq.req.extras = set(combined_ireq.extras)
 
     # InstallRequirements objects are assumed to come from only one source, and
     # so they support only a single comes_from entry. This function breaks this
