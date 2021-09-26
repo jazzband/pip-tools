@@ -350,7 +350,7 @@ def test_emit_index_url_option(runner, option, expected_output):
 
 @pytest.mark.network
 @pytest.mark.xfail(
-    is_pypy, is_windows, reason="https://github.com/jazzband/pip-tools/issues/1148"
+    is_pypy and is_windows, reason="https://github.com/jazzband/pip-tools/issues/1148"
 )
 def test_realistic_complex_sub_dependencies(runner):
     wheels_dir = "wheels"
