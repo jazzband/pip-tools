@@ -1,3 +1,4 @@
+import io
 import os
 import re
 import sys
@@ -98,6 +99,7 @@ class OutputWriter:
         index_urls: Iterable[str],
         trusted_hosts: Iterable[str],
         format_control: FormatControl,
+        linesep: str,
         allow_unsafe: bool,
         find_links: List[str],
         emit_find_links: bool,
@@ -117,6 +119,7 @@ class OutputWriter:
         self.index_urls = index_urls
         self.trusted_hosts = trusted_hosts
         self.format_control = format_control
+        self.linesep = linesep
         self.allow_unsafe = allow_unsafe
         self.find_links = find_links
         self.emit_find_links = emit_find_links
@@ -257,14 +260,25 @@ class OutputWriter:
         hashes: Optional[Dict[InstallRequirement, Set[str]]],
     ) -> None:
 
-        for line in self._iter_lines(results, unsafe_requirements, markers, hashes):
-            if self.dry_run:
-                # Bypass the log level to always print this during a dry run
-                log.log(line)
-            else:
-                log.info(line)
-                self.dst_file.write(unstyle(line).encode())
-                self.dst_file.write(os.linesep.encode())
+        if not self.dry_run:
+            dst_file = io.TextIOWrapper(
+                self.dst_file,
+                encoding="utf8",
+                newline=self.linesep,
+                line_buffering=True,
+            )
+        try:
+            for line in self._iter_lines(results, unsafe_requirements, markers, hashes):
+                if self.dry_run:
+                    # Bypass the log level to always print this during a dry run
+                    log.log(line)
+                else:
+                    log.info(line)
+                    dst_file.write(unstyle(line))
+                    dst_file.write("\n")
+        finally:
+            if not self.dry_run:
+                dst_file.detach()
 
     def _format_requirement(
         self,
