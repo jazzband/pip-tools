@@ -98,6 +98,7 @@ class OutputWriter:
         index_urls: Iterable[str],
         trusted_hosts: Iterable[str],
         format_control: FormatControl,
+        linesep: str,
         allow_unsafe: bool,
         find_links: List[str],
         emit_find_links: bool,
@@ -117,6 +118,7 @@ class OutputWriter:
         self.index_urls = index_urls
         self.trusted_hosts = trusted_hosts
         self.format_control = format_control
+        self.linesep = linesep
         self.allow_unsafe = allow_unsafe
         self.find_links = find_links
         self.emit_find_links = emit_find_links
@@ -215,7 +217,7 @@ class OutputWriter:
         if packages:
             for ireq in sorted(packages, key=self._sort_key):
                 if has_hashes and not hashes.get(ireq):
-                    yield MESSAGE_UNHASHED_PACKAGE
+                    yield self.linesep.join(MESSAGE_UNHASHED_PACKAGE.splitlines())
                     warn_uninstallable = True
                 line = self._format_requirement(
                     ireq, markers.get(key_from_ireq(ireq)), hashes=hashes
@@ -227,10 +229,10 @@ class OutputWriter:
             yield ""
             yielded = True
             if has_hashes and not self.allow_unsafe:
-                yield MESSAGE_UNSAFE_PACKAGES_UNPINNED
+                yield self.linesep.join(MESSAGE_UNSAFE_PACKAGES_UNPINNED.splitlines())
                 warn_uninstallable = True
             else:
-                yield MESSAGE_UNSAFE_PACKAGES
+                yield self.linesep.join(MESSAGE_UNSAFE_PACKAGES.splitlines())
 
             for ireq in sorted(unsafe_requirements, key=self._sort_key):
                 ireq_key = key_from_ireq(ireq)
@@ -264,7 +266,7 @@ class OutputWriter:
             else:
                 log.info(line)
                 self.dst_file.write(unstyle(line).encode())
-                self.dst_file.write(os.linesep.encode())
+                self.dst_file.write(self.linesep.encode())
 
     def _format_requirement(
         self,
@@ -279,7 +281,7 @@ class OutputWriter:
             line = strip_extras(line)
 
         if not self.annotate:
-            return line
+            return self.linesep.join(line.splitlines())
 
         # Annotate what packages or reqs-ins this package is required by
         required_by = set()
@@ -308,6 +310,6 @@ class OutputWriter:
                 annotation = strip_extras(annotation)
             # 24 is one reasonable column size to use here, that we've used in the past
             lines = f"{line:24}{sep}{comment(annotation)}".splitlines()
-            line = "\n".join(ln.rstrip() for ln in lines)
+            line = self.linesep.join(ln.rstrip() for ln in lines)
 
         return line
