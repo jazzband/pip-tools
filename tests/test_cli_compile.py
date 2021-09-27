@@ -937,6 +937,71 @@ def test_generate_hashes_with_annotations(runner):
 
 
 @pytest.mark.network
+@pytest.mark.parametrize("gen_hashes", (True, False))
+@pytest.mark.parametrize(
+    "annotate_options",
+    (
+        ("--no-annotate",),
+        ("--annotation-style", "line"),
+        ("--annotation-style", "split"),
+    ),
+)
+@pytest.mark.parametrize(
+    ("nl_options", "must_include", "must_exclude"),
+    (
+        pytest.param(("--newline", "lf"), "\n", "\r\n", id="LF"),
+        pytest.param(("--newline", "crlf"), "\r\n", "\n", id="CRLF"),
+        pytest.param(
+            ("--newline", "native"),
+            os.linesep,
+            {"\n": "\r\n", "\r\n": "\n"}[os.linesep],
+            id="native",
+        ),
+        pytest.param(
+            (), os.linesep, {"\n": "\r\n", "\r\n": "\n"}[os.linesep], id="default"
+        ),
+    ),
+)
+def test_override_newline(
+    runner, gen_hashes, annotate_options, nl_options, must_include, must_exclude
+):
+    opts = annotate_options + nl_options
+    if gen_hashes:
+        opts += ("--generate-hashes",)
+
+    with open("requirements.in", "w") as req_in:
+        req_in.write("six==1.15.0\n")
+        req_in.write("setuptools\n")
+        req_in.write("pip-tools @ git+https://github.com/jazzband/pip-tools\n")
+
+    runner.invoke(cli, [*opts, "requirements.in"])
+    with open("requirements.txt", "rb") as req_txt:
+        txt = req_txt.read().decode()
+
+    assert must_include in txt
+
+    if must_exclude in must_include:
+        txt = txt.replace(must_include, "")
+    assert must_exclude not in txt
+
+    # Do it again, with --newline=preserve:
+
+    opts = annotate_options + ("--newline", "preserve")
+    if gen_hashes:
+        opts += ("--generate-hashes",)
+
+    runner.invoke(cli, [*opts, "requirements.in"])
+    with open("requirements.txt", "rb") as req_txt:
+        txt = req_txt.read().decode()
+
+    assert must_include in txt
+
+    if must_exclude in must_include:
+        txt = txt.replace(must_include, "")
+    assert must_exclude not in txt
+
+
+@pytest.mark.network
 def test_generate_hashes_with_split_style_annotations(runner):
     with open("requirements.in", "w") as fp:
         fp.write("Django==1.11.29\n")
