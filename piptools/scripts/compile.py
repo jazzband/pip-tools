@@ -160,6 +160,12 @@ def _get_default_option(option_name: str) -> Any:
     ),
 )
 @click.option(
+    "--newline",
+    type=click.Choice(("LF", "CRLF", "native", "preserve"), case_sensitive=False),
+    default="preserve",
+    help="Override the newline control characters used",
+)
+@click.option(
     "--allow-unsafe/--no-allow-unsafe",
     is_flag=True,
     default=False,
@@ -272,6 +278,7 @@ def cli(
     upgrade: bool,
     upgrade_packages: Tuple[str, ...],
     output_file: Union[LazyFile, IO[Any], None],
+    newline: str,
     allow_unsafe: bool,
     strip_extras: bool,
     generate_hashes: bool,
@@ -503,6 +510,25 @@ def cli(
 
     log.debug("")
 
+    # Determine linesep for OutputWriter to use
+    if newline == "preserve":
+        for fname in (output_file.name, *src_files):
+            if os.path.exists(fname):
+                with open(fname, "rb") as existing_file:
+                    existing_text = existing_file.read().decode()
+                if "\r\n" in existing_text:
+                    newline = "CRLF"
+                    break
+                elif "\n" in existing_text:
+                    newline = "LF"
+                    break
+    linesep = {
+        "native": os.linesep,
+        "LF": "\n",
+        "CRLF": "\r\n",
+        "preserve": "\n",
+    }[newline]
+
     ##
     # Output
     ##
@@ -522,6 +548,7 @@ def cli(
         index_urls=repository.finder.index_urls,
         trusted_hosts=repository.finder.trusted_hosts,
         format_control=repository.finder.format_control,
+        linesep=linesep,
         allow_unsafe=allow_unsafe,
         find_links=repository.finder.find_links,
         emit_find_links=emit_find_links,
