@@ -48,16 +48,21 @@ version_option_kwargs = {"package_name": "pip-tools"} if IS_CLICK_VER_8_PLUS els
     "-f",
     "--find-links",
     multiple=True,
-    help="Look for archives in this directory or on this HTML page",
+    help="Look for archives in this directory or on this HTML page; may be used more than once",
 )
 @click.option("-i", "--index-url", help="Change index URL (defaults to PyPI)")
 @click.option(
-    "--extra-index-url", multiple=True, help="Add additional index URL to search"
+    "--extra-index-url",
+    multiple=True,
+    help="Add another index URL to search; may be used more than once",
 )
 @click.option(
     "--trusted-host",
     multiple=True,
-    help="Mark this host as trusted, even though it does not have valid or any HTTPS.",
+    help=(
+        "Mark this host as trusted, even though it does not have valid or any HTTPS"
+        "; may be used more than once"
+    ),
 )
 @click.option(
     "--no-index",
