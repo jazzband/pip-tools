@@ -1,3 +1,4 @@
+import itertools
 import os
 import shlex
 import sys
@@ -421,6 +422,8 @@ def cli(
                     options=repository.options,
                 )
             )
+
+    extras = tuple(itertools.chain.from_iterable(ex.split(",") for ex in extras))
 
     if extras and not setup_file_found:
         msg = "--extra has effect only with setup.py and PEP-517 input formats"

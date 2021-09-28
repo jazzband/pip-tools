@@ -1933,9 +1933,16 @@ def test_one_extra(fake_dists, runner, make_module, fname, content):
 
 
 @pytest.mark.network
+@pytest.mark.parametrize(
+    "extra_opts",
+    (
+        pytest.param(("--extra", "dev", "--extra", "test"), id="singular"),
+        pytest.param(("--extra", "dev,test"), id="comma-separated"),
+    ),
+)
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
 @pytest.mark.xfail(is_pypy, reason="https://github.com/jazzband/pip-tools/issues/1375")
-def test_multiple_extras(fake_dists, runner, make_module, fname, content):
+def test_multiple_extras(fake_dists, runner, make_module, fname, content, extra_opts):
     """
     Test passing multiple `--extra` params.
     """
@@ -1944,10 +1951,7 @@ def test_multiple_extras(fake_dists, runner, make_module, fname, content):
         cli,
         [
             "-n",
-            "--extra",
-            "dev",
-            "--extra",
-            "test",
+            *extra_opts,
             "--find-links",
             fake_dists,
             meta_path,
