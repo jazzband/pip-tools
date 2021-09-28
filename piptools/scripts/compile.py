@@ -75,13 +75,13 @@ def _get_default_option(option_name: str) -> Any:
     "--extra",
     "extras",
     multiple=True,
-    help="Names of extras_require to install",
+    help="Name of an extras_require group to install; may be used more than once",
 )
 @click.option(
     "-f",
     "--find-links",
     multiple=True,
-    help="Look for archives in this directory or on this HTML page",
+    help="Look for archives in this directory or on this HTML page; may be used more than once",
 )
 @click.option(
     "-i",
@@ -91,7 +91,9 @@ def _get_default_option(option_name: str) -> Any:
     ),
 )
 @click.option(
-    "--extra-index-url", multiple=True, help="Add additional index URL to search"
+    "--extra-index-url",
+    multiple=True,
+    help="Add another index URL to search; may be used more than once",
 )
 @click.option("--cert", help="Path to alternate CA bundle.")
 @click.option(
@@ -103,7 +105,7 @@ def _get_default_option(option_name: str) -> Any:
     "--trusted-host",
     multiple=True,
     help="Mark this host as trusted, even though it does not have "
-    "valid or any HTTPS.",
+    "valid or any HTTPS; may be used more than once",
 )
 @click.option(
     "--header/--no-header",
@@ -142,7 +144,7 @@ def _get_default_option(option_name: str) -> Any:
     "upgrade_packages",
     nargs=1,
     multiple=True,
-    help="Specify particular packages to upgrade.",
+    help="Specify a particular package to upgrade; may be used more than once",
 )
 @click.option(
     "-o",
