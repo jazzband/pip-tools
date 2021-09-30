@@ -499,14 +499,18 @@ def cli(
 
     log.debug("")
 
+    # Determine linesep for OutputWriter to use
     if newline == "preserve":
-        if os.path.exists(output_file.name):
-            with open(output_file.name, "rb") as existing_target:
-                existing_txt = existing_target.read().decode()
-            if "\r\n" in existing_txt:
-                newline = "CRLF"
-            elif "\n" in existing_txt:
-                newline = "LF"
+        for fname in (output_file.name, *src_files):
+            if os.path.exists(fname):
+                with open(fname, "rb") as existing_file:
+                    existing_text = existing_file.read().decode()
+                if "\r\n" in existing_text:
+                    newline = "CRLF"
+                    break
+                elif "\n" in existing_text:
+                    newline = "LF"
+                    break
     linesep = {
         "native": os.linesep,
         "LF": "\n",
