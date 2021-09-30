@@ -957,9 +957,6 @@ def test_generate_hashes_with_annotations(runner):
             {"\n": "\r\n", "\r\n": "\n"}[os.linesep],
             id="native",
         ),
-        pytest.param(
-            (), os.linesep, {"\n": "\r\n", "\r\n": "\n"}[os.linesep], id="default"
-        ),
     ),
 )
 def test_override_newline(
@@ -998,6 +995,26 @@ def test_override_newline(
 
     if must_exclude in must_include:
         txt = txt.replace(must_include, "")
+    assert must_exclude not in txt
+
+
+@pytest.mark.network
+@pytest.mark.parametrize(
+    ("linesep", "must_exclude"),
+    (pytest.param("\n", "\r\n", id="LF"), pytest.param("\r\n", "\n", id="CRLF")),
+)
+def test_preserve_newline_from_input(runner, linesep, must_exclude):
+    with open("requirements.in", "wb") as req_in:
+        req_in.write(f"six{linesep}".encode())
+
+    runner.invoke(cli, ["--newline=preserve", "requirements.in"])
+    with open("requirements.txt", "rb") as req_txt:
+        txt = req_txt.read().decode()
+
+    assert linesep in txt
+
+    if must_exclude in linesep:
+        txt = txt.replace(linesep, "")
     assert must_exclude not in txt
 
 
