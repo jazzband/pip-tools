@@ -199,9 +199,9 @@ version 8.0, ``pip-compile`` offers ``--generate-hashes`` flag:
         --hash=sha256:7c3dca29c022744e95b547e867cee89f4fce4373f3549ccd8797d8eb52cdb873 \
         # via django
 
-By default, this will include a hash for every release file available for the give version. This
-behavior can be changed to only include a hash for the best match file for the current environment
-with the ``--single-hash`` flag.
+By default, this will include a hash for every release file available for the given version. This
+behavior can be changed to only include a hash for the best matching file for the current
+environment with the ``--single-hash`` flag.
 
 Output File
 -----------
