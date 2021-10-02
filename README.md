@@ -278,7 +278,7 @@ sqlparse==0.4.3 \
 
 By default, this will include a hash for every release file available for the
 given version. This behavior can be changed to only include a hash for the best
-match file for the current environment with the `--single-hash` flag.
+matching file for the current environment with the `--single-hash` flag.
 
 ### Output File
 
