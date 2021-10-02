@@ -73,8 +73,7 @@ jobs:
         os:
           - Ubuntu
           - MacOS
-          # TODO: fix test_realistic_complex_sub_dependencies test on Windows
-          # - Windows
+          - Windows
         python-version:
           - pypy3
         pip-version:

@@ -1,0 +1,19 @@
+# https://docs.readthedocs.io/en/stable/config-file/v2.html
+
+version: 2
+
+# Build documentation in the docs/ directory with Sphinx
+sphinx:
+  builder: dirhtml
+  configuration: docs/conf.py
+  fail_on_warning: true
+
+formats: all
+
+python:
+  version: 3.8
+  install:
+    - requirements: docs/requirements.txt
+    - method: pip
+      path: .
+  system_packages: false

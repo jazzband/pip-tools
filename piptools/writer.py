@@ -51,6 +51,23 @@ def _comes_from_as_string(ireq: InstallRequirement) -> str:
     return key_from_ireq(ireq.comes_from)
 
 
+def annotation_style_split(required_by: Set[str]) -> str:
+    sorted_required_by = sorted(required_by)
+    if len(sorted_required_by) == 1:
+        source = sorted_required_by[0]
+        annotation = "# via " + source
+    else:
+        annotation_lines = ["# via"]
+        for source in sorted_required_by:
+            annotation_lines.append("    #   " + source)
+        annotation = "\n".join(annotation_lines)
+    return annotation
+
+
+def annotation_style_line(required_by: Set[str]) -> str:
+    return f"# via {', '.join(sorted(required_by))}"
+
+
 class OutputWriter:
     def __init__(
         self,
@@ -61,6 +78,7 @@ class OutputWriter:
         emit_index_url: bool,
         emit_trusted_host: bool,
         annotate: bool,
+        annotation_style: str,
         strip_extras: bool,
         generate_hashes: bool,
         default_index_url: str,
@@ -79,6 +97,7 @@ class OutputWriter:
         self.emit_index_url = emit_index_url
         self.emit_trusted_host = emit_trusted_host
         self.annotate = annotate
+        self.annotation_style = annotation_style
         self.strip_extras = strip_extras
         self.generate_hashes = generate_hashes
         self.default_index_url = default_index_url
@@ -258,15 +277,16 @@ class OutputWriter:
             required_by.add(_comes_from_as_string(ireq))
 
         if required_by:
-            sorted_required_by = sorted(required_by)
-            if len(sorted_required_by) == 1:
-                source = sorted_required_by[0]
-                annotation = "    # via " + source
-            else:
-                annotation_lines = ["    # via"]
-                for source in sorted_required_by:
-                    annotation_lines.append("    #   " + source)
-                annotation = "\n".join(annotation_lines)
-            line = f"{line}\n{comment(annotation)}"
+            if self.annotation_style == "split":
+                annotation = annotation_style_split(required_by)
+                sep = "\n    "
+            elif self.annotation_style == "line":
+                annotation = annotation_style_line(required_by)
+                sep = "\n    " if ireq_hashes else "  "
+            else:  # pragma: no cover
+                raise ValueError("Invalid value for annotation style")
+            # 24 is one reasonable column size to use here, that we've used in the past
+            lines = f"{line:24}{sep}{comment(annotation)}".splitlines()
+            line = "\n".join(ln.rstrip() for ln in lines)
 
         return line

@@ -7,7 +7,7 @@ pip-tools = pip-compile + pip-sync
 A set of command line tools to help you keep your ``pip``-based packages fresh,
 even when you've pinned them.  You do pin them, right? (In building your Python application and its dependencies for production, you want to make sure that your builds are predictable and deterministic.)
 
-.. image:: https://github.com/jazzband/pip-tools/raw/master/img/pip-tools-overview.png
+.. image:: https://github.com/jazzband/pip-tools/raw/master/img/pip-tools-overview.svg
    :alt: pip-tools overview for phase II
 
 .. |buildstatus-gha| image:: https://github.com/jazzband/pip-tools/workflows/CI/badge.svg
@@ -356,7 +356,7 @@ Sample ``.pre-commit-config.yaml``:
 
     repos:
       - repo: https://github.com/jazzband/pip-tools
-        rev: 5.0.0
+        rev: 6.3.0
         hooks:
           - id: pip-compile
 
@@ -366,7 +366,7 @@ You might want to customize ``pip-compile`` args by configuring ``args`` and/or 
 
     repos:
       - repo: https://github.com/jazzband/pip-tools
-        rev: 5.0.0
+        rev: 6.3.0
         hooks:
           - id: pip-compile
             files: ^requirements/production\.(in|txt)$
@@ -533,5 +533,5 @@ versions as the required ``pip`` versions.
 +---------------+----------------+----------------+
 | 5.5.0         | 20.1 - 20.3.*  | 2.7, 3.5 - 3.9 |
 +---------------+----------------+----------------+
-| 6.0.0         | 20.3+          | 3.6 - 3.9      |
+| 6.0.0+        | 20.3+          | 3.6 - 3.9      |
 +---------------+----------------+----------------+
