@@ -307,7 +307,7 @@ class PyPIRepository(BaseRepository):
         Given a pinned InstallRequirement, return a set of hashes that can be used to verify the
         file to install for the requirement. If single_hash is True, the set will only have the
         hash for the best match file to install based on the current execution environment. When
-        False (the default), included hashes for all of the files for a given requirement.
+        False (the default), include hashes for all of the files for a given requirement.
 
         Files that are unhashable are excluded from the returned set.
 
