@@ -163,9 +163,9 @@ class BaseResolver(metaclass=ABCMeta):
         r"""
         Find acceptable hashes for all of the given ``InstallRequirement``\ s.
 
-        If single_hash is True, the set for each given  requirement will only have the hash for the
-        best match file to install based on the current execution environment. When False, hashes
-        for all release files wil included for a given requirement.
+        If single_hash is True, the set for each given requirement will only have the hash for the
+        best matching file to install based on the current execution environment. When False,
+        hashes for all release files will be included for a given requirement.
         """
         log.debug("")
         log.debug("Generating hashes:")
