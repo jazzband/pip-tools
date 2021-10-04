@@ -300,7 +300,17 @@ def test_combine_install_requirements(repository, from_line):
     assert str(combined_all.req.specifier) == "<3.2,==3.1.1,>3.0"
 
 
-def test_combine_install_requirements_extras(repository, from_line, make_package):
+def _test_combine_install_requirements_extras(repository, with_extra, without_extra):
+    combined = combine_install_requirements(repository, [without_extra, with_extra])
+    assert str(combined) == str(with_extra)
+    assert combined.extras == with_extra.extras
+
+    combined = combine_install_requirements(repository, [with_extra, without_extra])
+    assert str(combined) == str(with_extra)
+    assert combined.extras == with_extra.extras
+
+
+def test_combine_install_requirements_extras_req(repository, from_line, make_package):
     """
     Extras should be unioned in combined install requirements
     (whether or not InstallRequirement.req is None, and testing either order of the inputs)
@@ -310,31 +320,25 @@ def test_combine_install_requirements_extras(repository, from_line, make_package
     without_extra = from_line("edx-opaque-keys")
     assert without_extra.req is not None
 
-    combined = combine_install_requirements(repository, [without_extra, with_extra])
-    assert str(combined) == str(with_extra)
-    assert combined.extras == with_extra.extras
+    _test_combine_install_requirements_extras(repository, with_extra, without_extra)
 
-    combined = combine_install_requirements(repository, [with_extra, without_extra])
-    assert str(combined) == str(with_extra)
-    assert combined.extras == with_extra.extras
 
+def test_combine_install_requirements_extras_no_req(
+    repository, from_line, make_package
+):
+    """
+    Extras should be unioned in combined install requirements
+    (whether or not InstallRequirement.req is None, and testing either order of the inputs)
+    """
     test_package = make_package("test-package", extras_require={"extra": []})
     local_package_with_extra = from_line(f"{test_package}[extra]")
     assert local_package_with_extra.req is None
     local_package_without_extra = from_line(path_to_url(test_package))
     assert local_package_without_extra.req is None
 
-    combined = combine_install_requirements(
-        repository, [local_package_without_extra, local_package_with_extra]
+    _test_combine_install_requirements_extras(
+        repository, local_package_with_extra, local_package_without_extra
     )
-    assert str(combined) == str(local_package_with_extra)
-    assert combined.extras == local_package_with_extra.extras
-
-    combined = combine_install_requirements(
-        repository, [local_package_with_extra, local_package_without_extra]
-    )
-    assert str(combined) == str(local_package_with_extra)
-    assert combined.extras == local_package_with_extra.extras
 
 
 def test_compile_failure_shows_provenance(resolver, from_line):
