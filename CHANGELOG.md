@@ -1,3 +1,15 @@
+## 6.3.1 (2021-10-08)
+
+Bug Fixes:
+
+- Ensure `pip-tools` unions dependencies of multiple declarations of a package with
+  different extras ([#1486](https://github.com/jazzband/pip-tools/pull/1486)). Thanks
+  @richafrank
+- Allow comma-separated arguments for `--extra`
+  ([#1493](https://github.com/jazzband/pip-tools/pull/1493)). Thanks @AndydeCleyre
+- Improve clarity of help text for options supporting multiple
+  ([#1492](https://github.com/jazzband/pip-tools/pull/1492)). Thanks @AndydeCleyre
+
 ## 6.3.0 (2021-09-21)
 
 Features:
