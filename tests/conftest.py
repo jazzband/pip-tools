@@ -91,10 +91,6 @@ class FakeRepository(BaseRepository):
         # No need to do an actual pip.Wheel mock here.
         yield
 
-    def copy_ireq_dependencies(self, source, dest):
-        # No state to update.
-        pass
-
     @property
     def options(self) -> optparse.Values:
         """Not used"""

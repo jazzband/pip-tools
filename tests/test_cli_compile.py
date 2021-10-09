@@ -1727,6 +1727,38 @@ def test_duplicate_reqs_combined(
     assert "test-package-1==0.1" in out.stderr
 
 
+def test_combine_extras(pip_conf, runner, make_package):
+    """
+    Ensure that multiple declarations of a dependency that specify different
+    extras produces a requirement for that package with the union of the extras
+    """
+    package_with_extras = make_package(
+        "package_with_extras",
+        extras_require={
+            "extra1": ["small-fake-a==0.1"],
+            "extra2": ["small-fake-b==0.1"],
+        },
+    )
+
+    with open("requirements.in", "w") as req_in:
+        req_in.writelines(
+            [
+                "-r ./requirements-second.in\n",
+                f"{package_with_extras}[extra1]",
+            ]
+        )
+
+    with open("requirements-second.in", "w") as req_sec_in:
+        req_sec_in.write(f"{package_with_extras}[extra2]")
+
+    out = runner.invoke(cli, ["-n"])
+
+    assert out.exit_code == 0
+    assert "package-with-extras" in out.stderr
+    assert "small-fake-a==" in out.stderr
+    assert "small-fake-b==" in out.stderr
+
+
 @pytest.mark.parametrize(
     ("pkg2_install_requires", "req_in_content", "out_expected_content"),
     (
