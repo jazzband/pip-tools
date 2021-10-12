@@ -72,11 +72,16 @@ def combine_install_requirements(
 
     # deepcopy the accumulator so as to not modify the inputs
     combined_ireq = copy.deepcopy(source_ireqs[0])
+    repository.copy_ireq_dependencies(source_ireqs[0], combined_ireq)
 
     for ireq in source_ireqs[1:]:
         # NOTE we may be losing some info on dropped reqs here
         if combined_ireq.req is not None and ireq.req is not None:
             combined_ireq.req.specifier &= ireq.req.specifier
+        if combined_ireq.constraint:
+            # We don't find dependencies for constraint ireqs, so copy them
+            # from non-constraints:
+            repository.copy_ireq_dependencies(ireq, combined_ireq)
         combined_ireq.constraint &= ireq.constraint
         combined_ireq.extras = {*combined_ireq.extras, *ireq.extras}
         if combined_ireq.req is not None:
