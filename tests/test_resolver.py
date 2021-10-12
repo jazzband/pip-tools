@@ -284,6 +284,25 @@ def test_iter_dependencies_ignores_constraints(resolver, from_line):
         next(res._iter_dependencies(ireq))
 
 
+def test_iter_dependencies_after_combine_install_requirements(
+    pypi_repository, base_resolver, make_package, from_line
+):
+    res = base_resolver([], repository=pypi_repository)
+
+    sub_deps = ["click"]
+    package_a = make_package("package-a", install_requires=sub_deps)
+    package_b = make_package("package-b", install_requires=["package-a"])
+
+    local_package_a = from_line(path_to_url(package_a))
+    assert [dep.name for dep in res._iter_dependencies(local_package_a)] == sub_deps
+
+    package_a_from_b = from_line("package-a", comes_from=path_to_url(package_b))
+    combined = combine_install_requirements(
+        pypi_repository, [local_package_a, package_a_from_b]
+    )
+    assert [dep.name for dep in res._iter_dependencies(combined)] == sub_deps
+
+
 def test_combine_install_requirements(repository, from_line):
     celery30 = from_line("celery>3.0", comes_from="-r requirements.in")
     celery31 = from_line("celery==3.1.1", comes_from=from_line("fake-package"))
