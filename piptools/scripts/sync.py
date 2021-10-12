@@ -9,7 +9,8 @@ import click
 from pip._internal.commands import create_command
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
-from pip._internal.utils.misc import get_installed_distributions
+from pip._internal.metadata import get_environment
+from pip._vendor.pkg_resources import Distribution
 
 from .. import sync
 from .._compat import IS_CLICK_VER_8_PLUS, parse_requirements
@@ -152,9 +153,10 @@ def cli(
         if python_executable is None
         else get_sys_path_for_python_executable(python_executable)
     )
-
-    installed_dists = get_installed_distributions(
-        skip=[], user_only=user_only, paths=paths, local_only=python_executable is None
+    installed_dists = _get_installed_distributions(
+        user_only=user_only,
+        local_only=python_executable is None,
+        paths=paths,
     )
     to_install, to_uninstall = sync.diff(merged_requirements, installed_dists)
 
@@ -268,3 +270,20 @@ def _compose_install_flags(
         result.extend(["--client-cert", client_cert])
 
     return result
+
+
+def _get_installed_distributions(
+    local_only: bool = True,
+    user_only: bool = False,
+    paths: Optional[List[str]] = None,
+) -> List[Distribution]:
+    """Return a list of installed Distribution objects."""
+    from pip._internal.metadata.pkg_resources import Distribution as _Dist
+
+    env = get_environment(paths)
+    dists = env.iter_installed_distributions(
+        local_only=local_only,
+        user_only=user_only,
+        skip=[],
+    )
+    return [cast(_Dist, dist)._dist for dist in dists]
