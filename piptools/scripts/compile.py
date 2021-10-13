@@ -1,3 +1,4 @@
+import itertools
 import os
 import shlex
 import sys
@@ -75,13 +76,13 @@ def _get_default_option(option_name: str) -> Any:
     "--extra",
     "extras",
     multiple=True,
-    help="Names of extras_require to install",
+    help="Name of an extras_require group to install; may be used more than once",
 )
 @click.option(
     "-f",
     "--find-links",
     multiple=True,
-    help="Look for archives in this directory or on this HTML page",
+    help="Look for archives in this directory or on this HTML page; may be used more than once",
 )
 @click.option(
     "-i",
@@ -91,7 +92,9 @@ def _get_default_option(option_name: str) -> Any:
     ),
 )
 @click.option(
-    "--extra-index-url", multiple=True, help="Add additional index URL to search"
+    "--extra-index-url",
+    multiple=True,
+    help="Add another index URL to search; may be used more than once",
 )
 @click.option("--cert", help="Path to alternate CA bundle.")
 @click.option(
@@ -103,7 +106,7 @@ def _get_default_option(option_name: str) -> Any:
     "--trusted-host",
     multiple=True,
     help="Mark this host as trusted, even though it does not have "
-    "valid or any HTTPS.",
+    "valid or any HTTPS; may be used more than once",
 )
 @click.option(
     "--header/--no-header",
@@ -124,6 +127,12 @@ def _get_default_option(option_name: str) -> Any:
     help="Annotate results, indicating where dependencies come from",
 )
 @click.option(
+    "--annotation-style",
+    type=click.Choice(("line", "split")),
+    default="split",
+    help="Choose the format of annotation comments",
+)
+@click.option(
     "-U",
     "--upgrade/--no-upgrade",
     is_flag=True,
@@ -136,7 +145,7 @@ def _get_default_option(option_name: str) -> Any:
     "upgrade_packages",
     nargs=1,
     multiple=True,
-    help="Specify particular packages to upgrade.",
+    help="Specify a particular package to upgrade; may be used more than once",
 )
 @click.option(
     "-o",
@@ -244,6 +253,7 @@ def cli(
     header: bool,
     emit_trusted_host: bool,
     annotate: bool,
+    annotation_style: str,
     upgrade: bool,
     upgrade_packages: Tuple[str, ...],
     output_file: Union[LazyFile, IO[Any], None],
@@ -413,6 +423,8 @@ def cli(
                 )
             )
 
+    extras = tuple(itertools.chain.from_iterable(ex.split(",") for ex in extras))
+
     if extras and not setup_file_found:
         msg = "--extra has effect only with setup.py and PEP-517 input formats"
         raise click.BadParameter(msg)
@@ -471,6 +483,7 @@ def cli(
         emit_index_url=emit_index_url,
         emit_trusted_host=emit_trusted_host,
         annotate=annotate,
+        annotation_style=annotation_style,
         strip_extras=strip_extras,
         generate_hashes=generate_hashes,
         default_index_url=repository.DEFAULT_INDEX_URL,

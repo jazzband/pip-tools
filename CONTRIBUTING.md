@@ -10,7 +10,7 @@ Here are a few additional or emphasized guidelines to follow when contributing t
 
 - If you need to have a virtualenv outside of `tox`, it is possible to reuse its configuration to provision it as [described in the docs](https://tox.readthedocs.io/en/latest/example/devenv.html#creating-development-environments-using-the-devenv-option).
 - Always provide tests for your changes and run `tox -p all` to make sure they are passing the checks locally.
-- Give a clear one-line description in the PR (that the maintainers can add to [CHANGELOG](CHANGELOG.md) afterwards).
+- Give a clear one-line description in the PR (that the maintainers can add to [CHANGELOG] afterwards).
 - Wait for the review of at least one other contributor before merging (even if you're a Jazzband member).
 - Before merging, assign the PR to a milestone for a version to help with the release process.
 
@@ -28,7 +28,7 @@ To help keeping track of the releases and their changes, here's the current rele
 
 - Check to see if any recently merged PRs are missing from the milestone of the version about to be released.
 - Create a branch for the release. _Ex: release-3.4.0_.
-- Update the [CHANGELOG](CHANGELOG.md) with the version, date and add the text from [drafter release](https://github.com/jazzband/pip-tools/releases).
+- Update the [CHANGELOG] with the version, date and add the text from [drafter release](https://github.com/jazzband/pip-tools/releases).
 - Push the branch to your fork and create a pull request.
 - Merge the pull request after the changes being approved.
 - Make sure that the tests/CI still pass.
@@ -45,3 +45,5 @@ To help keeping track of the releases and their changes, here's the current rele
 Please be mindful of other before and when performing a release, and use this access responsibly.
 
 Do not hesitate to ask questions if you have any before performing a release.
+
+[changelog]: https://github.com/jazzband/pip-tools/blob/master/CHANGELOG.md
