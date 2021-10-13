@@ -87,6 +87,11 @@ def combine_install_requirements(
         if combined_ireq.req is not None:
             combined_ireq.req.extras = set(combined_ireq.extras)
 
+        for attr in ("link", "local_file_path", "original_link"):
+            setattr(
+                combined_ireq, attr, getattr(combined_ireq, attr) or getattr(ireq, attr)
+            )
+
     # InstallRequirements objects are assumed to come from only one source, and
     # so they support only a single comes_from entry. This function breaks this
     # model. As a workaround, we deterministically choose a single source for
