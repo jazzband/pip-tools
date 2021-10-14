@@ -1,7 +1,6 @@
 import os
 import sys
 from contextlib import contextmanager
-from shutil import rmtree
 from tempfile import NamedTemporaryFile
 
 import pytest
