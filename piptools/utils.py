@@ -3,6 +3,7 @@ import itertools
 import json
 import os
 import shlex
+import typing
 from typing import (
     Callable,
     Dict,
@@ -26,7 +27,7 @@ from pip._internal.vcs import is_url
 from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.specifiers import SpecifierSet
 from pip._vendor.packaging.version import Version
-from pip._vendor.pkg_resources import get_distribution
+from pip._vendor.pkg_resources import Distribution, Requirement, get_distribution
 
 from piptools.subprocess_utils import run_python_snippet
 
@@ -56,7 +57,9 @@ def key_from_ireq(ireq: InstallRequirement) -> str:
         return key_from_req(ireq.req)
 
 
-def key_from_req(req: InstallRequirement) -> str:
+def key_from_req(
+    req: typing.Union[InstallRequirement, Distribution, Requirement]
+) -> str:
     """Get an all-lowercase version of the requirement's name."""
     if hasattr(req, "key"):
         # from pkg_resources, such as installed dists for pip-sync

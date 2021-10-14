@@ -1,3 +1,17 @@
+## 6.4.0 (2021-10-12)
+
+Features:
+
+- Add support for `pip>=21.3`
+  ([#1501](https://github.com/jazzband/pip-tools/pull/1501)). Thanks @atugushev
+- Add support for Python 3.10
+  ([#1497](https://github.com/jazzband/pip-tools/pull/1497)). Thanks @joshuadavidthomas
+
+Other Changes:
+
+- Bump pip minimum version to `>= 21.2`
+  ([#1500](https://github.com/jazzband/pip-tools/pull/1500)). Thanks @atugushev
+
 ## 6.3.1 (2021-10-08)
 
 Bug Fixes:

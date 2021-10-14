@@ -52,9 +52,9 @@ Example usage for ``pip-compile``
 The ``pip-compile`` command lets you compile a ``requirements.txt`` file from
 your dependencies, specified in either ``setup.py`` or ``requirements.in``.
 
-Run it with ``pip-compile`` or  ``python -m piptools compile``. If you use
-multiple Python versions, you can run ``pip-compile`` as ``py -X.Y -m piptools
-compile`` on Windows and ``pythonX.Y -m piptools compile`` on other systems.
+Run it with ``pip-compile`` or ``python -m piptools compile``. If you use
+multiple Python versions, you can also run ``py -X.Y -m piptools compile`` on
+Windows and ``pythonX.Y -m piptools compile`` on other systems.
 
 ``pip-compile`` should be run from the same virtual environment as your
 project so conditional dependencies that require a specific Python version,
@@ -445,10 +445,6 @@ Any valid ``pip install`` flags or arguments may be passed with ``pip-sync``'s
 
     $ pip-sync requirements.txt --pip-args '--no-cache-dir --no-deps'
 
-If you use multiple Python versions, you can run ``pip-sync`` as
-``py -X.Y -m piptools sync ...`` on Windows and
-``pythonX.Y -m piptools sync ...`` on other systems.
-
 **Note**: ``pip-sync`` will not upgrade or uninstall packaging tools like
 ``setuptools``, ``pip``, or ``pip-tools`` itself. Use ``python -m pip install --upgrade``
 to upgrade those packages.
@@ -533,5 +529,7 @@ versions as the required ``pip`` versions.
 +---------------+----------------+----------------+
 | 5.5.0         | 20.1 - 20.3.*  | 2.7, 3.5 - 3.9 |
 +---------------+----------------+----------------+
-| 6.0.0+        | 20.3+          | 3.6 - 3.9      |
+| 6.0.0 - 6.3.1 | 20.3 - 21.2.*  | 3.6 - 3.9      |
++---------------+----------------+----------------+
+| 6.4.0+        | 21.2+          | 3.6 - 3.10     |
 +---------------+----------------+----------------+
