@@ -114,6 +114,7 @@ class Resolver:
         clear_caches: bool = False,
         allow_unsafe: bool = False,
         unsafe_packages: Optional[Set[str]] = None,
+        allow_unsafe_recursive: bool = False,
     ) -> None:
         """
         This class resolves a given set of constraints (a collection of
@@ -129,6 +130,7 @@ class Resolver:
         self.allow_unsafe = allow_unsafe
         self.unsafe_constraints: Set[InstallRequirement] = set()
         self.unsafe_packages = unsafe_packages or UNSAFE_PACKAGES
+        self.allow_unsafe_recursive = allow_unsafe_recursive
 
     @property
     def constraints(self) -> Set[InstallRequirement]:
@@ -191,18 +193,24 @@ class Resolver:
         # Filter out unsafe requirements.
         self.unsafe_constraints = set()
         if not self.allow_unsafe:
-            # reverse_dependencies is used to filter out packages that are only
-            # required by unsafe packages. This logic is incomplete, as it would
-            # fail to filter sub-sub-dependencies of unsafe packages. None of the
-            # UNSAFE_PACKAGES currently have any dependencies at all (which makes
-            # sense for installation tools) so this seems sufficient.
-            reverse_dependencies = self.reverse_dependencies(results)
+            if not self.allow_unsafe_recursive:
+                # reverse_dependencies is used to filter out packages that are only
+                # required by unsafe packages. This logic is incomplete, as it would
+                # fail to filter sub-sub-dependencies of unsafe packages. None of the
+                # UNSAFE_PACKAGES currently have any dependencies at all (which makes
+                # sense for installation tools) so this seems sufficient.
+                reverse_dependencies = self.reverse_dependencies(results)
+
+                for req in results.copy():
+                    required_by = reverse_dependencies.get(req.name.lower(), set())
+                    if required_by and all(
+                        name in self.unsafe_packages for name in required_by
+                    ):
+                        self.unsafe_constraints.add(req)
+                        results.remove(req)
+
             for req in results.copy():
-                required_by = reverse_dependencies.get(req.name.lower(), set())
-                if req.name in self.unsafe_packages or (
-                    required_by
-                    and all(name in self.unsafe_packages for name in required_by)
-                ):
+                if req.name in self.unsafe_packages:
                     self.unsafe_constraints.add(req)
                     results.remove(req)
 
