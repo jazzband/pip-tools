@@ -113,6 +113,7 @@ class Resolver:
         prereleases: Optional[bool] = False,
         clear_caches: bool = False,
         allow_unsafe: bool = False,
+        unsafe_packages: Optional[Set[str]] = None,
     ) -> None:
         """
         This class resolves a given set of constraints (a collection of
@@ -127,6 +128,7 @@ class Resolver:
         self.clear_caches = clear_caches
         self.allow_unsafe = allow_unsafe
         self.unsafe_constraints: Set[InstallRequirement] = set()
+        self.unsafe_packages = unsafe_packages or UNSAFE_PACKAGES
 
     @property
     def constraints(self) -> Set[InstallRequirement]:
@@ -197,8 +199,9 @@ class Resolver:
             reverse_dependencies = self.reverse_dependencies(results)
             for req in results.copy():
                 required_by = reverse_dependencies.get(req.name.lower(), set())
-                if req.name in UNSAFE_PACKAGES or (
-                    required_by and all(name in UNSAFE_PACKAGES for name in required_by)
+                if req.name in self.unsafe_packages or (
+                    required_by
+                    and all(name in self.unsafe_packages for name in required_by)
                 ):
                     self.unsafe_constraints.add(req)
                     results.remove(req)
