@@ -187,7 +187,7 @@ def tmpdir_cwd(tmpdir):
 
 @pytest.fixture
 def make_pip_conf(tmpdir, monkeypatch):
-    created_paths = []
+    created_paths = set()
 
     def _make_pip_conf(content):
         pip_conf_file = "pip.conf" if os.name != "nt" else "pip.ini"
@@ -198,7 +198,7 @@ def make_pip_conf(tmpdir, monkeypatch):
 
         monkeypatch.setenv("PIP_CONFIG_FILE", path)
 
-        created_paths.append(path)
+        created_paths.add(path)
         return path
 
     try:
@@ -232,6 +232,11 @@ def pip_with_index_conf(make_pip_conf):
             """
         )
     )
+
+
+@pytest.fixture(autouse=True)
+def pip_with_empty_conf(make_pip_conf):
+    return make_pip_conf("")
 
 
 @pytest.fixture

@@ -116,6 +116,3 @@ def test_reverse_dependencies(from_line, tmpdir):
         "bottom": {"middle", "top"},
         "bonus": {"top"},
     }
-
-    # Clean up our temp directory
-    rmtree(tmpdir)
