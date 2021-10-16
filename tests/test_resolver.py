@@ -303,6 +303,32 @@ def test_iter_dependencies_after_combine_install_requirements(
     assert [dep.name for dep in res._iter_dependencies(combined)] == sub_deps
 
 
+@pytest.mark.xfail(
+    reason="resolver does not yet support combining extras after the first round"
+)
+def test_iter_dependencies_after_combine_install_requirements_extras(
+    pypi_repository, base_resolver, make_package, from_line
+):
+    res = base_resolver([], repository=pypi_repository)
+
+    package_a = make_package(
+        "package-a", extras_require={"click": ["click"], "celery": ["celery"]}
+    )
+    package_b = make_package("package-b", install_requires=["package-a"])
+
+    local_package_a = from_line(path_to_url(package_a))
+    assert [dep.name for dep in res._iter_dependencies(local_package_a)] == []
+
+    package_a_from_b = from_line("package-a[click]", comes_from=path_to_url(package_b))
+    package_a_with_other_extra = from_line("package-a[celery]")
+    combined = combine_install_requirements(
+        pypi_repository, [local_package_a, package_a_from_b, package_a_with_other_extra]
+    )
+
+    dependency_names = {dep.name for dep in res._iter_dependencies(combined)}
+    assert {"celery", "click"}.issubset(dependency_names)
+
+
 def test_combine_install_requirements(repository, from_line):
     celery30 = from_line("celery>3.0", comes_from="-r requirements.in")
     celery31 = from_line("celery==3.1.1", comes_from=from_line("fake-package"))
