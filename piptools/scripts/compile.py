@@ -515,7 +515,7 @@ def cli(
         "native": os.linesep,
         "LF": "\n",
         "CRLF": "\r\n",
-        "preserve": os.linesep,
+        "preserve": "\n",
     }[newline]
 
     ##
