@@ -73,6 +73,9 @@ def combine_install_requirements(
     # deepcopy the accumulator so as to not modify the inputs
     combined_ireq = copy.deepcopy(source_ireqs[0])
     repository.copy_ireq_dependencies(source_ireqs[0], combined_ireq)
+    # combined install_requirement needs to be prepared again, i.e. to have its
+    # dependencies be resolved again.
+    combined_ireq.prepared = False
 
     for ireq in source_ireqs[1:]:
         # NOTE we may be losing some info on dropped reqs here

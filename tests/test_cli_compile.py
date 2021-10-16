@@ -1792,6 +1792,70 @@ def test_combine_extras(pip_conf, runner, make_package):
     assert "small-fake-b==" in out.stderr
 
 
+def test_combine_different_extras_of_the_same_package(
+    pip_conf, runner, tmpdir, make_package, make_wheel
+):
+    """
+    Loosely based on the example from https://github.com/jazzband/pip-tools/issues/1511.
+    """
+    pkgs = [
+        make_package(
+            "fake-colorful",
+            version="0.3",
+        ),
+        make_package(
+            "fake-tensorboardX",
+            version="0.5",
+        ),
+        make_package(
+            "fake-ray",
+            version="0.1",
+            extras_require={
+                "default": ["fake-colorful==0.3"],
+                "tune": ["fake-tensorboardX==0.5"],
+            },
+        ),
+        make_package(
+            "fake-tune-sklearn",
+            version="0.7",
+            install_requires=[
+                "fake-ray[tune]==0.1",
+            ],
+        ),
+    ]
+
+    dists_dir = tmpdir / "dists"
+    for pkg in pkgs:
+        make_wheel(pkg, dists_dir)
+
+    with open("requirements.in", "w") as req_in:
+        req_in.writelines(
+            [
+                "fake-ray[default]==0.1\n",
+                "fake-tune-sklearn==0.7\n",
+            ]
+        )
+
+    out = runner.invoke(cli, ["--find-links", str(dists_dir)])
+
+    assert out.exit_code == 0
+    assert (
+        """\
+fake-colorful==0.3
+    # via fake-ray
+fake-ray[default,tune]==0.1
+    # via
+    #   -r requirements.in
+    #   fake-tune-sklearn
+fake-tensorboardx==0.5
+    # via fake-ray
+fake-tune-sklearn==0.7
+    # via -r requirements.in
+"""
+        in out.stderr
+    )
+
+
 @pytest.mark.parametrize(
     ("pkg2_install_requires", "req_in_content", "out_expected_content"),
     (

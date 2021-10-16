@@ -402,6 +402,19 @@ def test_combine_install_requirements_with_paths(repository, from_line, make_pac
         assert str(combined.original_link) == str(fake_package.original_link)
 
 
+def test_combine_install_requirements_for_one_package_with_multiple_extras_reset_prepared(
+    repository, from_line
+):
+    """Regression test for https://github.com/jazzband/pip-tools/pull/1512/files."""
+    pkg1 = from_line("ray[default]==1.1.1")
+    pkg1.prepared = True
+    pkg2 = from_line("ray[tune]==1.1.1")
+    combined = combine_install_requirements(repository, [pkg1, pkg2])
+
+    assert str(combined) == "ray[default,tune]==1.1.1"
+    assert combined.prepared is False
+
+
 def test_compile_failure_shows_provenance(resolver, from_line):
     """
     Provenance of conflicting dependencies should be printed on failure.
