@@ -341,7 +341,7 @@ def test_combine_install_requirements_extras_no_req(
     )
 
 
-def test_combine_install_requirements_with_multiple_extras_reset_prepared(
+def test_combine_install_requirements_for_one_package_with_multiple_extras_reset_prepared(
     repository, from_line
 ):
     """Regression test for https://github.com/jazzband/pip-tools/pull/1512/files."""
