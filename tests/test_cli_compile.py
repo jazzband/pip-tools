@@ -1732,6 +1732,34 @@ def test_duplicate_reqs_combined(
     assert "test-package-1==0.1" in out.stderr
 
 
+def test_local_duplicate_subdependency_combined(runner, make_package):
+    """
+    Test pip-compile tracks subdependencies properly when install requirements
+    are combined, especially when local paths are passed as urls, and those reqs
+    are combined after getting dependencies.
+
+    Regression test for issue GH-1505.
+    """
+    package_a = make_package("project-a", install_requires=["pip-tools==6.3.0"])
+    package_b = make_package("project-b", install_requires=["project-a"])
+
+    with open("requirements.in", "w") as req_in:
+        req_in.writelines(
+            [
+                f"file://{package_a}#egg=project-a\n",
+                f"file://{package_b}#egg=project-b",
+            ]
+        )
+
+    out = runner.invoke(cli, ["-n"])
+
+    assert out.exit_code == 0
+    assert "project-b" in out.stderr
+    assert "project-a" in out.stderr
+    assert "pip-tools==6.3.0" in out.stderr
+    assert "click" in out.stderr  # dependency of pip-tools
+
+
 def test_combine_extras(pip_conf, runner, make_package):
     """
     Ensure that multiple declarations of a dependency that specify different
