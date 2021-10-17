@@ -1798,7 +1798,7 @@ def test_combine_different_extras_of_the_same_package(
     with open("requirements.in", "w") as req_in:
         req_in.writelines(
             [
-                f"fake-ray[default]==0.1\n",
+                "fake-ray[default]==0.1\n",
                 "fake-tune-sklearn==0.7\n",
             ]
         )
