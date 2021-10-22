@@ -386,6 +386,22 @@ def test_combine_install_requirements_extras_no_req(
     )
 
 
+def test_combine_install_requirements_with_paths(repository, from_line, make_package):
+    name = "fake_package_b"
+    version = "1.0.0"
+
+    test_package = make_package(name, version=version)
+    fake_package = from_line(f"{name} @ {path_to_url(test_package)}")
+    fake_package_name = from_line(f"{name}=={version}", comes_from=from_line(name))
+
+    for pair in [(fake_package, fake_package_name), (fake_package_name, fake_package)]:
+        combined = combine_install_requirements(repository, pair)
+        assert str(combined.specifier) == str(fake_package_name.specifier)
+        assert str(combined.link) == str(fake_package.link)
+        assert str(combined.local_file_path) == str(fake_package.local_file_path)
+        assert str(combined.original_link) == str(fake_package.original_link)
+
+
 def test_compile_failure_shows_provenance(resolver, from_line):
     """
     Provenance of conflicting dependencies should be printed on failure.
