@@ -234,39 +234,6 @@ class Resolver:
 
         return results
 
-    def _get_ireq_with_name(
-        self,
-        ireq: InstallRequirement,
-        proxy_cache: Dict[InstallRequirement, InstallRequirement],
-    ) -> InstallRequirement:
-        """
-        Return the given ireq, if it has a name, or a proxy for the given ireq
-        which has been prepared and therefore has a name.
-
-        Preparing the ireq is side-effect-ful and can only be done once for an
-        instance, so we use a proxy instead. combine_install_requirements may
-        use the given ireq as a template for its aggregate result, mutating it
-        further by combining extras, etc. In that situation, we don't want that
-        aggregate ireq to be prepared prior to mutation, since its dependencies
-        will be frozen with those of only a subset of extras.
-
-        i.e. We both want its name early (via preparation), but we also need to
-        prepare it after any mutation for combination purposes. So we use a
-        proxy here for the early preparation.
-        """
-        if ireq.name is not None:
-            return ireq
-
-        if ireq in proxy_cache:
-            return proxy_cache[ireq]
-
-        # get_dependencies has the side-effect of assigning name to ireq
-        # (so we can group by the name in _group_constraints below).
-        name_proxy = copy.deepcopy(ireq)
-        self.repository.get_dependencies(name_proxy)
-        proxy_cache[ireq] = name_proxy
-        return name_proxy
-
     def _group_constraints(
         self, constraints: Iterable[InstallRequirement]
     ) -> Iterator[InstallRequirement]:
@@ -287,30 +254,19 @@ class Resolver:
         """
         constraints = list(constraints)
 
-        cache: Dict[InstallRequirement, InstallRequirement] = {}
-
-        def key_from_ireq_with_name(ireq: InstallRequirement) -> str:
-            """
-            See _get_ireq_with_name for context.
-
-            We use a cache per call here because it should only be necessary
-            the first time an ireq is passed here (later on in the round, it
-            will be prepared and dependencies for it calculated), but we can
-            save time by reusing the proxy between the sort and groupby calls
-            below.
-            """
-            return key_from_ireq(self._get_ireq_with_name(ireq, cache))
+        for ireq in constraints:
+            if ireq.name is None:
+                # get_dependencies has side-effect of assigning name to ireq
+                # (so we can group by the name below).
+                self.repository.get_dependencies(ireq)
 
         # Sort first by name, i.e. the groupby key. Then within each group,
         # sort editables first.
         # This way, we don't bother with combining editables, since the first
         # ireq will be editable, if one exists.
         for _, ireqs in groupby(
-            sorted(
-                constraints,
-                key=(lambda x: (key_from_ireq_with_name(x), not x.editable)),
-            ),
-            key=key_from_ireq_with_name,
+            sorted(constraints, key=(lambda x: (key_from_ireq(x), not x.editable))),
+            key=key_from_ireq,
         ):
             yield combine_install_requirements(ireqs)
 
