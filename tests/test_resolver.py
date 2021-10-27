@@ -303,9 +303,6 @@ def test_iter_dependencies_after_combine_install_requirements(
     assert [dep.name for dep in res._iter_dependencies(combined)] == sub_deps
 
 
-@pytest.mark.xfail(
-    reason="resolver does not yet support combining extras after the first round"
-)
 def test_iter_dependencies_after_combine_install_requirements_extras(
     pypi_repository, base_resolver, make_package, from_line
 ):
