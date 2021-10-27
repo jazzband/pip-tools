@@ -54,7 +54,7 @@ class RequirementSummary:
 
 
 def combine_install_requirements(
-    repository: BaseRepository, ireqs: Iterable[InstallRequirement]
+    ireqs: Iterable[InstallRequirement],
 ) -> InstallRequirement:
     """
     Return a single install requirement that reflects a combination of
@@ -312,7 +312,7 @@ class Resolver:
             ),
             key=key_from_ireq_with_name,
         ):
-            yield combine_install_requirements(self.repository, ireqs)
+            yield combine_install_requirements(ireqs)
 
     def _resolve_one_round(self) -> Tuple[bool, Set[InstallRequirement]]:
         """

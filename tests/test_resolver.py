@@ -297,9 +297,7 @@ def test_iter_dependencies_after_combine_install_requirements(
     assert [dep.name for dep in res._iter_dependencies(local_package_a)] == sub_deps
 
     package_a_from_b = from_line("package-a", comes_from=path_to_url(package_b))
-    combined = combine_install_requirements(
-        pypi_repository, [local_package_a, package_a_from_b]
-    )
+    combined = combine_install_requirements([local_package_a, package_a_from_b])
     assert [dep.name for dep in res._iter_dependencies(combined)] == sub_deps
 
 
@@ -319,40 +317,40 @@ def test_iter_dependencies_after_combine_install_requirements_extras(
     package_a_from_b = from_line("package-a[click]", comes_from=path_to_url(package_b))
     package_a_with_other_extra = from_line("package-a[celery]")
     combined = combine_install_requirements(
-        pypi_repository, [local_package_a, package_a_from_b, package_a_with_other_extra]
+        [local_package_a, package_a_from_b, package_a_with_other_extra]
     )
 
     dependency_names = {dep.name for dep in res._iter_dependencies(combined)}
     assert {"celery", "click"}.issubset(dependency_names)
 
 
-def test_combine_install_requirements(repository, from_line):
+def test_combine_install_requirements(from_line):
     celery30 = from_line("celery>3.0", comes_from="-r requirements.in")
     celery31 = from_line("celery==3.1.1", comes_from=from_line("fake-package"))
     celery32 = from_line("celery<3.2")
 
-    combined = combine_install_requirements(repository, [celery30, celery31])
+    combined = combine_install_requirements([celery30, celery31])
     assert combined.comes_from == celery31.comes_from  # shortest string
     assert set(combined._source_ireqs) == {celery30, celery31}
     assert str(combined.req.specifier) == "==3.1.1,>3.0"
 
-    combined_all = combine_install_requirements(repository, [celery32, combined])
+    combined_all = combine_install_requirements([celery32, combined])
     assert combined_all.comes_from is None
     assert set(combined_all._source_ireqs) == {celery30, celery31, celery32}
     assert str(combined_all.req.specifier) == "<3.2,==3.1.1,>3.0"
 
 
-def _test_combine_install_requirements_extras(repository, with_extra, without_extra):
-    combined = combine_install_requirements(repository, [without_extra, with_extra])
+def _test_combine_install_requirements_extras(with_extra, without_extra):
+    combined = combine_install_requirements([without_extra, with_extra])
     assert str(combined) == str(with_extra)
     assert combined.extras == with_extra.extras
 
-    combined = combine_install_requirements(repository, [with_extra, without_extra])
+    combined = combine_install_requirements([with_extra, without_extra])
     assert str(combined) == str(with_extra)
     assert combined.extras == with_extra.extras
 
 
-def test_combine_install_requirements_extras_req(repository, from_line, make_package):
+def test_combine_install_requirements_extras_req(from_line, make_package):
     """
     Extras should be unioned in combined install requirements
     (whether or not InstallRequirement.req is None, and testing either order of the inputs)
@@ -362,12 +360,10 @@ def test_combine_install_requirements_extras_req(repository, from_line, make_pac
     without_extra = from_line("edx-opaque-keys")
     assert without_extra.req is not None
 
-    _test_combine_install_requirements_extras(repository, with_extra, without_extra)
+    _test_combine_install_requirements_extras(with_extra, without_extra)
 
 
-def test_combine_install_requirements_extras_no_req(
-    repository, from_line, make_package
-):
+def test_combine_install_requirements_extras_no_req(from_line, make_package):
     """
     Extras should be unioned in combined install requirements
     (whether or not InstallRequirement.req is None, and testing either order of the inputs)
@@ -379,11 +375,11 @@ def test_combine_install_requirements_extras_no_req(
     assert local_package_without_extra.req is None
 
     _test_combine_install_requirements_extras(
-        repository, local_package_with_extra, local_package_without_extra
+        local_package_with_extra, local_package_without_extra
     )
 
 
-def test_combine_install_requirements_with_paths(repository, from_line, make_package):
+def test_combine_install_requirements_with_paths(from_line, make_package):
     name = "fake_package_b"
     version = "1.0.0"
 
@@ -392,7 +388,7 @@ def test_combine_install_requirements_with_paths(repository, from_line, make_pac
     fake_package_name = from_line(f"{name}=={version}", comes_from=from_line(name))
 
     for pair in [(fake_package, fake_package_name), (fake_package_name, fake_package)]:
-        combined = combine_install_requirements(repository, pair)
+        combined = combine_install_requirements(pair)
         assert str(combined.specifier) == str(fake_package_name.specifier)
         assert str(combined.link) == str(fake_package.link)
         assert str(combined.local_file_path) == str(fake_package.local_file_path)
@@ -400,13 +396,13 @@ def test_combine_install_requirements_with_paths(repository, from_line, make_pac
 
 
 def test_combine_install_requirements_for_one_package_with_multiple_extras_reset_prepared(
-    repository, from_line
+    from_line,
 ):
     """Regression test for https://github.com/jazzband/pip-tools/pull/1512/files."""
     pkg1 = from_line("ray[default]==1.1.1")
     pkg1.prepared = True
     pkg2 = from_line("ray[tune]==1.1.1")
-    combined = combine_install_requirements(repository, [pkg1, pkg2])
+    combined = combine_install_requirements([pkg1, pkg2])
 
     assert str(combined) == "ray[default,tune]==1.1.1"
     assert combined.prepared is False
