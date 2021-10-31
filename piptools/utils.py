@@ -152,9 +152,7 @@ def format_requirement(
         # for which ireq.link.is_file == False
     else:
         fragment = fragment_string(ireq)
-        extras = (
-            f"[{','.join(xtr for xtr in sorted(ireq.extras))}]" if ireq.extras else ""
-        )
+        extras = f"[{','.join(sorted(ireq.extras))}]" if ireq.extras else ""
         delimiter = "#" if extras and not fragment else ""
         if not from_dir:
             line = (
