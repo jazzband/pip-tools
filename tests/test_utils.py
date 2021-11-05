@@ -274,7 +274,7 @@ def test_is_pinned_requirement_editable(from_editable):
         ("file:///example.zip", True),
         ("https://example.com/example.zip", True),
         ("https://example.com/example.zip#egg=example", True),
-        ("git+git://github.com/jazzband/pip-tools@master", True),
+        ("git+https://github.com/jazzband/pip-tools@master", True),
     ),
 )
 def test_is_url_requirement(caplog, from_line, line, expected):
