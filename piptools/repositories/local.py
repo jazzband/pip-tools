@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import optparse
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from typing import Iterator, Mapping, cast
 
 from pip._internal.commands.install import InstallCommand
@@ -11,8 +11,9 @@ from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.hashes import FAVORITE_HASH
 
-from piptools.utils import as_tuple, key_from_ireq, make_install_requirement
+from piptools.utils import key_from_ireq
 
+from ..exceptions import NoCandidateFound
 from .base import BaseRepository
 from .pypi import PyPIRepository
 
@@ -78,10 +79,9 @@ class LocalRequirementsRepository(BaseRepository):
         key = key_from_ireq(ireq)
         existing_pin = self.existing_pins.get(key)
         if existing_pin and ireq_satisfied_by_existing_pin(ireq, existing_pin):
-            project, version, _ = as_tuple(existing_pin)
-            return make_install_requirement(project, version, ireq)
-        else:
-            return self.repository.find_best_match(ireq, prereleases)
+            with suppress(NoCandidateFound):
+                return self.repository.find_best_match(existing_pin, prereleases)
+        return self.repository.find_best_match(ireq, prereleases)
 
     def get_dependencies(self, ireq: InstallRequirement) -> set[InstallRequirement]:
         return self.repository.get_dependencies(ireq)
