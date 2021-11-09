@@ -1958,6 +1958,21 @@ def test_preserve_compiled_prerelease_version(pip_conf, runner):
     assert "small-fake-a==0.3b1" in out.stderr.splitlines()
 
 
+@pytest.mark.xfail
+def test_ignore_compiled_unavailable_version(pip_conf, runner):
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-a")
+
+    with open("requirements.txt", "w") as req_txt:
+        req_txt.write("small-fake-a==9999")
+
+    out = runner.invoke(cli, ["--no-annotate", "--no-header"])
+
+    assert out.exit_code == 0, out
+    assert "small-fake-a==" in out.stderr
+    assert "small-fake-a==9999" not in out.stderr.splitlines()
+
+
 def test_prefer_binary_dist(
     pip_conf, make_package, make_sdist, make_wheel, tmpdir, runner
 ):
