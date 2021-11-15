@@ -1,6 +1,9 @@
 import collections
 import itertools
+import json
+import os
 import shlex
+import typing
 from typing import (
     Callable,
     Dict,
@@ -12,6 +15,7 @@ from typing import (
     Tuple,
     TypeVar,
     Union,
+    cast,
 )
 
 import click
@@ -23,6 +27,9 @@ from pip._internal.vcs import is_url
 from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.specifiers import SpecifierSet
 from pip._vendor.packaging.version import Version
+from pip._vendor.pkg_resources import Distribution, Requirement, get_distribution
+
+from piptools.subprocess_utils import run_python_snippet
 
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
@@ -50,7 +57,9 @@ def key_from_ireq(ireq: InstallRequirement) -> str:
         return key_from_req(ireq.req)
 
 
-def key_from_req(req: InstallRequirement) -> str:
+def key_from_req(
+    req: typing.Union[InstallRequirement, Distribution, Requirement]
+) -> str:
     """Get an all-lowercase version of the requirement's name."""
     if hasattr(req, "key"):
         # from pkg_resources, such as installed dists for pip-sync
@@ -110,7 +119,7 @@ def format_requirement(
     if ireq.editable:
         line = f"-e {ireq.link.url}"
     elif is_url_requirement(ireq):
-        line = ireq.link.url
+        line = _build_direct_reference_best_efforts(ireq)
     else:
         line = str(ireq.req).lower()
 
@@ -122,6 +131,38 @@ def format_requirement(
             line += f" \\\n    --hash={hash_}"
 
     return line
+
+
+def _build_direct_reference_best_efforts(ireq: InstallRequirement) -> str:
+    """
+    Returns a string of a direct reference URI, whenever possible.
+    See https://www.python.org/dev/peps/pep-0508/
+    """
+    # If the requirement has no name then we cannot build a direct reference.
+    if not ireq.name:
+        return cast(str, ireq.link.url)
+
+    # Look for a relative file path, the direct reference currently does not work with it.
+    if ireq.link.is_file and not ireq.link.path.startswith("/"):
+        return cast(str, ireq.link.url)
+
+    # If we get here then we have a requirement that supports direct reference.
+    # We need to remove the egg if it exists and keep the rest of the fragments.
+    direct_reference = f"{ireq.name.lower()} @ {ireq.link.url_without_fragment}"
+    fragments = []
+
+    # Check if there is any fragment to add to the URI.
+    if ireq.link.subdirectory_fragment:
+        fragments.append(f"subdirectory={ireq.link.subdirectory_fragment}")
+
+    if ireq.link.has_hash:
+        fragments.append(f"{ireq.link.hash_name}={ireq.link.hash}")
+
+    # Then add the fragments into the URI, if any.
+    if fragments:
+        direct_reference += f"#{'&'.join(fragments)}"
+
+    return direct_reference
 
 
 def format_specifier(ireq: InstallRequirement) -> str:
@@ -358,3 +399,41 @@ def get_compile_command(click_ctx: click.Context) -> str:
                     left_args.append(f"{option_long_name}={shlex.quote(str(val))}")
 
     return " ".join(["pip-compile", *sorted(left_args), *sorted(right_args)])
+
+
+def get_required_pip_specification() -> SpecifierSet:
+    """
+    Returns pip version specifier requested by current pip-tools installation.
+    """
+    project_dist = get_distribution("pip-tools")
+    requirement = next(  # pragma: no branch
+        (r for r in project_dist.requires() if r.name == "pip"), None
+    )
+    assert (
+        requirement is not None
+    ), "'pip' is expected to be in the list of pip-tools requirements"
+    return requirement.specifier
+
+
+def get_pip_version_for_python_executable(python_executable: str) -> Version:
+    """
+    Returns pip version for the given python executable.
+    """
+    str_version = run_python_snippet(
+        python_executable, "import pip;print(pip.__version__)"
+    )
+    return Version(str_version)
+
+
+def get_sys_path_for_python_executable(python_executable: str) -> List[str]:
+    """
+    Returns sys.path list for the given python executable.
+    """
+    result = run_python_snippet(
+        python_executable, "import sys;import json;print(json.dumps(sys.path))"
+    )
+
+    paths = json.loads(result)
+    assert isinstance(paths, list)
+    assert all(isinstance(i, str) for i in paths)
+    return [os.path.abspath(path) for path in paths]

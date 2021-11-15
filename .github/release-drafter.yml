@@ -1,0 +1,50 @@
+name-template: "$RESOLVED_VERSION"
+tag-template: "$RESOLVED_VERSION"
+
+categories:
+  - title: "Backwards Incompatible Changes"
+    labels:
+      - "backwards incompatible"
+
+  - title: "Features"
+    labels:
+      - "feature"
+      - "enhancement"
+      # usually combined with enhancement (avoid double listing)
+      - "deprecation"
+
+  - title: "Bug Fixes"
+    labels:
+      - "bug"
+      - "bug fix"
+
+  - title: "Other Changes"
+    labels:
+      - "dependency"
+      - "docs"
+
+category-template: "$TITLE:"
+change-template: "- $TITLE ([#$NUMBER](https://github.com/jazzband/pip-tools/pull/$NUMBER)). Thanks @$AUTHOR"
+exclude-labels:
+  - "skip-changelog"
+  - "maintenance"
+  - "trivial"
+template: |
+  $CHANGES
+
+version-resolver:
+  major:
+    labels:
+      - "backwards incompatible"
+  minor:
+    labels:
+      - "feature"
+      - "enhancement"
+      - "deprecation"
+  patch:
+    labels:
+      - "bug fix"
+      - "bug"
+      - "dependency"
+      - "docs"
+  default: minor

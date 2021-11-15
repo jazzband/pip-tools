@@ -1,6 +1,7 @@
 import itertools
 import os
 import shlex
+import shutil
 import sys
 from typing import List, Optional, Tuple, cast
 
@@ -8,19 +9,25 @@ import click
 from pip._internal.commands import create_command
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
-from pip._internal.utils.misc import get_installed_distributions
+from pip._internal.metadata import get_environment
+from pip._vendor.pkg_resources import Distribution
 
 from .. import sync
 from .._compat import IS_CLICK_VER_8_PLUS, parse_requirements
 from ..exceptions import PipToolsError
 from ..logging import log
 from ..repositories import PyPIRepository
-from ..utils import flat_map
+from ..utils import (
+    flat_map,
+    get_pip_version_for_python_executable,
+    get_required_pip_specification,
+    get_sys_path_for_python_executable,
+)
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 
 # TODO: drop click 7 and remove this block, pass directly to version_option
-version_option_kwargs = {} if IS_CLICK_VER_8_PLUS else {"package_name": "pip-tools"}
+version_option_kwargs = {"package_name": "pip-tools"} if IS_CLICK_VER_8_PLUS else {}
 
 
 @click.command(context_settings={"help_option_names": ("-h", "--help")})
@@ -42,21 +49,30 @@ version_option_kwargs = {} if IS_CLICK_VER_8_PLUS else {"package_name": "pip-too
     "-f",
     "--find-links",
     multiple=True,
-    help="Look for archives in this directory or on this HTML page",
+    help="Look for archives in this directory or on this HTML page; may be used more than once",
 )
 @click.option("-i", "--index-url", help="Change index URL (defaults to PyPI)")
 @click.option(
-    "--extra-index-url", multiple=True, help="Add additional index URL to search"
+    "--extra-index-url",
+    multiple=True,
+    help="Add another index URL to search; may be used more than once",
 )
 @click.option(
     "--trusted-host",
     multiple=True,
-    help="Mark this host as trusted, even though it does not have valid or any HTTPS.",
+    help=(
+        "Mark this host as trusted, even though it does not have valid or any HTTPS"
+        "; may be used more than once"
+    ),
 )
 @click.option(
     "--no-index",
     is_flag=True,
     help="Ignore package index (only looking at --find-links URLs instead)",
+)
+@click.option(
+    "--python-executable",
+    help="Custom python executable path if targeting an environment other than current.",
 )
 @click.option("-v", "--verbose", count=True, help="Show more output")
 @click.option("-q", "--quiet", count=True, help="Give less output")
@@ -80,6 +96,7 @@ def cli(
     extra_index_url: Tuple[str, ...],
     trusted_host: Tuple[str, ...],
     no_index: bool,
+    python_executable: Optional[str],
     verbose: int,
     quiet: int,
     user_only: bool,
@@ -111,6 +128,9 @@ def cli(
             log.error("ERROR: " + msg)
             sys.exit(2)
 
+    if python_executable:
+        _validate_python_executable(python_executable)
+
     install_command = cast(InstallCommand, create_command("install"))
     options, _ = install_command.parse_args([])
     session = install_command._build_session(options)
@@ -128,7 +148,16 @@ def cli(
         log.error(str(e))
         sys.exit(2)
 
-    installed_dists = get_installed_distributions(skip=[], user_only=user_only)
+    paths = (
+        None
+        if python_executable is None
+        else get_sys_path_for_python_executable(python_executable)
+    )
+    installed_dists = _get_installed_distributions(
+        user_only=user_only,
+        local_only=python_executable is None,
+        paths=paths,
+    )
     to_install, to_uninstall = sync.diff(merged_requirements, installed_dists)
 
     install_flags = (
@@ -152,8 +181,33 @@ def cli(
             dry_run=dry_run,
             install_flags=install_flags,
             ask=ask,
+            python_executable=python_executable,
         )
     )
+
+
+def _validate_python_executable(python_executable: str) -> None:
+    """
+    Validates incoming python_executable argument passed to CLI.
+    """
+    resolved_python_executable = shutil.which(python_executable)
+    if resolved_python_executable is None:
+        msg = "Could not resolve '{}' as valid executable path or alias."
+        log.error(msg.format(python_executable))
+        sys.exit(2)
+
+    # Ensure that target python executable has the right version of pip installed
+    pip_version = get_pip_version_for_python_executable(python_executable)
+    required_pip_specification = get_required_pip_specification()
+    if not required_pip_specification.contains(pip_version, prereleases=True):
+        msg = (
+            "Target python executable '{}' has pip version {} installed. "
+            "Version {} is expected."
+        )
+        log.error(
+            msg.format(python_executable, pip_version, required_pip_specification)
+        )
+        sys.exit(2)
 
 
 def _compose_install_flags(
@@ -216,3 +270,20 @@ def _compose_install_flags(
         result.extend(["--client-cert", client_cert])
 
     return result
+
+
+def _get_installed_distributions(
+    local_only: bool = True,
+    user_only: bool = False,
+    paths: Optional[List[str]] = None,
+) -> List[Distribution]:
+    """Return a list of installed Distribution objects."""
+    from pip._internal.metadata.pkg_resources import Distribution as _Dist
+
+    env = get_environment(paths)
+    dists = env.iter_installed_distributions(
+        local_only=local_only,
+        user_only=user_only,
+        skip=[],
+    )
+    return [cast(_Dist, dist)._dist for dist in dists]

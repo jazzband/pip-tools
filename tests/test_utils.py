@@ -2,8 +2,11 @@ import logging
 import operator
 import os
 import shlex
+import sys
 
+import pip
 import pytest
+from pip._vendor.packaging.version import Version
 
 from piptools.scripts.compile import cli as compile_cli
 from piptools.utils import (
@@ -15,6 +18,8 @@ from piptools.utils import (
     format_specifier,
     get_compile_command,
     get_hashes_from_ireq,
+    get_pip_version_for_python_executable,
+    get_sys_path_for_python_executable,
     is_pinned_requirement,
     is_url_requirement,
     lookup_table,
@@ -27,9 +32,98 @@ def test_format_requirement(from_line):
     assert format_requirement(ireq) == "test==1.2"
 
 
-def test_format_requirement_url(from_line):
-    ireq = from_line("https://example.com/example.zip")
-    assert format_requirement(ireq) == "https://example.com/example.zip"
+@pytest.mark.parametrize(
+    ("line", "expected"),
+    (
+        pytest.param(
+            "https://example.com/example.zip",
+            "https://example.com/example.zip",
+            id="simple url",
+        ),
+        pytest.param(
+            "example @ https://example.com/example.zip",
+            "example @ https://example.com/example.zip",
+            id="direct reference",
+        ),
+        pytest.param(
+            "Example @ https://example.com/example.zip",
+            "example @ https://example.com/example.zip",
+            id="direct reference lowered case",
+        ),
+        pytest.param(
+            "example @ https://example.com/example.zip#egg=example",
+            "example @ https://example.com/example.zip",
+            id="direct reference with egg in fragment",
+        ),
+        pytest.param(
+            "example @ https://example.com/example.zip#subdirectory=test&egg=example",
+            "example @ https://example.com/example.zip#subdirectory=test",
+            id="direct reference with subdirectory and egg in fragment",
+        ),
+        pytest.param(
+            "example @ https://example.com/example.zip#subdirectory=test"
+            "&egg=example&sha1=594b7dd32bec37d8bf70a6ffa8866d30e93f3c42",
+            "example @ https://example.com/example.zip#subdirectory=test"
+            "&sha1=594b7dd32bec37d8bf70a6ffa8866d30e93f3c42",
+            id="direct reference with subdirectory, hash and egg in fragment",
+        ),
+        pytest.param(
+            "example @ https://example.com/example.zip?egg=test",
+            "example @ https://example.com/example.zip?egg=test",
+            id="direct reference with egg in query",
+        ),
+        pytest.param(
+            "file:./vendor/package.zip",
+            "file:./vendor/package.zip",
+            id="file scheme relative path",
+        ),
+        pytest.param(
+            "file:vendor/package.zip",
+            "file:vendor/package.zip",
+            id="file scheme relative path",
+        ),
+        pytest.param(
+            "file:vendor/package.zip#egg=example",
+            "file:vendor/package.zip#egg=example",
+            id="file scheme relative path with egg",
+        ),
+        pytest.param(
+            "file:./vendor/package.zip#egg=example",
+            "file:./vendor/package.zip#egg=example",
+            id="file scheme relative path with egg",
+        ),
+        pytest.param(
+            "file:///vendor/package.zip",
+            "file:///vendor/package.zip",
+            id="file scheme absolute path without direct reference",
+        ),
+        pytest.param(
+            "file:///vendor/package.zip#egg=test",
+            "test @ file:///vendor/package.zip",
+            id="file scheme absolute path with egg",
+        ),
+        pytest.param(
+            "package @ file:///vendor/package.zip",
+            "package @ file:///vendor/package.zip",
+            id="file scheme absolute path with direct reference",
+        ),
+        pytest.param(
+            "package @ file:///vendor/package.zip#egg=example",
+            "package @ file:///vendor/package.zip",
+            id="file scheme absolute path with direct reference and egg",
+        ),
+        pytest.param(
+            "package @ file:///vendor/package.zip#egg=example&subdirectory=test"
+            "&sha1=594b7dd32bec37d8bf70a6ffa8866d30e93f3c42",
+            "package @ file:///vendor/package.zip#subdirectory=test"
+            "&sha1=594b7dd32bec37d8bf70a6ffa8866d30e93f3c42",
+            id="full path with direct reference, egg, subdirectory and hash",
+        ),
+    ),
+)
+def test_format_requirement_url(from_line, line, expected):
+    ireq = from_line(line)
+    assert format_requirement(ireq) == expected
 
 
 def test_format_requirement_editable_vcs(from_editable):
@@ -180,7 +274,7 @@ def test_is_pinned_requirement_editable(from_editable):
         ("file:///example.zip", True),
         ("https://example.com/example.zip", True),
         ("https://example.com/example.zip#egg=example", True),
-        ("git+git://github.com/jazzband/pip-tools@master", True),
+        ("git+https://github.com/jazzband/pip-tools@master", True),
     ),
 )
 def test_is_url_requirement(caplog, from_line, line, expected):
@@ -233,8 +327,10 @@ def test_is_url_requirement_filename(caplog, from_line, line):
         (["--no-emit-trusted-host"], "pip-compile --no-emit-trusted-host"),
         (["--no-annotate"], "pip-compile --no-annotate"),
         (["--no-allow-unsafe"], "pip-compile"),
+        (["--no-emit-options"], "pip-compile --no-emit-options"),
         # Check that default values will be removed from the command
         (["--emit-trusted-host"], "pip-compile"),
+        (["--emit-options"], "pip-compile"),
         (["--annotate"], "pip-compile"),
         (["--emit-index-url"], "pip-compile"),
         (["--max-rounds=10"], "pip-compile"),
@@ -423,3 +519,16 @@ def test_drop_extras(from_line, given, expected):
         assert ireq.markers is None
     else:
         assert str(ireq.markers).replace("'", '"') == expected.replace("'", '"')
+
+
+def test_get_pip_version_for_python_executable():
+    result = get_pip_version_for_python_executable(sys.executable)
+    assert Version(pip.__version__) == result
+
+
+def test_get_sys_path_for_python_executable():
+    result = get_sys_path_for_python_executable(sys.executable)
+    assert result, "get_sys_path_for_python_executable should not return empty result"
+    # not testing for equality, because pytest adds extra paths into current sys.path
+    for path in result:
+        assert path in sys.path

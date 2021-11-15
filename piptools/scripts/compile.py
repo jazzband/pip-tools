@@ -1,3 +1,4 @@
+import itertools
 import os
 import shlex
 import sys
@@ -34,7 +35,7 @@ DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 METADATA_FILENAMES = frozenset({"setup.py", "setup.cfg", "pyproject.toml"})
 
 # TODO: drop click 7 and remove this block, pass directly to version_option
-version_option_kwargs = {} if IS_CLICK_VER_8_PLUS else {"package_name": "pip-tools"}
+version_option_kwargs = {"package_name": "pip-tools"} if IS_CLICK_VER_8_PLUS else {}
 
 
 def _get_default_option(option_name: str) -> Any:
@@ -75,13 +76,13 @@ def _get_default_option(option_name: str) -> Any:
     "--extra",
     "extras",
     multiple=True,
-    help="Names of extras_require to install",
+    help="Name of an extras_require group to install; may be used more than once",
 )
 @click.option(
     "-f",
     "--find-links",
     multiple=True,
-    help="Look for archives in this directory or on this HTML page",
+    help="Look for archives in this directory or on this HTML page; may be used more than once",
 )
 @click.option(
     "-i",
@@ -91,7 +92,9 @@ def _get_default_option(option_name: str) -> Any:
     ),
 )
 @click.option(
-    "--extra-index-url", multiple=True, help="Add additional index URL to search"
+    "--extra-index-url",
+    multiple=True,
+    help="Add another index URL to search; may be used more than once",
 )
 @click.option("--cert", help="Path to alternate CA bundle.")
 @click.option(
@@ -103,7 +106,7 @@ def _get_default_option(option_name: str) -> Any:
     "--trusted-host",
     multiple=True,
     help="Mark this host as trusted, even though it does not have "
-    "valid or any HTTPS.",
+    "valid or any HTTPS; may be used more than once",
 )
 @click.option(
     "--header/--no-header",
@@ -124,8 +127,14 @@ def _get_default_option(option_name: str) -> Any:
     help="Annotate results, indicating where dependencies come from",
 )
 @click.option(
+    "--annotation-style",
+    type=click.Choice(("line", "split")),
+    default="split",
+    help="Choose the format of annotation comments",
+)
+@click.option(
     "-U",
-    "--upgrade",
+    "--upgrade/--no-upgrade",
     is_flag=True,
     default=False,
     help="Try to upgrade all dependencies to their latest versions",
@@ -136,7 +145,7 @@ def _get_default_option(option_name: str) -> Any:
     "upgrade_packages",
     nargs=1,
     multiple=True,
-    help="Specify particular packages to upgrade.",
+    help="Specify a particular package to upgrade; may be used more than once",
 )
 @click.option(
     "-o",
@@ -161,6 +170,12 @@ def _get_default_option(option_name: str) -> Any:
             ", ".join(sorted(UNSAFE_PACKAGES))
         )
     ),
+)
+@click.option(
+    "--strip-extras",
+    is_flag=True,
+    default=False,
+    help="Assure output file is constraints compatible, avoiding use of extras.",
 )
 @click.option(
     "--generate-hashes",
@@ -215,6 +230,12 @@ def _get_default_option(option_name: str) -> Any:
     default=True,
     help="Add index URL to generated file",
 )
+@click.option(
+    "--emit-options/--no-emit-options",
+    is_flag=True,
+    default=True,
+    help="Add options to generated file",
+)
 def cli(
     ctx: click.Context,
     verbose: int,
@@ -232,10 +253,12 @@ def cli(
     header: bool,
     emit_trusted_host: bool,
     annotate: bool,
+    annotation_style: str,
     upgrade: bool,
     upgrade_packages: Tuple[str, ...],
     output_file: Union[LazyFile, IO[Any], None],
     allow_unsafe: bool,
+    strip_extras: bool,
     generate_hashes: bool,
     reuse_hashes: bool,
     src_files: Tuple[str, ...],
@@ -245,6 +268,7 @@ def cli(
     cache_dir: str,
     pip_args_str: Optional[str],
     emit_index_url: bool,
+    emit_options: bool,
 ) -> None:
     """Compiles requirements.txt from requirements.in specs."""
     log.verbosity = verbose - quiet
@@ -399,6 +423,8 @@ def cli(
                 )
             )
 
+    extras = tuple(itertools.chain.from_iterable(ex.split(",") for ex in extras))
+
     if extras and not setup_file_found:
         msg = "--extra has effect only with setup.py and PEP-517 input formats"
         raise click.BadParameter(msg)
@@ -457,6 +483,8 @@ def cli(
         emit_index_url=emit_index_url,
         emit_trusted_host=emit_trusted_host,
         annotate=annotate,
+        annotation_style=annotation_style,
+        strip_extras=strip_extras,
         generate_hashes=generate_hashes,
         default_index_url=repository.DEFAULT_INDEX_URL,
         index_urls=repository.finder.index_urls,
@@ -465,6 +493,7 @@ def cli(
         allow_unsafe=allow_unsafe,
         find_links=repository.finder.find_links,
         emit_find_links=emit_find_links,
+        emit_options=emit_options,
     )
     writer.write(
         results=results,

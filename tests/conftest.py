@@ -32,16 +32,16 @@ from piptools.utils import (
     make_install_requirement,
 )
 
-from .constants import MINIMAL_WHEELS_PATH
+from .constants import MINIMAL_WHEELS_PATH, TEST_DATA_PATH
 from .utils import looks_like_ci
 
 
 class FakeRepository(BaseRepository):
     def __init__(self):
-        with open("tests/test_data/fake-index.json") as f:
+        with open(os.path.join(TEST_DATA_PATH, "fake-index.json")) as f:
             self.index = json.load(f)
 
-        with open("tests/test_data/fake-editables.json") as f:
+        with open(os.path.join(TEST_DATA_PATH, "fake-editables.json")) as f:
             self.editables = json.load(f)
 
     def get_hashes(self, ireq):
@@ -88,10 +88,6 @@ class FakeRepository(BaseRepository):
     def allow_all_wheels(self):
         # No need to do an actual pip.Wheel mock here.
         yield
-
-    def copy_ireq_dependencies(self, source, dest):
-        # No state to update.
-        pass
 
     @property
     def options(self) -> optparse.Values:
@@ -244,9 +240,13 @@ def make_package(tmp_path):
     Make a package from a given name, version and list of required packages.
     """
 
-    def _make_package(name, version="0.1", install_requires=None):
+    def _make_package(name, version="0.1", install_requires=None, extras_require=None):
+
         if install_requires is None:
             install_requires = []
+
+        if extras_require is None:
+            extras_require = dict()
 
         install_requires_str = "[{}]".format(
             ",".join(f"{package!r}" for package in install_requires)
@@ -267,6 +267,7 @@ def make_package(tmp_path):
                         author_email="pip-tools@localhost",
                         url="https://github.com/jazzband/pip-tools",
                         install_requires={install_requires_str},
+                        extras_require={extras_require},
                     )
                     """
                 )

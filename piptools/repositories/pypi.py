@@ -239,15 +239,6 @@ class PyPIRepository(BaseRepository):
 
         return self._dependencies_cache[ireq]
 
-    def copy_ireq_dependencies(
-        self, source: InstallRequirement, dest: InstallRequirement
-    ) -> None:
-        try:
-            self._dependencies_cache[dest] = self._dependencies_cache[source]
-        except KeyError:
-            # `source` may not be in cache yet.
-            pass
-
     def _get_project(self, ireq: InstallRequirement) -> Any:
         """
         Return a dict of a project info from PyPI JSON API for a given
@@ -331,7 +322,7 @@ class PyPIRepository(BaseRepository):
         with log.indentation():
             hashes = self._get_hashes_from_pypi(ireq)
             if hashes is None:
-                log.log("Couldn't get hashes from PyPI, fallback to hashing files")
+                log.debug("Couldn't get hashes from PyPI, fallback to hashing files")
                 return self._get_hashes_from_files(ireq)
 
         return hashes

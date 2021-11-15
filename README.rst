@@ -7,7 +7,7 @@ pip-tools = pip-compile + pip-sync
 A set of command line tools to help you keep your ``pip``-based packages fresh,
 even when you've pinned them.  You do pin them, right? (In building your Python application and its dependencies for production, you want to make sure that your builds are predictable and deterministic.)
 
-.. image:: https://github.com/jazzband/pip-tools/raw/master/img/pip-tools-overview.png
+.. image:: https://github.com/jazzband/pip-tools/raw/master/img/pip-tools-overview.svg
    :alt: pip-tools overview for phase II
 
 .. |buildstatus-gha| image:: https://github.com/jazzband/pip-tools/workflows/CI/badge.svg
@@ -52,9 +52,9 @@ Example usage for ``pip-compile``
 The ``pip-compile`` command lets you compile a ``requirements.txt`` file from
 your dependencies, specified in either ``setup.py`` or ``requirements.in``.
 
-Run it with ``pip-compile`` or  ``python -m piptools compile``. If you use
-multiple Python versions, you can run ``pip-compile`` as ``py -X.Y -m piptools
-compile`` on Windows and ``pythonX.Y -m piptools compile`` on other systems.
+Run it with ``pip-compile`` or ``python -m piptools compile``. If you use
+multiple Python versions, you can also run ``py -X.Y -m piptools compile`` on
+Windows and ``pythonX.Y -m piptools compile`` on other systems.
 
 ``pip-compile`` should be run from the same virtual environment as your
 project so conditional dependencies that require a specific Python version,
@@ -352,7 +352,7 @@ Sample ``.pre-commit-config.yaml``:
 
     repos:
       - repo: https://github.com/jazzband/pip-tools
-        rev: 5.0.0
+        rev: 6.3.0
         hooks:
           - id: pip-compile
 
@@ -362,11 +362,35 @@ You might want to customize ``pip-compile`` args by configuring ``args`` and/or 
 
     repos:
       - repo: https://github.com/jazzband/pip-tools
-        rev: 5.0.0
+        rev: 6.3.0
         hooks:
           - id: pip-compile
             files: ^requirements/production\.(in|txt)$
             args: [--index-url=https://example.com, requirements/production.in]
+
+If you have multiple requirement files make sure you create a hook for each file. 
+
+.. code-block:: yaml 
+
+    repos:
+      - repo: https://github.com/jazzband/pip-tools
+        rev: 5.3.1
+        hooks:
+          - id: pip-compile
+            name: pip-compile setup.py
+            files: ^(setup\.py|requirements\.txt)$
+          - id: pip-compile
+            name: pip-compile requirements-dev.in
+            args: [requirements-dev.in]
+            files: ^requirements-dev\.(in|txt)$
+          - id: pip-compile
+            name: pip-compile requirements-lint.in
+            args: [requirements-lint.in]
+            files: ^requirements-lint\.(in|txt)$
+          - id: pip-compile
+            name: pip-compile requirements.txt
+            args: [requirements.txt]
+            files: ^requirements\.(in|txt)$
 
 
 Example usage for ``pip-sync``
@@ -416,10 +440,6 @@ Any valid ``pip install`` flags or arguments may be passed with ``pip-sync``'s
 .. code-block:: bash
 
     $ pip-sync requirements.txt --pip-args '--no-cache-dir --no-deps'
-
-If you use multiple Python versions, you can run ``pip-sync`` as
-``py -X.Y -m piptools sync ...`` on Windows and
-``pythonX.Y -m piptools sync ...`` on other systems.
 
 **Note**: ``pip-sync`` will not upgrade or uninstall packaging tools like
 ``setuptools``, ``pip``, or ``pip-tools`` itself. Use ``python -m pip install --upgrade``
@@ -505,5 +525,7 @@ versions as the required ``pip`` versions.
 +---------------+----------------+----------------+
 | 5.5.0         | 20.1 - 20.3.*  | 2.7, 3.5 - 3.9 |
 +---------------+----------------+----------------+
-| 6.0.0         | 20.3+          | 3.6 - 3.9      |
+| 6.0.0 - 6.3.1 | 20.3 - 21.2.*  | 3.6 - 3.9      |
++---------------+----------------+----------------+
+| 6.4.0+        | 21.2+          | 3.6 - 3.10     |
 +---------------+----------------+----------------+

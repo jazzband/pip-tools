@@ -19,7 +19,7 @@ import click
 from pip._internal.commands.freeze import DEV_PKGS
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.compat import stdlib_pkgs
-from pip._vendor.packaging.requirements import Requirement
+from pip._vendor.pkg_resources import Distribution
 
 from .exceptions import IncompatibleRequirements
 from .logging import log
@@ -44,7 +44,7 @@ PACKAGES_TO_IGNORE = [
 
 
 def dependency_tree(
-    installed_keys: Mapping[str, Requirement], root_key: str
+    installed_keys: Mapping[str, Distribution], root_key: str
 ) -> Set[str]:
     """
     Calculate the dependency tree for the package `root_key` and return
@@ -55,7 +55,7 @@ def dependency_tree(
     `root_key` should be the key to return the dependency tree for.
     """
     dependencies = set()
-    queue: Deque[Requirement] = collections.deque()
+    queue: Deque[Distribution] = collections.deque()
 
     if root_key in installed_keys:
         dep = installed_keys[root_key]
@@ -80,7 +80,7 @@ def dependency_tree(
     return dependencies
 
 
-def get_dists_to_ignore(installed: Iterable[Requirement]) -> List[str]:
+def get_dists_to_ignore(installed: Iterable[Distribution]) -> List[str]:
     """
     Returns a collection of package names to ignore when performing pip-sync,
     based on the currently installed environment.  For example, when pip-tools
@@ -142,7 +142,7 @@ def diff_key_from_ireq(ireq: InstallRequirement) -> str:
 
 def diff(
     compiled_requirements: Iterable[InstallRequirement],
-    installed_dists: Iterable[Requirement],
+    installed_dists: Iterable[Distribution],
 ) -> Tuple[Set[InstallRequirement], Set[str]]:
     """
     Calculate which packages should be installed or uninstalled, given a set
@@ -178,11 +178,14 @@ def sync(
     dry_run: bool = False,
     install_flags: Optional[List[str]] = None,
     ask: bool = False,
+    python_executable: Optional[str] = None,
 ) -> int:
     """
     Install and uninstalls the given sets of modules.
     """
     exit_code = 0
+
+    python_executable = python_executable or sys.executable
 
     if not to_uninstall and not to_install:
         log.info("Everything up-to-date", err=False)
@@ -216,7 +219,7 @@ def sync(
         if to_uninstall:
             run(  # nosec
                 [
-                    sys.executable,
+                    python_executable,
                     "-m",
                     "pip",
                     "uninstall",
@@ -244,7 +247,7 @@ def sync(
             try:
                 run(  # nosec
                     [
-                        sys.executable,
+                        python_executable,
                         "-m",
                         "pip",
                         "install",
