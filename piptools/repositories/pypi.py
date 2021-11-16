@@ -279,7 +279,7 @@ class PyPIRepository(BaseRepository):
 
         API reference: https://warehouse.readthedocs.io/api-reference/json/
         """
-        for _,link in self._get_all_package_links(ireq):
+        for link in self._get_all_package_links(ireq):
             data = self._get_json_from_index(link)
             if data is not None:
                 return data
@@ -353,7 +353,10 @@ class PyPIRepository(BaseRepository):
         }
 
         # remove duplicates and empty json responses
-        return {url: hashes for url, hashes in pypi_hashes.items() if hashes is not None}
+        hashes_by_index = {
+            url: hashes for url, hashes in pypi_hashes.items() if hashes is not None
+        }
+        return hashes_by_index or None
 
     def _get_hash_from_json(self, pypi_json: object, ireq: InstallRequirement) -> Optional[Set[str]]:
         """
