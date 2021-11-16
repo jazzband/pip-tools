@@ -11,7 +11,6 @@ from typing import (
     ContextManager,
     Dict,
     Iterator,
-    Iterable,
     List,
     NamedTuple,
     Optional,
@@ -258,18 +257,19 @@ class PyPIRepository(BaseRepository):
         except ValueError as e:
             log.debug(f"Cannot parse JSON response from PyPI: {url}: {e}")
 
-
     def _get_all_package_links(self, ireq: InstallRequirement):
         package_indexes = (
             PackageIndex(url=index_url, file_storage_domain="")
             for index_url in self.finder.search_scope.index_urls
         )
         package_links = (
-            Link(f"{package_index.pypi_url}/{ireq.name}", comes_from=package_index.simple_url)
+            Link(
+                f"{package_index.pypi_url}/{ireq.name}",
+                comes_from=package_index.simple_url,
+            )
             for package_index in package_indexes
         )
         return package_links
-
 
     def _get_project(self, ireq: InstallRequirement) -> Any:
         """
@@ -346,10 +346,14 @@ class PyPIRepository(BaseRepository):
         all_package_links = self._get_all_package_links(ireq)
 
         # Get json from each index server
-        pypi_json = {link.comes_from: self._get_json_from_index(link) for link in all_package_links}
+        pypi_json = {
+            link.comes_from: self._get_json_from_index(link)
+            for link in all_package_links
+        }
         pypi_hashes = {
             url: self._get_hash_from_json(json_resp, ireq)
-            for url, json_resp in pypi_json.items() if json_resp
+            for url, json_resp in pypi_json.items()
+            if json_resp
         }
 
         # remove duplicates and empty json responses
@@ -358,7 +362,9 @@ class PyPIRepository(BaseRepository):
         }
         return hashes_by_index or None
 
-    def _get_hash_from_json(self, pypi_json: object, ireq: InstallRequirement) -> Optional[Set[str]]:
+    def _get_hash_from_json(
+        self, pypi_json: object, ireq: InstallRequirement
+    ) -> Optional[Set[str]]:
         """
         Return a set of hashes from PyPI JSON API for a given InstallRequirement.
         Return None if fetching data is failed or missing digests.
@@ -383,7 +389,9 @@ class PyPIRepository(BaseRepository):
 
         return hashes
 
-    def _get_hashes_from_files(self, ireq: InstallRequirement, pypi_hashes=None) -> Set[str]:
+    def _get_hashes_from_files(
+        self, ireq: InstallRequirement, pypi_hashes=None
+    ) -> Set[str]:
         """
         Return a set of hashes for all release files of a given InstallRequirement.
         """
@@ -398,7 +406,8 @@ class PyPIRepository(BaseRepository):
         matching_candidates = candidates_by_version[matching_versions[0]]
 
         return {
-            self._get_file_hash(candidate.link, pypi_hashes) for candidate in matching_candidates
+            self._get_file_hash(candidate.link, pypi_hashes)
+            for candidate in matching_candidates
         }
 
     def _get_file_hash(self, link: Link, pypi_hashes=None) -> str:
