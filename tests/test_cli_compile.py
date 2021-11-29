@@ -477,7 +477,7 @@ def test_editable_package_in_constraints(pip_conf, runner, req_editable):
 @pytest.mark.network
 def test_editable_package_vcs(runner):
     vcs_package = (
-        "git+git://github.com/jazzband/pip-tools@"
+        "git+https://github.com/jazzband/pip-tools@"
         "f97e62ecb0d9b70965c8eff952c001d8e2722e94"
         "#egg=pip-tools"
     )
@@ -525,7 +525,7 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
             id="Zip URL",
         ),
         pytest.param(
-            "git+git://github.com/jazzband/pip-tools@"
+            "git+https://github.com/jazzband/pip-tools@"
             "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3",
             "\nclick==",
             id="VCS URL",
@@ -538,10 +538,10 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
             id="Wheel URL",
         ),
         pytest.param(
-            "pytest-django @ git+git://github.com/pytest-dev/pytest-django"
+            "pytest-django @ git+https://github.com/pytest-dev/pytest-django"
             "@21492afc88a19d4ca01cd0ac392a5325b14f95c7"
             "#egg=pytest-django",
-            "pytest-django @ git+git://github.com/pytest-dev/pytest-django"
+            "pytest-django @ git+https://github.com/pytest-dev/pytest-django"
             "@21492afc88a19d4ca01cd0ac392a5325b14f95c7",
             id="VCS with direct reference and egg",
         ),
