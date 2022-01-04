@@ -30,11 +30,10 @@ jobs:
         pip-version:
           - "latest"
           - "previous"
-        # TODO: uncomment after https://github.com/pytest-dev/py/issues/273 being fixed
-        # include:
-        #   - os: Ubuntu
-        #     python-version: 3.11-dev
-        #     pip-version: latest
+        include:
+          - os: Ubuntu
+            python-version: 3.11-dev
+            pip-version: latest
 
     env:
       PY_COLORS: 1
