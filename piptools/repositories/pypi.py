@@ -405,19 +405,20 @@ class PyPIRepository(BaseRepository):
         )
         matching_candidates = candidates_by_version[matching_versions[0]]
 
-        return {
-            self._get_file_hash(candidate.link, pypi_hashes)
-            for candidate in matching_candidates
-        }
+        return set(itertools.chain.from_iterable(self._get_hashes_for_link(candidate.link, pypi_hashes) for candidate in matching_candidates))
 
-    def _get_file_hash(self, link: Link, pypi_hashes=None) -> str:
-        if link.has_hash:
-            return f"{link.hash_name}:{link.hash}"
-
+    def _get_hashes_for_link(self, link: Link, pypi_hashes: Dict[str,Set[str]]) -> Set[str]:
         # This conditional feels too peculiar to tolerate future maintenance.
         # But figuring out how the Link is constructed in find_all_candidates smells like it isn't a guaranteed API
         if pypi_hashes and link.comes_from in pypi_hashes:
-            return pypi_hashes[link.url]
+            yield from pypi_hashes[link.comes_from]
+
+        else:
+            yield self._get_file_hash(link)
+
+    def _get_file_hash(self, link: Link) -> str:
+        if link.has_hash:
+            return f"{link.hash_name}:{link.hash}"
 
         log.debug(f"Hashing {link.show_url}")
         h = hashlib.new(FAVORITE_HASH)

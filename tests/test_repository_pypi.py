@@ -1,13 +1,16 @@
 import os
+from pathlib import Path
 from unittest import mock
 
 import pytest
+from pip._internal.models.candidate import InstallationCandidate
 from pip._internal.models.link import Link
 from pip._internal.utils.urls import path_to_url
 from pip._vendor.requests import HTTPError, Session
 
 from piptools.repositories import PyPIRepository
 from piptools.repositories.pypi import open_local_or_remote_file
+from tests.constants import MINIMAL_WHEELS_PATH
 
 
 def test_generate_hashes_all_platforms(capsys, pip_conf, from_line, pypi_repository):
@@ -252,6 +255,155 @@ def test_get_hashes_from_pypi(from_line, tmpdir, project_data, expected_hashes):
     ireq = from_line("fake-package==0.1")
 
     actual_hashes = pypi_repository._get_hashes_from_pypi(ireq)
+    assert actual_hashes == expected_hashes
+
+
+@pytest.mark.parametrize(
+    ("pypi_json", "expected_hashes"),
+    (
+        pytest.param(
+            {
+                "https://pypi.org/pypi/fake-package": {
+                    "releases": {
+                        "0.1": [
+                            {
+                                "packagetype": "bdist_wheel",
+                                "digests": {"sha256": "fake-hash"},
+                            }
+                        ]
+                    },
+                    "comes_from": "https://pypi.org/simple"
+                },
+            },
+            {"sha256:fake-hash"},
+            id="return single hash",
+        ),
+        pytest.param(
+            {
+                "https://pypi.org/pypi/fake-package": {
+                    "releases": {
+                        "0.1": [
+                            {
+                                "packagetype": "bdist_wheel",
+                                "digests": {"sha256": "fake-hash-number1"},
+                            },
+                            {
+                                "packagetype": "sdist",
+                                "digests": {"sha256": "fake-hash-number2"},
+                            },
+                        ]
+                    },
+                    "comes_from": "https://pypi.org/simple"
+                }
+            },
+            {"sha256:fake-hash-number1", "sha256:fake-hash-number2"},
+            id="return multiple hashes",
+        ),
+        pytest.param(
+            {
+                "https://pypi.org/simple/fake-package": {
+                    "releases": {
+                        "0.1": [
+                            {
+                                "packagetype": "bdist_wheel",
+                                "digests": {"sha256": "fake-hash-number1"},
+                            },
+                        ]
+                    },
+                    "comes_from": "https://pypi.org/simple"
+                },
+                "https://internal-index-server.com/pypi/fake-package": {
+                    "releases": {
+                        "0.1": [
+                            {
+                                "packagetype": "sdist",
+                                "digests": {"sha256": "fake-hash-number2"},
+                            },
+                        ]
+                    },
+                    "comes_from": "https://internal-index-server.com/simple"
+                }
+            },
+            {"sha256:fake-hash-number1", "sha256:fake-hash-number2"},
+            id="return multiple indices",
+        ),
+    ),
+)
+def test_get_hashes_multiple_indices_json_api(from_line, tmpdir, pypi_json, expected_hashes):
+    """
+    Test PyPIRepository.get_hashes() returns expected hashes for multiple indices.
+    """
+
+    # I don't love how specific the details of this test are. If PyPIRepository changes internal
+    # implementation details, this mock class will need to change too.
+    class MockPyPIRepository(PyPIRepository):
+        def _get_all_package_links(self, _):
+            return [Link(url, comes_from=pypi_json[url]['comes_from']) for url in pypi_json]
+
+        def _get_json_from_index(self, link: Link):
+            return pypi_json.get(link.url)
+
+        def find_all_candidates(self, req_name: str):
+            # I don't know why, but candidates have a different URL the the json links
+            return [
+                InstallationCandidate(
+                    'fake-package',
+                    '0.1',
+                    Link(url, comes_from=pypi_json[url]['comes_from'])
+                )
+                for url in pypi_json
+            ]
+
+    pypi_repository = MockPyPIRepository(
+        ["--no-cache-dir"], cache_dir=(tmpdir / "pypi-repo-cache")
+    )
+    ireq = from_line("fake-package==0.1")
+
+    actual_hashes = pypi_repository.get_hashes(ireq)
+    assert actual_hashes == expected_hashes
+
+
+def test_get_hashes_pypi_and_simple_index_server(from_line, tmpdir):
+    """
+    test PyPIRepository.get_hashes() when a file hash needs to be computed
+    """
+    expected_hashes = {
+        'sha256:fake-hash-number1',
+        'sha256:5e6071ee6e4c59e0d0408d366fe9b66781d2cf01be9a6e19a2433bb3c5336330',
+    }
+
+    simple_server_address = "https://internal-index-server.com/pypi/small-fake-a"
+    hashable_path = Path(MINIMAL_WHEELS_PATH) / 'small_fake_a-0.1-py2.py3-none-any.whl'
+
+    pypi_response = {
+        "releases": {
+            "0.1": [
+                {
+                    "packagetype": "sdist",
+                    "digests": {"sha256": "fake-hash-number1"},
+                },
+            ]
+        },
+        "comes_from": "https://pypi.org/simple"
+    }
+    installation_links = [
+        Link("https://pypi.org/pypi/small-fake-a", comes_from=pypi_response['comes_from']),
+        Link(f"file://{hashable_path.absolute()}", comes_from=simple_server_address),
+    ]
+    installation_candidates = [InstallationCandidate('small-fake-a', '0.1', link) for link in installation_links]
+
+    ireq = from_line("small-fake-a==0.1")
+
+    pypi_repository = PyPIRepository(
+        ["--index-url", PyPIRepository.DEFAULT_INDEX_URL,
+         '--extra-index-url', simple_server_address],
+        cache_dir=(tmpdir / "pypi-repo"),
+    )
+
+    with mock.patch.object(pypi_repository, '_get_json_from_index', return_value=pypi_response):
+        with mock.patch.object(pypi_repository, 'find_all_candidates', return_value=installation_candidates):
+            actual_hashes = pypi_repository.get_hashes(ireq)
+
     assert actual_hashes == expected_hashes
 
 
