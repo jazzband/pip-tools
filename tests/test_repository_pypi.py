@@ -172,7 +172,7 @@ def test_pip_cache_dir_is_empty(from_line, tmpdir):
                     ]
                 }
             },
-            {'https://pypi.org/simple': {"sha256:fake-hash"}},
+            {"https://pypi.org/simple": {"sha256:fake-hash"}},
             id="return single hash",
         ),
         pytest.param(
@@ -190,7 +190,12 @@ def test_pip_cache_dir_is_empty(from_line, tmpdir):
                     ]
                 }
             },
-            {'https://pypi.org/simple': {"sha256:fake-hash-number1", "sha256:fake-hash-number2"}},
+            {
+                "https://pypi.org/simple": {
+                    "sha256:fake-hash-number1",
+                    "sha256:fake-hash-number2",
+                }
+            },
             id="return multiple hashes",
         ),
         pytest.param(
@@ -212,7 +217,12 @@ def test_pip_cache_dir_is_empty(from_line, tmpdir):
                     ]
                 }
             },
-            {'https://pypi.org/simple': {"sha256:fake-hash-number1", "sha256:fake-hash-number2"}},
+            {
+                "https://pypi.org/simple": {
+                    "sha256:fake-hash-number1",
+                    "sha256:fake-hash-number2",
+                }
+            },
             id="return only bdist_wheel and sdist hashes",
         ),
         pytest.param(None, None, id="not found project data"),
