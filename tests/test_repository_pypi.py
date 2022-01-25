@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Any, Iterable, List
 from unittest import mock
 
 import pytest
@@ -175,7 +176,7 @@ def test_pip_cache_dir_is_empty(from_line, tmpdir):
                     ]
                 }
             },
-            {'https://pypi.org/simple': {"sha256:fake-hash"}},
+            {"https://pypi.org/simple": {"sha256:fake-hash"}},
             id="return single hash",
         ),
         pytest.param(
@@ -193,7 +194,12 @@ def test_pip_cache_dir_is_empty(from_line, tmpdir):
                     ]
                 }
             },
-            {'https://pypi.org/simple': {"sha256:fake-hash-number1", "sha256:fake-hash-number2"}},
+            {
+                "https://pypi.org/simple": {
+                    "sha256:fake-hash-number1",
+                    "sha256:fake-hash-number2",
+                }
+            },
             id="return multiple hashes",
         ),
         pytest.param(
@@ -215,7 +221,12 @@ def test_pip_cache_dir_is_empty(from_line, tmpdir):
                     ]
                 }
             },
-            {'https://pypi.org/simple': {"sha256:fake-hash-number1", "sha256:fake-hash-number2"}},
+            {
+                "https://pypi.org/simple": {
+                    "sha256:fake-hash-number1",
+                    "sha256:fake-hash-number2",
+                }
+            },
             id="return only bdist_wheel and sdist hashes",
         ),
         pytest.param(None, None, id="not found project data"),
@@ -272,7 +283,7 @@ def test_get_hashes_from_pypi(from_line, tmpdir, project_data, expected_hashes):
                             }
                         ]
                     },
-                    "comes_from": "https://pypi.org/simple"
+                    "comes_from": "https://pypi.org/simple",
                 },
             },
             {"sha256:fake-hash"},
@@ -293,7 +304,7 @@ def test_get_hashes_from_pypi(from_line, tmpdir, project_data, expected_hashes):
                             },
                         ]
                     },
-                    "comes_from": "https://pypi.org/simple"
+                    "comes_from": "https://pypi.org/simple",
                 }
             },
             {"sha256:fake-hash-number1", "sha256:fake-hash-number2"},
@@ -310,7 +321,7 @@ def test_get_hashes_from_pypi(from_line, tmpdir, project_data, expected_hashes):
                             },
                         ]
                     },
-                    "comes_from": "https://pypi.org/simple"
+                    "comes_from": "https://pypi.org/simple",
                 },
                 "https://internal-index-server.com/pypi/fake-package": {
                     "releases": {
@@ -321,15 +332,17 @@ def test_get_hashes_from_pypi(from_line, tmpdir, project_data, expected_hashes):
                             },
                         ]
                     },
-                    "comes_from": "https://internal-index-server.com/simple"
-                }
+                    "comes_from": "https://internal-index-server.com/simple",
+                },
             },
             {"sha256:fake-hash-number1", "sha256:fake-hash-number2"},
             id="return multiple indices",
         ),
     ),
 )
-def test_get_hashes_multiple_indices_json_api(from_line, tmpdir, pypi_json, expected_hashes):
+def test_get_hashes_multiple_indices_json_api(
+    from_line, tmpdir, pypi_json, expected_hashes
+):
     """
     Test PyPIRepository.get_hashes() returns expected hashes for multiple indices.
     """
@@ -337,19 +350,21 @@ def test_get_hashes_multiple_indices_json_api(from_line, tmpdir, pypi_json, expe
     # I don't love how specific the details of this test are. If PyPIRepository changes internal
     # implementation details, this mock class will need to change too.
     class MockPyPIRepository(PyPIRepository):
-        def _get_all_package_links(self, _):
-            return [Link(url, comes_from=pypi_json[url]['comes_from']) for url in pypi_json]
+        def _get_all_package_links(self, _: Any) -> Iterable[Any]:
+            return [
+                Link(url, comes_from=pypi_json[url]["comes_from"]) for url in pypi_json
+            ]
 
-        def _get_json_from_index(self, link: Link):
+        def _get_json_from_index(self, link: Link) -> Any:
             return pypi_json.get(link.url)
 
-        def find_all_candidates(self, req_name: str):
+        def find_all_candidates(self, req_name: str) -> List[InstallationCandidate]:
             # I don't know why, but candidates have a different URL the the json links
             return [
                 InstallationCandidate(
-                    'fake-package',
-                    '0.1',
-                    Link(url, comes_from=pypi_json[url]['comes_from'])
+                    "fake-package",
+                    "0.1",
+                    Link(url, comes_from=pypi_json[url]["comes_from"]),
                 )
                 for url in pypi_json
             ]
@@ -368,12 +383,12 @@ def test_get_hashes_pypi_and_simple_index_server(from_line, tmpdir):
     test PyPIRepository.get_hashes() when a file hash needs to be computed
     """
     expected_hashes = {
-        'sha256:fake-hash-number1',
-        'sha256:5e6071ee6e4c59e0d0408d366fe9b66781d2cf01be9a6e19a2433bb3c5336330',
+        "sha256:fake-hash-number1",
+        "sha256:5e6071ee6e4c59e0d0408d366fe9b66781d2cf01be9a6e19a2433bb3c5336330",
     }
 
     simple_server_address = "https://internal-index-server.com/pypi/small-fake-a"
-    hashable_path = Path(MINIMAL_WHEELS_PATH) / 'small_fake_a-0.1-py2.py3-none-any.whl'
+    hashable_path = Path(MINIMAL_WHEELS_PATH) / "small_fake_a-0.1-py2.py3-none-any.whl"
 
     pypi_response = {
         "releases": {
@@ -384,24 +399,37 @@ def test_get_hashes_pypi_and_simple_index_server(from_line, tmpdir):
                 },
             ]
         },
-        "comes_from": "https://pypi.org/simple"
+        "comes_from": "https://pypi.org/simple",
     }
     installation_links = [
-        Link("https://pypi.org/pypi/small-fake-a", comes_from=pypi_response['comes_from']),
+        Link(
+            "https://pypi.org/pypi/small-fake-a", comes_from=pypi_response["comes_from"]
+        ),
         Link(f"file://{hashable_path.absolute()}", comes_from=simple_server_address),
     ]
-    installation_candidates = [InstallationCandidate('small-fake-a', '0.1', link) for link in installation_links]
+    installation_candidates = [
+        InstallationCandidate("small-fake-a", "0.1", link)
+        for link in installation_links
+    ]
 
     ireq = from_line("small-fake-a==0.1")
 
     pypi_repository = PyPIRepository(
-        ["--index-url", PyPIRepository.DEFAULT_INDEX_URL,
-         '--extra-index-url', simple_server_address],
+        [
+            "--index-url",
+            PyPIRepository.DEFAULT_INDEX_URL,
+            "--extra-index-url",
+            simple_server_address,
+        ],
         cache_dir=(tmpdir / "pypi-repo"),
     )
 
-    with mock.patch.object(pypi_repository, '_get_json_from_index', return_value=pypi_response):
-        with mock.patch.object(pypi_repository, 'find_all_candidates', return_value=installation_candidates):
+    with mock.patch.object(
+        pypi_repository, "_get_json_from_index", return_value=pypi_response
+    ):
+        with mock.patch.object(
+            pypi_repository, "find_all_candidates", return_value=installation_candidates
+        ):
             actual_hashes = pypi_repository.get_hashes(ireq)
 
     assert actual_hashes == expected_hashes

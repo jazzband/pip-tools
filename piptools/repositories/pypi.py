@@ -10,6 +10,7 @@ from typing import (
     BinaryIO,
     ContextManager,
     Dict,
+    Iterable,
     Iterator,
     List,
     NamedTuple,
@@ -27,7 +28,7 @@ from pip._internal.models.candidate import InstallationCandidate
 from pip._internal.models.index import PackageIndex
 from pip._internal.models.link import Link
 from pip._internal.models.wheel import Wheel
-from pip._internal.network.session import PipSession
+from pip._internal.network.session import PipSession, Response
 from pip._internal.req import InstallRequirement, RequirementSet
 from pip._internal.req.req_tracker import get_requirement_tracker
 from pip._internal.utils.hashes import FAVORITE_HASH
@@ -239,25 +240,41 @@ class PyPIRepository(BaseRepository):
 
         return self._dependencies_cache[ireq]
 
-    def _get_json_from_index(self, link: Link):
+    def _get_json_from_index(self, link: Link) -> Optional[Dict[str, Any]]:
         url = f"{link.url}/json"
         try:
             response = self.session.get(url)
         except RequestException as e:
             log.debug(f"Fetch package info from PyPI failed: {url}: {e}")
-            return
+            return None
 
         # Skip this PyPI server, because there is no package
         # or JSON API might be not supported
         if response.status_code == 404:
-            return
+            return None
 
         try:
-            return response.json()
+            return self._get_json_obj(response)
         except ValueError as e:
             log.debug(f"Cannot parse JSON response from PyPI: {url}: {e}")
+            return None
 
-    def _get_all_package_links(self, ireq: InstallRequirement):
+    @staticmethod
+    def _get_json_obj(resp: Response) -> Optional[Dict[str, Any]]:
+        decoded_json = resp.json()
+
+        if decoded_json is None:
+            return decoded_json
+
+        # This is actually guaranteed by the python stdlib. Json can only contain these types
+        if not isinstance(decoded_json, dict):
+            raise ValueError(
+                f"Invalid json type {type(decoded_json)}. Expected 'object'"
+            )
+
+        return decoded_json
+
+    def _get_all_package_links(self, ireq: InstallRequirement) -> Iterable[Link]:
         package_indexes = (
             PackageIndex(url=index_url, file_storage_domain="")
             for index_url in self.finder.search_scope.index_urls
@@ -271,7 +288,7 @@ class PyPIRepository(BaseRepository):
         )
         return package_links
 
-    def _get_project(self, ireq: InstallRequirement) -> Any:
+    def _get_project(self, ireq: InstallRequirement) -> Optional[Dict[str, Any]]:
         """
         Return a dict of a project info from PyPI JSON API for a given
         InstallRequirement. Return None on HTTP/JSON error or if a package
@@ -335,14 +352,17 @@ class PyPIRepository(BaseRepository):
         with log.indentation():
             # get pypi hashes using the json API, once per server
             pypi_hashes = self._get_hashes_from_pypi(ireq)
-            # Compute hashes for ALL candidate installation links, using hashes from json APIs if available
+            # Compute hashes for ALL candidate installation links, using hashes from json APIs
             hashes = self._get_hashes_from_files(ireq, pypi_hashes)
 
         return hashes
 
-    def _get_hashes_from_pypi(self, ireq: InstallRequirement):
+    def _get_hashes_from_pypi(
+        self, ireq: InstallRequirement
+    ) -> Optional[Dict[str, Set[str]]]:
         # package links help us construct a json query URL for index servers.
-        # Note the same type but different usage from installation candidates because we only care about one per server.
+        # Note the same type but different usage from installation candidates because we only care
+        # about one per server.
         all_package_links = self._get_all_package_links(ireq)
 
         # Get json from each index server
@@ -363,7 +383,7 @@ class PyPIRepository(BaseRepository):
         return hashes_by_index or None
 
     def _get_hash_from_json(
-        self, pypi_json: object, ireq: InstallRequirement
+        self, pypi_json: Dict[str, Any], ireq: InstallRequirement
     ) -> Optional[Set[str]]:
         """
         Return a set of hashes from PyPI JSON API for a given InstallRequirement.
@@ -390,7 +410,9 @@ class PyPIRepository(BaseRepository):
         return hashes
 
     def _get_hashes_from_files(
-        self, ireq: InstallRequirement, pypi_hashes=None
+        self,
+        ireq: InstallRequirement,
+        pypi_hashes: Optional[Dict[str, Set[str]]] = None,
     ) -> Set[str]:
         """
         Return a set of hashes for all release files of a given InstallRequirement.
@@ -405,11 +427,19 @@ class PyPIRepository(BaseRepository):
         )
         matching_candidates = candidates_by_version[matching_versions[0]]
 
-        return set(itertools.chain.from_iterable(self._get_hashes_for_link(candidate.link, pypi_hashes) for candidate in matching_candidates))
+        return set(
+            itertools.chain.from_iterable(
+                self._get_hashes_for_link(candidate.link, pypi_hashes)
+                for candidate in matching_candidates
+            )
+        )
 
-    def _get_hashes_for_link(self, link: Link, pypi_hashes: Dict[str,Set[str]]) -> Set[str]:
+    def _get_hashes_for_link(
+        self, link: Link, pypi_hashes: Optional[Dict[str, Set[str]]]
+    ) -> Iterator[str]:
         # This conditional feels too peculiar to tolerate future maintenance.
-        # But figuring out how the Link is constructed in find_all_candidates smells like it isn't a guaranteed API
+        # But figuring out how the Link is constructed in find_all_candidates smells like
+        # it isn't a guaranteed API
         if pypi_hashes and link.comes_from in pypi_hashes:
             yield from pypi_hashes[link.comes_from]
 
