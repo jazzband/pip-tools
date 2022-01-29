@@ -178,7 +178,7 @@ from piptools.resolver import RequirementSummary, combine_install_requirements
                 [
                     "amqp==2.1.4 (from kombu==4.0.2->celery==4.0.2)",
                     "kombu==4.0.2 (from celery==4.0.2)",
-                    "billiard<3.6.0,==3.5.9999,>=3.5.0.2 from "
+                    "billiard<3.6.0,==3.5.9999,>=3.5.0.2 from ",
                     "git+https://github.com/celery/billiard#egg=billiard==3.5.9999",
                     "vine==1.1.3 (from amqp==2.1.4->kombu==4.0.2->celery==4.0.2)",
                     "celery==4.0.2",
