@@ -450,17 +450,17 @@ class PyPIRepository(BaseRepository):
 
         # Sync pip's console handler stream with LogContext.stream
         logger = logging.getLogger()
-        for handler in logger.handlers:
-            if handler.name == "console":  # pragma: no branch
-                assert isinstance(handler, logging.StreamHandler)
-                handler.stream = log.stream
-                break
-        else:  # pragma: no cover
+        logger_names = [x.name for x in logger.handles]
+        if 'console' not in logger_names: # pragma: no cover
             # There is always a console handler. This warning would be a signal that
             # this block should be removed/revisited, because of pip possibly
             # refactored-out logging config.
             log.warning("Couldn't find a 'console' logging handler")
-
+        else:
+            for handler in logger.handlers:
+                if isinstance(handler, logging.StreamHandler):
+                    handler.stream = log.stream
+                    break
         # Sync pip's progress bars stream with LogContext.stream
         for bar_cls in itertools.chain(*BAR_TYPES.values()):
             bar_cls.file = log.stream
