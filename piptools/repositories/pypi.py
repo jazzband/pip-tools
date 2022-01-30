@@ -451,7 +451,7 @@ class PyPIRepository(BaseRepository):
         # Sync pip's console handler stream with LogContext.stream
         logger = logging.getLogger()
         logger_names = [x.name for x in logger.handles]
-        if 'console' not in logger_names: # pragma: no cover
+        if "console" not in logger_names:  # pragma: no cover
             # There is always a console handler. This warning would be a signal that
             # this block should be removed/revisited, because of pip possibly
             # refactored-out logging config.
