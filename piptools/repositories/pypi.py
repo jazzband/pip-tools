@@ -1,3 +1,4 @@
+import contextlib
 import hashlib
 import itertools
 import logging
@@ -39,7 +40,6 @@ from pip._vendor.packaging.tags import Tag
 from pip._vendor.packaging.version import _BaseVersion
 from pip._vendor.requests import RequestException, Session
 
-from .._compat import contextlib
 from ..exceptions import NoCandidateFound
 from ..logging import log
 from ..utils import (
