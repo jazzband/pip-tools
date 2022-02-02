@@ -31,7 +31,7 @@ from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement, RequirementSet
 from pip._internal.req.req_tracker import get_requirement_tracker
 from pip._internal.utils.hashes import FAVORITE_HASH
-from pip._internal.utils.logging import RichPipStreamHandler, indent_log, setup_logging
+from pip._internal.utils.logging import indent_log, setup_logging
 from pip._internal.utils.misc import normalize_path
 from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
 from pip._internal.utils.urls import path_to_url, url_to_path
@@ -39,7 +39,7 @@ from pip._vendor.packaging.tags import Tag
 from pip._vendor.packaging.version import _BaseVersion
 from pip._vendor.requests import RequestException, Session
 
-from .._compat import contextlib
+from .._compat import PIP_VERSION, contextlib
 from ..exceptions import NoCandidateFound
 from ..logging import log
 from ..utils import (
@@ -50,6 +50,15 @@ from ..utils import (
     make_install_requirement,
 )
 from .base import BaseRepository
+
+# pip introduced rich for logging in version 22
+if PIP_VERSION[0] >= 22:
+    from pip._internal.utils.logging import RichPipStreamHandler
+
+    compatible_handler = RichPipStreamHandler
+else:
+    compatible_handler = logging.StreamHandler
+
 
 FILE_CHUNK_SIZE = 4096
 
@@ -452,9 +461,7 @@ class PyPIRepository(BaseRepository):
         logger = logging.getLogger()
         for handler in logger.handlers:
             if handler.name == "console":  # pragma: no branch
-                assert isinstance(
-                    handler, (logging.StreamHandler, RichPipStreamHandler)
-                )
+                assert isinstance(handler, compatible_handler)
                 handler.stream = log.stream
                 break
         else:  # pragma: no cover
