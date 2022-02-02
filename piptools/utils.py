@@ -127,7 +127,6 @@ def format_requirement(
         req = copy.copy(ireq.req)
         req.name = canonicalize_name(req.name)
         line = str(req)
-        line = str(ireq.req).lower()
 
     if marker:
         line = f"{line} ; {marker}"
