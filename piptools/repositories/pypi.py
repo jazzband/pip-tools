@@ -31,7 +31,11 @@ from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement, RequirementSet
 from pip._internal.req.req_tracker import get_requirement_tracker
 from pip._internal.utils.hashes import FAVORITE_HASH
-from pip._internal.utils.logging import indent_log, setup_logging
+from pip._internal.utils.logging import (
+    indent_log,
+    setup_logging,
+    RichPipStreamHandler,
+)
 from pip._internal.utils.misc import normalize_path
 from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
 from pip._internal.utils.urls import path_to_url, url_to_path
@@ -450,17 +454,20 @@ class PyPIRepository(BaseRepository):
 
         # Sync pip's console handler stream with LogContext.stream
         logger = logging.getLogger()
-        logger_names = [x.name for x in logger.handlers]
-        if "console" not in logger_names:  # pragma: no cover
+        for handler in logger.handlers:
+            if handler.name == "console":  # pragma: no branch
+                try:
+                    assert isinstance(handler, logging.StreamHandler)
+                except Exception:
+                    assert isinstance(handler, RichPipStreamHandler)
+                handler.stream = log.stream
+                break
+        else:  # pragma: no cover
             # There is always a console handler. This warning would be a signal that
             # this block should be removed/revisited, because of pip possibly
             # refactored-out logging config.
             log.warning("Couldn't find a 'console' logging handler")
-        else:
-            for handler in logger.handlers:
-                if isinstance(handler, logging.StreamHandler):
-                    handler.stream = log.stream
-                    break
+
         # Sync pip's progress bars stream with LogContext.stream
         for bar_cls in itertools.chain(*BAR_TYPES.values()):
             bar_cls.file = log.stream
