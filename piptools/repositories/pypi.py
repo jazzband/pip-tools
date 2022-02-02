@@ -31,7 +31,7 @@ from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement, RequirementSet
 from pip._internal.req.req_tracker import get_requirement_tracker
 from pip._internal.utils.hashes import FAVORITE_HASH
-from pip._internal.utils.logging import indent_log, setup_logging
+from pip._internal.utils.logging import RichPipStreamHandler, indent_log, setup_logging
 from pip._internal.utils.misc import normalize_path
 from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
 from pip._internal.utils.urls import path_to_url, url_to_path
@@ -452,7 +452,9 @@ class PyPIRepository(BaseRepository):
         logger = logging.getLogger()
         for handler in logger.handlers:
             if handler.name == "console":  # pragma: no branch
-                assert isinstance(handler, logging.StreamHandler)
+                assert isinstance(
+                    handler, (logging.StreamHandler, RichPipStreamHandler)
+                )
                 handler.stream = log.stream
                 break
         else:  # pragma: no cover
