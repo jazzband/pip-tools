@@ -26,6 +26,7 @@ from pip._internal.utils.misc import redact_auth_from_url
 from pip._internal.vcs import is_url
 from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.specifiers import SpecifierSet
+from pip._vendor.packaging.utils import canonicalize_name
 from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Distribution, Requirement, get_distribution
 
@@ -121,6 +122,9 @@ def format_requirement(
     elif is_url_requirement(ireq):
         line = _build_direct_reference_best_efforts(ireq)
     else:
+        # Canonicalize the requirement name
+        # https://packaging.pypa.io/en/latest/utils.html#packaging.utils.canonicalize_name
+        ireq.req.name = canonicalize_name(ireq.req.name)
         line = str(ireq.req).lower()
 
     if marker:
