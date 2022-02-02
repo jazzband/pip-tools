@@ -124,7 +124,9 @@ def format_requirement(
     else:
         # Canonicalize the requirement name
         # https://packaging.pypa.io/en/latest/utils.html#packaging.utils.canonicalize_name
-        ireq.req.name = canonicalize_name(ireq.req.name)
+        req = copy.copy(ireq.req)
+        req.name = canonicalize_name(req.name)
+        line = str(req)
         line = str(ireq.req).lower()
 
     if marker:
