@@ -381,7 +381,8 @@ def test_write_find_links(writer, find_links, expected_lines):
 
 def test_write_order(writer, from_line):
     """
-    Order of packages should match that of `pip freeze`.
+    Order of packages should match that of `pip freeze`, with the exception
+    that requirement names should be canonicalized.
     """
     writer.emit_header = False
 
@@ -393,7 +394,7 @@ def test_write_order(writer, from_line):
     ]
     expected_lines = [
         "package==5.6",
-        "package_a==0.1",
+        "package-a==0.1",
         "package-b==2.3.4",
         "package2==7.8.9",
     ]

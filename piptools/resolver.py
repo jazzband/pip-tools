@@ -62,7 +62,7 @@ def combine_install_requirements(
     """
     # We will store the source ireqs in a _source_ireqs attribute;
     # if any of the inputs have this, then use those sources directly.
-    source_ireqs = []
+    source_ireqs: List[InstallRequirement] = []
     for ireq in ireqs:
         source_ireqs.extend(getattr(ireq, "_source_ireqs", [ireq]))
 
