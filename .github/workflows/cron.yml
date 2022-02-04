@@ -33,30 +33,12 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Pip cache
-        uses: actions/cache@v2
-        with:
-          path: >-
-            ${{
-              runner.os == 'Linux' &&
-              '~/.cache/pip'
-              || ''
-            }}${{
-              runner.os == 'macOS' &&
-              '~/Library/Caches/pip'
-              || ''
-            }}${{
-              runner.os == 'Windows' &&
-              '~\AppData\Local\pip\Cache'
-              || ''
-            }}
-          key: >-
-            ${{ runner.os }}-pip-${{ hashFiles('setup.cfg') }}-${{
-            hashFiles('setup.py') }}-${{ hashFiles('tox.ini') }}-${{
-            hashFiles('.pre-commit-config.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-            ${{ runner.os }}-
+          cache: pip
+          cache-dependency-path: |
+            .pre-commit-config.yaml
+            setup.cfg
+            setup.py
+            tox.ini
       - name: Install test dependencies
         run: python -m pip install -U tox virtualenv
       - name: Prepare test environment
@@ -88,30 +70,12 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Pip cache
-        uses: actions/cache@v2
-        with:
-          path: >-
-            ${{
-              runner.os == 'Linux' &&
-              '~/.cache/pip'
-              || ''
-            }}${{
-              runner.os == 'macOS' &&
-              '~/Library/Caches/pip'
-              || ''
-            }}${{
-              runner.os == 'Windows' &&
-              '~\AppData\Local\pip\Cache'
-              || ''
-            }}
-          key: >-
-            ${{ runner.os }}-pip-${{ hashFiles('setup.cfg') }}-${{
-            hashFiles('setup.py') }}-${{ hashFiles('tox.ini') }}-${{
-            hashFiles('.pre-commit-config.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-            ${{ runner.os }}-
+          cache: pip
+          cache-dependency-path: |
+            .pre-commit-config.yaml
+            setup.cfg
+            setup.py
+            tox.ini
       - name: Install tox
         run: pip install tox
       - name: Prepare test environment
