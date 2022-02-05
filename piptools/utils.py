@@ -69,9 +69,7 @@ def key_from_req(
     else:
         # from packaging, such as install requirements from requirements.txt
         key = req.name
-    assert isinstance(key, str)
-    key = key.replace("_", "-").lower()
-    return key
+    return str(canonicalize_name(key))
 
 
 def comment(text: str) -> str:
