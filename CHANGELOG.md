@@ -1,3 +1,11 @@
+## 6.5.1 (2022-02-08)
+
+Bug Fixes:
+
+- Ensure canonicalized requirement names are used as keys, to prevent unnecessary
+  reinstallations during sync
+  ([#1572](https://github.com/jazzband/pip-tools/pull/1572)). Thanks @AndydeCleyre
+
 ## 6.5.0 (2022-02-04)
 
 Features:
