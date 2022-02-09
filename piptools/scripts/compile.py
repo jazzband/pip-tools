@@ -452,6 +452,27 @@ def cli(
                 )
             )
 
+    if upgrade_packages:
+        constraints_file = tempfile.NamedTemporaryFile(mode="wt", delete=False)
+        constraints_file.write("\n".join(upgrade_packages))
+        constraints_file.flush()
+        try:
+            reqs = list(
+                parse_requirements(
+                    constraints_file.name,
+                    finder=repository.finder,
+                    session=repository.session,
+                    options=repository.options,
+                    constraint=True,
+                )
+            )
+        finally:
+            constraints_file.close()
+            os.unlink(constraints_file.name)
+        for req in reqs:
+            req.comes_from = None
+        constraints.extend(reqs)
+
     extras = tuple(itertools.chain.from_iterable(ex.split(",") for ex in extras))
 
     if extras and not setup_file_found:
