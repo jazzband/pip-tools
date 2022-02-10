@@ -803,13 +803,20 @@ def test_upgrade_packages_version_option_no_existing_file(pip_conf, runner):
     assert "small-fake-b==0.2" in out.stderr
 
 
-def test_upgrade_packages_version_option_and_upgrade(pip_conf, runner):
+@pytest.mark.parametrize(
+    "reqs_in",
+    (
+        pytest.param("small-fake-a\nsmall-fake-b", id="direct reqs"),
+        pytest.param("small-fake-with-unpinned-deps", id="parent req"),
+    ),
+)
+def test_upgrade_packages_version_option_and_upgrade(pip_conf, runner, reqs_in):
     """
     piptools respects --upgrade-package/-P inline list with specified versions
     whilst also doing --upgrade.
     """
     with open("requirements.in", "w") as req_in:
-        req_in.write("small-fake-a\nsmall-fake-b")
+        req_in.write(reqs_in)
     with open("requirements.txt", "w") as req_in:
         req_in.write("small-fake-a==0.1\nsmall-fake-b==0.1")
 
