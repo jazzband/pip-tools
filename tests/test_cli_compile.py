@@ -1592,6 +1592,7 @@ def test_unreachable_index_urls(runner, cli_options, expected_message):
     assert expected_message in stderr_lines
 
 
+@pytest.mark.parametrize("subdep_already_pinned", (True, False))
 @pytest.mark.parametrize(
     ("current_package", "upgraded_package"),
     (
@@ -1600,7 +1601,7 @@ def test_unreachable_index_urls(runner, cli_options, expected_message):
     ),
 )
 def test_upgrade_packages_option_subdependency(
-    pip_conf, runner, current_package, upgraded_package
+    pip_conf, runner, current_package, upgraded_package, subdep_already_pinned
 ):
     """
     Test that pip-compile --upgrade-package/-P upgrades/downgrades subdependencies.
@@ -1611,7 +1612,8 @@ def test_upgrade_packages_option_subdependency(
 
     with open("requirements.txt", "w") as reqs:
         reqs.write("small-fake-a==0.1\n")
-        reqs.write(current_package + "\n")
+        if subdep_already_pinned:
+            reqs.write(current_package + "\n")
         reqs.write("small-fake-with-unpinned-deps==0.1\n")
 
     out = runner.invoke(
