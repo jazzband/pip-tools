@@ -1,7 +1,7 @@
 import pytest
 from pip._internal.utils.urls import path_to_url
 
-from piptools.exceptions import NoCandidateFound
+from piptools.exceptions import CandidateException
 from piptools.resolver import RequirementSummary, combine_install_requirements
 
 
@@ -350,13 +350,39 @@ def test_compile_failure_shows_provenance(resolver, from_line):
         from_line("celery>3.2"),
     ]
 
-    with pytest.raises(NoCandidateFound) as err:
+    with pytest.raises(CandidateException) as err:
         resolver(requirements).resolve()
     lines = str(err.value).splitlines()
     assert lines[-2].strip() == "celery>3.2"
     assert (
         lines[-1].strip()
         == "celery==3.1.18 (from fake-piptools-test-with-pinned-deps==0.1)"
+    )
+
+
+def test_compile_multiple_failure_shows_provenance(resolver, from_line):
+    """
+    Provenance of conflicting dependencies should be printed on failure.
+    """
+    requirements = [
+        from_line("fake-piptools-test-with-pinned-deps==0.1"),
+        from_line("celery>3.2"),
+        from_line("requests == 2.27.1"),
+        from_line("urllib3 == 1.20"),
+    ]
+
+    with pytest.raises(CandidateException) as err:
+        resolver(requirements).resolve()
+    lines = str(err.value).splitlines()
+    assert lines[-7].strip() == "celery>3.2"
+    assert (
+        lines[-6].strip()
+        == "celery==3.1.18 (from fake-piptools-test-with-pinned-deps==0.1)"
+    )
+    assert lines[-2].strip() == "urllib3==1.20"
+    assert (
+            lines[-1].strip()
+            == "urllib3<1.27,>=1.21.1 (from requests==2.27.1)"
     )
 
 

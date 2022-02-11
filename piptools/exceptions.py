@@ -66,6 +66,15 @@ class NoCandidateFound(PipToolsError):
         return "\n".join(lines)
 
 
+class CandidateException(PipToolsError):
+
+    def __init__(self, exceptions: Iterable[Exception]):
+        self.exceptions = exceptions
+
+    def __str__(self):
+        return "\n".join([str(e) for e in self.exceptions])
+
+
 class IncompatibleRequirements(PipToolsError):
     def __init__(self, ireq_a: InstallRequirement, ireq_b: InstallRequirement) -> None:
         self.ireq_a = ireq_a

@@ -1,4 +1,5 @@
 import copy
+import sys
 from functools import partial
 from itertools import chain, count, groupby
 from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple
@@ -9,6 +10,7 @@ from pip._internal.req.constructors import install_req_from_line
 from pip._internal.req.req_tracker import update_env_context_manager
 
 from piptools.cache import DependencyCache
+from piptools.exceptions import NoCandidateFound, CandidateException
 from piptools.repositories.base import BaseRepository
 
 from .logging import log
@@ -127,6 +129,7 @@ class Resolver:
         self.clear_caches = clear_caches
         self.allow_unsafe = allow_unsafe
         self.unsafe_constraints: Set[InstallRequirement] = set()
+        self.no_candidate_found_cache: List[NoCandidateFound] = list()
 
     @property
     def constraints(self) -> Set[InstallRequirement]:
@@ -308,6 +311,7 @@ class Resolver:
         log.debug("Finding the best candidates:")
         with log.indentation():
             best_matches = {self.get_best_match(ireq) for ireq in constraints}
+        self.may_exception()
 
         # Find the new set of secondary dependencies
         log.debug("")
@@ -345,7 +349,7 @@ class Resolver:
         self.their_constraints = theirs
         return has_changed, best_matches
 
-    def get_best_match(self, ireq: InstallRequirement) -> InstallRequirement:
+    def get_best_match(self, ireq: InstallRequirement) -> Optional[InstallRequirement]:
         """
         Returns a (pinned or editable) InstallRequirement, indicating the best
         match to use for the given InstallRequirement (in the form of an
@@ -373,9 +377,13 @@ class Resolver:
             # to be resolved
             best_match = ireq
         else:
-            best_match = self.repository.find_best_match(
-                ireq, prereleases=self.prereleases
-            )
+            try:
+                best_match = self.repository.find_best_match(
+                    ireq, prereleases=self.prereleases
+                )
+            except NoCandidateFound as e:
+                self.no_candidate_found_cache.append(e)
+                return None
 
         # Format the best match
         log.debug(
@@ -448,3 +456,7 @@ class Resolver:
             ireq for ireq in ireqs if not (ireq.editable or is_url_requirement(ireq))
         ]
         return self.dependency_cache.reverse_dependencies(non_editable)
+
+    def may_exception(self):
+        if len(self.no_candidate_found_cache):
+            raise CandidateException(self.no_candidate_found_cache)
