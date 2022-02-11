@@ -1,5 +1,4 @@
 import copy
-import sys
 from functools import partial
 from itertools import chain, count, groupby
 from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple
@@ -457,6 +456,6 @@ class Resolver:
         ]
         return self.dependency_cache.reverse_dependencies(non_editable)
 
-    def may_exception(self):
+    def may_exception(self) -> None:
         if len(self.no_candidate_found_cache):
             raise CandidateException(self.no_candidate_found_cache)

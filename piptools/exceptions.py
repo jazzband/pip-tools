@@ -67,10 +67,10 @@ class NoCandidateFound(PipToolsError):
 
 
 class CandidateException(PipToolsError):
-    def __init__(self, exceptions: Iterable[Exception]):
+    def __init__(self, exceptions: Iterable[Exception]) -> None:
         self.exceptions = exceptions
 
-    def __str__(self):
+    def __str__(self) -> str:
         return "\n".join([str(e) for e in self.exceptions])
 
 
