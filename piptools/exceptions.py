@@ -67,7 +67,6 @@ class NoCandidateFound(PipToolsError):
 
 
 class CandidateException(PipToolsError):
-
     def __init__(self, exceptions: Iterable[Exception]):
         self.exceptions = exceptions
 

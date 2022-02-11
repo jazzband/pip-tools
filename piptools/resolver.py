@@ -10,7 +10,7 @@ from pip._internal.req.constructors import install_req_from_line
 from pip._internal.req.req_tracker import update_env_context_manager
 
 from piptools.cache import DependencyCache
-from piptools.exceptions import NoCandidateFound, CandidateException
+from piptools.exceptions import CandidateException, NoCandidateFound
 from piptools.repositories.base import BaseRepository
 
 from .logging import log

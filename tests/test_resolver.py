@@ -380,10 +380,7 @@ def test_compile_multiple_failure_shows_provenance(resolver, from_line):
         == "celery==3.1.18 (from fake-piptools-test-with-pinned-deps==0.1)"
     )
     assert lines[-2].strip() == "urllib3==1.20"
-    assert (
-            lines[-1].strip()
-            == "urllib3<1.27,>=1.21.1 (from requests==2.27.1)"
-    )
+    assert lines[-1].strip() == "urllib3<1.27,>=1.21.1 (from requests==2.27.1)"
 
 
 @pytest.mark.parametrize(
