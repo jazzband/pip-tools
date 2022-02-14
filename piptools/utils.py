@@ -152,7 +152,9 @@ def _build_direct_reference_best_efforts(ireq: InstallRequirement) -> str:
 
     # If we get here then we have a requirement that supports direct reference.
     # We need to remove the egg if it exists and keep the rest of the fragments.
-    direct_reference = f"{ireq.name.lower()} @ {ireq.link.url_without_fragment}"
+    lowered_ireq_name = ireq.name.lower()
+    extras = f"[{','.join(sorted(ireq.extras))}]" if ireq.extras else ""
+    direct_reference = f"{lowered_ireq_name}{extras} @ {ireq.link.url_without_fragment}"
     fragments = []
 
     # Check if there is any fragment to add to the URI.
