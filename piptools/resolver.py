@@ -46,7 +46,7 @@ from .utils import (
     is_url_requirement,
     key_from_ireq,
     key_from_req,
-    remove_value,
+    omit_list_value,
     strip_extras,
 )
 
@@ -236,7 +236,7 @@ class LegacyResolver(BaseResolver):
             raise PipToolsError("Legacy resolver deprecated feature must be enabled.")
 
         # Make sure there is no enabled 2020-resolver
-        options.features_enabled = remove_value(
+        options.features_enabled = omit_list_value(
             options.features_enabled, "2020-resolver"
         )
 
@@ -534,7 +534,7 @@ class BacktrackingResolver(BaseResolver):
         self._constraints_map = {key_from_ireq(ireq): ireq for ireq in constraints}
 
         # Make sure there is no enabled legacy resolver
-        options.deprecated_features_enabled = remove_value(
+        options.deprecated_features_enabled = omit_list_value(
             options.deprecated_features_enabled, "legacy-resolver"
         )
 

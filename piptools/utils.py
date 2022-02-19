@@ -444,10 +444,8 @@ def get_sys_path_for_python_executable(python_executable: str) -> List[str]:
     return [os.path.abspath(path) for path in paths]
 
 
-def remove_value(lst: List[_T], value: _T) -> List[_T]:
-    """
-    Returns new list without a given value.
-    """
+def omit_list_value(lst: List[_T], value: _T) -> List[_T]:
+    """Produce a new list with a given value skipped."""
     return [item for item in lst if item != value]
 
 

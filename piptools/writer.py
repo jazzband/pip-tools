@@ -293,9 +293,7 @@ class OutputWriter:
         if ireq.comes_from:
             required_by.add(_comes_from_as_string(ireq.comes_from))
 
-        if hasattr(ireq, "_required_by"):
-            for name in ireq._required_by:
-                required_by.add(name)
+        required_by |= set(getattr(ireq, "_required_by", set()))
 
         if required_by:
             if self.annotation_style == "split":
