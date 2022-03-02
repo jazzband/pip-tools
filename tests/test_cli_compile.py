@@ -643,7 +643,7 @@ def test_local_file_uri_package(
         ),
         pytest.param(
             "./small_fake_with_extras[dev,test]",
-            "file:small_fake_with_extras#[dev,test]",
+            "./small_fake_with_extras[dev,test]",
             id="relative path with extras",
         ),
         pytest.param(

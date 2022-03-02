@@ -153,7 +153,14 @@ def format_requirement(
     else:
         fragment = fragment_string(ireq)
         extras = f"[{','.join(sorted(ireq.extras))}]" if ireq.extras else ""
-        delimiter = "#" if extras and not fragment else ""
+        # pip install needs different relpath formats, depending on extras and fragments:
+        # https://github.com/jazzband/pip-tools/pull/1329#issuecomment-1056409415
+        if fragment or not extras:
+            prefix = "file:"
+            delimiter = ""
+        else:
+            prefix = ""
+            delimiter = "#"
         if not from_dir:
             line = (
                 f"-e {path_to_url(ireq.local_file_path)}{fragment}{delimiter}{extras}"
@@ -162,9 +169,9 @@ def format_requirement(
             )
         else:
             try:
-                path_url = "file:" + os.path.relpath(
-                    ireq.local_file_path, from_dir
-                ).replace(os.path.sep, "/")
+                relpath = os.path.relpath(ireq.local_file_path, from_dir).replace(
+                    os.path.sep, "/"
+                )
             except ValueError:
                 # On Windows, a relative path is not always possible (no common ancestor)
                 line = (
@@ -173,7 +180,9 @@ def format_requirement(
                     else _build_direct_reference_best_efforts(ireq)
                 )
             else:
-                line = f"{'-e ' if ireq.editable else ''}{path_url}{fragment}{delimiter}{extras}"
+                if not prefix and not relpath.startswith("."):
+                    prefix = "./"
+                line = f"{'-e ' if ireq.editable else ''}{prefix}{relpath}{fragment}{extras}"
 
     if marker:
         line = f"{line} ; {marker}"
