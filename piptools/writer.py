@@ -245,8 +245,11 @@ class OutputWriter:
     ) -> None:
 
         for line in self._iter_lines(results, unsafe_requirements, markers, hashes):
-            log.info(line)
-            if not self.dry_run:
+            if self.dry_run:
+                # Bypass the log level to always print this during a dry run
+                log.log(line)
+            else:
+                log.info(line)
                 self.dst_file.write(unstyle(line).encode())
                 self.dst_file.write(os.linesep.encode())
 

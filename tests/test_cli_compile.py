@@ -801,8 +801,9 @@ def test_upgrade_packages_version_option_and_upgrade_no_existing_file(pip_conf, 
 def test_quiet_option(runner):
     with open("requirements", "w"):
         pass
-    out = runner.invoke(cli, ["--quiet", "-n", "requirements"])
-    # Pinned requirements result has not been written to output.
+    out = runner.invoke(cli, ["--quiet", "requirements"])
+    # Pinned requirements result has not been written to stdout or stderr:
+    assert not out.stdout_bytes
     assert not out.stderr_bytes
 
 
@@ -818,8 +819,12 @@ def test_dry_run_quiet_option(runner):
     with open("requirements", "w"):
         pass
     out = runner.invoke(cli, ["--dry-run", "--quiet", "requirements"])
-    # Dry-run message has not been written to output.
-    assert not out.stderr_bytes
+    # Neither dry-run message nor pinned requirements written to output:
+    assert not out.stdout_bytes
+    # Dry-run message has not been written to stderr:
+    assert "dry-run" not in out.stderr.lower()
+    # Pinned requirements (just the header in this case) *are* written to stderr:
+    assert "# " in out.stderr
 
 
 def test_generate_hashes_with_editable(pip_conf, runner):
