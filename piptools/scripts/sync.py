@@ -160,20 +160,17 @@ def cli(
     )
     to_install, to_uninstall = sync.diff(merged_requirements, installed_dists)
 
-    install_flags = (
-        _compose_install_flags(
-            finder,
-            no_index=no_index,
-            index_url=index_url,
-            extra_index_url=extra_index_url,
-            trusted_host=trusted_host,
-            find_links=find_links,
-            user_only=user_only,
-            cert=cert,
-            client_cert=client_cert,
-        )
-        + shlex.split(pip_args or "")
-    )
+    install_flags = _compose_install_flags(
+        finder,
+        no_index=no_index,
+        index_url=index_url,
+        extra_index_url=extra_index_url,
+        trusted_host=trusted_host,
+        find_links=find_links,
+        user_only=user_only,
+        cert=cert,
+        client_cert=client_cert,
+    ) + shlex.split(pip_args or "")
     sys.exit(
         sync.sync(
             to_install,

@@ -610,7 +610,7 @@ def test_url_package(runner, line, dependency, generate_hashes):
         ),
         pytest.param(
             path_to_url(os.path.join(PACKAGES_PATH, "small_fake_with_subdir"))
-            + "#subdirectory=subdir&egg=small_fake_a",
+            + "#subdirectory=subdir&egg=small-fake-a",
             "small-fake-a @ "
             + path_to_url(os.path.join(PACKAGES_PATH, "small_fake_with_subdir"))
             + "#subdirectory=subdir",
