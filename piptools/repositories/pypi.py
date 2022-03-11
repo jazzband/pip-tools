@@ -1,3 +1,4 @@
+import contextlib
 import hashlib
 import itertools
 import logging
@@ -40,7 +41,7 @@ from pip._vendor.packaging.tags import Tag
 from pip._vendor.packaging.version import _BaseVersion
 from pip._vendor.requests import RequestException, Session
 
-from .._compat import contextlib
+from .._compat import PIP_VERSION
 from ..exceptions import NoCandidateFound
 from ..logging import log
 from ..utils import (
@@ -104,7 +105,8 @@ class PyPIRepository(BaseRepository):
         self._cache_dir = normalize_path(str(cache_dir))
         self._download_dir = os.path.join(self._cache_dir, "pkgs")
 
-        self._setup_logging()
+        if PIP_VERSION[0] < 22:
+            self._setup_logging()
 
     def clear_caches(self) -> None:
         rmtree(self._download_dir, ignore_errors=True)
@@ -514,7 +516,8 @@ class PyPIRepository(BaseRepository):
     def _setup_logging(self) -> None:
         """
         Setup pip's logger. Ensure pip is verbose same as pip-tools and sync
-        pip's log stream with LogContext.stream.
+        pip's log stream with LogContext.stream. This is only necessary for
+        pip<22.0.
         """
         # Default pip's logger is noisy, so decrease it's verbosity
         setup_logging(

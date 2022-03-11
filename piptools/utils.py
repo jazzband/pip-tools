@@ -1,4 +1,5 @@
 import collections
+import copy
 import itertools
 import json
 import os
@@ -26,6 +27,7 @@ from pip._internal.utils.misc import redact_auth_from_url
 from pip._internal.vcs import is_url
 from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.specifiers import SpecifierSet
+from pip._vendor.packaging.utils import canonicalize_name
 from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Distribution, Requirement, get_distribution
 
@@ -67,9 +69,7 @@ def key_from_req(
     else:
         # from packaging, such as install requirements from requirements.txt
         key = req.name
-    assert isinstance(key, str)
-    key = key.replace("_", "-").lower()
-    return key
+    return str(canonicalize_name(key))
 
 
 def comment(text: str) -> str:
@@ -121,7 +121,11 @@ def format_requirement(
     elif is_url_requirement(ireq):
         line = _build_direct_reference_best_efforts(ireq)
     else:
-        line = str(ireq.req).lower()
+        # Canonicalize the requirement name
+        # https://packaging.pypa.io/en/latest/utils.html#packaging.utils.canonicalize_name
+        req = copy.copy(ireq.req)
+        req.name = canonicalize_name(req.name)
+        line = str(req)
 
     if marker:
         line = f"{line} ; {marker}"
