@@ -332,13 +332,13 @@ To install requirements in production stage use:
 
 .. code-block:: bash
 
-    $ pip-sync
+    $ pip-sync requirements.txt
 
 You can install requirements in development stage by:
 
 .. code-block:: bash
 
-    $ pip-sync requirements.txt dev-requirements.txt
+    $ pip-sync dev-requirements.txt
 
 
 Version control integration
