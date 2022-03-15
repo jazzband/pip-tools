@@ -42,7 +42,7 @@ jobs:
       - uses: actions/checkout@master
       - name: Set up Python ${{ matrix.python-version }} from GitHub
         if: "!endsWith(matrix.python-version, '-dev')"
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
       - name: Set up Python ${{ matrix.python-version }} from deadsnakes
@@ -100,7 +100,7 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install tox
