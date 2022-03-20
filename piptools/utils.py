@@ -3,7 +3,10 @@ import copy
 import itertools
 import json
 import os
+import platform
 import shlex
+import string
+import sys
 import typing
 from typing import (
     Callable,
@@ -49,6 +52,22 @@ COMPILE_EXCLUDE_OPTIONS = {
     "--cache-dir",
     "--no-reuse-hashes",
 }
+
+
+class InvalidEnvironmentMarkerError(Exception):
+    """
+    Raised when an invalid environment marker is used.
+    """
+
+    pass
+
+
+class InvalidFormatStringError(Exception):
+    """
+    Raised when an invalid format string is passed.
+    """
+
+    pass
 
 
 def key_from_ireq(ireq: InstallRequirement) -> str:
@@ -441,3 +460,72 @@ def get_sys_path_for_python_executable(python_executable: str) -> List[str]:
     assert isinstance(paths, list)
     assert all(isinstance(i, str) for i in paths)
     return [os.path.abspath(path) for path in paths]
+
+
+def get_formatted_environment_marker_string(format_string: str) -> str:
+    """
+    Returns a formatted version of an input `format_string`, with known
+    field names replaced by environment marker tokens.
+    """
+
+    try:
+        parsed_fields = [
+            field
+            for _, field, _, _ in string.Formatter().parse(format_string)
+            if field is not None
+        ]
+    except ValueError as e:
+        raise InvalidFormatStringError(str(e)) from None
+
+    # No formatting necessary.
+    if len(parsed_fields) == 0:
+        return format_string
+
+    # Define accepted environment markers.
+    # The names align to those specified in PEP508; values are in lowercase.
+    # See more: https://www.python.org/dev/peps/pep-0508/#environment-markers
+    environment_markers = {
+        k: v.lower()
+        for k, v in {
+            "os_name": os.name,
+            "sys_platform": sys.platform,
+            "platform_machine": platform.machine(),
+            "platform_python_implementation": platform.python_implementation(),
+            "platform_system": platform.system(),
+            "python_version": ".".join(platform.python_version_tuple()[:2]),
+            "python_full_version": platform.python_version(),
+            "implementation_name": sys.implementation.name,
+        }.items()
+    }
+
+    # Allow short versions of the implementation environment markers.
+    # See more: https://peps.python.org/pep-0425/#python-tag
+    implementation_short_names = {
+        "cpython": "cp",
+        "ironpython": "ip",
+        "pypy": "pp",
+        "jython": "jy",
+    }
+
+    for key in ["platform_python_implementation", "implementation_name"]:
+        value = environment_markers[key]
+
+        key_short = f"{key}_short"
+        value_short = implementation_short_names[value]
+
+        environment_markers[key_short] = value_short
+
+    parsed_environment_markers = {}
+
+    for field in parsed_fields:
+        try:
+            parsed_environment_markers[field] = environment_markers[field]
+        except KeyError:
+            raise InvalidEnvironmentMarkerError(
+                f"Unknown environment marker: {field} (allowed: "
+                f"{', '.join([key for key in environment_markers.keys()])})"
+            ) from None
+
+        parsed_environment_markers[field] = environment_markers[field]
+
+    return string.Formatter().format(format_string, **parsed_environment_markers)

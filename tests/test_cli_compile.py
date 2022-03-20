@@ -1,10 +1,13 @@
 import os
+import platform
 import shutil
 import subprocess
 import sys
+from pathlib import Path
 from textwrap import dedent
 from unittest import mock
 
+import click
 import pytest
 from pip._internal.utils.urls import path_to_url
 
@@ -121,6 +124,125 @@ def test_command_line_setuptools_output_file(runner, options, expected_output_fi
     out = runner.invoke(cli, options)
     assert out.exit_code == 0
     assert os.path.exists(expected_output_file)
+
+
+@pytest.mark.network
+@pytest.mark.parametrize(
+    (
+        "options",
+        "platform_system",
+        "platform_python_implementation",
+        "platform_python_version_tuple",
+        "expected_output_file",
+    ),
+    (
+        pytest.param(
+            [
+                "--output-file",
+                "{platform_system}-{platform_python_implementation_short}{python_version}-requirements.txt",  # noqa: E501
+            ],
+            "Darwin",
+            "CPython",
+            ("3", "10", "0"),
+            "darwin-cp3.10-requirements.txt",
+        ),
+    ),
+)
+def test_command_line_setuptools_output_file_with_environment_markers(
+    runner,
+    options,
+    platform_system,
+    platform_python_implementation,
+    platform_python_version_tuple,
+    expected_output_file,
+):
+    """
+    Test `pip-compile` generates the expected output file when a format
+    string is passed with known field names corresponding to environment markers.
+    The input file is `setup.py`.
+    """
+
+    platform.system = mock.Mock(return_value=platform_system)
+
+    platform.python_implementation = mock.Mock(
+        return_value=platform_python_implementation
+    )
+
+    platform.python_version_tuple = mock.Mock(
+        return_value=platform_python_version_tuple
+    )
+
+    with open("setup.py", "w") as package:
+        package.write(
+            dedent(
+                """\
+                from setuptools import setup
+                setup(install_requires=[])
+                """
+            )
+        )
+
+    out = runner.invoke(cli, options)
+    assert out.exit_code == 0
+    assert os.path.exists(expected_output_file)
+
+
+@pytest.mark.network
+@pytest.mark.parametrize(
+    (
+        "options",
+        "expected_exit_code",
+    ),
+    (
+        pytest.param(
+            ["--output-file", "{python_version-requirements.txt"],
+            click.BadParameter.exit_code,
+        ),
+    ),
+)
+def test_command_line_setuptools_output_file_with_environment_markers_exits_with_bad_format_string(
+    runner,
+    options,
+    expected_exit_code,
+):
+    """
+    Test `pip-compile` exits with an expected error code when invalid format strings are
+    passed in the `--output-file` argument. The input file is `setup.py`.
+    """
+
+    Path("setup.py").touch()
+
+    out = runner.invoke(cli, options)
+    assert out.exit_code == expected_exit_code
+
+
+@pytest.mark.network
+@pytest.mark.parametrize(
+    (
+        "options",
+        "expected_exit_code",
+    ),
+    (
+        pytest.param(
+            ["--output-file", "{invalid_field}-requirements.txt"],
+            click.BadParameter.exit_code,
+        ),
+    ),
+)
+def test_command_line_setuptools_output_file_with_environment_markers_exits_with_bad_fields(
+    runner,
+    options,
+    expected_exit_code,
+):
+    """
+    Test `pip-compile` exits with an expected error code when invalid fields are
+    passed in the `--output-file` argument. The input file is `setup.py`.
+    """
+
+    Path("setup.py").touch()
+
+    out = runner.invoke(cli, options)
+    assert out.exit_code == expected_exit_code
 
 
 @pytest.mark.network

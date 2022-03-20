@@ -23,8 +23,11 @@ from ..repositories.base import BaseRepository
 from ..resolver import Resolver
 from ..utils import (
     UNSAFE_PACKAGES,
+    InvalidEnvironmentMarkerError,
+    InvalidFormatStringError,
     dedup,
     drop_extras,
+    get_formatted_environment_marker_string,
     is_pinned_requirement,
     key_from_ireq,
 )
@@ -46,6 +49,26 @@ def _get_default_option(option_name: str) -> Any:
     install_command = create_command("install")
     default_values = install_command.parser.get_default_values()
     return getattr(default_values, option_name)
+
+
+class _FormattedEnvironmentMarkerFile(click.File):
+    """
+    Utility class that allows users to embed format strings
+    with optional environment marker fields that can be expanded
+    to create a `click.File`. Formatting is optional, so if no
+    special fields are included in the input `param` string, then
+    no formatting will occur.
+    """
+
+    def convert(
+        self, value: Any, param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> Any:
+        try:
+            file_name = get_formatted_environment_marker_string(value)
+        except (InvalidEnvironmentMarkerError, InvalidFormatStringError) as e:
+            self.fail(str(e), param, ctx)
+
+        return super().convert(file_name, param, ctx)
 
 
 @click.command(context_settings={"help_option_names": ("-h", "--help")})
@@ -152,7 +175,7 @@ def _get_default_option(option_name: str) -> Any:
     "--output-file",
     nargs=1,
     default=None,
-    type=click.File("w+b", atomic=True, lazy=True),
+    type=_FormattedEnvironmentMarkerFile("w+b", atomic=True, lazy=True),
     help=(
         "Output file name. Required if more than one input file is given. "
         "Will be derived from input file otherwise."

@@ -1,8 +1,10 @@
 import logging
 import operator
 import os
+import platform
 import shlex
 import sys
+from unittest import mock
 
 import pip
 import pytest
@@ -10,6 +12,8 @@ from pip._vendor.packaging.version import Version
 
 from piptools.scripts.compile import cli as compile_cli
 from piptools.utils import (
+    InvalidEnvironmentMarkerError,
+    InvalidFormatStringError,
     as_tuple,
     dedup,
     drop_extras,
@@ -17,6 +21,7 @@ from piptools.utils import (
     format_requirement,
     format_specifier,
     get_compile_command,
+    get_formatted_environment_marker_string,
     get_hashes_from_ireq,
     get_pip_version_for_python_executable,
     get_sys_path_for_python_executable,
@@ -540,3 +545,174 @@ def test_get_sys_path_for_python_executable():
     # not testing for equality, because pytest adds extra paths into current sys.path
     for path in result:
         assert path in sys.path
+
+
+@pytest.mark.parametrize(
+    (
+        "input_format_string",
+        "os_name",
+        "sys_platform",
+        "sys_implementation_name",
+        "platform_machine",
+        "platform_python_implementation",
+        "platform_system",
+        "platform_python_version_tuple",
+        "platform_python_version",
+        "expected",
+    ),
+    (
+        pytest.param(
+            (
+                "{os_name}-"
+                "{sys_platform}-"
+                "{platform_machine}-"
+                "{platform_python_implementation}-"
+                "{platform_system}-"
+                "{python_version}-"
+                "{python_full_version}-"
+                "{implementation_name}-"
+                "requirements.txt"
+            ),
+            "posix",
+            "linux",
+            "cpython",
+            "x86_64",
+            "CPython",
+            "Linux",
+            ("3", "10", "0"),
+            "3.10.0",
+            (
+                "posix-"
+                "linux-"
+                "x86_64-"
+                "cpython-"
+                "linux-"
+                "3.10-"
+                "3.10.0-"
+                "cpython-"
+                "requirements.txt"
+            ),
+            id="Using all non short name format string fields",
+        ),
+    ),
+)
+def test_get_formatted_environment_marker_string(
+    input_format_string,
+    os_name,
+    sys_platform,
+    sys_implementation_name,
+    platform_machine,
+    platform_python_implementation,
+    platform_system,
+    platform_python_version_tuple,
+    platform_python_version,
+    expected,
+):
+    """
+    Test that the `get_formatted_environment_marker_string` method returns
+    expected values when known field names are passed in the format string.
+    """
+
+    platform.machine = mock.Mock(return_value=platform_machine)
+
+    platform.python_implementation = mock.Mock(
+        return_value=platform_python_implementation
+    )
+
+    platform.system = mock.Mock(return_value=platform_system)
+
+    platform.python_version_tuple = mock.Mock(
+        return_value=platform_python_version_tuple
+    )
+
+    platform.python_version = mock.Mock(return_value=platform_python_version)
+
+    with mock.patch("os.name", os_name), mock.patch(
+        "sys.platform", sys_platform
+    ), mock.patch("sys.implementation.name", sys_implementation_name):
+
+        assert get_formatted_environment_marker_string(input_format_string) == expected
+
+
+@pytest.mark.parametrize("invalid_field_name", ("{py}-requirements",))
+def test_get_formatted_environment_marker_string_raises_exception_with_bad_fields(
+    invalid_field_name,
+):
+    """
+    Test that the `get_formatted_environment_marker_string` method raises
+    `InvalidEnvironmentMarkerError` exceptions when invalid field names are
+    passed in the format string.
+    """
+
+    with pytest.raises(InvalidEnvironmentMarkerError):
+        get_formatted_environment_marker_string(invalid_field_name)
+
+
+@pytest.mark.parametrize("invalid_format_string", ("{python_version-requirements",))
+def test_get_formatted_environment_marker_string_raises_exception_with_bad_format_string(
+    invalid_format_string,
+):
+    """
+    Test that the `get_formatted_environment_marker_string` method raises
+    `InvalidFormatStringError` exceptions when invalid format strings are passed.
+    """
+
+    with pytest.raises(InvalidFormatStringError):
+        get_formatted_environment_marker_string(invalid_format_string)
+
+
+@pytest.mark.parametrize(
+    (
+        "input_format_string",
+        "sys_implementation_name",
+        "platform_python_implementation",
+        "expected",
+    ),
+    (
+        pytest.param(
+            "{platform_python_implementation_short}-{implementation_name_short}-requirements.txt",
+            "cpython",
+            "CPython",
+            "cp-cp-requirements.txt",
+            id="Using implementation short names with CPython",
+        ),
+        pytest.param(
+            "{platform_python_implementation_short}-{implementation_name_short}-requirements.txt",
+            "ironpython",
+            "IronPython",
+            "ip-ip-requirements.txt",
+            id="Using implementation short names with IronPython",
+        ),
+        pytest.param(
+            "{platform_python_implementation_short}-{implementation_name_short}-requirements.txt",
+            "jython",
+            "Jython",
+            "jy-jy-requirements.txt",
+            id="Using implementation short names with Jython",
+        ),
+        pytest.param(
+            "{platform_python_implementation_short}-{implementation_name_short}-requirements.txt",
+            "pypy",
+            "PyPy",
+            "pp-pp-requirements.txt",
+            id="Using implementation short names with PyPy",
+        ),
+    ),
+)
+def test_get_formatted_environment_marker_string_with_short_name_fields(
+    input_format_string,
+    sys_implementation_name,
+    platform_python_implementation,
+    expected,
+):
+    """
+    Test that the `get_formatted_environment_marker_string` method returns
+    expected values when known "short name" field names are passed in the format string.
+    """
+
+    platform.python_implementation = mock.Mock(
+        return_value=platform_python_implementation
+    )
+
+    with mock.patch("sys.implementation.name", sys_implementation_name):
+        assert get_formatted_environment_marker_string(input_format_string) == expected

@@ -479,6 +479,15 @@ dependencies, making any newly generated ``requirements.txt`` environment-depend
 As a general rule, it's advised that users should still always execute ``pip-compile``
 on each targeted Python environment to avoid issues.
 
+``pip-compile`` supports a flexible mechanism for auto-embedding environment markers
+derived from the current environment in the generated output file names:
+
+.. code-block:: bash
+
+    $ pip-compile --output-file {platform_system}-{implementation_name_short}{python_version}-requirements.txt
+
+The format string fields corresponds directly to the PEP 508 marker names.
+
 .. _PEP 508 environment markers: https://www.python.org/dev/peps/pep-0508/#environment-markers
 
 Other useful tools
