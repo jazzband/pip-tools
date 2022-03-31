@@ -41,6 +41,8 @@ jobs:
       PY_COLORS: 1
       TOXENV: pip${{ matrix.pip-version }}-coverage
       TOX_PARALLEL_NO_SPINNER: 1
+    # TODO: should be allow-failure: true or something similar
+    #       see https://github.com/actions/toolkit/issues/399
     continue-on-error: ${{ matrix.pip-version == 'main' }}
     steps:
       - uses: actions/checkout@master
