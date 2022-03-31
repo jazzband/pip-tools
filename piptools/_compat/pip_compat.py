@@ -32,7 +32,7 @@ def parse_requirements(
         yield install_req_from_parsed_requirement(parsed_req, isolated=isolated)
 
 
-if PIP_VERSION <= (22, 0):
+if PIP_VERSION[:2] <= (22, 0):
     from pip._internal.req.req_tracker import (
         get_requirement_tracker as get_build_tracker,
     )
