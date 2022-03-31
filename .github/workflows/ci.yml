@@ -33,11 +33,15 @@ jobs:
           - os: Ubuntu
             python-version: 3.11-dev
             pip-version: latest
+          - os: Ubuntu
+            python-version: 3.7
+            pip-version: main
 
     env:
       PY_COLORS: 1
       TOXENV: pip${{ matrix.pip-version }}-coverage
       TOX_PARALLEL_NO_SPINNER: 1
+    continue-on-error: ${{ matrix.pip-version == 'main' }}
     steps:
       - uses: actions/checkout@master
       - name: Set up Python ${{ matrix.python-version }} from GitHub
