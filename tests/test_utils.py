@@ -28,9 +28,23 @@ from piptools.utils import (
 )
 
 
-def test_format_requirement(from_line):
-    ireq = from_line("test==1.2")
-    assert format_requirement(ireq) == "test==1.2"
+@pytest.mark.parametrize(
+    ("line", "expected"),
+    (
+        pytest.param("test==1.2", "test==1.2", id="with specifier"),
+        pytest.param("test[extra]==1.2", "test==1.2", id="with extra"),
+        pytest.param("test[extra1,extra2]==1.2", "test==1.2", id="with extra"),
+        pytest.param("test", "test", id="without specifier"),
+        pytest.param(
+            "test[extra1,extra2]==1.2;python_version=='2.7'",
+            'test==1.2 ; python_version == "2.7"',
+            id="with marker",
+        ),
+    ),
+)
+def test_format_requirement(from_line, line, expected):
+    ireq = from_line(line)
+    assert format_requirement(ireq, ireq.markers) == expected
 
 
 @pytest.mark.parametrize(

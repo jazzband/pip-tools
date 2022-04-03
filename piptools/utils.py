@@ -1,5 +1,4 @@
 import collections
-import copy
 import itertools
 import json
 import os
@@ -123,9 +122,9 @@ def format_requirement(
     else:
         # Canonicalize the requirement name
         # https://packaging.pypa.io/en/latest/utils.html#packaging.utils.canonicalize_name
-        req = copy.copy(ireq.req)
-        req.name = canonicalize_name(req.name)
-        line = str(req)
+        line = canonicalize_name(ireq.req.name)
+        if ireq.req.specifier:
+            line += str(ireq.req.specifier)
 
     if marker:
         line = f"{line} ; {marker}"
