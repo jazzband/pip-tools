@@ -1858,12 +1858,13 @@ METADATA_TEST_CASES = (
     pytest.param(
         "setup.py",
         """
-            from setuptools import setup
+            from setuptools import setup, find_packages
 
             setup(
                 name="sample_lib",
                 version=0.1,
                 install_requires=["small-fake-a==0.1", "small-fake-b==0.2"],
+                packages=find_packages(),
                 extras_require={
                     "dev": ["small-fake-c==0.3", "small-fake-d==0.4"],
                     "test": ["small-fake-e==0.5", "small-fake-f==0.6"],
