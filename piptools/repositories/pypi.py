@@ -181,7 +181,7 @@ class PyPIRepository(BaseRepository):
                 "download_dir": download_dir,
             }
 
-            if PIP_VERSION <= (22, 0):
+            if PIP_VERSION[:2] <= (22, 0):
                 preparer_kwargs["req_tracker"] = build_tracker
             else:
                 preparer_kwargs["build_tracker"] = build_tracker

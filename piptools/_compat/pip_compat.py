@@ -42,5 +42,3 @@ else:
         get_build_tracker,
         update_env_context_manager,
     )
-
-    raise Exception(1)

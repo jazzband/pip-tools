@@ -29,23 +29,17 @@ jobs:
         pip-version:
           - "latest"
           - "previous"
-        continue-on-error: [false]
         include:
           - os: Ubuntu
             python-version: 3.11-dev
             pip-version: latest
-            continue-on-error: false
           - os: Ubuntu
             python-version: 3.7
             pip-version: main
-            continue-on-error: true
     env:
       PY_COLORS: 1
       TOXENV: pip${{ matrix.pip-version }}-coverage
       TOX_PARALLEL_NO_SPINNER: 1
-    # TODO: should be allow-failure: true or something similar
-    #       see https://github.com/actions/toolkit/issues/399
-    continue-on-error: ${{ matrix.continue-on-error }}
     steps:
       - uses: actions/checkout@master
       - name: Set up Python ${{ matrix.python-version }} from GitHub
