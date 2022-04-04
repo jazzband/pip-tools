@@ -33,7 +33,9 @@ jobs:
           - os: Ubuntu
             python-version: 3.11-dev
             pip-version: latest
-
+          - os: Ubuntu
+            python-version: 3.7
+            pip-version: main
     env:
       PY_COLORS: 1
       TOXENV: pip${{ matrix.pip-version }}-coverage
