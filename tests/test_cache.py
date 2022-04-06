@@ -1,7 +1,6 @@
 import os
 import sys
 from contextlib import contextmanager
-from shutil import rmtree
 from tempfile import NamedTemporaryFile
 
 import pytest
@@ -116,6 +115,3 @@ def test_reverse_dependencies(from_line, tmpdir):
         "bottom": {"middle", "top"},
         "bonus": {"top"},
     }
-
-    # Clean up our temp directory
-    rmtree(tmpdir)
