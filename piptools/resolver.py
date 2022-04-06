@@ -6,11 +6,11 @@ from typing import Dict, Iterable, Iterator, List, Optional, Set, Tuple
 import click
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
-from pip._internal.req.req_tracker import update_env_context_manager
 
 from piptools.cache import DependencyCache
 from piptools.repositories.base import BaseRepository
 
+from ._compat.pip_compat import update_env_context_manager
 from .logging import log
 from .utils import (
     UNSAFE_PACKAGES,
@@ -62,7 +62,7 @@ def combine_install_requirements(
     """
     # We will store the source ireqs in a _source_ireqs attribute;
     # if any of the inputs have this, then use those sources directly.
-    source_ireqs = []
+    source_ireqs: List[InstallRequirement] = []
     for ireq in ireqs:
         source_ireqs.extend(getattr(ireq, "_source_ireqs", [ireq]))
 

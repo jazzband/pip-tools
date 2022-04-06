@@ -1,3 +1,4 @@
+import contextlib
 import hashlib
 import itertools
 import logging
@@ -29,7 +30,6 @@ from pip._internal.models.link import Link
 from pip._internal.models.wheel import Wheel
 from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement, RequirementSet
-from pip._internal.req.req_tracker import get_requirement_tracker
 from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.logging import indent_log, setup_logging
 from pip._internal.utils.misc import normalize_path
@@ -39,7 +39,8 @@ from pip._vendor.packaging.tags import Tag
 from pip._vendor.packaging.version import _BaseVersion
 from pip._vendor.requests import RequestException, Session
 
-from .._compat import contextlib
+from .._compat import PIP_VERSION
+from .._compat.pip_compat import get_build_tracker
 from ..exceptions import NoCandidateFound
 from ..logging import log
 from ..utils import (
@@ -103,7 +104,8 @@ class PyPIRepository(BaseRepository):
         self._cache_dir = normalize_path(str(cache_dir))
         self._download_dir = os.path.join(self._cache_dir, "pkgs")
 
-        self._setup_logging()
+        if PIP_VERSION[0] < 22:
+            self._setup_logging()
 
     def clear_caches(self) -> None:
         rmtree(self._download_dir, ignore_errors=True)
@@ -167,18 +169,23 @@ class PyPIRepository(BaseRepository):
         ireq: InstallRequirement,
         wheel_cache: WheelCache,
     ) -> Set[InstallationCandidate]:
-        with get_requirement_tracker() as req_tracker, TempDirectory(
+        with get_build_tracker() as build_tracker, TempDirectory(
             kind="resolver"
         ) as temp_dir, indent_log():
             preparer_kwargs = {
                 "temp_build_dir": temp_dir,
                 "options": self.options,
-                "req_tracker": req_tracker,
                 "session": self.session,
                 "finder": self.finder,
                 "use_user_site": False,
                 "download_dir": download_dir,
             }
+
+            if PIP_VERSION[:2] <= (22, 0):
+                preparer_kwargs["req_tracker"] = build_tracker
+            else:
+                preparer_kwargs["build_tracker"] = build_tracker
+
             preparer = self.command.make_requirement_preparer(**preparer_kwargs)
 
             reqset = RequirementSet()
@@ -429,6 +436,10 @@ class PyPIRepository(BaseRepository):
         Wheel.support_index_min = _wheel_support_index_min
         self._available_candidates_cache = {}
 
+        # If we don't clear this cache then it can contain results from an
+        # earlier call when allow_all_wheels wasn't active. See GH-1532
+        self.finder.find_all_candidates.cache_clear()
+
         try:
             yield
         finally:
@@ -439,7 +450,8 @@ class PyPIRepository(BaseRepository):
     def _setup_logging(self) -> None:
         """
         Setup pip's logger. Ensure pip is verbose same as pip-tools and sync
-        pip's log stream with LogContext.stream.
+        pip's log stream with LogContext.stream. This is only necessary for
+        pip<22.0.
         """
         # Default pip's logger is noisy, so decrease it's verbosity
         setup_logging(

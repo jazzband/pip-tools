@@ -17,10 +17,10 @@ jobs:
           - Windows
           - MacOS
         python-version:
-          - 3.9
-          - 3.6
-          - 3.7
-          - 3.8
+          - "3.10"
+          - "3.9"
+          - "3.8"
+          - "3.7"
         pip-version:
           - main
     env:
@@ -30,26 +30,17 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
       - name: Pip cache
         uses: actions/cache@v2
         with:
-          path: >-
-            ${{
-              runner.os == 'Linux' &&
-              '~/.cache/pip'
-              || ''
-            }}${{
-              runner.os == 'macOS' &&
-              '~/Library/Caches/pip'
-              || ''
-            }}${{
-              runner.os == 'Windows' &&
-              '~\AppData\Local\pip\Cache'
-              || ''
-            }}
+          path: ${{ steps.pip-cache.outputs.dir }}
           key: >-
             ${{ runner.os }}-pip-${{ hashFiles('setup.cfg') }}-${{
             hashFiles('setup.py') }}-${{ hashFiles('tox.ini') }}-${{
@@ -75,7 +66,7 @@ jobs:
           - MacOS
           - Windows
         python-version:
-          - pypy3
+          - pypy-3.8
         pip-version:
           - latest
     env:
@@ -85,26 +76,17 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
       - name: Pip cache
         uses: actions/cache@v2
         with:
-          path: >-
-            ${{
-              runner.os == 'Linux' &&
-              '~/.cache/pip'
-              || ''
-            }}${{
-              runner.os == 'macOS' &&
-              '~/Library/Caches/pip'
-              || ''
-            }}${{
-              runner.os == 'Windows' &&
-              '~\AppData\Local\pip\Cache'
-              || ''
-            }}
+          path: ${{ steps.pip-cache.outputs.dir }}
           key: >-
             ${{ runner.os }}-pip-${{ hashFiles('setup.cfg') }}-${{
             hashFiles('setup.py') }}-${{ hashFiles('tox.ini') }}-${{

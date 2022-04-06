@@ -1,3 +1,25 @@
+## 6.5.1 (2022-02-08)
+
+Bug Fixes:
+
+- Ensure canonicalized requirement names are used as keys, to prevent unnecessary
+  reinstallations during sync
+  ([#1572](https://github.com/jazzband/pip-tools/pull/1572)). Thanks @AndydeCleyre
+
+## 6.5.0 (2022-02-04)
+
+Features:
+
+- Add support for pip>=22.0, drop support for Python 3.6
+  ([#1567](https://github.com/jazzband/pip-tools/pull/1567)). Thanks @di
+- Test on Python 3.11 ([#1527](https://github.com/jazzband/pip-tools/pull/1527)). Thanks
+  @hugovk
+
+Other Changes:
+
+- Minor doc edits ([#1445](https://github.com/jazzband/pip-tools/pull/1445)). Thanks
+  @ssiano
+
 ## 6.4.0 (2021-10-12)
 
 Features:

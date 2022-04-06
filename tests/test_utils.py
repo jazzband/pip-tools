@@ -22,6 +22,7 @@ from piptools.utils import (
     get_sys_path_for_python_executable,
     is_pinned_requirement,
     is_url_requirement,
+    key_from_ireq,
     lookup_table,
     lookup_table_from_tuples,
 )
@@ -266,6 +267,13 @@ def test_is_pinned_requirement_editable(from_editable):
     assert not is_pinned_requirement(ireq)
 
 
+def test_key_from_ireq_normalization(from_line):
+    keys = set()
+    for line in ("zope.event", "zope-event", "zope_event", "ZOPE.event"):
+        keys.add(key_from_ireq(from_line(line)))
+    assert len(keys) == 1
+
+
 @pytest.mark.parametrize(
     ("line", "expected"),
     (
@@ -274,7 +282,7 @@ def test_is_pinned_requirement_editable(from_editable):
         ("file:///example.zip", True),
         ("https://example.com/example.zip", True),
         ("https://example.com/example.zip#egg=example", True),
-        ("git+git://github.com/jazzband/pip-tools@master", True),
+        ("git+https://github.com/jazzband/pip-tools@master", True),
     ),
 )
 def test_is_url_requirement(caplog, from_line, line, expected):

@@ -477,7 +477,7 @@ def test_editable_package_in_constraints(pip_conf, runner, req_editable):
 @pytest.mark.network
 def test_editable_package_vcs(runner):
     vcs_package = (
-        "git+git://github.com/jazzband/pip-tools@"
+        "git+https://github.com/jazzband/pip-tools@"
         "f97e62ecb0d9b70965c8eff952c001d8e2722e94"
         "#egg=pip-tools"
     )
@@ -525,7 +525,7 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
             id="Zip URL",
         ),
         pytest.param(
-            "git+git://github.com/jazzband/pip-tools@"
+            "git+https://github.com/jazzband/pip-tools@"
             "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3",
             "\nclick==",
             id="VCS URL",
@@ -538,10 +538,10 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
             id="Wheel URL",
         ),
         pytest.param(
-            "pytest-django @ git+git://github.com/pytest-dev/pytest-django"
+            "pytest-django @ git+https://github.com/pytest-dev/pytest-django"
             "@21492afc88a19d4ca01cd0ac392a5325b14f95c7"
             "#egg=pytest-django",
-            "pytest-django @ git+git://github.com/pytest-dev/pytest-django"
+            "pytest-django @ git+https://github.com/pytest-dev/pytest-django"
             "@21492afc88a19d4ca01cd0ac392a5325b14f95c7",
             id="VCS with direct reference and egg",
         ),
@@ -610,7 +610,7 @@ def test_url_package(runner, line, dependency, generate_hashes):
         ),
         pytest.param(
             path_to_url(os.path.join(PACKAGES_PATH, "small_fake_with_subdir"))
-            + "#subdirectory=subdir&egg=small_fake_a",
+            + "#subdirectory=subdir&egg=small-fake-a",
             "small-fake-a @ "
             + path_to_url(os.path.join(PACKAGES_PATH, "small_fake_with_subdir"))
             + "#subdirectory=subdir",
@@ -801,8 +801,9 @@ def test_upgrade_packages_version_option_and_upgrade_no_existing_file(pip_conf, 
 def test_quiet_option(runner):
     with open("requirements", "w"):
         pass
-    out = runner.invoke(cli, ["--quiet", "-n", "requirements"])
-    # Pinned requirements result has not been written to output.
+    out = runner.invoke(cli, ["--quiet", "requirements"])
+    # Pinned requirements result has not been written to stdout or stderr:
+    assert not out.stdout_bytes
     assert not out.stderr_bytes
 
 
@@ -818,8 +819,12 @@ def test_dry_run_quiet_option(runner):
     with open("requirements", "w"):
         pass
     out = runner.invoke(cli, ["--dry-run", "--quiet", "requirements"])
-    # Dry-run message has not been written to output.
-    assert not out.stderr_bytes
+    # Neither dry-run message nor pinned requirements written to output:
+    assert not out.stdout_bytes
+    # Dry-run message has not been written to stderr:
+    assert "dry-run" not in out.stderr.lower()
+    # Pinned requirements (just the header in this case) *are* written to stderr:
+    assert "# " in out.stderr
 
 
 def test_generate_hashes_with_editable(pip_conf, runner):
@@ -1858,12 +1863,13 @@ METADATA_TEST_CASES = (
     pytest.param(
         "setup.py",
         """
-            from setuptools import setup
+            from setuptools import setup, find_packages
 
             setup(
                 name="sample_lib",
                 version=0.1,
                 install_requires=["small-fake-a==0.1", "small-fake-b==0.2"],
+                packages=find_packages(),
                 extras_require={
                     "dev": ["small-fake-c==0.3", "small-fake-d==0.4"],
                     "test": ["small-fake-e==0.5", "small-fake-f==0.6"],
