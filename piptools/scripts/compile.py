@@ -242,14 +242,6 @@ def _get_default_option(option_name: str) -> Any:
     help="Specify a package to consider unsafe; may be used more than once. "
     f"Replaces default unsafe packages, {', '.join(sorted(UNSAFE_PACKAGES))}",
 )
-@click.option(
-    "--allow-unsafe-recursive/--no-allow-unsafe-recursive",
-    is_flag=True,
-    default=False,
-    help="Determines whether dependencies that solely belong to unsafe packages "
-    "should be treated as unsafe. Default is false. This only covers direct dependencies. "
-    "Dependencies of dependencies of unsafe packages will not be marked unsafe.",
-)
 def cli(
     ctx: click.Context,
     verbose: int,
@@ -284,7 +276,6 @@ def cli(
     emit_index_url: bool,
     emit_options: bool,
     unsafe_packages: Tuple[str, ...],
-    allow_unsafe_recursive: bool,
 ) -> None:
     """Compiles requirements.txt from requirements.in specs."""
     log.verbosity = verbose - quiet
@@ -479,7 +470,6 @@ def cli(
             clear_caches=rebuild,
             allow_unsafe=allow_unsafe,
             unsafe_packages=set(unsafe_packages),
-            allow_unsafe_recursive=allow_unsafe_recursive,
         )
         results = resolver.resolve(max_rounds=max_rounds)
         hashes = resolver.resolve_hashes(results) if generate_hashes else None
