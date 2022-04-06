@@ -239,8 +239,8 @@ def _get_default_option(option_name: str) -> Any:
 @click.option(
     "--unsafe-packages",
     multiple=True,
-    help="List of packages to consider unsafe. Replaces "
-    f"{', '.join(sorted(UNSAFE_PACKAGES))}; may be used more than once",
+    help="Specify a package to consider unsafe; may be used more than once. "
+    f"Replaces default unsafe packages, {', '.join(sorted(UNSAFE_PACKAGES))}",
 )
 @click.option(
     "--allow-unsafe-recursive/--no-allow-unsafe-recursive",
