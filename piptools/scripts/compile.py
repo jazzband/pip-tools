@@ -237,7 +237,7 @@ def _get_default_option(option_name: str) -> Any:
     help="Add options to generated file",
 )
 @click.option(
-    "--unsafe-packages",
+    "--unsafe-package",
     multiple=True,
     help="Specify a package to consider unsafe; may be used more than once. "
     f"Replaces default unsafe packages, {', '.join(sorted(UNSAFE_PACKAGES))}",
