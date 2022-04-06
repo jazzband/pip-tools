@@ -1,3 +1,18 @@
+## 6.6.0 (2022-04-06)
+
+Features:
+
+- Add support for pip>=22.1 ([#1607](https://github.com/jazzband/pip-tools/pull/1607)).
+  Thanks @atugushev
+
+Bug Fixes:
+
+- Ensure `pip-compile --dry-run --quiet` still shows what would be done, while omitting
+  the dry run message ([#1592](https://github.com/jazzband/pip-tools/pull/1592)). Thanks
+  @AndydeCleyre
+- Fix `--generate-hashes` when hashes are computed from files
+  ([#1540](https://github.com/jazzband/pip-tools/pull/1540)). Thanks @RazerM
+
 ## 6.5.1 (2022-02-08)
 
 Bug Fixes:
