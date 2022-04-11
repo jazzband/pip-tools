@@ -19,9 +19,16 @@ def test_generate_hashes_all_platforms(capsys, pip_conf, from_line, pypi_reposit
         "sha256:8d4d131cd05338e09f461ad784297efea3652e542c5fabe04a62358429a6175e",
         "sha256:ad05e1371eb99f257ca00f791b755deb22e752393eb8e75bc01d651715b02ea9",
         "sha256:24afa5b317b302f356fd3fc3b1cfb0aad114d509cf635ea9566052424191b944",
+        "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     }
 
     ireq = from_line("small-fake-multi-arch==0.1")
+
+    # pip caches the candidates for the current system, which means
+    # allow_all_wheels won't have the desired effect unless the cache is
+    # cleared. See GH-1532
+    assert pypi_repository.get_hashes(ireq) < expected
+
     with pypi_repository.allow_all_wheels():
         assert pypi_repository.get_hashes(ireq) == expected
     captured = capsys.readouterr()
