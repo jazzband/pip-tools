@@ -702,6 +702,20 @@ def test_input_file_without_extension(pip_conf, runner):
     assert os.path.exists("requirements.txt")
 
 
+def test_ignore_incompatible_existing_pins(pip_conf, runner):
+    """
+    Successfully compile when existing output pins conflict with input.
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-b>0.1")
+    with open("requirements.txt", "w") as req_in:
+        req_in.write("small-fake-b==0.1")
+
+    out = runner.invoke(cli, [])
+
+    assert out.exit_code == 0
+
+
 def test_upgrade_packages_option(pip_conf, runner):
     """
     piptools respects --upgrade-package/-P inline list.
