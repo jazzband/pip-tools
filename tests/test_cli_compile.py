@@ -706,10 +706,10 @@ def test_ignore_incompatible_existing_pins(pip_conf, runner):
     """
     Successfully compile when existing output pins conflict with input.
     """
+    with open("requirements.txt", "w") as req_txt:
+        req_txt.write("small-fake-a==0.2\nsmall-fake-b==0.2")
     with open("requirements.in", "w") as req_in:
-        req_in.write("small-fake-b>0.1")
-    with open("requirements.txt", "w") as req_in:
-        req_in.write("small-fake-b==0.1")
+        req_in.write("small-fake-with-deps\nsmall-fake-b<0.2")
 
     out = runner.invoke(cli, [])
 
