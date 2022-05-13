@@ -20,7 +20,6 @@ from typing import (
 
 from click import progressbar
 from pip._internal.cache import WheelCache
-from pip._internal.cli.progress_bars import BAR_TYPES
 from pip._internal.commands import create_command
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
@@ -472,6 +471,9 @@ class PyPIRepository(BaseRepository):
             # this block should be removed/revisited, because of pip possibly
             # refactored-out logging config.
             log.warning("Couldn't find a 'console' logging handler")
+
+        # This import will fail with pip 22.1, but here we're pip<22.0
+        from pip._internal.cli.progress_bars import BAR_TYPES
 
         # Sync pip's progress bars stream with LogContext.stream
         for bar_cls in itertools.chain(*BAR_TYPES.values()):
