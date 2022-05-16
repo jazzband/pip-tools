@@ -452,7 +452,7 @@ Generally, yes. If you want a reproducible environment installation available fr
 then yes, you should commit both ``requirements.in`` and ``requirements.txt`` to source control.
 
 Note that if you are deploying on multiple Python environments (read the section below),
-then you must commit a seperate output file for each Python environment.
+then you must commit a separate output file for each Python environment.
 We suggest to use the ``{env}-requirements.txt`` format
 (ex: ``win32-py3.7-requirements.txt``, ``macos-py3.10-requirements.txt``, etc.).
 
