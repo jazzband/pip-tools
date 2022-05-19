@@ -227,7 +227,7 @@ Any valid ``pip`` flags or arguments may be passed on with ``pip-compile``'s
 
 .. code-block:: bash
 
-    $ pip-compile requirements.in --pip-args '--retries 10 --timeout 30'
+    $ pip-compile requirements.in --pip-args "--retries 10 --timeout 30"
 
 Configuration
 -------------
@@ -439,7 +439,7 @@ Any valid ``pip install`` flags or arguments may be passed with ``pip-sync``'s
 
 .. code-block:: bash
 
-    $ pip-sync requirements.txt --pip-args '--no-cache-dir --no-deps'
+    $ pip-sync requirements.txt --pip-args "--no-cache-dir --no-deps"
 
 **Note**: ``pip-sync`` will not upgrade or uninstall packaging tools like
 ``setuptools``, ``pip``, or ``pip-tools`` itself. Use ``python -m pip install --upgrade``
