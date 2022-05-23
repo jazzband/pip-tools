@@ -189,7 +189,12 @@ class PyPIRepository(BaseRepository):
 
             reqset = RequirementSet()
             ireq.user_supplied = True
-            reqset.add_requirement(ireq)
+            if PIP_VERSION[:3] < (22, 1, 1):
+                reqset.add_requirement(ireq)
+            elif getattr(ireq, 'name', None):
+                reqset.add_named_requirement(ireq)
+            else:
+                reqset.add_unnamed_requirement(ireq)
 
             resolver = self.command.make_resolver(
                 preparer=preparer,
