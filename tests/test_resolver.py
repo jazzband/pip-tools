@@ -83,7 +83,7 @@ from piptools.resolver import RequirementSummary, combine_install_requirements
             # is removed (e.g. vine from amqp>=2.0)
             # See: GH-370
             # because of updated dependencies in the test index, we need to pin celery
-            # in order to reproduce vine removal (because it was read in later
+            # in order to reproduce vine removal (because it was added in later
             # releases)
             (
                 ["celery<=3.1.23", "librabbitmq"],
