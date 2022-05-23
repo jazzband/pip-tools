@@ -1,3 +1,10 @@
+## 6.6.1 (2022-05-13)
+
+Bug Fixes:
+
+- Fix support for pip>=22.1 ([#1618](https://github.com/jazzband/pip-tools/pull/1618)).
+  Thanks @wizpig64
+
 ## 6.6.0 (2022-04-06)
 
 Features:
