@@ -191,7 +191,7 @@ class PyPIRepository(BaseRepository):
             ireq.user_supplied = True
             if PIP_VERSION[:3] < (22, 1, 1):
                 reqset.add_requirement(ireq)
-            elif getattr(ireq, 'name', None):
+            elif getattr(ireq, "name", None):
                 reqset.add_named_requirement(ireq)
             else:
                 reqset.add_unnamed_requirement(ireq)
