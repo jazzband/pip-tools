@@ -1,3 +1,10 @@
+## 6.6.2 (2022-05-23)
+
+Bug Fixes:
+
+- Update `PyPIRepository::resolve_reqs()` for pip>=22.1.1
+  ([#1624](https://github.com/jazzband/pip-tools/pull/1624)). Thanks @m000
+
 ## 6.6.1 (2022-05-13)
 
 Bug Fixes:
