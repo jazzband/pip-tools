@@ -6,8 +6,8 @@ import tempfile
 from typing import IO, Any, BinaryIO, List, Optional, Tuple, Union, cast
 
 import click
+from build.util import project_wheel_metadata
 from click.utils import LazyFile, safecall
-from pep517 import meta
 from pip._internal.commands import create_command
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
@@ -405,12 +405,14 @@ def cli(
             constraints.extend(reqs)
         elif is_setup_file:
             setup_file_found = True
-            dist = meta.load(os.path.dirname(os.path.abspath(src_file)))
-            comes_from = f"{dist.metadata.get_all('Name')[0]} ({src_file})"
+            metadata = project_wheel_metadata(
+                os.path.dirname(os.path.abspath(src_file))
+            )
+            comes_from = f"{metadata.get_all('Name')[0]} ({src_file})"
             constraints.extend(
                 [
                     install_req_from_line(req, comes_from=comes_from)
-                    for req in dist.requires or []
+                    for req in metadata.get_all("Requires-Dist") or []
                 ]
             )
         else:
