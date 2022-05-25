@@ -2027,7 +2027,6 @@ METADATA_TEST_CASES = (
 
 @pytest.mark.network
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
-@pytest.mark.xfail(is_pypy, reason="https://github.com/jazzband/pip-tools/issues/1375")
 def test_input_formats(fake_dists, runner, make_module, fname, content):
     """
     Test different dependency formats as input file.
@@ -2046,7 +2045,6 @@ def test_input_formats(fake_dists, runner, make_module, fname, content):
 
 @pytest.mark.network
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
-@pytest.mark.xfail(is_pypy, reason="https://github.com/jazzband/pip-tools/issues/1375")
 def test_one_extra(fake_dists, runner, make_module, fname, content):
     """
     Test one `--extra` (dev) passed, other extras (test) must be ignored.
@@ -2074,7 +2072,6 @@ def test_one_extra(fake_dists, runner, make_module, fname, content):
     ),
 )
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
-@pytest.mark.xfail(is_pypy, reason="https://github.com/jazzband/pip-tools/issues/1375")
 def test_multiple_extras(fake_dists, runner, make_module, fname, content, extra_opts):
     """
     Test passing multiple `--extra` params.
