@@ -401,6 +401,8 @@ def cli(
     # Parsing/collecting initial requirements
     ###
 
+    extras = tuple(itertools.chain.from_iterable(ex.split(",") for ex in extras))
+
     constraints: List[InstallRequirement] = []
     setup_file_found = False
     for src_file in src_files:
@@ -442,6 +444,14 @@ def cli(
                     for req in metadata.get_all("Requires-Dist") or []
                 ]
             )
+            # Since "*" is not a valid extra there is no risk confusing an actual extra
+            # for the wildcard.
+            # https://peps.python.org/pep-0508/#grammar
+            if "*" in extras:
+                if len(extras) != 1:
+                    msg = "--extra=* only makes sense if it is the only --extra"
+                    raise click.BadParameter(msg)
+                extras = tuple(metadata.get_all("Provides-Extra"))
         else:
             constraints.extend(
                 parse_requirements(
@@ -451,8 +461,6 @@ def cli(
                     options=repository.options,
                 )
             )
-
-    extras = tuple(itertools.chain.from_iterable(ex.split(",") for ex in extras))
 
     if extras and not setup_file_found:
         msg = "--extra has effect only with setup.py and PEP-517 input formats"

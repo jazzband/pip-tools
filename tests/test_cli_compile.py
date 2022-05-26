@@ -2190,6 +2190,44 @@ def test_multiple_extras(fake_dists, runner, make_module, fname, content, extra_
     assert "extra ==" not in out.stderr
 
 
+@pytest.mark.network
+@pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
+def test_wildcard_extras(fake_dists, runner, make_module, fname, content):
+    """
+    Test passing wildcard `--extra` includes all applicable extras.
+    """
+    meta_path = make_module(fname=fname, content=content)
+    out = runner.invoke(
+        cli,
+        [
+            "-n",
+            "--extra",
+            "*",
+            "--find-links",
+            fake_dists,
+            "--no-annotate",
+            "--no-emit-options",
+            "--no-header",
+            meta_path,
+        ],
+    )
+    assert out.exit_code == 0, out.stderr
+    assert (
+        dedent(
+            """\
+        small-fake-a==0.1
+        small-fake-b==0.2
+        small-fake-c==0.3
+        small-fake-d==0.4
+        small-fake-e==0.5
+        small-fake-f==0.6
+        Dry-run, so nothing updated.
+        """
+        )
+        == out.stderr
+    )
+
+
 def test_extras_fail_with_requirements_in(runner, tmpdir):
     """
     Test that passing `--extra` with `requirements.in` input file fails.
