@@ -1011,6 +1011,16 @@ def test_filter_pip_markers(pip_conf, runner):
     assert "unknown_package" not in out.stderr
 
 
+def test_bad_setup_file(runner):
+    with open("setup.py", "w") as package:
+        package.write("BAD SYNTAX")
+
+    out = runner.invoke(cli, [])
+
+    assert out.exit_code == 2
+    assert f"Failed to parse {os.path.abspath('setup.py')}" in out.stderr
+
+
 def test_no_candidates(pip_conf, runner):
     with open("requirements", "w") as req_in:
         req_in.write("small-fake-a>0.3b1,<0.3b2")
