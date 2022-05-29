@@ -7,6 +7,10 @@ on:
       - master
     tags:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
 jobs:
   qa:
     name: ${{ matrix.toxenv }}
