@@ -560,6 +560,32 @@ Usage
                                       Add options to generated file
      -h, --help                       Show this message and exit.
 
+::
+
+   Usage: 
+       pip-sync [OPTIONS] [SRC_FILES]...
+
+        Synchronize virtual environment with
+        requirements.txt.
+
+   Options:
+      --version                 Show the version and exit.
+      -a, --ask                 Show what would happen, then ask whether to continue
+      -n, --dry-run             Only show what would happen, don't change anything
+      --force                   Proceed even if conflicts are found
+      -f, --find-links TEXT     Look for archives in this directory or on this HTML page
+      -i, --index-url TEXT      Change index URL (defaults to PyPI)
+      --extra-index-url TEXT    Add additional index URL to search
+      --trusted-host TEXT       Mark this host as trusted, even though it does not have valid or any HTTPS.
+      --no-index                Ignore package index (only looking at --find-links URLs instead)
+      --python-executable TEXT  Custom python executable path if targeting an environment other than current.
+      -v, --verbose             Show more output
+      -q, --quiet               Give less output
+      --user                    Restrict attention to user directory
+      --cert TEXT               Path to alternate CA bundle.
+      --client-cert TEXT        Path to SSL client certificate, a single file containing the private key and the certificate in PEM format.
+      --pip-args TEXT           Arguments to pass directly to pip install.
+      -h, --help                Show this message and exit.
 
 Versions and compatibility
 ==========================
