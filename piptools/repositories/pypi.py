@@ -5,7 +5,9 @@ import hashlib
 import itertools
 import optparse
 import os
+import sys
 from contextlib import contextmanager
+from functools import lru_cache
 from shutil import rmtree
 from typing import Any, BinaryIO, ContextManager, Iterator, NamedTuple
 
@@ -78,11 +80,6 @@ class PyPIRepository(BaseRepository):
         )
 
         # Caches
-        # stores project_name => InstallationCandidate mappings for all
-        # versions reported by PyPI, so we only have to ask once for each
-        # project
-        self._available_candidates_cache: dict[str, list[InstallationCandidate]] = {}
-
         # stores InstallRequirement => list(InstallRequirement) mappings
         # of all secondary dependencies for the given requirement, so we
         # only have to go to disk once for each requirement
@@ -119,12 +116,6 @@ class PyPIRepository(BaseRepository):
         """Return an install command instance."""
         return self._command
 
-    def find_all_candidates(self, req_name: str) -> list[InstallationCandidate]:
-        if req_name not in self._available_candidates_cache:
-            candidates = self.finder.find_all_candidates(req_name)
-            self._available_candidates_cache[req_name] = candidates
-        return self._available_candidates_cache[req_name]
-
     def find_best_match(
         self, ireq: InstallRequirement, prereleases: bool | None = None
     ) -> InstallRequirement:
@@ -135,7 +126,7 @@ class PyPIRepository(BaseRepository):
         if ireq.editable or is_url_requirement(ireq):
             return ireq  # return itself as the best match
 
-        all_candidates = self.find_all_candidates(ireq.name)
+        all_candidates = self.finder.find_all_candidates(ireq.name)
         candidates_by_version = lookup_table(all_candidates, key=candidate_version)
         matching_versions = ireq.specifier.filter(
             (candidate.version for candidate in all_candidates), prereleases=prereleases
@@ -381,7 +372,7 @@ class PyPIRepository(BaseRepository):
         # We need to get all of the candidates that match our current version
         # pin, these will represent all of the files that could possibly
         # satisfy this constraint.
-        all_candidates = self.find_all_candidates(ireq.name)
+        all_candidates = self.finder.find_all_candidates(ireq.name)
         candidates_by_version = lookup_table(all_candidates, key=candidate_version)
         matching_versions = list(
             ireq.specifier.filter(candidate.version for candidate in all_candidates)
@@ -437,22 +428,29 @@ class PyPIRepository(BaseRepository):
 
         original_wheel_supported = Wheel.supported
         original_support_index_min = Wheel.support_index_min
-        original_cache = self._available_candidates_cache
+        original_candidates_cache = self.finder.find_all_candidates
 
         Wheel.supported = _wheel_supported
         Wheel.support_index_min = _wheel_support_index_min
-        self._available_candidates_cache = {}
 
-        # If we don't clear this cache then it can contain results from an
+        # If we don't temporarily clear this cache then it can contain results from an
         # earlier call when allow_all_wheels wasn't active. See GH-1532
-        self.finder.find_all_candidates.cache_clear()
+        if sys.version_info >= (3, 9):
+            cache_parameters = self.finder.find_all_candidates.cache_parameters()
+        else:
+            cache_parameters = {
+                "maxsize": self.finder.find_all_candidates.cache_info().maxsize
+            }
+        self.finder.find_all_candidates = lru_cache(**cache_parameters)(
+            self.finder.find_all_candidates.__wrapped__
+        ).__get__(self.finder)
 
         try:
             yield
         finally:
             Wheel.supported = original_wheel_supported
             Wheel.support_index_min = original_support_index_min
-            self._available_candidates_cache = original_cache
+            self.finder.find_all_candidates = original_candidates_cache
 
 
 @contextmanager

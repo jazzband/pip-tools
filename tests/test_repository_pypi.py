@@ -287,7 +287,7 @@ def test_get_hashes_from_pypi(from_line, tmpdir, project_data, expected_hashes):
     assert actual_hashes == expected_hashes
 
 
-def test_get_hashes_from_mixed(pip_conf, from_line, tmpdir):
+def test_get_hashes_from_mixed(pip_conf, from_line, tmpdir, monkeypatch):
     """
     Test PyPIRepository.get_hashes() returns hashes from both PyPi and extra indexes/links
     """
@@ -327,14 +327,17 @@ def test_get_hashes_from_mixed(pip_conf, from_line, tmpdir):
                 }
             }
 
-        def find_all_candidates(self, req_name):
-            return all_candidates
-
         def _get_file_hash(self, link):
             return file_hashes[link]
 
+    def mock_find_all_candidates(project_name):
+        return all_candidates
+
     pypi_repository = MockPyPIRepository(
         ["--no-cache-dir"], cache_dir=(tmpdir / "pypi-repo-cache")
+    )
+    monkeypatch.setattr(
+        pypi_repository.finder, "find_all_candidates", mock_find_all_candidates
     )
 
     ireq = from_line(f"{package_name}=={package_version}")
