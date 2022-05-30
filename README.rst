@@ -507,6 +507,60 @@ This section lists ``pip-tools`` features that are currently deprecated.
   recommended to pass the ``--allow-unsafe`` now to adapt to the upcoming
   change.
 
+
+Usage
+============
+
+::
+
+   Usage: 
+       pip-compile [OPTIONS] [SRC_FILES]...
+       
+        Compiles requirements.txt from requirements.in
+        specs.
+     
+   Options:
+      --version                       Show the version and exit.
+      -v, --verbose                   Show more output
+      -q, --quiet                     Give less output
+      -n, --dry-run                   Only show what would happen, don't change anything
+      -p, --pre                       Allow resolving to prereleases (default is not)
+      -r, --rebuild                   Clear any caches upfront, rebuild from scratch
+      --extra TEXT                    Names of extras_require to install
+      -f, --find-links TEXT           Look for archives in this directory or on this HTML page
+      -i, --index-url TEXT            Change index URL (defaults to https://pypi.org/simple)
+      --extra-index-url TEXT          Add additional index URL to search
+      --cert TEXT                     Path to alternate CA bundle.
+      --client-cert TEXT              Path to SSL client certificate, a single file containing the private key and the certificate in PEM format.
+      --trusted-host TEXT             Mark this host as trusted, even though it does not have valid or any HTTPS.
+      --header / --no-header          Add header to generated file
+      --emit-trusted-host / --no-emit-trusted-host
+                                      Add trusted host option to generated file
+      --annotate / --no-annotate      Annotate results, indicating where dependencies come from
+      -U, --upgrade                   Try to upgrade all dependencies to their latest versions
+      -P, --upgrade-package TEXT      Specify particular packages to upgrade.
+      -o, --output-file FILENAME      Output file name. Required if more than one input file is given. Will be derived from input file otherwise.
+      --allow-unsafe / --no-allow-unsafe
+                                      Pin packages considered unsafe: distribute, pip, setuptools.
+                                      WARNING: Future versions of pip-tools will enable this behavior by default. Use --no-allow-unsafe to keep the old behavior. It is recommended to pass the --allow-unsafe now to adapt to the upcoming change.
+      --strip-extras                  Assure output file is constraints compatible, avoiding use of extras.
+      --generate-hashes               Generate pip 8 style hashes in the resulting requirements file.
+      --reuse-hashes / --no-reuse-hashes
+                                      Improve the speed of --generate-hashes by reusing the hashes from an existing output file.
+      --max-rounds INTEGER            Maximum number of rounds before resolving the requirements aborts.
+      --build-isolation / --no-build-isolation
+                                      Enable isolation when building a modern source distribution. Build dependencies specified by PEP 518 must be already installed if build isolation is disabled.
+     --emit-find-links / --no-emit-find-links
+                                      Add the find-links option to generated file
+     --cache-dir DIRECTORY            Store the cache data in DIRECTORY.  [envvar: PIP_TOOLS_CACHE_DIR; default: /root/.cache/pip-tools]
+     --pip-args TEXT                  Arguments to pass directly to the pip command.
+     --emit-index-url / --no-emit-index-url
+                                      Add index URL to generated file
+     --emit-options / --no-emit-options
+                                      Add options to generated file
+     -h, --help                       Show this message and exit.
+
+
 Versions and compatibility
 ==========================
 
