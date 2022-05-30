@@ -510,7 +510,8 @@ This section lists ``pip-tools`` features that are currently deprecated.
 
 Usage
 ============
-
+pip-compile 
+-----------
 ::
 
    Usage: 
@@ -559,6 +560,9 @@ Usage
      --emit-options / --no-emit-options
                                       Add options to generated file
      -h, --help                       Show this message and exit.
+     
+pip-sync 
+________
 
 ::
 
