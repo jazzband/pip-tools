@@ -1732,6 +1732,34 @@ def test_duplicate_reqs_combined(
     assert "test-package-1==0.1" in out.stderr
 
 
+def test_local_duplicate_subdependency_combined(runner, make_package):
+    """
+    Test pip-compile tracks subdependencies properly when install requirements
+    are combined, especially when local paths are passed as urls, and those reqs
+    are combined after getting dependencies.
+
+    Regression test for issue GH-1505.
+    """
+    package_a = make_package("project-a", install_requires=["pip-tools==6.3.0"])
+    package_b = make_package("project-b", install_requires=["project-a"])
+
+    with open("requirements.in", "w") as req_in:
+        req_in.writelines(
+            [
+                f"file://{package_a}#egg=project-a\n",
+                f"file://{package_b}#egg=project-b",
+            ]
+        )
+
+    out = runner.invoke(cli, ["-n"])
+
+    assert out.exit_code == 0
+    assert "project-b" in out.stderr
+    assert "project-a" in out.stderr
+    assert "pip-tools==6.3.0" in out.stderr
+    assert "click" in out.stderr  # dependency of pip-tools
+
+
 def test_combine_extras(pip_conf, runner, make_package):
     """
     Ensure that multiple declarations of a dependency that specify different
@@ -1762,6 +1790,73 @@ def test_combine_extras(pip_conf, runner, make_package):
     assert "package-with-extras" in out.stderr
     assert "small-fake-a==" in out.stderr
     assert "small-fake-b==" in out.stderr
+
+
+def test_combine_different_extras_of_the_same_package(
+    pip_conf, runner, tmpdir, make_package, make_wheel
+):
+    """
+    Loosely based on the example from https://github.com/jazzband/pip-tools/issues/1511.
+    """
+    pkgs = [
+        make_package(
+            "fake-colorful",
+            version="0.3",
+        ),
+        make_package(
+            "fake-tensorboardX",
+            version="0.5",
+        ),
+        make_package(
+            "fake-ray",
+            version="0.1",
+            extras_require={
+                "default": ["fake-colorful==0.3"],
+                "tune": ["fake-tensorboardX==0.5"],
+            },
+        ),
+        make_package(
+            "fake-tune-sklearn",
+            version="0.7",
+            install_requires=[
+                "fake-ray[tune]==0.1",
+            ],
+        ),
+    ]
+
+    dists_dir = tmpdir / "dists"
+    for pkg in pkgs:
+        make_wheel(pkg, dists_dir)
+
+    with open("requirements.in", "w") as req_in:
+        req_in.writelines(
+            [
+                "fake-ray[default]==0.1\n",
+                "fake-tune-sklearn==0.7\n",
+            ]
+        )
+
+    out = runner.invoke(
+        cli, ["--find-links", str(dists_dir), "--no-header", "--no-emit-options"]
+    )
+    assert out.exit_code == 0
+    assert (
+        dedent(
+            """\
+        fake-colorful==0.3
+            # via fake-ray
+        fake-ray[default,tune]==0.1
+            # via
+            #   -r requirements.in
+            #   fake-tune-sklearn
+        fake-tensorboardx==0.5
+            # via fake-ray
+        fake-tune-sklearn==0.7
+            # via -r requirements.in
+        """
+        )
+        == out.stderr
+    )
 
 
 @pytest.mark.parametrize(
