@@ -1836,23 +1836,26 @@ def test_combine_different_extras_of_the_same_package(
             ]
         )
 
-    out = runner.invoke(cli, ["--find-links", str(dists_dir)])
-
+    out = runner.invoke(
+        cli, ["--find-links", str(dists_dir), "--no-header", "--no-emit-options"]
+    )
     assert out.exit_code == 0
     assert (
-        """\
-fake-colorful==0.3
-    # via fake-ray
-fake-ray[default,tune]==0.1
-    # via
-    #   -r requirements.in
-    #   fake-tune-sklearn
-fake-tensorboardx==0.5
-    # via fake-ray
-fake-tune-sklearn==0.7
-    # via -r requirements.in
-"""
-        in out.stderr
+        dedent(
+            """\
+        fake-colorful==0.3
+            # via fake-ray
+        fake-ray[default,tune]==0.1
+            # via
+            #   -r requirements.in
+            #   fake-tune-sklearn
+        fake-tensorboardx==0.5
+            # via fake-ray
+        fake-tune-sklearn==0.7
+            # via -r requirements.in
+        """
+        )
+        == out.stderr
     )
 
 
