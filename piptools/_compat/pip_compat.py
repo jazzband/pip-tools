@@ -1,5 +1,5 @@
 import optparse
-from typing import Callable, Iterator, Optional, cast
+from typing import Callable, Iterable, Iterator, Optional, cast
 
 import pip
 from pip._internal.index.package_finder import PackageFinder
@@ -73,12 +73,20 @@ if uses_pkg_resources:
     from pip._vendor.pkg_resources import Distribution
 
     dist_requires = cast(
-        Callable[[Distribution], Iterator[Requirement]], methodcaller("requires")
+        Callable[[Distribution], Iterable[Requirement]], methodcaller("requires")
     )
 else:
     from pip._internal.metadata import select_backend
 
     Distribution = select_backend().Distribution
 
-    def dist_requires(dist: "Distribution") -> Iterator[Requirement]:
-        return map(Requirement, dist.requires or ())
+    def dist_requires(dist: "Distribution") -> Iterable[Requirement]:
+        """Mimics pkg_resources.Distribution.requires for the case of no
+        extras. This doesn't fulfill that API's `extras` parameter but
+        satisfies the needs of pip-tools."""
+        reqs = (Requirement.parse(req) for req in (dist.requires or ()))
+        return [
+            req
+            for req in reqs
+            if not req.marker or req.marker.evaluate({"extra": None})
+        ]
