@@ -54,7 +54,7 @@ class RequirementSummary:
 
 
 def combine_install_requirements(
-    repository: BaseRepository, ireqs: Iterable[InstallRequirement]
+    ireqs: Iterable[InstallRequirement],
 ) -> InstallRequirement:
     """
     Return a single install requirement that reflects a combination of
@@ -70,37 +70,66 @@ def combine_install_requirements(
     if len(source_ireqs) == 1:
         return source_ireqs[0]
 
-    # deepcopy the accumulator so as to not modify the inputs
-    combined_ireq = copy.deepcopy(source_ireqs[0])
+    link_attrs = {
+        attr: getattr(source_ireqs[0], attr) for attr in ("link", "original_link")
+    }
+
+    constraint = source_ireqs[0].constraint
+    extras = set(source_ireqs[0].extras)
+    # deepcopy the accumulator req so as to not modify the inputs
+    req = copy.deepcopy(source_ireqs[0].req)
 
     for ireq in source_ireqs[1:]:
         # NOTE we may be losing some info on dropped reqs here
-        if combined_ireq.req is not None and ireq.req is not None:
-            combined_ireq.req.specifier &= ireq.req.specifier
-        combined_ireq.constraint &= ireq.constraint
-        combined_ireq.extras = {*combined_ireq.extras, *ireq.extras}
-        if combined_ireq.req is not None:
-            combined_ireq.req.extras = set(combined_ireq.extras)
+        if req is not None and ireq.req is not None:
+            req.specifier &= ireq.req.specifier
+
+        constraint &= ireq.constraint
+        extras |= ireq.extras
+        if req is not None:
+            req.extras = set(extras)
+
+        for attr_name, attr_val in link_attrs.items():
+            link_attrs[attr_name] = attr_val or getattr(ireq, attr_name)
 
     # InstallRequirements objects are assumed to come from only one source, and
     # so they support only a single comes_from entry. This function breaks this
     # model. As a workaround, we deterministically choose a single source for
     # the comes_from entry, and add an extra _source_ireqs attribute to keep
     # track of multiple sources for use within pip-tools.
-    if len(source_ireqs) > 1:
-        if any(ireq.comes_from is None for ireq in source_ireqs):
-            # None indicates package was directly specified.
-            combined_ireq.comes_from = None
-        else:
-            # Populate the comes_from field from one of the sources.
-            # Requirement input order is not stable, so we need to sort:
-            # We choose the shortest entry in order to keep the printed
-            # representation as concise as possible.
-            combined_ireq.comes_from = min(
-                (ireq.comes_from for ireq in source_ireqs),
-                key=lambda x: (len(str(x)), str(x)),
-            )
-        combined_ireq._source_ireqs = source_ireqs
+    if any(ireq.comes_from is None for ireq in source_ireqs):
+        # None indicates package was directly specified.
+        comes_from = None
+    else:
+        # Populate the comes_from field from one of the sources.
+        # Requirement input order is not stable, so we need to sort:
+        # We choose the shortest entry in order to keep the printed
+        # representation as concise as possible.
+        comes_from = min(
+            (ireq.comes_from for ireq in source_ireqs),
+            key=lambda x: (len(str(x)), str(x)),
+        )
+
+    combined_ireq = InstallRequirement(
+        req=req,
+        comes_from=comes_from,
+        editable=source_ireqs[0].editable,
+        link=link_attrs["link"],
+        markers=source_ireqs[0].markers,
+        use_pep517=source_ireqs[0].use_pep517,
+        isolated=source_ireqs[0].isolated,
+        install_options=source_ireqs[0].install_options,
+        global_options=source_ireqs[0].global_options,
+        hash_options=source_ireqs[0].hash_options,
+        constraint=constraint,
+        extras=extras,
+        user_supplied=source_ireqs[0].user_supplied,
+    )
+    # e.g. If the original_link was None, keep it so. Passing `link` as an
+    # argument to `InstallRequirement` sets it as the original_link:
+    combined_ireq.original_link = link_attrs["original_link"]
+    combined_ireq._source_ireqs = source_ireqs
+
     return combined_ireq
 
 
@@ -205,39 +234,6 @@ class Resolver:
 
         return results
 
-    def _get_ireq_with_name(
-        self,
-        ireq: InstallRequirement,
-        proxy_cache: Dict[InstallRequirement, InstallRequirement],
-    ) -> InstallRequirement:
-        """
-        Return the given ireq, if it has a name, or a proxy for the given ireq
-        which has been prepared and therefore has a name.
-
-        Preparing the ireq is side-effect-ful and can only be done once for an
-        instance, so we use a proxy instead. combine_install_requirements may
-        use the given ireq as a template for its aggregate result, mutating it
-        further by combining extras, etc. In that situation, we don't want that
-        aggregate ireq to be prepared prior to mutation, since its dependencies
-        will be frozen with those of only a subset of extras.
-
-        i.e. We both want its name early (via preparation), but we also need to
-        prepare it after any mutation for combination purposes. So we use a
-        proxy here for the early preparation.
-        """
-        if ireq.name is not None:
-            return ireq
-
-        if ireq in proxy_cache:
-            return proxy_cache[ireq]
-
-        # get_dependencies has the side-effect of assigning name to ireq
-        # (so we can group by the name in _group_constraints below).
-        name_proxy = copy.deepcopy(ireq)
-        self.repository.get_dependencies(name_proxy)
-        proxy_cache[ireq] = name_proxy
-        return name_proxy
-
     def _group_constraints(
         self, constraints: Iterable[InstallRequirement]
     ) -> Iterator[InstallRequirement]:
@@ -258,32 +254,21 @@ class Resolver:
         """
         constraints = list(constraints)
 
-        cache: Dict[InstallRequirement, InstallRequirement] = {}
-
-        def key_from_ireq_with_name(ireq: InstallRequirement) -> str:
-            """
-            See _get_ireq_with_name for context.
-
-            We use a cache per call here because it should only be necessary
-            the first time an ireq is passed here (later on in the round, it
-            will be prepared and dependencies for it calculated), but we can
-            save time by reusing the proxy between the sort and groupby calls
-            below.
-            """
-            return key_from_ireq(self._get_ireq_with_name(ireq, cache))
+        for ireq in constraints:
+            if ireq.name is None:
+                # get_dependencies has side-effect of assigning name to ireq
+                # (so we can group by the name below).
+                self.repository.get_dependencies(ireq)
 
         # Sort first by name, i.e. the groupby key. Then within each group,
         # sort editables first.
         # This way, we don't bother with combining editables, since the first
         # ireq will be editable, if one exists.
         for _, ireqs in groupby(
-            sorted(
-                constraints,
-                key=(lambda x: (key_from_ireq_with_name(x), not x.editable)),
-            ),
-            key=key_from_ireq_with_name,
+            sorted(constraints, key=(lambda x: (key_from_ireq(x), not x.editable))),
+            key=key_from_ireq,
         ):
-            yield combine_install_requirements(self.repository, ireqs)
+            yield combine_install_requirements(ireqs)
 
     def _resolve_one_round(self) -> Tuple[bool, Set[InstallRequirement]]:
         """
@@ -411,7 +396,11 @@ class Resolver:
             return
 
         if ireq.editable or is_url_requirement(ireq):
-            yield from self.repository.get_dependencies(ireq)
+            dependencies = self.repository.get_dependencies(ireq)
+            # Don't just yield from above. Instead, use the same `markers`-stripping
+            # behavior as we have for cached dependencies below.
+            dependency_strings = sorted(str(ireq.req) for ireq in dependencies)
+            yield from self._ireqs_of_dependencies(ireq, dependency_strings)
             return
         elif not is_pinned_requirement(ireq):
             raise TypeError(f"Expected pinned or editable requirement, got {ireq}")
@@ -430,12 +419,20 @@ class Resolver:
 
         # Example: ['Werkzeug>=0.9', 'Jinja2>=2.4']
         dependency_strings = self.dependency_cache[ireq]
+        yield from self._ireqs_of_dependencies(ireq, dependency_strings)
+
+    def _ireqs_of_dependencies(
+        self, ireq: InstallRequirement, dependency_strings: List[str]
+    ) -> Iterator[InstallRequirement]:
         log.debug(
             "{:25} requires {}".format(
                 format_requirement(ireq),
                 ", ".join(sorted(dependency_strings, key=lambda s: s.lower())) or "-",
             )
         )
+        # This yields new InstallRequirements that are similar to those that
+        # produced the dependency_strings, but they lack `markers` on their
+        # underlying Requirements:
         for dependency_string in dependency_strings:
             yield install_req_from_line(
                 dependency_string, constraint=ireq.constraint, comes_from=ireq
