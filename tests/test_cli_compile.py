@@ -667,7 +667,7 @@ def test_direct_reference_with_extras(runner):
 def test_input_file_without_extension(pip_conf, runner):
     """
     piptools can compile a file without an extension,
-    and add .txt as the defaut output file extension.
+    and add .txt as the default output file extension.
     """
     with open("requirements", "w") as req_in:
         req_in.write("small-fake-a==0.1")
