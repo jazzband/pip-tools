@@ -83,7 +83,7 @@ from piptools.resolver import RequirementSummary, combine_install_requirements
             # is removed (e.g. vine from amqp>=2.0)
             # See: GH-370
             # because of updated dependencies in the test index, we need to pin celery
-            # in order to reproduce vine removal (because it was readded in later
+            # in order to reproduce vine removal (because it was added in later
             # releases)
             (
                 ["celery<=3.1.23", "librabbitmq"],
@@ -111,7 +111,7 @@ from piptools.resolver import RequirementSummary, combine_install_requirements
                     "pytz==2016.4 (from celery==3.1.18)",
                 ],
             ),
-            # Exclude package dependcy of setuptools as it is unsafe.
+            # Exclude package dependency of setuptools as it is unsafe.
             (
                 ["html5lib"],
                 ["html5lib==0.999999999"],
