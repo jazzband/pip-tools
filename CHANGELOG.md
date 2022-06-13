@@ -323,7 +323,7 @@ Features:
 
 Backwards Incompatible Changes:
 
-- `pip-tools` now requires `pip>=20.0` (previosly `8.1.x` - `20.0.x`). Windows users,
+- `pip-tools` now requires `pip>=20.0` (previously `8.1.x` - `20.0.x`). Windows users,
   make sure to use `python -m pip install pip-tools` to avoid issues with `pip`
   self-update from now on ([#1055](https://github.com/jazzband/pip-tools/pull/1055)).
   Thanks @atugushev
@@ -809,7 +809,7 @@ Bug Fixes:
 
 ## 1.8.2 (2017-03-28)
 
-- Regression fix: editable reqs were loosing their dependencies after first round
+- Regression fix: editable reqs were losing their dependencies after first round
   ([#476](https://github.com/jazzband/pip-tools/pull/476)) Thanks @mattlong
 - Remove duplicate index urls in generated requirements.txt
   ([#468](https://github.com/jazzband/pip-tools/pull/468)) Thanks @majuscule
