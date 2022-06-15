@@ -349,6 +349,18 @@ def make_module(tmpdir):
         path = os.path.join(tmpdir, "sample_lib", "__init__.py")
         with open(path, "w") as stream:
             stream.write("'example module'\n__version__ = '1.2.3'")
+        if fname == "setup.cfg":
+            path = os.path.join(tmpdir, "pyproject.toml")
+            with open(path, "w") as stream:
+                stream.write(
+                    "\n".join(
+                        (
+                            "[build-system]",
+                            'requires = ["setuptools"]',
+                            'build-backend = "setuptools.build_meta"',
+                        )
+                    )
+                )
         path = os.path.join(tmpdir, fname)
         with open(path, "w") as stream:
             stream.write(dedent(content))
