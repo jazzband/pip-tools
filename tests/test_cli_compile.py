@@ -12,9 +12,6 @@ from piptools.scripts.compile import cli
 
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
 
-is_pypy = "__pypy__" in sys.builtin_module_names
-is_windows = sys.platform == "win32"
-
 
 @pytest.fixture(autouse=True)
 def _temp_dep_cache(tmpdir, monkeypatch):
@@ -349,9 +346,6 @@ def test_emit_index_url_option(runner, option, expected_output):
 
 
 @pytest.mark.network
-@pytest.mark.xfail(
-    is_pypy and is_windows, reason="https://github.com/jazzband/pip-tools/issues/1148"
-)
 def test_realistic_complex_sub_dependencies(runner):
     wheels_dir = "wheels"
 
@@ -1015,6 +1009,16 @@ def test_filter_pip_markers(pip_conf, runner):
     assert out.exit_code == 0
     assert "small-fake-a==0.1" in out.stderr
     assert "unknown_package" not in out.stderr
+
+
+def test_bad_setup_file(runner):
+    with open("setup.py", "w") as package:
+        package.write("BAD SYNTAX")
+
+    out = runner.invoke(cli, [])
+
+    assert out.exit_code == 2
+    assert f"Failed to parse {os.path.abspath('setup.py')}" in out.stderr
 
 
 def test_no_candidates(pip_conf, runner):
@@ -2027,7 +2031,6 @@ METADATA_TEST_CASES = (
 
 @pytest.mark.network
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
-@pytest.mark.xfail(is_pypy, reason="https://github.com/jazzband/pip-tools/issues/1375")
 def test_input_formats(fake_dists, runner, make_module, fname, content):
     """
     Test different dependency formats as input file.
@@ -2046,7 +2049,6 @@ def test_input_formats(fake_dists, runner, make_module, fname, content):
 
 @pytest.mark.network
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
-@pytest.mark.xfail(is_pypy, reason="https://github.com/jazzband/pip-tools/issues/1375")
 def test_one_extra(fake_dists, runner, make_module, fname, content):
     """
     Test one `--extra` (dev) passed, other extras (test) must be ignored.
@@ -2074,7 +2076,6 @@ def test_one_extra(fake_dists, runner, make_module, fname, content):
     ),
 )
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
-@pytest.mark.xfail(is_pypy, reason="https://github.com/jazzband/pip-tools/issues/1375")
 def test_multiple_extras(fake_dists, runner, make_module, fname, content, extra_opts):
     """
     Test passing multiple `--extra` params.
