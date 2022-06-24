@@ -27,11 +27,15 @@ jobs:
         run: |
           python -m pip install -U pip
           python -m pip install -U setuptools twine wheel
+          # pip-tools can be built using `build` with the new pyproject.toml file
+          # python -m pip install -U twine build # setuptools and wheel are installed by build
 
       - name: Build package
         run: |
           python setup.py --version
           python setup.py sdist --format=gztar bdist_wheel
+          # pip-tools can be built using `build` with the new pyproject.toml file
+          # python -m build
           twine check dist/*
 
       - name: Upload packages to Jazzband
