@@ -20,7 +20,6 @@ from typing import (
 
 from click import progressbar
 from pip._internal.cache import WheelCache
-from pip._internal.cli.progress_bars import BAR_TYPES
 from pip._internal.commands import create_command
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
@@ -30,7 +29,6 @@ from pip._internal.models.link import Link
 from pip._internal.models.wheel import Wheel
 from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement, RequirementSet
-from pip._internal.req.req_tracker import get_requirement_tracker
 from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.logging import indent_log, setup_logging
 from pip._internal.utils.misc import normalize_path
@@ -41,6 +39,7 @@ from pip._vendor.packaging.version import _BaseVersion
 from pip._vendor.requests import RequestException, Session
 
 from .._compat import PIP_VERSION
+from .._compat.pip_compat import get_build_tracker
 from ..exceptions import NoCandidateFound
 from ..logging import log
 from ..utils import (
@@ -169,23 +168,33 @@ class PyPIRepository(BaseRepository):
         ireq: InstallRequirement,
         wheel_cache: WheelCache,
     ) -> Set[InstallationCandidate]:
-        with get_requirement_tracker() as req_tracker, TempDirectory(
+        with get_build_tracker() as build_tracker, TempDirectory(
             kind="resolver"
         ) as temp_dir, indent_log():
             preparer_kwargs = {
                 "temp_build_dir": temp_dir,
                 "options": self.options,
-                "req_tracker": req_tracker,
                 "session": self.session,
                 "finder": self.finder,
                 "use_user_site": False,
                 "download_dir": download_dir,
             }
+
+            if PIP_VERSION[:2] <= (22, 0):
+                preparer_kwargs["req_tracker"] = build_tracker
+            else:
+                preparer_kwargs["build_tracker"] = build_tracker
+
             preparer = self.command.make_requirement_preparer(**preparer_kwargs)
 
             reqset = RequirementSet()
             ireq.user_supplied = True
-            reqset.add_requirement(ireq)
+            if PIP_VERSION[:3] < (22, 1, 1):
+                reqset.add_requirement(ireq)
+            elif getattr(ireq, "name", None):
+                reqset.add_named_requirement(ireq)
+            else:
+                reqset.add_unnamed_requirement(ireq)
 
             resolver = self.command.make_resolver(
                 preparer=preparer,
@@ -431,6 +440,10 @@ class PyPIRepository(BaseRepository):
         Wheel.support_index_min = _wheel_support_index_min
         self._available_candidates_cache = {}
 
+        # If we don't clear this cache then it can contain results from an
+        # earlier call when allow_all_wheels wasn't active. See GH-1532
+        self.finder.find_all_candidates.cache_clear()
+
         try:
             yield
         finally:
@@ -463,6 +476,9 @@ class PyPIRepository(BaseRepository):
             # this block should be removed/revisited, because of pip possibly
             # refactored-out logging config.
             log.warning("Couldn't find a 'console' logging handler")
+
+        # This import will fail with pip 22.1, but here we're pip<22.0
+        from pip._internal.cli.progress_bars import BAR_TYPES
 
         # Sync pip's progress bars stream with LogContext.stream
         for bar_cls in itertools.chain(*BAR_TYPES.values()):

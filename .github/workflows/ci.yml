@@ -10,6 +10,10 @@ on:
     # Run everyday at 03:53 UTC
     - cron: 53 3 * * *
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: ${{ matrix.os }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
@@ -33,7 +37,9 @@ jobs:
           - os: Ubuntu
             python-version: 3.11-dev
             pip-version: latest
-
+          - os: Ubuntu
+            python-version: 3.7
+            pip-version: main
     env:
       PY_COLORS: 1
       TOXENV: pip${{ matrix.pip-version }}-coverage
@@ -42,7 +48,7 @@ jobs:
       - uses: actions/checkout@master
       - name: Set up Python ${{ matrix.python-version }} from GitHub
         if: "!endsWith(matrix.python-version, '-dev')"
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
       - name: Set up Python ${{ matrix.python-version }} from deadsnakes
@@ -52,23 +58,14 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Log python version info (${{ matrix.python-version }})
         run: python --version --version
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
       - name: Pip cache
         uses: actions/cache@v2
         with:
-          path: >-
-            ${{
-              runner.os == 'Linux' &&
-              '~/.cache/pip'
-              || ''
-            }}${{
-              runner.os == 'macOS' &&
-              '~/Library/Caches/pip'
-              || ''
-            }}${{
-              runner.os == 'Windows' &&
-              '~\AppData\Local\pip\Cache'
-              || ''
-            }}
+          path: ${{ steps.pip-cache.outputs.dir }}
           key: >-
             ${{ runner.os }}-pip-${{ hashFiles('setup.cfg') }}-${{
             hashFiles('setup.py') }}-${{ hashFiles('tox.ini') }}-${{
@@ -109,7 +106,7 @@ jobs:
     steps:
       - uses: actions/checkout@master
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install tox

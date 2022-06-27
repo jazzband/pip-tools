@@ -19,6 +19,7 @@ from pip._internal.req.constructors import (
 from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Requirement
 
+from piptools._compat.pip_compat import uses_pkg_resources
 from piptools.cache import DependencyCache
 from piptools.exceptions import NoCandidateFound
 from piptools.repositories import PyPIRepository
@@ -106,6 +107,7 @@ class FakeInstalledDistribution:
     def __init__(self, line, deps=None):
         if deps is None:
             deps = []
+        self.dep_strs = deps
         self.deps = [Requirement.parse(d) for d in deps]
 
         self.req = Requirement.parse(line)
@@ -115,8 +117,18 @@ class FakeInstalledDistribution:
 
         self.version = line.split("==")[1]
 
-    def requires(self):
-        return self.deps
+    # The Distribution interface has changed between pkg_resources and
+    # importlib.metadata.
+    if uses_pkg_resources:
+
+        def requires(self):
+            return self.deps
+
+    else:
+
+        @property
+        def requires(self):
+            return self.dep_strs
 
 
 def pytest_collection_modifyitems(config, items):
@@ -337,6 +349,18 @@ def make_module(tmpdir):
         path = os.path.join(tmpdir, "sample_lib", "__init__.py")
         with open(path, "w") as stream:
             stream.write("'example module'\n__version__ = '1.2.3'")
+        if fname == "setup.cfg":
+            path = os.path.join(tmpdir, "pyproject.toml")
+            with open(path, "w") as stream:
+                stream.write(
+                    "\n".join(
+                        (
+                            "[build-system]",
+                            'requires = ["setuptools"]',
+                            'build-backend = "setuptools.build_meta"',
+                        )
+                    )
+                )
         path = os.path.join(tmpdir, fname)
         with open(path, "w") as stream:
             stream.write(dedent(content))
