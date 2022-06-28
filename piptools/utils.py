@@ -7,6 +7,7 @@ import re
 import shlex
 import typing
 from typing import (
+    Any,
     Callable,
     Dict,
     Iterable,
@@ -457,26 +458,41 @@ def strip_extras(name: str) -> str:
     return re.sub(_strip_extras_re, "", name)
 
 
-def copy_install_requirement(template: InstallRequirement) -> InstallRequirement:
-    """Make a copy of an ``InstallRequirement``."""
-    ireq = InstallRequirement(
-        req=copy.deepcopy(template.req),
-        comes_from=template.comes_from,
-        editable=template.editable,
-        link=template.link,
-        markers=template.markers,
-        use_pep517=template.use_pep517,
-        isolated=template.isolated,
-        install_options=template.install_options,
-        global_options=template.global_options,
-        hash_options=template.hash_options,
-        constraint=template.constraint,
-        extras=template.extras,
-        user_supplied=template.user_supplied,
-    )
+def copy_install_requirement(
+    template: InstallRequirement, **extra_kwargs: Any
+) -> InstallRequirement:
+    """Make a copy of a template ``InstallRequirement`` with extra kwargs."""
+    # Prepare install requirement kwargs.
+    kwargs = {
+        "comes_from": template.comes_from,
+        "editable": template.editable,
+        "link": template.link,
+        "markers": template.markers,
+        "use_pep517": template.use_pep517,
+        "isolated": template.isolated,
+        "install_options": template.install_options,
+        "global_options": template.global_options,
+        "hash_options": template.hash_options,
+        "constraint": template.constraint,
+        "extras": template.extras,
+        "user_supplied": template.user_supplied,
+    }
+    kwargs.update(extra_kwargs)
+
+    # Original link does not belong to install requirements constructor,
+    # pop it now to update later.
+    original_link = kwargs.pop("original_link", None)
+
+    # Copy template.req if not specified in extra kwargs.
+    if "req" not in kwargs:
+        kwargs["req"] = copy.deepcopy(template.req)
+
+    ireq = InstallRequirement(**kwargs)
 
     # If the original_link was None, keep it so. Passing `link` as an
-    # argument to `InstallRequirement` sets it as the original_link:
-    ireq.original_link = template.original_link
+    # argument to `InstallRequirement` sets it as the original_link.
+    ireq.original_link = (
+        template.original_link if original_link is None else original_link
+    )
 
     return ireq

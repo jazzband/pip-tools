@@ -139,24 +139,14 @@ def combine_install_requirements(
             key=lambda x: (len(str(x)), str(x)),
         )
 
-    combined_ireq = InstallRequirement(
+    combined_ireq = copy_install_requirement(
+        template=source_ireqs[0],
         req=req,
         comes_from=comes_from,
-        editable=source_ireqs[0].editable,
-        link=link_attrs["link"],
-        markers=source_ireqs[0].markers,
-        use_pep517=source_ireqs[0].use_pep517,
-        isolated=source_ireqs[0].isolated,
-        install_options=source_ireqs[0].install_options,
-        global_options=source_ireqs[0].global_options,
-        hash_options=source_ireqs[0].hash_options,
         constraint=constraint,
         extras=extras,
-        user_supplied=source_ireqs[0].user_supplied,
+        **link_attrs,
     )
-    # e.g. If the original_link was None, keep it so. Passing `link` as an
-    # argument to `InstallRequirement` sets it as the original_link:
-    combined_ireq.original_link = link_attrs["original_link"]
     combined_ireq._source_ireqs = source_ireqs
 
     return combined_ireq
