@@ -2,6 +2,7 @@ import optparse
 from contextlib import contextmanager
 from typing import Iterator, Mapping, Optional, Set, cast
 
+from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.models.candidate import InstallationCandidate
 from pip._internal.req import InstallRequirement
@@ -60,6 +61,11 @@ class LocalRequirementsRepository(BaseRepository):
     @property
     def session(self) -> Session:
         return self.repository.session
+
+    @property
+    def command(self) -> InstallCommand:
+        """Return an install command instance."""
+        return self.repository.command
 
     def clear_caches(self) -> None:
         self.repository.clear_caches()
