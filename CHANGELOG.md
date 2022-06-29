@@ -1,3 +1,10 @@
+## 6.8.0 (2022-06-30)
+
+Features:
+
+- Add support for pip's 2020 dependency resolver
+  ([#1539](https://github.com/jazzband/pip-tools/pull/1539)). Thanks @atugushev
+
 ## 6.7.0 (2022-06-27)
 
 Features:
