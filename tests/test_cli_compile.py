@@ -511,6 +511,39 @@ def test_editable_package_vcs(runner):
     assert "click" in out.stderr  # dependency of pip-tools
 
 
+@pytest.mark.network
+def test_compile_cached_editable_vcs_package(runner, tmp_path):
+    """
+    Test that cached vcs package does not interfere pip-compile results.
+
+    Regression test for issue GH-1647.
+    """
+    vcs_package = (
+        "six @ git+https://github.com/benjaminp/six@"
+        "65486e4383f9f411da95937451205d3c7b61b9e1"
+    )
+
+    # Install and cache VCS package
+    # TODO: install package in isolated environment
+    subprocess.run(
+        [
+            sys.executable,
+            "-m" "pip",
+            "install",
+            vcs_package,
+        ],
+        check=True,
+    )
+
+    with open("requirements.in", "w") as req_in:
+        req_in.write(vcs_package)
+
+    out = runner.invoke(cli, ["--no-header", "--no-emit-options", "--no-annotate"])
+
+    assert out.exit_code == 0, out
+    assert vcs_package == out.stderr.strip()
+
+
 @legacy_resolver_only
 def test_locally_available_editable_package_is_not_archived_in_cache_dir(
     pip_conf, tmpdir, runner

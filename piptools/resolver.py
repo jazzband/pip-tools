@@ -761,9 +761,17 @@ class BacktrackingResolver(BaseResolver):
                 version_pin_operator = "==="
                 break
 
+        # Prepare extra kwargs for pinned install requirement.
+        pinned_ireq_kwargs = {}
+        if candidate.source_link is not None:
+            # InstallRequirement.link after dependency resolution might contain
+            # a link to a cached wheel, see GH-1647 for details. Override the link
+            # with the candidate's source link.
+            pinned_ireq_kwargs["link"] = candidate.source_link
+
         # Prepare pinned install requirement. Copy it from candidate's install
         # requirement so that it could be mutated later.
-        pinned_ireq = copy_install_requirement(ireq)
+        pinned_ireq = copy_install_requirement(ireq, **pinned_ireq_kwargs)
 
         # Canonicalize name
         assert ireq.name is not None
