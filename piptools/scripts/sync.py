@@ -71,6 +71,15 @@ version_option_kwargs = {"package_name": "pip-tools"} if IS_CLICK_VER_8_PLUS els
     help="Ignore package index (only looking at --find-links URLs instead)",
 )
 @click.option(
+    "--read-relative-to-input",
+    is_flag=True,
+    default=False,
+    help=(
+        "Resolve relative paths as relative to the input file's parent. "
+        "Will be resolved as relative to the current folder otherwise."
+    ),
+)
+@click.option(
     "--python-executable",
     help="Custom python executable path if targeting an environment other than current.",
 )
@@ -96,6 +105,7 @@ def cli(
     extra_index_url: Tuple[str, ...],
     trusted_host: Tuple[str, ...],
     no_index: bool,
+    read_relative_to_input: bool,
     python_executable: Optional[str],
     verbose: int,
     quiet: int,
@@ -139,7 +149,17 @@ def cli(
     # Parse requirements file. Note, all options inside requirements file
     # will be collected by the finder.
     requirements = flat_map(
-        lambda src: parse_requirements(src, finder=finder, session=session), src_files
+        lambda src: parse_requirements(
+            src,
+            finder=finder,
+            session=session,
+            from_dir=(
+                os.path.dirname(os.path.abspath(src))
+                if read_relative_to_input
+                else os.getcwd()
+            ),
+        ),
+        src_files,
     )
 
     try:

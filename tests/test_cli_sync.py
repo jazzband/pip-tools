@@ -1,12 +1,15 @@
 import os
 import subprocess
 import sys
+from textwrap import dedent
 from unittest import mock
 
 import pytest
+from pip._internal.utils.urls import path_to_url
 from pip._vendor.packaging.version import Version
 
 from piptools.scripts.sync import DEFAULT_REQUIREMENTS_FILE, cli
+from piptools.utils import working_dir
 
 
 def test_run_as_module_sync():
@@ -244,6 +247,49 @@ def test_sync_dry_run_returns_non_zero_exit_code(runner):
     out = runner.invoke(cli, ["--dry-run"])
 
     assert out.exit_code == 1
+
+
+@pytest.mark.parametrize("written_from_txt", (True, False))
+@pytest.mark.parametrize("relpath_prefix", ("file:", "./"))
+def test_sync_relative_path(runner, tmp_path, relpath_prefix, written_from_txt):
+    """
+    Ensure sync finds relative paths successfully.
+    """
+    run_dir = tmp_path / "working"
+    txt_path = tmp_path / "deep" / "reqs.txt"
+    pkg_path = tmp_path / "deep" / "deeper" / "fake-setuptools-a"
+
+    run_dir.mkdir(parents=True, exist_ok=True)
+    pkg_path.mkdir(parents=True, exist_ok=True)
+
+    (pkg_path / "setup.py").write_text(
+        dedent(
+            """\
+            from setuptools import setup
+            setup(
+                name="fake-setuptools-a",
+                install_requires=["small-fake-a==0.1"]
+            )
+            """
+        )
+    )
+
+    if written_from_txt:
+        write_from_dir = txt_path.parent
+        cli_args = ["--dry-run", "--read-relative-to-input", str(txt_path)]
+    else:
+        write_from_dir = run_dir
+        cli_args = ["--dry-run", str(txt_path)]
+
+    with working_dir(write_from_dir):
+        with open(txt_path, "w") as reqs_txt:
+            reqs_txt.write(
+                f"{relpath_prefix}{os.path.relpath(pkg_path).replace(os.path.sep, '/')}"
+            )
+
+    with working_dir(run_dir):
+        out = runner.invoke(cli, cli_args)
+        assert path_to_url(pkg_path) in out.stdout
 
 
 @mock.patch("piptools.sync.run")
