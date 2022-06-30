@@ -705,8 +705,8 @@ class BacktrackingResolver(BaseResolver):
         for extras_candidate in extras_candidates:
             project_name = canonicalize_name(extras_candidate.project_name)
             ireq = result_ireqs[project_name]
-            ireq.extras |= extras_candidate.extras
-            ireq.req.extras |= extras_candidate.extras
+            ireq.extras = set(ireq.extras) | set(extras_candidate.extras)
+            ireq.req.extras = set(ireq.req.extras) | set(extras_candidate.extras)
 
         return set(result_ireqs.values())
 
