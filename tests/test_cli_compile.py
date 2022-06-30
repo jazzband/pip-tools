@@ -739,7 +739,10 @@ def test_direct_reference_with_extras(runner):
         )
     out = runner.invoke(cli, ["-n", "--rebuild"])
     assert out.exit_code == 0
-    assert "pip-tools @ git+https://github.com/jazzband/pip-tools@6.2.0" in out.stderr
+    assert (
+        "pip-tools[coverage,testing] @ git+https://github.com/jazzband/pip-tools@6.2.0"
+        in out.stderr
+    )
     assert "pytest==" in out.stderr
     assert "pytest-cov==" in out.stderr
 
