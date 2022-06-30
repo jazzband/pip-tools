@@ -2473,3 +2473,16 @@ def test_resolver_reaches_max_rounds(runner):
     out = runner.invoke(cli, ["--max-rounds", 0])
 
     assert out.exit_code != 0, out
+
+
+@pytest.mark.parametrize("extras", (("dev",), ("test",), ("dev", "test")))
+def test_local_file_uri_with_extras(pip_conf, runner, extras):
+    """
+    Test [extras] notation is included output.
+    """
+    uri = path_to_url(os.path.join(PACKAGES_PATH, "small_fake_with_extras"))
+    out = runner.invoke(
+        cli, ["--output-file", "-", "-"], input=f"{uri}#[{','.join(extras)}]"
+    )
+    assert out.exit_code == 0
+    assert f"small-fake-with-extras[{','.join(sorted(extras))}] @ " in out.stderr
