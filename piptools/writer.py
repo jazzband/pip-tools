@@ -129,6 +129,7 @@ class OutputWriter:
         find_links: List[str],
         emit_find_links: bool,
         emit_options: bool,
+        write_relative_to_output: bool,
     ) -> None:
         self.dst_file = dst_file
         self.click_ctx = click_ctx
@@ -148,6 +149,7 @@ class OutputWriter:
         self.find_links = find_links
         self.emit_find_links = emit_find_links
         self.emit_options = emit_options
+        self.write_relative_to_output = write_relative_to_output
 
     def _sort_key(self, ireq: InstallRequirement) -> Tuple[bool, str]:
         return (not ireq.editable, key_from_ireq(ireq))
@@ -300,11 +302,16 @@ class OutputWriter:
         hashes: Optional[Dict[InstallRequirement, Set[str]]] = None,
     ) -> str:
         ireq_hashes = (hashes if hashes is not None else {}).get(ireq)
+        from_dir = (
+            os.getcwd()
+            if not self.write_relative_to_output or self.dst_file.name == "-"
+            else os.path.dirname(os.path.abspath(self.dst_file.name))
+        )
         line = format_requirement(
             ireq,
             marker=marker,
             hashes=ireq_hashes,
-            from_dir=(os.getcwd() if hasattr(ireq, "_was_relative") else None),
+            from_dir=(from_dir if hasattr(ireq, "_was_relative") else None),
         )
         if self.strip_extras:
             line = strip_extras(line)
@@ -316,13 +323,13 @@ class OutputWriter:
         required_by = set()
         if hasattr(ireq, "_source_ireqs"):
             required_by |= {
-                _comes_from_as_string(src_ireq.comes_from)
+                _comes_from_as_string(src_ireq.comes_from, from_dir=from_dir)
                 for src_ireq in ireq._source_ireqs
                 if src_ireq.comes_from
             }
 
         if ireq.comes_from:
-            required_by.add(_comes_from_as_string(ireq.comes_from))
+            required_by.add(_comes_from_as_string(ireq.comes_from, from_dir=from_dir))
 
         required_by |= set(getattr(ireq, "_required_by", set()))
 

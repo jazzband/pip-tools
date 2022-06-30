@@ -9,7 +9,7 @@ import pytest
 from pip._internal.utils.urls import path_to_url
 
 from piptools.scripts.compile import cli
-from piptools.utils import COMPILE_EXCLUDE_OPTIONS
+from piptools.utils import COMPILE_EXCLUDE_OPTIONS, working_dir
 
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
 
@@ -673,6 +673,53 @@ def test_relative_file_uri_package(pip_conf, runner):
     out = runner.invoke(cli, ["-n", "--rebuild"])
     assert out.exit_code == 0
     assert "file:small_fake_with_deps-0.1-py2.py3-none-any.whl" in out.stderr
+
+
+@pytest.mark.parametrize(
+    ("flags", "expected"),
+    (
+        (("--write-relative-to-output",), "-e file:deeper/fake-setuptools-a"),
+        ((), "-e file:../deep/deeper/fake-setuptools-a"),
+    ),
+)
+@pytest.mark.parametrize("relpath_prefix", ("file:", "./"))
+def test_write_relative_to_output(
+    pip_conf, runner, tmp_path, relpath_prefix, flags, expected
+):
+    """
+    Relative paths in output are correct between CWD, output, and local packages.
+    """
+    run_dir = tmp_path / "working"
+    in_path = tmp_path / "reqs.in"
+    txt_path = tmp_path / "deep" / "reqs.txt"
+    pkg_path = tmp_path / "deep" / "deeper" / "fake-setuptools-a"
+
+    run_dir.mkdir(parents=True, exist_ok=True)
+    pkg_path.mkdir(parents=True, exist_ok=True)
+
+    (pkg_path / "setup.py").write_text(
+        dedent(
+            """\
+            from setuptools import setup
+            setup(
+                name="fake-setuptools-a",
+                install_requires=["small-fake-a==0.1"]
+            )
+            """
+        )
+    )
+
+    with working_dir(run_dir):
+        in_path.write_text(
+            f"-e {relpath_prefix}{os.path.relpath(pkg_path).replace(os.path.sep, '/')}"
+        )
+        out = runner.invoke(
+            cli,
+            ["-o", os.path.relpath(txt_path), *flags, os.path.relpath(in_path)],
+        )
+
+    assert out.exit_code == 0
+    assert expected in out.stderr
 
 
 def test_direct_reference_with_extras(runner):

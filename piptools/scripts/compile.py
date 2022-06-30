@@ -160,6 +160,15 @@ def _get_default_option(option_name: str) -> Any:
     ),
 )
 @click.option(
+    "--write-relative-to-output",
+    is_flag=True,
+    default=False,
+    help=(
+        "Construct relative paths as relative to the output file's parent. "
+        "Will be written as relative to the current folder otherwise."
+    ),
+)
+@click.option(
     "--allow-unsafe/--no-allow-unsafe",
     is_flag=True,
     default=False,
@@ -272,6 +281,7 @@ def cli(
     upgrade: bool,
     upgrade_packages: Tuple[str, ...],
     output_file: Union[LazyFile, IO[Any], None],
+    write_relative_to_output: bool,
     allow_unsafe: bool,
     strip_extras: bool,
     generate_hashes: bool,
@@ -385,6 +395,11 @@ def cli(
             finder=tmp_repository.finder,
             session=tmp_repository.session,
             options=tmp_repository.options,
+            from_dir=(
+                os.path.dirname(os.path.abspath(output_file.name))
+                if write_relative_to_output
+                else None
+            ),
         )
 
         for ireq in filter(is_pinned_requirement, ireqs):
@@ -526,6 +541,7 @@ def cli(
         find_links=repository.finder.find_links,
         emit_find_links=emit_find_links,
         emit_options=emit_options,
+        write_relative_to_output=write_relative_to_output,
     )
     writer.write(
         results=results,
