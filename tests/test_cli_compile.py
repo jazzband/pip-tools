@@ -679,16 +679,22 @@ def test_relative_file_uri_package(pip_conf, runner):
 @pytest.mark.parametrize(
     ("flags", "expected"),
     (
+        (
+            ("--write-relative-to-output", "--read-relative-to-input"),
+            "-e file:deeper/fake-setuptools-a",
+        ),
         (("--write-relative-to-output",), "-e file:deeper/fake-setuptools-a"),
         ((), "-e file:../deep/deeper/fake-setuptools-a"),
+        (("--read-relative-to-input",), "-e file:../deep/deeper/fake-setuptools-a"),
     ),
 )
 @pytest.mark.parametrize("relpath_prefix", ("file:", "./"))
-def test_write_relative_to_output(
+def test_read_write_relative(
     pip_conf, runner, tmp_path, relpath_prefix, flags, expected
 ):
     """
-    Relative paths in output are correct between CWD, output, and local packages.
+    Relative paths in output are correct between CWD, output, and local packages,
+    and relative paths in inputs are correctly resolved.
     """
     run_dir = tmp_path / "working"
     in_path = tmp_path / "reqs.in"
@@ -710,10 +716,13 @@ def test_write_relative_to_output(
         )
     )
 
-    with working_dir(run_dir):
+    with working_dir(
+        in_path.parent if "--read-relative-to-input" in flags else run_dir
+    ):
         in_path.write_text(
             f"-e {relpath_prefix}{os.path.relpath(pkg_path).replace(os.path.sep, '/')}"
         )
+    with working_dir(run_dir):
         out = runner.invoke(
             cli,
             ["-o", os.path.relpath(txt_path), *flags, os.path.relpath(in_path)],
