@@ -1412,6 +1412,58 @@ def test_annotate_option(pip_conf, runner, options, expected):
     assert out.stderr == dedent(expected)
 
 
+@pytest.mark.network
+@pytest.mark.parametrize("to_stdout", (True, False))
+@pytest.mark.parametrize(
+    "flags",
+    (
+        (),
+        ("--write-relative-to-output",),
+        ("--read-relative-to-input",),
+        ("--write-relative-to-output", "--read-relative-to-input"),
+    ),
+)
+@pytest.mark.parametrize(
+    ("input_filename", "input_content", "expected"),
+    (
+        ("requirements.in", "small-fake-a==0.1", " # via -r {}"),
+        (
+            "setup.py",
+            (
+                "from setuptools import setup\n"
+                "setup(name='fake-setuptools-a', install_requires=['small-fake-a==0.1'])"
+            ),
+            " # via fake-setuptools-a ({})",
+        ),
+    ),
+    ids=("requirements.in", "setup.py"),
+)
+def test_annotation_relative_paths(
+    runner, tmp_path, input_filename, input_content, expected, flags, to_stdout
+):
+    """
+    Annotations referencing files use paths relative to the output file.
+    """
+    run_dir = tmp_path
+
+    in_path = tmp_path / input_filename
+    in_path.write_text(input_content)
+
+    txt_path = tmp_path / "deeper" / "requirements.txt"
+    txt_path.parent.mkdir(parents=True, exist_ok=True)
+
+    output = "-" if to_stdout else str(txt_path)
+
+    with working_dir(run_dir):
+        out = runner.invoke(
+            cli,
+            ["--find-links", MINIMAL_WHEELS_PATH, "-o", output, *flags, str(in_path)],
+        )
+        assert out.exit_code == 0
+        with working_dir(None if to_stdout else txt_path.parent):
+            assert expected.format(os.path.relpath(in_path)) in out.stderr
+
+
 @pytest.mark.parametrize(
     ("option", "expected"),
     (
