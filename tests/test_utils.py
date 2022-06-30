@@ -2,6 +2,7 @@ import logging
 import operator
 import os
 import platform
+import re
 import shlex
 import sys
 
@@ -144,7 +145,9 @@ def test_format_requirement_editable_vcs_with_password(from_editable):
 
 def test_format_requirement_editable_local_path(from_editable):
     ireq = from_editable("file:///home/user/package")
-    assert format_requirement(ireq) == "-e file:///home/user/package"
+    assert re.match(
+        r"-e file:///([a-zA-Z]:/)?home/user/package$", format_requirement(ireq)
+    )
 
 
 @pytest.mark.skipif(
