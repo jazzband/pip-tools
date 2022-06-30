@@ -5,6 +5,7 @@ from typing import Callable, Iterable, Iterator, Optional, cast
 
 import pip
 from pip._internal.index.package_finder import PackageFinder
+from pip._internal.models.link import Link
 from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement
 from pip._internal.req import parse_requirements as _parse_requirements
@@ -12,7 +13,7 @@ from pip._internal.req.constructors import install_req_from_parsed_requirement
 from pip._vendor.packaging.version import parse as parse_version
 from pip._vendor.pkg_resources import Requirement
 
-from ..utils import abs_ireq, working_dir
+from ..utils import abs_ireq, copy_install_requirement, fragment_string, working_dir
 
 PIP_VERSION = tuple(map(int, parse_version(pip.__version__).base_version.split(".")))
 
@@ -43,13 +44,28 @@ def parse_requirements(
         # with non-URI (non file:) syntax, e.g. '-e ..'
         with working_dir(from_dir):
             ireq = install_req_from_parsed_requirement(parsed_req, isolated=isolated)
+            # The resulting ireq has two problems:
+            # - It's now absolute (ahead of schedule),
+            #   so abs_ireq will not know to apply the _was_relative attribute,
+            #   which is needed for the writer to use the relpath.
+            # - Sometimes the fragment is lost!
 
-        # But the resulting ireq is absolute (ahead of schedule),
-        # so abs_ireq will not apply the _was_relative attribute,
-        # which is needed for the writer to use the relpath.
+        # To account for the second:
+        if not fragment_string(ireq):
+            fragment = Link(parsed_req.requirement)._parsed_url.fragment
+            if fragment:
+                link_with_fragment = Link(
+                    url=f"{ireq.link.url}#{fragment}",
+                    comes_from=ireq.link.comes_from,
+                    requires_python=ireq.link.requires_python,
+                    yanked_reason=ireq.link.yanked_reason,
+                    cache_link_parsing=ireq.link.cache_link_parsing,
+                )
+                ireq = copy_install_requirement(ireq, link=link_with_fragment)
+
         a_ireq = abs_ireq(ireq, from_dir)
 
-        # To account for that, we guess if the path was initially relative and
+        # To account for the first, we guess if the path was initially relative and
         # set _was_relative ourselves:
         bare_path = file_url_schemes_re.sub("", parsed_req.requirement)
         is_win = platform.system() == "Windows"
