@@ -322,15 +322,15 @@ def cli(
         # An output file must be provided for stdin
         if src_files == ("-",):
             raise click.BadParameter("--output-file is required if input is from stdin")
-        # Use default requirements output file if there is a setup.py the source file
-        elif os.path.basename(src_files[0]) in METADATA_FILENAMES:
-            file_name = os.path.join(
-                os.path.dirname(src_files[0]), DEFAULT_REQUIREMENTS_OUTPUT_FILE
-            )
         # An output file must be provided if there are multiple source files
         elif len(src_files) > 1:
             raise click.BadParameter(
                 "--output-file is required if two or more input files are given."
+            )
+        # Use default requirements output file if there is only a setup.py source file
+        elif os.path.basename(src_files[0]) in METADATA_FILENAMES:
+            file_name = os.path.join(
+                os.path.dirname(src_files[0]), DEFAULT_REQUIREMENTS_OUTPUT_FILE
             )
         # Otherwise derive the output file from the source file
         else:
