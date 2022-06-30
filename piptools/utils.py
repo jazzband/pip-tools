@@ -110,9 +110,7 @@ def is_url_requirement(ireq: InstallRequirement) -> bool:
     return bool(ireq.original_link)
 
 
-def fragment_string(
-    ireq: InstallRequirement, omit_egg: bool = False, omit_extras: bool = True
-) -> str:
+def fragment_string(ireq: InstallRequirement, omit_egg: bool = False) -> str:
     """
     Return a string like "#egg=pkgname&subdirectory=folder", or "".
     """
@@ -123,10 +121,9 @@ def fragment_string(
         fragment = re.sub(r"[#&]egg=[^#&]+", "", fragment).lstrip("#&")
         if fragment:
             fragment = f"#{fragment}"
-    if omit_extras:
-        fragment = re.sub(r"\[[^\]]+\]$", "", fragment).lstrip("#")
-        if fragment:
-            fragment = f"#{fragment}"
+    fragment = re.sub(r"\[[^\]]+\]$", "", fragment).lstrip("#")
+    if fragment:
+        fragment = f"#{fragment}"
     return fragment
 
 
