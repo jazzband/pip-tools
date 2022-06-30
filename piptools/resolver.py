@@ -778,4 +778,13 @@ class BacktrackingResolver(BaseResolver):
         if source_ireq is not None and ireq_key not in self.existing_constraints:
             pinned_ireq._source_ireqs = [source_ireq]
 
+        # Preserve _was_relative attribute of local path requirements
+        if pinned_ireq.link.is_file:
+            # Install requirement keys may not match
+            for c in self.constraints:
+                if pinned_ireq.link == c.link:
+                    if hasattr(c, "_was_relative"):
+                        pinned_ireq._was_relative = True
+                    break
+
         return pinned_ireq

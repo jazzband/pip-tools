@@ -300,8 +300,12 @@ class OutputWriter:
         hashes: Optional[Dict[InstallRequirement, Set[str]]] = None,
     ) -> str:
         ireq_hashes = (hashes if hashes is not None else {}).get(ireq)
-
-        line = format_requirement(ireq, marker=marker, hashes=ireq_hashes)
+        line = format_requirement(
+            ireq,
+            marker=marker,
+            hashes=ireq_hashes,
+            from_dir=(os.getcwd() if hasattr(ireq, "_was_relative") else None),
+        )
         if self.strip_extras:
             line = strip_extras(line)
 
