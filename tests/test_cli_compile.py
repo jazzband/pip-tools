@@ -512,7 +512,7 @@ def test_editable_package_vcs(runner):
 
 
 @pytest.mark.network
-def test_compile_cached_editable_vcs_package(runner, tmp_path):
+def test_compile_cached_vcs_package(runner):
     """
     Test that cached vcs package does not interfere pip-compile results.
 
