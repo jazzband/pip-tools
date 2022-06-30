@@ -3,6 +3,7 @@ import copy
 import itertools
 import json
 import os
+import platform
 import re
 import shlex
 from contextlib import contextmanager
@@ -23,10 +24,11 @@ from typing import (
 
 import click
 from click.utils import LazyFile
+from pip._internal.models.link import Link
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
-from pip._internal.utils.urls import path_to_url
+from pip._internal.utils.urls import path_to_url, url_to_path
 from pip._internal.vcs import is_url
 from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.specifiers import SpecifierSet
@@ -367,6 +369,52 @@ def working_dir(folder: Optional[str]) -> Iterator[None]:
             os.chdir(original_dir)
 
 
+def abs_ireq(
+    ireq: InstallRequirement, from_dir: Optional[str] = None
+) -> InstallRequirement:
+    """
+    Return the given InstallRequirement if its source isn't a relative path;
+    Otherwise, return a new one with the relative path rewritten as absolute.
+
+    In this case, an extra attribute is added: _was_relative,
+    which is always True when present at all.
+    """
+    # We check ireq.link.scheme rather than ireq.link.is_file,
+    # to also match <vcs>+file schemes
+    if ireq.link is None or not ireq.link.scheme.endswith("file"):
+        return ireq
+
+    naive_path = ireq.local_file_path or ireq.link.path
+    if platform.system() == "Windows":
+        naive_path = naive_path.lstrip("/")
+
+    with working_dir(from_dir):
+        url = path_to_url(naive_path).replace("%40", "@")
+
+    if (
+        os.path.normpath(naive_path).lower()
+        == os.path.normpath(url_to_path(url)).lower()
+    ):
+        return ireq
+
+    abs_url = f"{url}{fragment_string(ireq)}"
+    if "+" in ireq.link.scheme:
+        abs_url = f"{ireq.link.scheme.split('+')[0]}+{abs_url}"
+
+    abs_link = Link(
+        url=abs_url,
+        comes_from=ireq.link.comes_from,
+        requires_python=ireq.link.requires_python,
+        yanked_reason=ireq.link.yanked_reason,
+        cache_link_parsing=ireq.link.cache_link_parsing,
+    )
+
+    a_ireq = copy_install_requirement(ireq, link=abs_link)
+    a_ireq._was_relative = True
+
+    return a_ireq
+
+
 def get_compile_command(click_ctx: click.Context) -> str:
     """
     Returns a normalized compile command depending on cli context.
@@ -539,5 +587,9 @@ def copy_install_requirement(
     ireq.original_link = (
         template.original_link if original_link is None else original_link
     )
+
+    for custom_attr in ("_source_ireqs", "_was_relative"):
+        if hasattr(template, custom_attr):
+            setattr(ireq, custom_attr, getattr(template, custom_attr))
 
     return ireq

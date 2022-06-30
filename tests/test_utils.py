@@ -1,6 +1,7 @@
 import logging
 import operator
 import os
+import platform
 import shlex
 import sys
 
@@ -10,6 +11,7 @@ from pip._vendor.packaging.version import Version
 
 from piptools.scripts.compile import cli as compile_cli
 from piptools.utils import (
+    abs_ireq,
     as_tuple,
     dedup,
     drop_extras,
@@ -143,6 +145,15 @@ def test_format_requirement_editable_vcs_with_password(from_editable):
 def test_format_requirement_editable_local_path(from_editable):
     ireq = from_editable("file:///home/user/package")
     assert format_requirement(ireq) == "-e file:///home/user/package"
+
+
+@pytest.mark.skipif(
+    platform.system() != "Windows",
+    reason="Relative paths can only be impossible on Windows",
+)
+def test_format_requirement_impossible_relative_path_becomes_absolute(from_line):
+    ireq = abs_ireq(from_line("file:./vendor/package.zip"), ".")
+    assert format_requirement(ireq, from_dir="z:") == ireq.link.url
 
 
 def test_format_requirement_ireq_with_hashes(from_line):
@@ -560,3 +571,17 @@ def test_working_dir(tmpdir_cwd, folder_name, use_abspath):
         assert os.getcwd() == expected_within
 
     assert os.getcwd() == tmpdir_cwd
+
+
+def test_local_abs_ireq_preserves_source_ireqs(from_line):
+    ireq1 = from_line("testone==1.2")
+    ireq1.comes_from = "xyz"
+
+    ireq2 = from_line("testtwo==2.4")
+    ireq2.comes_from = "lmno"
+
+    ireq3 = from_line("file:testwithsrcs")
+    ireq3._source_ireqs = [ireq1, ireq2]
+    ireq3 = abs_ireq(ireq3, os.getcwd())
+
+    assert ireq3._source_ireqs == [ireq1, ireq2]
