@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+from contextlib import suppress
 from itertools import chain
 from typing import (
     BinaryIO,
@@ -31,6 +32,7 @@ from .utils import (
     get_compile_command,
     key_from_ireq,
     strip_extras,
+    working_dir,
 )
 
 MESSAGE_UNHASHED_PACKAGE = comment(
@@ -55,13 +57,38 @@ MESSAGE_UNINSTALLABLE = (
 )
 
 
-strip_comes_from_line_re = re.compile(r" \(line \d+\)$")
+comes_from_line_re = re.compile(
+    r"^(?P<opts>-[rc]) (?P<path>.+)(?P<line_num> \(line \d+\))$"
+)
+
+comes_from_line_project_re = re.compile(
+    r"^(?P<name>.+) \((?P<path>.+(/|\\)(?P<filename>setup\.(py|cfg)|pyproject\.toml))\)$"
+)
 
 
-def _comes_from_as_string(comes_from: Union[str, InstallRequirement]) -> str:
-    if isinstance(comes_from, str):
-        return strip_comes_from_line_re.sub("", comes_from)
-    return cast(str, canonicalize_name(key_from_ireq(comes_from)))
+def _comes_from_as_string(
+    comes_from: Union[str, InstallRequirement], from_dir: Optional[str] = None
+) -> str:
+    if not isinstance(comes_from, str):
+        return cast(str, canonicalize_name(key_from_ireq(comes_from)))
+
+    match = comes_from_line_re.search(comes_from)
+    if match:
+        with working_dir(from_dir):
+            with suppress(ValueError):
+                return f"{match['opts']} {os.path.relpath(match['path'])}"
+            # ValueError: it's impossible to construct the relative path
+        return f"{match['opts']} {match['path']}"
+
+    match = comes_from_line_project_re.search(comes_from)
+    if match:
+        with working_dir(from_dir):
+            with suppress(ValueError):
+                return f"{match['name']} ({os.path.relpath(match['path'])})"
+            # ValueError: it's impossible to construct the relative path
+        return f"{match['name']} ({match['path']})"
+
+    return comes_from
 
 
 def annotation_style_split(required_by: Set[str]) -> str:
