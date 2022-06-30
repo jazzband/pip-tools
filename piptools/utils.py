@@ -581,6 +581,19 @@ def copy_install_requirement(
     if "req" not in kwargs:
         kwargs["req"] = copy.deepcopy(template.req)
 
+    # Copy extras from a new link if appropriate.
+    if (
+        not kwargs["extras"]
+        and kwargs["link"]
+        and kwargs["link"]._parsed_url.fragment.endswith("]")
+    ):
+        kwargs["extras"] = tuple(
+            map(
+                str.strip,
+                kwargs["link"]._parsed_url.fragment.rsplit("[", 1)[-1][:-1].split(","),
+            )
+        )
+
     ireq = InstallRequirement(**kwargs)
 
     # If the original_link was None, keep it so. Passing `link` as an
