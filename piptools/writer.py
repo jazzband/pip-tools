@@ -302,11 +302,12 @@ class OutputWriter:
         hashes: Optional[Dict[InstallRequirement, Set[str]]] = None,
     ) -> str:
         ireq_hashes = (hashes if hashes is not None else {}).get(ireq)
-        from_dir = (
+        out_dir = (
             os.getcwd()
-            if not self.write_relative_to_output or self.dst_file.name == "-"
+            if self.dst_file.name == "-"
             else os.path.dirname(os.path.abspath(self.dst_file.name))
         )
+        from_dir = out_dir if self.write_relative_to_output else os.getcwd()
         line = format_requirement(
             ireq,
             marker=marker,
@@ -323,13 +324,13 @@ class OutputWriter:
         required_by = set()
         if hasattr(ireq, "_source_ireqs"):
             required_by |= {
-                _comes_from_as_string(src_ireq.comes_from, from_dir=from_dir)
+                _comes_from_as_string(src_ireq.comes_from, from_dir=out_dir)
                 for src_ireq in ireq._source_ireqs
                 if src_ireq.comes_from
             }
 
         if ireq.comes_from:
-            required_by.add(_comes_from_as_string(ireq.comes_from, from_dir=from_dir))
+            required_by.add(_comes_from_as_string(ireq.comes_from, from_dir=out_dir))
 
         required_by |= set(getattr(ireq, "_required_by", set()))
 
