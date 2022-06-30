@@ -53,7 +53,7 @@ def parse_requirements(
                 # This can happen when the url is a relpath with a fragment,
                 # so we try again with the fragment stripped
                 preq_without_fragment = ParsedRequirement(
-                    requirement=re.sub(r"#[^#]+=.+$", "", parsed_req.requirement),
+                    requirement=re.sub(r"#[^#]+$", "", parsed_req.requirement),
                     is_editable=parsed_req.is_editable,
                     comes_from=parsed_req.comes_from,
                     constraint=parsed_req.constraint,
@@ -75,7 +75,7 @@ def parse_requirements(
             fragment = Link(parsed_req.requirement)._parsed_url.fragment
             if fragment:
                 link_with_fragment = Link(
-                    url=f"{ireq.link.url}#{fragment}",
+                    url=f"{ireq.link.url_without_fragment}#{fragment}",
                     comes_from=ireq.link.comes_from,
                     requires_python=ireq.link.requires_python,
                     yanked_reason=ireq.link.yanked_reason,
@@ -87,7 +87,9 @@ def parse_requirements(
 
         # To account for the second, we guess if the path was initially relative and
         # set _was_relative ourselves:
-        bare_path = file_url_schemes_re.sub("", parsed_req.requirement)
+        bare_path = file_url_schemes_re.sub(
+            "", parsed_req.requirement.split(" @ ", 1)[-1]
+        )
         is_win = platform.system() == "Windows"
         if is_win:
             bare_path = bare_path.lstrip("/")

@@ -110,7 +110,9 @@ def is_url_requirement(ireq: InstallRequirement) -> bool:
     return bool(ireq.original_link)
 
 
-def fragment_string(ireq: InstallRequirement, omit_egg: bool = False) -> str:
+def fragment_string(
+    ireq: InstallRequirement, omit_egg: bool = False, omit_extras: bool = True
+) -> str:
     """
     Return a string like "#egg=pkgname&subdirectory=folder", or "".
     """
@@ -119,6 +121,10 @@ def fragment_string(ireq: InstallRequirement, omit_egg: bool = False) -> str:
     fragment = f"#{ireq.link._parsed_url.fragment.replace(os.path.sep, '/')}"
     if omit_egg:
         fragment = re.sub(r"[#&]egg=[^#&]+", "", fragment).lstrip("#&")
+        if fragment:
+            fragment = f"#{fragment}"
+    if omit_extras:
+        fragment = re.sub(r"\[[^\]]+\]$", "", fragment).lstrip("#")
         if fragment:
             fragment = f"#{fragment}"
     return fragment
@@ -148,26 +154,30 @@ def format_requirement(
         )
         # pip doesn't support relative paths in git+file scheme urls,
         # for which ireq.link.is_file == False
-    elif not from_dir:
-        line = (
-            f"-e {path_to_url(ireq.local_file_path)}"
-            if ireq.editable
-            else _build_direct_reference_best_efforts(ireq)
-        )
     else:
-        try:
-            path_url = "file:" + os.path.relpath(
-                ireq.local_file_path, from_dir
-            ).replace(os.path.sep, "/")
-        except ValueError:
-            # On Windows, a relative path is not always possible (no common ancestor)
+        fragment = fragment_string(ireq)
+        extras = f"[{','.join(sorted(ireq.extras))}]" if ireq.extras else ""
+        delimiter = "#" if extras and not fragment else ""
+        if not from_dir:
             line = (
-                f"-e {path_to_url(ireq.local_file_path)}"
+                f"-e {path_to_url(ireq.local_file_path)}{fragment}{delimiter}{extras}"
                 if ireq.editable
                 else _build_direct_reference_best_efforts(ireq)
             )
         else:
-            line = f"{'-e ' if ireq.editable else ''}{path_url}{fragment_string(ireq)}"
+            try:
+                path_url = "file:" + os.path.relpath(
+                    ireq.local_file_path, from_dir
+                ).replace(os.path.sep, "/")
+            except ValueError:
+                # On Windows, a relative path is not always possible (no common ancestor)
+                line = (
+                    f"-e {path_to_url(ireq.local_file_path)}{fragment}{delimiter}{extras}"
+                    if ireq.editable
+                    else _build_direct_reference_best_efforts(ireq)
+                )
+            else:
+                line = f"{'-e ' if ireq.editable else ''}{path_url}{fragment}{delimiter}{extras}"
 
     if marker:
         line = f"{line} ; {marker}"
