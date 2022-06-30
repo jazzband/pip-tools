@@ -203,7 +203,8 @@ def _build_direct_reference_best_efforts(ireq: InstallRequirement) -> str:
     # We need to remove the egg if it exists and keep the rest of the fragments.
     extras = f"[{','.join(sorted(ireq.extras))}]" if ireq.extras else ""
     return (
-        f"{ireq.name.lower()}{extras} @ {ireq.link.url_without_fragment}"
+        f"{canonicalize_name(ireq.name)}{extras} @ "
+        f"{ireq.link.url_without_fragment}"
         f"{fragment_string(ireq, omit_egg=True)}"
     )
 
