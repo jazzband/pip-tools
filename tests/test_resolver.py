@@ -250,6 +250,81 @@ def test_resolver__allows_unsafe_deps(
     assert output == {str(line) for line in expected}
 
 
+@pytest.mark.parametrize(
+    (
+        "input",
+        "cuts",
+        "expected",
+    ),
+    (
+        # No cuts, get all recursive dependencies.
+        (
+            ["flask==0.10.1"],
+            set(),
+            {
+                "markupsafe==0.23 (from jinja2==2.7.3->flask==0.10.1)",
+                "itsdangerous==0.24 (from flask==0.10.1)",
+                "werkzeug==0.10.4 (from flask==0.10.1)",
+                "flask==0.10.1",
+                "jinja2==2.7.3 (from flask==0.10.1)",
+            },
+        ),
+        # Cut all of flask's dependencies. Get only flask.
+        (
+            ["flask==0.10.1"],
+            {"flask"},
+            {
+                "flask==0.10.1",
+            },
+        ),
+        # Cut flask's dependency on Jinja2. Get the remaining dependencies.
+        (
+            ["flask==0.10.1"],
+            {"flask:Jinja2"},
+            {
+                "itsdangerous==0.24 (from flask==0.10.1)",
+                "werkzeug==0.10.4 (from flask==0.10.1)",
+                "flask==0.10.1",
+            },
+        ),
+        # Again cut flask's dependency on Jinja2, but now also install another
+        # package that depends on Jinja2. Now we do get Jinja2, among others.
+        (
+            ["flask==0.10.1", "ipython[notebook]==2.1.0"],
+            {"flask:Jinja2"},
+            {
+                "jinja2==2.7.3 (from ipython[notebook]==2.1.0)",
+                "tornado==3.2.2 (from ipython[notebook]==2.1.0)",
+                "itsdangerous==0.24 (from flask==0.10.1)",
+                "markupsafe==0.23 (from jinja2==2.7.3->ipython[notebook]==2.1.0)",
+                "pyzmq==2.1.12 (from ipython[notebook]==2.1.0)",
+                "ipython[notebook]==2.1.0",
+                "gnureadline==6.3.3 (from ipython[notebook]==2.1.0)",
+                "flask==0.10.1",
+                "werkzeug==0.10.4 (from flask==0.10.1)",
+            },
+        ),
+    ),
+)
+def test_resolver__cut_deps(
+    resolver,
+    from_line,
+    input,
+    cuts,
+    expected,
+):
+    input = [line if isinstance(line, tuple) else (line, False) for line in input]
+    input = [from_line(req[0], constraint=req[1]) for req in input]
+    resolver = resolver(
+        input,
+        cuts=cuts,
+    )
+    output = resolver.resolve()
+    output = {str(line) for line in output}
+
+    assert output == expected
+
+
 def test_resolver__max_number_rounds_reached(resolver, from_line):
     """
     Resolver should raise an exception if max round has been reached.

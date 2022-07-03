@@ -245,6 +245,13 @@ def _get_default_option(option_name: str) -> Any:
     default=True,
     help="Add options to generated file",
 )
+@click.option(
+    "--cut-deps",
+    multiple=True,
+    help="Ignore a package's dependencies. May be used more than once. "
+    "Pass just the package name to ignore all of its dependencies. "
+    "Pass pkg-name:dep-name to ignore just one dependency.",
+)
 def cli(
     ctx: click.Context,
     verbose: int,
@@ -279,6 +286,7 @@ def cli(
     resolver_name: str,
     emit_index_url: bool,
     emit_options: bool,
+    cut_deps: Tuple[str, ...],
 ) -> None:
     """Compiles requirements.txt from requirements.in specs."""
     log.verbosity = verbose - quiet
@@ -483,6 +491,7 @@ def cli(
             cache=DependencyCache(cache_dir),
             clear_caches=rebuild,
             allow_unsafe=allow_unsafe,
+            cuts=set(cut_deps),
         )
         results = resolver.resolve(max_rounds=max_rounds)
         hashes = resolver.resolve_hashes(results) if generate_hashes else None

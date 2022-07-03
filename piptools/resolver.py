@@ -206,6 +206,7 @@ class LegacyResolver(BaseResolver):
         prereleases: Optional[bool] = False,
         clear_caches: bool = False,
         allow_unsafe: bool = False,
+        cuts: Optional[Set[str]] = None,
     ) -> None:
         """
         This class resolves a given set of constraints (a collection of
@@ -220,6 +221,7 @@ class LegacyResolver(BaseResolver):
         self.clear_caches = clear_caches
         self.allow_unsafe = allow_unsafe
         self.unsafe_constraints: Set[InstallRequirement] = set()
+        self.cuts = cuts or set()
 
         options = self.repository.options
         if "legacy-resolver" not in options.deprecated_features_enabled:
@@ -353,7 +355,14 @@ class LegacyResolver(BaseResolver):
         their_constraints: List[InstallRequirement] = []
         with log.indentation():
             for best_match in best_matches:
-                their_constraints.extend(self._iter_dependencies(best_match))
+                for dep in self._iter_dependencies(best_match):
+                    # Must iterate even if we're going to cut all dependencies,
+                    # so our dependency cache gets populated.
+                    pair = f"{best_match.name}:{dep.name}"
+                    if best_match.name in self.cuts or pair in self.cuts:
+                        log.debug(f"Cutting dependency {pair}")
+                    else:
+                        their_constraints.append(dep)
         # Grouping constraints to make clean diff between rounds
         theirs = set(self._group_constraints(their_constraints))
 
