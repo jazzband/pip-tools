@@ -1,4 +1,5 @@
 import pytest
+from pip._internal.exceptions import DistributionNotFound
 from pip._internal.utils.urls import path_to_url
 
 from piptools.exceptions import NoCandidateFound
@@ -500,3 +501,28 @@ def test_requirement_summary_with_other_objects(from_line):
     requirement_summary = RequirementSummary(from_line("test_package==1.2.3"))
     other_object = object()
     assert requirement_summary != other_object
+
+
+@pytest.mark.parametrize(
+    ("exception", "cause"),
+    (
+        pytest.param(DistributionNotFound, None, id="without cause"),
+        pytest.param(DistributionNotFound, ZeroDivisionError, id="with cause"),
+    ),
+)
+def test_catch_distribution_not_found_error(backtracking_resolver, exception, cause):
+    """
+    Test internal edge-cases when backtracking resolver catches
+    and re-raises ``DistributionNotFound`` error with/without causes.
+    """
+    resolver = backtracking_resolver([])
+
+    class FakePipResolver:
+        def resolve(self, *args, **kwargs):
+            raise exception from cause
+
+    with pytest.raises(DistributionNotFound):
+        resolver._do_resolve(
+            resolver=FakePipResolver(),
+            compatible_existing_constraints={},
+        )

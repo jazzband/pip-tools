@@ -32,11 +32,7 @@ To help keeping track of the releases and their changes, here's the current rele
 - Push the branch to your fork and create a pull request.
 - Merge the pull request after the changes being approved.
 - Make sure that the tests/CI still pass.
-- Once ready, go to `Github pip-tools Homepage > releases tab > Draft a new release` and type in:
-  - _Tag version:_ The exact version number, following [Semantic Versioning](https://blog.versioneye.com/2014/01/16/semantic-versioning/). _Ex: 3.4.0_
-  - _Target:_ master. As a general rule, the HEAD commit of the master branch should be the release target.
-  - _Release title:_ Same as the tag. _Ex: 3.4.0_
-- Publish release. This will push a tag on the HEAD of master, trigger the CI pipeline and
+- Once ready, go to [releases](https://github.com/jazzband/pip-tools/releases) page and publish the latest draft release. This will push a tag on the HEAD of master, trigger the CI pipeline and
   deploy a pip-tools release in the **Jazzband private package index** upon success.
 - The pip-tools "lead" project members will receive an email notification to review the release and
   deploy it to the public PyPI if all is correct.

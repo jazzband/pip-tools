@@ -1,3 +1,29 @@
+## 6.8.0 (2022-06-30)
+
+Features:
+
+- Add support for pip's 2020 dependency resolver. Use
+  `pip-compile --resolver backtracking` to enable new resolver
+  ([#1539](https://github.com/jazzband/pip-tools/pull/1539)). Thanks @atugushev
+
+## 6.7.0 (2022-06-27)
+
+Features:
+
+- Support for the `importlib.metadata` metadata implementation
+  ([#1632](https://github.com/jazzband/pip-tools/pull/1632)). Thanks @richafrank
+
+Bug Fixes:
+
+- Instantiate a new accumulator `InstallRequirement` for `combine_install_requirements`
+  output ([#1519](https://github.com/jazzband/pip-tools/pull/1519)). Thanks @richafrank
+
+Other Changes:
+
+- Replace direct usage of the `pep517` module with the `build` module, for loading
+  project metadata ([#1629](https://github.com/jazzband/pip-tools/pull/1629)). Thanks
+  @AndydeCleyre
+
 ## 6.6.2 (2022-05-23)
 
 Bug Fixes:

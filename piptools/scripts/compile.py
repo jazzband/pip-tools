@@ -21,7 +21,7 @@ from ..locations import CACHE_DIR
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..repositories.base import BaseRepository
-from ..resolver import Resolver
+from ..resolver import BacktrackingResolver, LegacyResolver
 from ..utils import (
     UNSAFE_PACKAGES,
     dedup,
@@ -226,6 +226,14 @@ def _get_default_option(option_name: str) -> Any:
     "--pip-args", "pip_args_str", help="Arguments to pass directly to the pip command."
 )
 @click.option(
+    "--resolver",
+    "resolver_name",
+    type=click.Choice(("legacy", "backtracking")),
+    default="legacy",
+    envvar="PIP_TOOLS_RESOLVER",
+    help="Choose the dependency resolver.",
+)
+@click.option(
     "--emit-index-url/--no-emit-index-url",
     is_flag=True,
     default=True,
@@ -268,6 +276,7 @@ def cli(
     emit_find_links: bool,
     cache_dir: str,
     pip_args_str: Optional[str],
+    resolver_name: str,
     emit_index_url: bool,
     emit_options: bool,
 ) -> None:
@@ -334,9 +343,10 @@ def cli(
         pip_args.extend(["--pre"])
     for host in trusted_host:
         pip_args.extend(["--trusted-host", host])
-
     if not build_isolation:
         pip_args.append("--no-build-isolation")
+    if resolver_name == "legacy":
+        pip_args.extend(["--use-deprecated", "legacy-resolver"])
     pip_args.extend(right_args)
 
     repository: BaseRepository
@@ -349,6 +359,10 @@ def cli(
     }
 
     existing_pins_to_upgrade = set()
+
+    # Exclude packages from --upgrade-package/-P from the existing
+    # constraints, and separately gather pins to be upgraded
+    existing_pins = {}
 
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified
     # (= default invocation)
@@ -363,9 +377,6 @@ def cli(
             options=tmp_repository.options,
         )
 
-        # Exclude packages from --upgrade-package/-P from the existing
-        # constraints, and separately gather pins to be upgraded
-        existing_pins = {}
         for ireq in filter(is_pinned_requirement, ireqs):
             key = key_from_ireq(ireq)
             if key in upgrade_install_reqs:
@@ -462,10 +473,12 @@ def cli(
             for find_link in dedup(repository.finder.find_links):
                 log.debug(redact_auth_from_url(find_link))
 
+    resolver_cls = LegacyResolver if resolver_name == "legacy" else BacktrackingResolver
     try:
-        resolver = Resolver(
-            constraints,
-            repository,
+        resolver = resolver_cls(
+            constraints=constraints,
+            existing_constraints=existing_pins,
+            repository=repository,
             prereleases=repository.finder.allow_all_prereleases or pre,
             cache=DependencyCache(cache_dir),
             clear_caches=rebuild,
