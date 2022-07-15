@@ -285,7 +285,7 @@ def cli(
     resolver_name: str,
     emit_index_url: bool,
     emit_options: bool,
-    unsafe_packages: Tuple[str, ...],
+    unsafe_package: Tuple[str, ...],
 ) -> None:
     """Compiles requirements.txt from requirements.in specs."""
     log.verbosity = verbose - quiet
@@ -490,7 +490,7 @@ def cli(
             cache=DependencyCache(cache_dir),
             clear_caches=rebuild,
             allow_unsafe=allow_unsafe,
-            unsafe_packages=set(unsafe_packages),
+            unsafe_packages=set(unsafe_package),
         )
         results = resolver.resolve(max_rounds=max_rounds)
         hashes = resolver.resolve_hashes(results) if generate_hashes else None
