@@ -1,14 +1,16 @@
 import json
-import optparse
 import os
 import subprocess
 import sys
 from contextlib import contextmanager
+from dataclasses import dataclass, field
 from functools import partial
 from textwrap import dedent
+from typing import List, Optional
 
 import pytest
 from click.testing import CliRunner
+from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.models.candidate import InstallationCandidate
 from pip._internal.network.session import PipSession
@@ -19,11 +21,12 @@ from pip._internal.req.constructors import (
 from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Requirement
 
+from piptools._compat.pip_compat import uses_pkg_resources
 from piptools.cache import DependencyCache
 from piptools.exceptions import NoCandidateFound
 from piptools.repositories import PyPIRepository
 from piptools.repositories.base import BaseRepository
-from piptools.resolver import Resolver
+from piptools.resolver import BacktrackingResolver, LegacyResolver
 from piptools.utils import (
     as_tuple,
     is_url_requirement,
@@ -36,8 +39,17 @@ from .constants import MINIMAL_WHEELS_PATH, TEST_DATA_PATH
 from .utils import looks_like_ci
 
 
+@dataclass
+class FakeOptions:
+    features_enabled: List[str] = field(default_factory=list)
+    deprecated_features_enabled: List[str] = field(default_factory=list)
+    target_dir: Optional[str] = None
+
+
 class FakeRepository(BaseRepository):
-    def __init__(self):
+    def __init__(self, options: FakeOptions):
+        self._options = options
+
         with open(os.path.join(TEST_DATA_PATH, "fake-index.json")) as f:
             self.index = json.load(f)
 
@@ -90,8 +102,8 @@ class FakeRepository(BaseRepository):
         yield
 
     @property
-    def options(self) -> optparse.Values:
-        """Not used"""
+    def options(self):
+        return self._options
 
     @property
     def session(self) -> PipSession:
@@ -101,11 +113,16 @@ class FakeRepository(BaseRepository):
     def finder(self) -> PackageFinder:
         """Not used"""
 
+    @property
+    def command(self) -> InstallCommand:
+        """Not used"""
+
 
 class FakeInstalledDistribution:
     def __init__(self, line, deps=None):
         if deps is None:
             deps = []
+        self.dep_strs = deps
         self.deps = [Requirement.parse(d) for d in deps]
 
         self.req = Requirement.parse(line)
@@ -115,8 +132,18 @@ class FakeInstalledDistribution:
 
         self.version = line.split("==")[1]
 
-    def requires(self):
-        return self.deps
+    # The Distribution interface has changed between pkg_resources and
+    # importlib.metadata.
+    if uses_pkg_resources:
+
+        def requires(self):
+            return self.deps
+
+    else:
+
+        @property
+        def requires(self):
+            return self.dep_strs
 
 
 def pytest_collection_modifyitems(config, items):
@@ -133,13 +160,20 @@ def fake_dist():
 
 @pytest.fixture
 def repository():
-    return FakeRepository()
+    return FakeRepository(
+        options=FakeOptions(deprecated_features_enabled=["legacy-resolver"])
+    )
 
 
 @pytest.fixture
 def pypi_repository(tmpdir):
     return PyPIRepository(
-        ["--index-url", PyPIRepository.DEFAULT_INDEX_URL],
+        [
+            "--index-url",
+            PyPIRepository.DEFAULT_INDEX_URL,
+            "--use-deprecated",
+            "legacy-resolver",
+        ],
         cache_dir=(tmpdir / "pypi-repo"),
     )
 
@@ -154,12 +188,27 @@ def resolver(depcache, repository):
     # TODO: It'd be nicer if Resolver instance could be set up and then
     #       use .resolve(...) on the specset, instead of passing it to
     #       the constructor like this (it's not reusable)
-    return partial(Resolver, repository=repository, cache=depcache)
+    return partial(
+        LegacyResolver, repository=repository, cache=depcache, existing_constraints={}
+    )
+
+
+@pytest.fixture
+def backtracking_resolver(depcache):
+    # TODO: It'd be nicer if Resolver instance could be set up and then
+    #       use .resolve(...) on the specset, instead of passing it to
+    #       the constructor like this (it's not reusable)
+    return partial(
+        BacktrackingResolver,
+        repository=FakeRepository(options=FakeOptions()),
+        cache=depcache,
+        existing_constraints={},
+    )
 
 
 @pytest.fixture
 def base_resolver(depcache):
-    return partial(Resolver, cache=depcache)
+    return partial(LegacyResolver, cache=depcache, existing_constraints={})
 
 
 @pytest.fixture
@@ -187,7 +236,7 @@ def tmpdir_cwd(tmpdir):
 
 @pytest.fixture
 def make_pip_conf(tmpdir, monkeypatch):
-    created_paths = set()
+    created_paths = []
 
     def _make_pip_conf(content):
         pip_conf_file = "pip.conf" if os.name != "nt" else "pip.ini"
@@ -198,7 +247,7 @@ def make_pip_conf(tmpdir, monkeypatch):
 
         monkeypatch.setenv("PIP_CONFIG_FILE", path)
 
-        created_paths.add(path)
+        created_paths.append(path)
         return path
 
     try:
@@ -232,11 +281,6 @@ def pip_with_index_conf(make_pip_conf):
             """
         )
     )
-
-
-@pytest.fixture(autouse=True)
-def pip_with_empty_conf(make_pip_conf):
-    return make_pip_conf("")
 
 
 @pytest.fixture
@@ -342,6 +386,18 @@ def make_module(tmpdir):
         path = os.path.join(tmpdir, "sample_lib", "__init__.py")
         with open(path, "w") as stream:
             stream.write("'example module'\n__version__ = '1.2.3'")
+        if fname == "setup.cfg":
+            path = os.path.join(tmpdir, "pyproject.toml")
+            with open(path, "w") as stream:
+                stream.write(
+                    "\n".join(
+                        (
+                            "[build-system]",
+                            'requires = ["setuptools"]',
+                            'build-backend = "setuptools.build_meta"',
+                        )
+                    )
+                )
         path = os.path.join(tmpdir, fname)
         with open(path, "w") as stream:
             stream.write(dedent(content))
