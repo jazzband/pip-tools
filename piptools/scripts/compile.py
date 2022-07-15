@@ -6,8 +6,9 @@ import tempfile
 from typing import IO, Any, BinaryIO, List, Optional, Tuple, Union, cast
 
 import click
+from build import BuildBackendException
+from build.util import project_wheel_metadata
 from click.utils import LazyFile, safecall
-from pep517 import meta
 from pip._internal.commands import create_command
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
@@ -20,7 +21,7 @@ from ..locations import CACHE_DIR
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..repositories.base import BaseRepository
-from ..resolver import Resolver
+from ..resolver import BacktrackingResolver, LegacyResolver
 from ..utils import (
     UNSAFE_PACKAGES,
     dedup,
@@ -225,6 +226,14 @@ def _get_default_option(option_name: str) -> Any:
     "--pip-args", "pip_args_str", help="Arguments to pass directly to the pip command."
 )
 @click.option(
+    "--resolver",
+    "resolver_name",
+    type=click.Choice(("legacy", "backtracking")),
+    default="legacy",
+    envvar="PIP_TOOLS_RESOLVER",
+    help="Choose the dependency resolver.",
+)
+@click.option(
     "--emit-index-url/--no-emit-index-url",
     is_flag=True,
     default=True,
@@ -273,6 +282,7 @@ def cli(
     emit_find_links: bool,
     cache_dir: str,
     pip_args_str: Optional[str],
+    resolver_name: str,
     emit_index_url: bool,
     emit_options: bool,
     unsafe_packages: Tuple[str, ...],
@@ -340,9 +350,10 @@ def cli(
         pip_args.extend(["--pre"])
     for host in trusted_host:
         pip_args.extend(["--trusted-host", host])
-
     if not build_isolation:
         pip_args.append("--no-build-isolation")
+    if resolver_name == "legacy":
+        pip_args.extend(["--use-deprecated", "legacy-resolver"])
     pip_args.extend(right_args)
 
     repository: BaseRepository
@@ -355,6 +366,10 @@ def cli(
     }
 
     existing_pins_to_upgrade = set()
+
+    # Exclude packages from --upgrade-package/-P from the existing
+    # constraints, and separately gather pins to be upgraded
+    existing_pins = {}
 
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified
     # (= default invocation)
@@ -369,9 +384,6 @@ def cli(
             options=tmp_repository.options,
         )
 
-        # Exclude packages from --upgrade-package/-P from the existing
-        # constraints, and separately gather pins to be upgraded
-        existing_pins = {}
         for ireq in filter(is_pinned_requirement, ireqs):
             key = key_from_ireq(ireq)
             if key in upgrade_install_reqs:
@@ -412,12 +424,19 @@ def cli(
             constraints.extend(reqs)
         elif is_setup_file:
             setup_file_found = True
-            dist = meta.load(os.path.dirname(os.path.abspath(src_file)))
-            comes_from = f"{dist.metadata.get_all('Name')[0]} ({src_file})"
+            try:
+                metadata = project_wheel_metadata(
+                    os.path.dirname(os.path.abspath(src_file))
+                )
+            except BuildBackendException as e:
+                log.error(str(e))
+                log.error(f"Failed to parse {os.path.abspath(src_file)}")
+                sys.exit(2)
+            comes_from = f"{metadata.get_all('Name')[0]} ({src_file})"
             constraints.extend(
                 [
                     install_req_from_line(req, comes_from=comes_from)
-                    for req in dist.requires or []
+                    for req in metadata.get_all("Requires-Dist") or []
                 ]
             )
         else:
@@ -461,10 +480,12 @@ def cli(
             for find_link in dedup(repository.finder.find_links):
                 log.debug(redact_auth_from_url(find_link))
 
+    resolver_cls = LegacyResolver if resolver_name == "legacy" else BacktrackingResolver
     try:
-        resolver = Resolver(
-            constraints,
-            repository,
+        resolver = resolver_cls(
+            constraints=constraints,
+            existing_constraints=existing_pins,
+            repository=repository,
             prereleases=repository.finder.allow_all_prereleases or pre,
             cache=DependencyCache(cache_dir),
             clear_caches=rebuild,

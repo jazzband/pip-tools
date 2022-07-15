@@ -9,11 +9,34 @@ import pytest
 from pip._internal.utils.urls import path_to_url
 
 from piptools.scripts.compile import cli
+from piptools.utils import COMPILE_EXCLUDE_OPTIONS
 
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
 
-is_pypy = "__pypy__" in sys.builtin_module_names
-is_windows = sys.platform == "win32"
+legacy_resolver_only = pytest.mark.parametrize(
+    "current_resolver",
+    ("legacy",),
+    indirect=("current_resolver",),
+)
+
+
+@pytest.fixture(
+    autouse=True,
+    params=[
+        pytest.param("legacy", id="legacy resolver"),
+        pytest.param("backtracking", id="backtracking resolver"),
+    ],
+)
+def current_resolver(request, monkeypatch):
+    # Hide --resolver option from pip-compile header, so that we don't have to
+    # inject it every time to tests outputs.
+    exclude_options = COMPILE_EXCLUDE_OPTIONS | {"--resolver"}
+    monkeypatch.setattr("piptools.utils.COMPILE_EXCLUDE_OPTIONS", exclude_options)
+
+    # Setup given resolver name
+    resolver_name = request.param
+    monkeypatch.setenv("PIP_TOOLS_RESOLVER", resolver_name)
+    return resolver_name
 
 
 @pytest.fixture(autouse=True)
@@ -349,9 +372,6 @@ def test_emit_index_url_option(runner, option, expected_output):
 
 
 @pytest.mark.network
-@pytest.mark.xfail(
-    is_pypy and is_windows, reason="https://github.com/jazzband/pip-tools/issues/1148"
-)
 def test_realistic_complex_sub_dependencies(runner):
     wheels_dir = "wheels"
 
@@ -427,6 +447,7 @@ def test_editable_package_without_non_editable_duplicate(pip_conf, runner):
     assert "small-fake-a==" not in out.stderr
 
 
+@legacy_resolver_only
 def test_editable_package_constraint_without_non_editable_duplicate(pip_conf, runner):
     """
     piptools keeps editable constraint,
@@ -451,6 +472,7 @@ def test_editable_package_constraint_without_non_editable_duplicate(pip_conf, ru
     assert "small-fake-a==" not in out.stderr
 
 
+@legacy_resolver_only
 @pytest.mark.parametrize("req_editable", ((True,), (False,)))
 def test_editable_package_in_constraints(pip_conf, runner, req_editable):
     """
@@ -489,6 +511,7 @@ def test_editable_package_vcs(runner):
     assert "click" in out.stderr  # dependency of pip-tools
 
 
+@legacy_resolver_only
 def test_locally_available_editable_package_is_not_archived_in_cache_dir(
     pip_conf, tmpdir, runner
 ):
@@ -655,7 +678,7 @@ def test_relative_file_uri_package(pip_conf, runner):
 def test_direct_reference_with_extras(runner):
     with open("requirements.in", "w") as req_in:
         req_in.write(
-            "piptools[testing,coverage] @ git+https://github.com/jazzband/pip-tools@6.2.0"
+            "pip-tools[testing,coverage] @ git+https://github.com/jazzband/pip-tools@6.2.0"
         )
     out = runner.invoke(cli, ["-n", "--rebuild"])
     assert out.exit_code == 0
@@ -667,7 +690,7 @@ def test_direct_reference_with_extras(runner):
 def test_input_file_without_extension(pip_conf, runner):
     """
     piptools can compile a file without an extension,
-    and add .txt as the defaut output file extension.
+    and add .txt as the default output file extension.
     """
     with open("requirements", "w") as req_in:
         req_in.write("small-fake-a==0.1")
@@ -677,6 +700,20 @@ def test_input_file_without_extension(pip_conf, runner):
     assert out.exit_code == 0
     assert "small-fake-a==0.1" in out.stderr
     assert os.path.exists("requirements.txt")
+
+
+def test_ignore_incompatible_existing_pins(pip_conf, runner):
+    """
+    Successfully compile when existing output pins conflict with input.
+    """
+    with open("requirements.txt", "w") as req_txt:
+        req_txt.write("small-fake-a==0.2\nsmall-fake-b==0.2")
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-with-deps\nsmall-fake-b<0.2")
+
+    out = runner.invoke(cli, [])
+
+    assert out.exit_code == 0
 
 
 def test_upgrade_packages_option(pip_conf, runner):
@@ -1017,6 +1054,17 @@ def test_filter_pip_markers(pip_conf, runner):
     assert "unknown_package" not in out.stderr
 
 
+def test_bad_setup_file(runner):
+    with open("setup.py", "w") as package:
+        package.write("BAD SYNTAX")
+
+    out = runner.invoke(cli, [])
+
+    assert out.exit_code == 2
+    assert f"Failed to parse {os.path.abspath('setup.py')}" in out.stderr
+
+
+@legacy_resolver_only
 def test_no_candidates(pip_conf, runner):
     with open("requirements", "w") as req_in:
         req_in.write("small-fake-a>0.3b1,<0.3b2")
@@ -1027,6 +1075,7 @@ def test_no_candidates(pip_conf, runner):
     assert "Skipped pre-versions:" in out.stderr
 
 
+@legacy_resolver_only
 def test_no_candidates_pre(pip_conf, runner):
     with open("requirements", "w") as req_in:
         req_in.write("small-fake-a>0.3b1,<0.3b1")
@@ -1203,30 +1252,73 @@ def test_annotate_option(pip_conf, runner, options, expected):
 
     out = runner.invoke(cli, [*options, "-n", "--no-emit-find-links"])
 
+    assert out.exit_code == 0, out
     assert out.stderr == dedent(expected)
-    assert out.exit_code == 0
 
 
 @pytest.mark.parametrize(
     ("option", "expected"),
     (
-        ("--allow-unsafe", "small-fake-a==0.1"),
-        ("--no-allow-unsafe", "# small-fake-a"),
-        (None, "# small-fake-a"),
+        pytest.param(
+            "--allow-unsafe",
+            dedent(
+                """\
+                small-fake-a==0.1
+                small-fake-b==0.3
+                small-fake-with-deps==0.1
+                """
+            ),
+            id="allow all packages",
+        ),
+        pytest.param(
+            "--no-allow-unsafe",
+            dedent(
+                """\
+                small-fake-b==0.3
+
+                # The following packages are considered to be unsafe in a requirements file:
+                # small-fake-a
+                # small-fake-with-deps
+                """
+            ),
+            id="comment out small-fake-with-deps and its dependencies",
+        ),
+        pytest.param(
+            None,
+            dedent(
+                """\
+                small-fake-b==0.3
+
+                # The following packages are considered to be unsafe in a requirements file:
+                # small-fake-a
+                # small-fake-with-deps
+                """
+            ),
+            id="allow unsafe is default option",
+        ),
     ),
 )
 def test_allow_unsafe_option(pip_conf, monkeypatch, runner, option, expected):
     """
     Unsafe packages are printed as expected with and without --allow-unsafe.
     """
-    monkeypatch.setattr("piptools.resolver.UNSAFE_PACKAGES", {"small-fake-a"})
+    monkeypatch.setattr("piptools.resolver.UNSAFE_PACKAGES", {"small-fake-with-deps"})
     with open("requirements.in", "w") as req_in:
-        req_in.write(path_to_url(os.path.join(PACKAGES_PATH, "small_fake_with_deps")))
+        req_in.write("small-fake-b\n")
+        req_in.write("small-fake-with-deps")
 
-    out = runner.invoke(cli, ["--no-annotate", option] if option else [])
+    out = runner.invoke(
+        cli,
+        [
+            "--no-header",
+            "--no-emit-options",
+            "--no-annotate",
+            *([option] if option else []),
+        ],
+    )
 
-    assert expected in out.stderr.splitlines()
-    assert out.exit_code == 0
+    assert out.exit_code == 0, out
+    assert out.stderr == expected
 
 
 @pytest.mark.parametrize(
@@ -1483,6 +1575,7 @@ def test_options_in_requirements_file(runner, options):
         ),
     ),
 )
+@legacy_resolver_only
 def test_unreachable_index_urls(runner, cli_options, expected_message):
     """
     Test pip-compile raises an error if index URLs are not reachable.
@@ -1732,6 +1825,34 @@ def test_duplicate_reqs_combined(
     assert "test-package-1==0.1" in out.stderr
 
 
+def test_local_duplicate_subdependency_combined(runner, make_package):
+    """
+    Test pip-compile tracks subdependencies properly when install requirements
+    are combined, especially when local paths are passed as urls, and those reqs
+    are combined after getting dependencies.
+
+    Regression test for issue GH-1505.
+    """
+    package_a = make_package("project-a", install_requires=["pip-tools==6.3.0"])
+    package_b = make_package("project-b", install_requires=["project-a"])
+
+    with open("requirements.in", "w") as req_in:
+        req_in.writelines(
+            [
+                f"file://{package_a}#egg=project-a\n",
+                f"file://{package_b}#egg=project-b",
+            ]
+        )
+
+    out = runner.invoke(cli, ["-n"])
+
+    assert out.exit_code == 0
+    assert "project-b" in out.stderr
+    assert "project-a" in out.stderr
+    assert "pip-tools==6.3.0" in out.stderr
+    assert "click" in out.stderr  # dependency of pip-tools
+
+
 def test_combine_extras(pip_conf, runner, make_package):
     """
     Ensure that multiple declarations of a dependency that specify different
@@ -1762,6 +1883,73 @@ def test_combine_extras(pip_conf, runner, make_package):
     assert "package-with-extras" in out.stderr
     assert "small-fake-a==" in out.stderr
     assert "small-fake-b==" in out.stderr
+
+
+def test_combine_different_extras_of_the_same_package(
+    pip_conf, runner, tmpdir, make_package, make_wheel
+):
+    """
+    Loosely based on the example from https://github.com/jazzband/pip-tools/issues/1511.
+    """
+    pkgs = [
+        make_package(
+            "fake-colorful",
+            version="0.3",
+        ),
+        make_package(
+            "fake-tensorboardX",
+            version="0.5",
+        ),
+        make_package(
+            "fake-ray",
+            version="0.1",
+            extras_require={
+                "default": ["fake-colorful==0.3"],
+                "tune": ["fake-tensorboardX==0.5"],
+            },
+        ),
+        make_package(
+            "fake-tune-sklearn",
+            version="0.7",
+            install_requires=[
+                "fake-ray[tune]==0.1",
+            ],
+        ),
+    ]
+
+    dists_dir = tmpdir / "dists"
+    for pkg in pkgs:
+        make_wheel(pkg, dists_dir)
+
+    with open("requirements.in", "w") as req_in:
+        req_in.writelines(
+            [
+                "fake-ray[default]==0.1\n",
+                "fake-tune-sklearn==0.7\n",
+            ]
+        )
+
+    out = runner.invoke(
+        cli, ["--find-links", str(dists_dir), "--no-header", "--no-emit-options"]
+    )
+    assert out.exit_code == 0
+    assert (
+        dedent(
+            """\
+        fake-colorful==0.3
+            # via fake-ray
+        fake-ray[default,tune]==0.1
+            # via
+            #   -r requirements.in
+            #   fake-tune-sklearn
+        fake-tensorboardx==0.5
+            # via fake-ray
+        fake-tune-sklearn==0.7
+            # via -r requirements.in
+        """
+        )
+        == out.stderr
+    )
 
 
 @pytest.mark.parametrize(
@@ -1932,7 +2120,6 @@ METADATA_TEST_CASES = (
 
 @pytest.mark.network
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
-@pytest.mark.xfail(is_pypy, reason="https://github.com/jazzband/pip-tools/issues/1375")
 def test_input_formats(fake_dists, runner, make_module, fname, content):
     """
     Test different dependency formats as input file.
@@ -1951,7 +2138,6 @@ def test_input_formats(fake_dists, runner, make_module, fname, content):
 
 @pytest.mark.network
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
-@pytest.mark.xfail(is_pypy, reason="https://github.com/jazzband/pip-tools/issues/1375")
 def test_one_extra(fake_dists, runner, make_module, fname, content):
     """
     Test one `--extra` (dev) passed, other extras (test) must be ignored.
@@ -1979,7 +2165,6 @@ def test_one_extra(fake_dists, runner, make_module, fname, content):
     ),
 )
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
-@pytest.mark.xfail(is_pypy, reason="https://github.com/jazzband/pip-tools/issues/1375")
 def test_multiple_extras(fake_dists, runner, make_module, fname, content, extra_opts):
     """
     Test passing multiple `--extra` params.
@@ -2042,3 +2227,23 @@ def test_cli_compile_strip_extras(runner, make_package, make_sdist, tmpdir):
     assert out.exit_code == 0, out
     assert "test-package-2==0.1" in out.stderr
     assert "[more]" not in out.stderr
+
+
+def test_resolution_failure(runner):
+    """Test resolution impossible for unknown package."""
+    with open("requirements.in", "w") as reqs_out:
+        reqs_out.write("unknown-package")
+
+    out = runner.invoke(cli)
+
+    assert out.exit_code != 0, out
+
+
+def test_resolver_reaches_max_rounds(runner):
+    """Test resolver reched max rounds and raises error."""
+    with open("requirements.in", "w") as reqs_out:
+        reqs_out.write("six")
+
+    out = runner.invoke(cli, ["--max-rounds", 0])
+
+    assert out.exit_code != 0, out
