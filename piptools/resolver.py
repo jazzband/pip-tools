@@ -484,14 +484,6 @@ class LegacyResolver(BaseResolver):
                 dependency_string, constraint=ireq.constraint, comes_from=ireq
             )
 
-    def reverse_dependencies(
-        self, ireqs: Iterable[InstallRequirement]
-    ) -> Dict[str, Set[str]]:
-        non_editable = [
-            ireq for ireq in ireqs if not (ireq.editable or is_url_requirement(ireq))
-        ]
-        return self.dependency_cache.reverse_dependencies(non_editable)
-
 
 class BacktrackingResolver(BaseResolver):
     """A wrapper for backtracking resolver."""
