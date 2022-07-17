@@ -609,14 +609,8 @@ class BacktrackingResolver(BaseResolver):
         resolver_result = resolver._result
         assert isinstance(resolver_result, Result)
 
-        # Get reverse requirements from the resolver result graph.
-        reverse_dependencies = self._get_reverse_dependencies(resolver_result)
-
         # Prepare set of install requirements from resolver result.
-        result_ireqs = self._get_install_requirements(
-            resolver_result=resolver_result,
-            reverse_dependencies=reverse_dependencies,
-        )
+        result_ireqs = self._get_install_requirements(resolver_result=resolver_result)
 
         # Filter out unsafe requirements.
         if not self.allow_unsafe:
@@ -676,12 +670,13 @@ class BacktrackingResolver(BaseResolver):
         return True
 
     def _get_install_requirements(
-        self,
-        resolver_result: Result,
-        reverse_dependencies: Dict[str, Set[str]],
+        self, resolver_result: Result
     ) -> Set[InstallRequirement]:
         """Return a set of install requirements from resolver results."""
         result_ireqs: Dict[str, InstallRequirement] = {}
+
+        # Get reverse requirements from the resolver result graph.
+        reverse_dependencies = self._get_reverse_dependencies(resolver_result)
 
         # Transform candidates to install requirements
         resolved_candidates = tuple(resolver_result.mapping.values())
