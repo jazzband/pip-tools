@@ -249,7 +249,7 @@ def _get_default_option(option_name: str) -> Any:
     "--unsafe-package",
     multiple=True,
     help="Specify a package to consider unsafe; may be used more than once. "
-    f"Replaces default unsafe packages, {', '.join(sorted(UNSAFE_PACKAGES))}",
+    f"Replaces default unsafe packages: {', '.join(sorted(UNSAFE_PACKAGES))}",
 )
 def cli(
     ctx: click.Context,
