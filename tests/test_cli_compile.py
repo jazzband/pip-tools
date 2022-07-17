@@ -1603,7 +1603,7 @@ def test_upgrade_packages_option_subdependency(
     pip_conf, runner, current_package, upgraded_package
 ):
     """
-    Test that pip-compile --upgrade-package/-P upgrades/dpwngrades subdependencies.
+    Test that pip-compile --upgrade-package/-P upgrades/downgrades subdependencies.
     """
 
     with open("requirements.in", "w") as reqs:
