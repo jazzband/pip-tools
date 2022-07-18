@@ -946,23 +946,8 @@ def test_generate_hashes_with_annotations(runner):
         ("--annotation-style", "split"),
     ),
 )
-@pytest.mark.parametrize(
-    ("nl_options", "must_include", "must_exclude"),
-    (
-        pytest.param(("--newline", "lf"), "\n", "\r\n", id="LF"),
-        pytest.param(("--newline", "crlf"), "\r\n", "\n", id="CRLF"),
-        pytest.param(
-            ("--newline", "native"),
-            os.linesep,
-            {"\n": "\r\n", "\r\n": "\n"}[os.linesep],
-            id="native",
-        ),
-    ),
-)
-def test_override_newline(
-    runner, gen_hashes, annotate_options, nl_options, must_include, must_exclude
-):
-    opts = annotate_options + nl_options
+def test_force_lf_newlines(runner, gen_hashes, annotate_options):
+    opts = (*annotate_options, "--force-lf-newlines")
     if gen_hashes:
         opts += ("--generate-hashes",)
 
@@ -975,27 +960,8 @@ def test_override_newline(
     with open("requirements.txt", "rb") as req_txt:
         txt = req_txt.read().decode()
 
-    assert must_include in txt
-
-    if must_exclude in must_include:
-        txt = txt.replace(must_include, "")
-    assert must_exclude not in txt
-
-    # Do it again, with --newline=preserve:
-
-    opts = annotate_options + ("--newline", "preserve")
-    if gen_hashes:
-        opts += ("--generate-hashes",)
-
-    runner.invoke(cli, [*opts, "requirements.in"])
-    with open("requirements.txt", "rb") as req_txt:
-        txt = req_txt.read().decode()
-
-    assert must_include in txt
-
-    if must_exclude in must_include:
-        txt = txt.replace(must_include, "")
-    assert must_exclude not in txt
+    assert "\n" in txt
+    assert "\r\n" not in txt
 
 
 @pytest.mark.network
@@ -1003,11 +969,27 @@ def test_override_newline(
     ("linesep", "must_exclude"),
     (pytest.param("\n", "\r\n", id="LF"), pytest.param("\r\n", "\n", id="CRLF")),
 )
-def test_preserve_newline_from_input(runner, linesep, must_exclude):
+def test_preserve_newlines_from_output_or_input(runner, linesep, must_exclude):
     with open("requirements.in", "wb") as req_in:
         req_in.write(f"six{linesep}".encode())
 
-    runner.invoke(cli, ["--newline=preserve", "requirements.in"])
+    runner.invoke(cli, ["requirements.in"])
+    with open("requirements.txt", "rb") as req_txt:
+        txt = req_txt.read().decode()
+
+    assert linesep in txt
+
+    if must_exclude in linesep:
+        txt = txt.replace(linesep, "")
+    assert must_exclude not in txt
+
+    # Now that we have good output,
+    # see that it's preserved when we have bad input:
+
+    with open("requirements.in", "wb") as req_in:
+        req_in.write(f"six{must_exclude}".encode())
+
+    runner.invoke(cli, ["requirements.in"])
     with open("requirements.txt", "rb") as req_txt:
         txt = req_txt.read().decode()
 

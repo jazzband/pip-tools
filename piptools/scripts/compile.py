@@ -49,33 +49,24 @@ def _get_default_option(option_name: str) -> Any:
     return getattr(default_values, option_name)
 
 
-def _determine_linesep(
-    strategy: str = "preserve", filenames: Tuple[str, ...] = ()
-) -> str:
+def _existing_linesep(*filenames: str) -> str:
     """
-    Determine and return linesep string for OutputWriter to use.
-    Valid strategies: "LF", "CRLF", "native", "preserve"
-    When preserving, files are checked in order for existing newlines.
+    Check files in order for an existing linesep and return it, if possible.
+    Otherwise, return LF ("\n").
     """
-    if strategy == "preserve":
-        for fname in filenames:
-            try:
-                with open(fname, "rb") as existing_file:
-                    existing_text = existing_file.read()
-            except FileNotFoundError:
-                continue
-            if b"\r\n" in existing_text:
-                strategy = "CRLF"
-                break
-            elif b"\n" in existing_text:
-                strategy = "LF"
-                break
-    return {
-        "native": os.linesep,
-        "LF": "\n",
-        "CRLF": "\r\n",
-        "preserve": "\n",
-    }[strategy]
+    linesep = "\n"
+    for fname in filenames:
+        try:
+            with open(fname, "rb") as existing_file:
+                existing_text = existing_file.read()
+        except FileNotFoundError:
+            continue
+        if b"\r\n" in existing_text:
+            linesep = "\r\n"
+            break
+        elif b"\n" in existing_text:
+            break
+    return linesep
 
 
 @click.command(context_settings={"help_option_names": ("-h", "--help")})
@@ -195,10 +186,10 @@ def _determine_linesep(
     ),
 )
 @click.option(
-    "--newline",
-    type=click.Choice(("LF", "CRLF", "native", "preserve"), case_sensitive=False),
-    default="preserve",
-    help="Override the newline control characters used",
+    "--force-lf-newlines",
+    is_flag=True,
+    default=False,
+    help="Always use LF newlines, rather than auto-detecting from existing files.",
 )
 @click.option(
     "--allow-unsafe/--no-allow-unsafe",
@@ -314,7 +305,7 @@ def cli(
     upgrade: bool,
     upgrade_packages: Tuple[str, ...],
     output_file: Union[LazyFile, IO[Any], None],
-    newline: str,
+    force_lf_newlines: bool,
     allow_unsafe: bool,
     strip_extras: bool,
     generate_hashes: bool,
@@ -551,8 +542,8 @@ def cli(
 
     log.debug("")
 
-    linesep = _determine_linesep(
-        strategy=newline, filenames=(output_file.name, *src_files)
+    linesep = (
+        "\n" if force_lf_newlines else _existing_linesep(output_file.name, *src_files)
     )
 
     ##
