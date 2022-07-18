@@ -49,6 +49,35 @@ def _get_default_option(option_name: str) -> Any:
     return getattr(default_values, option_name)
 
 
+def _determine_linesep(
+    strategy: str = "preserve", filenames: Tuple[str, ...] = ()
+) -> str:
+    """
+    Determine and return linesep string for OutputWriter to use.
+    Valid strategies: "LF", "CRLF", "native", "preserve"
+    When preserving, files are checked in order for existing newlines.
+    """
+    if strategy == "preserve":
+        for fname in filenames:
+            try:
+                with open(fname, "rb") as existing_file:
+                    existing_text = existing_file.read()
+            except FileNotFoundError:
+                continue
+            if b"\r\n" in existing_text:
+                strategy = "CRLF"
+                break
+            elif b"\n" in existing_text:
+                strategy = "LF"
+                break
+    return {
+        "native": os.linesep,
+        "LF": "\n",
+        "CRLF": "\r\n",
+        "preserve": "\n",
+    }[strategy]
+
+
 @click.command(context_settings={"help_option_names": ("-h", "--help")})
 @click.version_option(**version_option_kwargs)
 @click.pass_context
@@ -510,24 +539,9 @@ def cli(
 
     log.debug("")
 
-    # Determine linesep for OutputWriter to use
-    if newline == "preserve":
-        for fname in (output_file.name, *src_files):
-            if os.path.exists(fname):
-                with open(fname, "rb") as existing_file:
-                    existing_text = existing_file.read().decode()
-                if "\r\n" in existing_text:
-                    newline = "CRLF"
-                    break
-                elif "\n" in existing_text:
-                    newline = "LF"
-                    break
-    linesep = {
-        "native": os.linesep,
-        "LF": "\n",
-        "CRLF": "\r\n",
-        "preserve": "\n",
-    }[newline]
+    linesep = _determine_linesep(
+        strategy=newline, filenames=(output_file.name, *src_files)
+    )
 
     ##
     # Output
