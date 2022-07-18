@@ -152,20 +152,18 @@ from piptools.resolver import RequirementSummary, combine_install_requirements
             ),
             (
                 ["fake-piptools-test-with-unsafe-deps==0.1"],
-                ["fake-piptools-test-with-unsafe-deps==0.1"],
+                [
+                    "appdirs==1.4.9 (from "
+                    "setuptools==34.0.0->fake-piptools-test-with-unsafe-deps==0.1)",
+                    "fake-piptools-test-with-unsafe-deps==0.1",
+                    "packaging==16.8 (from "
+                    "setuptools==34.0.0->fake-piptools-test-with-unsafe-deps==0.1)",
+                ],
                 False,
                 {
                     (
                         "setuptools==34.0.0 (from "
                         "fake-piptools-test-with-unsafe-deps==0.1)"
-                    ),
-                    (
-                        "appdirs==1.4.9 (from "
-                        "setuptools==34.0.0->fake-piptools-test-with-unsafe-deps==0.1)"
-                    ),
-                    (
-                        "packaging==16.8 (from "
-                        "setuptools==34.0.0->fake-piptools-test-with-unsafe-deps==0.1)"
                     ),
                 },
             ),
@@ -248,6 +246,55 @@ def test_resolver__allows_unsafe_deps(
     output = resolver(input, prereleases=prereleases, allow_unsafe=True).resolve()
     output = {str(line) for line in output}
     assert output == {str(line) for line in expected}
+
+
+@pytest.mark.parametrize(
+    (
+        "input",
+        "expected",
+        "unsafe_packages",
+        "unsafe_constraints",
+    ),
+    (
+        (
+            ["fake-piptools-test-with-pinned-deps==0.1"],
+            {
+                "fake-piptools-test-with-pinned-deps==0.1",
+                "pytz==2016.4 (from celery==3.1.18->fake-piptools-test-with-pinned-deps==0.1)",
+                "billiard==3.3.0.23 (from "
+                "celery==3.1.18->fake-piptools-test-with-pinned-deps==0.1)",
+                "celery==3.1.18 (from fake-piptools-test-with-pinned-deps==0.1)",
+                "anyjson==0.3.3 (from "
+                "kombu==3.0.35->celery==3.1.18->fake-piptools-test-with-pinned-deps==0.1)",
+                "amqp==1.4.9 (from "
+                "kombu==3.0.35->celery==3.1.18->fake-piptools-test-with-pinned-deps==0.1)",
+            },
+            {"kombu"},
+            {
+                "kombu==3.0.35 (from celery==3.1.18->fake-piptools-test-with-pinned-deps==0.1)",
+            },
+        ),
+    ),
+)
+def test_resolver__custom_unsafe_deps(
+    resolver,
+    from_line,
+    input,
+    expected,
+    unsafe_packages,
+    unsafe_constraints,
+):
+    input = [line if isinstance(line, tuple) else (line, False) for line in input]
+    input = [from_line(req[0], constraint=req[1]) for req in input]
+    resolver = resolver(
+        input,
+        unsafe_packages=unsafe_packages,
+    )
+    output = resolver.resolve()
+    output = {str(line) for line in output}
+
+    assert output == expected
+    assert {str(line) for line in resolver.unsafe_constraints} == unsafe_constraints
 
 
 def test_resolver__max_number_rounds_reached(resolver, from_line):
