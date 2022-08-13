@@ -124,7 +124,6 @@ You can produce your pin files as easily as:
     #
     #    pip-compile --extra=dev --output-file=dev-requirements.txt pyproject.toml
     #
-    --index-url https://pypi.vm.ag/root/vrmd/+simple/
 
     asgiref==3.5.2
         # via django
