@@ -73,7 +73,7 @@ Requirements from ``pyproject.toml``
 
 The ``pyproject.toml`` file is the
 `latest standard <https://peps.python.org/pep-0621/>`_ for configuring
-packages and applications and recommended for new projects. ``pip-compile``
+packages and applications, and is recommended for new projects. ``pip-compile``
 supports both installing your ``project.dependencies`` as well as your
 ``project.optional-dependencies``. Thanks to the fact that this is an
 official standard, you can use ``pip-compile`` to pin your dependencies
