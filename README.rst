@@ -161,8 +161,8 @@ Requirements from ``setup.py`` and ``setup.cfg``
 Just define your dependencies and extras as usual and run
 ``pip-compile`` as above.
 
-``requirements.in``
--------------------
+Requirements from ``requirements.in``
+-------------------------------------
 
 You can also use plain text files for your requirements (e.g. if you don't
 want your application to be a package). To use a ``requirements.in`` file to
