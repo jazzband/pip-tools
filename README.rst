@@ -76,8 +76,8 @@ The ``pyproject.toml`` file is the
 packages and applications, and is recommended for new projects. ``pip-compile``
 supports both installing your ``project.dependencies`` as well as your
 ``project.optional-dependencies``. Thanks to the fact that this is an
-official standard, you can use ``pip-compile`` to pin your dependencies
-for projects based on modern standards-adhering packaging tools like
+official standard, you can use ``pip-compile`` to pin the dependencies
+in projects that use modern standards-adhering packaging tools like
 `Hatch <https://hatch.pypa.io/>`_ or `flit <https://flit.pypa.io/>`_.
 
 Suppose you have a Django project that is packaged using ``Hatch``, and you
