@@ -113,7 +113,7 @@ Requirements from ``setup.py`` and ``setup.cfg``
 ------------------------------------------------
 
 ``pip-compile`` has also full support for ``setup.py``- and
-``setup.cfg``-based projects that drive setuptools.
+``setup.cfg``-based projects that use ``setuptools``.
 
 Just define your dependencies and extras as usual and run
 ``pip-compile`` as above.
