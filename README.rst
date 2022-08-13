@@ -82,7 +82,7 @@ in projects that use modern standards-adhering packaging tools like
 
 Suppose you have a Django application that is packaged using ``Hatch``, and you
 want to pin it for production. You also want to pin your development tools
-into a separate pin file. You declare ``django`` as a dependency and create an
+in a separate pin file. You declare ``django`` as a dependency and create an
 optional dependency ``dev`` that includes ``pytest``:
 
 .. code-block:: toml
