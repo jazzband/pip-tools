@@ -287,7 +287,10 @@ def cli(
     emit_options: bool,
     unsafe_package: Tuple[str, ...],
 ) -> None:
-    """Compiles requirements.txt from requirements.in specs."""
+    """
+    Compiles requirements.txt from requirements.in, pyproject.toml, setup.cfg,
+    or setup.py specs.
+    """
     log.verbosity = verbose - quiet
 
     if len(src_files) == 0:
