@@ -101,7 +101,7 @@ optional dependency ``dev`` that includes ``pytest``:
 
 You can produce your pin files as easily as:
 
-.. code-block:: bash
+.. code-block:: console
 
     $ pip-compile -o requirements.txt pyproject.toml
     $ pip-compile --extra dev -o dev-requirements.txt pyproject.toml
