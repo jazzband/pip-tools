@@ -80,7 +80,7 @@ official standard, you can use ``pip-compile`` to pin the dependencies
 in projects that use modern standards-adhering packaging tools like
 `Hatch <https://hatch.pypa.io/>`_ or `flit <https://flit.pypa.io/>`_.
 
-Suppose you have a Django project that is packaged using ``Hatch``, and you
+Suppose you have a Django application that is packaged using ``Hatch``, and you
 want to pin it for production. You also want to pin your development tools
 into a separate pin file. You declare ``django`` as a dependency and create an
 optional dependency ``dev`` that includes ``pytest``:
