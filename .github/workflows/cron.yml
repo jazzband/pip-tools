@@ -4,6 +4,8 @@ on:
   schedule:
     # Run every day at 00:00 UTC
     - cron: 0 0 * * *
+  push:
+  pull_request:
 
 jobs:
   main:
@@ -13,14 +15,14 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - Ubuntu
+          #- Ubuntu
           - Windows
-          - MacOS
+          #- MacOS
         python-version:
           - "3.10"
-          - "3.9"
-          - "3.8"
-          - "3.7"
+          #- "3.9"
+          #- "3.8"
+          #- "3.7"
         pip-version:
           - main
     env:
@@ -50,6 +52,11 @@ jobs:
             ${{ runner.os }}-
       - name: Install test dependencies
         run: python -m pip install -U tox virtualenv
+      - name: Uninstall pip
+        run: python -m pip uninstall pip --yes
+      - name: Ensure Pip
+        run: python -m ensurepip
+      # see https://github.com/jazzband/pip-tools/issues/1671
       - name: Prepare test environment
         run: tox --notest -p auto --parallel-live
       - name: Test pip ${{ matrix.pip-version }}
@@ -62,8 +69,8 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - Ubuntu
-          - MacOS
+          #- Ubuntu
+          #- MacOS
           - Windows
         python-version:
           - pypy-3.8
@@ -96,6 +103,10 @@ jobs:
             ${{ runner.os }}-
       - name: Install tox
         run: pip install tox
+      - name: Uninstall pip
+        run: python -m pip uninstall pip --yes
+      - name: Ensure Pip
+        run: python -m ensurepip
       - name: Prepare test environment
         run: tox --notest -p auto --parallel-live
       - name: Test pip ${{ matrix.pip-version }}
