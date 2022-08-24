@@ -3,7 +3,9 @@ import os
 import shlex
 import sys
 import tempfile
-from subprocess import CalledProcessError  # nosec - we only import exception for type checks
+from subprocess import (  # nosec - we only import exception for type checks
+    CalledProcessError,
+)
 from typing import IO, Any, BinaryIO, List, Optional, Tuple, Union, cast
 
 import click
