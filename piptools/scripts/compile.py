@@ -433,6 +433,8 @@ def cli(
                 )
             except BuildBackendException as e:
                 log.error(str(e))
+                if isinstance(e.exception, CalledProcessError):
+                    log.error(str(e.exception.output.decode()))
                 log.error(f"Failed to parse {os.path.abspath(src_file)}")
                 sys.exit(2)
             comes_from = f"{metadata.get_all('Name')[0]} ({src_file})"
