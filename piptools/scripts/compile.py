@@ -4,6 +4,7 @@ import shlex
 import sys
 import tempfile
 from typing import IO, Any, BinaryIO, List, Optional, Tuple, Union, cast
+from subprocess import CalledProcessError
 
 import click
 from build import BuildBackendException

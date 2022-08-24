@@ -1062,6 +1062,7 @@ def test_bad_setup_file(runner):
 
     assert out.exit_code == 2
     assert f"Failed to parse {os.path.abspath('setup.py')}" in out.stderr
+    assert "SyntaxError" in out.stderr
 
 
 @legacy_resolver_only
