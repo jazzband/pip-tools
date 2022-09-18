@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 import click
 from pip._internal.commands import create_command
@@ -8,6 +8,13 @@ from pip._internal.utils.misc import redact_auth_from_url
 
 from piptools.locations import CACHE_DIR, DEFAULT_CONFIG_FILE_NAMES
 from piptools.utils import UNSAFE_PACKAGES, override_defaults_from_config_file
+
+BuildTargetT = Literal["sdist", "wheel", "editable"]
+ALL_BUILD_TARGETS: tuple[BuildTargetT, ...] = (
+    "editable",
+    "sdist",
+    "wheel",
+)
 
 
 def _get_default_option(option_name: str) -> Any:
@@ -363,4 +370,30 @@ user = click.option(
     "user_only",
     is_flag=True,
     help="Restrict attention to user directory",
+)
+
+build_deps_for = click.option(
+    "--build-deps-for",
+    "build_deps_targets",
+    multiple=True,
+    type=click.Choice(ALL_BUILD_TARGETS),
+    help="Name of a build target to extract dependencies for. "
+    "Static dependencies declared in 'pyproject.toml::build-system.requires' will be included as "
+    "well; may be used more than once.",
+)
+
+all_build_deps = click.option(
+    "--all-build-deps",
+    is_flag=True,
+    default=False,
+    help="Extract dependencies for all build targets. "
+    "Static dependencies declared in 'pyproject.toml::build-system.requires' will be included as "
+    "well.",
+)
+
+only_build_deps = click.option(
+    "--only-build-deps",
+    is_flag=True,
+    default=False,
+    help="Extract a package only if it is a build dependency.",
 )
