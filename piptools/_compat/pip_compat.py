@@ -50,8 +50,8 @@ else:
 
 # The Distribution interface has changed between pkg_resources and
 # importlib.metadata, so this compat layer allows for a consistent access
-# pattern. In pip 22.1, importlib.metdata became the default on Python 3.11
-# (and later), but is overrideable. `select_backend` returns what's being used.
+# pattern. In pip 22.1, importlib.metadata became the default on Python 3.11
+# (and later), but is overridable. `select_backend` returns what's being used.
 
 
 def _uses_pkg_resources() -> bool:

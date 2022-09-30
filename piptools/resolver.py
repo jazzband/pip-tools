@@ -5,6 +5,7 @@ from functools import partial
 from itertools import chain, count, groupby
 from typing import (
     Any,
+    Container,
     DefaultDict,
     Dict,
     Iterable,
@@ -176,22 +177,13 @@ class BaseResolver(metaclass=ABCMeta):
     def _filter_out_unsafe_constraints(
         self,
         ireqs: Set[InstallRequirement],
-        reverse_dependencies: Dict[str, Set[str]],
+        unsafe_packages: Container[str],
     ) -> None:
         """
         Remove from a given set of ``InstallRequirement``'s unsafe constraints.
-
-        Reverse_dependencies is used to filter out packages that are only
-        required by unsafe packages. This logic is incomplete, as it would
-        fail to filter sub-sub-dependencies of unsafe packages. None of the
-        UNSAFE_PACKAGES currently have any dependencies at all (which makes
-        sense for installation tools) so this seems sufficient.
         """
         for req in ireqs.copy():
-            required_by = reverse_dependencies.get(req.name.lower(), set())
-            if req.name in UNSAFE_PACKAGES or (
-                required_by and all(name in UNSAFE_PACKAGES for name in required_by)
-            ):
+            if req.name in unsafe_packages:
                 self.unsafe_constraints.add(req)
                 ireqs.remove(req)
 
@@ -206,6 +198,7 @@ class LegacyResolver(BaseResolver):
         prereleases: Optional[bool] = False,
         clear_caches: bool = False,
         allow_unsafe: bool = False,
+        unsafe_packages: Optional[Set[str]] = None,
     ) -> None:
         """
         This class resolves a given set of constraints (a collection of
@@ -220,6 +213,7 @@ class LegacyResolver(BaseResolver):
         self.clear_caches = clear_caches
         self.allow_unsafe = allow_unsafe
         self.unsafe_constraints: Set[InstallRequirement] = set()
+        self.unsafe_packages = unsafe_packages or UNSAFE_PACKAGES
 
         options = self.repository.options
         if "legacy-resolver" not in options.deprecated_features_enabled:
@@ -281,7 +275,7 @@ class LegacyResolver(BaseResolver):
         if not self.allow_unsafe:
             self._filter_out_unsafe_constraints(
                 ireqs=results,
-                reverse_dependencies=self.reverse_dependencies(results),
+                unsafe_packages=self.unsafe_packages,
             )
 
         return results
@@ -490,14 +484,6 @@ class LegacyResolver(BaseResolver):
                 dependency_string, constraint=ireq.constraint, comes_from=ireq
             )
 
-    def reverse_dependencies(
-        self, ireqs: Iterable[InstallRequirement]
-    ) -> Dict[str, Set[str]]:
-        non_editable = [
-            ireq for ireq in ireqs if not (ireq.editable or is_url_requirement(ireq))
-        ]
-        return self.dependency_cache.reverse_dependencies(non_editable)
-
 
 class BacktrackingResolver(BaseResolver):
     """A wrapper for backtracking resolver."""
@@ -508,11 +494,13 @@ class BacktrackingResolver(BaseResolver):
         existing_constraints: Dict[str, InstallRequirement],
         repository: BaseRepository,
         allow_unsafe: bool = False,
+        unsafe_packages: Optional[Set[str]] = None,
         **kwargs: Any,
     ) -> None:
         self.constraints = list(constraints)
         self.repository = repository
         self.allow_unsafe = allow_unsafe
+        self.unsafe_packages = unsafe_packages or UNSAFE_PACKAGES
 
         options = self.options = self.repository.options
         self.session = self.repository.session
@@ -634,7 +622,7 @@ class BacktrackingResolver(BaseResolver):
         if not self.allow_unsafe:
             self._filter_out_unsafe_constraints(
                 ireqs=result_ireqs,
-                reverse_dependencies=reverse_dependencies,
+                unsafe_packages=self.unsafe_packages,
             )
 
         return result_ireqs

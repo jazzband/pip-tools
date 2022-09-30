@@ -1274,10 +1274,10 @@ def test_annotate_option(pip_conf, runner, options, expected):
             "--no-allow-unsafe",
             dedent(
                 """\
+                small-fake-a==0.1
                 small-fake-b==0.3
 
                 # The following packages are considered to be unsafe in a requirements file:
-                # small-fake-a
                 # small-fake-with-deps
                 """
             ),
@@ -1287,10 +1287,10 @@ def test_annotate_option(pip_conf, runner, options, expected):
             None,
             dedent(
                 """\
+                small-fake-a==0.1
                 small-fake-b==0.3
 
                 # The following packages are considered to be unsafe in a requirements file:
-                # small-fake-a
                 # small-fake-with-deps
                 """
             ),
@@ -1603,7 +1603,7 @@ def test_upgrade_packages_option_subdependency(
     pip_conf, runner, current_package, upgraded_package
 ):
     """
-    Test that pip-compile --upgrade-package/-P upgrades/dpwngrades subdependencies.
+    Test that pip-compile --upgrade-package/-P upgrades/downgrades subdependencies.
     """
 
     with open("requirements.in", "w") as reqs:
