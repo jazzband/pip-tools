@@ -80,6 +80,12 @@ def _get_default_option(option_name: str) -> Any:
     help="Name of an extras_require group to install; may be used more than once",
 )
 @click.option(
+    "--all-extras",
+    is_flag=True,
+    default=False,
+    help="Install all extras_require groups",
+)
+@click.option(
     "-f",
     "--find-links",
     multiple=True,
@@ -259,6 +265,7 @@ def cli(
     pre: bool,
     rebuild: bool,
     extras: Tuple[str, ...],
+    all_extras: bool,
     find_links: Tuple[str, ...],
     index_url: str,
     extra_index_url: Tuple[str, ...],
@@ -401,8 +408,6 @@ def cli(
     # Parsing/collecting initial requirements
     ###
 
-    extras = tuple(itertools.chain.from_iterable(ex.split(",") for ex in extras))
-
     constraints: List[InstallRequirement] = []
     setup_file_found = False
     for src_file in src_files:
@@ -444,12 +449,9 @@ def cli(
                     for req in metadata.get_all("Requires-Dist") or []
                 ]
             )
-            # Since "*" is not a valid extra there is no risk confusing an actual extra
-            # for the wildcard.
-            # https://peps.python.org/pep-0508/#grammar
-            if "*" in extras:
-                if len(extras) != 1:
-                    msg = "--extra=* only makes sense if it is the only --extra"
+            if all_extras:
+                if extras:
+                    msg = "--extra has no effect when used with --all-extras"
                     raise click.BadParameter(msg)
                 extras = tuple(metadata.get_all("Provides-Extra"))
         else:
@@ -461,6 +463,8 @@ def cli(
                     options=repository.options,
                 )
             )
+
+    extras = tuple(itertools.chain.from_iterable(ex.split(",") for ex in extras))
 
     if extras and not setup_file_found:
         msg = "--extra has effect only with setup.py and PEP-517 input formats"

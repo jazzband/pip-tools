@@ -2192,17 +2192,16 @@ def test_multiple_extras(fake_dists, runner, make_module, fname, content, extra_
 
 @pytest.mark.network
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
-def test_wildcard_extras(fake_dists, runner, make_module, fname, content):
+def test_all_extras(fake_dists, runner, make_module, fname, content):
     """
-    Test passing wildcard `--extra` includes all applicable extras.
+    Test passing `--all-extras` includes all applicable extras.
     """
     meta_path = make_module(fname=fname, content=content)
     out = runner.invoke(
         cli,
         [
             "-n",
-            "--extra",
-            "*",
+            "--all-extras",
             "--find-links",
             fake_dists,
             "--no-annotate",
@@ -2226,6 +2225,33 @@ def test_wildcard_extras(fake_dists, runner, make_module, fname, content):
         )
         == out.stderr
     )
+
+
+# This should not depend on the metadata format so testing all cases is wasteful
+@pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES[:1])
+def test_all_extras_fail_with_extra(fake_dists, runner, make_module, fname, content):
+    """
+    Test that passing `--all-extras` and `--extra` fails.
+    """
+    meta_path = make_module(fname=fname, content=content)
+    out = runner.invoke(
+        cli,
+        [
+            "-n",
+            "--all-extras",
+            "--extra",
+            "dev",
+            "--find-links",
+            fake_dists,
+            "--no-annotate",
+            "--no-emit-options",
+            "--no-header",
+            meta_path,
+        ],
+    )
+    assert out.exit_code == 2
+    exp = "--extra has no effect when used with --all-extras"
+    assert exp in out.stderr
 
 
 def test_extras_fail_with_requirements_in(runner, tmpdir):
