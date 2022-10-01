@@ -751,7 +751,14 @@ class BacktrackingResolver(BaseResolver):
 
         # Prepare pinned install requirement. Copy it from candidate's install
         # requirement so that it could be mutated later.
-        pinned_ireq = copy_install_requirement(ireq)
+        pinned_ireq = copy_install_requirement(
+            template=ireq,
+            # The link this candidate "originates" from. This is different
+            # from ``ireq.link`` when the link is found in the wheel cache.
+            # ``ireq.link`` would point to the wheel cache, while this points
+            # to the found remote link (e.g. from pypi.org).
+            link=candidate.source_link,
+        )
 
         # Canonicalize name
         assert ireq.name is not None
