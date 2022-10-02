@@ -127,6 +127,6 @@ jobs:
 
     steps:
       - name: Decide whether the needed jobs succeeded or failed
-        uses: re-actors/alls-green@release/v1
+        uses: re-actors/alls-green@13b4244b312e8a314951e03958a2f91519a6a3c9
         with:
           jobs: ${{ toJSON(needs) }}
