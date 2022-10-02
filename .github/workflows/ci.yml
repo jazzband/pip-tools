@@ -115,3 +115,18 @@ jobs:
         run: tox --notest -p auto --parallel-live
       - name: Test pip ${{ matrix.pip-version }}
         run: tox
+
+  check: # This job does nothing and is only used for the branch protection
+    if: always()
+
+    needs:
+      - pypy
+      - test
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@13b4244b312e8a314951e03958a2f91519a6a3c9
+        with:
+          jobs: ${{ toJSON(needs) }}
