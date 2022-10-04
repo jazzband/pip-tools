@@ -45,15 +45,15 @@ jobs:
       TOXENV: pip${{ matrix.pip-version }}-coverage
       TOX_PARALLEL_NO_SPINNER: 1
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }} from GitHub
         if: "!endsWith(matrix.python-version, '-dev')"
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Set up Python ${{ matrix.python-version }} from deadsnakes
         if: endsWith(matrix.python-version, '-dev')
-        uses: deadsnakes/action@v2.0.1
+        uses: deadsnakes/action@v2.1.1
         with:
           python-version: ${{ matrix.python-version }}
       - name: Log python version info (${{ matrix.python-version }})
@@ -63,7 +63,7 @@ jobs:
         run: |
           echo "::set-output name=dir::$(pip cache dir)"
       - name: Pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: >-
@@ -80,7 +80,7 @@ jobs:
       - name: Test pip ${{ matrix.pip-version }}
         run: tox
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1.0.15
+        uses: codecov/codecov-action@v3
         with:
           file: ./coverage.xml
           name: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.pip-version }}
@@ -104,9 +104,9 @@ jobs:
       TOXENV: pip${{ matrix.pip-version }}
       TOX_PARALLEL_NO_SPINNER: 1
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install tox
