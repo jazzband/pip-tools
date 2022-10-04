@@ -47,6 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }} from GitHub
+        id: python-install
         if: "!endsWith(matrix.python-version, '-dev')"
         uses: actions/setup-python@v4
         with:
@@ -82,8 +83,34 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
-          file: ./coverage.xml
-          name: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.pip-version }}
+          files: ./coverage.xml
+          flags: >-
+            CI-GHA,
+            OS-${{
+              runner.os
+            }},
+            VM-${{
+              matrix.os
+            }},
+            Py-${{
+              steps.python-install.outputs.python-version
+            }},
+            Pip-${{
+              matrix.pip-version
+            }}
+          name: >-
+            OS-${{
+              runner.os
+            }},
+            VM-${{
+              matrix.os
+            }},
+            Py-${{
+              steps.python-install.outputs.python-version
+            }},
+            Pip-${{
+              matrix.pip-version
+            }}
 
   pypy:
     name: ${{ matrix.os }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
