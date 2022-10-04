@@ -14,6 +14,22 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
+env:
+  FORCE_COLOR: 1 # Request colored output from CLI tools supporting it
+  MYPY_FORCE_COLOR: 1 # MyPy's color enforcement
+  PIP_DISABLE_PIP_VERSION_CHECK: 1
+  PIP_NO_PYTHON_VERSION_WARNING: 1
+  PIP_NO_WARN_SCRIPT_LOCATION: 1
+  PY_COLORS: 1 # Recognized by the `py` package, dependency of `pytest`
+  TOX_PARALLEL_NO_SPINNER: 1
+  TOX_TESTENV_PASSENV: >-
+    FORCE_COLOR
+    MYPY_FORCE_COLOR
+    NO_COLOR
+    PY_COLORS
+    PYTEST_THEME
+    PYTEST_THEME_MODE
+
 jobs:
   test:
     name: ${{ matrix.os }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
@@ -41,9 +57,7 @@ jobs:
             python-version: 3.7
             pip-version: main
     env:
-      PY_COLORS: 1
       TOXENV: pip${{ matrix.pip-version }}-coverage
-      TOX_PARALLEL_NO_SPINNER: 1
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }} from GitHub
@@ -100,9 +114,7 @@ jobs:
         pip-version:
           - latest
     env:
-      PY_COLORS: 1
       TOXENV: pip${{ matrix.pip-version }}
-      TOX_PARALLEL_NO_SPINNER: 1
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
