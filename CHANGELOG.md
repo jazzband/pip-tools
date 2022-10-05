@@ -1,3 +1,24 @@
+## 6.9.0 (2022-10-05)
+
+Features:
+
+- Add `--all-extras` flag to `pip-compile`
+  ([#1630](https://github.com/jazzband/pip-tools/pull/1630)). Thanks @apljungquist
+- Support Exclude Package with custom unsafe packages
+  ([#1509](https://github.com/jazzband/pip-tools/pull/1509)). Thanks @hmc-cs-mdrissi
+
+Bug Fixes:
+
+- Fix compile cached vcs packages
+  ([#1649](https://github.com/jazzband/pip-tools/pull/1649)). Thanks @atugushev
+- Include `py.typed` in wheel file
+  ([#1648](https://github.com/jazzband/pip-tools/pull/1648)). Thanks @FlorentJeannot
+
+Other Changes:
+
+- Add pyproject.toml & modern packaging to introduction.
+  ([#1668](https://github.com/jazzband/pip-tools/pull/1668)). Thanks @hynek
+
 ## 6.8.0 (2022-06-30)
 
 Features:
