@@ -2214,14 +2214,14 @@ def test_all_extras(fake_dists, runner, make_module, fname, content):
     assert (
         dedent(
             """\
-        small-fake-a==0.1
-        small-fake-b==0.2
-        small-fake-c==0.3
-        small-fake-d==0.4
-        small-fake-e==0.5
-        small-fake-f==0.6
-        Dry-run, so nothing updated.
-        """
+            small-fake-a==0.1
+            small-fake-b==0.2
+            small-fake-c==0.3
+            small-fake-d==0.4
+            small-fake-e==0.5
+            small-fake-f==0.6
+            Dry-run, so nothing updated.
+            """
         )
         == out.stderr
     )
