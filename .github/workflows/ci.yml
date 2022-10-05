@@ -86,31 +86,15 @@ jobs:
           files: ./coverage.xml
           flags: >-
             CI-GHA,
-            OS-${{
-              runner.os
-            }},
-            VM-${{
-              matrix.os
-            }},
-            Py-${{
-              steps.python-install.outputs.python-version
-            }},
-            Pip-${{
-              matrix.pip-version
-            }}
+            OS-${{ runner.os }},
+            VM-${{ matrix.os }},
+            Py-${{ steps.python-install.outputs.python-version }},
+            Pip-${{ matrix.pip-version }}
           name: >-
-            OS-${{
-              runner.os
-            }},
-            VM-${{
-              matrix.os
-            }},
-            Py-${{
-              steps.python-install.outputs.python-version
-            }},
-            Pip-${{
-              matrix.pip-version
-            }}
+            OS-${{ runner.os }},
+            VM-${{ matrix.os }},
+            Py-${{ steps.python-install.outputs.python-version }},
+            Pip-${{ matrix.pip-version }}
 
   pypy:
     name: ${{ matrix.os }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
