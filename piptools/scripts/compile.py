@@ -80,6 +80,12 @@ def _get_default_option(option_name: str) -> Any:
     help="Name of an extras_require group to install; may be used more than once",
 )
 @click.option(
+    "--all-extras",
+    is_flag=True,
+    default=False,
+    help="Install all extras_require groups",
+)
+@click.option(
     "-f",
     "--find-links",
     multiple=True,
@@ -259,6 +265,7 @@ def cli(
     pre: bool,
     rebuild: bool,
     extras: Tuple[str, ...],
+    all_extras: bool,
     find_links: Tuple[str, ...],
     index_url: str,
     extra_index_url: Tuple[str, ...],
@@ -442,6 +449,11 @@ def cli(
                     for req in metadata.get_all("Requires-Dist") or []
                 ]
             )
+            if all_extras:
+                if extras:
+                    msg = "--extra has no effect when used with --all-extras"
+                    raise click.BadParameter(msg)
+                extras = tuple(metadata.get_all("Provides-Extra"))
         else:
             constraints.extend(
                 parse_requirements(
