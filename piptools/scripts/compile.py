@@ -49,6 +49,35 @@ def _get_default_option(option_name: str) -> Any:
     return getattr(default_values, option_name)
 
 
+def _determine_linesep(
+    strategy: str = "preserve", filenames: Tuple[str, ...] = ()
+) -> str:
+    """
+    Determine and return linesep string for OutputWriter to use.
+    Valid strategies: "LF", "CRLF", "native", "preserve"
+    When preserving, files are checked in order for existing newlines.
+    """
+    if strategy == "preserve":
+        for fname in filenames:
+            try:
+                with open(fname, "rb") as existing_file:
+                    existing_text = existing_file.read()
+            except FileNotFoundError:
+                continue
+            if b"\r\n" in existing_text:
+                strategy = "CRLF"
+                break
+            elif b"\n" in existing_text:
+                strategy = "LF"
+                break
+    return {
+        "native": os.linesep,
+        "LF": "\n",
+        "CRLF": "\r\n",
+        "preserve": "\n",
+    }[strategy]
+
+
 @click.command(context_settings={"help_option_names": ("-h", "--help")})
 @click.version_option(**version_option_kwargs)
 @click.pass_context
@@ -166,6 +195,12 @@ def _get_default_option(option_name: str) -> Any:
     ),
 )
 @click.option(
+    "--newline",
+    type=click.Choice(("LF", "CRLF", "native", "preserve"), case_sensitive=False),
+    default="preserve",
+    help="Override the newline control characters used",
+)
+@click.option(
     "--allow-unsafe/--no-allow-unsafe",
     is_flag=True,
     default=False,
@@ -279,6 +314,7 @@ def cli(
     upgrade: bool,
     upgrade_packages: Tuple[str, ...],
     output_file: Union[LazyFile, IO[Any], None],
+    newline: str,
     allow_unsafe: bool,
     strip_extras: bool,
     generate_hashes: bool,
@@ -515,6 +551,10 @@ def cli(
 
     log.debug("")
 
+    linesep = _determine_linesep(
+        strategy=newline, filenames=(output_file.name, *src_files)
+    )
+
     ##
     # Output
     ##
@@ -534,6 +574,7 @@ def cli(
         index_urls=repository.finder.index_urls,
         trusted_hosts=repository.finder.trusted_hosts,
         format_control=repository.finder.format_control,
+        linesep=linesep,
         allow_unsafe=allow_unsafe,
         find_links=repository.finder.find_links,
         emit_find_links=emit_find_links,
