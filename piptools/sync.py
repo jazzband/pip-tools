@@ -19,8 +19,8 @@ import click
 from pip._internal.commands.freeze import DEV_PKGS
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.compat import stdlib_pkgs
-from pip._vendor.pkg_resources import Distribution
 
+from ._compat.pip_compat import Distribution, dist_requires
 from .exceptions import IncompatibleRequirements
 from .logging import log
 from .utils import (
@@ -69,7 +69,7 @@ def dependency_tree(
 
         dependencies.add(key)
 
-        for dep_specifier in v.requires():
+        for dep_specifier in dist_requires(v):
             dep_name = key_from_req(dep_specifier)
             if dep_name in installed_keys:
                 dep = installed_keys[dep_name]

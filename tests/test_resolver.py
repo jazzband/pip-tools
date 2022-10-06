@@ -1,4 +1,5 @@
 import pytest
+from pip._internal.exceptions import DistributionNotFound
 from pip._internal.utils.urls import path_to_url
 
 from piptools.exceptions import NoCandidateFound
@@ -83,7 +84,7 @@ from piptools.resolver import RequirementSummary, combine_install_requirements
             # is removed (e.g. vine from amqp>=2.0)
             # See: GH-370
             # because of updated dependencies in the test index, we need to pin celery
-            # in order to reproduce vine removal (because it was readded in later
+            # in order to reproduce vine removal (because it was added in later
             # releases)
             (
                 ["celery<=3.1.23", "librabbitmq"],
@@ -111,7 +112,7 @@ from piptools.resolver import RequirementSummary, combine_install_requirements
                     "pytz==2016.4 (from celery==3.1.18)",
                 ],
             ),
-            # Exclude package dependcy of setuptools as it is unsafe.
+            # Exclude package dependency of setuptools as it is unsafe.
             (
                 ["html5lib"],
                 ["html5lib==0.999999999"],
@@ -151,20 +152,18 @@ from piptools.resolver import RequirementSummary, combine_install_requirements
             ),
             (
                 ["fake-piptools-test-with-unsafe-deps==0.1"],
-                ["fake-piptools-test-with-unsafe-deps==0.1"],
+                [
+                    "appdirs==1.4.9 (from "
+                    "setuptools==34.0.0->fake-piptools-test-with-unsafe-deps==0.1)",
+                    "fake-piptools-test-with-unsafe-deps==0.1",
+                    "packaging==16.8 (from "
+                    "setuptools==34.0.0->fake-piptools-test-with-unsafe-deps==0.1)",
+                ],
                 False,
                 {
                     (
                         "setuptools==34.0.0 (from "
                         "fake-piptools-test-with-unsafe-deps==0.1)"
-                    ),
-                    (
-                        "appdirs==1.4.9 (from "
-                        "setuptools==34.0.0->fake-piptools-test-with-unsafe-deps==0.1)"
-                    ),
-                    (
-                        "packaging==16.8 (from "
-                        "setuptools==34.0.0->fake-piptools-test-with-unsafe-deps==0.1)"
                     ),
                 },
             ),
@@ -249,6 +248,55 @@ def test_resolver__allows_unsafe_deps(
     assert output == {str(line) for line in expected}
 
 
+@pytest.mark.parametrize(
+    (
+        "input",
+        "expected",
+        "unsafe_packages",
+        "unsafe_constraints",
+    ),
+    (
+        (
+            ["fake-piptools-test-with-pinned-deps==0.1"],
+            {
+                "fake-piptools-test-with-pinned-deps==0.1",
+                "pytz==2016.4 (from celery==3.1.18->fake-piptools-test-with-pinned-deps==0.1)",
+                "billiard==3.3.0.23 (from "
+                "celery==3.1.18->fake-piptools-test-with-pinned-deps==0.1)",
+                "celery==3.1.18 (from fake-piptools-test-with-pinned-deps==0.1)",
+                "anyjson==0.3.3 (from "
+                "kombu==3.0.35->celery==3.1.18->fake-piptools-test-with-pinned-deps==0.1)",
+                "amqp==1.4.9 (from "
+                "kombu==3.0.35->celery==3.1.18->fake-piptools-test-with-pinned-deps==0.1)",
+            },
+            {"kombu"},
+            {
+                "kombu==3.0.35 (from celery==3.1.18->fake-piptools-test-with-pinned-deps==0.1)",
+            },
+        ),
+    ),
+)
+def test_resolver__custom_unsafe_deps(
+    resolver,
+    from_line,
+    input,
+    expected,
+    unsafe_packages,
+    unsafe_constraints,
+):
+    input = [line if isinstance(line, tuple) else (line, False) for line in input]
+    input = [from_line(req[0], constraint=req[1]) for req in input]
+    resolver = resolver(
+        input,
+        unsafe_packages=unsafe_packages,
+    )
+    output = resolver.resolve()
+    output = {str(line) for line in output}
+
+    assert output == expected
+    assert {str(line) for line in resolver.unsafe_constraints} == unsafe_constraints
+
+
 def test_resolver__max_number_rounds_reached(resolver, from_line):
     """
     Resolver should raise an exception if max round has been reached.
@@ -284,33 +332,73 @@ def test_iter_dependencies_ignores_constraints(resolver, from_line):
         next(res._iter_dependencies(ireq))
 
 
-def test_combine_install_requirements(repository, from_line):
+def test_iter_dependencies_after_combine_install_requirements(
+    pypi_repository, base_resolver, make_package, from_line
+):
+    res = base_resolver([], repository=pypi_repository)
+
+    sub_deps = ["click"]
+    package_a = make_package("package-a", install_requires=sub_deps)
+    package_b = make_package("package-b", install_requires=["package-a"])
+
+    local_package_a = from_line(path_to_url(package_a))
+    assert [dep.name for dep in res._iter_dependencies(local_package_a)] == sub_deps
+
+    package_a_from_b = from_line("package-a", comes_from=path_to_url(package_b))
+    combined = combine_install_requirements([local_package_a, package_a_from_b])
+    assert [dep.name for dep in res._iter_dependencies(combined)] == sub_deps
+
+
+def test_iter_dependencies_after_combine_install_requirements_extras(
+    pypi_repository, base_resolver, make_package, from_line
+):
+    res = base_resolver([], repository=pypi_repository)
+
+    package_a = make_package(
+        "package-a", extras_require={"click": ["click"], "celery": ["celery"]}
+    )
+    package_b = make_package("package-b", install_requires=["package-a"])
+
+    local_package_a = from_line(path_to_url(package_a))
+    assert [dep.name for dep in res._iter_dependencies(local_package_a)] == []
+
+    package_a_from_b = from_line("package-a[click]", comes_from=path_to_url(package_b))
+    package_a_with_other_extra = from_line("package-a[celery]")
+    combined = combine_install_requirements(
+        [local_package_a, package_a_from_b, package_a_with_other_extra]
+    )
+
+    dependency_names = {dep.name for dep in res._iter_dependencies(combined)}
+    assert {"celery", "click"}.issubset(dependency_names)
+
+
+def test_combine_install_requirements(from_line):
     celery30 = from_line("celery>3.0", comes_from="-r requirements.in")
     celery31 = from_line("celery==3.1.1", comes_from=from_line("fake-package"))
     celery32 = from_line("celery<3.2")
 
-    combined = combine_install_requirements(repository, [celery30, celery31])
+    combined = combine_install_requirements([celery30, celery31])
     assert combined.comes_from == celery31.comes_from  # shortest string
     assert set(combined._source_ireqs) == {celery30, celery31}
     assert str(combined.req.specifier) == "==3.1.1,>3.0"
 
-    combined_all = combine_install_requirements(repository, [celery32, combined])
+    combined_all = combine_install_requirements([celery32, combined])
     assert combined_all.comes_from is None
     assert set(combined_all._source_ireqs) == {celery30, celery31, celery32}
     assert str(combined_all.req.specifier) == "<3.2,==3.1.1,>3.0"
 
 
-def _test_combine_install_requirements_extras(repository, with_extra, without_extra):
-    combined = combine_install_requirements(repository, [without_extra, with_extra])
+def _test_combine_install_requirements_extras(with_extra, without_extra):
+    combined = combine_install_requirements([without_extra, with_extra])
     assert str(combined) == str(with_extra)
     assert combined.extras == with_extra.extras
 
-    combined = combine_install_requirements(repository, [with_extra, without_extra])
+    combined = combine_install_requirements([with_extra, without_extra])
     assert str(combined) == str(with_extra)
     assert combined.extras == with_extra.extras
 
 
-def test_combine_install_requirements_extras_req(repository, from_line, make_package):
+def test_combine_install_requirements_extras_req(from_line, make_package):
     """
     Extras should be unioned in combined install requirements
     (whether or not InstallRequirement.req is None, and testing either order of the inputs)
@@ -320,12 +408,10 @@ def test_combine_install_requirements_extras_req(repository, from_line, make_pac
     without_extra = from_line("edx-opaque-keys")
     assert without_extra.req is not None
 
-    _test_combine_install_requirements_extras(repository, with_extra, without_extra)
+    _test_combine_install_requirements_extras(with_extra, without_extra)
 
 
-def test_combine_install_requirements_extras_no_req(
-    repository, from_line, make_package
-):
+def test_combine_install_requirements_extras_no_req(from_line, make_package):
     """
     Extras should be unioned in combined install requirements
     (whether or not InstallRequirement.req is None, and testing either order of the inputs)
@@ -337,8 +423,35 @@ def test_combine_install_requirements_extras_no_req(
     assert local_package_without_extra.req is None
 
     _test_combine_install_requirements_extras(
-        repository, local_package_with_extra, local_package_without_extra
+        local_package_with_extra, local_package_without_extra
     )
+
+
+def test_combine_install_requirements_with_paths(from_line, make_package):
+    name = "fake_package_b"
+    version = "1.0.0"
+
+    test_package = make_package(name, version=version)
+    fake_package = from_line(f"{name} @ {path_to_url(test_package)}")
+    fake_package_name = from_line(f"{name}=={version}", comes_from=from_line(name))
+
+    for pair in [(fake_package, fake_package_name), (fake_package_name, fake_package)]:
+        combined = combine_install_requirements(pair)
+        assert str(combined.specifier) == str(fake_package_name.specifier)
+        assert str(combined.link) == str(fake_package.link)
+        assert str(combined.local_file_path) == str(fake_package.local_file_path)
+        assert str(combined.original_link) == str(fake_package.original_link)
+
+
+def test_combine_install_requirements_for_one_package_with_multiple_extras(
+    from_line,
+):
+    """Regression test for https://github.com/jazzband/pip-tools/pull/1512"""
+    pkg1 = from_line("ray[default]==1.1.1")
+    pkg2 = from_line("ray[tune]==1.1.1")
+    combined = combine_install_requirements([pkg1, pkg2])
+
+    assert str(combined) == "ray[default,tune]==1.1.1"
 
 
 def test_compile_failure_shows_provenance(resolver, from_line):
@@ -435,3 +548,28 @@ def test_requirement_summary_with_other_objects(from_line):
     requirement_summary = RequirementSummary(from_line("test_package==1.2.3"))
     other_object = object()
     assert requirement_summary != other_object
+
+
+@pytest.mark.parametrize(
+    ("exception", "cause"),
+    (
+        pytest.param(DistributionNotFound, None, id="without cause"),
+        pytest.param(DistributionNotFound, ZeroDivisionError, id="with cause"),
+    ),
+)
+def test_catch_distribution_not_found_error(backtracking_resolver, exception, cause):
+    """
+    Test internal edge-cases when backtracking resolver catches
+    and re-raises ``DistributionNotFound`` error with/without causes.
+    """
+    resolver = backtracking_resolver([])
+
+    class FakePipResolver:
+        def resolve(self, *args, **kwargs):
+            raise exception from cause
+
+    with pytest.raises(DistributionNotFound):
+        resolver._do_resolve(
+            resolver=FakePipResolver(),
+            compatible_existing_constraints={},
+        )

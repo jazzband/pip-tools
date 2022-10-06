@@ -3,9 +3,11 @@ import copy
 import itertools
 import json
 import os
+import re
 import shlex
 import typing
 from typing import (
+    Any,
     Callable,
     Dict,
     Iterable,
@@ -69,9 +71,7 @@ def key_from_req(
     else:
         # from packaging, such as install requirements from requirements.txt
         key = req.name
-    assert isinstance(key, str)
-    key = key.replace("_", "-").lower()
-    return key
+    return str(canonicalize_name(key))
 
 
 def comment(text: str) -> str:
@@ -443,3 +443,56 @@ def get_sys_path_for_python_executable(python_executable: str) -> List[str]:
     assert isinstance(paths, list)
     assert all(isinstance(i, str) for i in paths)
     return [os.path.abspath(path) for path in paths]
+
+
+def omit_list_value(lst: List[_T], value: _T) -> List[_T]:
+    """Produce a new list with a given value skipped."""
+    return [item for item in lst if item != value]
+
+
+_strip_extras_re = re.compile(r"\[.+?\]")
+
+
+def strip_extras(name: str) -> str:
+    """Strip extras from package name, e.g. pytest[testing] -> pytest."""
+    return re.sub(_strip_extras_re, "", name)
+
+
+def copy_install_requirement(
+    template: InstallRequirement, **extra_kwargs: Any
+) -> InstallRequirement:
+    """Make a copy of a template ``InstallRequirement`` with extra kwargs."""
+    # Prepare install requirement kwargs.
+    kwargs = {
+        "comes_from": template.comes_from,
+        "editable": template.editable,
+        "link": template.link,
+        "markers": template.markers,
+        "use_pep517": template.use_pep517,
+        "isolated": template.isolated,
+        "install_options": template.install_options,
+        "global_options": template.global_options,
+        "hash_options": template.hash_options,
+        "constraint": template.constraint,
+        "extras": template.extras,
+        "user_supplied": template.user_supplied,
+    }
+    kwargs.update(extra_kwargs)
+
+    # Original link does not belong to install requirements constructor,
+    # pop it now to update later.
+    original_link = kwargs.pop("original_link", None)
+
+    # Copy template.req if not specified in extra kwargs.
+    if "req" not in kwargs:
+        kwargs["req"] = copy.deepcopy(template.req)
+
+    ireq = InstallRequirement(**kwargs)
+
+    # If the original_link was None, keep it so. Passing `link` as an
+    # argument to `InstallRequirement` sets it as the original_link.
+    ireq.original_link = (
+        template.original_link if original_link is None else original_link
+    )
+
+    return ireq
