@@ -6,8 +6,9 @@ import tempfile
 from typing import IO, Any, BinaryIO, List, Optional, Tuple, Union, cast
 
 import click
+from build import BuildBackendException
+from build.util import project_wheel_metadata
 from click.utils import LazyFile, safecall
-from pep517 import meta
 from pip._internal.commands import create_command
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
@@ -20,7 +21,7 @@ from ..locations import CACHE_DIR
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..repositories.base import BaseRepository
-from ..resolver import Resolver
+from ..resolver import BacktrackingResolver, LegacyResolver
 from ..utils import (
     UNSAFE_PACKAGES,
     dedup,
@@ -46,6 +47,35 @@ def _get_default_option(option_name: str) -> Any:
     install_command = create_command("install")
     default_values = install_command.parser.get_default_values()
     return getattr(default_values, option_name)
+
+
+def _determine_linesep(
+    strategy: str = "preserve", filenames: Tuple[str, ...] = ()
+) -> str:
+    """
+    Determine and return linesep string for OutputWriter to use.
+    Valid strategies: "LF", "CRLF", "native", "preserve"
+    When preserving, files are checked in order for existing newlines.
+    """
+    if strategy == "preserve":
+        for fname in filenames:
+            try:
+                with open(fname, "rb") as existing_file:
+                    existing_text = existing_file.read()
+            except FileNotFoundError:
+                continue
+            if b"\r\n" in existing_text:
+                strategy = "CRLF"
+                break
+            elif b"\n" in existing_text:
+                strategy = "LF"
+                break
+    return {
+        "native": os.linesep,
+        "LF": "\n",
+        "CRLF": "\r\n",
+        "preserve": "\n",
+    }[strategy]
 
 
 @click.command(context_settings={"help_option_names": ("-h", "--help")})
@@ -77,6 +107,12 @@ def _get_default_option(option_name: str) -> Any:
     "extras",
     multiple=True,
     help="Name of an extras_require group to install; may be used more than once",
+)
+@click.option(
+    "--all-extras",
+    is_flag=True,
+    default=False,
+    help="Install all extras_require groups",
 )
 @click.option(
     "-f",
@@ -159,6 +195,12 @@ def _get_default_option(option_name: str) -> Any:
     ),
 )
 @click.option(
+    "--newline",
+    type=click.Choice(("LF", "CRLF", "native", "preserve"), case_sensitive=False),
+    default="preserve",
+    help="Override the newline control characters used",
+)
+@click.option(
     "--allow-unsafe/--no-allow-unsafe",
     is_flag=True,
     default=False,
@@ -225,6 +267,14 @@ def _get_default_option(option_name: str) -> Any:
     "--pip-args", "pip_args_str", help="Arguments to pass directly to the pip command."
 )
 @click.option(
+    "--resolver",
+    "resolver_name",
+    type=click.Choice(("legacy", "backtracking")),
+    default="legacy",
+    envvar="PIP_TOOLS_RESOLVER",
+    help="Choose the dependency resolver.",
+)
+@click.option(
     "--emit-index-url/--no-emit-index-url",
     is_flag=True,
     default=True,
@@ -236,6 +286,12 @@ def _get_default_option(option_name: str) -> Any:
     default=True,
     help="Add options to generated file",
 )
+@click.option(
+    "--unsafe-package",
+    multiple=True,
+    help="Specify a package to consider unsafe; may be used more than once. "
+    f"Replaces default unsafe packages: {', '.join(sorted(UNSAFE_PACKAGES))}",
+)
 def cli(
     ctx: click.Context,
     verbose: int,
@@ -244,6 +300,7 @@ def cli(
     pre: bool,
     rebuild: bool,
     extras: Tuple[str, ...],
+    all_extras: bool,
     find_links: Tuple[str, ...],
     index_url: str,
     extra_index_url: Tuple[str, ...],
@@ -257,6 +314,7 @@ def cli(
     upgrade: bool,
     upgrade_packages: Tuple[str, ...],
     output_file: Union[LazyFile, IO[Any], None],
+    newline: str,
     allow_unsafe: bool,
     strip_extras: bool,
     generate_hashes: bool,
@@ -267,10 +325,15 @@ def cli(
     emit_find_links: bool,
     cache_dir: str,
     pip_args_str: Optional[str],
+    resolver_name: str,
     emit_index_url: bool,
     emit_options: bool,
+    unsafe_package: Tuple[str, ...],
 ) -> None:
-    """Compiles requirements.txt from requirements.in specs."""
+    """
+    Compiles requirements.txt from requirements.in, pyproject.toml, setup.cfg,
+    or setup.py specs.
+    """
     log.verbosity = verbose - quiet
 
     if len(src_files) == 0:
@@ -333,9 +396,10 @@ def cli(
         pip_args.extend(["--pre"])
     for host in trusted_host:
         pip_args.extend(["--trusted-host", host])
-
     if not build_isolation:
         pip_args.append("--no-build-isolation")
+    if resolver_name == "legacy":
+        pip_args.extend(["--use-deprecated", "legacy-resolver"])
     pip_args.extend(right_args)
 
     repository: BaseRepository
@@ -348,6 +412,10 @@ def cli(
     }
 
     existing_pins_to_upgrade = set()
+
+    # Exclude packages from --upgrade-package/-P from the existing
+    # constraints, and separately gather pins to be upgraded
+    existing_pins = {}
 
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified
     # (= default invocation)
@@ -362,9 +430,6 @@ def cli(
             options=tmp_repository.options,
         )
 
-        # Exclude packages from --upgrade-package/-P from the existing
-        # constraints, and separately gather pins to be upgraded
-        existing_pins = {}
         for ireq in filter(is_pinned_requirement, ireqs):
             key = key_from_ireq(ireq)
             if key in upgrade_install_reqs:
@@ -405,14 +470,26 @@ def cli(
             constraints.extend(reqs)
         elif is_setup_file:
             setup_file_found = True
-            dist = meta.load(os.path.dirname(os.path.abspath(src_file)))
-            comes_from = f"{dist.metadata.get_all('Name')[0]} ({src_file})"
+            try:
+                metadata = project_wheel_metadata(
+                    os.path.dirname(os.path.abspath(src_file))
+                )
+            except BuildBackendException as e:
+                log.error(str(e))
+                log.error(f"Failed to parse {os.path.abspath(src_file)}")
+                sys.exit(2)
+            comes_from = f"{metadata.get_all('Name')[0]} ({src_file})"
             constraints.extend(
                 [
                     install_req_from_line(req, comes_from=comes_from)
-                    for req in dist.requires or []
+                    for req in metadata.get_all("Requires-Dist") or []
                 ]
             )
+            if all_extras:
+                if extras:
+                    msg = "--extra has no effect when used with --all-extras"
+                    raise click.BadParameter(msg)
+                extras = tuple(metadata.get_all("Provides-Extra"))
         else:
             constraints.extend(
                 parse_requirements(
@@ -454,14 +531,17 @@ def cli(
             for find_link in dedup(repository.finder.find_links):
                 log.debug(redact_auth_from_url(find_link))
 
+    resolver_cls = LegacyResolver if resolver_name == "legacy" else BacktrackingResolver
     try:
-        resolver = Resolver(
-            constraints,
-            repository,
+        resolver = resolver_cls(
+            constraints=constraints,
+            existing_constraints=existing_pins,
+            repository=repository,
             prereleases=repository.finder.allow_all_prereleases or pre,
             cache=DependencyCache(cache_dir),
             clear_caches=rebuild,
             allow_unsafe=allow_unsafe,
+            unsafe_packages=set(unsafe_package),
         )
         results = resolver.resolve(max_rounds=max_rounds)
         hashes = resolver.resolve_hashes(results) if generate_hashes else None
@@ -470,6 +550,10 @@ def cli(
         sys.exit(2)
 
     log.debug("")
+
+    linesep = _determine_linesep(
+        strategy=newline, filenames=(output_file.name, *src_files)
+    )
 
     ##
     # Output
@@ -490,6 +574,7 @@ def cli(
         index_urls=repository.finder.index_urls,
         trusted_hosts=repository.finder.trusted_hosts,
         format_control=repository.finder.format_control,
+        linesep=linesep,
         allow_unsafe=allow_unsafe,
         find_links=repository.finder.find_links,
         emit_find_links=emit_find_links,

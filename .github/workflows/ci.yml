@@ -10,6 +10,26 @@ on:
     # Run everyday at 03:53 UTC
     - cron: 53 3 * * *
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: 1 # Request colored output from CLI tools supporting it
+  MYPY_FORCE_COLOR: 1 # MyPy's color enforcement
+  PIP_DISABLE_PIP_VERSION_CHECK: 1
+  PIP_NO_PYTHON_VERSION_WARNING: 1
+  PIP_NO_WARN_SCRIPT_LOCATION: 1
+  PY_COLORS: 1 # Recognized by the `py` package, dependency of `pytest`
+  TOX_PARALLEL_NO_SPINNER: 1
+  TOX_TESTENV_PASSENV: >-
+    FORCE_COLOR
+    MYPY_FORCE_COLOR
+    NO_COLOR
+    PY_COLORS
+    PYTEST_THEME
+    PYTEST_THEME_MODE
+
 jobs:
   test:
     name: ${{ matrix.os }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
@@ -37,19 +57,18 @@ jobs:
             python-version: 3.7
             pip-version: main
     env:
-      PY_COLORS: 1
       TOXENV: pip${{ matrix.pip-version }}-coverage
-      TOX_PARALLEL_NO_SPINNER: 1
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }} from GitHub
+        id: python-install
         if: "!endsWith(matrix.python-version, '-dev')"
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Set up Python ${{ matrix.python-version }} from deadsnakes
         if: endsWith(matrix.python-version, '-dev')
-        uses: deadsnakes/action@v2.0.1
+        uses: deadsnakes/action@v2.1.1
         with:
           python-version: ${{ matrix.python-version }}
       - name: Log python version info (${{ matrix.python-version }})
@@ -59,7 +78,7 @@ jobs:
         run: |
           echo "::set-output name=dir::$(pip cache dir)"
       - name: Pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: >-
@@ -76,10 +95,20 @@ jobs:
       - name: Test pip ${{ matrix.pip-version }}
         run: tox
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1.0.15
+        uses: codecov/codecov-action@v3
         with:
-          file: ./coverage.xml
-          name: ${{ runner.os }}-${{ matrix.python-version }}-${{ matrix.pip-version }}
+          files: ./coverage.xml
+          flags: >-
+            CI-GHA,
+            OS-${{ runner.os }},
+            VM-${{ matrix.os }},
+            Py-${{ steps.python-install.outputs.python-version }},
+            Pip-${{ matrix.pip-version }}
+          name: >-
+            OS-${{ runner.os }},
+            VM-${{ matrix.os }},
+            Py-${{ steps.python-install.outputs.python-version }},
+            Pip-${{ matrix.pip-version }}
 
   pypy:
     name: ${{ matrix.os }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
@@ -96,13 +125,11 @@ jobs:
         pip-version:
           - latest
     env:
-      PY_COLORS: 1
       TOXENV: pip${{ matrix.pip-version }}
-      TOX_PARALLEL_NO_SPINNER: 1
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install tox
@@ -111,3 +138,18 @@ jobs:
         run: tox --notest -p auto --parallel-live
       - name: Test pip ${{ matrix.pip-version }}
         run: tox
+
+  check: # This job does nothing and is only used for the branch protection
+    if: always()
+
+    needs:
+      - pypy
+      - test
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@13b4244b312e8a314951e03958a2f91519a6a3c9
+        with:
+          jobs: ${{ toJSON(needs) }}

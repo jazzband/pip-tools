@@ -20,7 +20,6 @@ from typing import (
 
 from click import progressbar
 from pip._internal.cache import WheelCache
-from pip._internal.cli.progress_bars import BAR_TYPES
 from pip._internal.commands import create_command
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
@@ -74,10 +73,9 @@ class PyPIRepository(BaseRepository):
         # Use pip's parser for pip.conf management and defaults.
         # General options (find_links, index_url, extra_index_url, trusted_host,
         # and pre) are deferred to pip.
-        self.command: InstallCommand = create_command("install")
-        extra_pip_args = ["--use-deprecated", "legacy-resolver"]
+        self._command: InstallCommand = create_command("install")
 
-        options, _ = self.command.parse_args(pip_args + extra_pip_args)
+        options, _ = self.command.parse_args(pip_args)
         if options.cache_dir:
             options.cache_dir = normalize_path(options.cache_dir)
         options.require_hashes = False
@@ -104,8 +102,7 @@ class PyPIRepository(BaseRepository):
         self._cache_dir = normalize_path(str(cache_dir))
         self._download_dir = os.path.join(self._cache_dir, "pkgs")
 
-        if PIP_VERSION[0] < 22:
-            self._setup_logging()
+        self._setup_logging()
 
     def clear_caches(self) -> None:
         rmtree(self._download_dir, ignore_errors=True)
@@ -121,6 +118,11 @@ class PyPIRepository(BaseRepository):
     @property
     def finder(self) -> PackageFinder:
         return self._finder
+
+    @property
+    def command(self) -> InstallCommand:
+        """Return an install command instance."""
+        return self._command
 
     def find_all_candidates(self, req_name: str) -> List[InstallationCandidate]:
         if req_name not in self._available_candidates_cache:
@@ -190,7 +192,12 @@ class PyPIRepository(BaseRepository):
 
             reqset = RequirementSet()
             ireq.user_supplied = True
-            reqset.add_requirement(ireq)
+            if PIP_VERSION[:3] < (22, 1, 1):
+                reqset.add_requirement(ireq)
+            elif getattr(ireq, "name", None):
+                reqset.add_named_requirement(ireq)
+            else:
+                reqset.add_unnamed_requirement(ireq)
 
             resolver = self.command.make_resolver(
                 preparer=preparer,
@@ -460,6 +467,9 @@ class PyPIRepository(BaseRepository):
             user_log_file=self.options.log,
         )
 
+        if PIP_VERSION[0] >= 22:
+            return
+
         # Sync pip's console handler stream with LogContext.stream
         logger = logging.getLogger()
         for handler in logger.handlers:
@@ -472,6 +482,9 @@ class PyPIRepository(BaseRepository):
             # this block should be removed/revisited, because of pip possibly
             # refactored-out logging config.
             log.warning("Couldn't find a 'console' logging handler")
+
+        # This import will fail with pip 22.1, but here we're pip<22.0
+        from pip._internal.cli.progress_bars import BAR_TYPES
 
         # Sync pip's progress bars stream with LogContext.stream
         for bar_cls in itertools.chain(*BAR_TYPES.values()):
