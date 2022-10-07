@@ -44,7 +44,7 @@ def read_cache_file(cache_file_path: str) -> CacheDict:
     with open(cache_file_path, encoding="utf-8") as cache_file:
         try:
             doc = json.load(cache_file)
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, UnicodeDecodeError):
             raise CorruptCacheError(cache_file_path)
 
         # Check version and load the contents
