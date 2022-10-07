@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import optparse
 from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
@@ -18,7 +20,7 @@ class BaseRepository(metaclass=ABCMeta):
 
     @abstractmethod
     def find_best_match(
-        self, ireq: InstallRequirement, prereleases: Optional[bool]
+        self, ireq: InstallRequirement, prereleases: bool | None
     ) -> InstallRequirement:
         """
         Returns a pinned InstallRequirement object that indicates the best match
@@ -26,7 +28,7 @@ class BaseRepository(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def get_dependencies(self, ireq: InstallRequirement) -> Set[InstallRequirement]:
+    def get_dependencies(self, ireq: InstallRequirement) -> set[InstallRequirement]:
         """
         Given a pinned, URL, or editable InstallRequirement, returns a set of
         dependencies (also InstallRequirements, but not necessarily pinned).
@@ -34,7 +36,7 @@ class BaseRepository(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def get_hashes(self, ireq: InstallRequirement) -> Set[str]:
+    def get_hashes(self, ireq: InstallRequirement) -> set[str]:
         """
         Given a pinned InstallRequirement, returns a set of hashes that represent
         all of the files for a given requirement. It is not acceptable for an
