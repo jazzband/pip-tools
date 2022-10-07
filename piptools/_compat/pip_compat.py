@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import optparse
-from typing import Callable, Iterable, Iterator, Optional, cast
+from typing import Callable, Iterable, Iterator, cast
 
 import pip
 from pip._internal.index.package_finder import PackageFinder

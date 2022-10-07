@@ -3,7 +3,7 @@ from __future__ import annotations
 import optparse
 from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
-from typing import Iterator, Optional, Set
+from typing import Iterator
 
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder

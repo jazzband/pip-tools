@@ -7,21 +7,7 @@ import json
 import os
 import re
 import shlex
-import typing
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, Callable, Iterable, Iterator, TypeVar, cast
 
 import click
 from click.utils import LazyFile

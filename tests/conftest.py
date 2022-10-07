@@ -8,7 +8,6 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from functools import partial
 from textwrap import dedent
-from typing import List, Optional
 
 import pytest
 from click.testing import CliRunner

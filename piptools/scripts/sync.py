@@ -5,7 +5,7 @@ import os
 import shlex
 import shutil
 import sys
-from typing import List, Optional, Tuple, cast
+from typing import cast
 
 import click
 from pip._internal.commands import create_command

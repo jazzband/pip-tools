@@ -5,7 +5,7 @@ import os
 import shlex
 import sys
 import tempfile
-from typing import IO, Any, BinaryIO, List, Optional, Tuple, Union, cast
+from typing import IO, Any, BinaryIO, cast
 
 import click
 from build import BuildBackendException

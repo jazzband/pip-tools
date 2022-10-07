@@ -5,17 +5,7 @@ import os
 import sys
 import tempfile
 from subprocess import run  # nosec
-from typing import (
-    Deque,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Set,
-    Tuple,
-    ValuesView,
-)
+from typing import Deque, Iterable, Mapping, ValuesView
 
 import click
 from pip._internal.commands.freeze import DEV_PKGS

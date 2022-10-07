@@ -4,7 +4,7 @@ import json
 import os
 import platform
 import sys
-from typing import Dict, Iterable, List, Optional, Set, Tuple, cast
+from typing import Dict, Iterable, List, Tuple, cast
 
 from pip._internal.req import InstallRequirement
 from pip._vendor.packaging.requirements import Requirement

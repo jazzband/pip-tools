@@ -5,18 +5,7 @@ import os
 import re
 import sys
 from itertools import chain
-from typing import (
-    BinaryIO,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import BinaryIO, Iterable, Iterator, cast
 
 from click import unstyle
 from click.core import Context

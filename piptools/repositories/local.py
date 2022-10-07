@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import optparse
 from contextlib import contextmanager
-from typing import Iterator, Mapping, Optional, Set, cast
+from typing import Iterator, Mapping, cast
 
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder

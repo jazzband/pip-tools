@@ -5,18 +5,7 @@ import copy
 from abc import ABCMeta, abstractmethod
 from functools import partial
 from itertools import chain, count, groupby
-from typing import (
-    Any,
-    Container,
-    DefaultDict,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Set,
-    Tuple,
-)
+from typing import Any, Container, DefaultDict, Iterable, Iterator
 
 import click
 from pip._internal.cache import WheelCache
