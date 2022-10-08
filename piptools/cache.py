@@ -41,10 +41,10 @@ class CorruptCacheError(PipToolsError):
 
 
 def read_cache_file(cache_file_path: str) -> CacheDict:
-    with open(cache_file_path) as cache_file:
+    with open(cache_file_path, encoding="utf-8") as cache_file:
         try:
             doc = json.load(cache_file)
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, UnicodeDecodeError):
             raise CorruptCacheError(cache_file_path)
 
         # Check version and load the contents
@@ -108,7 +108,7 @@ class DependencyCache:
     def write_cache(self) -> None:
         """Writes the cache to disk as JSON."""
         doc = {"__format__": 1, "dependencies": self._cache}
-        with open(self._cache_file, "w") as f:
+        with open(self._cache_file, "w", encoding="utf-8") as f:
             json.dump(doc, f, sort_keys=True)
 
     def clear(self) -> None:
