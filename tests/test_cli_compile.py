@@ -951,36 +951,48 @@ def test_generate_hashes_with_annotations(runner):
 @pytest.mark.parametrize(
     ("nl_options", "must_include", "must_exclude"),
     (
-        pytest.param(("--newline", "lf"), "\n", "\r\n", id="LF"),
-        pytest.param(("--newline", "crlf"), "\r\n", "\n", id="CRLF"),
+        pytest.param(("--newline", "lf"), b"\n", b"\r\n", id="LF"),
+        pytest.param(("--newline", "crlf"), b"\r\n", b"\n", id="CRLF"),
         pytest.param(
             ("--newline", "native"),
-            os.linesep,
-            {"\n": "\r\n", "\r\n": "\n"}[os.linesep],
+            os.linesep.encode(),
+            {"\n": b"\r\n", "\r\n": b"\n"}[os.linesep],
             id="native",
         ),
     ),
 )
 def test_override_newline(
-    runner, gen_hashes, annotate_options, nl_options, must_include, must_exclude
+    runner,
+    gen_hashes,
+    annotate_options,
+    nl_options,
+    must_include,
+    must_exclude,
+    tmp_path,
 ):
     opts = annotate_options + nl_options
     if gen_hashes:
         opts += ("--generate-hashes",)
 
-    with open("requirements.in", "w") as req_in:
-        req_in.write("six==1.15.0\n")
-        req_in.write("setuptools\n")
-        req_in.write("pip-tools @ git+https://github.com/jazzband/pip-tools\n")
+    example_dir = tmp_path / "example_dir"
+    example_dir.mkdir()
+    in_path = example_dir / "requirements.in"
+    out_path = example_dir / "requirements.txt"
+    in_path.write_bytes(
+        b"six==1.15.0\n"
+        b"setuptools\n"
+        b"pip-tools @ git+https://github.com/jazzband/pip-tools\n"
+    )
 
-    runner.invoke(cli, [*opts, "requirements.in"])
-    with open("requirements.txt", "rb") as req_txt:
-        txt = req_txt.read().decode()
+    runner.invoke(
+        cli, [*opts, f"--output-file={os.fsdecode(out_path)}", os.fsdecode(in_path)]
+    )
+    txt = out_path.read_bytes()
 
     assert must_include in txt
 
     if must_exclude in must_include:
-        txt = txt.replace(must_include, "")
+        txt = txt.replace(must_include, b"")
     assert must_exclude not in txt
 
     # Do it again, with --newline=preserve:
@@ -989,14 +1001,15 @@ def test_override_newline(
     if gen_hashes:
         opts += ("--generate-hashes",)
 
-    runner.invoke(cli, [*opts, "requirements.in"])
-    with open("requirements.txt", "rb") as req_txt:
-        txt = req_txt.read().decode()
+    runner.invoke(
+        cli, [*opts, f"--output-file={os.fsdecode(out_path)}", os.fsdecode(in_path)]
+    )
+    txt = out_path.read_bytes()
 
     assert must_include in txt
 
     if must_exclude in must_include:
-        txt = txt.replace(must_include, "")
+        txt = txt.replace(must_include, b"")
     assert must_exclude not in txt
 
 
