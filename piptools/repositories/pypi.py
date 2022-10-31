@@ -11,6 +11,7 @@ from typing import (
     BinaryIO,
     ContextManager,
     Dict,
+    Iterable,
     Iterator,
     List,
     NamedTuple,
@@ -27,7 +28,7 @@ from pip._internal.models.candidate import InstallationCandidate
 from pip._internal.models.index import PackageIndex
 from pip._internal.models.link import Link
 from pip._internal.models.wheel import Wheel
-from pip._internal.network.session import PipSession
+from pip._internal.network.session import PipSession, Response
 from pip._internal.req import InstallRequirement, RequirementSet
 from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.logging import indent_log, setup_logging
@@ -253,7 +254,55 @@ class PyPIRepository(BaseRepository):
 
         return self._dependencies_cache[ireq]
 
-    def _get_project(self, ireq: InstallRequirement) -> Any:
+    def _get_json_from_index(self, link: Link) -> Optional[Dict[str, Any]]:
+        url = f"{link.url}/json"
+        try:
+            response = self.session.get(url)
+        except RequestException as e:
+            log.debug(f"Fetch package info from PyPI failed: {url}: {e}")
+            return None
+
+        # Skip this PyPI server, because there is no package
+        # or JSON API might be not supported
+        if response.status_code == 404:
+            return None
+
+        try:
+            return self._get_json_obj(response)
+        except ValueError as e:
+            log.debug(f"Cannot parse JSON response from PyPI: {url}: {e}")
+            return None
+
+    @staticmethod
+    def _get_json_obj(resp: Response) -> Optional[Dict[str, Any]]:
+        decoded_json = resp.json()
+
+        if decoded_json is None:
+            return decoded_json
+
+        # This is actually guaranteed by the python stdlib. Json can only contain these types
+        if not isinstance(decoded_json, dict):
+            raise ValueError(
+                f"Invalid json type {type(decoded_json)}. Expected 'object'"
+            )
+
+        return decoded_json
+
+    def _get_all_package_links(self, ireq: InstallRequirement) -> Iterable[Link]:
+        package_indexes = (
+            PackageIndex(url=index_url, file_storage_domain="")
+            for index_url in self.finder.search_scope.index_urls
+        )
+        package_links = (
+            Link(
+                f"{package_index.pypi_url}/{ireq.name}",
+                comes_from=package_index.simple_url,
+            )
+            for package_index in package_indexes
+        )
+        return package_links
+
+    def _get_project(self, ireq: InstallRequirement) -> Optional[Dict[str, Any]]:
         """
         Return a dict of a project info from PyPI JSON API for a given
         InstallRequirement. Return None on HTTP/JSON error or if a package
@@ -261,29 +310,10 @@ class PyPIRepository(BaseRepository):
 
         API reference: https://warehouse.readthedocs.io/api-reference/json/
         """
-        package_indexes = (
-            PackageIndex(url=index_url, file_storage_domain="")
-            for index_url in self.finder.search_scope.index_urls
-        )
-        for package_index in package_indexes:
-            url = f"{package_index.pypi_url}/{ireq.name}/json"
-            try:
-                response = self.session.get(url)
-            except RequestException as e:
-                log.debug(f"Fetch package info from PyPI failed: {url}: {e}")
-                continue
-
-            # Skip this PyPI server, because there is no package
-            # or JSON API might be not supported
-            if response.status_code == 404:
-                continue
-
-            try:
-                data = response.json()
-            except ValueError as e:
-                log.debug(f"Cannot parse JSON response from PyPI: {url}: {e}")
-                continue
-            return data
+        for link in self._get_all_package_links(ireq):
+            data = self._get_json_from_index(link)
+            if data is not None:
+                return data
         return None
 
     def _get_download_path(self, ireq: InstallRequirement) -> str:
@@ -334,26 +364,49 @@ class PyPIRepository(BaseRepository):
         log.debug(ireq.name)
 
         with log.indentation():
-            hashes = self._get_hashes_from_pypi(ireq)
-            if hashes is None:
-                log.debug("Couldn't get hashes from PyPI, fallback to hashing files")
-                return self._get_hashes_from_files(ireq)
+            # get pypi hashes using the json API, once per server
+            pypi_hashes = self._get_hashes_from_pypi(ireq)
+            # Compute hashes for ALL candidate installation links, using hashes from json APIs
+            hashes = self._get_hashes_from_files(ireq, pypi_hashes)
 
         return hashes
 
-    def _get_hashes_from_pypi(self, ireq: InstallRequirement) -> Optional[Set[str]]:
+    def _get_hashes_from_pypi(
+        self, ireq: InstallRequirement
+    ) -> Optional[Dict[str, Set[str]]]:
+        # package links help us construct a json query URL for index servers.
+        # Note the same type but different usage from installation candidates because we only care
+        # about one per server.
+        all_package_links = self._get_all_package_links(ireq)
+
+        # Get json from each index server
+        pypi_json = {
+            link.comes_from: self._get_json_from_index(link)
+            for link in all_package_links
+        }
+        pypi_hashes = {
+            url: self._get_hash_from_json(json_resp, ireq)
+            for url, json_resp in pypi_json.items()
+            if json_resp
+        }
+
+        # remove duplicates and empty json responses
+        hashes_by_index = {
+            url: hashes for url, hashes in pypi_hashes.items() if hashes is not None
+        }
+        return hashes_by_index or None
+
+    def _get_hash_from_json(
+        self, pypi_json: Dict[str, Any], ireq: InstallRequirement
+    ) -> Optional[Set[str]]:
         """
         Return a set of hashes from PyPI JSON API for a given InstallRequirement.
         Return None if fetching data is failed or missing digests.
         """
-        project = self._get_project(ireq)
-        if project is None:
-            return None
-
         _, version, _ = as_tuple(ireq)
 
         try:
-            release_files = project["releases"][version]
+            release_files = pypi_json["releases"][version]
         except KeyError:
             log.debug("Missing release files on PyPI")
             return None
@@ -370,7 +423,11 @@ class PyPIRepository(BaseRepository):
 
         return hashes
 
-    def _get_hashes_from_files(self, ireq: InstallRequirement) -> Set[str]:
+    def _get_hashes_from_files(
+        self,
+        ireq: InstallRequirement,
+        pypi_hashes: Optional[Dict[str, Set[str]]] = None,
+    ) -> Set[str]:
         """
         Return a set of hashes for all release files of a given InstallRequirement.
         """
@@ -384,11 +441,29 @@ class PyPIRepository(BaseRepository):
         )
         matching_candidates = candidates_by_version[matching_versions[0]]
 
-        return {
-            self._get_file_hash(candidate.link) for candidate in matching_candidates
-        }
+        return set(
+            itertools.chain.from_iterable(
+                self._get_hashes_for_link(candidate.link, pypi_hashes)
+                for candidate in matching_candidates
+            )
+        )
+
+    def _get_hashes_for_link(
+        self, link: Link, pypi_hashes: Optional[Dict[str, Set[str]]]
+    ) -> Iterator[str]:
+        # This conditional feels too peculiar to tolerate future maintenance.
+        # But figuring out how the Link is constructed in find_all_candidates smells like
+        # it isn't a guaranteed API
+        if pypi_hashes and link.comes_from in pypi_hashes:
+            yield from pypi_hashes[link.comes_from]
+
+        else:
+            yield self._get_file_hash(link)
 
     def _get_file_hash(self, link: Link) -> str:
+        if link.has_hash:
+            return f"{link.hash_name}:{link.hash}"
+
         log.debug(f"Hashing {link.show_url}")
         h = hashlib.new(FAVORITE_HASH)
         with open_local_or_remote_file(link, self.session) as f:
