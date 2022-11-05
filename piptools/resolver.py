@@ -770,7 +770,7 @@ class BacktrackingResolver(BaseResolver):
 
         # Save source for annotation
         source_ireq = self._constraints_map.get(ireq_key)
-        if source_ireq is not None and ireq_key not in self.existing_constraints:
+        if source_ireq is not None:
             pinned_ireq._source_ireqs = [source_ireq]
 
         return pinned_ireq
