@@ -2450,3 +2450,40 @@ def test_resolver_reaches_max_rounds(runner):
     out = runner.invoke(cli, ["--max-rounds", 0])
 
     assert out.exit_code != 0, out
+
+
+def test_preserve_via_requirements_constrained_dependencies_when_run_twice(
+    pip_conf, runner
+):
+    """
+    Test that 2 consecutive runs of pip-compile (first with a non-existing requirements.txt file,
+    second with an existing file) produce the same output.
+    """
+    with open("constraints.txt", "w") as constraints_in:
+        constraints_in.write("small-fake-a==0.1")
+
+    with open("requirements.in", "w") as req_in:
+        req_in.write("-c constraints.txt\nsmall_fake_with_deps")
+
+    cli_arguments = ["--no-emit-options", "--no-header"]
+
+    # First run of the command will generate `requirements.txt`, which doesn't yet exist.
+    first_out = runner.invoke(cli, cli_arguments)
+
+    # Second run of the command will update `requirements.txt`.
+    second_out = runner.invoke(cli, cli_arguments)
+
+    expected_output = dedent(
+        """\
+        small-fake-a==0.1
+            # via
+            #   -c constraints.txt
+            #   small-fake-with-deps
+        small-fake-with-deps==0.1
+            # via -r requirements.in
+        """
+    )
+
+    for output in (first_out, second_out):
+        assert output.exit_code == 0, output
+        assert output.stderr == expected_output
