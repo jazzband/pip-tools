@@ -28,7 +28,7 @@ even when you've pinned them.  You do pin them, right? (In building your Python 
 .. |pyversions| image:: https://img.shields.io/pypi/pyversions/pip-tools.svg
    :alt: Supported Python versions
    :target: https://pypi.org/project/pip-tools/
-.. _You do pin them, right?: http://nvie.com/posts/pin-your-packages/
+.. _You do pin them, right?: https://nvie.com/posts/pin-your-packages/
 
 Installation
 ============
