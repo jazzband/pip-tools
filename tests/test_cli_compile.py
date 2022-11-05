@@ -511,6 +511,50 @@ def test_editable_package_vcs(runner):
     assert "click" in out.stderr  # dependency of pip-tools
 
 
+@pytest.mark.network
+def test_compile_cached_vcs_package(runner, venv):
+    """
+    Test pip-compile doesn't write local paths for cached wheels of VCS packages.
+
+    Regression test for issue GH-1647.
+    """
+    vcs_package = (
+        "typing-extensions @ git+https://github.com/python/typing_extensions@"
+        "9c0759a260fe126210a1e2026720000a3c40a919"
+    )
+    vcs_wheel_prefix = "typing_extensions-4.3.0-py3"
+
+    # Install and cache VCS package.
+    subprocess.run(
+        [os.fspath(venv / "python"), "-m" "pip", "install", vcs_package],
+        check=True,
+    )
+    assert (
+        vcs_wheel_prefix
+        in subprocess.run(
+            [
+                sys.executable,
+                "-m" "pip",
+                "cache",
+                "list",
+                "--format=abspath",
+                vcs_wheel_prefix,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+    )
+
+    with open("requirements.in", "w") as req_in:
+        req_in.write(vcs_package)
+
+    out = runner.invoke(cli, ["--no-header", "--no-emit-options", "--no-annotate"])
+
+    assert out.exit_code == 0, out
+    assert vcs_package == out.stderr.strip()
+
+
 @legacy_resolver_only
 def test_locally_available_editable_package_is_not_archived_in_cache_dir(
     pip_conf, tmpdir, runner
