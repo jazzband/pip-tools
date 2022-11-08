@@ -572,6 +572,21 @@ This section lists ``pip-tools`` features that are currently deprecated.
   recommended to pass the ``--allow-unsafe`` now to adapt to the upcoming
   change.
 
+A Note on Resolvers
+===================
+
+You can choose from either the legacy or the backtracking resolver.
+The backtracking resolver is recommended, and will become the default
+with the 7.0 release.
+
+Use it now with the ``--resolver=backtracking`` option to ``pip-compile``.
+
+The legacy resolver will occasionally fail to resolve dependencies. The
+backtracking resolver is more robust, but can take longer to run in
+general.
+
+You can continue using the legacy resolver with ``--resolver=legacy``.
+
 Versions and compatibility
 ==========================
 
