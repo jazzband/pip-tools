@@ -581,7 +581,9 @@ with the 7.0 release.
 
 Use it now with the ``--resolver=backtracking`` option to ``pip-compile``.
 
-See issue https://github.com/jazzband/pip-tools/issues/1717 for example.
+The legacy resolver will occasionally fail to resolve dependencies. The
+backtracking resolver is more robust, but can take longer to run in
+general.
 
 You can continue using the legacy resolver with ``--resolver=legacy``.
 
