@@ -16,7 +16,7 @@ from pip._internal.utils.misc import redact_auth_from_url
 
 from .._compat import IS_CLICK_VER_8_PLUS, parse_requirements
 from ..cache import DependencyCache
-from ..exceptions import PipToolsError, NoCandidateFound
+from ..exceptions import NoCandidateFound, PipToolsError
 from ..locations import CACHE_DIR
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
@@ -547,7 +547,9 @@ def cli(
         hashes = resolver.resolve_hashes(results) if generate_hashes else None
     except NoCandidateFound as e:
         if resolver_cls == LegacyResolver:
-            log.error("Using legacy resolver.  Consider using backtracking resolver with --resolver=backtracking")
+            log.error(
+                "Using legacy resolver.  Consider using backtracking resolver with --resolver=backtracking"
+            )
 
         log.error(str(e))
         sys.exit(2)
