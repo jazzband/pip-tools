@@ -584,6 +584,8 @@ Use it now with the ``--resolver=backtracking`` option to ``pip-compile``.
 See issue `#1717 <https://github.com/jazzband/pip-tools/issues/1717>`
 for example.
 
+You can continue using the legacy resolver with ``resolver=legacy``.
+
 Versions and compatibility
 ==========================
 
