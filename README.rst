@@ -28,7 +28,7 @@ even when you've pinned them.  You do pin them, right? (In building your Python 
 .. |pyversions| image:: https://img.shields.io/pypi/pyversions/pip-tools.svg
    :alt: Supported Python versions
    :target: https://pypi.org/project/pip-tools/
-.. _You do pin them, right?: http://nvie.com/posts/pin-your-packages/
+.. _You do pin them, right?: https://nvie.com/posts/pin-your-packages/
 
 Installation
 ============
@@ -571,6 +571,21 @@ This section lists ``pip-tools`` features that are currently deprecated.
   default. Use ``--no-allow-unsafe`` to keep the old behavior. It is
   recommended to pass the ``--allow-unsafe`` now to adapt to the upcoming
   change.
+
+A Note on Resolvers
+===================
+
+You can choose from either the legacy or the backtracking resolver.
+The backtracking resolver is recommended, and will become the default
+with the 7.0 release.
+
+Use it now with the ``--resolver=backtracking`` option to ``pip-compile``.
+
+The legacy resolver will occasionally fail to resolve dependencies. The
+backtracking resolver is more robust, but can take longer to run in
+general.
+
+You can continue using the legacy resolver with ``--resolver=legacy``.
 
 Versions and compatibility
 ==========================
