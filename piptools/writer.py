@@ -8,7 +8,6 @@ import sys
 from dataclasses import dataclass
 from itertools import chain
 from typing import BinaryIO, Generator, Iterable, Iterator, cast
-from typing import BinaryIO, Iterable, Iterator, cast
 
 from click import unstyle
 from click.core import Context
