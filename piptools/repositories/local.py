@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import optparse
 from contextlib import contextmanager
-from typing import Iterator, Mapping, Optional, Set, cast
+from typing import Iterator, Mapping, cast
 
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
@@ -71,7 +73,7 @@ class LocalRequirementsRepository(BaseRepository):
         self.repository.clear_caches()
 
     def find_best_match(
-        self, ireq: InstallRequirement, prereleases: Optional[bool] = None
+        self, ireq: InstallRequirement, prereleases: bool | None = None
     ) -> InstallationCandidate:
         key = key_from_ireq(ireq)
         existing_pin = self.existing_pins.get(key)
@@ -81,10 +83,10 @@ class LocalRequirementsRepository(BaseRepository):
         else:
             return self.repository.find_best_match(ireq, prereleases)
 
-    def get_dependencies(self, ireq: InstallRequirement) -> Set[InstallRequirement]:
+    def get_dependencies(self, ireq: InstallRequirement) -> set[InstallRequirement]:
         return self.repository.get_dependencies(ireq)
 
-    def get_hashes(self, ireq: InstallRequirement) -> Set[str]:
+    def get_hashes(self, ireq: InstallRequirement) -> set[str]:
         existing_pin = self._reuse_hashes and self.existing_pins.get(
             key_from_ireq(ireq)
         )

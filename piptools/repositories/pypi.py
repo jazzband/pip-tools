@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import contextlib
 import hashlib
 import itertools
@@ -6,17 +8,7 @@ import optparse
 import os
 from contextlib import contextmanager
 from shutil import rmtree
-from typing import (
-    Any,
-    BinaryIO,
-    ContextManager,
-    Dict,
-    Iterator,
-    List,
-    NamedTuple,
-    Optional,
-    Set,
-)
+from typing import Any, BinaryIO, ContextManager, Iterator, NamedTuple
 
 from click import progressbar
 from pip._internal.cache import WheelCache
@@ -56,7 +48,7 @@ FILE_CHUNK_SIZE = 4096
 
 class FileStream(NamedTuple):
     stream: BinaryIO
-    size: Optional[float]
+    size: float | None
 
 
 class PyPIRepository(BaseRepository):
@@ -69,7 +61,7 @@ class PyPIRepository(BaseRepository):
     changed/configured on the Finder.
     """
 
-    def __init__(self, pip_args: List[str], cache_dir: str):
+    def __init__(self, pip_args: list[str], cache_dir: str):
         # Use pip's parser for pip.conf management and defaults.
         # General options (find_links, index_url, extra_index_url, trusted_host,
         # and pre) are deferred to pip.
@@ -91,12 +83,12 @@ class PyPIRepository(BaseRepository):
         # stores project_name => InstallationCandidate mappings for all
         # versions reported by PyPI, so we only have to ask once for each
         # project
-        self._available_candidates_cache: Dict[str, List[InstallationCandidate]] = {}
+        self._available_candidates_cache: dict[str, list[InstallationCandidate]] = {}
 
         # stores InstallRequirement => list(InstallRequirement) mappings
         # of all secondary dependencies for the given requirement, so we
         # only have to go to disk once for each requirement
-        self._dependencies_cache: Dict[InstallRequirement, Set[InstallRequirement]] = {}
+        self._dependencies_cache: dict[InstallRequirement, set[InstallRequirement]] = {}
 
         # Setup file paths
         self._cache_dir = normalize_path(str(cache_dir))
@@ -124,14 +116,14 @@ class PyPIRepository(BaseRepository):
         """Return an install command instance."""
         return self._command
 
-    def find_all_candidates(self, req_name: str) -> List[InstallationCandidate]:
+    def find_all_candidates(self, req_name: str) -> list[InstallationCandidate]:
         if req_name not in self._available_candidates_cache:
             candidates = self.finder.find_all_candidates(req_name)
             self._available_candidates_cache[req_name] = candidates
         return self._available_candidates_cache[req_name]
 
     def find_best_match(
-        self, ireq: InstallRequirement, prereleases: Optional[bool] = None
+        self, ireq: InstallRequirement, prereleases: bool | None = None
     ) -> InstallRequirement:
         """
         Returns a pinned InstallRequirement object that indicates the best match
@@ -167,10 +159,10 @@ class PyPIRepository(BaseRepository):
 
     def resolve_reqs(
         self,
-        download_dir: Optional[str],
+        download_dir: str | None,
         ireq: InstallRequirement,
         wheel_cache: WheelCache,
-    ) -> Set[InstallationCandidate]:
+    ) -> set[InstallationCandidate]:
         with get_build_tracker() as build_tracker, TempDirectory(
             kind="resolver"
         ) as temp_dir, indent_log():
@@ -218,7 +210,7 @@ class PyPIRepository(BaseRepository):
 
         return set(results)
 
-    def get_dependencies(self, ireq: InstallRequirement) -> Set[InstallRequirement]:
+    def get_dependencies(self, ireq: InstallRequirement) -> set[InstallRequirement]:
         """
         Given a pinned, URL, or editable InstallRequirement, returns a set of
         dependencies (also InstallRequirements, but not necessarily pinned).
@@ -301,7 +293,7 @@ class PyPIRepository(BaseRepository):
         else:
             return self._download_dir
 
-    def get_hashes(self, ireq: InstallRequirement) -> Set[str]:
+    def get_hashes(self, ireq: InstallRequirement) -> set[str]:
         """
         Given an InstallRequirement, return a set of hashes that represent all
         of the files for a given requirement. Unhashable requirements return an
@@ -341,7 +333,7 @@ class PyPIRepository(BaseRepository):
 
         return hashes
 
-    def _get_hashes_from_pypi(self, ireq: InstallRequirement) -> Optional[Set[str]]:
+    def _get_hashes_from_pypi(self, ireq: InstallRequirement) -> set[str] | None:
         """
         Return a set of hashes from PyPI JSON API for a given InstallRequirement.
         Return None if fetching data is failed or missing digests.
@@ -370,7 +362,7 @@ class PyPIRepository(BaseRepository):
 
         return hashes
 
-    def _get_hashes_from_files(self, ireq: InstallRequirement) -> Set[str]:
+    def _get_hashes_from_files(self, ireq: InstallRequirement) -> set[str]:
         """
         Return a set of hashes for all release files of a given InstallRequirement.
         """
@@ -427,11 +419,11 @@ class PyPIRepository(BaseRepository):
         the previous non-patched calls will interfere.
         """
 
-        def _wheel_supported(self: Wheel, tags: List[Tag]) -> bool:
+        def _wheel_supported(self: Wheel, tags: list[Tag]) -> bool:
             # Ignore current platform. Support everything.
             return True
 
-        def _wheel_support_index_min(self: Wheel, tags: List[Tag]) -> int:
+        def _wheel_support_index_min(self: Wheel, tags: list[Tag]) -> int:
             # All wheels are equal priority for sorting.
             return 0
 
@@ -518,7 +510,7 @@ def open_local_or_remote_file(link: Link, session: Session) -> Iterator[FileStre
         response = session.get(url, headers=headers, stream=True)
 
         # Content length must be int or None
-        content_length: Optional[int]
+        content_length: int | None
         try:
             content_length = int(response.headers["content-length"])
         except (ValueError, KeyError, TypeError):

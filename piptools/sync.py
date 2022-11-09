@@ -1,19 +1,11 @@
+from __future__ import annotations
+
 import collections
 import os
 import sys
 import tempfile
 from subprocess import run  # nosec
-from typing import (
-    Deque,
-    Dict,
-    Iterable,
-    List,
-    Mapping,
-    Optional,
-    Set,
-    Tuple,
-    ValuesView,
-)
+from typing import Deque, Iterable, Mapping, ValuesView
 
 import click
 from pip._internal.commands.freeze import DEV_PKGS
@@ -45,7 +37,7 @@ PACKAGES_TO_IGNORE = [
 
 def dependency_tree(
     installed_keys: Mapping[str, Distribution], root_key: str
-) -> Set[str]:
+) -> set[str]:
     """
     Calculate the dependency tree for the package `root_key` and return
     a collection of all its dependencies.  Uses a DFS traversal algorithm.
@@ -80,7 +72,7 @@ def dependency_tree(
     return dependencies
 
 
-def get_dists_to_ignore(installed: Iterable[Distribution]) -> List[str]:
+def get_dists_to_ignore(installed: Iterable[Distribution]) -> list[str]:
     """
     Returns a collection of package names to ignore when performing pip-sync,
     based on the currently installed environment.  For example, when pip-tools
@@ -98,7 +90,7 @@ def get_dists_to_ignore(installed: Iterable[Distribution]) -> List[str]:
 def merge(
     requirements: Iterable[InstallRequirement], ignore_conflicts: bool
 ) -> ValuesView[InstallRequirement]:
-    by_key: Dict[str, InstallRequirement] = {}
+    by_key: dict[str, InstallRequirement] = {}
 
     for ireq in requirements:
         # Limitation: URL requirements are merged by precise string match, so
@@ -143,7 +135,7 @@ def diff_key_from_ireq(ireq: InstallRequirement) -> str:
 def diff(
     compiled_requirements: Iterable[InstallRequirement],
     installed_dists: Iterable[Distribution],
-) -> Tuple[Set[InstallRequirement], Set[str]]:
+) -> tuple[set[InstallRequirement], set[str]]:
     """
     Calculate which packages should be installed or uninstalled, given a set
     of compiled requirements and a list of currently installed modules.
@@ -176,9 +168,9 @@ def sync(
     to_install: Iterable[InstallRequirement],
     to_uninstall: Iterable[InstallRequirement],
     dry_run: bool = False,
-    install_flags: Optional[List[str]] = None,
+    install_flags: list[str] | None = None,
     ask: bool = False,
-    python_executable: Optional[str] = None,
+    python_executable: str | None = None,
 ) -> int:
     """
     Install and uninstalls the given sets of modules.

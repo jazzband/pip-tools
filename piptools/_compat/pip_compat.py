@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import optparse
-from typing import Callable, Iterable, Iterator, Optional, cast
+from typing import Callable, Iterable, Iterator, cast
 
 import pip
 from pip._internal.index.package_finder import PackageFinder
@@ -25,8 +27,8 @@ __all__ = [
 def parse_requirements(
     filename: str,
     session: PipSession,
-    finder: Optional[PackageFinder] = None,
-    options: Optional[optparse.Values] = None,
+    finder: PackageFinder | None = None,
+    options: optparse.Values | None = None,
     constraint: bool = False,
     isolated: bool = False,
 ) -> Iterator[InstallRequirement]:
@@ -80,7 +82,7 @@ else:
 
     Distribution = select_backend().Distribution
 
-    def dist_requires(dist: "Distribution") -> Iterable[Requirement]:
+    def dist_requires(dist: Distribution) -> Iterable[Requirement]:
         """Mimics pkg_resources.Distribution.requires for the case of no
         extras. This doesn't fulfill that API's `extras` parameter but
         satisfies the needs of pip-tools."""
