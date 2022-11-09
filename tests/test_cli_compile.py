@@ -513,6 +513,50 @@ def test_editable_package_vcs(runner):
     assert "click" in out.stderr  # dependency of pip-tools
 
 
+@pytest.mark.network
+def test_compile_cached_vcs_package(runner, venv):
+    """
+    Test pip-compile doesn't write local paths for cached wheels of VCS packages.
+
+    Regression test for issue GH-1647.
+    """
+    vcs_package = (
+        "typing-extensions @ git+https://github.com/python/typing_extensions@"
+        "9c0759a260fe126210a1e2026720000a3c40a919"
+    )
+    vcs_wheel_prefix = "typing_extensions-4.3.0-py3"
+
+    # Install and cache VCS package.
+    subprocess.run(
+        [os.fspath(venv / "python"), "-m" "pip", "install", vcs_package],
+        check=True,
+    )
+    assert (
+        vcs_wheel_prefix
+        in subprocess.run(
+            [
+                sys.executable,
+                "-m" "pip",
+                "cache",
+                "list",
+                "--format=abspath",
+                vcs_wheel_prefix,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+    )
+
+    with open("requirements.in", "w") as req_in:
+        req_in.write(vcs_package)
+
+    out = runner.invoke(cli, ["--no-header", "--no-emit-options", "--no-annotate"])
+
+    assert out.exit_code == 0, out
+    assert vcs_package == out.stderr.strip()
+
+
 @legacy_resolver_only
 def test_locally_available_editable_package_is_not_archived_in_cache_dir(
     pip_conf, tmpdir, runner
@@ -951,36 +995,48 @@ def test_generate_hashes_with_annotations(runner):
 @pytest.mark.parametrize(
     ("nl_options", "must_include", "must_exclude"),
     (
-        pytest.param(("--newline", "lf"), "\n", "\r\n", id="LF"),
-        pytest.param(("--newline", "crlf"), "\r\n", "\n", id="CRLF"),
+        pytest.param(("--newline", "lf"), b"\n", b"\r\n", id="LF"),
+        pytest.param(("--newline", "crlf"), b"\r\n", b"\n", id="CRLF"),
         pytest.param(
             ("--newline", "native"),
-            os.linesep,
-            {"\n": "\r\n", "\r\n": "\n"}[os.linesep],
+            os.linesep.encode(),
+            {"\n": b"\r\n", "\r\n": b"\n"}[os.linesep],
             id="native",
         ),
     ),
 )
 def test_override_newline(
-    runner, gen_hashes, annotate_options, nl_options, must_include, must_exclude
+    runner,
+    gen_hashes,
+    annotate_options,
+    nl_options,
+    must_include,
+    must_exclude,
+    tmp_path,
 ):
     opts = annotate_options + nl_options
     if gen_hashes:
         opts += ("--generate-hashes",)
 
-    with open("requirements.in", "w") as req_in:
-        req_in.write("six==1.15.0\n")
-        req_in.write("setuptools\n")
-        req_in.write("pip-tools @ git+https://github.com/jazzband/pip-tools\n")
+    example_dir = tmp_path / "example_dir"
+    example_dir.mkdir()
+    in_path = example_dir / "requirements.in"
+    out_path = example_dir / "requirements.txt"
+    in_path.write_bytes(
+        b"six==1.15.0\n"
+        b"setuptools\n"
+        b"pip-tools @ git+https://github.com/jazzband/pip-tools\n"
+    )
 
-    runner.invoke(cli, [*opts, "requirements.in"])
-    with open("requirements.txt", "rb") as req_txt:
-        txt = req_txt.read().decode()
+    runner.invoke(
+        cli, [*opts, f"--output-file={os.fsdecode(out_path)}", os.fsdecode(in_path)]
+    )
+    txt = out_path.read_bytes()
 
     assert must_include in txt
 
     if must_exclude in must_include:
-        txt = txt.replace(must_include, "")
+        txt = txt.replace(must_include, b"")
     assert must_exclude not in txt
 
     # Do it again, with --newline=preserve:
@@ -989,14 +1045,15 @@ def test_override_newline(
     if gen_hashes:
         opts += ("--generate-hashes",)
 
-    runner.invoke(cli, [*opts, "requirements.in"])
-    with open("requirements.txt", "rb") as req_txt:
-        txt = req_txt.read().decode()
+    runner.invoke(
+        cli, [*opts, f"--output-file={os.fsdecode(out_path)}", os.fsdecode(in_path)]
+    )
+    txt = out_path.read_bytes()
 
     assert must_include in txt
 
     if must_exclude in must_include:
-        txt = txt.replace(must_include, "")
+        txt = txt.replace(must_include, b"")
     assert must_exclude not in txt
 
 
@@ -2395,3 +2452,40 @@ def test_resolver_reaches_max_rounds(runner):
     out = runner.invoke(cli, ["--max-rounds", 0])
 
     assert out.exit_code != 0, out
+
+
+def test_preserve_via_requirements_constrained_dependencies_when_run_twice(
+    pip_conf, runner
+):
+    """
+    Test that 2 consecutive runs of pip-compile (first with a non-existing requirements.txt file,
+    second with an existing file) produce the same output.
+    """
+    with open("constraints.txt", "w") as constraints_in:
+        constraints_in.write("small-fake-a==0.1")
+
+    with open("requirements.in", "w") as req_in:
+        req_in.write("-c constraints.txt\nsmall_fake_with_deps")
+
+    cli_arguments = ["--no-emit-options", "--no-header"]
+
+    # First run of the command will generate `requirements.txt`, which doesn't yet exist.
+    first_out = runner.invoke(cli, cli_arguments)
+
+    # Second run of the command will update `requirements.txt`.
+    second_out = runner.invoke(cli, cli_arguments)
+
+    expected_output = dedent(
+        """\
+        small-fake-a==0.1
+            # via
+            #   -c constraints.txt
+            #   small-fake-with-deps
+        small-fake-with-deps==0.1
+            # via -r requirements.in
+        """
+    )
+
+    for output in (first_out, second_out):
+        assert output.exit_code == 0, output
+        assert output.stderr == expected_output
