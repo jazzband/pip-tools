@@ -648,7 +648,7 @@ def test_url_package(runner, line, dependency, generate_hashes):
         pytest.param(
             os.path.join(
                 MINIMAL_WHEELS_PATH, "small_fake_with_deps-0.1-py2.py3-none-any.whl"
-            ),
+           ),
             "\nsmall-fake-a==0.1",
             path_to_url(
                 os.path.join(
@@ -2487,3 +2487,85 @@ def test_preserve_via_requirements_constrained_dependencies_when_run_twice(
     for output in (first_out, second_out):
         assert output.exit_code == 0, output
         assert output.stderr == expected_output
+
+
+def test_failure_of_legacy_resolver_prompts_for_backtracking(
+        pip_conf, runner, tmpdir, make_package, make_wheel
+):
+    """ Test that pip-compile prompts to use the backtracking resolver """
+    pkgs = [
+        make_package(
+            "a",
+            version="0.1",
+            install_requires=["b==0.1"]
+        ),
+        make_package(
+            "a",
+            version="0.2",
+            install_requires=["b==0.2"]
+        ),
+        make_package(
+            "b",
+            version="0.1"
+        ),
+        make_package(
+            "b",
+            version="0.2"
+        ),
+        make_package(
+            "c",
+            version="1",
+            install_requires=["b==0.1", "a"]
+        )
+    ]
+
+    dists_dir = tmpdir / "dists"
+    for pkg in pkgs:
+        make_wheel(pkg, dists_dir)
+
+    with open("requirements.in", "w") as req_in:
+        req_in.writelines(["c"])
+
+    out = runner.invoke(cli, ["--resolver=legacy", "--find-links", str(dists_dir), "--pip-args='--no-index'"])
+    assert "Consider using backtracking resolver with" in out.stderr
+
+
+def test_success_of_legacy_resolver_doesnt_prompt_for_backtracking(
+        pip_conf, runner, tmpdir, make_package, make_wheel
+):
+    """ Test that pip-compile prompts to use the backtracking resolver """
+    pkgs = [
+        make_package(
+            "a",
+            version="0.1",
+            install_requires=["b==0.1"]
+        ),
+        make_package(
+            "a",
+            version="0.2",
+            install_requires=["b==0.2"]
+        ),
+        make_package(
+            "b",
+            version="0.1"
+        ),
+        make_package(
+            "b",
+            version="0.2"
+        ),
+        make_package(
+            "c",
+            version="1",
+            install_requires=["b==0.2", "a"]
+        )
+    ]
+
+    dists_dir = tmpdir / "dists"
+    for pkg in pkgs:
+        make_wheel(pkg, dists_dir)
+
+    with open("requirements.in", "w") as req_in:
+        req_in.writelines(["c"])
+
+    out = runner.invoke(cli, ["--resolver=legacy", "--find-links", str(dists_dir), "--pip-args='--no-index'"])
+    assert "Consider using backtracking resolver with" not in out.stderr
