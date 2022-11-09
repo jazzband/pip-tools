@@ -548,7 +548,9 @@ def cli(
     except NoCandidateFound as e:
         if resolver_cls == LegacyResolver:
             log.error(
-                "Using legacy resolver.  Consider using backtracking resolver with --resolver=backtracking"
+                "Using legacy resolver. "
+                "Consider using backtracking resolver with "
+                "`--resolver=backtracking`."
             )
 
         log.error(str(e))
