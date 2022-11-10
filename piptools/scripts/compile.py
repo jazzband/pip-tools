@@ -6,13 +6,14 @@ import tempfile
 from typing import IO, Any, BinaryIO, List, Optional, Tuple, Union, cast
 
 import click
-from build import BuildBackendException
 from build.util import project_wheel_metadata
 from click.utils import LazyFile, safecall
 from pip._internal.commands import create_command
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
+
+from build import BuildBackendException
 
 from .._compat import IS_CLICK_VER_8_PLUS, parse_requirements
 from ..cache import DependencyCache
@@ -546,7 +547,7 @@ def cli(
         results = resolver.resolve(max_rounds=max_rounds)
         hashes = resolver.resolve_hashes(results) if generate_hashes else None
     except NoCandidateFound as e:
-        if resolver_cls == LegacyResolver:
+        if resolver_cls == LegacyResolver:  # pragma: no branch
             log.error(
                 "Using legacy resolver. "
                 "Consider using backtracking resolver with "
