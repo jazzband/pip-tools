@@ -1,20 +1,11 @@
+from __future__ import annotations
+
 import io
 import os
 import re
 import sys
 from itertools import chain
-from typing import (
-    BinaryIO,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    Union,
-    cast,
-)
+from typing import BinaryIO, Iterable, Iterator, cast
 
 from click import unstyle
 from click.core import Context
@@ -59,13 +50,13 @@ MESSAGE_UNINSTALLABLE = (
 strip_comes_from_line_re = re.compile(r" \(line \d+\)$")
 
 
-def _comes_from_as_string(comes_from: Union[str, InstallRequirement]) -> str:
+def _comes_from_as_string(comes_from: str | InstallRequirement) -> str:
     if isinstance(comes_from, str):
         return strip_comes_from_line_re.sub("", comes_from)
     return cast(str, canonicalize_name(key_from_ireq(comes_from)))
 
 
-def annotation_style_split(required_by: Set[str]) -> str:
+def annotation_style_split(required_by: set[str]) -> str:
     sorted_required_by = sorted(required_by)
     if len(sorted_required_by) == 1:
         source = sorted_required_by[0]
@@ -78,7 +69,7 @@ def annotation_style_split(required_by: Set[str]) -> str:
     return annotation
 
 
-def annotation_style_line(required_by: Set[str]) -> str:
+def annotation_style_line(required_by: set[str]) -> str:
     return f"# via {', '.join(sorted(required_by))}"
 
 
@@ -101,7 +92,7 @@ class OutputWriter:
         format_control: FormatControl,
         linesep: str,
         allow_unsafe: bool,
-        find_links: List[str],
+        find_links: list[str],
         emit_find_links: bool,
         emit_options: bool,
     ) -> None:
@@ -125,7 +116,7 @@ class OutputWriter:
         self.emit_find_links = emit_find_links
         self.emit_options = emit_options
 
-    def _sort_key(self, ireq: InstallRequirement) -> Tuple[bool, str]:
+    def _sort_key(self, ireq: InstallRequirement) -> tuple[bool, str]:
         return (not ireq.editable, key_from_ireq(ireq))
 
     def write_header(self) -> Iterator[str]:
@@ -184,10 +175,10 @@ class OutputWriter:
 
     def _iter_lines(
         self,
-        results: Set[InstallRequirement],
-        unsafe_requirements: Optional[Set[InstallRequirement]] = None,
-        markers: Optional[Dict[str, Marker]] = None,
-        hashes: Optional[Dict[InstallRequirement, Set[str]]] = None,
+        results: set[InstallRequirement],
+        unsafe_requirements: set[InstallRequirement] | None = None,
+        markers: dict[str, Marker] | None = None,
+        hashes: dict[InstallRequirement, set[str]] | None = None,
     ) -> Iterator[str]:
         # default values
         unsafe_requirements = unsafe_requirements or set()
@@ -254,10 +245,10 @@ class OutputWriter:
 
     def write(
         self,
-        results: Set[InstallRequirement],
-        unsafe_requirements: Set[InstallRequirement],
-        markers: Dict[str, Marker],
-        hashes: Optional[Dict[InstallRequirement, Set[str]]],
+        results: set[InstallRequirement],
+        unsafe_requirements: set[InstallRequirement],
+        markers: dict[str, Marker],
+        hashes: dict[InstallRequirement, set[str]] | None,
     ) -> None:
 
         if not self.dry_run:
@@ -283,8 +274,8 @@ class OutputWriter:
     def _format_requirement(
         self,
         ireq: InstallRequirement,
-        marker: Optional[Marker] = None,
-        hashes: Optional[Dict[InstallRequirement, Set[str]]] = None,
+        marker: Marker | None = None,
+        hashes: dict[InstallRequirement, set[str]] | None = None,
     ) -> str:
         ireq_hashes = (hashes if hashes is not None else {}).get(ireq)
 

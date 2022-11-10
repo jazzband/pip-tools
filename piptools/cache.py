@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import json
 import os
 import platform
 import sys
-from typing import Dict, Iterable, List, Optional, Set, Tuple, cast
+from typing import Dict, Iterable, List, Tuple, cast
 
 from pip._internal.req import InstallRequirement
 from pip._vendor.packaging.requirements import Requirement
@@ -70,7 +72,7 @@ class DependencyCache:
         cache_filename = f"depcache-{_implementation_name()}.json"
 
         self._cache_file = os.path.join(cache_dir, cache_filename)
-        self._cache: Optional[CacheDict] = None
+        self._cache: CacheDict | None = None
 
     @property
     def cache(self) -> CacheDict:
@@ -119,11 +121,11 @@ class DependencyCache:
         pkgname, pkgversion_and_extras = self.as_cache_key(ireq)
         return pkgversion_and_extras in self.cache.get(pkgname, {})
 
-    def __getitem__(self, ireq: InstallRequirement) -> List[str]:
+    def __getitem__(self, ireq: InstallRequirement) -> list[str]:
         pkgname, pkgversion_and_extras = self.as_cache_key(ireq)
         return self.cache[pkgname][pkgversion_and_extras]
 
-    def __setitem__(self, ireq: InstallRequirement, values: List[str]) -> None:
+    def __setitem__(self, ireq: InstallRequirement, values: list[str]) -> None:
         pkgname, pkgversion_and_extras = self.as_cache_key(ireq)
         self.cache.setdefault(pkgname, {})
         self.cache[pkgname][pkgversion_and_extras] = values
@@ -131,7 +133,7 @@ class DependencyCache:
 
     def reverse_dependencies(
         self, ireqs: Iterable[InstallRequirement]
-    ) -> Dict[str, Set[str]]:
+    ) -> dict[str, set[str]]:
         """
         Returns a lookup table of reverse dependencies for all the given ireqs.
 
@@ -144,8 +146,8 @@ class DependencyCache:
         return self._reverse_dependencies(ireqs_as_cache_values)
 
     def _reverse_dependencies(
-        self, cache_keys: Iterable[Tuple[str, str]]
-    ) -> Dict[str, Set[str]]:
+        self, cache_keys: Iterable[tuple[str, str]]
+    ) -> dict[str, set[str]]:
         """
         Returns a lookup table of reverse dependencies for all the given cache keys.
 

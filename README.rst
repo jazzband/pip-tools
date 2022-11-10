@@ -417,7 +417,7 @@ Sample ``.pre-commit-config.yaml``:
 
     repos:
       - repo: https://github.com/jazzband/pip-tools
-        rev: 6.3.0
+        rev: 6.9.0
         hooks:
           - id: pip-compile
 
@@ -427,7 +427,7 @@ You might want to customize ``pip-compile`` args by configuring ``args`` and/or 
 
     repos:
       - repo: https://github.com/jazzband/pip-tools
-        rev: 6.3.0
+        rev: 6.9.0
         hooks:
           - id: pip-compile
             files: ^requirements/production\.(in|txt)$
@@ -439,7 +439,7 @@ If you have multiple requirement files make sure you create a hook for each file
 
     repos:
       - repo: https://github.com/jazzband/pip-tools
-        rev: 5.3.1
+        rev: 6.9.0
         hooks:
           - id: pip-compile
             name: pip-compile setup.py
@@ -571,6 +571,21 @@ This section lists ``pip-tools`` features that are currently deprecated.
   default. Use ``--no-allow-unsafe`` to keep the old behavior. It is
   recommended to pass the ``--allow-unsafe`` now to adapt to the upcoming
   change.
+
+A Note on Resolvers
+===================
+
+You can choose from either the legacy or the backtracking resolver.
+The backtracking resolver is recommended, and will become the default
+with the 7.0 release.
+
+Use it now with the ``--resolver=backtracking`` option to ``pip-compile``.
+
+The legacy resolver will occasionally fail to resolve dependencies. The
+backtracking resolver is more robust, but can take longer to run in
+general.
+
+You can continue using the legacy resolver with ``--resolver=legacy``.
 
 Versions and compatibility
 ==========================

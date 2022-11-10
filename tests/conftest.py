@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 import os
 import platform
@@ -7,7 +9,6 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from functools import partial
 from textwrap import dedent
-from typing import List, Optional
 
 import pytest
 from click.testing import CliRunner
@@ -42,9 +43,9 @@ from .utils import looks_like_ci
 
 @dataclass
 class FakeOptions:
-    features_enabled: List[str] = field(default_factory=list)
-    deprecated_features_enabled: List[str] = field(default_factory=list)
-    target_dir: Optional[str] = None
+    features_enabled: list[str] = field(default_factory=list)
+    deprecated_features_enabled: list[str] = field(default_factory=list)
+    target_dir: str | None = None
 
 
 class FakeRepository(BaseRepository):

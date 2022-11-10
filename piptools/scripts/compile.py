@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import itertools
 import os
 import shlex
 import sys
 import tempfile
-from typing import IO, Any, BinaryIO, List, Optional, Tuple, Union, cast
+from typing import IO, Any, BinaryIO, cast
 
 import click
 from build import BuildBackendException
@@ -50,7 +52,7 @@ def _get_default_option(option_name: str) -> Any:
 
 
 def _determine_linesep(
-    strategy: str = "preserve", filenames: Tuple[str, ...] = ()
+    strategy: str = "preserve", filenames: tuple[str, ...] = ()
 ) -> str:
     """
     Determine and return linesep string for OutputWriter to use.
@@ -299,36 +301,36 @@ def cli(
     dry_run: bool,
     pre: bool,
     rebuild: bool,
-    extras: Tuple[str, ...],
+    extras: tuple[str, ...],
     all_extras: bool,
-    find_links: Tuple[str, ...],
+    find_links: tuple[str, ...],
     index_url: str,
-    extra_index_url: Tuple[str, ...],
-    cert: Optional[str],
-    client_cert: Optional[str],
-    trusted_host: Tuple[str, ...],
+    extra_index_url: tuple[str, ...],
+    cert: str | None,
+    client_cert: str | None,
+    trusted_host: tuple[str, ...],
     header: bool,
     emit_trusted_host: bool,
     annotate: bool,
     annotation_style: str,
     upgrade: bool,
-    upgrade_packages: Tuple[str, ...],
-    output_file: Union[LazyFile, IO[Any], None],
+    upgrade_packages: tuple[str, ...],
+    output_file: LazyFile | IO[Any] | None,
     newline: str,
     allow_unsafe: bool,
     strip_extras: bool,
     generate_hashes: bool,
     reuse_hashes: bool,
-    src_files: Tuple[str, ...],
+    src_files: tuple[str, ...],
     max_rounds: int,
     build_isolation: bool,
     emit_find_links: bool,
     cache_dir: str,
-    pip_args_str: Optional[str],
+    pip_args_str: str | None,
     resolver_name: str,
     emit_index_url: bool,
     emit_options: bool,
-    unsafe_package: Tuple[str, ...],
+    unsafe_package: tuple[str, ...],
 ) -> None:
     """
     Compiles requirements.txt from requirements.in, pyproject.toml, setup.cfg,
@@ -444,7 +446,7 @@ def cli(
     # Parsing/collecting initial requirements
     ###
 
-    constraints: List[InstallRequirement] = []
+    constraints: list[InstallRequirement] = []
     setup_file_found = False
     for src_file in src_files:
         is_setup_file = os.path.basename(src_file) in METADATA_FILENAMES
