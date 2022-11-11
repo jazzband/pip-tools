@@ -4,6 +4,7 @@ import os
 from unittest import mock
 
 import pytest
+from pip._internal.models.candidate import InstallationCandidate
 from pip._internal.models.link import Link
 from pip._internal.utils.urls import path_to_url
 from pip._vendor.requests import HTTPError, Session
@@ -177,11 +178,12 @@ def test_pip_cache_dir_is_empty(from_line, tmpdir):
                         {
                             "packagetype": "bdist_wheel",
                             "digests": {"sha256": "fake-hash"},
+                            "url": "https://link",
                         }
                     ]
                 }
             },
-            {"sha256:fake-hash"},
+            {"https://link": "sha256:fake-hash"},
             id="return single hash",
         ),
         pytest.param(
@@ -191,15 +193,20 @@ def test_pip_cache_dir_is_empty(from_line, tmpdir):
                         {
                             "packagetype": "bdist_wheel",
                             "digests": {"sha256": "fake-hash-number1"},
+                            "url": "https://link1",
                         },
                         {
                             "packagetype": "sdist",
                             "digests": {"sha256": "fake-hash-number2"},
+                            "url": "https://link2",
                         },
                     ]
                 }
             },
-            {"sha256:fake-hash-number1", "sha256:fake-hash-number2"},
+            {
+                "https://link1": "sha256:fake-hash-number1",
+                "https://link2": "sha256:fake-hash-number2",
+            },
             id="return multiple hashes",
         ),
         pytest.param(
@@ -209,39 +216,55 @@ def test_pip_cache_dir_is_empty(from_line, tmpdir):
                         {
                             "packagetype": "bdist_wheel",
                             "digests": {"sha256": "fake-hash-number1"},
+                            "url": "https://link1",
                         },
                         {
                             "packagetype": "sdist",
                             "digests": {"sha256": "fake-hash-number2"},
+                            "url": "https://link2",
                         },
                         {
                             "packagetype": "bdist_eggs",
                             "digests": {"sha256": "fake-hash-number3"},
+                            "url": "https://link3",
                         },
                     ]
                 }
             },
-            {"sha256:fake-hash-number1", "sha256:fake-hash-number2"},
+            {
+                "https://link1": "sha256:fake-hash-number1",
+                "https://link2": "sha256:fake-hash-number2",
+            },
             id="return only bdist_wheel and sdist hashes",
         ),
-        pytest.param(None, None, id="not found project data"),
-        pytest.param({}, None, id="not found releases key"),
-        pytest.param({"releases": {}}, None, id="not found version"),
-        pytest.param({"releases": {"0.1": [{}]}}, None, id="not found digests"),
+        pytest.param(None, {}, id="not found project data"),
+        pytest.param({}, {}, id="not found releases key"),
+        pytest.param({"releases": {}}, {}, id="not found version"),
+        pytest.param({"releases": {"0.1": [{}]}}, {}, id="not found digests"),
         pytest.param(
-            {"releases": {"0.1": [{"packagetype": "bdist_wheel", "digests": {}}]}},
-            None,
+            {
+                "releases": {
+                    "0.1": [
+                        {"packagetype": "bdist_wheel", "digests": {}, "url": "link"}
+                    ]
+                }
+            },
+            {},
             id="digests are empty",
         ),
         pytest.param(
             {
                 "releases": {
                     "0.1": [
-                        {"packagetype": "bdist_wheel", "digests": {"md5": "fake-hash"}}
+                        {
+                            "packagetype": "bdist_wheel",
+                            "digests": {"md5": "fake-hash"},
+                            "url": "https://link",
+                        }
                     ]
                 }
             },
-            None,
+            {},
             id="not found sha256 algo",
         ),
     ),
@@ -261,6 +284,64 @@ def test_get_hashes_from_pypi(from_line, tmpdir, project_data, expected_hashes):
     ireq = from_line("fake-package==0.1")
 
     actual_hashes = pypi_repository._get_hashes_from_pypi(ireq)
+    assert actual_hashes == expected_hashes
+
+
+def test_get_hashes_from_mixed(pip_conf, from_line, tmpdir):
+    """
+    Test PyPIRepository.get_hashes() returns hashes from both PyPi and extra indexes/links
+    """
+
+    package_name = "small-fake-multi-arch"
+    package_version = "0.1"
+
+    # One candidate from PyPi and the rest from find-links / extra indexes
+    extra_index_link1 = Link("https://extra-index-link1")
+    extra_index_link2 = Link("https://extra-index-link2")
+    pypi_link = Link("https://pypi-link")
+
+    all_candidates = [
+        InstallationCandidate(package_name, package_version, extra_index_link1),
+        InstallationCandidate(package_name, package_version, extra_index_link2),
+        InstallationCandidate(package_name, package_version, pypi_link),
+    ]
+
+    # Extra indexes hashes so we don't spend time computing them
+    file_hashes = {
+        extra_index_link1: "sha256:hash-link1",
+        extra_index_link2: "sha256:hash-link2",
+    }
+    pypi_hash = "pypi-hash"
+
+    class MockPyPIRepository(PyPIRepository):
+        def _get_project(self, ireq):
+            return {
+                "releases": {
+                    package_version: [
+                        {
+                            "packagetype": "bdist_wheel",
+                            "digests": {"sha256": pypi_hash},
+                            "url": str(pypi_link),
+                        },
+                    ]
+                }
+            }
+
+        def find_all_candidates(self, req_name):
+            return all_candidates
+
+        def _get_file_hash(self, link):
+            return file_hashes[link]
+
+    pypi_repository = MockPyPIRepository(
+        ["--no-cache-dir"], cache_dir=(tmpdir / "pypi-repo-cache")
+    )
+
+    ireq = from_line(f"{package_name}=={package_version}")
+
+    expected_hashes = {"sha256:" + pypi_hash} | set(file_hashes.values())
+
+    actual_hashes = pypi_repository.get_hashes(ireq)
     assert actual_hashes == expected_hashes
 
 

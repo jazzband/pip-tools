@@ -322,21 +322,31 @@ class PyPIRepository(BaseRepository):
         log.debug(ireq.name)
 
         with log.indentation():
-            hashes = self._get_hashes_from_pypi(ireq)
-            if hashes is None:
-                log.debug("Couldn't get hashes from PyPI, fallback to hashing files")
-                return self._get_hashes_from_files(ireq)
+            return self._get_req_hashes(ireq)
 
-        return hashes
+    def _get_req_hashes(self, ireq: InstallRequirement) -> set[str]:
+        matching_candidates = self._get_matching_candidates(ireq)
+        pypi_hashes_by_link = self._get_hashes_from_pypi(ireq)
+        pypi_hashes = {
+            pypi_hashes_by_link[candidate.link.url]
+            for candidate in matching_candidates
+            if candidate.link.url in pypi_hashes_by_link
+        }
+        local_hashes = {
+            self._get_file_hash(candidate.link)
+            for candidate in matching_candidates
+            if candidate.link.url not in pypi_hashes_by_link
+        }
+        return pypi_hashes | local_hashes
 
-    def _get_hashes_from_pypi(self, ireq: InstallRequirement) -> set[str] | None:
+    def _get_hashes_from_pypi(self, ireq: InstallRequirement) -> dict[str, str]:
         """
         Return a set of hashes from PyPI JSON API for a given InstallRequirement.
         Return None if fetching data is failed or missing digests.
         """
         project = self._get_project(ireq)
         if project is None:
-            return None
+            return {}
 
         _, version, _ = as_tuple(ireq)
 
@@ -344,21 +354,23 @@ class PyPIRepository(BaseRepository):
             release_files = project["releases"][version]
         except KeyError:
             log.debug("Missing release files on PyPI")
-            return None
+            return {}
 
         try:
             hashes = {
-                f"{FAVORITE_HASH}:{file_['digests'][FAVORITE_HASH]}"
+                file_["url"]: f"{FAVORITE_HASH}:{file_['digests'][FAVORITE_HASH]}"
                 for file_ in release_files
                 if file_["packagetype"] in self.HASHABLE_PACKAGE_TYPES
             }
         except KeyError:
             log.debug("Missing digests of release files on PyPI")
-            return None
+            return {}
 
         return hashes
 
-    def _get_hashes_from_files(self, ireq: InstallRequirement) -> set[str]:
+    def _get_matching_candidates(
+        self, ireq: InstallRequirement
+    ) -> set[InstallationCandidate]:
         """
         Return a set of hashes for all release files of a given InstallRequirement.
         """
@@ -371,10 +383,7 @@ class PyPIRepository(BaseRepository):
             ireq.specifier.filter(candidate.version for candidate in all_candidates)
         )
         matching_candidates = candidates_by_version[matching_versions[0]]
-
-        return {
-            self._get_file_hash(candidate.link) for candidate in matching_candidates
-        }
+        return matching_candidates
 
     def _get_file_hash(self, link: Link) -> str:
         log.debug(f"Hashing {link.show_url}")

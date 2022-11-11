@@ -14,6 +14,7 @@ from piptools.scripts.compile import cli
 from piptools.utils import COMPILE_EXCLUDE_OPTIONS
 
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
+from .test_utils import MockRequests
 
 legacy_resolver_only = pytest.mark.parametrize(
     "current_resolver",
@@ -1210,6 +1211,103 @@ def test_generate_hashes_with_line_style_annotations(runner):
             # via -r requirements.in, django-debug-toolbar
         """
     )
+
+
+SMALL_FAKE_A_FILE_NAME = "small_fake_a-0.1-py2.py3-none-any.whl"
+INDEX_URL_SMALL_FAKE_A = (
+    "https://files.pythonhosted.org/packages/08/e3/"
+    "ad05e1371eb99f257ca00f791b755deb22e752393eb8e75bc01d651715b02ea9/"
+    + SMALL_FAKE_A_FILE_NAME
+)
+INDEX_HASH_SMALL_FAKE_A = (
+    "33e1acdca3b9162e002cedb0e58b350d731d1ed3f53a6b22e0a628bca7c7c6ed"
+)
+
+INDEX_SIMPLE_SMALL_FAKE_A = {
+    "files": [
+        {
+            "filename": SMALL_FAKE_A_FILE_NAME,
+            "hashes": {"sha256": INDEX_HASH_SMALL_FAKE_A},
+            "requires-python": "",
+            "url": INDEX_URL_SMALL_FAKE_A,
+            "yanked": False,
+        },
+    ]
+}
+
+PYPI_PROJECT_SMALL_FAKE_A = {
+    "releases": {
+        "0.1": [
+            {
+                "packagetype": "bdist_wheel",
+                "digests": {
+                    "sha256": INDEX_HASH_SMALL_FAKE_A,
+                },
+                "url": INDEX_URL_SMALL_FAKE_A,
+            },
+        ]
+    }
+}
+
+
+def test_generate_hashes_with_mixed_sources(runner):
+    with open("requirements.in", "w") as fp:
+        fp.write("small_fake-a==0.1")
+
+    with (
+        MockRequests()
+        .handle(
+            "https://pypi.org/simple/small-fake-a/",
+            MockRequests.response_json(
+                INDEX_SIMPLE_SMALL_FAKE_A,
+                content_type="application/vnd.pypi.simple.v1+json",
+            ),
+        )
+        .handle(
+            "https://pypi.org/pypi/small-fake-a/json",
+            MockRequests.response_json(PYPI_PROJECT_SMALL_FAKE_A),
+        )
+        .handle(
+            "https://pypi.org/pypi/small_fake-a/json",
+            MockRequests.response_json(PYPI_PROJECT_SMALL_FAKE_A),
+        )
+        .handle(
+            INDEX_URL_SMALL_FAKE_A,
+            MockRequests.response_file(
+                os.path.join(
+                    # Note the discrepancy in file names to cause a different hash to be generated
+                    MINIMAL_WHEELS_PATH,
+                    "small_fake_a-0.2-py2.py3-none-any.whl",
+                )
+            ),
+        )
+    ):
+        out = runner.invoke(
+            cli,
+            [
+                "--output-file",
+                "-",
+                "--quiet",
+                "--no-header",
+                "--generate-hashes",
+                "--find-links",
+                MINIMAL_WHEELS_PATH,
+            ],
+        )
+
+    expected = dedent(
+        f"""\
+        --find-links {MINIMAL_WHEELS_PATH}
+        
+        small-fake-a==0.1 \\
+            --hash=sha256:{INDEX_HASH_SMALL_FAKE_A} \\
+            --hash=sha256:5e6071ee6e4c59e0d0408d366fe9b66781d2cf01be9a6e19a2433bb3c5336330
+            # via -r requirements.in
+        """
+    )
+
+    assert out.exit_code == 0, out
+    assert out.stdout == expected
 
 
 def test_filter_pip_markers(pip_conf, runner):
