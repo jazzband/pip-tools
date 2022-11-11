@@ -327,7 +327,7 @@ def cli(
     emit_find_links: bool,
     cache_dir: str,
     pip_args_str: str | None,
-    resolver_name: str | None,
+    resolver_name: str,
     emit_index_url: bool,
     emit_options: bool,
     unsafe_package: tuple[str, ...],
