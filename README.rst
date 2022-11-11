@@ -571,6 +571,8 @@ This section lists ``pip-tools`` features that are currently deprecated.
   default. Use ``--no-allow-unsafe`` to keep the old behavior. It is
   recommended to pass the ``--allow-unsafe`` now to adapt to the upcoming
   change.
+- Legacy resolver is deprecated and will be removed in future versions.
+  Use ``--resolver=backtracking`` instead.
 
 A Note on Resolvers
 ===================

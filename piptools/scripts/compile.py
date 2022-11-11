@@ -272,7 +272,7 @@ def _determine_linesep(
     "--resolver",
     "resolver_name",
     type=click.Choice(("legacy", "backtracking")),
-    default=None,
+    default="legacy",
     envvar="PIP_TOOLS_RESOLVER",
     help="Choose the dependency resolver.",
 )
@@ -378,12 +378,12 @@ def cli(
         if isinstance(output_file, LazyFile):  # pragma: no cover
             ctx.call_on_close(safecall(output_file.close_intelligently))
 
-    if resolver_name is None:
+    if resolver_name == "legacy":
         log.warning(
-            "WARNING: default resolver will be changed to 'backtracking' in 7.0.0 "
-            "version. Specify the --resolver option to silence this warning."
+            "WARNING: using legacy resolver is deprecated and will be removed in "
+            "future versions. The default resolver will be change to 'backtracking' "
+            "in 7.0.0 version. Specify --resolver=backtracking to silence this warning."
         )
-        resolver_name = "legacy"
 
     ###
     # Setup

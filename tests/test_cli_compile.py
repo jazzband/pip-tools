@@ -2530,11 +2530,11 @@ def test_failure_of_legacy_resolver_prompts_for_backtracking(
 
 
 @no_current_resolver
-def test_print_warning_if_resolver_not_specified(pip_conf, runner):
+def test_print_deprecation_warning_if_using_legacy_resolver(pip_conf, runner):
     with open("requirements.in", "w"):
         pass
 
     out = runner.invoke(cli)
 
     assert out.exit_code == 0, out
-    assert "WARNING: default resolver will be changed to 'backtracking'" in out.stderr
+    assert "WARNING: using legacy resolver is deprecated" in out.stderr
