@@ -8,13 +8,14 @@ import tempfile
 from typing import IO, Any, BinaryIO, cast
 
 import click
-from build import BuildBackendException
 from build.util import project_wheel_metadata
 from click.utils import LazyFile, safecall
 from pip._internal.commands import create_command
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
+
+from build import BuildBackendException
 
 from .._compat import IS_CLICK_VER_8_PLUS, parse_requirements
 from ..cache import DependencyCache
@@ -272,7 +273,7 @@ def _determine_linesep(
     "--resolver",
     "resolver_name",
     type=click.Choice(("legacy", "backtracking")),
-    default="legacy",
+    default=None,
     envvar="PIP_TOOLS_RESOLVER",
     help="Choose the dependency resolver.",
 )
@@ -327,7 +328,7 @@ def cli(
     emit_find_links: bool,
     cache_dir: str,
     pip_args_str: str | None,
-    resolver_name: str,
+    resolver_name: str | None,
     emit_index_url: bool,
     emit_options: bool,
     unsafe_package: tuple[str, ...],
@@ -377,6 +378,13 @@ def cli(
         # only LazyFile has close_intelligently, newer IO[Any] does not
         if isinstance(output_file, LazyFile):  # pragma: no cover
             ctx.call_on_close(safecall(output_file.close_intelligently))
+
+    if resolver_name is None:
+        log.warning(
+            "WARNING: default resolver will be changed to 'backtracking' in 7.0.0 "
+            "version. Specify the --resolver option to silence this warning."
+        )
+        resolver_name = "legacy"
 
     ###
     # Setup

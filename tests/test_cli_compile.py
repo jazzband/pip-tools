@@ -20,6 +20,11 @@ legacy_resolver_only = pytest.mark.parametrize(
     ("legacy",),
     indirect=("current_resolver",),
 )
+no_current_resolver = pytest.mark.parametrize(
+    "current_resolver",
+    ("",),
+    indirect=("current_resolver",),
+)
 
 
 @pytest.fixture(
@@ -2522,3 +2527,14 @@ def test_failure_of_legacy_resolver_prompts_for_backtracking(
         assert out.exit_code == 0, out
     else:  # pragma: no cover
         raise AssertionError("unreachable")
+
+
+@no_current_resolver
+def test_print_warning_if_resolver_not_specified(pip_conf, runner):
+    with open("requirements.in", "w"):
+        pass
+
+    out = runner.invoke(cli)
+
+    assert out.exit_code == 0, out
+    assert "WARNING: default resolver will be changed to 'backtracking'" in out.stderr
