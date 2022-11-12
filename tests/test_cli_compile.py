@@ -20,11 +20,6 @@ legacy_resolver_only = pytest.mark.parametrize(
     ("legacy",),
     indirect=("current_resolver",),
 )
-no_current_resolver = pytest.mark.parametrize(
-    "current_resolver",
-    ("",),
-    indirect=("current_resolver",),
-)
 
 
 @pytest.fixture(
@@ -2553,12 +2548,15 @@ def test_failure_of_legacy_resolver_prompts_for_backtracking(
         raise AssertionError("unreachable")
 
 
-@no_current_resolver
-def test_print_deprecation_warning_if_using_legacy_resolver(pip_conf, runner):
+def test_print_deprecation_warning_if_using_legacy_resolver(runner, current_resolver):
     with open("requirements.in", "w"):
         pass
 
     out = runner.invoke(cli)
-
     assert out.exit_code == 0, out
-    assert "WARNING: using legacy resolver is deprecated" in out.stderr
+
+    expected_warning = "WARNING: using legacy resolver is deprecated"
+    if current_resolver == "legacy":
+        assert expected_warning in out.stderr
+    else:
+        assert expected_warning not in out.stderr
