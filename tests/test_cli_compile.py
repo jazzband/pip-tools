@@ -2546,3 +2546,17 @@ def test_failure_of_legacy_resolver_prompts_for_backtracking(
         assert out.exit_code == 0, out
     else:  # pragma: no cover
         raise AssertionError("unreachable")
+
+
+def test_print_deprecation_warning_if_using_legacy_resolver(runner, current_resolver):
+    with open("requirements.in", "w"):
+        pass
+
+    out = runner.invoke(cli)
+    assert out.exit_code == 0, out
+
+    expected_warning = "WARNING: using legacy resolver is deprecated"
+    if current_resolver == "legacy":
+        assert expected_warning in out.stderr
+    else:
+        assert expected_warning not in out.stderr
