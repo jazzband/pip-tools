@@ -1,7 +1,9 @@
-## 6.10.0 (2022-11-11)
+## 6.10.0 (2022-11-13)
 
 Features:
 
+- Deprecate `pip-compile --resolver=legacy`
+  ([#1724](https://github.com/jazzband/pip-tools/pull/1724)). Thanks @atugushev
 - Prompt user to use the backtracking resolver on errors
   ([#1719](https://github.com/jazzband/pip-tools/pull/1719)). Thanks @maxfenv
 - Add support for Python 3.11 final
