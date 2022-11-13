@@ -1494,7 +1494,9 @@ def test_cert_option(parse_requirements, runner, option, attr, expected):
     (("--build-isolation", True), ("--no-build-isolation", False)),
 )
 @mock.patch("piptools.scripts.compile.parse_requirements")
-def test_build_isolation_option(parse_requirements, runner, option, expected):
+def test_parse_requirements_build_isolation_option(
+    parse_requirements, runner, option, expected
+):
     """
     A value of the --build-isolation/--no-build-isolation flag
     must be passed to parse_requirements().
@@ -1507,6 +1509,36 @@ def test_build_isolation_option(parse_requirements, runner, option, expected):
     # Ensure the options in parse_requirements has the expected build_isolation option
     args, kwargs = parse_requirements.call_args
     assert kwargs["options"].build_isolation is expected
+
+
+@pytest.mark.parametrize(
+    ("option", "expected"),
+    (("--build-isolation", True), ("--no-build-isolation", False)),
+)
+@mock.patch("piptools.scripts.compile.project_wheel_metadata")
+def test_project_wheel_metadata_isolation_option(
+    project_wheel_metadata, runner, option, expected
+):
+    """
+    A value of the --build-isolation/--no-build-isolation flag
+    must be passed to project_wheel_metadata().
+    """
+
+    with open("setup.py", "w") as package:
+        package.write(
+            dedent(
+                """\
+                from setuptools import setup
+                setup(install_requires=[])
+                """
+            )
+        )
+
+    runner.invoke(cli, [option])
+
+    # Ensure the options in project_wheel_metadata has the isolated kwarg
+    _, kwargs = project_wheel_metadata.call_args
+    assert kwargs["isolated"] is expected
 
 
 @mock.patch("piptools.scripts.compile.PyPIRepository")
