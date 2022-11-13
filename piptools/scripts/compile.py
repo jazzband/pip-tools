@@ -378,6 +378,13 @@ def cli(
         if isinstance(output_file, LazyFile):  # pragma: no cover
             ctx.call_on_close(safecall(output_file.close_intelligently))
 
+    if resolver_name == "legacy":
+        log.warning(
+            "WARNING: using legacy resolver is deprecated and will be removed in "
+            "future versions. The default resolver will be change to 'backtracking' "
+            "in 7.0.0 version. Specify --resolver=backtracking to silence this warning."
+        )
+
     ###
     # Setup
     ###
