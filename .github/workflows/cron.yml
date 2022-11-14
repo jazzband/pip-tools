@@ -17,20 +17,32 @@ jobs:
           - Windows
           - MacOS
         python-version:
+          - "3.11"
           - "3.10"
           - "3.9"
           - "3.8"
           - "3.7"
         pip-version:
           - main
+        include:
+          - os: Ubuntu
+            python-version: 3.12-dev
+            pip-version: main
     env:
       PY_COLORS: 1
       TOXENV: pip${{ matrix.pip-version }}
       TOX_PARALLEL_NO_SPINNER: 1
     steps:
       - uses: actions/checkout@master
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }} from GitHub
+        id: python-install
+        if: "!endsWith(matrix.python-version, '-dev')"
         uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }} from deadsnakes
+        if: endsWith(matrix.python-version, '-dev')
+        uses: deadsnakes/action@v2.1.1
         with:
           python-version: ${{ matrix.python-version }}
       - name: Get pip cache dir
