@@ -10,6 +10,10 @@ from typing import Any, Container, DefaultDict, Iterable, Iterator
 import click
 from pip._internal.cache import WheelCache
 from pip._internal.exceptions import DistributionNotFound
+from pip._internal.operations.build.build_tracker import (
+    get_build_tracker,
+    update_env_context_manager,
+)
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.resolution.resolvelib.base import Candidate
@@ -24,8 +28,6 @@ from pip._vendor.resolvelib.resolvers import ResolutionImpossible, Result
 from piptools.cache import DependencyCache
 from piptools.repositories.base import BaseRepository
 
-from ._compat import PIP_VERSION
-from ._compat.pip_compat import get_build_tracker, update_env_context_manager
 from .exceptions import PipToolsError
 from .logging import log
 from .utils import (
@@ -554,13 +556,8 @@ class BacktrackingResolver(BaseResolver):
                 "session": self.session,
                 "finder": self.finder,
                 "use_user_site": False,
+                "build_tracker": build_tracker,
             }
-
-            if PIP_VERSION[:2] <= (22, 0):
-                preparer_kwargs["req_tracker"] = build_tracker
-            else:
-                preparer_kwargs["build_tracker"] = build_tracker
-
             preparer = self.command.make_requirement_preparer(**preparer_kwargs)
 
             resolver = self.command.make_resolver(
