@@ -3,7 +3,6 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import itertools
-import logging
 import optparse
 import os
 from contextlib import contextmanager
@@ -20,6 +19,7 @@ from pip._internal.models.index import PackageIndex
 from pip._internal.models.link import Link
 from pip._internal.models.wheel import Wheel
 from pip._internal.network.session import PipSession
+from pip._internal.operations.build.build_tracker import get_build_tracker
 from pip._internal.req import InstallRequirement, RequirementSet
 from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.logging import indent_log, setup_logging
@@ -30,8 +30,6 @@ from pip._vendor.packaging.tags import Tag
 from pip._vendor.packaging.version import _BaseVersion
 from pip._vendor.requests import RequestException, Session
 
-from .._compat import PIP_VERSION
-from .._compat.pip_compat import get_build_tracker
 from ..exceptions import NoCandidateFound
 from ..logging import log
 from ..utils import (
@@ -94,7 +92,12 @@ class PyPIRepository(BaseRepository):
         self._cache_dir = normalize_path(str(cache_dir))
         self._download_dir = os.path.join(self._cache_dir, "pkgs")
 
-        self._setup_logging()
+        # Default pip's logger is noisy, so decrease it's verbosity
+        setup_logging(
+            verbosity=log.verbosity - 1,
+            no_color=self.options.no_color,
+            user_log_file=self.options.log,
+        )
 
     def clear_caches(self) -> None:
         rmtree(self._download_dir, ignore_errors=True)
@@ -173,20 +176,13 @@ class PyPIRepository(BaseRepository):
                 "finder": self.finder,
                 "use_user_site": False,
                 "download_dir": download_dir,
+                "build_tracker": build_tracker,
             }
-
-            if PIP_VERSION[:2] <= (22, 0):
-                preparer_kwargs["req_tracker"] = build_tracker
-            else:
-                preparer_kwargs["build_tracker"] = build_tracker
-
             preparer = self.command.make_requirement_preparer(**preparer_kwargs)
 
             reqset = RequirementSet()
             ireq.user_supplied = True
-            if PIP_VERSION[:3] < (22, 1, 1):
-                reqset.add_requirement(ireq)
-            elif getattr(ireq, "name", None):
+            if getattr(ireq, "name", None):
                 reqset.add_named_requirement(ireq)
             else:
                 reqset.add_unnamed_requirement(ireq)
@@ -445,42 +441,6 @@ class PyPIRepository(BaseRepository):
             Wheel.supported = original_wheel_supported
             Wheel.support_index_min = original_support_index_min
             self._available_candidates_cache = original_cache
-
-    def _setup_logging(self) -> None:
-        """
-        Setup pip's logger. Ensure pip is verbose same as pip-tools and sync
-        pip's log stream with LogContext.stream. This is only necessary for
-        pip<22.0.
-        """
-        # Default pip's logger is noisy, so decrease it's verbosity
-        setup_logging(
-            verbosity=log.verbosity - 1,
-            no_color=self.options.no_color,
-            user_log_file=self.options.log,
-        )
-
-        if PIP_VERSION[0] >= 22:
-            return
-
-        # Sync pip's console handler stream with LogContext.stream
-        logger = logging.getLogger()
-        for handler in logger.handlers:
-            if handler.name == "console":  # pragma: no branch
-                assert isinstance(handler, logging.StreamHandler)
-                handler.stream = log.stream
-                break
-        else:  # pragma: no cover
-            # There is always a console handler. This warning would be a signal that
-            # this block should be removed/revisited, because of pip possibly
-            # refactored-out logging config.
-            log.warning("Couldn't find a 'console' logging handler")
-
-        # This import will fail with pip 22.1, but here we're pip<22.0
-        from pip._internal.cli.progress_bars import BAR_TYPES
-
-        # Sync pip's progress bars stream with LogContext.stream
-        for bar_cls in itertools.chain(*BAR_TYPES.values()):
-            bar_cls.file = log.stream
 
 
 @contextmanager
