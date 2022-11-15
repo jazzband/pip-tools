@@ -481,7 +481,8 @@ def cli(
             setup_file_found = True
             try:
                 metadata = project_wheel_metadata(
-                    os.path.dirname(os.path.abspath(src_file))
+                    os.path.dirname(os.path.abspath(src_file)),
+                    isolated=build_isolation,
                 )
             except BuildBackendException as e:
                 log.error(str(e))
