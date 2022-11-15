@@ -1250,7 +1250,7 @@ PYPI_PROJECT_SMALL_FAKE_A = {
 }
 
 
-def test_generate_hashes_with_mixed_sources(runner):
+def test_generate_hashes_with_mixed_sources_mocked(runner):
     with open("requirements.in", "w") as fp:
         fp.write("small_fake-a==0.1")
 
@@ -1308,6 +1308,46 @@ def test_generate_hashes_with_mixed_sources(runner):
 
     assert out.exit_code == 0, out
     assert out.stdout == expected
+
+
+@pytest.mark.network
+def test_generate_hashes_with_mixed_sources(runner):
+    with open("requirements.in", "w") as fp:
+        fp.write("torch-scatter==2.0.9\n")
+
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--no-header",
+            "--generate-hashes",
+            "--find-links",
+            "https://data.pyg.org/whl/torch-1.13.0+cpu.html",
+        ],
+    )
+
+    assert out.stdout == dedent(
+        """\
+        --find-links https://data.pyg.org/whl/torch-1.13.0+cpu.html
+        
+        torch-scatter==2.0.9 \\
+            --hash=sha256:08f5511d64473badf0a71d156b36dc2b09b9c2f00a7cd373b935b490c477a7f1 \\
+            --hash=sha256:2003d31429c4efa30c12026a1662194fae8fae1c3f0e891d5563b9e73afb9a67 \\
+            --hash=sha256:4c6dc46112ed0f01ea532a6ad98ed5facae1bcd15e0a74bc3b0efebcfc1b33ed \\
+            --hash=sha256:5a85675da0fa668aef938e097f3c89940ed4d9cda9f186e604e73960b8be4bdc \\
+            --hash=sha256:610d87fdc72738d4b76a4599a1a0eb0c3ec9f164edf07aca2c7d9c649ad0c6b0 \\
+            --hash=sha256:6bcb2d26bc7934683a667d2e23e8c9cc52c4c81e41526733bc12de2698ce9679 \\
+            --hash=sha256:84e9f266c5ed3527ce1d475ceb32df9a61017e3a6db28b1ab53cfba7836c82ec \\
+            --hash=sha256:967432cde1b736a6cbce7a606ddc9abefd7d1a4cafe1dcbef289672fc9fe9fcf \\
+            --hash=sha256:a8ca5eafa302fc4779c18b6a8854a4b3f1a2b20893c1fddf5f1137630995fea2 \\
+            --hash=sha256:aa9005a5ec09265d6cfde266c0e3a40f16b0a732cfcca2304839f81694904b1e \\
+            --hash=sha256:d470bfe9de64c95ca69ef46c90dd9aaad11f538ced601ada131cbb7d52d74a39 \\
+            --hash=sha256:d53255b4e23701ddaf5dda173bcb02ca0f69604e5917169cb06bf31ec3587e49
+            # via -r requirements.in
+        """
+    )
 
 
 def test_filter_pip_markers(pip_conf, runner):
