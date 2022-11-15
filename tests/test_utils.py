@@ -9,7 +9,7 @@ import sys
 from codecs import encode
 from contextlib import AbstractContextManager
 from io import BytesIO
-from typing import Callable
+from typing import Callable, Any
 from unittest import mock
 
 import pip
@@ -551,7 +551,7 @@ def test_get_sys_path_for_python_executable():
         assert path in sys.path
 
 
-class MockRequests(AbstractContextManager):
+class MockRequests(AbstractContextManager[Any]):
     def __init__(self):
         from pip._internal.network.session import PipSession
 
@@ -593,7 +593,7 @@ class MockRequests(AbstractContextManager):
     @classmethod
     def response_json(
         cls,
-        body: dict,
+        body: dict[Any, Any],
         status_code: int = 200,
         content_type: str = "application/json",
     ) -> Callable[[str], Response]:

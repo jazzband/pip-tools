@@ -1298,7 +1298,7 @@ def test_generate_hashes_with_mixed_sources_mocked(runner):
     expected = dedent(
         f"""\
         --find-links {MINIMAL_WHEELS_PATH}
-        
+
         small-fake-a==0.1 \\
             --hash=sha256:{INDEX_HASH_SMALL_FAKE_A} \\
             --hash=sha256:5e6071ee6e4c59e0d0408d366fe9b66781d2cf01be9a6e19a2433bb3c5336330
@@ -1331,7 +1331,7 @@ def test_generate_hashes_with_mixed_sources(runner):
     assert out.stdout == dedent(
         """\
         --find-links https://data.pyg.org/whl/torch-1.13.0+cpu.html
-        
+
         torch-scatter==2.0.9 \\
             --hash=sha256:08f5511d64473badf0a71d156b36dc2b09b9c2f00a7cd373b935b490c477a7f1 \\
             --hash=sha256:2003d31429c4efa30c12026a1662194fae8fae1c3f0e891d5563b9e73afb9a67 \\
