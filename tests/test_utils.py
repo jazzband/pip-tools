@@ -9,7 +9,7 @@ import sys
 from codecs import encode
 from contextlib import AbstractContextManager
 from io import BytesIO
-from typing import Callable, Any
+from typing import Any, Callable
 from unittest import mock
 
 import pip
