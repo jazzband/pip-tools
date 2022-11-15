@@ -1032,6 +1032,7 @@ def test_generate_hashes_with_annotations(runner):
     ),
 )
 def test_override_newline(
+    pip_conf,
     runner,
     gen_hashes,
     annotate_options,
@@ -1048,11 +1049,7 @@ def test_override_newline(
     example_dir.mkdir()
     in_path = example_dir / "requirements.in"
     out_path = example_dir / "requirements.txt"
-    in_path.write_bytes(
-        b"six==1.15.0\n"
-        b"setuptools\n"
-        b"pip-tools @ git+https://github.com/jazzband/pip-tools\n"
-    )
+    in_path.write_bytes(b"small-fake-a==0.1\nsmall-fake-b\n")
 
     runner.invoke(
         cli, [*opts, f"--output-file={os.fsdecode(out_path)}", os.fsdecode(in_path)]
