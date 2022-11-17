@@ -1,21 +1,14 @@
 from __future__ import annotations
 
-import json
 import logging
 import operator
 import os
 import shlex
 import sys
-from codecs import encode
-from contextlib import AbstractContextManager
-from io import BytesIO
-from typing import Any, Callable
-from unittest import mock
 
 import pip
 import pytest
 from pip._vendor.packaging.version import Version
-from pip._vendor.requests.models import Response
 
 from piptools.scripts.compile import cli as compile_cli
 from piptools.utils import (
@@ -549,80 +542,3 @@ def test_get_sys_path_for_python_executable():
     # not testing for equality, because pytest adds extra paths into current sys.path
     for path in result:
         assert path in sys.path
-
-
-class MockRequests(AbstractContextManager[Any]):
-    def __init__(self):
-        from pip._internal.network.session import PipSession
-
-        self.ctx = mock.patch.object(PipSession, "get", self._get)
-        self.responses = {}
-
-    def _get(self, url, **kwargs):
-        if url in self.responses:
-            response = self.responses[url]
-            return response(url)
-        else:
-            raise AssertionError(f"Missing handler for {url}")
-
-    def handle(self, url, response):
-        self.responses[url] = response
-        return self
-
-    def __enter__(self):
-        self.ctx.__enter__()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        return self.ctx.__exit__(exc_type, exc_val, exc_tb)
-
-    @classmethod
-    def response_html(
-        cls, body: str, status_code: int = 200
-    ) -> Callable[[str], Response]:
-        def response(url):
-            r = Response()
-            r.url = url
-            r.status_code = status_code
-            r.reason = "OK"
-            r.headers["Content-Type"] = "text/html"
-            r.raw = BytesIO(encode(body))
-            return r
-
-        return response
-
-    @classmethod
-    def response_json(
-        cls,
-        body: dict[Any, Any],
-        status_code: int = 200,
-        content_type: str = "application/json",
-    ) -> Callable[[str], Response]:
-        def response(url):
-            r = Response()
-            r.url = url
-            r.status_code = status_code
-            r.reason = "OK"
-            r.headers = {"Content-Type": content_type}
-            r.raw = BytesIO(encode(json.dumps(body)))
-            return r
-
-        return response
-
-    @classmethod
-    def response_file(
-        cls,
-        path: str,
-        status_code: int = 200,
-        content_type: str = "binary/octet-stream",
-    ) -> Callable[[str], Response]:
-        def response(url):
-            r = Response()
-            r.url = url
-            r.status_code = status_code
-            r.reason = "OK"
-            r.headers = {"Content-Type": content_type}
-            with open(path, "br") as f:
-                r.raw = BytesIO(f.read())
-            return r
-
-        return response
