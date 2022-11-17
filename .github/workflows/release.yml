@@ -31,7 +31,6 @@ jobs:
       - name: Build package
         run: |
           python setup.py --version
-          # pip-tools can be built using `build` with the new pyproject.toml file
           python -m build
           twine check dist/*
 
