@@ -1,12 +1,14 @@
+from __future__ import annotations
+
 import json
 import os
+import platform
 import subprocess
 import sys
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from functools import partial
 from textwrap import dedent
-from typing import List, Optional
 
 import pytest
 from click.testing import CliRunner
@@ -41,9 +43,9 @@ from .utils import looks_like_ci
 
 @dataclass
 class FakeOptions:
-    features_enabled: List[str] = field(default_factory=list)
-    deprecated_features_enabled: List[str] = field(default_factory=list)
-    target_dir: Optional[str] = None
+    features_enabled: list[str] = field(default_factory=list)
+    deprecated_features_enabled: list[str] = field(default_factory=list)
+    target_dir: str | None = None
 
 
 class FakeRepository(BaseRepository):
@@ -423,3 +425,13 @@ def fake_dists(tmpdir, make_package, make_wheel):
     for pkg in pkgs:
         make_wheel(pkg, dists_path)
     return dists_path
+
+
+@pytest.fixture
+def venv(tmp_path):
+    """Create a temporary venv and get the path of its directory of executables."""
+    subprocess.run(
+        [sys.executable, "-m", "venv", os.fspath(tmp_path)],
+        check=True,
+    )
+    return tmp_path / ("Scripts" if platform.system() == "Windows" else "bin")

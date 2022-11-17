@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 
 import pytest
@@ -42,6 +44,7 @@ def writer(tmpdir_cwd):
             index_urls=[],
             trusted_hosts=[],
             format_control=FormatControl(set(), set()),
+            linesep="\n",
             allow_unsafe=False,
             find_links=[],
             emit_find_links=True,

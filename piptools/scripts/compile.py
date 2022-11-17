@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import itertools
 import os
 import shlex
 import sys
 import tempfile
-from typing import IO, Any, BinaryIO, List, Optional, Tuple, Union, cast
+from typing import IO, Any, BinaryIO, cast
 
 import click
 from build import BuildBackendException
@@ -16,7 +18,7 @@ from pip._internal.utils.misc import redact_auth_from_url
 
 from .._compat import IS_CLICK_VER_8_PLUS, parse_requirements
 from ..cache import DependencyCache
-from ..exceptions import PipToolsError
+from ..exceptions import NoCandidateFound, PipToolsError
 from ..locations import CACHE_DIR
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
@@ -49,6 +51,35 @@ def _get_default_option(option_name: str) -> Any:
     return getattr(default_values, option_name)
 
 
+def _determine_linesep(
+    strategy: str = "preserve", filenames: tuple[str, ...] = ()
+) -> str:
+    """
+    Determine and return linesep string for OutputWriter to use.
+    Valid strategies: "LF", "CRLF", "native", "preserve"
+    When preserving, files are checked in order for existing newlines.
+    """
+    if strategy == "preserve":
+        for fname in filenames:
+            try:
+                with open(fname, "rb") as existing_file:
+                    existing_text = existing_file.read()
+            except FileNotFoundError:
+                continue
+            if b"\r\n" in existing_text:
+                strategy = "CRLF"
+                break
+            elif b"\n" in existing_text:
+                strategy = "LF"
+                break
+    return {
+        "native": os.linesep,
+        "LF": "\n",
+        "CRLF": "\r\n",
+        "preserve": "\n",
+    }[strategy]
+
+
 @click.command(context_settings={"help_option_names": ("-h", "--help")})
 @click.version_option(**version_option_kwargs)
 @click.pass_context
@@ -78,6 +109,12 @@ def _get_default_option(option_name: str) -> Any:
     "extras",
     multiple=True,
     help="Name of an extras_require group to install; may be used more than once",
+)
+@click.option(
+    "--all-extras",
+    is_flag=True,
+    default=False,
+    help="Install all extras_require groups",
 )
 @click.option(
     "-f",
@@ -158,6 +195,12 @@ def _get_default_option(option_name: str) -> Any:
         "Output file name. Required if more than one input file is given. "
         "Will be derived from input file otherwise."
     ),
+)
+@click.option(
+    "--newline",
+    type=click.Choice(("LF", "CRLF", "native", "preserve"), case_sensitive=False),
+    default="preserve",
+    help="Override the newline control characters used",
 )
 @click.option(
     "--allow-unsafe/--no-allow-unsafe",
@@ -245,6 +288,12 @@ def _get_default_option(option_name: str) -> Any:
     default=True,
     help="Add options to generated file",
 )
+@click.option(
+    "--unsafe-package",
+    multiple=True,
+    help="Specify a package to consider unsafe; may be used more than once. "
+    f"Replaces default unsafe packages: {', '.join(sorted(UNSAFE_PACKAGES))}",
+)
 def cli(
     ctx: click.Context,
     verbose: int,
@@ -252,35 +301,41 @@ def cli(
     dry_run: bool,
     pre: bool,
     rebuild: bool,
-    extras: Tuple[str, ...],
-    find_links: Tuple[str, ...],
+    extras: tuple[str, ...],
+    all_extras: bool,
+    find_links: tuple[str, ...],
     index_url: str,
-    extra_index_url: Tuple[str, ...],
-    cert: Optional[str],
-    client_cert: Optional[str],
-    trusted_host: Tuple[str, ...],
+    extra_index_url: tuple[str, ...],
+    cert: str | None,
+    client_cert: str | None,
+    trusted_host: tuple[str, ...],
     header: bool,
     emit_trusted_host: bool,
     annotate: bool,
     annotation_style: str,
     upgrade: bool,
-    upgrade_packages: Tuple[str, ...],
-    output_file: Union[LazyFile, IO[Any], None],
+    upgrade_packages: tuple[str, ...],
+    output_file: LazyFile | IO[Any] | None,
+    newline: str,
     allow_unsafe: bool,
     strip_extras: bool,
     generate_hashes: bool,
     reuse_hashes: bool,
-    src_files: Tuple[str, ...],
+    src_files: tuple[str, ...],
     max_rounds: int,
     build_isolation: bool,
     emit_find_links: bool,
     cache_dir: str,
-    pip_args_str: Optional[str],
+    pip_args_str: str | None,
     resolver_name: str,
     emit_index_url: bool,
     emit_options: bool,
+    unsafe_package: tuple[str, ...],
 ) -> None:
-    """Compiles requirements.txt from requirements.in specs."""
+    """
+    Compiles requirements.txt from requirements.in, pyproject.toml, setup.cfg,
+    or setup.py specs.
+    """
     log.verbosity = verbose - quiet
 
     if len(src_files) == 0:
@@ -322,6 +377,13 @@ def cli(
         # only LazyFile has close_intelligently, newer IO[Any] does not
         if isinstance(output_file, LazyFile):  # pragma: no cover
             ctx.call_on_close(safecall(output_file.close_intelligently))
+
+    if resolver_name == "legacy":
+        log.warning(
+            "WARNING: using legacy resolver is deprecated and will be removed in "
+            "future versions. The default resolver will be change to 'backtracking' "
+            "in 7.0.0 version. Specify --resolver=backtracking to silence this warning."
+        )
 
     ###
     # Setup
@@ -391,7 +453,7 @@ def cli(
     # Parsing/collecting initial requirements
     ###
 
-    constraints: List[InstallRequirement] = []
+    constraints: list[InstallRequirement] = []
     setup_file_found = False
     for src_file in src_files:
         is_setup_file = os.path.basename(src_file) in METADATA_FILENAMES
@@ -419,7 +481,8 @@ def cli(
             setup_file_found = True
             try:
                 metadata = project_wheel_metadata(
-                    os.path.dirname(os.path.abspath(src_file))
+                    os.path.dirname(os.path.abspath(src_file)),
+                    isolated=build_isolation,
                 )
             except BuildBackendException as e:
                 log.error(str(e))
@@ -432,6 +495,11 @@ def cli(
                     for req in metadata.get_all("Requires-Dist") or []
                 ]
             )
+            if all_extras:
+                if extras:
+                    msg = "--extra has no effect when used with --all-extras"
+                    raise click.BadParameter(msg)
+                extras = tuple(metadata.get_all("Provides-Extra"))
         else:
             constraints.extend(
                 parse_requirements(
@@ -483,14 +551,29 @@ def cli(
             cache=DependencyCache(cache_dir),
             clear_caches=rebuild,
             allow_unsafe=allow_unsafe,
+            unsafe_packages=set(unsafe_package),
         )
         results = resolver.resolve(max_rounds=max_rounds)
         hashes = resolver.resolve_hashes(results) if generate_hashes else None
+    except NoCandidateFound as e:
+        if resolver_cls == LegacyResolver:  # pragma: no branch
+            log.error(
+                "Using legacy resolver. "
+                "Consider using backtracking resolver with "
+                "`--resolver=backtracking`."
+            )
+
+        log.error(str(e))
+        sys.exit(2)
     except PipToolsError as e:
         log.error(str(e))
         sys.exit(2)
 
     log.debug("")
+
+    linesep = _determine_linesep(
+        strategy=newline, filenames=(output_file.name, *src_files)
+    )
 
     ##
     # Output
@@ -511,6 +594,7 @@ def cli(
         index_urls=repository.finder.index_urls,
         trusted_hosts=repository.finder.trusted_hosts,
         format_control=repository.finder.format_control,
+        linesep=linesep,
         allow_unsafe=allow_unsafe,
         find_links=repository.finder.find_links,
         emit_find_links=emit_find_links,

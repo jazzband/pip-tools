@@ -1,3 +1,53 @@
+## 6.10.0 (2022-11-13)
+
+Features:
+
+- Deprecate `pip-compile --resolver=legacy`
+  ([#1724](https://github.com/jazzband/pip-tools/pull/1724)). Thanks @atugushev
+- Prompt user to use the backtracking resolver on errors
+  ([#1719](https://github.com/jazzband/pip-tools/pull/1719)). Thanks @maxfenv
+- Add support for Python 3.11 final
+  ([#1708](https://github.com/jazzband/pip-tools/pull/1708)). Thanks @hugovk
+- Add `--newline=[LF|CRLF|native|preserve]` option to `pip-compile`
+  ([#1652](https://github.com/jazzband/pip-tools/pull/1652)). Thanks @AndydeCleyre
+
+Bug Fixes:
+
+- Fix inconsistent handling of constraints comments with backtracking resolver
+  ([#1713](https://github.com/jazzband/pip-tools/pull/1713)). Thanks @mkniewallner
+- Fix some encoding warnings in Python 3.10 (PEP 597)
+  ([#1614](https://github.com/jazzband/pip-tools/pull/1614)). Thanks @GalaxySnail
+
+Other Changes:
+
+- Update pip-tools version in the README's pre-commit examples
+  ([#1701](https://github.com/jazzband/pip-tools/pull/1701)). Thanks @Kludex
+- Document use of the backtracking resolver
+  ([#1718](https://github.com/jazzband/pip-tools/pull/1718)). Thanks @maxfenv
+- Use HTTPS in a readme link ([#1716](https://github.com/jazzband/pip-tools/pull/1716)).
+  Thanks @Arhell
+
+## 6.9.0 (2022-10-05)
+
+Features:
+
+- Add `--all-extras` flag to `pip-compile`
+  ([#1630](https://github.com/jazzband/pip-tools/pull/1630)). Thanks @apljungquist
+- Support Exclude Package with custom unsafe packages
+  ([#1509](https://github.com/jazzband/pip-tools/pull/1509)). Thanks @hmc-cs-mdrissi
+
+Bug Fixes:
+
+- Fix compile cached vcs packages
+  ([#1649](https://github.com/jazzband/pip-tools/pull/1649)). Thanks @atugushev
+- Include `py.typed` in wheel file
+  ([#1648](https://github.com/jazzband/pip-tools/pull/1648)). Thanks @FlorentJeannot
+
+Other Changes:
+
+- Add pyproject.toml & modern packaging to introduction.
+  ([#1668](https://github.com/jazzband/pip-tools/pull/1668)). Thanks @hynek
+
 ## 6.8.0 (2022-06-30)
 
 Features:

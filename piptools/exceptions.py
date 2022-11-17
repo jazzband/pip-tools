@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Iterable
 
 from pip._internal.index.package_finder import PackageFinder
