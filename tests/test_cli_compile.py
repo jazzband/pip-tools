@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import os
 import shutil
 import subprocess
@@ -8,6 +9,7 @@ from textwrap import dedent
 from unittest import mock
 
 import pytest
+from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.urls import path_to_url
 
 from piptools.scripts.compile import cli
@@ -1210,6 +1212,64 @@ def test_generate_hashes_with_line_style_annotations(runner):
             # via -r requirements.in, django-debug-toolbar
         """
     )
+
+
+@pytest.mark.network
+def test_generate_hashes_with_mixed_sources(
+    runner, make_package, make_wheel, make_sdist, tmp_path
+):
+    """
+    Test that pip-compile generate hashes for every file from all given sources:
+    PyPI and/or --find-links.
+    """
+
+    wheels_dir = tmp_path / "wheels"
+    wheels_dir.mkdir()
+
+    dummy_six_pkg = make_package(name="six", version="1.16.0")
+    make_wheel(dummy_six_pkg, wheels_dir, "--build-number", "123")
+
+    fav_hasher = hashlib.new(FAVORITE_HASH)
+    fav_hasher.update((wheels_dir / "six-1.16.0-123-py3-none-any.whl").read_bytes())
+    dummy_six_wheel_digest = fav_hasher.hexdigest()
+
+    with open("requirements.in", "w") as fp:
+        fp.write("six==1.16.0\n")
+
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--no-header",
+            "--generate-hashes",
+            "--no-emit-options",
+            "--no-annotate",
+            "--find-links",
+            wheels_dir.as_uri(),
+        ],
+    )
+
+    expected_digests = sorted(
+        (
+            # sdist hash for six-1.16.0.tar.gz from PyPI
+            "1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926",
+            # wheel hash for six-1.16.0-py2.py3-none-any.whl from PyPI
+            "8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254",
+            # wheel hash for local six-1.16.0-123-py3-none-any.whl file
+            dummy_six_wheel_digest,
+        )
+    )
+    expected_output = dedent(
+        f"""\
+        six==1.16.0 \\
+            --hash=sha256:{expected_digests[0]} \\
+            --hash=sha256:{expected_digests[1]} \\
+            --hash=sha256:{expected_digests[2]}
+        """
+    )
+    assert out.stdout == expected_output
 
 
 def test_filter_pip_markers(pip_conf, runner):
