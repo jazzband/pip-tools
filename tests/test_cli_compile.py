@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+import hashlib
 import os
 import shutil
 import subprocess
 import sys
-import traceback
 from textwrap import dedent
 from unittest import mock
 
 import pytest
+from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.urls import path_to_url
 
 from piptools.scripts.compile import cli
@@ -1214,9 +1215,26 @@ def test_generate_hashes_with_line_style_annotations(runner):
 
 
 @pytest.mark.network
-def test_generate_hashes_with_mixed_sources(runner):
+def test_generate_hashes_with_mixed_sources(
+    runner, make_package, make_wheel, make_sdist, tmp_path
+):
+    """
+    Test that pip-compile generate hashes for every file from all given sources:
+    PyPI and/or --find-links.
+    """
+
+    wheels_dir = tmp_path / "wheels"
+    wheels_dir.mkdir()
+
+    dummy_six_pkg = make_package(name="six", version="1.16.0")
+    make_wheel(dummy_six_pkg, wheels_dir, "--build-number", "123")
+
+    fav_hasher = hashlib.new(FAVORITE_HASH)
+    fav_hasher.update((wheels_dir / "six-1.16.0-123-py3-none-any.whl").read_bytes())
+    dummy_six_wheel_digest = fav_hasher.hexdigest()
+
     with open("requirements.in", "w") as fp:
-        fp.write("torch-scatter==2.0.9\n")
+        fp.write("six==1.16.0\n")
 
     out = runner.invoke(
         cli,
@@ -1226,33 +1244,32 @@ def test_generate_hashes_with_mixed_sources(runner):
             "--quiet",
             "--no-header",
             "--generate-hashes",
+            "--no-emit-options",
+            "--no-annotate",
             "--find-links",
-            "https://data.pyg.org/whl/torch-1.13.0+cpu.html",
+            wheels_dir.as_uri(),
         ],
     )
 
-    print(out.stderr)
-    traceback.print_exception(*out.exc_info)
-    assert out.stdout == dedent(
-        """\
-        --find-links https://data.pyg.org/whl/torch-1.13.0+cpu.html
-
-        torch-scatter==2.0.9 \\
-            --hash=sha256:08f5511d64473badf0a71d156b36dc2b09b9c2f00a7cd373b935b490c477a7f1 \\
-            --hash=sha256:2003d31429c4efa30c12026a1662194fae8fae1c3f0e891d5563b9e73afb9a67 \\
-            --hash=sha256:4c6dc46112ed0f01ea532a6ad98ed5facae1bcd15e0a74bc3b0efebcfc1b33ed \\
-            --hash=sha256:5a85675da0fa668aef938e097f3c89940ed4d9cda9f186e604e73960b8be4bdc \\
-            --hash=sha256:610d87fdc72738d4b76a4599a1a0eb0c3ec9f164edf07aca2c7d9c649ad0c6b0 \\
-            --hash=sha256:6bcb2d26bc7934683a667d2e23e8c9cc52c4c81e41526733bc12de2698ce9679 \\
-            --hash=sha256:84e9f266c5ed3527ce1d475ceb32df9a61017e3a6db28b1ab53cfba7836c82ec \\
-            --hash=sha256:967432cde1b736a6cbce7a606ddc9abefd7d1a4cafe1dcbef289672fc9fe9fcf \\
-            --hash=sha256:a8ca5eafa302fc4779c18b6a8854a4b3f1a2b20893c1fddf5f1137630995fea2 \\
-            --hash=sha256:aa9005a5ec09265d6cfde266c0e3a40f16b0a732cfcca2304839f81694904b1e \\
-            --hash=sha256:d470bfe9de64c95ca69ef46c90dd9aaad11f538ced601ada131cbb7d52d74a39 \\
-            --hash=sha256:d53255b4e23701ddaf5dda173bcb02ca0f69604e5917169cb06bf31ec3587e49
-            # via -r requirements.in
+    expected_digests = sorted(
+        (
+            # sdist hash for six-1.16.0.tar.gz from PyPI
+            "1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926",
+            # wheel hash for six-1.16.0-py2.py3-none-any.whl from PyPI
+            "8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254",
+            # wheel hash for local six-1.16.0-123-py3-none-any.whl file
+            dummy_six_wheel_digest,
+        )
+    )
+    expected_output = dedent(
+        f"""\
+        six==1.16.0 \\
+            --hash=sha256:{expected_digests[0]} \\
+            --hash=sha256:{expected_digests[1]} \\
+            --hash=sha256:{expected_digests[2]}
         """
     )
+    assert out.stdout == expected_output
 
 
 def test_filter_pip_markers(pip_conf, runner):
