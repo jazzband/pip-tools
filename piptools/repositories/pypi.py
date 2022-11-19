@@ -325,6 +325,10 @@ class PyPIRepository(BaseRepository):
             return self._get_req_hashes(ireq)
 
     def _get_req_hashes(self, ireq: InstallRequirement) -> set[str]:
+        """
+        Collects the hashes for all candidates satisfying the given InstallRequirement. Computes
+        the hashes for the candidates that don't have one reported by their index.
+        """
         matching_candidates = self._get_matching_candidates(ireq)
         pypi_hashes_by_link = self._get_hashes_from_pypi(ireq)
         pypi_hashes = {
@@ -341,8 +345,8 @@ class PyPIRepository(BaseRepository):
 
     def _get_hashes_from_pypi(self, ireq: InstallRequirement) -> dict[str, str]:
         """
-        Return a set of hashes from PyPI JSON API for a given InstallRequirement.
-        Return None if fetching data is failed or missing digests.
+        Builds a mapping from the release URLs to their hashes as reported by the PyPI JSON API
+        for a given InstallRequirement.
         """
         project = self._get_project(ireq)
         if project is None:
@@ -372,7 +376,7 @@ class PyPIRepository(BaseRepository):
         self, ireq: InstallRequirement
     ) -> set[InstallationCandidate]:
         """
-        Return a set of hashes for all release files of a given InstallRequirement.
+        Returns all candidates that satisfy the given InstallRequirement.
         """
         # We need to get all of the candidates that match our current version
         # pin, these will represent all of the files that could possibly
@@ -382,8 +386,7 @@ class PyPIRepository(BaseRepository):
         matching_versions = list(
             ireq.specifier.filter(candidate.version for candidate in all_candidates)
         )
-        matching_candidates = candidates_by_version[matching_versions[0]]
-        return matching_candidates
+        return candidates_by_version[matching_versions[0]]
 
     def _get_file_hash(self, link: Link) -> str:
         log.debug(f"Hashing {link.show_url}")
