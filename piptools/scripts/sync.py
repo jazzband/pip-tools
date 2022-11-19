@@ -14,7 +14,7 @@ from pip._internal.index.package_finder import PackageFinder
 from pip._internal.metadata import get_environment
 
 from .. import sync
-from .._compat import IS_CLICK_VER_8_PLUS, parse_requirements
+from .._compat import parse_requirements
 from .._compat.pip_compat import Distribution
 from ..exceptions import PipToolsError
 from ..logging import log
@@ -28,12 +28,9 @@ from ..utils import (
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 
-# TODO: drop click 7 and remove this block, pass directly to version_option
-version_option_kwargs = {"package_name": "pip-tools"} if IS_CLICK_VER_8_PLUS else {}
-
 
 @click.command(context_settings={"help_option_names": ("-h", "--help")})
-@click.version_option(**version_option_kwargs)
+@click.version_option(package_name="pip-tools")
 @click.option(
     "-a",
     "--ask",
