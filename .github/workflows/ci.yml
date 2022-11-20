@@ -38,22 +38,11 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - Ubuntu
           - Windows
-          - macOS
         python-version:
           - "3.11"
-          - "3.10"
-          - "3.9"
-          - "3.8"
-          - "3.7"
         pip-version:
-          - "latest"
-          - "previous"
-        include:
-          - os: Ubuntu
-            python-version: 3.7
-            pip-version: main
+          - "main"
     env:
       TOXENV: pip${{ matrix.pip-version }}-coverage
     steps:
