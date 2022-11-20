@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import collections
 import copy
 import itertools
@@ -5,21 +7,7 @@ import json
 import os
 import re
 import shlex
-import typing
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Set,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, Callable, Iterable, Iterator, TypeVar, cast
 
 import click
 from click.utils import LazyFile
@@ -61,9 +49,7 @@ def key_from_ireq(ireq: InstallRequirement) -> str:
         return key_from_req(ireq.req)
 
 
-def key_from_req(
-    req: typing.Union[InstallRequirement, Distribution, Requirement]
-) -> str:
+def key_from_req(req: InstallRequirement | Distribution | Requirement) -> str:
     """Get an all-lowercase version of the requirement's name."""
     if hasattr(req, "key"):
         # from pkg_resources, such as installed dists for pip-sync
@@ -79,7 +65,7 @@ def comment(text: str) -> str:
 
 
 def make_install_requirement(
-    name: str, version: Union[str, Version], ireq: InstallRequirement
+    name: str, version: str | Version, ireq: InstallRequirement
 ) -> InstallRequirement:
     # If no extras are specified, the extras string is blank
     extras_string = ""
@@ -111,8 +97,8 @@ def is_url_requirement(ireq: InstallRequirement) -> bool:
 
 def format_requirement(
     ireq: InstallRequirement,
-    marker: Optional[Marker] = None,
-    hashes: Optional[Set[str]] = None,
+    marker: Marker | None = None,
+    hashes: set[str] | None = None,
 ) -> str:
     """
     Generic formatter for pretty printing InstallRequirements to the terminal
@@ -211,7 +197,7 @@ def is_pinned_requirement(ireq: InstallRequirement) -> bool:
     return spec.operator in {"==", "==="} and not spec.version.endswith(".*")
 
 
-def as_tuple(ireq: InstallRequirement) -> Tuple[str, str, Tuple[str, ...]]:
+def as_tuple(ireq: InstallRequirement) -> tuple[str, str, tuple[str, ...]]:
     """
     Pulls out the (name: str, version:str, extras:(str)) tuple from
     the pinned InstallRequirement.
@@ -232,11 +218,11 @@ def flat_map(
     return itertools.chain.from_iterable(map(fn, collection))
 
 
-def lookup_table_from_tuples(values: Iterable[Tuple[_KT, _VT]]) -> Dict[_KT, Set[_VT]]:
+def lookup_table_from_tuples(values: Iterable[tuple[_KT, _VT]]) -> dict[_KT, set[_VT]]:
     """
     Builds a dict-based lookup table (index) elegantly.
     """
-    lut: Dict[_KT, Set[_VT]] = collections.defaultdict(set)
+    lut: dict[_KT, set[_VT]] = collections.defaultdict(set)
     for k, v in values:
         lut[k].add(v)
     return dict(lut)
@@ -244,7 +230,7 @@ def lookup_table_from_tuples(values: Iterable[Tuple[_KT, _VT]]) -> Dict[_KT, Set
 
 def lookup_table(
     values: Iterable[_VT], key: Callable[[_VT], _KT]
-) -> Dict[_KT, Set[_VT]]:
+) -> dict[_KT, set[_VT]]:
     """
     Builds a dict-based lookup table (index) elegantly.
     """
@@ -267,9 +253,9 @@ def drop_extras(ireq: InstallRequirement) -> None:
         ireq.markers = None
 
 
-def _drop_extras(markers: List[_T]) -> List[_T]:
+def _drop_extras(markers: list[_T]) -> list[_T]:
     # drop `extra` tokens
-    to_remove: List[int] = []
+    to_remove: list[int] = []
     for i, token in enumerate(markers):
         # operator (and/or)
         if isinstance(token, str):
@@ -309,7 +295,7 @@ def _drop_extras(markers: List[_T]) -> List[_T]:
     return markers
 
 
-def get_hashes_from_ireq(ireq: InstallRequirement) -> Set[str]:
+def get_hashes_from_ireq(ireq: InstallRequirement) -> set[str]:
     """
     Given an InstallRequirement, return a set of string hashes in the format
     "{algorithm}:{hash}". Return an empty set if there are no hashes in the
@@ -431,7 +417,7 @@ def get_pip_version_for_python_executable(python_executable: str) -> Version:
     return Version(str_version)
 
 
-def get_sys_path_for_python_executable(python_executable: str) -> List[str]:
+def get_sys_path_for_python_executable(python_executable: str) -> list[str]:
     """
     Returns sys.path list for the given python executable.
     """
@@ -445,7 +431,7 @@ def get_sys_path_for_python_executable(python_executable: str) -> List[str]:
     return [os.path.abspath(path) for path in paths]
 
 
-def omit_list_value(lst: List[_T], value: _T) -> List[_T]:
+def omit_list_value(lst: list[_T], value: _T) -> list[_T]:
     """Produce a new list with a given value skipped."""
     return [item for item in lst if item != value]
 

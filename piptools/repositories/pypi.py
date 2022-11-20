@@ -1,22 +1,13 @@
+from __future__ import annotations
+
 import contextlib
 import hashlib
 import itertools
-import logging
 import optparse
 import os
 from contextlib import contextmanager
 from shutil import rmtree
-from typing import (
-    Any,
-    BinaryIO,
-    ContextManager,
-    Dict,
-    Iterator,
-    List,
-    NamedTuple,
-    Optional,
-    Set,
-)
+from typing import Any, BinaryIO, ContextManager, Iterator, NamedTuple
 
 from click import progressbar
 from pip._internal.cache import WheelCache
@@ -28,6 +19,7 @@ from pip._internal.models.index import PackageIndex
 from pip._internal.models.link import Link
 from pip._internal.models.wheel import Wheel
 from pip._internal.network.session import PipSession
+from pip._internal.operations.build.build_tracker import get_build_tracker
 from pip._internal.req import InstallRequirement, RequirementSet
 from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.logging import indent_log, setup_logging
@@ -38,8 +30,6 @@ from pip._vendor.packaging.tags import Tag
 from pip._vendor.packaging.version import _BaseVersion
 from pip._vendor.requests import RequestException, Session
 
-from .._compat import PIP_VERSION
-from .._compat.pip_compat import get_build_tracker
 from ..exceptions import NoCandidateFound
 from ..logging import log
 from ..utils import (
@@ -56,7 +46,7 @@ FILE_CHUNK_SIZE = 4096
 
 class FileStream(NamedTuple):
     stream: BinaryIO
-    size: Optional[float]
+    size: float | None
 
 
 class PyPIRepository(BaseRepository):
@@ -69,7 +59,7 @@ class PyPIRepository(BaseRepository):
     changed/configured on the Finder.
     """
 
-    def __init__(self, pip_args: List[str], cache_dir: str):
+    def __init__(self, pip_args: list[str], cache_dir: str):
         # Use pip's parser for pip.conf management and defaults.
         # General options (find_links, index_url, extra_index_url, trusted_host,
         # and pre) are deferred to pip.
@@ -91,18 +81,23 @@ class PyPIRepository(BaseRepository):
         # stores project_name => InstallationCandidate mappings for all
         # versions reported by PyPI, so we only have to ask once for each
         # project
-        self._available_candidates_cache: Dict[str, List[InstallationCandidate]] = {}
+        self._available_candidates_cache: dict[str, list[InstallationCandidate]] = {}
 
         # stores InstallRequirement => list(InstallRequirement) mappings
         # of all secondary dependencies for the given requirement, so we
         # only have to go to disk once for each requirement
-        self._dependencies_cache: Dict[InstallRequirement, Set[InstallRequirement]] = {}
+        self._dependencies_cache: dict[InstallRequirement, set[InstallRequirement]] = {}
 
         # Setup file paths
         self._cache_dir = normalize_path(str(cache_dir))
         self._download_dir = os.path.join(self._cache_dir, "pkgs")
 
-        self._setup_logging()
+        # Default pip's logger is noisy, so decrease it's verbosity
+        setup_logging(
+            verbosity=log.verbosity - 1,
+            no_color=self.options.no_color,
+            user_log_file=self.options.log,
+        )
 
     def clear_caches(self) -> None:
         rmtree(self._download_dir, ignore_errors=True)
@@ -124,14 +119,14 @@ class PyPIRepository(BaseRepository):
         """Return an install command instance."""
         return self._command
 
-    def find_all_candidates(self, req_name: str) -> List[InstallationCandidate]:
+    def find_all_candidates(self, req_name: str) -> list[InstallationCandidate]:
         if req_name not in self._available_candidates_cache:
             candidates = self.finder.find_all_candidates(req_name)
             self._available_candidates_cache[req_name] = candidates
         return self._available_candidates_cache[req_name]
 
     def find_best_match(
-        self, ireq: InstallRequirement, prereleases: Optional[bool] = None
+        self, ireq: InstallRequirement, prereleases: bool | None = None
     ) -> InstallRequirement:
         """
         Returns a pinned InstallRequirement object that indicates the best match
@@ -167,10 +162,10 @@ class PyPIRepository(BaseRepository):
 
     def resolve_reqs(
         self,
-        download_dir: Optional[str],
+        download_dir: str | None,
         ireq: InstallRequirement,
         wheel_cache: WheelCache,
-    ) -> Set[InstallationCandidate]:
+    ) -> set[InstallationCandidate]:
         with get_build_tracker() as build_tracker, TempDirectory(
             kind="resolver"
         ) as temp_dir, indent_log():
@@ -181,20 +176,13 @@ class PyPIRepository(BaseRepository):
                 "finder": self.finder,
                 "use_user_site": False,
                 "download_dir": download_dir,
+                "build_tracker": build_tracker,
             }
-
-            if PIP_VERSION[:2] <= (22, 0):
-                preparer_kwargs["req_tracker"] = build_tracker
-            else:
-                preparer_kwargs["build_tracker"] = build_tracker
-
             preparer = self.command.make_requirement_preparer(**preparer_kwargs)
 
             reqset = RequirementSet()
             ireq.user_supplied = True
-            if PIP_VERSION[:3] < (22, 1, 1):
-                reqset.add_requirement(ireq)
-            elif getattr(ireq, "name", None):
+            if getattr(ireq, "name", None):
                 reqset.add_named_requirement(ireq)
             else:
                 reqset.add_unnamed_requirement(ireq)
@@ -218,7 +206,7 @@ class PyPIRepository(BaseRepository):
 
         return set(results)
 
-    def get_dependencies(self, ireq: InstallRequirement) -> Set[InstallRequirement]:
+    def get_dependencies(self, ireq: InstallRequirement) -> set[InstallRequirement]:
         """
         Given a pinned, URL, or editable InstallRequirement, returns a set of
         dependencies (also InstallRequirements, but not necessarily pinned).
@@ -301,7 +289,7 @@ class PyPIRepository(BaseRepository):
         else:
             return self._download_dir
 
-    def get_hashes(self, ireq: InstallRequirement) -> Set[str]:
+    def get_hashes(self, ireq: InstallRequirement) -> set[str]:
         """
         Given an InstallRequirement, return a set of hashes that represent all
         of the files for a given requirement. Unhashable requirements return an
@@ -334,21 +322,35 @@ class PyPIRepository(BaseRepository):
         log.debug(ireq.name)
 
         with log.indentation():
-            hashes = self._get_hashes_from_pypi(ireq)
-            if hashes is None:
-                log.debug("Couldn't get hashes from PyPI, fallback to hashing files")
-                return self._get_hashes_from_files(ireq)
+            return self._get_req_hashes(ireq)
 
-        return hashes
-
-    def _get_hashes_from_pypi(self, ireq: InstallRequirement) -> Optional[Set[str]]:
+    def _get_req_hashes(self, ireq: InstallRequirement) -> set[str]:
         """
-        Return a set of hashes from PyPI JSON API for a given InstallRequirement.
-        Return None if fetching data is failed or missing digests.
+        Collects the hashes for all candidates satisfying the given InstallRequirement. Computes
+        the hashes for the candidates that don't have one reported by their index.
+        """
+        matching_candidates = self._get_matching_candidates(ireq)
+        pypi_hashes_by_link = self._get_hashes_from_pypi(ireq)
+        pypi_hashes = {
+            pypi_hashes_by_link[candidate.link.url]
+            for candidate in matching_candidates
+            if candidate.link.url in pypi_hashes_by_link
+        }
+        local_hashes = {
+            self._get_file_hash(candidate.link)
+            for candidate in matching_candidates
+            if candidate.link.url not in pypi_hashes_by_link
+        }
+        return pypi_hashes | local_hashes
+
+    def _get_hashes_from_pypi(self, ireq: InstallRequirement) -> dict[str, str]:
+        """
+        Builds a mapping from the release URLs to their hashes as reported by the PyPI JSON API
+        for a given InstallRequirement.
         """
         project = self._get_project(ireq)
         if project is None:
-            return None
+            return {}
 
         _, version, _ = as_tuple(ireq)
 
@@ -356,23 +358,25 @@ class PyPIRepository(BaseRepository):
             release_files = project["releases"][version]
         except KeyError:
             log.debug("Missing release files on PyPI")
-            return None
+            return {}
 
         try:
             hashes = {
-                f"{FAVORITE_HASH}:{file_['digests'][FAVORITE_HASH]}"
+                file_["url"]: f"{FAVORITE_HASH}:{file_['digests'][FAVORITE_HASH]}"
                 for file_ in release_files
                 if file_["packagetype"] in self.HASHABLE_PACKAGE_TYPES
             }
         except KeyError:
             log.debug("Missing digests of release files on PyPI")
-            return None
+            return {}
 
         return hashes
 
-    def _get_hashes_from_files(self, ireq: InstallRequirement) -> Set[str]:
+    def _get_matching_candidates(
+        self, ireq: InstallRequirement
+    ) -> set[InstallationCandidate]:
         """
-        Return a set of hashes for all release files of a given InstallRequirement.
+        Returns all candidates that satisfy the given InstallRequirement.
         """
         # We need to get all of the candidates that match our current version
         # pin, these will represent all of the files that could possibly
@@ -382,11 +386,7 @@ class PyPIRepository(BaseRepository):
         matching_versions = list(
             ireq.specifier.filter(candidate.version for candidate in all_candidates)
         )
-        matching_candidates = candidates_by_version[matching_versions[0]]
-
-        return {
-            self._get_file_hash(candidate.link) for candidate in matching_candidates
-        }
+        return candidates_by_version[matching_versions[0]]
 
     def _get_file_hash(self, link: Link) -> str:
         log.debug(f"Hashing {link.show_url}")
@@ -427,11 +427,11 @@ class PyPIRepository(BaseRepository):
         the previous non-patched calls will interfere.
         """
 
-        def _wheel_supported(self: Wheel, tags: List[Tag]) -> bool:
+        def _wheel_supported(self: Wheel, tags: list[Tag]) -> bool:
             # Ignore current platform. Support everything.
             return True
 
-        def _wheel_support_index_min(self: Wheel, tags: List[Tag]) -> int:
+        def _wheel_support_index_min(self: Wheel, tags: list[Tag]) -> int:
             # All wheels are equal priority for sorting.
             return 0
 
@@ -453,42 +453,6 @@ class PyPIRepository(BaseRepository):
             Wheel.supported = original_wheel_supported
             Wheel.support_index_min = original_support_index_min
             self._available_candidates_cache = original_cache
-
-    def _setup_logging(self) -> None:
-        """
-        Setup pip's logger. Ensure pip is verbose same as pip-tools and sync
-        pip's log stream with LogContext.stream. This is only necessary for
-        pip<22.0.
-        """
-        # Default pip's logger is noisy, so decrease it's verbosity
-        setup_logging(
-            verbosity=log.verbosity - 1,
-            no_color=self.options.no_color,
-            user_log_file=self.options.log,
-        )
-
-        if PIP_VERSION[0] >= 22:
-            return
-
-        # Sync pip's console handler stream with LogContext.stream
-        logger = logging.getLogger()
-        for handler in logger.handlers:
-            if handler.name == "console":  # pragma: no branch
-                assert isinstance(handler, logging.StreamHandler)
-                handler.stream = log.stream
-                break
-        else:  # pragma: no cover
-            # There is always a console handler. This warning would be a signal that
-            # this block should be removed/revisited, because of pip possibly
-            # refactored-out logging config.
-            log.warning("Couldn't find a 'console' logging handler")
-
-        # This import will fail with pip 22.1, but here we're pip<22.0
-        from pip._internal.cli.progress_bars import BAR_TYPES
-
-        # Sync pip's progress bars stream with LogContext.stream
-        for bar_cls in itertools.chain(*BAR_TYPES.values()):
-            bar_cls.file = log.stream
 
 
 @contextmanager
@@ -518,7 +482,7 @@ def open_local_or_remote_file(link: Link, session: Session) -> Iterator[FileStre
         response = session.get(url, headers=headers, stream=True)
 
         # Content length must be int or None
-        content_length: Optional[int]
+        content_length: int | None
         try:
             content_length = int(response.headers["content-length"])
         except (ValueError, KeyError, TypeError):

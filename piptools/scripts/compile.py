@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import itertools
 import os
 import shlex
 import sys
 import tempfile
-from typing import IO, Any, BinaryIO, List, Optional, Tuple, Union, cast
+from typing import IO, Any, BinaryIO, cast
 
 import click
 from build import BuildBackendException
@@ -14,9 +16,9 @@ from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 
-from .._compat import IS_CLICK_VER_8_PLUS, parse_requirements
+from .._compat import parse_requirements
 from ..cache import DependencyCache
-from ..exceptions import PipToolsError
+from ..exceptions import NoCandidateFound, PipToolsError
 from ..locations import CACHE_DIR
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
@@ -35,9 +37,6 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.in"
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 METADATA_FILENAMES = frozenset({"setup.py", "setup.cfg", "pyproject.toml"})
 
-# TODO: drop click 7 and remove this block, pass directly to version_option
-version_option_kwargs = {"package_name": "pip-tools"} if IS_CLICK_VER_8_PLUS else {}
-
 
 def _get_default_option(option_name: str) -> Any:
     """
@@ -50,7 +49,7 @@ def _get_default_option(option_name: str) -> Any:
 
 
 def _determine_linesep(
-    strategy: str = "preserve", filenames: Tuple[str, ...] = ()
+    strategy: str = "preserve", filenames: tuple[str, ...] = ()
 ) -> str:
     """
     Determine and return linesep string for OutputWriter to use.
@@ -79,7 +78,7 @@ def _determine_linesep(
 
 
 @click.command(context_settings={"help_option_names": ("-h", "--help")})
-@click.version_option(**version_option_kwargs)
+@click.version_option(package_name="pip-tools")
 @click.pass_context
 @click.option("-v", "--verbose", count=True, help="Show more output")
 @click.option("-q", "--quiet", count=True, help="Give less output")
@@ -299,36 +298,36 @@ def cli(
     dry_run: bool,
     pre: bool,
     rebuild: bool,
-    extras: Tuple[str, ...],
+    extras: tuple[str, ...],
     all_extras: bool,
-    find_links: Tuple[str, ...],
+    find_links: tuple[str, ...],
     index_url: str,
-    extra_index_url: Tuple[str, ...],
-    cert: Optional[str],
-    client_cert: Optional[str],
-    trusted_host: Tuple[str, ...],
+    extra_index_url: tuple[str, ...],
+    cert: str | None,
+    client_cert: str | None,
+    trusted_host: tuple[str, ...],
     header: bool,
     emit_trusted_host: bool,
     annotate: bool,
     annotation_style: str,
     upgrade: bool,
-    upgrade_packages: Tuple[str, ...],
-    output_file: Union[LazyFile, IO[Any], None],
+    upgrade_packages: tuple[str, ...],
+    output_file: LazyFile | IO[Any] | None,
     newline: str,
     allow_unsafe: bool,
     strip_extras: bool,
     generate_hashes: bool,
     reuse_hashes: bool,
-    src_files: Tuple[str, ...],
+    src_files: tuple[str, ...],
     max_rounds: int,
     build_isolation: bool,
     emit_find_links: bool,
     cache_dir: str,
-    pip_args_str: Optional[str],
+    pip_args_str: str | None,
     resolver_name: str,
     emit_index_url: bool,
     emit_options: bool,
-    unsafe_package: Tuple[str, ...],
+    unsafe_package: tuple[str, ...],
 ) -> None:
     """
     Compiles requirements.txt from requirements.in, pyproject.toml, setup.cfg,
@@ -375,6 +374,13 @@ def cli(
         # only LazyFile has close_intelligently, newer IO[Any] does not
         if isinstance(output_file, LazyFile):  # pragma: no cover
             ctx.call_on_close(safecall(output_file.close_intelligently))
+
+    if resolver_name == "legacy":
+        log.warning(
+            "WARNING: using legacy resolver is deprecated and will be removed in "
+            "future versions. The default resolver will be change to 'backtracking' "
+            "in 7.0.0 version. Specify --resolver=backtracking to silence this warning."
+        )
 
     ###
     # Setup
@@ -444,7 +450,7 @@ def cli(
     # Parsing/collecting initial requirements
     ###
 
-    constraints: List[InstallRequirement] = []
+    constraints: list[InstallRequirement] = []
     setup_file_found = False
     for src_file in src_files:
         is_setup_file = os.path.basename(src_file) in METADATA_FILENAMES
@@ -472,7 +478,8 @@ def cli(
             setup_file_found = True
             try:
                 metadata = project_wheel_metadata(
-                    os.path.dirname(os.path.abspath(src_file))
+                    os.path.dirname(os.path.abspath(src_file)),
+                    isolated=build_isolation,
                 )
             except BuildBackendException as e:
                 log.error(str(e))
@@ -545,6 +552,16 @@ def cli(
         )
         results = resolver.resolve(max_rounds=max_rounds)
         hashes = resolver.resolve_hashes(results) if generate_hashes else None
+    except NoCandidateFound as e:
+        if resolver_cls == LegacyResolver:  # pragma: no branch
+            log.error(
+                "Using legacy resolver. "
+                "Consider using backtracking resolver with "
+                "`--resolver=backtracking`."
+            )
+
+        log.error(str(e))
+        sys.exit(2)
     except PipToolsError as e:
         log.error(str(e))
         sys.exit(2)

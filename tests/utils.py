@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 
 # NOTE: keep in sync with "passenv" in tox.ini
