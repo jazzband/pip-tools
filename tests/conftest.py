@@ -418,9 +418,6 @@ def fake_dists(tmpdir, make_package, make_wheel):
         make_package("small-fake-a", version="0.1"),
         make_package("small-fake-b", version="0.2"),
         make_package("small-fake-c", version="0.3"),
-        make_package("small-fake-d", version="0.4"),
-        make_package("small-fake-e", version="0.5"),
-        make_package("small-fake-f", version="0.6"),
     ]
     for pkg in pkgs:
         make_wheel(pkg, dists_path)

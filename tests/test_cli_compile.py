@@ -105,7 +105,12 @@ def test_command_line_setuptools_read(
 
     out = runner.invoke(
         cli,
-        (str(package_dir / "setup.py"), "--find-links", MINIMAL_WHEELS_PATH),
+        (
+            str(package_dir / "setup.py"),
+            "--find-links",
+            MINIMAL_WHEELS_PATH,
+            "--no-build-isolation",
+        ),
     )
     assert out.exit_code == 0
 
@@ -148,7 +153,7 @@ def test_command_line_setuptools_output_file(runner, options, expected_output_fi
             )
         )
 
-    out = runner.invoke(cli, options)
+    out = runner.invoke(cli, ["--no-build-isolation"] + options)
     assert out.exit_code == 0
     assert os.path.exists(expected_output_file)
 
@@ -170,7 +175,7 @@ def test_command_line_setuptools_nested_output_file(tmpdir, runner):
             )
         )
 
-    out = runner.invoke(cli, [str(proj_dir / "setup.py")])
+    out = runner.invoke(cli, [str(proj_dir / "setup.py"), "--no-build-isolation"])
     assert out.exit_code == 0
     assert (proj_dir / "requirements.txt").exists()
 
@@ -205,6 +210,7 @@ def test_setuptools_preserves_environment_markers(
             "--no-header",
             "--no-annotate",
             "--no-emit-find-links",
+            "--no-build-isolation",
             "--find-links",
             str(dists_dir),
         ],
@@ -576,6 +582,7 @@ def test_compile_cached_vcs_package(runner, venv):
             "--no-header",
             "--no-emit-options",
             "--no-annotate",
+            "--no-build-isolation",
         ],
     )
 
@@ -648,7 +655,9 @@ def test_url_package(runner, line, dependency, generate_hashes):
     with open("requirements.in", "w") as req_in:
         req_in.write(line)
     out = runner.invoke(
-        cli, ["-n", "--rebuild"] + (["--generate-hashes"] if generate_hashes else [])
+        cli,
+        ["-n", "--rebuild", "--no-build-isolation"]
+        + (["--generate-hashes"] if generate_hashes else []),
     )
     assert out.exit_code == 0
     assert dependency in out.stderr
@@ -752,7 +761,7 @@ def test_direct_reference_with_extras(runner):
         req_in.write(
             "pip-tools[testing,coverage] @ git+https://github.com/jazzband/pip-tools@6.2.0"
         )
-    out = runner.invoke(cli, ["-n", "--rebuild"])
+    out = runner.invoke(cli, ["-n", "--rebuild", "--no-build-isolation"])
     assert out.exit_code == 0
     assert "pip-tools @ git+https://github.com/jazzband/pip-tools@6.2.0" in out.stderr
     assert "pytest==" in out.stderr
@@ -1290,7 +1299,7 @@ def test_bad_setup_file(runner):
     with open("setup.py", "w") as package:
         package.write("BAD SYNTAX")
 
-    out = runner.invoke(cli, [])
+    out = runner.invoke(cli, ["--no-build-isolation"])
 
     assert out.exit_code == 2
     assert f"Failed to parse {os.path.abspath('setup.py')}" in out.stderr
@@ -2281,17 +2290,11 @@ METADATA_TEST_CASES = (
 
             [options]
             packages = find:
-            install_requires =
-                small-fake-a==0.1
-                small-fake-b==0.2
+            install_requires = small-fake-a==0.1
 
             [options.extras_require]
-            dev =
-                small-fake-c==0.3
-                small-fake-d==0.4
-            test =
-                small-fake-e==0.5
-                small-fake-f==0.6
+            dev = small-fake-b==0.2
+            test = small-fake-c==0.3
         """,
         id="setup.cfg",
     ),
@@ -2303,11 +2306,11 @@ METADATA_TEST_CASES = (
             setup(
                 name="sample_lib",
                 version=0.1,
-                install_requires=["small-fake-a==0.1", "small-fake-b==0.2"],
+                install_requires=["small-fake-a==0.1"],
                 packages=find_packages(),
                 extras_require={
-                    "dev": ["small-fake-c==0.3", "small-fake-d==0.4"],
-                    "test": ["small-fake-e==0.5", "small-fake-f==0.6"],
+                    "dev": ["small-fake-b==0.2"],
+                    "test": ["small-fake-c==0.3"],
                 },
             )
         """,
@@ -2325,11 +2328,11 @@ METADATA_TEST_CASES = (
             author = "Vincent Driessen"
             author-email = "me@nvie.com"
 
-            requires = ["small-fake-a==0.1", "small-fake-b==0.2"]
+            requires = ["small-fake-a==0.1"]
 
             [tool.flit.metadata.requires-extra]
-            dev  = ["small-fake-c==0.3", "small-fake-d==0.4"]
-            test = ["small-fake-e==0.5", "small-fake-f==0.6"]
+            dev  = ["small-fake-b==0.2"]
+            test = ["small-fake-c==0.3"]
         """,
         id="flit",
     ),
@@ -2350,15 +2353,11 @@ METADATA_TEST_CASES = (
             python = "*"
             small-fake-a = "0.1"
             small-fake-b = "0.2"
-
             small-fake-c = "0.3"
-            small-fake-d = "0.4"
-            small-fake-e = "0.5"
-            small-fake-f = "0.6"
 
             [tool.poetry.extras]
-            dev  = ["small-fake-c", "small-fake-d"]
-            test = ["small-fake-e", "small-fake-f"]
+            dev  = ["small-fake-b"]
+            test = ["small-fake-c"]
         """,
         id="poetry",
     ),
@@ -2372,14 +2371,13 @@ def test_input_formats(fake_dists, runner, make_module, fname, content):
     Test different dependency formats as input file.
     """
     meta_path = make_module(fname=fname, content=content)
-    out = runner.invoke(cli, ["-n", "--find-links", fake_dists, meta_path])
+    out = runner.invoke(
+        cli, ["-n", "--no-build-isolation", "--find-links", fake_dists, meta_path]
+    )
     assert out.exit_code == 0, out.stderr
     assert "small-fake-a==0.1" in out.stderr
-    assert "small-fake-b==0.2" in out.stderr
+    assert "small-fake-b" not in out.stderr
     assert "small-fake-c" not in out.stderr
-    assert "small-fake-d" not in out.stderr
-    assert "small-fake-e" not in out.stderr
-    assert "small-fake-f" not in out.stderr
     assert "extra ==" not in out.stderr
 
 
@@ -2391,15 +2389,20 @@ def test_one_extra(fake_dists, runner, make_module, fname, content):
     """
     meta_path = make_module(fname=fname, content=content)
     out = runner.invoke(
-        cli, ["-n", "--extra", "dev", "--find-links", fake_dists, meta_path]
+        cli,
+        [
+            "-n",
+            "--extra",
+            "dev",
+            "--no-build-isolation",
+            "--find-links",
+            fake_dists,
+            meta_path,
+        ],
     )
     assert out.exit_code == 0, out.stderr
     assert "small-fake-a==0.1" in out.stderr
     assert "small-fake-b==0.2" in out.stderr
-    assert "small-fake-c==0.3" in out.stderr
-    assert "small-fake-d==0.4" in out.stderr
-    assert "small-fake-e" not in out.stderr
-    assert "small-fake-f" not in out.stderr
     assert "extra ==" not in out.stderr
 
 
@@ -2422,6 +2425,7 @@ def test_multiple_extras(fake_dists, runner, make_module, fname, content, extra_
         [
             "-n",
             *extra_opts,
+            "--no-build-isolation",
             "--find-links",
             fake_dists,
             meta_path,
@@ -2430,10 +2434,6 @@ def test_multiple_extras(fake_dists, runner, make_module, fname, content, extra_
     assert out.exit_code == 0, out.stderr
     assert "small-fake-a==0.1" in out.stderr
     assert "small-fake-b==0.2" in out.stderr
-    assert "small-fake-c==0.3" in out.stderr
-    assert "small-fake-d==0.4" in out.stderr
-    assert "small-fake-e==0.5" in out.stderr
-    assert "small-fake-f==0.6" in out.stderr
     assert "extra ==" not in out.stderr
 
 
@@ -2456,6 +2456,7 @@ def test_all_extras(fake_dists, runner, make_module, fname, content):
             "--no-annotate",
             "--no-emit-options",
             "--no-header",
+            "--no-build-isolation",
             meta_path,
         ],
     )
@@ -2466,9 +2467,6 @@ def test_all_extras(fake_dists, runner, make_module, fname, content):
             small-fake-a==0.1
             small-fake-b==0.2
             small-fake-c==0.3
-            small-fake-d==0.4
-            small-fake-e==0.5
-            small-fake-f==0.6
             """
         )
         == out.stdout
@@ -2494,6 +2492,7 @@ def test_all_extras_fail_with_extra(fake_dists, runner, make_module, fname, cont
             "--no-annotate",
             "--no-emit-options",
             "--no-header",
+            "--no-build-isolation",
             meta_path,
         ],
     )
