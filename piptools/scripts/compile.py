@@ -183,6 +183,15 @@ def _determine_linesep(
     help="Specify a particular package to upgrade; may be used more than once",
 )
 @click.option(
+    "-A",
+    "--add-package",
+    "add_packages",
+    nargs=1,
+    multiple=True,
+    help="Like --upgrade-package, but only for packages that are not already "
+    "in the input file; may be used more than once",
+)
+@click.option(
     "-o",
     "--output-file",
     nargs=1,
@@ -312,6 +321,7 @@ def cli(
     annotation_style: str,
     upgrade: bool,
     upgrade_packages: tuple[str, ...],
+    add_packages: tuple[str, ...],
     output_file: LazyFile | IO[Any] | None,
     newline: str,
     allow_unsafe: bool,
@@ -416,6 +426,9 @@ def cli(
     upgrade_install_reqs = {
         key_from_ireq(install_req): install_req for install_req in upgrade_reqs_gen
     }
+    # Similar procedure for --add-package/-E but the key is not needed since
+    # the package doesn't need to be checked against the internal list
+    add_reqs_list = [install_req_from_line(pkg) for pkg in add_packages]
 
     existing_pins_to_upgrade = set()
 
@@ -517,10 +530,12 @@ def cli(
         key_from_ireq(ireq) for ireq in constraints if not ireq.constraint
     }
 
-    allowed_upgrades = primary_packages | existing_pins_to_upgrade
-    constraints.extend(
-        ireq for key, ireq in upgrade_install_reqs.items() if key in allowed_upgrades
+    allowed_upgrades = (primary_packages | existing_pins_to_upgrade).intersection(
+        upgrade_install_reqs
     )
+
+    constraints.extend(upgrade_install_reqs[key] for key in allowed_upgrades)
+    constraints.extend(add_reqs_list)
 
     constraints = [req for req in constraints if req.match_markers(extras)]
     for req in constraints:
