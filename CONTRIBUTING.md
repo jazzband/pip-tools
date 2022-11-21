@@ -32,7 +32,7 @@ To help keeping track of the releases and their changes, here's the current rele
 - Push the branch to your fork and create a pull request.
 - Merge the pull request after the changes being approved.
 - Make sure that the tests/CI still pass.
-- Once ready, go to [releases](https://github.com/jazzband/pip-tools/releases) page and publish the latest draft release. This will push a tag on the HEAD of main, trigger the CI pipeline and
+- Once ready, go to [releases](https://github.com/jazzband/pip-tools/releases) page and publish the latest draft release. This will push a tag on the HEAD of the main branch, trigger the CI pipeline and
   deploy a pip-tools release in the **Jazzband private package index** upon success.
 - The pip-tools "lead" project members will receive an email notification to review the release and
   deploy it to the public PyPI if all is correct.
