@@ -432,8 +432,8 @@ def test_name_collision(from_line, pypi_repository, make_package, make_sdist, tm
     """
     Test to ensure we don't fail if there are multiple URL-based requirements
     ending with the same filename where later ones depend on earlier, e.g.
-    https://git.example.com/requirement1/master.zip#egg=req_package_1
-    https://git.example.com/requirement2/master.zip#egg=req_package_2
+    https://git.example.com/requirement1/main.zip#egg=req_package_1
+    https://git.example.com/requirement2/main.zip#egg=req_package_2
     In this case, if req_package_2 depends on req_package_1 we don't want to
     fail due to issues such as caching the requirement based on filename.
     """
@@ -451,18 +451,18 @@ def test_name_collision(from_line, pypi_repository, make_package, make_sdist, tm
 
         os.rename(
             os.path.join(pkg_path, f"{pkg_name}-0.1.zip"),
-            os.path.join(pkg_path, "master.zip"),
+            os.path.join(pkg_path, "main.zip"),
         )
 
     name_collision_1 = "file://{dist_path}#egg=test_package_1".format(
-        dist_path=tmpdir / "test_package_1" / "master.zip"
+        dist_path=tmpdir / "test_package_1" / "main.zip"
     )
     ireq = from_line(name_collision_1)
     deps = pypi_repository.get_dependencies(ireq)
     assert len(deps) == 0
 
     name_collision_2 = "file://{dist_path}#egg=test_package_2".format(
-        dist_path=tmpdir / "test_package_2" / "master.zip"
+        dist_path=tmpdir / "test_package_2" / "main.zip"
     )
     ireq = from_line(name_collision_2)
     deps = pypi_repository.get_dependencies(ireq)
