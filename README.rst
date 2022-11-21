@@ -7,21 +7,21 @@ pip-tools = pip-compile + pip-sync
 A set of command line tools to help you keep your ``pip``-based packages fresh,
 even when you've pinned them.  You do pin them, right? (In building your Python application and its dependencies for production, you want to make sure that your builds are predictable and deterministic.)
 
-.. image:: https://github.com/jazzband/pip-tools/raw/master/img/pip-tools-overview.svg
+.. image:: https://github.com/jazzband/pip-tools/raw/main/img/pip-tools-overview.svg
    :alt: pip-tools overview for phase II
 
 .. |buildstatus-gha| image:: https://github.com/jazzband/pip-tools/workflows/CI/badge.svg
    :alt: GitHub Actions build status
    :target: https://github.com/jazzband/pip-tools/actions?query=workflow%3ACI
-.. |codecov| image:: https://codecov.io/gh/jazzband/pip-tools/branch/master/graph/badge.svg
+.. |codecov| image:: https://codecov.io/gh/jazzband/pip-tools/branch/main/graph/badge.svg
    :alt: Coverage
    :target: https://codecov.io/gh/jazzband/pip-tools
 .. |jazzband| image:: https://jazzband.co/static/img/badge.svg
    :alt: Jazzband
    :target: https://jazzband.co/
-.. |pre-commit| image:: https://results.pre-commit.ci/badge/github/jazzband/pip-tools/master.svg
+.. |pre-commit| image:: https://results.pre-commit.ci/badge/github/jazzband/pip-tools/main.svg
    :alt: pre-commit.ci status
-   :target: https://results.pre-commit.ci/latest/github/jazzband/pip-tools/master
+   :target: https://results.pre-commit.ci/latest/github/jazzband/pip-tools/main
 .. |pypi| image:: https://img.shields.io/pypi/v/pip-tools.svg
    :alt: PyPI version
    :target: https://pypi.org/project/pip-tools/

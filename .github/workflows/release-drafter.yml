@@ -4,7 +4,7 @@ on:
   push:
     # branches to consider in the event; optional, defaults to all
     branches:
-      - master
+      - main
       - "releases/**"
       - "stable/**"
 
@@ -16,7 +16,7 @@ jobs:
     if: github.repository == 'jazzband/pip-tools'
     runs-on: ubuntu-latest
     steps:
-      # Drafts your next release notes as Pull Requests are merged into "master"
+      # Drafts your next release notes as Pull Requests are merged into "main"
       - uses: release-drafter/release-drafter@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

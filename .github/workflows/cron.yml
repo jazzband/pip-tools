@@ -33,7 +33,7 @@ jobs:
       TOXENV: pip${{ matrix.pip-version }}
       TOX_PARALLEL_NO_SPINNER: 1
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@main
       - name: Set up Python ${{ matrix.python-version }} from GitHub
         id: python-install
         if: "!endsWith(matrix.python-version, '-dev')"
@@ -87,7 +87,7 @@ jobs:
       TOXENV: pip${{ matrix.pip-version }}
       TOX_PARALLEL_NO_SPINNER: 1
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@main
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
