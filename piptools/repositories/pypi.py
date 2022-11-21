@@ -389,9 +389,10 @@ class PyPIRepository(BaseRepository):
         return candidates_by_version[matching_versions[0]]
 
     def _get_file_hash(self, link: Link) -> str:
-        log.debug(f"Hashing {link.show_url}")
         if link.hash_name == FAVORITE_HASH:
+            log.debug(f"Getting hash from link {link.show_url}")
             return ":".join([FAVORITE_HASH, link.hash])
+        log.debug(f"Hashing {link.show_url}")
         h = hashlib.new(FAVORITE_HASH)
         with open_local_or_remote_file(link, self.session) as f:
             # Chunks to iterate
