@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     branches:
-      - master
+      - main
     tags:
   schedule:
     # Run everyday at 03:53 UTC
