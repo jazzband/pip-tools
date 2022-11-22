@@ -1971,6 +1971,12 @@ def test_ignore_compiled_unavailable_version(pip_conf, runner):
     assert "small-fake-a==" in out.stderr
     assert "small-fake-a==9999" not in out.stderr.splitlines()
 
+    assert (
+        "Discarding small-fake-a==9999 "
+        "(from -r requirements.txt (line 1)) "
+        "to proceed the resolution"
+    ) in out.stderr
+
 
 def test_prefer_binary_dist(
     pip_conf, make_package, make_sdist, make_wheel, tmpdir, runner
