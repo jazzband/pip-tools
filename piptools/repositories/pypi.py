@@ -59,7 +59,9 @@ class PyPIRepository(BaseRepository):
     changed/configured on the Finder.
     """
 
-    def __init__(self, pip_args: list[str], cache_dir: str):
+    def __init__(self, pip_args: list[str], cache_dir: str, verbosity: int = 0):
+        self._verbosity = verbosity
+
         # Use pip's parser for pip.conf management and defaults.
         # General options (find_links, index_url, extra_index_url, trusted_host,
         # and pre) are deferred to pip.
@@ -94,7 +96,7 @@ class PyPIRepository(BaseRepository):
 
         # Default pip's logger is noisy, so decrease it's verbosity
         setup_logging(
-            verbosity=log.verbosity - 1,
+            verbosity=self._verbosity - 1,
             no_color=self.options.no_color,
             user_log_file=self.options.log,
         )
@@ -397,7 +399,7 @@ class PyPIRepository(BaseRepository):
 
             # Choose a context manager depending on verbosity
             context_manager: ContextManager[Iterator[bytes]]
-            if log.verbosity >= 1:
+            if self._verbosity >= 1:
                 iter_length = int(f.size / FILE_CHUNK_SIZE) if f.size else None
                 bar_template = f"{' ' * log.current_indent}  |%(bar)s| %(info)s"
                 context_manager = progressbar(

@@ -171,6 +171,7 @@ def sync(
     install_flags: list[str] | None = None,
     ask: bool = False,
     python_executable: str | None = None,
+    verbosity: int = 0,
 ) -> int:
     """
     Install and uninstalls the given sets of modules.
@@ -184,7 +185,7 @@ def sync(
         return exit_code
 
     pip_flags = []
-    if log.verbosity < 0:
+    if verbosity < 0:
         pip_flags += ["-q"]
 
     if ask:

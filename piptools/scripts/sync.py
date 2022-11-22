@@ -105,7 +105,7 @@ def cli(
     pip_args: str | None,
 ) -> None:
     """Synchronize virtual environment with requirements.txt."""
-    log.verbosity = verbose - quiet
+    log.verbosity = verbosity = verbose - quiet
 
     if not src_files:
         if os.path.exists(DEFAULT_REQUIREMENTS_FILE):
@@ -178,6 +178,7 @@ def cli(
             install_flags=install_flags,
             ask=ask,
             python_executable=python_executable,
+            verbosity=verbosity,
         )
     )
 

@@ -333,7 +333,7 @@ def cli(
     Compiles requirements.txt from requirements.in, pyproject.toml, setup.cfg,
     or setup.py specs.
     """
-    log.verbosity = verbose - quiet
+    log.verbosity = verbosity = verbose - quiet
 
     if len(src_files) == 0:
         if os.path.exists(DEFAULT_REQUIREMENTS_FILE):
@@ -409,7 +409,7 @@ def cli(
     pip_args.extend(right_args)
 
     repository: BaseRepository
-    repository = PyPIRepository(pip_args, cache_dir=cache_dir)
+    repository = PyPIRepository(pip_args, cache_dir=cache_dir, verbosity=verbosity)
 
     # Parse all constraints coming from --upgrade-package/-P
     upgrade_reqs_gen = (install_req_from_line(pkg) for pkg in upgrade_packages)
@@ -428,7 +428,9 @@ def cli(
     if not upgrade and os.path.exists(output_file.name):
         # Use a temporary repository to ensure outdated(removed) options from
         # existing requirements.txt wouldn't get into the current repository.
-        tmp_repository = PyPIRepository(pip_args, cache_dir=cache_dir)
+        tmp_repository = PyPIRepository(
+            pip_args, cache_dir=cache_dir, verbosity=verbosity
+        )
         ireqs = parse_requirements(
             output_file.name,
             finder=tmp_repository.finder,
