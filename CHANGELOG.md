@@ -1,3 +1,26 @@
+## 6.11.0 (2022-11-30)
+
+Features:
+
+- Add `pyproject.toml` file ([#1643](https://github.com/jazzband/pip-tools/pull/1643)).
+  Thanks @otherJL0
+- Support build isolation using `setuptools/pyproject.toml` requirement files
+  ([#1727](https://github.com/jazzband/pip-tools/pull/1727)). Thanks @atugushev
+
+Bug Fixes:
+
+- Improve punctuation/grammar with `pip-compile` header
+  ([#1547](https://github.com/jazzband/pip-tools/pull/1547)). Thanks @blueyed
+- Generate hashes for all available candidates
+  ([#1723](https://github.com/jazzband/pip-tools/pull/1723)). Thanks @neykov
+
+Other Changes:
+
+- Bump click minimum version to `>= 8`
+  ([#1733](https://github.com/jazzband/pip-tools/pull/1733)). Thanks @atugushev
+- Bump pip minimum version to `>= 22.2`
+  ([#1729](https://github.com/jazzband/pip-tools/pull/1729)). Thanks @atugushev
+
 ## 6.10.0 (2022-11-13)
 
 Features:
