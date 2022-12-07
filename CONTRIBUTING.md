@@ -8,7 +8,7 @@ and follow the [guidelines](https://jazzband.co/about/guidelines).
 
 Here are a few additional or emphasized guidelines to follow when contributing to `pip-tools`:
 
-- If you need to have a virtualenv outside of `tox`, it is possible to reuse its configuration to provision it as [described in the docs](https://tox.readthedocs.io/en/latest/example/devenv.html#creating-development-environments-using-the-devenv-option).
+- If you need to have a virtualenv outside of `tox`, it is possible to reuse its configuration to provision it with [tox devenv](<https://tox.wiki/en/latest/cli_interface.html#tox-devenv-(d)>).
 - Always provide tests for your changes and run `tox -p all` to make sure they are passing the checks locally.
 - Give a clear one-line description in the PR (that the maintainers can add to [CHANGELOG] afterwards).
 - Wait for the review of at least one other contributor before merging (even if you're a Jazzband member).
