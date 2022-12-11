@@ -599,6 +599,7 @@ def cli(
     )
     writer.write(
         results=results,
+        unsafe_packages=resolver.unsafe_packages,
         unsafe_requirements=resolver.unsafe_constraints,
         markers={
             key_from_ireq(ireq): ireq.markers for ireq in constraints if ireq.markers
