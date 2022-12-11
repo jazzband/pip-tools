@@ -42,3 +42,6 @@ repos:
     rev: v3.0.0-alpha.4
     hooks:
       - id: prettier
+        additional_dependencies:
+          - "prettier"
+          - "prettier-plugin-toml"
