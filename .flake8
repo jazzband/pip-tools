@@ -1,0 +1,15 @@
+[flake8]
+max-line-length = 100
+# E203 conflicts with PEP8; see https://github.com/psf/black#slices
+extend-ignore = E203
+
+# flake8-pytest-style
+# PT001:
+pytest-fixture-no-parentheses = true
+# PT006:
+pytest-parametrize-names-type = tuple
+# PT007:
+pytest-parametrize-values-type = tuple
+pytest-parametrize-values-row-type = tuple
+# PT023:
+pytest-mark-no-parentheses = true
