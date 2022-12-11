@@ -30,9 +30,9 @@ jobs:
 
       - name: Build package
         run: |
-          python setup.py --version
+          python -m setuptools_scm
           python -m build
-          twine check dist/*
+          twine check --strict dist/*
 
       - name: Upload packages to Jazzband
         if: github.event.action == 'published'
