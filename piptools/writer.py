@@ -175,17 +175,13 @@ class OutputWriter:
     def _iter_lines(
         self,
         results: set[InstallRequirement],
-        unsafe_requirements: set[InstallRequirement] | None = None,
-        unsafe_packages: set[str] | None = None,
-        markers: dict[str, Marker] | None = None,
+        unsafe_requirements: set[InstallRequirement],
+        unsafe_packages: set[str],
+        markers: dict[str, Marker],
         hashes: dict[InstallRequirement, set[str]] | None = None,
     ) -> Iterator[str]:
         # default values
-        unsafe_requirements = unsafe_requirements or set()
-        if unsafe_packages is None:
-            unsafe_packages = set()
         unsafe_packages = unsafe_packages if not self.allow_unsafe else set()
-        markers = markers or {}
         hashes = hashes or {}
 
         # Check for unhashed or unpinned packages if at least one package does have
