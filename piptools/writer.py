@@ -16,7 +16,6 @@ from pip._vendor.packaging.utils import canonicalize_name
 
 from .logging import log
 from .utils import (
-    UNSAFE_PACKAGES,
     comment,
     dedup,
     format_requirement,
@@ -176,13 +175,13 @@ class OutputWriter:
     def _iter_lines(
         self,
         results: set[InstallRequirement],
-        unsafe_requirements: set[InstallRequirement] | None = None,
-        markers: dict[str, Marker] | None = None,
+        unsafe_requirements: set[InstallRequirement],
+        unsafe_packages: set[str],
+        markers: dict[str, Marker],
         hashes: dict[InstallRequirement, set[str]] | None = None,
     ) -> Iterator[str]:
         # default values
-        unsafe_requirements = unsafe_requirements or set()
-        markers = markers or {}
+        unsafe_packages = unsafe_packages if not self.allow_unsafe else set()
         hashes = hashes or {}
 
         # Check for unhashed or unpinned packages if at least one package does have
@@ -199,12 +198,10 @@ class OutputWriter:
             yield line
             yielded = True
 
-        unsafe_requirements = (
-            {r for r in results if r.name in UNSAFE_PACKAGES}
-            if not unsafe_requirements
-            else unsafe_requirements
-        )
-        packages = {r for r in results if r.name not in UNSAFE_PACKAGES}
+        unsafe_requirements = unsafe_requirements or {
+            r for r in results if r.name in unsafe_packages
+        }
+        packages = {r for r in results if r.name not in unsafe_packages}
 
         if packages:
             for ireq in sorted(packages, key=self._sort_key):
@@ -247,6 +244,7 @@ class OutputWriter:
         self,
         results: set[InstallRequirement],
         unsafe_requirements: set[InstallRequirement],
+        unsafe_packages: set[str],
         markers: dict[str, Marker],
         hashes: dict[InstallRequirement, set[str]] | None,
     ) -> None:
@@ -259,7 +257,9 @@ class OutputWriter:
                 line_buffering=True,
             )
         try:
-            for line in self._iter_lines(results, unsafe_requirements, markers, hashes):
+            for line in self._iter_lines(
+                results, unsafe_requirements, unsafe_packages, markers, hashes
+            ):
                 if self.dry_run:
                     # Bypass the log level to always print this during a dry run
                     log.log(line)

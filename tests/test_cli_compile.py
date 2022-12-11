@@ -1547,6 +1547,59 @@ def test_allow_unsafe_option(pip_conf, monkeypatch, runner, option, expected):
 
 
 @pytest.mark.parametrize(
+    ("unsafe_package", "expected"),
+    (
+        (
+            "small-fake-with-deps",
+            dedent(
+                """\
+                small-fake-a==0.1
+                small-fake-b==0.3
+
+                # The following packages are considered to be unsafe in a requirements file:
+                # small-fake-with-deps
+                """
+            ),
+        ),
+        (
+            "small-fake-a",
+            dedent(
+                """\
+                small-fake-b==0.3
+                small-fake-with-deps==0.1
+
+                # The following packages are considered to be unsafe in a requirements file:
+                # small-fake-a
+                """
+            ),
+        ),
+    ),
+)
+def test_unsafe_package_option(pip_conf, monkeypatch, runner, unsafe_package, expected):
+    monkeypatch.setattr("piptools.resolver.UNSAFE_PACKAGES", {"small-fake-with-deps"})
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-b\n")
+        req_in.write("small-fake-with-deps")
+
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--no-header",
+            "--no-emit-options",
+            "--no-annotate",
+            "--unsafe-package",
+            unsafe_package,
+        ],
+    )
+
+    assert out.exit_code == 0, out
+    assert out.stdout == expected
+
+
+@pytest.mark.parametrize(
     ("option", "attr", "expected"),
     (("--cert", "cert", "foo.crt"), ("--client-cert", "client_cert", "bar.pem")),
 )

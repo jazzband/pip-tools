@@ -113,7 +113,10 @@ def test_iter_lines__unsafe_dependencies(writer, from_line, allow_unsafe):
     writer.emit_header = False
 
     lines = writer._iter_lines(
-        [from_line("test==1.2")], [from_line("setuptools==1.10.0")]
+        {from_line("test==1.2")},
+        {from_line("setuptools==1.10.0")},
+        unsafe_packages=set(),
+        markers={},
     )
 
     expected_lines = (
@@ -132,7 +135,9 @@ def test_iter_lines__unsafe_with_hashes(capsys, writer, from_line):
     unsafe_ireqs = [from_line("setuptools==1.10.0")]
     hashes = {ireqs[0]: {"FAKEHASH"}, unsafe_ireqs[0]: set()}
 
-    lines = writer._iter_lines(ireqs, unsafe_ireqs, hashes=hashes)
+    lines = writer._iter_lines(
+        ireqs, unsafe_ireqs, unsafe_packages=set(), markers={}, hashes=hashes
+    )
 
     expected_lines = (
         "test==1.2 \\\n    --hash=FAKEHASH",
@@ -152,7 +157,13 @@ def test_iter_lines__hash_missing(capsys, writer, from_line):
     ireqs = [from_line("test==1.2"), from_line("file:///example/#egg=example")]
     hashes = {ireqs[0]: {"FAKEHASH"}, ireqs[1]: set()}
 
-    lines = writer._iter_lines(ireqs, hashes=hashes)
+    lines = writer._iter_lines(
+        ireqs,
+        hashes=hashes,
+        unsafe_requirements=set(),
+        unsafe_packages=set(),
+        markers={},
+    )
 
     expected_lines = (
         MESSAGE_UNHASHED_PACKAGE,
@@ -178,7 +189,13 @@ def test_iter_lines__no_warn_if_only_unhashable_packages(writer, from_line):
     ]
     hashes = {ireq: set() for ireq in ireqs}
 
-    lines = writer._iter_lines(ireqs, hashes=hashes)
+    lines = writer._iter_lines(
+        ireqs,
+        hashes=hashes,
+        unsafe_requirements=set(),
+        unsafe_packages=set(),
+        markers={},
+    )
 
     expected_lines = (
         "unhashable-pkg1 @ file:///unhashable-pkg1/",
@@ -389,16 +406,19 @@ def test_write_order(writer, from_line):
     """
     writer.emit_header = False
 
-    packages = [
+    packages = {
         from_line("package_a==0.1"),
         from_line("Package-b==2.3.4"),
         from_line("Package==5.6"),
         from_line("package2==7.8.9"),
-    ]
+    }
     expected_lines = [
         "package==5.6",
         "package-a==0.1",
         "package-b==2.3.4",
         "package2==7.8.9",
     ]
-    assert list(writer._iter_lines(packages)) == expected_lines
+    result = writer._iter_lines(
+        packages, unsafe_requirements=set(), unsafe_packages=set(), markers={}
+    )
+    assert list(result) == expected_lines
