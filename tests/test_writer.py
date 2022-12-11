@@ -418,9 +418,7 @@ def test_write_order(writer, from_line):
         "package-b==2.3.4",
         "package2==7.8.9",
     ]
-    result = list(
-        writer._iter_lines(
-            packages, unsafe_requirements=set(), unsafe_packages=set(), markers={}
-        )
+    result = writer._iter_lines(
+        packages, unsafe_requirements=set(), unsafe_packages=set(), markers={}
     )
-    assert result == expected_lines
+    assert list(result) == expected_lines
