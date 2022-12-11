@@ -26,6 +26,7 @@ from pip._vendor.pkg_resources import Requirement
 from piptools._compat.pip_compat import uses_pkg_resources
 from piptools.cache import DependencyCache
 from piptools.exceptions import NoCandidateFound
+from piptools.logging import log
 from piptools.repositories import PyPIRepository
 from piptools.repositories.base import BaseRepository
 from piptools.resolver import BacktrackingResolver, LegacyResolver
@@ -432,3 +433,13 @@ def venv(tmp_path):
         check=True,
     )
     return tmp_path / ("Scripts" if platform.system() == "Windows" else "bin")
+
+
+@pytest.fixture(autouse=True)
+def _reset_log():
+    """
+    Since piptools.logging.log is a global variable we have to restore its initial
+    state. Some tests can change logger verbosity which might cause a conflict
+    with other tests that depend on it.
+    """
+    log.reset()
