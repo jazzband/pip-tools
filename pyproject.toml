@@ -36,13 +36,14 @@ classifiers = [
 ]
 keywords = ["pip", "requirements", "packaging"]
 dependencies = [
-    # direct dependencies
-    "build",
-    "click >= 8",
-    "pip >= 22.2",
-    # indirect dependencies
-    "setuptools",  # typically needed when pip-tools invokes setup.py
-    "wheel",  # pip plugin needed by pip-tools
+  # direct dependencies
+  "build",
+  "click >= 8",
+  "pip >= 22.2",
+  # indirect dependencies
+  "setuptools", # typically needed when pip-tools invokes setup.py
+  "wheel", # pip plugin needed by pip-tools
+
 ]
 
 [project.urls]
@@ -53,16 +54,14 @@ changelog = "https://github.com/jazzband/pip-tools/releases"
 
 [project.optional-dependencies]
 testing = [
-    "pytest >= 7.2.0",
-    "pytest-rerunfailures",
-    "pytest-xdist",
-    # build deps for tests
-    "flit_core >=2,<4",
-    "poetry_core>=1.0.0",
+  "pytest >= 7.2.0",
+  "pytest-rerunfailures",
+  "pytest-xdist",
+  # build deps for tests
+  "flit_core >=2,<4",
+  "poetry_core>=1.0.0",
 ]
-coverage = [
-    "pytest-cov",
-]
+coverage = ["pytest-cov"]
 
 [project.scripts]
 pip-compile = "piptools.scripts.compile:cli"
@@ -87,30 +86,23 @@ warn_redundant_casts = true
 warn_return_any = true
 warn_unused_configs = true
 warn_unused_ignores = true
-
 # Avoid error: Duplicate module named 'setup'
 # https://github.com/python/mypy/issues/4008
 exclude = "^tests/test_data/"
 
 [tool.mypy.overrides]
-modules = [
-    "tests.*"
-]
+modules = ["tests.*"]
 disallow_untyped_defs = false
 
 [tool.pytest.ini_options]
 addopts = [
-    # `pytest-xdist`:
-    "--numprocesses=auto"
+  # `pytest-xdist`:
+  "--numprocesses=auto"
 ]
 norecursedirs = ".* build dist venv test_data piptools/_compat/*"
 testpaths = "tests piptools"
-filterwarnings = [
-    "always"
-]
-markers = [
-    "network: mark tests that require internet access"
-]
+filterwarnings = ["always"]
+markers = ["network: mark tests that require internet access"]
 
 [tool.setuptools.packages.find]
 # needed only because we did not adopt src layout yet
