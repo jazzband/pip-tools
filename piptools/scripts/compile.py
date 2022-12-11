@@ -127,6 +127,11 @@ def _determine_linesep(
     ),
 )
 @click.option(
+    "--no-index",
+    is_flag=True,
+    help="Ignore package index (only looking at --find-links URLs instead).",
+)
+@click.option(
     "--extra-index-url",
     multiple=True,
     help="Add another index URL to search; may be used more than once",
@@ -302,6 +307,7 @@ def cli(
     all_extras: bool,
     find_links: tuple[str, ...],
     index_url: str,
+    no_index: bool,
     extra_index_url: tuple[str, ...],
     cert: str | None,
     client_cert: str | None,
@@ -392,6 +398,8 @@ def cli(
         pip_args.extend(["-f", link])
     if index_url:
         pip_args.extend(["-i", index_url])
+    if no_index:
+        pip_args.extend(["--no-index"])
     for extra_index in extra_index_url:
         pip_args.extend(["--extra-index-url", extra_index])
     if cert:
@@ -526,10 +534,13 @@ def cli(
     for req in constraints:
         drop_extras(req)
 
-    log.debug("Using indexes:")
-    with log.indentation():
-        for index_url in dedup(repository.finder.index_urls):
-            log.debug(redact_auth_from_url(index_url))
+    if repository.finder.index_urls:
+        log.debug("Using indexes:")
+        with log.indentation():
+            for index_url in dedup(repository.finder.index_urls):
+                log.debug(redact_auth_from_url(index_url))
+    else:
+        log.debug("Ignoring indexes.")
 
     if repository.finder.find_links:
         log.debug("")

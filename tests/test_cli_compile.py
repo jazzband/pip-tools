@@ -220,6 +220,16 @@ def test_setuptools_preserves_environment_markers(
     assert out.stdout == 'foo==1.0 ; python_version >= "1"\n'
 
 
+def test_no_index_option(runner, tmp_path):
+    req_in = tmp_path / "requirements.in"
+    req_in.touch()
+
+    out = runner.invoke(cli, [req_in.as_posix(), "--no-index", "--verbose"])
+
+    assert out.exit_code == 0
+    assert "Ignoring indexes." in out.stderr
+
+
 def test_find_links_option(runner):
     with open("requirements.in", "w") as req_in:
         req_in.write("-f ./libs3")
