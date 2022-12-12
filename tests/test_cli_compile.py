@@ -894,13 +894,20 @@ def test_upgrade_packages_version_option_no_existing_file(pip_conf, runner):
     assert "small-fake-b==0.2" in out.stderr
 
 
-def test_upgrade_packages_version_option_and_upgrade(pip_conf, runner):
+@pytest.mark.parametrize(
+    "reqs_in",
+    (
+        pytest.param("small-fake-a\nsmall-fake-b", id="direct reqs"),
+        pytest.param("small-fake-with-unpinned-deps", id="parent req"),
+    ),
+)
+def test_upgrade_packages_version_option_and_upgrade(pip_conf, runner, reqs_in):
     """
     piptools respects --upgrade-package/-P inline list with specified versions
     whilst also doing --upgrade.
     """
     with open("requirements.in", "w") as req_in:
-        req_in.write("small-fake-a\nsmall-fake-b")
+        req_in.write(reqs_in)
     with open("requirements.txt", "w") as req_in:
         req_in.write("small-fake-a==0.1\nsmall-fake-b==0.1")
 
@@ -1895,6 +1902,7 @@ def test_unreachable_index_urls(runner, cli_options, expected_message):
     assert expected_message in stderr_lines
 
 
+@pytest.mark.parametrize("subdep_already_pinned", (True, False))
 @pytest.mark.parametrize(
     ("current_package", "upgraded_package"),
     (
@@ -1903,7 +1911,7 @@ def test_unreachable_index_urls(runner, cli_options, expected_message):
     ),
 )
 def test_upgrade_packages_option_subdependency(
-    pip_conf, runner, current_package, upgraded_package
+    pip_conf, runner, current_package, upgraded_package, subdep_already_pinned
 ):
     """
     Test that pip-compile --upgrade-package/-P upgrades/downgrades subdependencies.
@@ -1914,7 +1922,8 @@ def test_upgrade_packages_option_subdependency(
 
     with open("requirements.txt", "w") as reqs:
         reqs.write("small-fake-a==0.1\n")
-        reqs.write(current_package + "\n")
+        if subdep_already_pinned:
+            reqs.write(current_package + "\n")
         reqs.write("small-fake-with-unpinned-deps==0.1\n")
 
     out = runner.invoke(

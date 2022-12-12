@@ -425,10 +425,7 @@ def cli(
         key_from_ireq(install_req): install_req for install_req in upgrade_reqs_gen
     }
 
-    existing_pins_to_upgrade = set()
-
-    # Exclude packages from --upgrade-package/-P from the existing
-    # constraints, and separately gather pins to be upgraded
+    # Exclude packages from --upgrade-package/-P from the existing constraints
     existing_pins = {}
 
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified
@@ -446,9 +443,7 @@ def cli(
 
         for ireq in filter(is_pinned_requirement, ireqs):
             key = key_from_ireq(ireq)
-            if key in upgrade_install_reqs:
-                existing_pins_to_upgrade.add(key)
-            else:
+            if key not in upgrade_install_reqs:
                 existing_pins[key] = ireq
         repository = LocalRequirementsRepository(
             existing_pins, repository, reuse_hashes=reuse_hashes
@@ -515,6 +510,27 @@ def cli(
                 )
             )
 
+    if upgrade_packages:
+        constraints_file = tempfile.NamedTemporaryFile(mode="wt", delete=False)
+        constraints_file.write("\n".join(upgrade_packages))
+        constraints_file.flush()
+        try:
+            reqs = list(
+                parse_requirements(
+                    constraints_file.name,
+                    finder=repository.finder,
+                    session=repository.session,
+                    options=repository.options,
+                    constraint=True,
+                )
+            )
+        finally:
+            constraints_file.close()
+            os.unlink(constraints_file.name)
+        for req in reqs:
+            req.comes_from = None
+        constraints.extend(reqs)
+
     extras = tuple(itertools.chain.from_iterable(ex.split(",") for ex in extras))
 
     if extras and not setup_file_found:
@@ -525,9 +541,8 @@ def cli(
         key_from_ireq(ireq) for ireq in constraints if not ireq.constraint
     }
 
-    allowed_upgrades = primary_packages | existing_pins_to_upgrade
     constraints.extend(
-        ireq for key, ireq in upgrade_install_reqs.items() if key in allowed_upgrades
+        ireq for key, ireq in upgrade_install_reqs.items() if key in primary_packages
     )
 
     constraints = [req for req in constraints if req.match_markers(extras)]
