@@ -1,5 +1,7 @@
 # WARNING! BE CAREFUL UPDATING THIS FILE
 # Consider possible security implications associated with subprocess module.
+from __future__ import annotations
+
 import subprocess  # nosec
 
 

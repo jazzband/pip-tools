@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 from pip._internal.exceptions import DistributionNotFound
 from pip._internal.utils.urls import path_to_url

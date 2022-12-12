@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import hashlib
 import os
 import shutil
 import subprocess
@@ -6,6 +9,7 @@ from textwrap import dedent
 from unittest import mock
 
 import pytest
+from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.urls import path_to_url
 
 from piptools.scripts.compile import cli
@@ -92,7 +96,7 @@ def test_command_line_overrides_pip_conf(pip_with_index_conf, runner):
     ),
 )
 def test_command_line_setuptools_read(
-    runner, make_pip_conf, make_package, install_requires, expected_output
+    runner, make_package, install_requires, expected_output
 ):
     package_dir = make_package(
         name="fake-setuptools-a",
@@ -101,13 +105,21 @@ def test_command_line_setuptools_read(
 
     out = runner.invoke(
         cli,
-        (str(package_dir / "setup.py"), "--find-links", MINIMAL_WHEELS_PATH),
+        (
+            str(package_dir / "setup.py"),
+            "--find-links",
+            MINIMAL_WHEELS_PATH,
+            "--no-build-isolation",
+        ),
     )
-
-    assert expected_output in out.stderr.splitlines()
+    assert out.exit_code == 0
 
     # check that pip-compile generated a configuration file
-    assert (package_dir / "requirements.txt").exists()
+    output_file = package_dir / "requirements.txt"
+    assert output_file.exists()
+
+    # The package version must NOT be updated in the output file
+    assert expected_output in output_file.read_text().splitlines()
 
 
 @pytest.mark.network
@@ -141,7 +153,7 @@ def test_command_line_setuptools_output_file(runner, options, expected_output_fi
             )
         )
 
-    out = runner.invoke(cli, options)
+    out = runner.invoke(cli, ["--no-build-isolation"] + options)
     assert out.exit_code == 0
     assert os.path.exists(expected_output_file)
 
@@ -163,7 +175,7 @@ def test_command_line_setuptools_nested_output_file(tmpdir, runner):
             )
         )
 
-    out = runner.invoke(cli, [str(proj_dir / "setup.py")])
+    out = runner.invoke(cli, [str(proj_dir / "setup.py"), "--no-build-isolation"])
     assert out.exit_code == 0
     assert (proj_dir / "requirements.txt").exists()
 
@@ -193,16 +205,29 @@ def test_setuptools_preserves_environment_markers(
         cli,
         [
             str(bar_dir / "setup.py"),
+            "--output-file",
+            "-",
             "--no-header",
             "--no-annotate",
             "--no-emit-find-links",
+            "--no-build-isolation",
             "--find-links",
             str(dists_dir),
         ],
     )
 
     assert out.exit_code == 0, out.stderr
-    assert out.stderr == 'foo==1.0 ; python_version >= "1"\n'
+    assert out.stdout == 'foo==1.0 ; python_version >= "1"\n'
+
+
+def test_no_index_option(runner, tmp_path):
+    req_in = tmp_path / "requirements.in"
+    req_in.touch()
+
+    out = runner.invoke(cli, [req_in.as_posix(), "--no-index", "--verbose"])
+
+    assert out.exit_code == 0
+    assert "Ignoring indexes." in out.stderr
 
 
 def test_find_links_option(runner):
@@ -347,8 +372,8 @@ def test_trusted_host_envvar(monkeypatch, pip_conf, runner):
 def test_all_no_emit_options(runner, options):
     with open("requirements.in", "w"):
         pass
-    out = runner.invoke(cli, ["--no-header", *options])
-    assert out.stderr.strip().splitlines() == []
+    out = runner.invoke(cli, ["--output-file", "-", "--no-header", *options])
+    assert out.stdout.strip().splitlines() == []
 
 
 @pytest.mark.parametrize(
@@ -365,10 +390,19 @@ def test_emit_index_url_option(runner, option, expected_output):
         pass
 
     out = runner.invoke(
-        cli, ["--no-header", "--index-url", "https://index-url", option]
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--no-header",
+            "--index-url",
+            "https://index-url",
+            option,
+        ],
     )
 
-    assert out.stderr.strip().splitlines() == expected_output
+    assert out.stdout.strip().splitlines() == expected_output
 
 
 @pytest.mark.network
@@ -464,12 +498,12 @@ def test_editable_package_constraint_without_non_editable_duplicate(pip_conf, ru
             "\nsmall_fake_with_unpinned_deps"  # This one also requires small_fake_a
         )
 
-    out = runner.invoke(cli, ["-n"])
+    out = runner.invoke(cli, ["--output-file", "-", "--quiet"])
 
     assert out.exit_code == 0
-    assert fake_package_dir in out.stderr
+    assert fake_package_dir in out.stdout
     # Shouldn't include a non-editable small-fake-a==<version>.
-    assert "small-fake-a==" not in out.stderr
+    assert "small-fake-a==" not in out.stdout
 
 
 @legacy_resolver_only
@@ -509,6 +543,61 @@ def test_editable_package_vcs(runner):
     assert out.exit_code == 0
     assert vcs_package in out.stderr
     assert "click" in out.stderr  # dependency of pip-tools
+
+
+@pytest.mark.network
+def test_compile_cached_vcs_package(runner, venv):
+    """
+    Test pip-compile doesn't write local paths for cached wheels of VCS packages.
+
+    Regression test for issue GH-1647.
+    """
+    vcs_package = (
+        "typing-extensions @ git+https://github.com/python/typing_extensions@"
+        "9c0759a260fe126210a1e2026720000a3c40a919"
+    )
+    vcs_wheel_prefix = "typing_extensions-4.3.0-py3"
+
+    # Install and cache VCS package.
+    subprocess.run(
+        [os.fspath(venv / "python"), "-m" "pip", "install", vcs_package],
+        check=True,
+    )
+    assert (
+        vcs_wheel_prefix
+        in subprocess.run(
+            [
+                sys.executable,
+                "-m" "pip",
+                "cache",
+                "list",
+                "--format=abspath",
+                vcs_wheel_prefix,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout
+    )
+
+    with open("requirements.in", "w") as req_in:
+        req_in.write(vcs_package)
+
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--no-header",
+            "--no-emit-options",
+            "--no-annotate",
+            "--no-build-isolation",
+        ],
+    )
+
+    assert out.exit_code == 0, out
+    assert vcs_package == out.stdout.strip()
 
 
 @legacy_resolver_only
@@ -576,7 +665,9 @@ def test_url_package(runner, line, dependency, generate_hashes):
     with open("requirements.in", "w") as req_in:
         req_in.write(line)
     out = runner.invoke(
-        cli, ["-n", "--rebuild"] + (["--generate-hashes"] if generate_hashes else [])
+        cli,
+        ["-n", "--rebuild", "--no-build-isolation"]
+        + (["--generate-hashes"] if generate_hashes else []),
     )
     assert out.exit_code == 0
     assert dependency in out.stderr
@@ -680,7 +771,7 @@ def test_direct_reference_with_extras(runner):
         req_in.write(
             "pip-tools[testing,coverage] @ git+https://github.com/jazzband/pip-tools@6.2.0"
         )
-    out = runner.invoke(cli, ["-n", "--rebuild"])
+    out = runner.invoke(cli, ["-n", "--rebuild", "--no-build-isolation"])
     assert out.exit_code == 0
     assert "pip-tools @ git+https://github.com/jazzband/pip-tools@6.2.0" in out.stderr
     assert "pytest==" in out.stderr
@@ -842,27 +933,27 @@ def test_upgrade_packages_version_option_and_upgrade_no_existing_file(pip_conf, 
     assert "small-fake-b==0.1" in out.stderr
 
 
-def test_quiet_option(runner):
-    with open("requirements", "w"):
-        pass
-    out = runner.invoke(cli, ["--quiet", "requirements"])
-    # Pinned requirements result has not been written to stdout or stderr:
-    assert not out.stdout_bytes
-    assert not out.stderr_bytes
+def test_quiet_option(pip_conf, runner):
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-a")
+
+    out = runner.invoke(cli, ["--quiet"])
+    # Pinned requirements result has not been written to stderr:
+    assert b"small-fake-a" not in out.stderr_bytes
 
 
 def test_dry_run_noisy_option(runner):
-    with open("requirements", "w"):
+    with open("requirements.in", "w"):
         pass
-    out = runner.invoke(cli, ["--dry-run", "requirements"])
+    out = runner.invoke(cli, ["--dry-run"])
     # Dry-run message has been written to output
     assert "Dry-run, so nothing updated." in out.stderr.splitlines()
 
 
 def test_dry_run_quiet_option(runner):
-    with open("requirements", "w"):
+    with open("requirements.in", "w"):
         pass
-    out = runner.invoke(cli, ["--dry-run", "--quiet", "requirements"])
+    out = runner.invoke(cli, ["--output-file", "-", "--dry-run", "--quiet"])
     # Neither dry-run message nor pinned requirements written to output:
     assert not out.stdout_bytes
     # Dry-run message has not been written to stderr:
@@ -925,22 +1016,116 @@ def test_generate_hashes_with_annotations(runner):
     with open("requirements.in", "w") as fp:
         fp.write("six==1.15.0")
 
-    out = runner.invoke(cli, ["--generate-hashes"])
-    assert out.stderr == dedent(
-        f"""\
-        #
-        # This file is autogenerated by pip-compile with python \
-{sys.version_info.major}.{sys.version_info.minor}
-        # To update, run:
-        #
-        #    pip-compile --generate-hashes
-        #
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--no-header",
+            "--generate-hashes",
+        ],
+    )
+    assert out.stdout == dedent(
+        """\
         six==1.15.0 \\
             --hash=sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259 \\
             --hash=sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced
             # via -r requirements.in
         """
     )
+
+
+@pytest.mark.network
+@pytest.mark.parametrize("gen_hashes", (True, False))
+@pytest.mark.parametrize(
+    "annotate_options",
+    (
+        ("--no-annotate",),
+        ("--annotation-style", "line"),
+        ("--annotation-style", "split"),
+    ),
+)
+@pytest.mark.parametrize(
+    ("nl_options", "must_include", "must_exclude"),
+    (
+        pytest.param(("--newline", "lf"), b"\n", b"\r\n", id="LF"),
+        pytest.param(("--newline", "crlf"), b"\r\n", b"\n", id="CRLF"),
+        pytest.param(
+            ("--newline", "native"),
+            os.linesep.encode(),
+            {"\n": b"\r\n", "\r\n": b"\n"}[os.linesep],
+            id="native",
+        ),
+    ),
+)
+def test_override_newline(
+    pip_conf,
+    runner,
+    gen_hashes,
+    annotate_options,
+    nl_options,
+    must_include,
+    must_exclude,
+    tmp_path,
+):
+    opts = annotate_options + nl_options
+    if gen_hashes:
+        opts += ("--generate-hashes",)
+
+    example_dir = tmp_path / "example_dir"
+    example_dir.mkdir()
+    in_path = example_dir / "requirements.in"
+    out_path = example_dir / "requirements.txt"
+    in_path.write_bytes(b"small-fake-a==0.1\nsmall-fake-b\n")
+
+    runner.invoke(
+        cli, [*opts, f"--output-file={os.fsdecode(out_path)}", os.fsdecode(in_path)]
+    )
+    txt = out_path.read_bytes()
+
+    assert must_include in txt
+
+    if must_exclude in must_include:
+        txt = txt.replace(must_include, b"")
+    assert must_exclude not in txt
+
+    # Do it again, with --newline=preserve:
+
+    opts = annotate_options + ("--newline", "preserve")
+    if gen_hashes:
+        opts += ("--generate-hashes",)
+
+    runner.invoke(
+        cli, [*opts, f"--output-file={os.fsdecode(out_path)}", os.fsdecode(in_path)]
+    )
+    txt = out_path.read_bytes()
+
+    assert must_include in txt
+
+    if must_exclude in must_include:
+        txt = txt.replace(must_include, b"")
+    assert must_exclude not in txt
+
+
+@pytest.mark.network
+@pytest.mark.parametrize(
+    ("linesep", "must_exclude"),
+    (pytest.param("\n", "\r\n", id="LF"), pytest.param("\r\n", "\n", id="CRLF")),
+)
+def test_preserve_newline_from_input(runner, linesep, must_exclude):
+    with open("requirements.in", "wb") as req_in:
+        req_in.write(f"six{linesep}".encode())
+
+    runner.invoke(cli, ["--newline=preserve", "requirements.in"])
+    with open("requirements.txt", "rb") as req_txt:
+        txt = req_txt.read().decode()
+
+    assert linesep in txt
+
+    if must_exclude in linesep:
+        txt = txt.replace(linesep, "")
+    assert must_exclude not in txt
 
 
 @pytest.mark.network
@@ -953,16 +1138,20 @@ def test_generate_hashes_with_split_style_annotations(runner):
         fp.write("pytz==2020.4\n")
         fp.write("sqlparse==0.3.1\n")
 
-    out = runner.invoke(cli, ["--generate-hashes", "--annotation-style", "split"])
-    assert out.stderr == dedent(
-        f"""\
-        #
-        # This file is autogenerated by pip-compile with python \
-{sys.version_info.major}.{sys.version_info.minor}
-        # To update, run:
-        #
-        #    pip-compile --generate-hashes
-        #
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--no-header",
+            "--generate-hashes",
+            "--annotation-style",
+            "split",
+        ],
+    )
+    assert out.stdout == dedent(
+        """\
         django==1.11.29 \\
             --hash=sha256:014e3392058d94f40569206a24523ce254d55ad2f9f46c6550b0fe2e4f94cf3f \\
             --hash=sha256:4200aefb6678019a0acf0005cd14cfce3a5e6b9b90d06145fcdd2e474ad4329c
@@ -1009,16 +1198,20 @@ def test_generate_hashes_with_line_style_annotations(runner):
         fp.write("pytz==2020.4\n")
         fp.write("sqlparse==0.3.1\n")
 
-    out = runner.invoke(cli, ["--generate-hashes", "--annotation-style", "line"])
-    assert out.stderr == dedent(
-        f"""\
-        #
-        # This file is autogenerated by pip-compile with python \
-{sys.version_info.major}.{sys.version_info.minor}
-        # To update, run:
-        #
-        #    pip-compile --annotation-style=line --generate-hashes
-        #
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--no-header",
+            "--generate-hashes",
+            "--annotation-style",
+            "line",
+        ],
+    )
+    assert out.stdout == dedent(
+        """\
         django==1.11.29 \\
             --hash=sha256:014e3392058d94f40569206a24523ce254d55ad2f9f46c6550b0fe2e4f94cf3f \\
             --hash=sha256:4200aefb6678019a0acf0005cd14cfce3a5e6b9b90d06145fcdd2e474ad4329c
@@ -1047,25 +1240,83 @@ def test_generate_hashes_with_line_style_annotations(runner):
     )
 
 
+@pytest.mark.network
+def test_generate_hashes_with_mixed_sources(
+    runner, make_package, make_wheel, make_sdist, tmp_path
+):
+    """
+    Test that pip-compile generate hashes for every file from all given sources:
+    PyPI and/or --find-links.
+    """
+
+    wheels_dir = tmp_path / "wheels"
+    wheels_dir.mkdir()
+
+    dummy_six_pkg = make_package(name="six", version="1.16.0")
+    make_wheel(dummy_six_pkg, wheels_dir, "--build-number", "123")
+
+    fav_hasher = hashlib.new(FAVORITE_HASH)
+    fav_hasher.update((wheels_dir / "six-1.16.0-123-py3-none-any.whl").read_bytes())
+    dummy_six_wheel_digest = fav_hasher.hexdigest()
+
+    with open("requirements.in", "w") as fp:
+        fp.write("six==1.16.0\n")
+
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--no-header",
+            "--generate-hashes",
+            "--no-emit-options",
+            "--no-annotate",
+            "--find-links",
+            wheels_dir.as_uri(),
+        ],
+    )
+
+    expected_digests = sorted(
+        (
+            # sdist hash for six-1.16.0.tar.gz from PyPI
+            "1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926",
+            # wheel hash for six-1.16.0-py2.py3-none-any.whl from PyPI
+            "8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254",
+            # wheel hash for local six-1.16.0-123-py3-none-any.whl file
+            dummy_six_wheel_digest,
+        )
+    )
+    expected_output = dedent(
+        f"""\
+        six==1.16.0 \\
+            --hash=sha256:{expected_digests[0]} \\
+            --hash=sha256:{expected_digests[1]} \\
+            --hash=sha256:{expected_digests[2]}
+        """
+    )
+    assert out.stdout == expected_output
+
+
 def test_filter_pip_markers(pip_conf, runner):
     """
     Check that pip-compile works with pip environment markers (PEP496)
     """
-    with open("requirements", "w") as req_in:
+    with open("requirements.in", "w") as req_in:
         req_in.write("small-fake-a==0.1\nunknown_package==0.1; python_version == '1'")
 
-    out = runner.invoke(cli, ["-n", "requirements"])
+    out = runner.invoke(cli, ["--output-file", "-", "--quiet"])
 
     assert out.exit_code == 0
-    assert "small-fake-a==0.1" in out.stderr
-    assert "unknown_package" not in out.stderr
+    assert "small-fake-a==0.1" in out.stdout
+    assert "unknown_package" not in out.stdout
 
 
 def test_bad_setup_file(runner):
     with open("setup.py", "w") as package:
         package.write("BAD SYNTAX")
 
-    out = runner.invoke(cli, [])
+    out = runner.invoke(cli, ["--no-build-isolation"])
 
     assert out.exit_code == 2
     assert f"Failed to parse {os.path.abspath('setup.py')}" in out.stderr
@@ -1152,22 +1403,14 @@ def test_stdin(pip_conf, runner):
     """
     out = runner.invoke(
         cli,
-        ["-", "--output-file", "requirements.txt", "-n", "--no-emit-find-links"],
+        ["-", "--output-file", "-", "--quiet", "--no-emit-options", "--no-header"],
         input="small-fake-a==0.1",
     )
 
-    assert out.stderr == dedent(
-        f"""\
-        #
-        # This file is autogenerated by pip-compile with python \
-{sys.version_info.major}.{sys.version_info.minor}
-        # To update, run:
-        #
-        #    pip-compile --no-emit-find-links --output-file=requirements.txt -
-        #
+    assert out.stdout == dedent(
+        """\
         small-fake-a==0.1
             # via -r -
-        Dry-run, so nothing updated.
         """
     )
 
@@ -1195,53 +1438,29 @@ def test_multiple_input_files_without_output_file(runner):
     (
         pytest.param(
             ("--annotate",),
-            f"""\
-            #
-            # This file is autogenerated by pip-compile with python \
-{sys.version_info.major}.{sys.version_info.minor}
-            # To update, run:
-            #
-            #    pip-compile --no-emit-find-links
-            #
+            """\
             small-fake-a==0.1
                 # via
                 #   -c constraints.txt
                 #   small-fake-with-deps
             small-fake-with-deps==0.1
                 # via -r requirements.in
-            Dry-run, so nothing updated.
             """,
             id="annotate",
         ),
         pytest.param(
             ("--annotate", "--annotation-style", "line"),
-            f"""\
-            #
-            # This file is autogenerated by pip-compile with python \
-{sys.version_info.major}.{sys.version_info.minor}
-            # To update, run:
-            #
-            #    pip-compile --annotation-style=line --no-emit-find-links
-            #
+            """\
             small-fake-a==0.1         # via -c constraints.txt, small-fake-with-deps
             small-fake-with-deps==0.1  # via -r requirements.in
-            Dry-run, so nothing updated.
             """,
             id="annotate line style",
         ),
         pytest.param(
             ("--no-annotate",),
-            f"""\
-            #
-            # This file is autogenerated by pip-compile with python \
-{sys.version_info.major}.{sys.version_info.minor}
-            # To update, run:
-            #
-            #    pip-compile --no-annotate --no-emit-find-links
-            #
+            """\
             small-fake-a==0.1
             small-fake-with-deps==0.1
-            Dry-run, so nothing updated.
             """,
             id="no annotate",
         ),
@@ -1257,10 +1476,13 @@ def test_annotate_option(pip_conf, runner, options, expected):
         req_in.write("-c constraints.txt\n")
         req_in.write("small_fake_with_deps")
 
-    out = runner.invoke(cli, [*options, "-n", "--no-emit-find-links"])
+    out = runner.invoke(
+        cli,
+        [*options, "--output-file", "-", "--quiet", "--no-emit-options", "--no-header"],
+    )
 
     assert out.exit_code == 0, out
-    assert out.stderr == dedent(expected)
+    assert out.stdout == dedent(expected)
 
 
 @pytest.mark.parametrize(
@@ -1317,6 +1539,9 @@ def test_allow_unsafe_option(pip_conf, monkeypatch, runner, option, expected):
     out = runner.invoke(
         cli,
         [
+            "--output-file",
+            "-",
+            "--quiet",
             "--no-header",
             "--no-emit-options",
             "--no-annotate",
@@ -1325,7 +1550,60 @@ def test_allow_unsafe_option(pip_conf, monkeypatch, runner, option, expected):
     )
 
     assert out.exit_code == 0, out
-    assert out.stderr == expected
+    assert out.stdout == expected
+
+
+@pytest.mark.parametrize(
+    ("unsafe_package", "expected"),
+    (
+        (
+            "small-fake-with-deps",
+            dedent(
+                """\
+                small-fake-a==0.1
+                small-fake-b==0.3
+
+                # The following packages are considered to be unsafe in a requirements file:
+                # small-fake-with-deps
+                """
+            ),
+        ),
+        (
+            "small-fake-a",
+            dedent(
+                """\
+                small-fake-b==0.3
+                small-fake-with-deps==0.1
+
+                # The following packages are considered to be unsafe in a requirements file:
+                # small-fake-a
+                """
+            ),
+        ),
+    ),
+)
+def test_unsafe_package_option(pip_conf, monkeypatch, runner, unsafe_package, expected):
+    monkeypatch.setattr("piptools.resolver.UNSAFE_PACKAGES", {"small-fake-with-deps"})
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-b\n")
+        req_in.write("small-fake-with-deps")
+
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--no-header",
+            "--no-emit-options",
+            "--no-annotate",
+            "--unsafe-package",
+            unsafe_package,
+        ],
+    )
+
+    assert out.exit_code == 0, out
+    assert out.stdout == expected
 
 
 @pytest.mark.parametrize(
@@ -1352,7 +1630,9 @@ def test_cert_option(parse_requirements, runner, option, attr, expected):
     (("--build-isolation", True), ("--no-build-isolation", False)),
 )
 @mock.patch("piptools.scripts.compile.parse_requirements")
-def test_build_isolation_option(parse_requirements, runner, option, expected):
+def test_parse_requirements_build_isolation_option(
+    parse_requirements, runner, option, expected
+):
     """
     A value of the --build-isolation/--no-build-isolation flag
     must be passed to parse_requirements().
@@ -1365,6 +1645,36 @@ def test_build_isolation_option(parse_requirements, runner, option, expected):
     # Ensure the options in parse_requirements has the expected build_isolation option
     args, kwargs = parse_requirements.call_args
     assert kwargs["options"].build_isolation is expected
+
+
+@pytest.mark.parametrize(
+    ("option", "expected"),
+    (("--build-isolation", True), ("--no-build-isolation", False)),
+)
+@mock.patch("piptools.scripts.compile.project_wheel_metadata")
+def test_project_wheel_metadata_isolation_option(
+    project_wheel_metadata, runner, option, expected
+):
+    """
+    A value of the --build-isolation/--no-build-isolation flag
+    must be passed to project_wheel_metadata().
+    """
+
+    with open("setup.py", "w") as package:
+        package.write(
+            dedent(
+                """\
+                from setuptools import setup
+                setup(install_requires=[])
+                """
+            )
+        )
+
+    runner.invoke(cli, [option])
+
+    # Ensure the options in project_wheel_metadata has the isolated kwarg
+    _, kwargs = project_wheel_metadata.call_args
+    assert kwargs["isolated"] is expected
 
 
 @mock.patch("piptools.scripts.compile.PyPIRepository")
@@ -1518,17 +1828,10 @@ def test_upgrade_package_doesnt_remove_annotation(pip_conf, runner):
             "small-fake-a==0.1         # via small-fake-with-deps\n"
         )
 
-    runner.invoke(cli, ["-P", "small-fake-a", "--no-emit-find-links"])
+    runner.invoke(cli, ["-P", "small-fake-a", "--no-emit-options", "--no-header"])
     with open("requirements.txt") as req_txt:
         assert req_txt.read() == dedent(
-            f"""\
-            #
-            # This file is autogenerated by pip-compile with python \
-{sys.version_info.major}.{sys.version_info.minor}
-            # To update, run:
-            #
-            #    pip-compile --no-emit-find-links
-            #
+            """\
             small-fake-a==0.1
                 # via small-fake-with-deps
             small-fake-with-deps==0.1
@@ -1684,10 +1987,10 @@ def test_remove_outdated_options(runner, input_opts, output_opts):
     with open("requirements.txt", "w") as req_txt:
         req_txt.write(output_opts)
 
-    out = runner.invoke(cli, ["--no-header"])
+    out = runner.invoke(cli, ["--output-file", "-", "--quiet", "--no-header"])
 
     assert out.exit_code == 0, out
-    assert out.stderr.strip() == input_opts
+    assert out.stdout.strip() == input_opts
 
 
 def test_sub_dependencies_with_constraints(pip_conf, runner):
@@ -1939,7 +2242,16 @@ def test_combine_different_extras_of_the_same_package(
         )
 
     out = runner.invoke(
-        cli, ["--find-links", str(dists_dir), "--no-header", "--no-emit-options"]
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--find-links",
+            str(dists_dir),
+            "--no-header",
+            "--no-emit-options",
+        ],
     )
     assert out.exit_code == 0
     assert (
@@ -1957,7 +2269,7 @@ def test_combine_different_extras_of_the_same_package(
             # via -r requirements.in
         """
         )
-        == out.stderr
+        == out.stdout
     )
 
 
@@ -2043,17 +2355,11 @@ METADATA_TEST_CASES = (
 
             [options]
             packages = find:
-            install_requires =
-                small-fake-a==0.1
-                small-fake-b==0.2
+            install_requires = small-fake-a==0.1
 
             [options.extras_require]
-            dev =
-                small-fake-c==0.3
-                small-fake-d==0.4
-            test =
-                small-fake-e==0.5
-                small-fake-f==0.6
+            dev = small-fake-b==0.2
+            test = small-fake-c==0.3
         """,
         id="setup.cfg",
     ),
@@ -2065,11 +2371,11 @@ METADATA_TEST_CASES = (
             setup(
                 name="sample_lib",
                 version=0.1,
-                install_requires=["small-fake-a==0.1", "small-fake-b==0.2"],
+                install_requires=["small-fake-a==0.1"],
                 packages=find_packages(),
                 extras_require={
-                    "dev": ["small-fake-c==0.3", "small-fake-d==0.4"],
-                    "test": ["small-fake-e==0.5", "small-fake-f==0.6"],
+                    "dev": ["small-fake-b==0.2"],
+                    "test": ["small-fake-c==0.3"],
                 },
             )
         """,
@@ -2087,11 +2393,11 @@ METADATA_TEST_CASES = (
             author = "Vincent Driessen"
             author-email = "me@nvie.com"
 
-            requires = ["small-fake-a==0.1", "small-fake-b==0.2"]
+            requires = ["small-fake-a==0.1"]
 
             [tool.flit.metadata.requires-extra]
-            dev  = ["small-fake-c==0.3", "small-fake-d==0.4"]
-            test = ["small-fake-e==0.5", "small-fake-f==0.6"]
+            dev  = ["small-fake-b==0.2"]
+            test = ["small-fake-c==0.3"]
         """,
         id="flit",
     ),
@@ -2112,15 +2418,11 @@ METADATA_TEST_CASES = (
             python = "*"
             small-fake-a = "0.1"
             small-fake-b = "0.2"
-
             small-fake-c = "0.3"
-            small-fake-d = "0.4"
-            small-fake-e = "0.5"
-            small-fake-f = "0.6"
 
             [tool.poetry.extras]
-            dev  = ["small-fake-c", "small-fake-d"]
-            test = ["small-fake-e", "small-fake-f"]
+            dev  = ["small-fake-b"]
+            test = ["small-fake-c"]
         """,
         id="poetry",
     ),
@@ -2134,14 +2436,13 @@ def test_input_formats(fake_dists, runner, make_module, fname, content):
     Test different dependency formats as input file.
     """
     meta_path = make_module(fname=fname, content=content)
-    out = runner.invoke(cli, ["-n", "--find-links", fake_dists, meta_path])
+    out = runner.invoke(
+        cli, ["-n", "--no-build-isolation", "--find-links", fake_dists, meta_path]
+    )
     assert out.exit_code == 0, out.stderr
     assert "small-fake-a==0.1" in out.stderr
-    assert "small-fake-b==0.2" in out.stderr
+    assert "small-fake-b" not in out.stderr
     assert "small-fake-c" not in out.stderr
-    assert "small-fake-d" not in out.stderr
-    assert "small-fake-e" not in out.stderr
-    assert "small-fake-f" not in out.stderr
     assert "extra ==" not in out.stderr
 
 
@@ -2153,15 +2454,20 @@ def test_one_extra(fake_dists, runner, make_module, fname, content):
     """
     meta_path = make_module(fname=fname, content=content)
     out = runner.invoke(
-        cli, ["-n", "--extra", "dev", "--find-links", fake_dists, meta_path]
+        cli,
+        [
+            "-n",
+            "--extra",
+            "dev",
+            "--no-build-isolation",
+            "--find-links",
+            fake_dists,
+            meta_path,
+        ],
     )
     assert out.exit_code == 0, out.stderr
     assert "small-fake-a==0.1" in out.stderr
     assert "small-fake-b==0.2" in out.stderr
-    assert "small-fake-c==0.3" in out.stderr
-    assert "small-fake-d==0.4" in out.stderr
-    assert "small-fake-e" not in out.stderr
-    assert "small-fake-f" not in out.stderr
     assert "extra ==" not in out.stderr
 
 
@@ -2184,6 +2490,7 @@ def test_multiple_extras(fake_dists, runner, make_module, fname, content, extra_
         [
             "-n",
             *extra_opts,
+            "--no-build-isolation",
             "--find-links",
             fake_dists,
             meta_path,
@@ -2192,11 +2499,71 @@ def test_multiple_extras(fake_dists, runner, make_module, fname, content, extra_
     assert out.exit_code == 0, out.stderr
     assert "small-fake-a==0.1" in out.stderr
     assert "small-fake-b==0.2" in out.stderr
-    assert "small-fake-c==0.3" in out.stderr
-    assert "small-fake-d==0.4" in out.stderr
-    assert "small-fake-e==0.5" in out.stderr
-    assert "small-fake-f==0.6" in out.stderr
     assert "extra ==" not in out.stderr
+
+
+@pytest.mark.network
+@pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
+def test_all_extras(fake_dists, runner, make_module, fname, content):
+    """
+    Test passing `--all-extras` includes all applicable extras.
+    """
+    meta_path = make_module(fname=fname, content=content)
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--all-extras",
+            "--find-links",
+            fake_dists,
+            "--no-annotate",
+            "--no-emit-options",
+            "--no-header",
+            "--no-build-isolation",
+            meta_path,
+        ],
+    )
+    assert out.exit_code == 0, out
+    assert (
+        dedent(
+            """\
+            small-fake-a==0.1
+            small-fake-b==0.2
+            small-fake-c==0.3
+            """
+        )
+        == out.stdout
+    )
+
+
+# This should not depend on the metadata format so testing all cases is wasteful
+@pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES[:1])
+def test_all_extras_fail_with_extra(fake_dists, runner, make_module, fname, content):
+    """
+    Test that passing `--all-extras` and `--extra` fails.
+    """
+    meta_path = make_module(fname=fname, content=content)
+    out = runner.invoke(
+        cli,
+        [
+            "-n",
+            "--all-extras",
+            "--extra",
+            "dev",
+            "--find-links",
+            fake_dists,
+            "--no-annotate",
+            "--no-emit-options",
+            "--no-header",
+            "--no-build-isolation",
+            meta_path,
+        ],
+    )
+    assert out.exit_code == 2
+    exp = "--extra has no effect when used with --all-extras"
+    assert exp in out.stderr
 
 
 def test_extras_fail_with_requirements_in(runner, tmpdir):
@@ -2256,3 +2623,93 @@ def test_resolver_reaches_max_rounds(runner):
     out = runner.invoke(cli, ["--max-rounds", 0])
 
     assert out.exit_code != 0, out
+
+
+def test_preserve_via_requirements_constrained_dependencies_when_run_twice(
+    pip_conf, runner
+):
+    """
+    Test that 2 consecutive runs of pip-compile (first with a non-existing requirements.txt file,
+    second with an existing file) produce the same output.
+    """
+    with open("constraints.txt", "w") as constraints_in:
+        constraints_in.write("small-fake-a==0.1")
+
+    with open("requirements.in", "w") as req_in:
+        req_in.write("-c constraints.txt\nsmall_fake_with_deps")
+
+    cli_arguments = ["--no-emit-options", "--no-header"]
+
+    # First run of the command will generate `requirements.txt`, which doesn't yet exist.
+    first_out = runner.invoke(cli, cli_arguments)
+    assert first_out.exit_code == 0, first_out
+
+    with open("requirements.txt") as req_txt:
+        first_output = req_txt.read()
+
+    # Second run of the command will update `requirements.txt`.
+    second_out = runner.invoke(cli, cli_arguments)
+    assert second_out.exit_code == 0, second_out
+
+    with open("requirements.txt") as req_txt:
+        second_output = req_txt.read()
+
+    expected_output = dedent(
+        """\
+        small-fake-a==0.1
+            # via
+            #   -c constraints.txt
+            #   small-fake-with-deps
+        small-fake-with-deps==0.1
+            # via -r requirements.in
+        """
+    )
+    assert first_output == expected_output
+    assert second_output == expected_output
+
+
+def test_failure_of_legacy_resolver_prompts_for_backtracking(
+    pip_conf, runner, tmpdir, make_package, make_wheel, current_resolver
+):
+    """Test that pip-compile prompts to use the backtracking resolver"""
+    pkgs = [
+        make_package("a", version="0.1", install_requires=["b==0.1"]),
+        make_package("a", version="0.2", install_requires=["b==0.2"]),
+        make_package("b", version="0.1"),
+        make_package("b", version="0.2"),
+        make_package("c", version="1", install_requires=["b==0.1", "a"]),
+    ]
+
+    dists_dir = tmpdir / "dists"
+    for pkg in pkgs:
+        make_wheel(pkg, dists_dir)
+
+    with open("requirements.in", "w") as req_in:
+        req_in.writelines(["c"])
+
+    out = runner.invoke(
+        cli,
+        ["--resolver", current_resolver, "--find-links", str(dists_dir)],
+    )
+
+    if current_resolver == "legacy":
+        assert out.exit_code == 2, out
+        assert "Consider using backtracking resolver with" in out.stderr
+    elif current_resolver == "backtracking":
+        assert out.exit_code == 0, out
+    else:  # pragma: no cover
+        raise AssertionError("unreachable")
+
+
+def test_print_deprecation_warning_if_using_legacy_resolver(runner, current_resolver):
+    with open("requirements.in", "w"):
+        pass
+
+    out = runner.invoke(cli)
+    assert out.exit_code == 0, out
+
+    expected_warning = "WARNING: using legacy resolver is deprecated"
+    if current_resolver == "legacy":
+        assert expected_warning in out.stderr
+    else:
+        assert expected_warning not in out.stderr

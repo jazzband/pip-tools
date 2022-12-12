@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     branches:
-      - master
+      - main
     tags:
 
 concurrency:
@@ -29,30 +29,30 @@ jobs:
       TOXENV: ${{ matrix.toxenv }}
       TOX_PARALLEL_NO_SPINNER: 1
     steps:
-      - uses: actions/checkout@master
+      - uses: actions/checkout@main
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Get pip cache dir
         id: pip-cache
         run: |
-          echo "::set-output name=dir::$(pip cache dir)"
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
       - name: Pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: >-
             ${{ runner.os }}-pip-${{ hashFiles('setup.cfg') }}-${{
-            hashFiles('setup.py') }}-${{ hashFiles('tox.ini') }}-${{
+            hashFiles('pyproject.toml') }}-${{ hashFiles('tox.ini') }}-${{
             hashFiles('.pre-commit-config.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pip-
             ${{ runner.os }}-
       - name: Prepare cache key
         id: cache-key
-        run: echo "::set-output name=sha-256::$(python -VV | sha256sum | cut -d' ' -f1)"
-      - uses: actions/cache@v1
+        run: echo "sha-256=$(python -VV | sha256sum | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+      - uses: actions/cache@v3
         with:
           path: ~/.cache/pre-commit
           key: pre-commit|${{ steps.cache-key.outputs.sha-256 }}|${{ hashFiles('.pre-commit-config.yaml') }}

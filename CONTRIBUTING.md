@@ -8,7 +8,7 @@ and follow the [guidelines](https://jazzband.co/about/guidelines).
 
 Here are a few additional or emphasized guidelines to follow when contributing to `pip-tools`:
 
-- If you need to have a virtualenv outside of `tox`, it is possible to reuse its configuration to provision it as [described in the docs](https://tox.readthedocs.io/en/latest/example/devenv.html#creating-development-environments-using-the-devenv-option).
+- If you need to have a virtualenv outside of `tox`, it is possible to reuse its configuration to provision it with [tox devenv](<https://tox.wiki/en/latest/cli_interface.html#tox-devenv-(d)>).
 - Always provide tests for your changes and run `tox -p all` to make sure they are passing the checks locally.
 - Give a clear one-line description in the PR (that the maintainers can add to [CHANGELOG] afterwards).
 - Wait for the review of at least one other contributor before merging (even if you're a Jazzband member).
@@ -32,7 +32,7 @@ To help keeping track of the releases and their changes, here's the current rele
 - Push the branch to your fork and create a pull request.
 - Merge the pull request after the changes being approved.
 - Make sure that the tests/CI still pass.
-- Once ready, go to [releases](https://github.com/jazzband/pip-tools/releases) page and publish the latest draft release. This will push a tag on the HEAD of master, trigger the CI pipeline and
+- Once ready, go to [releases](https://github.com/jazzband/pip-tools/releases) page and publish the latest draft release. This will push a tag on the HEAD of the main branch, trigger the CI pipeline and
   deploy a pip-tools release in the **Jazzband private package index** upon success.
 - The pip-tools "lead" project members will receive an email notification to review the release and
   deploy it to the public PyPI if all is correct.
@@ -42,4 +42,4 @@ Please be mindful of other before and when performing a release, and use this ac
 
 Do not hesitate to ask questions if you have any before performing a release.
 
-[changelog]: https://github.com/jazzband/pip-tools/blob/master/CHANGELOG.md
+[changelog]: https://github.com/jazzband/pip-tools/blob/main/CHANGELOG.md

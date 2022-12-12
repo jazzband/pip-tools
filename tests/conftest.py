@@ -1,12 +1,14 @@
+from __future__ import annotations
+
 import json
 import os
+import platform
 import subprocess
 import sys
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from functools import partial
 from textwrap import dedent
-from typing import List, Optional
 
 import pytest
 from click.testing import CliRunner
@@ -24,6 +26,7 @@ from pip._vendor.pkg_resources import Requirement
 from piptools._compat.pip_compat import uses_pkg_resources
 from piptools.cache import DependencyCache
 from piptools.exceptions import NoCandidateFound
+from piptools.logging import log
 from piptools.repositories import PyPIRepository
 from piptools.repositories.base import BaseRepository
 from piptools.resolver import BacktrackingResolver, LegacyResolver
@@ -41,9 +44,9 @@ from .utils import looks_like_ci
 
 @dataclass
 class FakeOptions:
-    features_enabled: List[str] = field(default_factory=list)
-    deprecated_features_enabled: List[str] = field(default_factory=list)
-    target_dir: Optional[str] = None
+    features_enabled: list[str] = field(default_factory=list)
+    deprecated_features_enabled: list[str] = field(default_factory=list)
+    target_dir: str | None = None
 
 
 class FakeRepository(BaseRepository):
@@ -416,10 +419,27 @@ def fake_dists(tmpdir, make_package, make_wheel):
         make_package("small-fake-a", version="0.1"),
         make_package("small-fake-b", version="0.2"),
         make_package("small-fake-c", version="0.3"),
-        make_package("small-fake-d", version="0.4"),
-        make_package("small-fake-e", version="0.5"),
-        make_package("small-fake-f", version="0.6"),
     ]
     for pkg in pkgs:
         make_wheel(pkg, dists_path)
     return dists_path
+
+
+@pytest.fixture
+def venv(tmp_path):
+    """Create a temporary venv and get the path of its directory of executables."""
+    subprocess.run(
+        [sys.executable, "-m", "venv", os.fspath(tmp_path)],
+        check=True,
+    )
+    return tmp_path / ("Scripts" if platform.system() == "Windows" else "bin")
+
+
+@pytest.fixture(autouse=True)
+def _reset_log():
+    """
+    Since piptools.logging.log is a global variable we have to restore its initial
+    state. Some tests can change logger verbosity which might cause a conflict
+    with other tests that depend on it.
+    """
+    log.reset()
