@@ -23,6 +23,12 @@ legacy_resolver_only = pytest.mark.parametrize(
     indirect=("current_resolver",),
 )
 
+backtracking_resolver_only = pytest.mark.parametrize(
+    "current_resolver",
+    ("backtracking",),
+    indirect=("current_resolver",),
+)
+
 
 @pytest.fixture(
     autouse=True,
@@ -2028,6 +2034,28 @@ def test_preserve_compiled_prerelease_version(pip_conf, runner):
 
     assert out.exit_code == 0, out
     assert "small-fake-a==0.3b1" in out.stderr.splitlines()
+
+
+@backtracking_resolver_only
+def test_ignore_compiled_unavailable_version(pip_conf, runner, current_resolver):
+
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-a")
+
+    with open("requirements.txt", "w") as req_txt:
+        req_txt.write("small-fake-a==9999")
+
+    out = runner.invoke(cli, ["--no-annotate", "--no-header"])
+
+    assert out.exit_code == 0, out
+    assert "small-fake-a==" in out.stderr
+    assert "small-fake-a==9999" not in out.stderr.splitlines()
+
+    assert (
+        "Discarding small-fake-a==9999 "
+        "(from -r requirements.txt (line 1)) "
+        "to proceed the resolution"
+    ) in out.stderr
 
 
 def test_prefer_binary_dist(
