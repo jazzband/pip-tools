@@ -1,3 +1,19 @@
+## 6.12.0 (2022-12-13)
+
+Features:
+
+- Add `--no-index` flag to `pip-compile`
+  ([#1745](https://github.com/jazzband/pip-tools/pull/1745)). Thanks @atugushev
+
+Bug Fixes:
+
+- Treat `--upgrade-packages` PKGSPECs as constraints (not just minimums), consistently
+  ([#1578](https://github.com/jazzband/pip-tools/pull/1578)). Thanks @AndydeCleyre
+- Filter out the user provided unsafe packages
+  ([#1766](https://github.com/jazzband/pip-tools/pull/1766)). Thanks @q0w
+- Adopt PEP-621 for packaging
+  ([#1763](https://github.com/jazzband/pip-tools/pull/1763)). Thanks @ssbarnea
+
 ## 6.11.0 (2022-11-30)
 
 Features:
