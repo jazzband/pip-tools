@@ -23,6 +23,12 @@ legacy_resolver_only = pytest.mark.parametrize(
     indirect=("current_resolver",),
 )
 
+backtracking_resolver_only = pytest.mark.parametrize(
+    "current_resolver",
+    ("backtracking",),
+    indirect=("current_resolver",),
+)
+
 
 @pytest.fixture(
     autouse=True,
@@ -2030,11 +2036,8 @@ def test_preserve_compiled_prerelease_version(pip_conf, runner):
     assert "small-fake-a==0.3b1" in out.stderr.splitlines()
 
 
+@backtracking_resolver_only
 def test_ignore_compiled_unavailable_version(pip_conf, runner, current_resolver):
-    if current_resolver == "legacy":
-        pytest.xfail(
-            "We know this is broken in the legacy resolver, but no fix is planned."
-        )
 
     with open("requirements.in", "w") as req_in:
         req_in.write("small-fake-a")
