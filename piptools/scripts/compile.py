@@ -383,9 +383,10 @@ def cli(
 
     if resolver_name == "legacy":
         log.warning(
-            "WARNING: using legacy resolver is deprecated and will be removed in "
-            "future versions. The default resolver will be change to 'backtracking' "
-            "in 7.0.0 version. Specify --resolver=backtracking to silence this warning."
+            "WARNING: the legacy dependency resolver is deprecated and will be removed"
+            " in future versions of pip-tools. The default resolver will be changed to"
+            " 'backtracking' in pip-tools 7.0.0. Specify --resolver=backtracking to"
+            " silence this warning."
         )
 
     ###

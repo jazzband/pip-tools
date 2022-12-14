@@ -2736,7 +2736,7 @@ def test_print_deprecation_warning_if_using_legacy_resolver(runner, current_reso
     out = runner.invoke(cli)
     assert out.exit_code == 0, out
 
-    expected_warning = "WARNING: using legacy resolver is deprecated"
+    expected_warning = "WARNING: the legacy dependency resolver is deprecated"
     if current_resolver == "legacy":
         assert expected_warning in out.stderr
     else:
