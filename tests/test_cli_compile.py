@@ -1393,16 +1393,6 @@ def test_stdin_without_output_file(runner):
     assert "--output-file is required if input is from stdin" in out.stderr
 
 
-def test_not_specified_input_file(runner):
-    """
-    It should raise an error if there are no input files or default input files
-    such as "setup.py" or "requirements.in".
-    """
-    out = runner.invoke(cli)
-    assert "If you do not specify an input file" in out.stderr
-    assert out.exit_code == 2
-
-
 def test_stdin(pip_conf, runner):
     """
     Test compile requirements from STDIN.
@@ -2455,6 +2445,27 @@ METADATA_TEST_CASES = (
         id="poetry",
     ),
 )
+
+
+@pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
+def test_not_specified_input_file(runner, make_module, fname, content):
+    """
+    It should raise an error if there are no input files or default input files
+    such as "setup.py", "requirements.in" or "pyproject.toml".
+    """
+    default_file_names = ("requirements.in", "setup.py", "pyproject.toml", "setup.cfg")
+    make_module(fname=fname, content=content, base_dir=os.getcwd())
+    out = runner.invoke(cli)
+    if fname in default_file_names:
+        assert "small-fake-a==0.1" in out.stderr
+        assert "small-fake-b" not in out.stderr
+        assert "small-fake-c" not in out.stderr
+        assert "extra ==" not in out.stderr
+    else:
+        assert "If you do not specify an input file" in out.stderr
+        assert out.exit_code == 2
+        for file_name in default_file_names:
+            assert file_name in out.stderr
 
 
 @pytest.mark.network

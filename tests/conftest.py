@@ -383,14 +383,16 @@ def make_module(tmpdir):
     Make a metadata file with the given name and content and a fake module.
     """
 
-    def _make_module(fname, content):
-        path = os.path.join(tmpdir, "sample_lib")
+    def _make_module(fname, content, base_dir=None):
+        if base_dir is None:
+            base_dir = tmpdir
+        path = os.path.join(base_dir, "sample_lib")
         os.mkdir(path)
-        path = os.path.join(tmpdir, "sample_lib", "__init__.py")
+        path = os.path.join(base_dir, "sample_lib", "__init__.py")
         with open(path, "w") as stream:
             stream.write("'example module'\n__version__ = '1.2.3'")
         if fname == "setup.cfg":
-            path = os.path.join(tmpdir, "pyproject.toml")
+            path = os.path.join(base_dir, "pyproject.toml")
             with open(path, "w") as stream:
                 stream.write(
                     "\n".join(
@@ -401,7 +403,7 @@ def make_module(tmpdir):
                         )
                     )
                 )
-        path = os.path.join(tmpdir, fname)
+        path = os.path.join(base_dir, fname)
         with open(path, "w") as stream:
             stream.write(dedent(content))
         return path
