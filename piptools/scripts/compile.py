@@ -33,9 +33,7 @@ from ..utils import (
 )
 from ..writer import OutputWriter
 
-DEFAULT_REQUIREMENTS_FILES = (
-    "requirements.in", "setup.py", "pyproject.toml"
-)
+DEFAULT_REQUIREMENTS_FILES = ("requirements.in", "setup.py", "pyproject.toml")
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 METADATA_FILENAMES = frozenset({"setup.py", "setup.cfg", "pyproject.toml"})
 
@@ -351,8 +349,7 @@ def cli(
         else:
             raise click.BadParameter(
                 (
-                    "If you do not specify an input file, "
-                    "the default is one of: {}"
+                    "If you do not specify an input file, " "the default is one of: {}"
                 ).format(", ".join(DEFAULT_REQUIREMENTS_FILES))
             )
 
