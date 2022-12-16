@@ -106,6 +106,6 @@ markers = ["network: mark tests that require internet access"]
 
 [tool.setuptools.packages.find]
 # needed only because we did not adopt src layout yet
-include = ["piptools"]
+include = ["piptools*"]
 
 [tool.setuptools_scm]
