@@ -1,3 +1,10 @@
+## 6.12.1 (2022-12-16)
+
+Bug Fixes:
+
+- Set explicitly packages for setuptools
+  ([#1782](https://github.com/jazzband/pip-tools/pull/1782)). Thanks @q0w
+
 ## 6.12.0 (2022-12-13)
 
 Features:

@@ -90,8 +90,8 @@ warn_unused_ignores = true
 # https://github.com/python/mypy/issues/4008
 exclude = "^tests/test_data/"
 
-[tool.mypy.overrides]
-modules = ["tests.*"]
+[[tool.mypy.overrides]]
+module = ["tests.*"]
 disallow_untyped_defs = false
 
 [tool.pytest.ini_options]
@@ -106,6 +106,6 @@ markers = ["network: mark tests that require internet access"]
 
 [tool.setuptools.packages.find]
 # needed only because we did not adopt src layout yet
-exclude = ["img"]
+include = ["piptools*"]
 
 [tool.setuptools_scm]
