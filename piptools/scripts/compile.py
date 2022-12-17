@@ -33,7 +33,12 @@ from ..utils import (
 )
 from ..writer import OutputWriter
 
-DEFAULT_REQUIREMENTS_FILES = ("requirements.in", "setup.py", "setup.cfg", "pyproject.toml")
+DEFAULT_REQUIREMENTS_FILES = (
+    "requirements.in",
+    "setup.py",
+    "setup.cfg",
+    "pyproject.toml",
+)
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 METADATA_FILENAMES = frozenset({"setup.py", "setup.cfg", "pyproject.toml"})
 
