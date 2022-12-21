@@ -2448,7 +2448,9 @@ METADATA_TEST_CASES = (
 
 
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
-def test_not_specified_input_file(runner, make_module, fname, content, tmpdir, monkeypatch):
+def test_not_specified_input_file(
+    runner, make_module, fname, content, tmpdir, monkeypatch
+):
     """
     It should raise an error if there are no input files or default input files
     such as "setup.py", "requirements.in" or "pyproject.toml".
