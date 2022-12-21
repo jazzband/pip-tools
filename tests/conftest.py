@@ -381,18 +381,19 @@ def make_sdist(run_setup_file):
 def make_module(tmpdir):
     """
     Make a metadata file with the given name and content and a fake module.
+
+    By default, the file is created in the temporary directory; passing the
+    `base_dir` argument allows for fine-tuning the file's location.
     """
 
-    def _make_module(fname, content, base_dir=None):
-        if base_dir is None:
-            base_dir = tmpdir
-        path = os.path.join(base_dir, "sample_lib")
+    def _make_module(fname, content):
+        path = os.path.join(tmpdir, "sample_lib")
         os.mkdir(path)
-        path = os.path.join(base_dir, "sample_lib", "__init__.py")
+        path = os.path.join(tmpdir, "sample_lib", "__init__.py")
         with open(path, "w") as stream:
             stream.write("'example module'\n__version__ = '1.2.3'")
         if fname == "setup.cfg":
-            path = os.path.join(base_dir, "pyproject.toml")
+            path = os.path.join(tmpdir, "pyproject.toml")
             with open(path, "w") as stream:
                 stream.write(
                     "\n".join(
@@ -403,7 +404,7 @@ def make_module(tmpdir):
                         )
                     )
                 )
-        path = os.path.join(base_dir, fname)
+        path = os.path.join(tmpdir, fname)
         with open(path, "w") as stream:
             stream.write(dedent(content))
         return path

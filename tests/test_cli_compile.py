@@ -2448,24 +2448,33 @@ METADATA_TEST_CASES = (
 
 
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
-def test_not_specified_input_file(runner, make_module, fname, content):
+def test_not_specified_input_file(runner, make_module, fname, content, tmpdir, monkeypatch):
     """
     It should raise an error if there are no input files or default input files
     such as "setup.py", "requirements.in" or "pyproject.toml".
     """
-    default_file_names = ("requirements.in", "setup.py", "pyproject.toml", "setup.cfg")
-    make_module(fname=fname, content=content, base_dir=os.getcwd())
+    make_module(fname=fname, content=content)
+
+    monkeypatch.chdir(tmpdir)
     out = runner.invoke(cli)
-    if fname in default_file_names:
-        assert "small-fake-a==0.1" in out.stderr
-        assert "small-fake-b" not in out.stderr
-        assert "small-fake-c" not in out.stderr
-        assert "extra ==" not in out.stderr
-    else:
-        assert "If you do not specify an input file" in out.stderr
-        assert out.exit_code == 2
-        for file_name in default_file_names:
-            assert file_name in out.stderr
+    monkeypatch.undo()
+
+    assert "small-fake-a==0.1" in out.stderr
+    assert "small-fake-b" not in out.stderr
+    assert "small-fake-c" not in out.stderr
+    assert "extra ==" not in out.stderr
+
+
+def test_not_specified_input_file_without_allowed_files(runner):
+    """
+    It should raise an error if there are no input files or default input files
+    such as "setup.py" or "requirements.in".
+    """
+    out = runner.invoke(cli)
+    assert "If you do not specify an input file" in out.stderr
+    assert out.exit_code == 2
+    for file_name in ("requirements.in", "setup.py", "pyproject.toml"):
+        assert file_name in out.stderr
 
 
 @pytest.mark.network
