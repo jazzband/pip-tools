@@ -381,9 +381,6 @@ def make_sdist(run_setup_file):
 def make_module(tmpdir):
     """
     Make a metadata file with the given name and content and a fake module.
-
-    By default, the file is created in the temporary directory; passing the
-    `base_dir` argument allows for fine-tuning the file's location.
     """
 
     def _make_module(fname, content):
