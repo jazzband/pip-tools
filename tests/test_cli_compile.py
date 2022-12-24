@@ -2452,8 +2452,7 @@ def test_not_specified_input_file(
     runner, make_module, fname, content, tmpdir, monkeypatch
 ):
     """
-    It should raise an error if there are no input files or default input files
-    such as "setup.py", "requirements.in" or "pyproject.toml".
+    Test that a default-named file is parsed if present.
     """
     make_module(fname=fname, content=content)
 
@@ -2465,6 +2464,7 @@ def test_not_specified_input_file(
     assert "small-fake-b" not in out.stderr
     assert "small-fake-c" not in out.stderr
     assert "extra ==" not in out.stderr
+    assert out.exit_code == 1
 
 
 def test_not_specified_input_file_without_allowed_files(runner):
@@ -2475,9 +2475,11 @@ def test_not_specified_input_file_without_allowed_files(runner):
     out = runner.invoke(cli)
     assert "If you do not specify an input file" in out.stderr
     assert out.exit_code == 2
-    for file_name in ("requirements.in", "setup.py", "pyproject.toml"):
-        assert file_name in out.stderr
-
+    expected_error = (
+        "Error: Invalid value: If you do not specify an input file, the default "
+        "is one of: requirements.in, setup.py, pyproject.toml, setup.cfg"
+    )
+    assert expected_error in out.stderr.splitlines()
 
 @pytest.mark.network
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
