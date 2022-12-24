@@ -354,7 +354,7 @@ def cli(
         else:
             raise click.BadParameter(
                 (
-                    "If you do not specify an input file, " "the default is one of: {}"
+                    "If you do not specify an input file, the default is one of: {}"
                 ).format(", ".join(DEFAULT_REQUIREMENTS_FILES))
             )
 
