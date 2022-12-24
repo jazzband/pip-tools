@@ -2481,6 +2481,7 @@ def test_not_specified_input_file_without_allowed_files(runner):
     )
     assert expected_error in out.stderr.splitlines()
 
+
 @pytest.mark.network
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
 def test_input_formats(fake_dists, runner, make_module, fname, content):
