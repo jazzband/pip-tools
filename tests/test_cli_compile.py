@@ -2447,24 +2447,24 @@ METADATA_TEST_CASES = (
 )
 
 
+@pytest.mark.network
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
 def test_not_specified_input_file(
-    runner, make_module, fname, content, tmpdir, monkeypatch
+    fake_dists, runner, make_module, fname, content, monkeypatch
 ):
     """
     Test that a default-named file is parsed if present.
     """
-    make_module(fname=fname, content=content)
-
-    monkeypatch.chdir(tmpdir)
-    out = runner.invoke(cli)
+    meta_path = make_module(fname=fname, content=content)
+    monkeypatch.chdir(os.path.dirname(meta_path))
+    out = runner.invoke(cli, ["-n", "--no-build-isolation", "--find-links", fake_dists])
     monkeypatch.undo()
 
+    assert out.exit_code == 0, out.stderr
     assert "small-fake-a==0.1" in out.stderr
     assert "small-fake-b" not in out.stderr
     assert "small-fake-c" not in out.stderr
     assert "extra ==" not in out.stderr
-    assert out.exit_code == 1
 
 
 def test_not_specified_input_file_without_allowed_files(runner):
