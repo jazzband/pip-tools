@@ -2473,7 +2473,6 @@ def test_not_specified_input_file_without_allowed_files(runner):
     such as "setup.py" or "requirements.in".
     """
     out = runner.invoke(cli)
-    assert "If you do not specify an input file" in out.stderr
     assert out.exit_code == 2
     expected_error = (
         "Error: Invalid value: If you do not specify an input file, the default "
