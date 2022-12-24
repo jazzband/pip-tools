@@ -2457,14 +2457,23 @@ def test_not_specified_input_file(
     """
     meta_path = make_module(fname=fname, content=content)
     monkeypatch.chdir(os.path.dirname(meta_path))
-    out = runner.invoke(cli, ["-n", "--no-build-isolation", "--find-links", fake_dists])
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--no-header",
+            "--no-emit-options",
+            "--no-annotate",
+            "--no-build-isolation",
+            "--find-links",
+            fake_dists,
+        ],
+    )
     monkeypatch.undo()
 
     assert out.exit_code == 0, out.stderr
-    assert "small-fake-a==0.1" in out.stderr
-    assert "small-fake-b" not in out.stderr
-    assert "small-fake-c" not in out.stderr
-    assert "extra ==" not in out.stderr
+    assert "small-fake-a==0.1\n" == out.stdout
 
 
 def test_not_specified_input_file_without_allowed_files(runner):
