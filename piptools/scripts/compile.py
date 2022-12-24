@@ -382,7 +382,7 @@ def cli(
             ctx.call_on_close(safecall(output_file.close_intelligently))
 
     for src_file in src_files:
-        if src_file == output_file.name:
+        if src_file != "-" and src_file == output_file.name:
             raise click.BadArgumentUsage(
                 f"input and output filenames must not be matched: {src_file}"
             )
