@@ -2741,3 +2741,31 @@ def test_print_deprecation_warning_if_using_legacy_resolver(runner, current_reso
         assert expected_warning in out.stderr
     else:
         assert expected_warning not in out.stderr
+
+
+@pytest.mark.parametrize(
+    "input_filenames",
+    (
+        pytest.param(("requirements.txt",), id="one file"),
+        pytest.param(("requirements.txt", "dev-requirements.in"), id="multiple files"),
+    ),
+)
+def test_raise_error_when_input_and_output_filenames_are_matched(
+    runner, tmp_path, input_filenames
+):
+    req_in_paths = []
+    for input_filename in input_filenames:
+        req_in = tmp_path / input_filename
+        req_in.touch()
+        req_in_paths.append(req_in.as_posix())
+
+    req_out = tmp_path / "requirements.txt"
+    req_out_path = req_out.as_posix()
+
+    out = runner.invoke(cli, req_in_paths + ["--output-file", req_out_path])
+    assert out.exit_code == 2
+
+    expected_error = (
+        f"Error: input and output filenames must not be matched: {req_out_path}"
+    )
+    assert expected_error in out.stderr.splitlines()
