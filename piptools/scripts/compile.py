@@ -381,11 +381,10 @@ def cli(
         if isinstance(output_file, LazyFile):  # pragma: no cover
             ctx.call_on_close(safecall(output_file.close_intelligently))
 
-    for src_file in src_files:
-        if src_file != "-" and src_file == output_file.name:
-            raise click.BadArgumentUsage(
-                f"input and output filenames must not be matched: {src_file}"
-            )
+    if output_file.name != "-" and output_file.name in src_files:
+        raise click.BadArgumentUsage(
+            f"input and output filenames must not be matched: {output_file.name}"
+        )
 
     if resolver_name == "legacy":
         log.warning(
