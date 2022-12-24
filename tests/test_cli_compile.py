@@ -2474,15 +2474,6 @@ def test_not_specified_input_file(
 
     assert out.exit_code == 0, out.stderr
     assert "small-fake-a==0.1\n" == out.stdout
-            "--no-build-isolation",
-            "--find-links",
-            fake_dists,
-        ],
-    )
-    monkeypatch.undo()
-
-    assert out.exit_code == 0, out.stderr
-    assert "small-fake-a==0.1\n" == out.stdout
 
 
 def test_not_specified_input_file_without_allowed_files(runner):
