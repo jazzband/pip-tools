@@ -33,7 +33,12 @@ from ..utils import (
 )
 from ..writer import OutputWriter
 
-DEFAULT_REQUIREMENTS_FILE = "requirements.in"
+DEFAULT_REQUIREMENTS_FILES = (
+    "requirements.in",
+    "setup.py",
+    "pyproject.toml",
+    "setup.cfg",
+)
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 METADATA_FILENAMES = frozenset({"setup.py", "setup.cfg", "pyproject.toml"})
 
@@ -342,16 +347,15 @@ def cli(
     log.verbosity = verbose - quiet
 
     if len(src_files) == 0:
-        if os.path.exists(DEFAULT_REQUIREMENTS_FILE):
-            src_files = (DEFAULT_REQUIREMENTS_FILE,)
-        elif os.path.exists("setup.py"):
-            src_files = ("setup.py",)
+        for file_path in DEFAULT_REQUIREMENTS_FILES:
+            if os.path.exists(file_path):
+                src_files = (file_path,)
+                break
         else:
             raise click.BadParameter(
                 (
-                    "If you do not specify an input file, "
-                    "the default is {} or setup.py"
-                ).format(DEFAULT_REQUIREMENTS_FILE)
+                    "If you do not specify an input file, the default is one of: {}"
+                ).format(", ".join(DEFAULT_REQUIREMENTS_FILES))
             )
 
     if not output_file:
