@@ -1490,6 +1490,8 @@ def test_annotate_option(pip_conf, runner, options, expected):
                 """\
                 small-fake-a==0.1
                 small-fake-b==0.3
+
+                # The following packages are considered to be unsafe in a requirements file:
                 small-fake-with-deps==0.1
                 """
             ),
