@@ -385,6 +385,11 @@ def cli(
         if isinstance(output_file, LazyFile):  # pragma: no cover
             ctx.call_on_close(safecall(output_file.close_intelligently))
 
+    if output_file.name != "-" and output_file.name in src_files:
+        raise click.BadArgumentUsage(
+            f"input and output filenames must not be matched: {output_file.name}"
+        )
+
     if resolver_name == "legacy":
         log.warning(
             "WARNING: the legacy dependency resolver is deprecated and will be removed"
