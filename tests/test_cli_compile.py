@@ -1393,16 +1393,6 @@ def test_stdin_without_output_file(runner):
     assert "--output-file is required if input is from stdin" in out.stderr
 
 
-def test_not_specified_input_file(runner):
-    """
-    It should raise an error if there are no input files or default input files
-    such as "setup.py" or "requirements.in".
-    """
-    out = runner.invoke(cli)
-    assert "If you do not specify an input file" in out.stderr
-    assert out.exit_code == 2
-
-
 def test_stdin(pip_conf, runner):
     """
     Test compile requirements from STDIN.
@@ -1500,6 +1490,8 @@ def test_annotate_option(pip_conf, runner, options, expected):
                 """\
                 small-fake-a==0.1
                 small-fake-b==0.3
+
+                # The following packages are considered to be unsafe in a requirements file:
                 small-fake-with-deps==0.1
                 """
             ),
@@ -2455,6 +2447,49 @@ METADATA_TEST_CASES = (
         id="poetry",
     ),
 )
+
+
+@pytest.mark.network
+@pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
+def test_not_specified_input_file(
+    fake_dists, runner, make_module, fname, content, monkeypatch
+):
+    """
+    Test that a default-named file is parsed if present.
+    """
+    meta_path = make_module(fname=fname, content=content)
+    monkeypatch.chdir(os.path.dirname(meta_path))
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--no-header",
+            "--no-emit-options",
+            "--no-annotate",
+            "--no-build-isolation",
+            "--find-links",
+            fake_dists,
+        ],
+    )
+    monkeypatch.undo()
+
+    assert out.exit_code == 0, out.stderr
+    assert "small-fake-a==0.1\n" == out.stdout
+
+
+def test_not_specified_input_file_without_allowed_files(runner):
+    """
+    It should raise an error if there are no input files or default input files
+    such as "setup.py" or "requirements.in".
+    """
+    out = runner.invoke(cli)
+    assert out.exit_code == 2
+    expected_error = (
+        "Error: Invalid value: If you do not specify an input file, the default "
+        "is one of: requirements.in, setup.py, pyproject.toml, setup.cfg"
+    )
+    assert expected_error in out.stderr.splitlines()
 
 
 @pytest.mark.network
