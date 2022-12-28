@@ -8,13 +8,14 @@ import tempfile
 from typing import IO, Any, BinaryIO, cast
 
 import click
-from build import BuildBackendException
 from build.util import project_wheel_metadata
 from click.utils import LazyFile, safecall
 from pip._internal.commands import create_command
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
+
+from build import BuildBackendException
 
 from .._compat import parse_requirements
 from ..cache import DependencyCache
@@ -498,10 +499,18 @@ def cli(
                 log.error(str(e))
                 log.error(f"Failed to parse {os.path.abspath(src_file)}")
                 sys.exit(2)
+            package_name = metadata.get_all("Name")[0]
             comes_from = f"{metadata.get_all('Name')[0]} ({src_file})"
             constraints.extend(
                 [
-                    install_req_from_line(req, comes_from=comes_from)
+                    install_req_from_line(
+                        req.replace(
+                            package_name, os.path.dirname(os.path.abspath(src_file))
+                        ),
+                        comes_from,
+                    )
+                    if package_name in req
+                    else install_req_from_line(req, comes_from)
                     for req in metadata.get_all("Requires-Dist") or []
                 ]
             )

@@ -2804,3 +2804,42 @@ def test_raise_error_when_input_and_output_filenames_are_matched(
         f"Error: input and output filenames must not be matched: {req_out_path}"
     )
     assert expected_error in out.stderr.splitlines()
+
+
+@backtracking_resolver_only
+def test_compile_recursive_extras(runner, tmp_path, current_resolver):
+    (tmp_path / "pyproject.toml").write_text(
+        dedent(
+            """
+            [project]
+            name = "foo"
+            version = "0.0.1"
+            dependencies = ["small-fake-a"]
+            [project.optional-dependencies]
+            test = ["small-fake-b"]
+            dev = ["foo[test]"]
+            """
+        )
+    )
+    out = runner.invoke(
+        cli,
+        [
+            "--no-header",
+            "--no-annotate",
+            "--no-emit-find-links",
+            "--extra",
+            "dev",
+            "--find-links",
+            os.fspath(MINIMAL_WHEELS_PATH),
+            os.fspath(tmp_path / "pyproject.toml"),
+        ],
+    )
+    expected = dedent(
+        f"""\
+        foo @ file://{os.fspath(tmp_path)}
+        small-fake-a==0.2
+        small-fake-b==0.3
+        """
+    )
+    assert out.exit_code == 0
+    assert expected == out.stderr
