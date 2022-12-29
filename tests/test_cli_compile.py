@@ -2834,12 +2834,9 @@ def test_compile_recursive_extras(runner, tmp_path, current_resolver):
             os.fspath(tmp_path / "pyproject.toml"),
         ],
     )
-    expected = dedent(
-        f"""\
-        foo @ file://{os.fspath(tmp_path)}
-        small-fake-a==0.2
-        small-fake-b==0.3
-        """
-    )
+    expected = rf"""foo @ file://{os.fspath(tmp_path)}
+small-fake-a==0.2
+small-fake-b==0.3
+"""
     assert out.exit_code == 0
     assert expected == out.stderr
