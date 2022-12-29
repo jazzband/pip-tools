@@ -498,7 +498,7 @@ def cli(
                 log.error(f"Failed to parse {os.path.abspath(src_file)}")
                 sys.exit(2)
             package_name = metadata.get_all("Name")[0]
-            comes_from = f"{metadata.get_all('Name')[0]} ({src_file})"
+            comes_from = f"{package_name} ({src_file})"
             constraints.extend(
                 [
                     install_req_from_line(
