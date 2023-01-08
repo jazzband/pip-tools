@@ -428,7 +428,7 @@ class PyPIRepository(BaseRepository):
 
         original_wheel_supported = Wheel.supported
         original_support_index_min = Wheel.support_index_min
-        original_candidates_cache = self.finder.find_all_candidates
+        original_candidates_cache = vars(self.finder).get("find_all_candidates")
 
         Wheel.supported = _wheel_supported
         Wheel.support_index_min = _wheel_support_index_min
@@ -450,7 +450,10 @@ class PyPIRepository(BaseRepository):
         finally:
             Wheel.supported = original_wheel_supported
             Wheel.support_index_min = original_support_index_min
-            self.finder.find_all_candidates = original_candidates_cache
+            if original_candidates_cache is not None:
+                self.finder.find_all_candidates = original_candidates_cache
+            else:
+                del self.finder.find_all_candidates
 
 
 @contextmanager
