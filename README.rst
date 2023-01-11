@@ -98,6 +98,12 @@ optional dependency ``dev`` that includes ``pytest``:
 
     [project.optional-dependencies]
     dev = ["pytest"]
+    
+Note: If a ``build-system`` is not specified then ``setuptools`` is used by
+default as per `PEP-518 <https://peps.python.org/pep-0518/#build-system-table>`_.
+Information on how to write a valid ``pyproject.toml`` file which works with
+``setuptools``, including some ``setuptools`` specific options, can be found
+`here <https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html>`_.
 
 You can produce your pin files as easily as:
 
@@ -588,6 +594,34 @@ backtracking resolver is more robust, but can take longer to run in
 general.
 
 You can continue using the legacy resolver with ``--resolver=legacy``.
+
+Debugging Tips
+==============
+
+If ``pip-compile`` is giving you strange error messages such as:
+
+.. code-block:: console
+
+   Backend subprocess exited when trying to invoke get_requires_for_build_wheel
+   Failed to parse /Users/jburton/Projects/python_101/pyproject.toml
+
+Then here are a couple of steps to assist with debugging...
+
+Validate ``pyproject.toml``
+---------------------------
+
+This can be achieved simply by installing and running ``validate-pyproject``,
+more information can be found `here <https://pypi.org/project/validate-pyproject/>`_.
+
+Unsilence ``build`` Logs
+------------------------
+
+1. Find where your dependencies are installed (e.g. ``venv/``)
+2. Find the ``build`` package
+3. Open ``util.py``
+4. Replace ``runner=pep517.quiet_subprocess_runner`` with ``runner=pep517.default_subprocess_runner``
+   as demonstrated `here <https://github.com/jazzband/pip-tools/issues/1711#issuecomment-1328301486>`_
+5. Re-run ``pip-compile`` to see a more helpful error message
 
 Versions and compatibility
 ==========================
