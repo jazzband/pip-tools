@@ -103,7 +103,7 @@ Note: If a ``build-system`` is not specified then ``setuptools`` is used by
 default as per `PEP-518 <https://peps.python.org/pep-0518/#build-system-table>`_.
 Information on how to write a valid ``pyproject.toml`` file which works with
 ``setuptools``, including some ``setuptools`` specific options, can be found
-`here <https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html>`_.
+via the `setuptools docs <https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html>`_.
 
 You can produce your pin files as easily as:
 
@@ -610,8 +610,8 @@ Then here are a couple of steps to assist with debugging...
 Validate ``pyproject.toml``
 ---------------------------
 
-This can be achieved simply by installing and running ``validate-pyproject``,
-more information can be found `here <https://pypi.org/project/validate-pyproject/>`_.
+This can be achieved simply by installing and running
+`validate-pyproject <https://pypi.org/project/validate-pyproject/>`_.
 
 Unsilence ``build`` Logs
 ------------------------
