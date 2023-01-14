@@ -1304,6 +1304,204 @@ def test_generate_hashes_with_mixed_sources(
     assert out.stdout == expected_output
 
 
+@pytest.mark.network
+def test_generate_hashes_with_mixed_sources_local_version_1(
+    runner, make_package, make_wheel, make_sdist, tmp_path, current_resolver
+):
+    """
+    Test that pip-compile generate hashes for every file from all given sources:
+    PyPI and/or --find-links.
+    Make sure that local versions are included in the set of candidate hashes.
+    """
+
+    wheels_dir = tmp_path / "wheels"
+    wheels_dir.mkdir()
+
+    def six_package(version):
+        dummy_six_pkg = make_package(name="six", version=version)
+        make_wheel(dummy_six_pkg, wheels_dir, "--build-number", "123")
+
+    def hash_package(wheel_name):
+        fav_hasher = hashlib.new(FAVORITE_HASH)
+        fav_hasher.update((wheels_dir / wheel_name).read_bytes())
+        return fav_hasher.hexdigest()
+
+    six_package("1.16.0")
+    dummy_six_wheel_digest = hash_package("six-1.16.0-123-py3-none-any.whl")
+    six_package("1.16.0+local")
+    dummy_six_cpu_wheel_digest = hash_package("six-1.16.0+local-123-py3-none-any.whl")
+
+    with open("requirements.in", "w") as fp:
+        fp.write("six==1.16.0\n")
+
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--no-header",
+            "--generate-hashes",
+            "--no-emit-options",
+            "--no-annotate",
+            "--find-links",
+            wheels_dir.as_uri(),
+        ],
+    )
+
+    if current_resolver == "legacy":
+        expected_digests = sorted(
+            (
+                # sdist hash for six-1.16.0.tar.gz from PyPI
+                "1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926",
+                # wheel hash for six-1.16.0-py2.py3-none-any.whl from PyPI
+                "8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254",
+                # wheel hash for local six-1.16.0-123-py3-none-any.whl file
+                dummy_six_wheel_digest,
+                # wheel hash for local six-1.16.0+local-123-py3-none-any.whl file
+                dummy_six_cpu_wheel_digest,
+            )
+        )
+
+        expected_output = dedent(
+            f"""\
+            six==1.16.0 \\
+                --hash=sha256:{expected_digests[0]} \\
+                --hash=sha256:{expected_digests[1]} \\
+                --hash=sha256:{expected_digests[2]} \\
+                --hash=sha256:{expected_digests[3]}
+            """
+        )
+    else:
+        expected_output = dedent(
+            f"""\
+            six==1.16.0+local \\
+                --hash=sha256:{dummy_six_cpu_wheel_digest}
+            """
+        )
+    assert out.stdout == expected_output
+
+
+@pytest.mark.network
+def test_generate_hashes_with_mixed_sources_local_version_2(
+    runner, make_package, make_wheel, make_sdist, tmp_path, current_resolver
+):
+    """
+    Test that pip-compile generate hashes for every file from all given sources:
+    PyPI and/or --find-links.
+    Makes sure that pinning to local version works as expected.
+    """
+
+    wheels_dir = tmp_path / "wheels"
+    wheels_dir.mkdir()
+
+    def six_package(version):
+        dummy_six_pkg = make_package(name="six", version=version)
+        make_wheel(dummy_six_pkg, wheels_dir, "--build-number", "123")
+
+    def hash_package(wheel_name):
+        fav_hasher = hashlib.new(FAVORITE_HASH)
+        fav_hasher.update((wheels_dir / wheel_name).read_bytes())
+        return fav_hasher.hexdigest()
+
+    six_package("1.16.0")
+    six_package("1.16.0+local")
+    dummy_six_cpu_wheel_digest = hash_package("six-1.16.0+local-123-py3-none-any.whl")
+
+    with open("requirements.in", "w") as fp:
+        fp.write("six==1.16.0+local\n")
+
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--no-header",
+            "--generate-hashes",
+            "--no-emit-options",
+            "--no-annotate",
+            "--find-links",
+            wheels_dir.as_uri(),
+        ],
+    )
+
+    expected_output = dedent(
+        f"""\
+        six==1.16.0+local \\
+            --hash=sha256:{dummy_six_cpu_wheel_digest}
+        """
+    )
+    assert out.stdout == expected_output
+
+
+@pytest.mark.network
+def test_generate_hashes_with_mixed_sources_local_version_3(
+    runner, make_package, make_wheel, make_sdist, tmp_path
+):
+    """
+    Test that pip-compile generate hashes for every file from all given sources:
+    PyPI and/or --find-links.
+    Make sure that the Arbitrary Equality (https://peps.python.org/pep-0440/#arbitrary-equality)
+    is taken into consideration in the presence of local version candidates.
+    """
+
+    wheels_dir = tmp_path / "wheels"
+    wheels_dir.mkdir()
+
+    def six_package(version):
+        dummy_six_pkg = make_package(name="six", version=version)
+        make_wheel(dummy_six_pkg, wheels_dir, "--build-number", "123")
+
+    def hash_package(wheel_name):
+        fav_hasher = hashlib.new(FAVORITE_HASH)
+        fav_hasher.update((wheels_dir / wheel_name).read_bytes())
+        return fav_hasher.hexdigest()
+
+    six_package("1.16.0")
+    dummy_six_wheel_digest = hash_package("six-1.16.0-123-py3-none-any.whl")
+    six_package("1.16.0+local")
+
+    with open("requirements.in", "w") as fp:
+        fp.write("six===1.16.0\n")
+
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--no-header",
+            "--generate-hashes",
+            "--no-emit-options",
+            "--no-annotate",
+            "--find-links",
+            wheels_dir.as_uri(),
+        ],
+    )
+
+    expected_digests = sorted(
+        (
+            # sdist hash for six-1.16.0.tar.gz from PyPI
+            "1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926",
+            # wheel hash for six-1.16.0-py2.py3-none-any.whl from PyPI
+            "8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254",
+            # wheel hash for local six-1.16.0-123-py3-none-any.whl file
+            dummy_six_wheel_digest,
+        )
+    )
+
+    expected_output = dedent(
+        f"""\
+        six===1.16.0 \\
+            --hash=sha256:{expected_digests[0]} \\
+            --hash=sha256:{expected_digests[1]} \\
+            --hash=sha256:{expected_digests[2]}
+        """
+    )
+    assert out.stdout == expected_output
+
+
 def test_filter_pip_markers(pip_conf, runner):
     """
     Check that pip-compile works with pip environment markers (PEP496)

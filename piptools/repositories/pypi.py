@@ -383,10 +383,11 @@ class PyPIRepository(BaseRepository):
         # satisfy this constraint.
         all_candidates = self.find_all_candidates(ireq.name)
         candidates_by_version = lookup_table(all_candidates, key=candidate_version)
-        matching_versions = list(
+        matching_versions = set(
             ireq.specifier.filter(candidate.version for candidate in all_candidates)
         )
-        return candidates_by_version[matching_versions[0]]
+        candidates_for_all_versions = [candidates_by_version[mv] for mv in matching_versions]
+        return set().union(*candidates_for_all_versions)
 
     def _get_file_hash(self, link: Link) -> str:
         log.debug(f"Hashing {link.show_url}")
