@@ -386,7 +386,9 @@ class PyPIRepository(BaseRepository):
         matching_versions = set(
             ireq.specifier.filter(candidate.version for candidate in all_candidates)
         )
-        candidates_for_all_versions = [candidates_by_version[mv] for mv in matching_versions]
+        candidates_for_all_versions = [
+            candidates_by_version[mv] for mv in matching_versions
+        ]
         return set().union(*candidates_for_all_versions)
 
     def _get_file_hash(self, link: Link) -> str:
