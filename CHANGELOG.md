@@ -1,3 +1,14 @@
+## 6.12.2 (2022-12-25)
+
+Bug Fixes:
+
+- Raise error if input and output filenames are matched
+  ([#1787](https://github.com/jazzband/pip-tools/pull/1787)). Thanks @atugushev
+- Add `pyproject.toml` as default input file format
+  ([#1780](https://github.com/jazzband/pip-tools/pull/1780)). Thanks @berislavlopac
+- Fix a regression with unsafe packages for `--allow-unsafe`
+  ([#1788](https://github.com/jazzband/pip-tools/pull/1788)). Thanks @q0w
+
 ## 6.12.1 (2022-12-16)
 
 Bug Fixes:
