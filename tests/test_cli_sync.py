@@ -28,7 +28,7 @@ def test_run_as_module_sync():
         check=True,
     )
 
-    # Should have run pip-compile successfully.
+    # Should have run pip-sync successfully.
     assert result.stdout.startswith(b"Usage:")
     assert b"Synchronize virtual environment with" in result.stdout
 
@@ -69,7 +69,7 @@ def test_quiet_option_when_up_to_date(run, runner):
 def test_no_requirements_file(runner):
     """
     It should raise an error if there are no input files
-    or a requirements.txt file does not exist.
+    and a requirements.txt file does not exist.
     """
     out = runner.invoke(cli)
 
