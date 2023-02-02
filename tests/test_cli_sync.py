@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
+from pathlib import Path
 from unittest import mock
 
 import pytest
@@ -126,6 +127,31 @@ def test_merge_error(req_lines, should_raise, runner):
         assert "Incompatible requirements found" in out.stderr
     else:
         assert out.exit_code == 1
+
+
+@pytest.mark.parametrize(
+    "req_line",
+    (
+        "file:.",
+        "-e file:.",
+    ),
+)
+@mock.patch("piptools.sync.run")
+def test_merge_no_name_urls(run, req_line, runner):
+    """
+    Test sync succeeds when merging requirements that lack names.
+    """
+    reqs_paths = [
+        Path(name).absolute() for name in ("requirements.txt", "dev_requirements.txt")
+    ]
+
+    for reqs_path in reqs_paths:
+        with reqs_path.open("w") as req_out:
+            req_out.write(f"{req_line} \n")
+
+    out = runner.invoke(cli, [str(path) for path in reqs_paths])
+    assert out.exit_code == 0
+    assert run.call_count == 2
 
 
 @pytest.mark.parametrize(
