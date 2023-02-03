@@ -46,7 +46,7 @@ def install_req_from_line(
 ) -> InstallRequirement:
     parts = parse_req_from_line(name, comes_from)
     if base_package and base_dir and parts.requirement.name == base_package:
-        name = name.replace(base_package, base_dir)
+        name = name.replace(base_package, base_dir, 1)
         parts = parse_req_from_line(name, comes_from)
 
     return InstallRequirement(

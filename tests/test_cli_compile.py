@@ -2816,8 +2816,8 @@ def test_compile_recursive_extras(runner, tmp_path, current_resolver):
             version = "0.0.1"
             dependencies = ["small-fake-a"]
             [project.optional-dependencies]
-            test = ["small-fake-b"]
-            dev = ["foo[test]"]
+            footest = ["small-fake-b"]
+            dev = ["foo[footest]"]
             """
         )
     )
