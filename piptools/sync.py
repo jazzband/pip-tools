@@ -104,7 +104,11 @@ def merge(
                 if existing_ireq:
                     # NOTE: We check equality here since we can assume that the
                     # requirements are all pinned
-                    if ireq.specifier != existing_ireq.specifier:
+                    if (
+                        ireq.req
+                        and existing_ireq.req
+                        and ireq.specifier != existing_ireq.specifier
+                    ):
                         raise IncompatibleRequirements(ireq, existing_ireq)
 
             # TODO: Always pick the largest specifier in case of a conflict
