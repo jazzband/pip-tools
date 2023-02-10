@@ -939,6 +939,29 @@ def test_upgrade_packages_version_option_and_upgrade_no_existing_file(pip_conf, 
     assert "small-fake-b==0.1" in out.stderr
 
 
+def test_upgrade_packages_with_extra(pip_conf, make_package, runner):
+    """
+    piptools ignores extras on --upgrade-package/-P items if already constrained.
+    """
+    package_with_extra = make_package(
+        "package_with_extra",
+        extras_require={
+            "extra": ["small-fake-a==0.1"],
+        },
+    )
+
+    with open("requirements.in", "w") as req_in:
+        req_in.write(f"{package_with_extra}[extra]")
+
+    out = runner.invoke(
+        cli, ["--no-annotate", "--upgrade-package", "package_with_extra[extra]"]
+    )
+
+    assert out.exit_code == 0
+    assert "package_with_extra" in out.stderr
+    assert "small-fake-a==" in out.stderr
+
+
 def test_quiet_option(pip_conf, runner):
     with open("requirements.in", "w") as req_in:
         req_in.write("small-fake-a")
