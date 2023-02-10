@@ -115,6 +115,26 @@ def test_merge_urls(from_line):
     )
 
 
+@pytest.mark.parametrize(
+    "install_req",
+    (
+        "from_line",
+        "from_editable",
+    ),
+)
+def test_merge_no_name_urls(install_req, request):
+    install_req = request.getfixturevalue(install_req)
+    url = "file:///example.zip"
+    requirements = [
+        install_req(url),
+        install_req(url),
+    ]
+
+    assert Counter(requirements[1:]) == Counter(
+        merge(requirements, ignore_conflicts=False)
+    )
+
+
 def test_diff_should_do_nothing():
     installed = []  # empty env
     reqs = []  # no requirements
