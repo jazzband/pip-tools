@@ -939,7 +939,7 @@ def test_upgrade_packages_version_option_and_upgrade_no_existing_file(pip_conf, 
     assert "small-fake-b==0.1" in out.stderr
 
 
-def test_upgrade_packages_with_extra(pip_conf, make_package, runner):
+def test_upgrade_package_with_extra(pip_conf, make_package, runner):
     """
     piptools ignores extras on --upgrade-package/-P items if already constrained.
     """
