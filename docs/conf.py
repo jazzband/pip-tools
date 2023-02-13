@@ -22,7 +22,9 @@ copyright = f"The {author}"
 
 # The short X.Y version
 version = ".".join(
-    get_scm_version(local_scheme="no-local-version",).split(
+    get_scm_version(
+        local_scheme="no-local-version",
+    ).split(
         "."
     )[:3],
 )

@@ -293,7 +293,6 @@ def make_package(tmp_path):
     """
 
     def _make_package(name, version="0.1", install_requires=None, extras_require=None):
-
         if install_requires is None:
             install_requires = []
 
