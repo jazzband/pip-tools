@@ -248,7 +248,6 @@ class OutputWriter:
         markers: dict[str, Marker],
         hashes: dict[InstallRequirement, set[str]] | None,
     ) -> None:
-
         if not self.dry_run:
             dst_file = io.TextIOWrapper(
                 self.dst_file,
