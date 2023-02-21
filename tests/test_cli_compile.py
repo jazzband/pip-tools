@@ -939,27 +939,53 @@ def test_upgrade_packages_version_option_and_upgrade_no_existing_file(pip_conf, 
     assert "small-fake-b==0.1" in out.stderr
 
 
-def test_upgrade_package_with_extra(pip_conf, make_package, runner):
+def test_upgrade_package_with_extra(runner, make_package, make_sdist, tmpdir):
     """
     piptools ignores extras on --upgrade-package/-P items if already constrained.
     """
-    package_with_extra = make_package(
-        "package_with_extra",
-        extras_require={
-            "extra": ["small-fake-a==0.1"],
-        },
+    test_package_1 = make_package(
+        "test_package_1", version="0.1", extras_require={"more": "test_package_2"}
     )
+    test_package_2 = make_package(
+        "test_package_2",
+        version="0.1",
+    )
+    dists_dir = tmpdir / "dists"
+    for pkg in (test_package_1, test_package_2):
+        make_sdist(pkg, dists_dir)
 
+    # Constrain our requirement with an extra
     with open("requirements.in", "w") as req_in:
-        req_in.write(f"{package_with_extra}[extra]")
+        req_in.write(f"test-package-1[more]")
 
+    # Run update on test-package-1[more] -- this should be equivalent to running update on test-package-1
     out = runner.invoke(
-        cli, ["--no-annotate", "--upgrade-package", "package_with_extra[extra]"]
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--find-links",
+            str(dists_dir),
+            "--no-annotate",
+            "--no-header",
+            "--no-emit-options",
+            "--no-build-isolation",
+            "--upgrade-package",
+            "test-package-1[more]"
+        ]
     )
 
-    assert out.exit_code == 0
-    assert "package_with_extra" in out.stderr
-    assert "small-fake-a==" in out.stderr
+    assert out.exit_code == 0, out
+    assert (
+        dedent(
+            f"""\
+            test-package-1[more]==0.1
+            test-package-2==0.1
+            """
+        )
+        == out.stdout
+    )
 
 
 def test_quiet_option(pip_conf, runner):
