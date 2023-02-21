@@ -2080,7 +2080,6 @@ def test_preserve_compiled_prerelease_version(pip_conf, runner):
 
 @backtracking_resolver_only
 def test_ignore_compiled_unavailable_version(pip_conf, runner, current_resolver):
-
     with open("requirements.in", "w") as req_in:
         req_in.write("small-fake-a")
 

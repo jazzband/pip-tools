@@ -3,13 +3,20 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
-from pathlib import Path
 from unittest import mock
 
 import pytest
 from pip._vendor.packaging.version import Version
 
-from piptools.scripts.sync import DEFAULT_REQUIREMENTS_FILE, cli
+from piptools.scripts import sync
+from piptools.scripts.sync import cli
+
+
+@pytest.fixture(autouse=True)
+def _temp_default_reqs(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        sync, "DEFAULT_REQUIREMENTS_FILE", str(tmp_path / "requirements.txt")
+    )
 
 
 def test_run_as_module_sync():
@@ -21,7 +28,7 @@ def test_run_as_module_sync():
         check=True,
     )
 
-    # Should have run pip-compile successfully.
+    # Should have run pip-sync successfully.
     assert result.stdout.startswith(b"Usage:")
     assert b"Synchronize virtual environment with" in result.stdout
 
@@ -30,7 +37,7 @@ def test_run_as_module_sync():
 def test_quiet_option(run, runner):
     """sync command can be run with `--quiet` or `-q` flag."""
 
-    with open("requirements.txt", "w") as req_in:
+    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as req_in:
         req_in.write("six==1.10.0")
 
     out = runner.invoke(cli, ["-q"])
@@ -48,7 +55,7 @@ def test_quiet_option_when_up_to_date(run, runner):
     """
     Sync should output nothing when everything is up to date and quiet option is set.
     """
-    with open("requirements.txt", "w"):
+    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w"):
         pass
 
     with mock.patch("piptools.sync.diff", return_value=(set(), set())):
@@ -62,7 +69,7 @@ def test_quiet_option_when_up_to_date(run, runner):
 def test_no_requirements_file(runner):
     """
     It should raise an error if there are no input files
-    or a requirements.txt file does not exist.
+    and a requirements.txt file does not exist.
     """
     out = runner.invoke(cli)
 
@@ -70,30 +77,29 @@ def test_no_requirements_file(runner):
     assert out.exit_code == 2
 
 
-def test_input_files_with_dot_in_extension(runner):
+def test_input_files_with_dot_in_extension(runner, tmp_path):
     """
     It should raise an error if some of the input files have .in extension.
     """
-    with open("requirements.in", "w") as req_in:
-        req_in.write("six==1.10.0")
+    req_in = tmp_path / "requirements.in"
+    req_in.write_text("six==1.10.0")
 
-    out = runner.invoke(cli, ["requirements.in"])
+    out = runner.invoke(cli, [str(req_in)])
 
     assert "ERROR: Some input files have the .in extension" in out.stderr
     assert out.exit_code == 2
 
 
-def test_force_files_with_dot_in_extension(runner):
+def test_force_files_with_dot_in_extension(runner, tmp_path):
     """
     It should print a warning and sync anyway if some of the input files
     have .in extension.
     """
-
-    with open("requirements.in", "w") as req_in:
-        req_in.write("six==1.10.0")
+    req_in = tmp_path / "requirements.in"
+    req_in.write_text("six==1.10.0")
 
     with mock.patch("piptools.sync.run"):
-        out = runner.invoke(cli, ["requirements.in", "--force"])
+        out = runner.invoke(cli, [str(req_in), "--force"])
 
     assert "WARNING: Some input files have the .in extension" in out.stderr
     assert out.exit_code == 0
@@ -115,7 +121,7 @@ def test_merge_error(req_lines, should_raise, runner):
     It should not raise an error if otherwise incompatible requirements
     are isolated by exclusive environment markers.
     """
-    with open("requirements.txt", "w") as req_in:
+    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as req_in:
         for line in req_lines:
             req_in.write(line + "\n")
 
@@ -137,17 +143,16 @@ def test_merge_error(req_lines, should_raise, runner):
     ),
 )
 @mock.patch("piptools.sync.run")
-def test_merge_no_name_urls(run, req_line, runner):
+def test_merge_no_name_urls(run, req_line, runner, tmp_path):
     """
     Test sync succeeds when merging requirements that lack names.
     """
     reqs_paths = [
-        Path(name).absolute() for name in ("requirements.txt", "dev_requirements.txt")
+        (tmp_path / name) for name in ("requirements.txt", "dev_requirements.txt")
     ]
 
     for reqs_path in reqs_paths:
-        with reqs_path.open("w") as req_out:
-            req_out.write(f"{req_line} \n")
+        reqs_path.write_text(f"{req_line} \n")
 
     out = runner.invoke(cli, [str(path) for path in reqs_paths])
     assert out.exit_code == 0
@@ -193,7 +198,7 @@ def test_pip_install_flags(run, cli_flags, expected_install_flags, runner):
     """
     Test the cli flags have to be passed to the pip install command.
     """
-    with open("requirements.txt", "w") as req_in:
+    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as req_in:
         req_in.write("six==1.10.0")
 
     runner.invoke(cli, cli_flags)
@@ -222,7 +227,7 @@ def test_pip_install_flags_in_requirements_file(run, runner, install_flags):
     """
     Test the options from requirements.txt file pass to the pip install command.
     """
-    with open(DEFAULT_REQUIREMENTS_FILE, "w") as reqs:
+    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as reqs:
         reqs.write(" ".join(install_flags) + "\n")
         reqs.write("six==1.10.0")
 
@@ -240,7 +245,7 @@ def test_sync_ask_declined(run, runner):
     """
     Make sure nothing is installed if the confirmation is declined
     """
-    with open("requirements.txt", "w") as req_in:
+    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as req_in:
         req_in.write("small-fake-a==1.10.0")
 
     runner.invoke(cli, ["--ask"], input="n\n")
@@ -254,7 +259,7 @@ def test_sync_ask_accepted(run, runner):
     Make sure pip is called when the confirmation is accepted (even if
     --dry-run is given)
     """
-    with open("requirements.txt", "w") as req_in:
+    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as req_in:
         req_in.write("small-fake-a==1.10.0")
 
     runner.invoke(cli, ["--ask", "--dry-run"], input="y\n")
@@ -266,7 +271,7 @@ def test_sync_dry_run_returns_non_zero_exit_code(runner):
     """
     Make sure non-zero exit code is returned when --dry-run is given.
     """
-    with open("requirements.txt", "w") as req_in:
+    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as req_in:
         req_in.write("small-fake-a==1.10.0")
 
     out = runner.invoke(cli, ["--dry-run"])
@@ -283,7 +288,7 @@ def test_python_executable_option(
     """
     Make sure sync command can run with `--python-executable` option.
     """
-    with open("requirements.txt", "w") as req_in:
+    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as req_in:
         req_in.write("small-fake-a==1.10.0")
 
     custom_executable = os.path.abspath(sys.executable)
@@ -312,7 +317,7 @@ def test_python_executable_option(
     ),
 )
 def test_invalid_python_executable(runner, python_executable):
-    with open("requirements.txt", "w") as req_in:
+    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as req_in:
         req_in.write("small-fake-a==1.10.0")
 
     out = runner.invoke(cli, ["--python-executable", python_executable])
@@ -323,20 +328,19 @@ def test_invalid_python_executable(runner, python_executable):
 
 @mock.patch("piptools.scripts.sync.get_pip_version_for_python_executable")
 def test_invalid_pip_version_in_python_executable(
-    get_pip_version_for_python_executable, runner
+    get_pip_version_for_python_executable, runner, tmp_path
 ):
-    with open("requirements.txt", "w") as req_in:
+    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as req_in:
         req_in.write("small-fake-a==1.10.0")
 
-    custom_executable = os.path.abspath("custom_executable")
-    with open(custom_executable, "w") as exec_file:
-        exec_file.write("")
+    custom_executable = tmp_path / "custom_executable"
+    custom_executable.write_text("")
 
-    os.chmod(custom_executable, 0o700)
+    custom_executable.chmod(0o700)
 
     get_pip_version_for_python_executable.return_value = Version("19.1")
 
-    out = runner.invoke(cli, ["--python-executable", custom_executable])
+    out = runner.invoke(cli, ["--python-executable", str(custom_executable)])
     assert out.exit_code == 2, out
     message = (
         "Target python executable '{}' has pip version 19.1 installed. "
@@ -350,7 +354,7 @@ def test_default_python_executable_option(run, runner):
     """
     Make sure sys.executable is used when --python-executable is not provided.
     """
-    with open("requirements.txt", "w") as req_in:
+    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as req_in:
         req_in.write("small-fake-a==1.10.0")
 
     runner.invoke(cli)
