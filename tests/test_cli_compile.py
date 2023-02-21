@@ -958,7 +958,8 @@ def test_upgrade_package_with_extra(runner, make_package, make_sdist, tmpdir):
     with open("requirements.in", "w") as req_in:
         req_in.write("test-package-1[more]")
 
-    # Run update on test-package-1[more] -- this should be equivalent to running update on test-package-1
+    # Run update on test-package-1[more] -- this should be equivalent
+    # to running an update on test-package-1
     out = runner.invoke(
         cli,
         [
