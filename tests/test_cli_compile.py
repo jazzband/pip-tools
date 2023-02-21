@@ -956,7 +956,7 @@ def test_upgrade_package_with_extra(runner, make_package, make_sdist, tmpdir):
 
     # Constrain our requirement with an extra
     with open("requirements.in", "w") as req_in:
-        req_in.write(f"test-package-1[more]")
+        req_in.write("test-package-1[more]")
 
     # Run update on test-package-1[more] -- this should be equivalent to running update on test-package-1
     out = runner.invoke(
@@ -979,7 +979,7 @@ def test_upgrade_package_with_extra(runner, make_package, make_sdist, tmpdir):
     assert out.exit_code == 0, out
     assert (
         dedent(
-            f"""\
+            """\
             test-package-1[more]==0.1
             test-package-2==0.1
             """
