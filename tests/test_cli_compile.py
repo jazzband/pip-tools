@@ -972,8 +972,8 @@ def test_upgrade_package_with_extra(runner, make_package, make_sdist, tmpdir):
             "--no-emit-options",
             "--no-build-isolation",
             "--upgrade-package",
-            "test-package-1[more]"
-        ]
+            "test-package-1[more]",
+        ],
     )
 
     assert out.exit_code == 0, out
