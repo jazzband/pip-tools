@@ -1,3 +1,12 @@
+## 6.12.3 (2023-03-01)
+
+Bug Fixes:
+
+- Remove extras from user-supplied constraints in backtracking resolver
+  ([#1808](https://github.com/jazzband/pip-tools/pull/1808)). Thanks @thomdixon
+- Fix for sync error when the ireqs being merged have no names
+  ([#1802](https://github.com/jazzband/pip-tools/pull/1802)). Thanks @richafrank
+
 ## 6.12.2 (2022-12-25)
 
 Bug Fixes:

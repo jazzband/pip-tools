@@ -417,7 +417,7 @@ Sample ``.pre-commit-config.yaml``:
 
     repos:
       - repo: https://github.com/jazzband/pip-tools
-        rev: 6.12.0
+        rev: 6.12.3
         hooks:
           - id: pip-compile
 
@@ -427,7 +427,7 @@ You might want to customize ``pip-compile`` args by configuring ``args`` and/or 
 
     repos:
       - repo: https://github.com/jazzband/pip-tools
-        rev: 6.12.0
+        rev: 6.12.3
         hooks:
           - id: pip-compile
             files: ^requirements/production\.(in|txt)$
@@ -439,7 +439,7 @@ If you have multiple requirement files make sure you create a hook for each file
 
     repos:
       - repo: https://github.com/jazzband/pip-tools
-        rev: 6.12.0
+        rev: 6.12.3
         hooks:
           - id: pip-compile
             name: pip-compile setup.py
@@ -539,8 +539,8 @@ needed, the same way it would be done for regular ``pip`` cross-environment usag
 
 If the generated ``requirements.txt`` remains exactly the same for all Python
 environments, then it can be used across Python environments safely. **But** users
-should be careful as any package update can introduce environment-dependant
-dependencies, making any newly generated ``requirements.txt`` environment-dependant too.
+should be careful as any package update can introduce environment-dependent
+dependencies, making any newly generated ``requirements.txt`` environment-dependent too.
 As a general rule, it's advised that users should still always execute ``pip-compile``
 on each targeted Python environment to avoid issues.
 

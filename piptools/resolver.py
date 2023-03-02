@@ -520,6 +520,8 @@ class BacktrackingResolver(BaseResolver):
         ), get_build_tracker() as build_tracker, global_tempdir_manager(), indent_log():
             # Mark direct/primary/user_supplied packages
             for ireq in self.constraints:
+                if ireq.constraint:
+                    ireq.extras = set()  # pip does not support extras in constraints
                 ireq.user_supplied = True
 
             # Pass compiled requirements from `requirements.txt`
@@ -535,7 +537,7 @@ class BacktrackingResolver(BaseResolver):
                     if not primary_ireq.specifier.contains(version, prereleases):
                         continue
 
-                ireq.extras = set()  # pip does not support extras in constraints
+                ireq.extras = set()
                 ireq.constraint = True
                 ireq.user_supplied = False
                 compatible_existing_constraints[key_from_ireq(ireq)] = ireq
