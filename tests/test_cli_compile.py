@@ -858,7 +858,11 @@ def test_upgrade_packages_option_no_existing_file(pip_conf, runner):
     assert out.exit_code == 0
     assert "small-fake-a==0.2" in out.stderr.splitlines()
     assert "small-fake-b==0.3" in out.stderr.splitlines()
-    assert "WARNING: the output file requirements.txt exists but is empty" not in out.stderr
+    assert (
+        "WARNING: the output file requirements.txt exists but is empty"
+        not in out.stderr
+    )
+
 
 def test_upgrade_packages_option_empty_existing_file_warning(pip_conf, runner):
     """
@@ -875,7 +879,6 @@ def test_upgrade_packages_option_empty_existing_file_warning(pip_conf, runner):
     assert out.exit_code == 0
     assert "small-fake-a==0.2" in out.stderr.splitlines()
     assert "WARNING: the output file requirements.txt exists but is empty" in out.stderr
-
 
 
 @pytest.mark.parametrize(
