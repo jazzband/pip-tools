@@ -441,6 +441,15 @@ def cli(
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified
     # (= default invocation)
     if not upgrade and os.path.exists(output_file.name):
+        if upgrade_install_reqs and os.path.getsize(output_file.name) == 0:
+            log.warning(
+                f"WARNING: the output file {output_file.name} exists but is empty. "
+                "Pip-tools cannot upgrade only specific packages (using -P/--upgrade-package) "
+                "without an existing pin file to provide constraints. "
+                "This often occurs if you redirect standard output to your output file, "
+                "as any existing content is truncated."
+            )
+
         # Use a temporary repository to ensure outdated(removed) options from
         # existing requirements.txt wouldn't get into the current repository.
         tmp_repository = PyPIRepository(pip_args, cache_dir=cache_dir)
