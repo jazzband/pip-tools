@@ -424,6 +424,8 @@ def cli(
         pip_args.append("--no-build-isolation")
     if resolver_name == "legacy":
         pip_args.extend(["--use-deprecated", "legacy-resolver"])
+    if resolver_name == "backtracking" and cache_dir:
+        pip_args.extend(["--cache-dir", cache_dir])
     pip_args.extend(right_args)
 
     repository: BaseRepository
