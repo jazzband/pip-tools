@@ -36,6 +36,7 @@ jobs:
   test:
     name: ${{ matrix.os }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
     runs-on: ${{ matrix.os }}-latest
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
       matrix:
@@ -52,10 +53,12 @@ jobs:
         pip-version:
           - "latest"
           - "previous"
+        experimental: [false]
         include:
           - os: Ubuntu
             python-version: 3.7
             pip-version: main
+            experimental: true
     env:
       TOXENV: pip${{ matrix.pip-version }}-coverage
     steps:
