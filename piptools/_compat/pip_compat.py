@@ -4,6 +4,7 @@ import optparse
 from typing import Callable, Iterable, Iterator, cast
 
 import pip
+from pip._internal.cache import WheelCache
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement
@@ -74,3 +75,10 @@ else:
             for req in reqs
             if not req.marker or req.marker.evaluate({"extra": None})
         ]
+
+
+def create_wheel_cache(cache_dir: str, format_control: str | None = None) -> WheelCache:
+    kwargs: dict[str, str | None] = {"cache_dir": cache_dir}
+    if PIP_VERSION[:2] <= (23, 0):
+        kwargs["format_control"] = format_control
+    return WheelCache(**kwargs)
