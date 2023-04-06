@@ -2809,7 +2809,7 @@ def test_failure_of_legacy_resolver_prompts_for_backtracking(
         assert "Consider using backtracking resolver with" in out.stderr
     elif current_resolver == "backtracking":
         assert out.exit_code == 0, out
-    else:  # pragma: no cover
+    else:
         raise AssertionError("unreachable")
 
 

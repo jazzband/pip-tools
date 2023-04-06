@@ -1,8 +1,8 @@
 [run]
-branch = True
-source = .
+plugins = covdefaults
 omit =
     piptools/_compat/*
 
 [report]
 include = piptools/*, tests/*
+fail_under = 99
