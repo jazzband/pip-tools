@@ -8,10 +8,7 @@ from pip._internal.index.package_finder import PackageFinder
 from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement
 from pip._internal.req import parse_requirements as _parse_requirements
-from pip._internal.req.constructors import (
-    install_req_from_parsed_requirement,
-    parse_req_from_line,
-)
+from pip._internal.req.constructors import install_req_from_parsed_requirement
 from pip._vendor.packaging.version import parse as parse_version
 from pip._vendor.pkg_resources import Requirement
 
@@ -36,26 +33,6 @@ def parse_requirements(
         filename, session, finder=finder, options=options, constraint=constraint
     ):
         yield install_req_from_parsed_requirement(parsed_req, isolated=isolated)
-
-
-def install_req_from_line(
-    name: str,
-    comes_from: str | InstallRequirement | None = None,
-    base_package: str | None = None,
-    base_dir: str | None = None,
-) -> InstallRequirement:
-    parts = parse_req_from_line(name, comes_from)
-    if base_package and base_dir and parts.requirement.name == base_package:
-        name = name.replace(base_package, base_dir, 1)
-        parts = parse_req_from_line(name, comes_from)
-
-    return InstallRequirement(
-        parts.requirement,
-        comes_from,
-        link=parts.link,
-        markers=parts.markers,
-        extras=parts.extras,
-    )
 
 
 # The Distribution interface has changed between pkg_resources and

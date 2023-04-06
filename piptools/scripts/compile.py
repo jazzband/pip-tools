@@ -13,9 +13,10 @@ from build.util import project_wheel_metadata
 from click.utils import LazyFile, safecall
 from pip._internal.commands import create_command
 from pip._internal.req import InstallRequirement
+from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 
-from .._compat import install_req_from_line, parse_requirements
+from .._compat import parse_requirements
 from ..cache import DependencyCache
 from ..exceptions import NoCandidateFound, PipToolsError
 from ..locations import CACHE_DIR
@@ -29,6 +30,7 @@ from ..utils import (
     drop_extras,
     is_pinned_requirement,
     key_from_ireq,
+    parse_requirements_from_wheel_metadata,
 )
 from ..writer import OutputWriter
 
@@ -497,19 +499,13 @@ def cli(
                 log.error(str(e))
                 log.error(f"Failed to parse {os.path.abspath(src_file)}")
                 sys.exit(2)
-            package_name = metadata.get_all("Name")[0]
-            comes_from = f"{package_name} ({src_file})"
+
             constraints.extend(
-                [
-                    install_req_from_line(
-                        req,
-                        comes_from,
-                        package_name,
-                        os.path.dirname(os.path.abspath(src_file)),
-                    )
-                    for req in metadata.get_all("Requires-Dist") or []
-                ]
+                parse_requirements_from_wheel_metadata(
+                    metadata=metadata, src_file=src_file
+                )
             )
+
             if all_extras:
                 if extras:
                     msg = "--extra has no effect when used with --all-extras"
