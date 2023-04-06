@@ -551,11 +551,11 @@ dependencies, making any newly generated ``requirements.txt`` environment-depend
 As a general rule, it's advised that users should still always execute ``pip-compile``
 on each targeted Python environment to avoid issues.
 
-There is a feature (`--override-environment`) that can be used to
+There is a feature (``--override-environment``) that can be used to
 specify the environment when gathering dependencies, allowing for cross-environment
 fetching. However, a different ``requirements.txt`` must still be generated per
-environment. It is recommended to override all keys in `PEP 508` when targetting a
-different environment so the environment is fully defined.
+environment. It is recommended to override all keys in `PEP 508 environment markers`_
+when targetting a different environment so the environment is fully defined.
 
 .. _PEP 508 environment markers: https://www.python.org/dev/peps/pep-0508/#environment-markers
 
