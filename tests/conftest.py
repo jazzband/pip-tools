@@ -23,7 +23,7 @@ from pip._internal.req.constructors import (
 from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Requirement
 
-from piptools._compat.pip_compat import uses_pkg_resources
+from piptools._compat.pip_compat import PIP_VERSION, uses_pkg_resources
 from piptools.cache import DependencyCache
 from piptools.exceptions import NoCandidateFound
 from piptools.logging import log
@@ -216,7 +216,15 @@ def base_resolver(depcache):
 
 @pytest.fixture
 def from_line():
-    return install_req_from_line
+    def _from_line(*args, **kwargs):
+        if PIP_VERSION[:2] <= (23, 0):
+            hash_options = kwargs.pop("hash_options", {})
+            options = kwargs.pop("options", {})
+            options["hashes"] = hash_options
+            kwargs["options"] = options
+        return install_req_from_line(*args, **kwargs)
+
+    return _from_line
 
 
 @pytest.fixture
@@ -293,7 +301,6 @@ def make_package(tmp_path):
     """
 
     def _make_package(name, version="0.1", install_requires=None, extras_require=None):
-
         if install_requires is None:
             install_requires = []
 

@@ -21,6 +21,7 @@ from pip._vendor.packaging.utils import canonicalize_name
 from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Distribution, Requirement, get_distribution
 
+from piptools._compat import PIP_VERSION
 from piptools.subprocess_utils import run_python_snippet
 
 if TYPE_CHECKING:
@@ -462,7 +463,6 @@ def copy_install_requirement(
         "markers": template.markers,
         "use_pep517": template.use_pep517,
         "isolated": template.isolated,
-        "install_options": template.install_options,
         "global_options": template.global_options,
         "hash_options": template.hash_options,
         "constraint": template.constraint,
@@ -470,6 +470,9 @@ def copy_install_requirement(
         "user_supplied": template.user_supplied,
     }
     kwargs.update(extra_kwargs)
+
+    if PIP_VERSION[:2] <= (23, 0):
+        kwargs["install_options"] = template.install_options
 
     # Original link does not belong to install requirements constructor,
     # pop it now to update later.

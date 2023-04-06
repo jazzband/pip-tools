@@ -231,13 +231,11 @@ def test_dedup():
 def test_get_hashes_from_ireq(from_line):
     ireq = from_line(
         "pytz==2017.2",
-        options={
-            "hashes": {
-                "sha256": [
-                    "d1d6729c85acea5423671382868627129432fba9a89ecbb248d8d1c7a9f01c67",
-                    "f5c056e8f62d45ba8215e5cb8f50dfccb198b4b9fbea8500674f3443e4689589",
-                ]
-            }
+        hash_options={
+            "sha256": [
+                "d1d6729c85acea5423671382868627129432fba9a89ecbb248d8d1c7a9f01c67",
+                "f5c056e8f62d45ba8215e5cb8f50dfccb198b4b9fbea8500674f3443e4689589",
+            ]
         },
     )
     expected = {

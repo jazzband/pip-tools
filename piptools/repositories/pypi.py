@@ -30,6 +30,7 @@ from pip._vendor.packaging.tags import Tag
 from pip._vendor.packaging.version import _BaseVersion
 from pip._vendor.requests import RequestException, Session
 
+from .._compat import create_wheel_cache
 from ..exceptions import NoCandidateFound
 from ..logging import log
 from ..utils import (
@@ -234,7 +235,10 @@ class PyPIRepository(BaseRepository):
                 os.makedirs(download_dir, exist_ok=True)
 
             with global_tempdir_manager():
-                wheel_cache = WheelCache(self._cache_dir, self.options.format_control)
+                wheel_cache = create_wheel_cache(
+                    cache_dir=self._cache_dir,
+                    format_control=self.options.format_control,
+                )
                 self._dependencies_cache[ireq] = self.resolve_reqs(
                     download_dir, ireq, wheel_cache
                 )

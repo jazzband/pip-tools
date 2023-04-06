@@ -8,7 +8,6 @@ from itertools import chain, count, groupby
 from typing import Any, Container, DefaultDict, Iterable, Iterator
 
 import click
-from pip._internal.cache import WheelCache
 from pip._internal.exceptions import DistributionNotFound
 from pip._internal.operations.build.build_tracker import (
     get_build_tracker,
@@ -28,6 +27,7 @@ from pip._vendor.resolvelib.resolvers import ResolutionImpossible, Result
 from piptools.cache import DependencyCache
 from piptools.repositories.base import BaseRepository
 
+from ._compat import create_wheel_cache
 from .exceptions import PipToolsError
 from .logging import log
 from .utils import (
@@ -520,6 +520,8 @@ class BacktrackingResolver(BaseResolver):
         ), get_build_tracker() as build_tracker, global_tempdir_manager(), indent_log():
             # Mark direct/primary/user_supplied packages
             for ireq in self.constraints:
+                if ireq.constraint:
+                    ireq.extras = set()  # pip does not support extras in constraints
                 ireq.user_supplied = True
 
             # Pass compiled requirements from `requirements.txt`
@@ -535,13 +537,14 @@ class BacktrackingResolver(BaseResolver):
                     if not primary_ireq.specifier.contains(version, prereleases):
                         continue
 
-                ireq.extras = set()  # pip does not support extras in constraints
+                ireq.extras = set()
                 ireq.constraint = True
                 ireq.user_supplied = False
                 compatible_existing_constraints[key_from_ireq(ireq)] = ireq
 
-            wheel_cache = WheelCache(
-                self.options.cache_dir, self.options.format_control
+            wheel_cache = create_wheel_cache(
+                cache_dir=self.options.cache_dir,
+                format_control=self.options.format_control,
             )
 
             temp_dir = TempDirectory(

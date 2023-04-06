@@ -939,6 +939,56 @@ def test_upgrade_packages_version_option_and_upgrade_no_existing_file(pip_conf, 
     assert "small-fake-b==0.1" in out.stderr
 
 
+def test_upgrade_package_with_extra(runner, make_package, make_sdist, tmpdir):
+    """
+    piptools ignores extras on --upgrade-package/-P items if already constrained.
+    """
+    test_package_1 = make_package(
+        "test_package_1", version="0.1", extras_require={"more": "test_package_2"}
+    )
+    test_package_2 = make_package(
+        "test_package_2",
+        version="0.1",
+    )
+    dists_dir = tmpdir / "dists"
+    for pkg in (test_package_1, test_package_2):
+        make_sdist(pkg, dists_dir)
+
+    # Constrain our requirement with an extra
+    with open("requirements.in", "w") as req_in:
+        req_in.write("test-package-1[more]")
+
+    # Run update on test-package-1[more] -- this should be equivalent
+    # to running an update on test-package-1
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--find-links",
+            str(dists_dir),
+            "--no-annotate",
+            "--no-header",
+            "--no-emit-options",
+            "--no-build-isolation",
+            "--upgrade-package",
+            "test-package-1[more]",
+        ],
+    )
+
+    assert out.exit_code == 0, out
+    assert (
+        dedent(
+            """\
+            test-package-1[more]==0.1
+            test-package-2==0.1
+            """
+        )
+        == out.stdout
+    )
+
+
 def test_quiet_option(pip_conf, runner):
     with open("requirements.in", "w") as req_in:
         req_in.write("small-fake-a")
@@ -2030,7 +2080,6 @@ def test_preserve_compiled_prerelease_version(pip_conf, runner):
 
 @backtracking_resolver_only
 def test_ignore_compiled_unavailable_version(pip_conf, runner, current_resolver):
-
     with open("requirements.in", "w") as req_in:
         req_in.write("small-fake-a")
 
@@ -2804,6 +2853,21 @@ def test_raise_error_when_input_and_output_filenames_are_matched(
         f"Error: input and output filenames must not be matched: {req_out_path}"
     )
     assert expected_error in out.stderr.splitlines()
+
+
+@pytest.mark.network
+@backtracking_resolver_only
+def test_pass_pip_cache_to_pip_args(tmpdir, runner, current_resolver):
+    cache_dir = tmpdir.mkdir("cache_dir")
+
+    with open("requirements.in", "w") as fp:
+        fp.write("six==1.15.0")
+
+    out = runner.invoke(
+        cli, ["--cache-dir", str(cache_dir), "--resolver", current_resolver]
+    )
+    assert out.exit_code == 0
+    assert os.listdir(os.path.join(str(cache_dir), "http"))
 
 
 @backtracking_resolver_only
