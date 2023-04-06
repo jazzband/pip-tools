@@ -15,7 +15,6 @@ from pip._vendor.pkg_resources import Requirement
 
 PIP_VERSION = tuple(map(int, parse_version(pip.__version__).base_version.split(".")))
 
-
 __all__ = [
     "dist_requires",
     "uses_pkg_resources",

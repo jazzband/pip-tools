@@ -2868,3 +2868,39 @@ def test_pass_pip_cache_to_pip_args(tmpdir, runner, current_resolver):
     )
     assert out.exit_code == 0
     assert os.listdir(os.path.join(str(cache_dir), "http"))
+
+
+@backtracking_resolver_only
+def test_compile_recursive_extras(runner, tmp_path, current_resolver):
+    (tmp_path / "pyproject.toml").write_text(
+        dedent(
+            """
+            [project]
+            name = "foo"
+            version = "0.0.1"
+            dependencies = ["small-fake-a"]
+            [project.optional-dependencies]
+            footest = ["small-fake-b"]
+            dev = ["foo[footest]"]
+            """
+        )
+    )
+    out = runner.invoke(
+        cli,
+        [
+            "--no-header",
+            "--no-annotate",
+            "--no-emit-find-links",
+            "--extra",
+            "dev",
+            "--find-links",
+            os.fspath(MINIMAL_WHEELS_PATH),
+            os.fspath(tmp_path / "pyproject.toml"),
+        ],
+    )
+    expected = rf"""foo @ {tmp_path.as_uri()}
+small-fake-a==0.2
+small-fake-b==0.3
+"""
+    assert out.exit_code == 0
+    assert expected == out.stderr
