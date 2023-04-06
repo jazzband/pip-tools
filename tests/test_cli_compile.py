@@ -2925,3 +2925,121 @@ small-fake-b==0.3
 """
     assert out.exit_code == 0
     assert expected == out.stderr
+
+
+@pytest.mark.parametrize(
+    "platform",
+    (
+        "linux",
+        "darwin",
+    ),
+)
+def test_cross_fetch_top_level(fake_dists, runner, platform):
+    """
+    test passing `--override-environment` evaluates top level
+    requirements correctly.
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write('small-fake-a==0.1 ; sys_platform == "darwin"\n')
+        req_in.write('small-fake-b==0.2 ; sys_platform == "linux"\n')
+
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--find-links",
+            fake_dists,
+            "--no-annotate",
+            "--no-emit-options",
+            "--no-header",
+            "--override-environment",
+            "sys_platform",
+            platform,
+        ],
+    )
+
+    if platform == "darwin":
+        expected_output = dedent(
+            """\
+            small-fake-a==0.1 ; sys_platform == "darwin"
+            """
+        )
+    elif platform == "linux":
+        expected_output = dedent(
+            """\
+            small-fake-b==0.2 ; sys_platform == "linux"
+            """
+        )
+
+    assert out.exit_code == 0, out
+    assert expected_output == out.stdout
+
+
+@pytest.mark.network
+@pytest.mark.parametrize(
+    "platform",
+    (
+        "linux",
+        "darwin",
+    ),
+)
+def test_cross_fetch_transitive_deps(
+    runner, make_package, make_wheel, tmpdir, platform
+):
+    """
+    test passing `--override-environment` selects the correct
+    transitive dependencies.
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write("package-b\n")
+
+    package_a = make_package("package-a", version="1.0")
+    package_b = make_package(
+        "package-b",
+        version="1.0",
+        install_requires=['package-a ; sys_platform == "darwin"'],
+    )
+
+    dists_dir = tmpdir / "dists"
+    for pkg in [package_a, package_b]:
+        make_wheel(pkg, dists_dir)
+
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--find-links",
+            dists_dir,
+            "--no-annotate",
+            "--no-emit-options",
+            "--no-header",
+            "--override-environment",
+            "sys_platform",
+            platform,
+        ],
+    )
+
+    print(out.stdout)
+
+    expected_output = dedent(
+        """\
+        package-b==1.0
+        """
+    )
+
+    if platform == "darwin":
+        expected_output = (
+            dedent(
+                """\
+            package-a==1.0
+            """
+            )
+            + expected_output
+        )
+
+    assert out.exit_code == 0, out
+    assert expected_output == out.stdout

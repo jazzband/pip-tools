@@ -539,7 +539,7 @@ etc.). For an exact definition, refer to the possible combinations of `PEP 508
 environment markers`_.
 
 As the resulting ``requirements.txt`` can differ for each environment, users must
-execute ``pip-compile`` **on each Python environment separately** to generate a
+execute ``pip-compile`` **for each Python environment separately** to generate a
 ``requirements.txt`` valid for each said environment.  The same ``requirements.in`` can
 be used as the source file for all environments, using `PEP 508 environment markers`_ as
 needed, the same way it would be done for regular ``pip`` cross-environment usage.
@@ -550,6 +550,12 @@ should be careful as any package update can introduce environment-dependent
 dependencies, making any newly generated ``requirements.txt`` environment-dependent too.
 As a general rule, it's advised that users should still always execute ``pip-compile``
 on each targeted Python environment to avoid issues.
+
+There is a feature (`--override-environment`) that can be used to
+specify the environment when gathering dependencies, allowing for cross-environment
+fetching. However, a different ``requirements.txt`` must still be generated per
+environment. It is recommended to override all keys in `PEP 508` when targetting a
+different environment so the environment is fully defined.
 
 .. _PEP 508 environment markers: https://www.python.org/dev/peps/pep-0508/#environment-markers
 

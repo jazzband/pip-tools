@@ -302,6 +302,13 @@ def _determine_linesep(
     help="Specify a package to consider unsafe; may be used more than once. "
     f"Replaces default unsafe packages: {', '.join(sorted(UNSAFE_PACKAGES))}",
 )
+@click.option(
+    "--override-environment",
+    multiple=True,
+    type=(str, str),
+    help="Specify an environment marker to override."
+    "This can be used to fetch requirements for a different platform",
+)
 def cli(
     ctx: click.Context,
     verbose: int,
@@ -340,6 +347,7 @@ def cli(
     emit_index_url: bool,
     emit_options: bool,
     unsafe_package: tuple[str, ...],
+    override_environment: tuple[tuple[str, str], ...],
 ) -> None:
     """
     Compiles requirements.txt from requirements.in, pyproject.toml, setup.cfg,
@@ -428,6 +436,34 @@ def cli(
     if resolver_name == "backtracking" and cache_dir:
         pip_args.extend(["--cache-dir", cache_dir])
     pip_args.extend(right_args)
+
+    env_dict = dict(override_environment)
+    if len(env_dict) > 0:
+        # Since the environment is overriden globally, handle it here in the
+        # top level instead of within the resolver.
+        import pip._vendor.packaging.markers
+
+        default_env = pip._vendor.packaging.markers.default_environment()
+
+        def overriden_environment() -> dict[str, str]:
+            return {
+                k: env_dict.get(k, default_env[k])
+                for k in [
+                    "implementation_name",
+                    "implementation_version",
+                    "os_name",
+                    "platform_machine",
+                    "platform_release",
+                    "platform_system",
+                    "platform_version",
+                    "python_full_version",
+                    "platform_python_implementation",
+                    "python_version",
+                    "sys_platform",
+                ]
+            }
+
+        pip._vendor.packaging.markers.default_environment = overriden_environment
 
     repository: BaseRepository
     repository = PyPIRepository(pip_args, cache_dir=cache_dir)
