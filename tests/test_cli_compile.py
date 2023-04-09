@@ -2853,3 +2853,54 @@ def test_raise_error_when_input_and_output_filenames_are_matched(
         f"Error: input and output filenames must not be matched: {req_out_path}"
     )
     assert expected_error in out.stderr.splitlines()
+
+
+@pytest.mark.network
+@backtracking_resolver_only
+def test_pass_pip_cache_to_pip_args(tmpdir, runner, current_resolver):
+    cache_dir = tmpdir.mkdir("cache_dir")
+
+    with open("requirements.in", "w") as fp:
+        fp.write("six==1.15.0")
+
+    out = runner.invoke(
+        cli, ["--cache-dir", str(cache_dir), "--resolver", current_resolver]
+    )
+    assert out.exit_code == 0
+    assert os.listdir(os.path.join(str(cache_dir), "http"))
+
+
+@backtracking_resolver_only
+def test_compile_recursive_extras(runner, tmp_path, current_resolver):
+    (tmp_path / "pyproject.toml").write_text(
+        dedent(
+            """
+            [project]
+            name = "foo"
+            version = "0.0.1"
+            dependencies = ["small-fake-a"]
+            [project.optional-dependencies]
+            footest = ["small-fake-b"]
+            dev = ["foo[footest]"]
+            """
+        )
+    )
+    out = runner.invoke(
+        cli,
+        [
+            "--no-header",
+            "--no-annotate",
+            "--no-emit-find-links",
+            "--extra",
+            "dev",
+            "--find-links",
+            os.fspath(MINIMAL_WHEELS_PATH),
+            os.fspath(tmp_path / "pyproject.toml"),
+        ],
+    )
+    expected = rf"""foo @ {tmp_path.as_uri()}
+small-fake-a==0.2
+small-fake-b==0.3
+"""
+    assert out.exit_code == 0
+    assert expected == out.stderr
