@@ -1,3 +1,26 @@
+## 6.13.0 (2023-04-07)
+
+Features:
+
+- Add support for self-referential extras
+  ([#1791](https://github.com/jazzband/pip-tools/pull/1791)). Thanks @q0w
+- Add support for `pip==23.1` where removed `FormatControl` in `WheelCache`
+  ([#1834](https://github.com/jazzband/pip-tools/pull/1834)). Thanks @atugushev
+- Add support for `pip==23.1` where refactored requirement options
+  ([#1832](https://github.com/jazzband/pip-tools/pull/1832)). Thanks @atugushev
+- Add support for `pip==23.1` where deprecated `--install-option` has been removed
+  ([#1828](https://github.com/jazzband/pip-tools/pull/1828)). Thanks @atugushev
+
+Bug Fixes:
+
+- Pass `--cache-dir` to `--pip-args` for backtracking resolver
+  ([#1827](https://github.com/jazzband/pip-tools/pull/1827)). Thanks @q0w
+
+Other Changes:
+
+- Update examples in README ([#1835](https://github.com/jazzband/pip-tools/pull/1835)).
+  Thanks @lucaswerkmeister
+
 ## 6.12.3 (2023-03-01)
 
 Bug Fixes:

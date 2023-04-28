@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/psf/black
-    rev: 23.1.0
+    rev: 23.3.0
     hooks:
       - id: black
         args: [--target-version=py37]
@@ -32,6 +32,7 @@ repos:
           - pep517==0.10.0
           - toml==0.10.2
           - pip==20.3.4
+          - build==0.9.0
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.5
     hooks:
