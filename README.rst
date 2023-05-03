@@ -91,19 +91,13 @@ and you want to pin it for production. You can declare the project metadata as:
     build-backend = "setuptools.build_meta"
 
     [project]
+    requires-python = ">=3.9"
     name = "foobar"
-    description = "foobar description"
-    classifiers = [
-        "Programming Language :: Python",    
-        "Programming Language :: Python :: 3",
-    ]
-    dynamic = ["version", "dependencies"]
-
-    [project.urls]
-    homepage = "https://github.com/xyz/foobar"
+    dynamic = ["dependencies", "optional-dependencies"]
 
     [tool.setuptools.dynamic]
-    dependencies = { file = [".config/requirements.in"] }
+    dependencies = { file = ["requirements.in"] }
+    optional-dependencies.test = { file = ["requirements-test.txt"] }
 
 If you have a Django application that is packaged using ``Hatch``, and you
 want to pin it for production. You also want to pin your development tools
