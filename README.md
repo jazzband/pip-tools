@@ -5,14 +5,12 @@
 [![buildstatus-gha](https://github.com/jazzband/pip-tools/workflows/CI/badge.svg)](https://github.com/jazzband/pip-tools/actions?query=workflow%3ACI)
 [![codecov](https://codecov.io/gh/jazzband/pip-tools/branch/main/graph/badge.svg)](https://codecov.io/gh/jazzband/pip-tools)
 
-
 # pip-tools = pip-compile + pip-sync
 
-A set of command line tools to help you keep your ``pip``-based packages fresh,
-even when you've pinned them.  You do pin them, right? (In building your Python application and its dependencies for production, you want to make sure that your builds are predictable and deterministic.)
+A set of command line tools to help you keep your `pip`-based packages fresh,
+even when you've pinned them. You do pin them, right? (In building your Python application and its dependencies for production, you want to make sure that your builds are predictable and deterministic.)
 
 [![pip-tools overview for phase II](https://github.com/jazzband/pip-tools/raw/main/img/pip-tools-overview.svg)](https://github.com/jazzband/pip-tools/raw/main/img/pip-tools-overview.svg)
-
 
 ## Installation
 
@@ -45,7 +43,7 @@ environment.
 **Note**: If `pip-compile` finds an existing `requirements.txt` file that
 fulfils the dependencies then no changes will be made, even if updates are
 available. To compile from scratch, first delete the existing
-`requirements.txt` file, or see 
+`requirements.txt` file, or see
 [Updating requirements](https://github.com/jazzband/pip-tools#updating-requirements)
 for alternative approaches.
 
@@ -222,7 +220,7 @@ $ pip-compile --upgrade --upgrade-package 'requests<3.0'
 
 ### Using hashes
 
-If you would like to use *Hash-Checking Mode* available in `pip` since
+If you would like to use _Hash-Checking Mode_ available in `pip` since
 version 8.0, `pip-compile` offers `--generate-hashes` flag:
 
 ```
@@ -339,7 +337,6 @@ pytz==2023.3
     # via django
 ```
 
-
 Now compile the dev requirements and the `requirements.txt` file is used as
 a constraint:
 
@@ -432,8 +429,7 @@ repos:
         files: ^requirements\.(in|txt)$
 ```
 
-
-### Example usage for ``pip-sync``
+### Example usage for `pip-sync`
 
 Now that you have a `requirements.txt`, you can use `pip-sync` to update
 your virtual environment to reflect exactly what's in there. This will
@@ -494,21 +490,20 @@ then you must commit a separate output file for each Python environment.
 We suggest to use the `{env}-requirements.txt` format
 (ex: `win32-py3.7-requirements.txt`, `macos-py3.10-requirements.txt`, etc.).
 
-
 ### Cross-environment usage of `requirements.in`/`requirements.txt` and `pip-compile`
 
 The dependencies of a package can change depending on the Python environment in which it
-is installed.  Here, we define a Python environment as the combination of Operating
+is installed. Here, we define a Python environment as the combination of Operating
 System, Python version (3.7, 3.8, etc.), and Python implementation (CPython, PyPy,
 etc.). For an exact definition, refer to the possible combinations of [PEP 508
 environment markers](https://peps.python.org/pep-0508/#environment-markers).
 
 As the resulting `requirements.txt` can differ for each environment, users must
 execute `pip-compile` **on each Python environment separately** to generate a
-`requirements.txt` valid for each said environment.  The same `requirements.in` can
-be used as the source file for all environments, using 
+`requirements.txt` valid for each said environment. The same `requirements.in` can
+be used as the source file for all environments, using
 [PEP 508 environment markers](https://peps.python.org/pep-0508/#environment-markers) as
-needed, the same way it would be done for regular ``pip`` cross-environment usage.
+needed, the same way it would be done for regular `pip` cross-environment usage.
 
 If the generated `requirements.txt` remains exactly the same for all Python
 environments, then it can be used across Python environments safely. **But** users
@@ -517,16 +512,14 @@ dependencies, making any newly generated `requirements.txt` environment-dependen
 As a general rule, it's advised that users should still always execute `pip-compile`
 on each targeted Python environment to avoid issues.
 
-
 ### Other useful tools
 
 - [pipdeptree](https://github.com/tox-dev/pipdeptree) to print the dependency tree of the installed packages.
 - `requirements.in`/`requirements.txt` syntax highlighting:
 
-  * [requirements.txt.vim](https://github.com/raimon49/requirements.txt.vim) for Vim.
-  * [Python extension for VS Code](https://marketplace.visualstudio.com/items?itemName=ms-python.python) for VS Code.
-  * [pip-requirements.el](https://github.com/Wilfred/pip-requirements.el) for Emacs.
-
+  - [requirements.txt.vim](https://github.com/raimon49/requirements.txt.vim) for Vim.
+  - [Python extension for VS Code](https://marketplace.visualstudio.com/items?itemName=ms-python.python) for VS Code.
+  - [pip-requirements.el](https://github.com/Wilfred/pip-requirements.el) for Emacs.
 
 ### Deprecations
 
@@ -561,11 +554,11 @@ versions as the required `pip` versions.
 
 | pip-tools      | pip            | Python         |
 | -------------- | -------------- | -------------- |
-| 4.5.*          | 8.1.3 - 20.0.2 | 2.7, 3.5 - 3.8 |
+| 4.5.\*         | 8.1.3 - 20.0.2 | 2.7, 3.5 - 3.8 |
 | 5.0.0 - 5.3.0  | 20.0 - 20.1.1  | 2.7, 3.5 - 3.8 |
-| 5.4.0          | 20.1 - 20.3.*  | 2.7, 3.5 - 3.8 |
-| 5.5.0          | 20.1 - 20.3.*  | 2.7, 3.5 - 3.9 |
-| 6.0.0 - 6.3.1  | 20.3 - 21.2.*  | 3.6 - 3.9      |
-| 6.4.0          | 21.2 - 21.3.*  | 3.6 - 3.10     |
-| 6.5.0 - 6.10.0 | 21.2 - 22.3.*  | 3.7 - 3.11     |
+| 5.4.0          | 20.1 - 20.3.\* | 2.7, 3.5 - 3.8 |
+| 5.5.0          | 20.1 - 20.3.\* | 2.7, 3.5 - 3.9 |
+| 6.0.0 - 6.3.1  | 20.3 - 21.2.\* | 3.6 - 3.9      |
+| 6.4.0          | 21.2 - 21.3.\* | 3.6 - 3.10     |
+| 6.5.0 - 6.10.0 | 21.2 - 22.3.\* | 3.7 - 3.11     |
 | 6.11.0+        | 22.2+          | 3.7 - 3.11     |
