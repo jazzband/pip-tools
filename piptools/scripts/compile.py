@@ -31,6 +31,7 @@ from ..utils import (
     is_pinned_requirement,
     key_from_ireq,
     parse_requirements_from_wheel_metadata,
+    pyproject_toml_defaults_cb,
 )
 from ..writer import OutputWriter
 
@@ -302,6 +303,20 @@ def _determine_linesep(
     help="Specify a package to consider unsafe; may be used more than once. "
     f"Replaces default unsafe packages: {', '.join(sorted(UNSAFE_PACKAGES))}",
 )
+@click.option(
+    "--config",
+    type=click.Path(
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+        allow_dash=False,
+        path_type=str,
+    ),
+    help="Path to a pyproject.toml file with specialized defaults for pip-tools",
+    is_eager=True,
+    callback=pyproject_toml_defaults_cb,
+)
 def cli(
     ctx: click.Context,
     verbose: int,
@@ -340,6 +355,7 @@ def cli(
     emit_index_url: bool,
     emit_options: bool,
     unsafe_package: tuple[str, ...],
+    config: str | None,
 ) -> None:
     """
     Compiles requirements.txt from requirements.in, pyproject.toml, setup.cfg,
@@ -390,6 +406,9 @@ def cli(
         raise click.BadArgumentUsage(
             f"input and output filenames must not be matched: {output_file.name}"
         )
+
+    if config:
+        log.info(f"Using pip-tools configuration defaults found in '{config}'.")
 
     if resolver_name == "legacy":
         log.warning(

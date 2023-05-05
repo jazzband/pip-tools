@@ -2,14 +2,17 @@ from __future__ import annotations
 
 import collections
 import copy
+import functools
 import itertools
 import json
 import os
 import re
 import shlex
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator, TypeVar, cast
 
 import click
+import toml
 from click.utils import LazyFile
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line, parse_req_from_line
@@ -522,3 +525,104 @@ def parse_requirements_from_wheel_metadata(
             markers=parts.markers,
             extras=parts.extras,
         )
+
+
+def pyproject_toml_defaults_cb(
+    ctx: click.Context, param: click.Parameter, value: str | None
+) -> str | None:
+    """
+    Defaults for `click.Command` parameters should be override-able in pyproject.toml
+
+    Returns the path to the configuration file found, or None if no such file is found.
+    """
+    if value is None:
+        config_file = find_pyproject_toml(ctx.params.get("src_files", ()))
+        if config_file is None:
+            return None
+    else:
+        config_file = value
+
+    try:
+        config = parse_pyproject_toml(config_file)
+    except OSError as e:
+        raise click.FileError(
+            filename=config_file, hint=f"Could not read '{config_file}': {e}"
+        )
+    except ValueError as e:
+        raise click.FileError(
+            filename=config_file, hint=f"Could not parse '{config_file}': {e}"
+        )
+
+    if not config:
+        return None
+
+    defaults: dict[str, Any] = ctx.default_map.copy() if ctx.default_map else {}
+    defaults.update(config)
+
+    ctx.default_map = defaults
+    return config_file
+
+
+def find_pyproject_toml(src_files: tuple[str, ...]) -> str | None:
+    if not src_files:
+        # If no src_files were specified, we consider the current directory the only candidate
+        candidates = [Path.cwd()]
+    else:
+        # Collect the candidate directories based on the src_file arguments provided
+        src_files_as_paths = [
+            Path(Path.cwd(), src_file).resolve() for src_file in src_files
+        ]
+        candidates = [src if src.is_dir() else src.parent for src in src_files_as_paths]
+    pyproject_toml_path = next(
+        (
+            str(candidate / "pyproject.toml")
+            for candidate in candidates
+            if (candidate / "pyproject.toml").is_file()
+        ),
+        None,
+    )
+    return pyproject_toml_path
+
+
+# Some of the defined click options have different `dest` values than the defaults
+NON_STANDARD_OPTION_DEST_MAP: dict[str, str] = {
+    "extra": "extras",
+    "upgrade_package": "upgrade_packages",
+    "resolver": "resolver_name",
+    "user": "user_only",
+}
+
+
+def mutate_option_to_click_dest(option_name: str) -> str:
+    "Mutates an option from how click/pyproject.toml expect them to the click `dest` value"
+    # Format the keys properly
+    option_name = option_name.lstrip("-").replace("-", "_").lower()
+    # Some options have dest values that are overrides from the click generated default
+    option_name = NON_STANDARD_OPTION_DEST_MAP.get(option_name, option_name)
+    return option_name
+
+
+# Ensure that any default overrides for these click options are lists, supporting multiple values
+MULTIPLE_VALUE_OPTIONS = [
+    "extras",
+    "upgrade_packages",
+    "unsafe_package",
+    "find_links",
+    "extra_index_url",
+    "trusted_host",
+]
+
+
+@functools.lru_cache()
+def parse_pyproject_toml(config_file: str) -> dict[str, Any]:
+    pyproject_toml = toml.load(config_file)
+    config: dict[str, Any] = pyproject_toml.get("tool", {}).get("pip-tools", {})
+    config = {mutate_option_to_click_dest(k): v for k, v in config.items()}
+    # Any option with multiple values needs to be a list in the pyproject.toml
+    for mv_option in MULTIPLE_VALUE_OPTIONS:
+        if not isinstance(config.get(mv_option), (list, type(None))):
+            original_option = mv_option.replace("_", "-")
+            raise click.BadOptionUsage(
+                original_option, f"Config key '{original_option}' must be a list"
+            )
+    return config

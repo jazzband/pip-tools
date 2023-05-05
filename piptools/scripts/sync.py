@@ -24,6 +24,7 @@ from ..utils import (
     get_pip_version_for_python_executable,
     get_required_pip_specification,
     get_sys_path_for_python_executable,
+    pyproject_toml_defaults_cb,
 )
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
@@ -86,6 +87,20 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 )
 @click.argument("src_files", required=False, type=click.Path(exists=True), nargs=-1)
 @click.option("--pip-args", help="Arguments to pass directly to pip install.")
+@click.option(
+    "--config",
+    type=click.Path(
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+        allow_dash=False,
+        path_type=str,
+    ),
+    help="Path to a pyproject.toml file with specialized defaults for pip-tools",
+    is_eager=True,
+    callback=pyproject_toml_defaults_cb,
+)
 def cli(
     ask: bool,
     dry_run: bool,
@@ -103,6 +118,7 @@ def cli(
     client_cert: str | None,
     src_files: tuple[str, ...],
     pip_args: str | None,
+    config: str | None,
 ) -> None:
     """Synchronize virtual environment with requirements.txt."""
     log.verbosity = verbose - quiet
@@ -126,6 +142,9 @@ def cli(
         else:
             log.error("ERROR: " + msg)
             sys.exit(2)
+
+    if config:
+        log.info(f"Using pip-tools configuration defaults found in '{config}'.")
 
     if python_executable:
         _validate_python_executable(python_executable)

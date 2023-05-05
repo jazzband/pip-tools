@@ -8,6 +8,7 @@ import sys
 
 import pip
 import pytest
+from click import BadOptionUsage, Context, FileError
 from pip._vendor.packaging.version import Version
 
 from piptools.scripts.compile import cli as compile_cli
@@ -27,6 +28,8 @@ from piptools.utils import (
     key_from_ireq,
     lookup_table,
     lookup_table_from_tuples,
+    mutate_option_to_click_dest,
+    pyproject_toml_defaults_cb,
 )
 
 
@@ -540,3 +543,102 @@ def test_get_sys_path_for_python_executable():
     # not testing for equality, because pytest adds extra paths into current sys.path
     for path in result:
         assert path in sys.path
+
+
+@pytest.mark.parametrize(
+    ("pyproject_param", "new_default"),
+    (
+        # From sync
+        ("ask", True),
+        ("dry-run", True),
+        ("find-links", ["changed"]),
+        ("extra-index-url", ["changed"]),
+        ("trusted-host", ["changed"]),
+        ("no-index", True),
+        ("python-executable", "changed"),
+        ("verbose", True),
+        ("quiet", True),
+        ("user", True),
+        ("cert", "changed"),
+        ("client-cert", "changed"),
+        ("pip-args", "changed"),
+        # From compile, unless also in sync
+        ("pre", True),
+        ("rebuild", True),
+        ("extras", ["changed"]),
+        ("all-extras", True),
+        ("index-url", "changed"),
+        ("header", False),
+        ("emit-trusted-host", False),
+        ("annotate", False),
+        ("annotation-style", "line"),
+        ("upgrade", True),
+        ("upgrade-package", ["changed"]),
+        ("output-file", "changed"),
+        ("newline", "native"),
+        ("allow-unsafe", True),
+        ("strip-extras", True),
+        ("generate-hashes", True),
+        ("reuse-hashes", False),
+        ("max-rounds", 100),
+        ("build-isolation", False),
+        ("emit-find-links", False),
+        ("cache-dir", "changed"),
+        ("resolver", "backtracking"),
+        ("emit-index-url", False),
+        ("emit-options", False),
+        ("unsafe-package", ["changed"]),
+    ),
+)
+def test_pyproject_toml_defaults_cb(
+    pyproject_param, new_default, make_pyproject_toml_conf
+):
+    config_file = make_pyproject_toml_conf(pyproject_param, new_default)
+    # Create a "compile" run example pointing to the pyproject.toml
+    ctx = Context(compile_cli)
+    ctx.params["src_files"] = (str(config_file),)
+    found_config_file = pyproject_toml_defaults_cb(ctx, "config", None)
+    assert found_config_file == str(config_file)
+    # Make sure the default has been updated
+    lookup_param = mutate_option_to_click_dest(pyproject_param)
+    assert ctx.default_map[lookup_param] == new_default
+
+
+@pytest.mark.parametrize(
+    "mv_option",
+    (
+        "extra",
+        "upgrade-package",
+        "unsafe-package",
+        "find-links",
+        "extra-index-url",
+        "trusted-host",
+    ),
+)
+def test_pyproject_toml_defaults_cb_multi_value_options(
+    mv_option, make_pyproject_toml_conf
+):
+    config_file = make_pyproject_toml_conf(mv_option, "not-a-list")
+    ctx = Context(compile_cli)
+    ctx.params["src_files"] = (str(config_file),)
+    pytest.raises(BadOptionUsage, pyproject_toml_defaults_cb, ctx, "config", None)
+
+
+def test_pyproject_toml_defaults_cb_bad_toml(make_pyproject_toml_conf):
+    config_file = make_pyproject_toml_conf("verbose", True)
+    config_text = open(config_file).read()
+    open(config_file, "w").write(config_text[::-1])
+    ctx = Context(compile_cli)
+    ctx.params["src_files"] = (str(config_file),)
+    pytest.raises(FileError, pyproject_toml_defaults_cb, ctx, "config", None)
+
+
+def test_pyproject_toml_defaults_cb_unreadable_toml(make_pyproject_toml_conf):
+    ctx = Context(compile_cli)
+    pytest.raises(
+        FileError,
+        pyproject_toml_defaults_cb,
+        ctx,
+        "config",
+        "/path/does/not/exist/pyproject.toml",
+    )

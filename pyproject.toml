@@ -42,6 +42,7 @@ dependencies = [
   "pip >= 22.2",
   # indirect dependencies
   "setuptools", # typically needed when pip-tools invokes setup.py
+  "toml >= 0.10.1",
   "wheel", # pip plugin needed by pip-tools
 
 ]

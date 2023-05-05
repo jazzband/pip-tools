@@ -8,9 +8,11 @@ import sys
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from functools import partial
+from pathlib import Path
 from textwrap import dedent
 
 import pytest
+import toml
 from click.testing import CliRunner
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
@@ -450,3 +452,18 @@ def _reset_log():
     with other tests that depend on it.
     """
     log.reset()
+
+
+@pytest.fixture
+def make_pyproject_toml_conf(tmpdir_cwd):
+    def _maker(pyproject_param, new_default):
+        # Make a pyproject.toml with this one config default override
+        config_path = Path(tmpdir_cwd) / pyproject_param
+        config_file = config_path / "pyproject.toml"
+        config_path.mkdir()
+
+        with open(config_file, "w") as ofs:
+            toml.dump({"tool": {"pip-tools": {pyproject_param: new_default}}}, ofs)
+        return config_file
+
+    return _maker
