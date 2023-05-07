@@ -28,6 +28,7 @@ from pip._vendor.pkg_resources import Requirement
 from piptools._compat.pip_compat import PIP_VERSION, uses_pkg_resources
 from piptools.cache import DependencyCache
 from piptools.exceptions import NoCandidateFound
+from piptools.locations import CONFIG_FILE_NAME
 from piptools.logging import log
 from piptools.repositories import PyPIRepository
 from piptools.repositories.base import BaseRepository
@@ -455,15 +456,18 @@ def _reset_log():
 
 
 @pytest.fixture
-def make_pyproject_toml_conf(tmpdir_cwd):
-    def _maker(pyproject_param, new_default):
-        # Make a pyproject.toml with this one config default override
+def make_config_file(tmpdir_cwd):
+    def _maker(pyproject_param, new_default, config_file_name=CONFIG_FILE_NAME):
+        # Make a config file with this one config default override
         config_path = Path(tmpdir_cwd) / pyproject_param
-        config_file = config_path / "pyproject.toml"
-        config_path.mkdir()
+        config_file = config_path / config_file_name
+        config_path.mkdir(exist_ok=True)
 
+        config_to_dump = {"pip-tools": {pyproject_param: new_default}}
+        if config_file_name == "pyproject.toml":
+            config_to_dump = {"tool": config_to_dump}
         with open(config_file, "w") as ofs:
-            toml.dump({"tool": {"pip-tools": {pyproject_param: new_default}}}, ofs)
+            toml.dump(config_to_dump, ofs)
         return config_file
 
     return _maker

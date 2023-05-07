@@ -17,14 +17,15 @@ from .. import sync
 from .._compat import parse_requirements
 from .._compat.pip_compat import Distribution
 from ..exceptions import PipToolsError
+from ..locations import CONFIG_FILE_NAME
 from ..logging import log
 from ..repositories import PyPIRepository
 from ..utils import (
+    callback_config_file_defaults,
     flat_map,
     get_pip_version_for_python_executable,
     get_required_pip_specification,
     get_sys_path_for_python_executable,
-    pyproject_toml_defaults_cb,
 )
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
@@ -97,9 +98,10 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
         allow_dash=False,
         path_type=str,
     ),
-    help="Path to a pyproject.toml file with specialized defaults for pip-tools",
+    help=f"Read configuration from TOML file. By default, looks for a {CONFIG_FILE_NAME} or "
+    "pyproject.toml.",
     is_eager=True,
-    callback=pyproject_toml_defaults_cb,
+    callback=callback_config_file_defaults,
 )
 def cli(
     ask: bool,

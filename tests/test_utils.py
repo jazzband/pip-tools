@@ -5,6 +5,7 @@ import operator
 import os
 import shlex
 import sys
+from pathlib import Path
 
 import pip
 import pytest
@@ -14,11 +15,13 @@ from pip._vendor.packaging.version import Version
 from piptools.scripts.compile import cli as compile_cli
 from piptools.utils import (
     as_tuple,
+    callback_config_file_defaults,
     dedup,
     drop_extras,
     flat_map,
     format_requirement,
     format_specifier,
+    get_click_dest_for_option,
     get_compile_command,
     get_hashes_from_ireq,
     get_pip_version_for_python_executable,
@@ -28,8 +31,6 @@ from piptools.utils import (
     key_from_ireq,
     lookup_table,
     lookup_table_from_tuples,
-    mutate_option_to_click_dest,
-    pyproject_toml_defaults_cb,
 )
 
 
@@ -590,17 +591,15 @@ def test_get_sys_path_for_python_executable():
         ("unsafe-package", ["changed"]),
     ),
 )
-def test_pyproject_toml_defaults_cb(
-    pyproject_param, new_default, make_pyproject_toml_conf
-):
-    config_file = make_pyproject_toml_conf(pyproject_param, new_default)
-    # Create a "compile" run example pointing to the pyproject.toml
+def test_callback_config_file_defaults(pyproject_param, new_default, make_config_file):
+    config_file = make_config_file(pyproject_param, new_default)
+    # Create a "compile" run example pointing to the config file
     ctx = Context(compile_cli)
     ctx.params["src_files"] = (str(config_file),)
-    found_config_file = pyproject_toml_defaults_cb(ctx, "config", None)
+    found_config_file = callback_config_file_defaults(ctx, "config", None)
     assert found_config_file == str(config_file)
     # Make sure the default has been updated
-    lookup_param = mutate_option_to_click_dest(pyproject_param)
+    lookup_param = get_click_dest_for_option(pyproject_param)
     assert ctx.default_map[lookup_param] == new_default
 
 
@@ -615,30 +614,43 @@ def test_pyproject_toml_defaults_cb(
         "trusted-host",
     ),
 )
-def test_pyproject_toml_defaults_cb_multi_value_options(
-    mv_option, make_pyproject_toml_conf
-):
-    config_file = make_pyproject_toml_conf(mv_option, "not-a-list")
+def test_callback_config_file_defaults_multi_value_options(mv_option, make_config_file):
+    config_file = make_config_file(mv_option, "not-a-list")
     ctx = Context(compile_cli)
     ctx.params["src_files"] = (str(config_file),)
-    pytest.raises(BadOptionUsage, pyproject_toml_defaults_cb, ctx, "config", None)
+    with pytest.raises(BadOptionUsage, match="must be a list"):
+        callback_config_file_defaults(ctx, "config", None)
 
 
-def test_pyproject_toml_defaults_cb_bad_toml(make_pyproject_toml_conf):
-    config_file = make_pyproject_toml_conf("verbose", True)
-    config_text = open(config_file).read()
-    open(config_file, "w").write(config_text[::-1])
+def test_callback_config_file_defaults_bad_toml(make_config_file):
+    config_file = make_config_file("verbose", True)
+    # Simple means of making invalid TOML: have duplicate keys
+    with Path(config_file).open("r+") as fs:
+        config_text_lines = fs.readlines()
+        fs.write(config_text_lines[-1])
     ctx = Context(compile_cli)
     ctx.params["src_files"] = (str(config_file),)
-    pytest.raises(FileError, pyproject_toml_defaults_cb, ctx, "config", None)
+    with pytest.raises(FileError, match="Could not parse "):
+        callback_config_file_defaults(ctx, "config", None)
 
 
-def test_pyproject_toml_defaults_cb_unreadable_toml(make_pyproject_toml_conf):
+def test_callback_config_file_defaults_precedence(make_config_file):
+    piptools_config_file = make_config_file("newline", "LF")
+    project_config_file = make_config_file("newline", "CRLF", "pyproject.toml")
     ctx = Context(compile_cli)
-    pytest.raises(
-        FileError,
-        pyproject_toml_defaults_cb,
-        ctx,
-        "config",
-        "/path/does/not/exist/pyproject.toml",
-    )
+    ctx.params["src_files"] = (str(project_config_file),)
+    found_config_file = callback_config_file_defaults(ctx, "config", None)
+    # The pip-tools specific config file should take precedence over pyproject.toml
+    assert found_config_file == str(piptools_config_file)
+    lookup_param = get_click_dest_for_option("newline")
+    assert ctx.default_map[lookup_param] == "LF"
+
+
+def test_callback_config_file_defaults_unreadable_toml(make_config_file):
+    ctx = Context(compile_cli)
+    with pytest.raises(FileError, match="Could not read "):
+        callback_config_file_defaults(
+            ctx,
+            "config",
+            "/path/does/not/exist/my-config.toml",
+        )

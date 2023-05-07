@@ -8,11 +8,16 @@ import json
 import os
 import re
 import shlex
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator, TypeVar, cast
 
 import click
-import toml
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import toml
 from click.utils import LazyFile
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line, parse_req_from_line
@@ -25,6 +30,7 @@ from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Distribution, Requirement, get_distribution
 
 from piptools._compat import PIP_VERSION
+from piptools.locations import CONFIG_FILE_NAME
 from piptools.subprocess_utils import run_python_snippet
 
 if TYPE_CHECKING:
@@ -408,9 +414,9 @@ def get_required_pip_specification() -> SpecifierSet:
     Returns pip version specifier requested by current pip-tools installation.
     """
     project_dist = get_distribution("pip-tools")
-    requirement = next(  # pragma: no branch
+    requirement = next(
         (r for r in project_dist.requires() if r.name == "pip"), None
-    )
+    )  # pragma: no branch
     assert (
         requirement is not None
     ), "'pip' is expected to be in the list of pip-tools requirements"
@@ -527,30 +533,34 @@ def parse_requirements_from_wheel_metadata(
         )
 
 
-def pyproject_toml_defaults_cb(
+def callback_config_file_defaults(
     ctx: click.Context, param: click.Parameter, value: str | None
 ) -> str | None:
     """
-    Defaults for `click.Command` parameters should be override-able in pyproject.toml
+    Returns the path to the config file with defaults being used, or `None` if no such file is
+    found.
 
-    Returns the path to the configuration file found, or None if no such file is found.
+    Defaults for `click.Command` parameters should be override-able in a config file. `pip-tools`
+    will use the first file found, searching in this order: an explicitly given config file, a
+    `.pip-tools.toml`, a `pyproject.toml` file. Those files are searched for in the same directory
+    as the requirements input file.
     """
     if value is None:
-        config_file = find_pyproject_toml(ctx.params.get("src_files", ()))
+        config_file = select_config_file(ctx.params.get("src_files", ()))
         if config_file is None:
             return None
     else:
-        config_file = value
+        config_file = Path(value)
 
     try:
-        config = parse_pyproject_toml(config_file)
+        config = parse_config_file(config_file)
     except OSError as e:
         raise click.FileError(
-            filename=config_file, hint=f"Could not read '{config_file}': {e}"
+            filename=str(config_file), hint=f"Could not read '{config_file}': {e}"
         )
     except ValueError as e:
         raise click.FileError(
-            filename=config_file, hint=f"Could not parse '{config_file}': {e}"
+            filename=str(config_file), hint=f"Could not parse '{config_file}': {e}"
         )
 
     if not config:
@@ -560,28 +570,34 @@ def pyproject_toml_defaults_cb(
     defaults.update(config)
 
     ctx.default_map = defaults
-    return config_file
+    return str(config_file)
 
 
-def find_pyproject_toml(src_files: tuple[str, ...]) -> str | None:
+def select_config_file(src_files: tuple[str, ...]) -> Path | None:
+    """
+    Returns the config file to use for defaults given `src_files` provided.
+    """
     if not src_files:
         # If no src_files were specified, we consider the current directory the only candidate
-        candidates = [Path.cwd()]
+        candidate_dirs = [Path.cwd()]
     else:
         # Collect the candidate directories based on the src_file arguments provided
         src_files_as_paths = [
             Path(Path.cwd(), src_file).resolve() for src_file in src_files
         ]
-        candidates = [src if src.is_dir() else src.parent for src in src_files_as_paths]
-    pyproject_toml_path = next(
+        candidate_dirs = [
+            src if src.is_dir() else src.parent for src in src_files_as_paths
+        ]
+    config_file_path = next(
         (
-            str(candidate / "pyproject.toml")
-            for candidate in candidates
-            if (candidate / "pyproject.toml").is_file()
+            candidate_dir / config_file
+            for candidate_dir in candidate_dirs
+            for config_file in (CONFIG_FILE_NAME, "pyproject.toml")
+            if (candidate_dir / config_file).is_file()
         ),
         None,
     )
-    return pyproject_toml_path
+    return config_file_path
 
 
 # Some of the defined click options have different `dest` values than the defaults
@@ -593,8 +609,8 @@ NON_STANDARD_OPTION_DEST_MAP: dict[str, str] = {
 }
 
 
-def mutate_option_to_click_dest(option_name: str) -> str:
-    "Mutates an option from how click/pyproject.toml expect them to the click `dest` value"
+def get_click_dest_for_option(option_name: str) -> str:
+    """Returns the click `dest` value for the given option name."""
     # Format the keys properly
     option_name = option_name.lstrip("-").replace("-", "_").lower()
     # Some options have dest values that are overrides from the click generated default
@@ -614,15 +630,27 @@ MULTIPLE_VALUE_OPTIONS = [
 
 
 @functools.lru_cache()
-def parse_pyproject_toml(config_file: str) -> dict[str, Any]:
-    pyproject_toml = toml.load(config_file)
-    config: dict[str, Any] = pyproject_toml.get("tool", {}).get("pip-tools", {})
-    config = {mutate_option_to_click_dest(k): v for k, v in config.items()}
+def parse_config_file(config_file: Path) -> dict[str, Any]:
+    if sys.version_info >= (3, 11):
+        # Python 3.11 stdlib tomllib load() requires a binary file object
+        with config_file.open("rb") as ifs:
+            config = tomllib.load(ifs)
+    else:
+        # Before 3.11, using the external toml library, load requires the filename
+        config = toml.load(str(config_file))
+    # In a pyproject.toml file, we expect the config to be under `[tool.pip-tools]`, but in our
+    # native configuration, it would be just `[pip-tools]`.
+    if config_file.name == "pyproject.toml":
+        config = config.get("tool", {})
+    piptools_config: dict[str, Any] = config.get("pip-tools", {})
+    piptools_config = {
+        get_click_dest_for_option(k): v for k, v in piptools_config.items()
+    }
     # Any option with multiple values needs to be a list in the pyproject.toml
     for mv_option in MULTIPLE_VALUE_OPTIONS:
-        if not isinstance(config.get(mv_option), (list, type(None))):
+        if not isinstance(piptools_config.get(mv_option), (list, type(None))):
             original_option = mv_option.replace("_", "-")
             raise click.BadOptionUsage(
                 original_option, f"Config key '{original_option}' must be a list"
             )
-    return config
+    return piptools_config

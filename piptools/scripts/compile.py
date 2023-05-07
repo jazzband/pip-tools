@@ -19,19 +19,19 @@ from pip._internal.utils.misc import redact_auth_from_url
 from .._compat import parse_requirements
 from ..cache import DependencyCache
 from ..exceptions import NoCandidateFound, PipToolsError
-from ..locations import CACHE_DIR
+from ..locations import CACHE_DIR, CONFIG_FILE_NAME
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..repositories.base import BaseRepository
 from ..resolver import BacktrackingResolver, LegacyResolver
 from ..utils import (
     UNSAFE_PACKAGES,
+    callback_config_file_defaults,
     dedup,
     drop_extras,
     is_pinned_requirement,
     key_from_ireq,
     parse_requirements_from_wheel_metadata,
-    pyproject_toml_defaults_cb,
 )
 from ..writer import OutputWriter
 
@@ -313,9 +313,10 @@ def _determine_linesep(
         allow_dash=False,
         path_type=str,
     ),
-    help="Path to a pyproject.toml file with specialized defaults for pip-tools",
+    help=f"Read configuration from TOML file. By default, looks for a {CONFIG_FILE_NAME} or "
+    "pyproject.toml.",
     is_eager=True,
-    callback=pyproject_toml_defaults_cb,
+    callback=callback_config_file_defaults,
 )
 def cli(
     ctx: click.Context,
