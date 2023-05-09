@@ -5,6 +5,7 @@ import os
 import shlex
 import shutil
 import sys
+from pathlib import Path
 from typing import cast
 
 import click
@@ -14,7 +15,6 @@ from pip._internal.index.package_finder import PackageFinder
 from pip._internal.metadata import get_environment
 
 from .. import sync
-from pathlib import Path
 from .._compat import parse_requirements
 from .._compat.pip_compat import Distribution
 from ..exceptions import PipToolsError

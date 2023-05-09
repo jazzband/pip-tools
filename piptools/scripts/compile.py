@@ -5,6 +5,7 @@ import os
 import shlex
 import sys
 import tempfile
+from pathlib import Path
 from typing import IO, Any, BinaryIO, cast
 
 import click
@@ -16,7 +17,6 @@ from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 
-from pathlib import Path
 from .._compat import parse_requirements
 from ..cache import DependencyCache
 from ..exceptions import NoCandidateFound, PipToolsError
