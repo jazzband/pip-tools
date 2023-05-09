@@ -552,11 +552,11 @@ def callback_config_file_defaults(
     else:
         config_file = Path(value)
 
-    config = parse_config_file(config_file)
-    if not config:
+    if config := parse_config_file(config_file):
+        _assign_config_to_cli_context(ctx, config)
+    else:
         return None
 
-    _assign_config_to_cli_context(ctx, config)
     return config_file
 
 
