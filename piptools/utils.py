@@ -552,7 +552,8 @@ def determine_config_file(
     else:
         config_file = Path(value)
 
-    if config := parse_config_file(config_file):
+    config = parse_config_file(config_file)
+    if config:
         _assign_config_to_cli_context(ctx, config)
     else:
         return None
