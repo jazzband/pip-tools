@@ -27,8 +27,8 @@ from ..repositories.base import BaseRepository
 from ..resolver import BacktrackingResolver, LegacyResolver
 from ..utils import (
     UNSAFE_PACKAGES,
-    determine_config_file,
     dedup,
+    determine_config_file,
     drop_extras,
     is_pinned_requirement,
     key_from_ireq,

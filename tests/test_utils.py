@@ -15,8 +15,8 @@ from pip._vendor.packaging.version import Version
 from piptools.scripts.compile import cli as compile_cli
 from piptools.utils import (
     as_tuple,
-    determine_config_file,
     dedup,
+    determine_config_file,
     drop_extras,
     flat_map,
     format_requirement,
