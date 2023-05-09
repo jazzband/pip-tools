@@ -633,12 +633,12 @@ def parse_config_file(config_file: Path) -> dict[str, Any]:
     except OSError as os_err:
         raise click.FileError(
             filename=str(config_file),
-            hint=f"Could not read '{config_file !s}': {os_err !s}"
+            hint=f"Could not read '{config_file !s}': {os_err !s}",
         )
     except ValueError as value_err:
         raise click.FileError(
             filename=str(config_file),
-            hint=f"Could not parse '{config_file !s}': {value_err !s}"
+            hint=f"Could not parse '{config_file !s}': {value_err !s}",
         )
 
     # In a pyproject.toml file, we expect the config to be under `[tool.pip-tools]`, but in our
