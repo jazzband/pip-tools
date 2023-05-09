@@ -641,7 +641,7 @@ def test_callback_config_file_defaults_precedence(make_config_file):
     ctx.params["src_files"] = (str(project_config_file),)
     found_config_file = callback_config_file_defaults(ctx, "config", None)
     # The pip-tools specific config file should take precedence over pyproject.toml
-    assert found_config_file == str(piptools_config_file)
+    assert found_config_file == piptools_config_file
     lookup_param = get_click_dest_for_option("newline")
     assert ctx.default_map[lookup_param] == "LF"
 
