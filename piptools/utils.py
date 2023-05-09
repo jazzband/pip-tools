@@ -552,17 +552,7 @@ def callback_config_file_defaults(
     else:
         config_file = Path(value)
 
-    try:
-        config = parse_config_file(config_file)
-    except OSError as e:
-        raise click.FileError(
-            filename=str(config_file), hint=f"Could not read '{config_file}': {e}"
-        )
-    except ValueError as e:
-        raise click.FileError(
-            filename=str(config_file), hint=f"Could not parse '{config_file}': {e}"
-        )
-
+    config = parse_config_file(config_file)
     if not config:
         return None
 
@@ -638,7 +628,19 @@ MULTIPLE_VALUE_OPTIONS = [
 
 @functools.lru_cache()
 def parse_config_file(config_file: Path) -> dict[str, Any]:
-    config = tomllib.loads(config_file.read_text(encoding="utf-8"))
+    try:
+        config = tomllib.loads(config_file.read_text(encoding="utf-8"))
+    except OSError as os_err:
+        raise click.FileError(
+            filename=str(config_file),
+            hint=f"Could not read '{config_file !s}': {os_err !s}"
+        )
+    except ValueError as value_err:
+        raise click.FileError(
+            filename=str(config_file),
+            hint=f"Could not parse '{config_file !s}': {value_err !s}"
+        )
+
     # In a pyproject.toml file, we expect the config to be under `[tool.pip-tools]`, but in our
     # native configuration, it would be just `[pip-tools]`.
     if config_file.name == "pyproject.toml":
