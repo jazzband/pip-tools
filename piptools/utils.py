@@ -575,17 +575,17 @@ def select_config_file(src_files: tuple[str, ...]) -> Path | None:
     """
     Returns the config file to use for defaults given `src_files` provided.
     """
-    if not src_files:
-        # If no src_files were specified, we consider the current directory the only candidate
-        candidate_dirs = [Path.cwd()]
-    else:
-        # Collect the candidate directories based on the src_file arguments provided
-        src_files_as_paths = [
-            Path(Path.cwd(), src_file).resolve() for src_file in src_files
-        ]
-        candidate_dirs = [
-            src if src.is_dir() else src.parent for src in src_files_as_paths
-        ]
+    # NOTE: If no src_files were specified, consider the current directory the
+    # NOTE: only config file lookup candidate. This usually happens when a
+    # NOTE: pip-tools invocation gets its incoming requirements from standard
+    # NOTE: input.
+    src_files_as_paths = [
+        Path(Path.cwd(), src_file).resolve()
+        for src_file in src_files or ('.', )
+    ]
+    candidate_dirs = [
+        src if src.is_dir() else src.parent for src in src_files_as_paths
+    ]
     config_file_path = next(
         (
             candidate_dir / config_file
