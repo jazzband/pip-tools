@@ -12,7 +12,7 @@ from pathlib import Path
 from textwrap import dedent
 
 import pytest
-import toml
+import tomli_w
 from click.testing import CliRunner
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
@@ -466,8 +466,7 @@ def make_config_file(tmpdir_cwd):
         config_to_dump = {"pip-tools": {pyproject_param: new_default}}
         if config_file_name == "pyproject.toml":
             config_to_dump = {"tool": config_to_dump}
-        with open(config_file, "w") as ofs:
-            toml.dump(config_to_dump, ofs)
+        config_file.write_text(tomli_w.dumps(config_to_dump))
         return config_file
 
     return _maker

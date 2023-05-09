@@ -33,7 +33,6 @@ repos:
           - toml==0.10.2
           - pip==20.3.4
           - build==0.9.0
-          - types-toml==0.10.2
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.5
     hooks:

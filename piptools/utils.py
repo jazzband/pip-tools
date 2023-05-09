@@ -12,12 +12,12 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator, TypeVar, cast
 
-import click
-
 if sys.version_info >= (3, 11):
     import tomllib
 else:
-    import toml
+    import tomli as tomllib
+
+import click
 from click.utils import LazyFile
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line, parse_req_from_line
@@ -631,13 +631,7 @@ MULTIPLE_VALUE_OPTIONS = [
 
 @functools.lru_cache()
 def parse_config_file(config_file: Path) -> dict[str, Any]:
-    if sys.version_info >= (3, 11):
-        # Python 3.11 stdlib tomllib load() requires a binary file object
-        with config_file.open("rb") as ifs:
-            config = tomllib.load(ifs)
-    else:
-        # Before 3.11, using the external toml library, load requires the filename
-        config = toml.load(str(config_file))
+    config = tomllib.loads(config_file.read_text(encoding="utf-8"))
     # In a pyproject.toml file, we expect the config to be under `[tool.pip-tools]`, but in our
     # native configuration, it would be just `[pip-tools]`.
     if config_file.name == "pyproject.toml":

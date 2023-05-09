@@ -40,7 +40,7 @@ dependencies = [
   "build",
   "click >= 8",
   "pip >= 22.2",
-  "toml >= 0.10.1; python_version<'3.11'",
+  "tomli; python_version < '3.11'",
   # indirect dependencies
   "setuptools", # typically needed when pip-tools invokes setup.py
   "wheel", # pip plugin needed by pip-tools
@@ -58,7 +58,7 @@ testing = [
   "pytest >= 7.2.0",
   "pytest-rerunfailures",
   "pytest-xdist",
-  "toml >= 0.10.1",
+  "tomli-w",
   # build deps for tests
   "flit_core >=2,<4",
   "poetry_core>=1.0.0",
