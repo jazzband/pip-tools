@@ -22,7 +22,7 @@ from ..locations import CONFIG_FILE_NAME
 from ..logging import log
 from ..repositories import PyPIRepository
 from ..utils import (
-    callback_config_file_defaults,
+    determine_config_file,
     flat_map,
     get_pip_version_for_python_executable,
     get_required_pip_specification,
@@ -102,7 +102,7 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
     help=f"Read configuration from TOML file. By default, looks for a {CONFIG_FILE_NAME} or "
     "pyproject.toml.",
     is_eager=True,
-    callback=callback_config_file_defaults,
+    callback=determine_config_file,
 )
 def cli(
     ask: bool,

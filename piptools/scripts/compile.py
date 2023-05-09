@@ -27,7 +27,7 @@ from ..repositories.base import BaseRepository
 from ..resolver import BacktrackingResolver, LegacyResolver
 from ..utils import (
     UNSAFE_PACKAGES,
-    callback_config_file_defaults,
+    determine_config_file,
     dedup,
     drop_extras,
     is_pinned_requirement,
@@ -317,7 +317,7 @@ def _determine_linesep(
     help=f"Read configuration from TOML file. By default, looks for a {CONFIG_FILE_NAME} or "
     "pyproject.toml.",
     is_eager=True,
-    callback=callback_config_file_defaults,
+    callback=determine_config_file,
 )
 def cli(
     ctx: click.Context,

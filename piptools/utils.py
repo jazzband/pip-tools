@@ -533,7 +533,7 @@ def parse_requirements_from_wheel_metadata(
         )
 
 
-def callback_config_file_defaults(
+def determine_config_file(
     ctx: click.Context, param: click.Parameter, value: str | None
 ) -> Path | None:
     """
