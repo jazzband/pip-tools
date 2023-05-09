@@ -579,13 +579,14 @@ def select_config_file(src_files: tuple[str, ...]) -> Path | None:
     # NOTE: only config file lookup candidate. This usually happens when a
     # NOTE: pip-tools invocation gets its incoming requirements from standard
     # NOTE: input.
-    src_files_as_paths = [
+    src_files_as_paths = (
         Path(Path.cwd(), src_file).resolve()
         for src_file in src_files or ('.', )
-    ]
-    candidate_dirs = [
-        src if src.is_dir() else src.parent for src in src_files_as_paths
-    ]
+    )
+    candidate_dirs = (
+        src if src.is_dir() else src.parent
+        for src in src_files_as_paths
+    )
     config_file_path = next(
         (
             candidate_dir / config_file
