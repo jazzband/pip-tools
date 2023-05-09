@@ -566,10 +566,18 @@ def callback_config_file_defaults(
     if not config:
         return None
 
-    if ctx.default_map is None:
-        ctx.default_map = {}
-    ctx.default_map.update(config)
+    _assign_config_to_cli_context(ctx, config)
     return config_file
+
+
+def _assign_config_to_cli_context(
+    click_context: click.Context,
+    cli_config_mapping: dict[str, Any],
+) -> None:
+    if click_context.default_map is None:
+        click_context.default_map = {}
+
+    click_context.default_map.update(cli_config_mapping)
 
 
 def select_config_file(src_files: tuple[str, ...]) -> Path | None:
