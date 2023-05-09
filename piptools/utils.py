@@ -566,10 +566,9 @@ def callback_config_file_defaults(
     if not config:
         return None
 
-    defaults: dict[str, Any] = ctx.default_map.copy() if ctx.default_map else {}
-    defaults.update(config)
-
-    ctx.default_map = defaults
+    if ctx.default_map is None:
+        ctx.default_map = {}
+    ctx.default_map.update(config)
     return config_file
 
 
