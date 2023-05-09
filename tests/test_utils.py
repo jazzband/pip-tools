@@ -597,7 +597,7 @@ def test_callback_config_file_defaults(pyproject_param, new_default, make_config
     ctx = Context(compile_cli)
     ctx.params["src_files"] = (str(config_file),)
     found_config_file = callback_config_file_defaults(ctx, "config", None)
-    assert found_config_file == str(config_file)
+    assert found_config_file == config_file
     # Make sure the default has been updated
     lookup_param = get_click_dest_for_option(pyproject_param)
     assert ctx.default_map[lookup_param] == new_default

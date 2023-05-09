@@ -14,6 +14,7 @@ from pip._internal.index.package_finder import PackageFinder
 from pip._internal.metadata import get_environment
 
 from .. import sync
+from pathlib import Path
 from .._compat import parse_requirements
 from .._compat.pip_compat import Distribution
 from ..exceptions import PipToolsError
@@ -120,7 +121,7 @@ def cli(
     client_cert: str | None,
     src_files: tuple[str, ...],
     pip_args: str | None,
-    config: str | None,
+    config: Path | None,
 ) -> None:
     """Synchronize virtual environment with requirements.txt."""
     log.verbosity = verbose - quiet
@@ -146,7 +147,7 @@ def cli(
             sys.exit(2)
 
     if config:
-        log.info(f"Using pip-tools configuration defaults found in '{config}'.")
+        log.info(f"Using pip-tools configuration defaults found in '{config !s}'.")
 
     if python_executable:
         _validate_python_executable(python_executable)

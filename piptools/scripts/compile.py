@@ -16,6 +16,7 @@ from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 
+from pathlib import Path
 from .._compat import parse_requirements
 from ..cache import DependencyCache
 from ..exceptions import NoCandidateFound, PipToolsError
@@ -356,7 +357,7 @@ def cli(
     emit_index_url: bool,
     emit_options: bool,
     unsafe_package: tuple[str, ...],
-    config: str | None,
+    config: Path | None,
 ) -> None:
     """
     Compiles requirements.txt from requirements.in, pyproject.toml, setup.cfg,
@@ -409,7 +410,7 @@ def cli(
         )
 
     if config:
-        log.info(f"Using pip-tools configuration defaults found in '{config}'.")
+        log.info(f"Using pip-tools configuration defaults found in '{config !s}'.")
 
     if resolver_name == "legacy":
         log.warning(

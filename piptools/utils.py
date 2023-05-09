@@ -535,7 +535,7 @@ def parse_requirements_from_wheel_metadata(
 
 def callback_config_file_defaults(
     ctx: click.Context, param: click.Parameter, value: str | None
-) -> str | None:
+) -> Path | None:
     """
     Returns the path to the config file with defaults being used, or `None` if no such file is
     found.
@@ -570,7 +570,7 @@ def callback_config_file_defaults(
     defaults.update(config)
 
     ctx.default_map = defaults
-    return str(config_file)
+    return config_file
 
 
 def select_config_file(src_files: tuple[str, ...]) -> Path | None:
