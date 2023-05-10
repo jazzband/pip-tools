@@ -32,7 +32,7 @@ MESSAGE_UNHASHED_PACKAGE = comment(
 
 MESSAGE_UNSAFE_PACKAGES_UNPINNED = comment(
     "# WARNING: The following packages were not pinned, but pip requires them to be"
-    "\n# pinned when the requirements file includes hashes and the requirement is not "
+    "\n# pinned when the requirements file includes hashes and the requirement is not"
     "\n# satisfied by a package already installed. "
     "Consider using the --allow-unsafe flag."
 )
