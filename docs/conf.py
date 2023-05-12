@@ -52,3 +52,4 @@ html_theme = "furo"
 # -------------------------------------------------------------------------
 default_role = "any"
 nitpicky = True
+suppress_warnings = ["myst.xref_missing"]
