@@ -1,9 +1,9 @@
-[![jazzband][jazzband-image]](jazzband) 
+[![jazzband][jazzband-image]](jazzband)
 [![pypi][pypi-image]](pypi)
-[![pyversions][pyversions-image]](pyversions) 
-[![pre-commit][pre-commit-image]](pre-commit) 
-[![buildstatus-gha][buildstatus-gha-image]](buildstatus-gha) 
-[![codecov][codecov-image]](codecov) 
+[![pyversions][pyversions-image]](pyversions)
+[![pre-commit][pre-commit-image]](pre-commit)
+[![buildstatus-gha][buildstatus-gha-image]](buildstatus-gha)
+[![codecov][codecov-image]](codecov)
 
 # pip-tools = pip-compile + pip-sync
 
@@ -75,6 +75,7 @@ dynamic = ["dependencies", "optional-dependencies"]
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.in"] }
 optional-dependencies.test = { file = ["requirements-test.txt"] }
+
 ```
 
 If you have a Django application that is packaged using `Hatch`, and you
@@ -94,6 +95,7 @@ dependencies = ["django"]
 
 [project.optional-dependencies]
 dev = ["pytest"]
+
 ```
 
 You can produce your pin files as easily as:
@@ -562,7 +564,6 @@ versions as the required `pip` versions.
 | 6.4.0          | 21.2 - 21.3.\* | 3.6 - 3.10     |
 | 6.5.0 - 6.10.0 | 21.2 - 22.3.\* | 3.7 - 3.11     |
 | 6.11.0+        | 22.2+          | 3.7 - 3.11     |
-
 
 [jazzband]: https://jazzband.co/
 [jazzband-image]: https://jazzband.co/static/img/badge.svg
