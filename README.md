@@ -44,7 +44,7 @@ environment.
 fulfils the dependencies then no changes will be made, even if updates are
 available. To compile from scratch, first delete the existing
 `requirements.txt` file, or see
-[Updating requirements](https://github.com/jazzband/pip-tools#updating-requirements)
+[Updating requirements](#updating-requirements)
 for alternative approaches.
 
 ### Requirements from `pyproject.toml`
