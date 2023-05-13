@@ -864,7 +864,7 @@ def test_upgrade_packages_option_no_existing_file(pip_conf, runner):
     )
 
 
-def test_upgrade_packages_option_empty_existing_file_warning(pip_conf, runner):
+def test_upgrade_packages_empty_target_file_warning(pip_conf, runner):
     """
     piptools warns the user if --upgrade-package/-P is specified and the
     output file exists, but is empty.
