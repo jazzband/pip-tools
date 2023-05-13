@@ -78,9 +78,28 @@ supports both installing your ``project.dependencies`` as well as your
 ``project.optional-dependencies``. Thanks to the fact that this is an
 official standard, you can use ``pip-compile`` to pin the dependencies
 in projects that use modern standards-adhering packaging tools like
-`Hatch <https://hatch.pypa.io/>`_ or `flit <https://flit.pypa.io/>`_.
+`Setuptools <https://setuptools.pypa.io>`_ , `Hatch <https://hatch.pypa.io/>`_
+or `flit <https://flit.pypa.io/>`_.
 
-Suppose you have a Django application that is packaged using ``Hatch``, and you
+Suppose you have a 'foobar' Python application that is packaged using ``Setuptools``,
+and you want to pin it for production. You can declare the project metadata as:
+
+.. code-block:: toml
+
+    [build-system]
+    requires = ["setuptools", "setuptools-scm"]
+    build-backend = "setuptools.build_meta"
+
+    [project]
+    requires-python = ">=3.9"
+    name = "foobar"
+    dynamic = ["dependencies", "optional-dependencies"]
+
+    [tool.setuptools.dynamic]
+    dependencies = { file = ["requirements.in"] }
+    optional-dependencies.test = { file = ["requirements-test.txt"] }
+
+If you have a Django application that is packaged using ``Hatch``, and you
 want to pin it for production. You also want to pin your development tools
 in a separate pin file. You declare ``django`` as a dependency and create an
 optional dependency ``dev`` that includes ``pytest``:
@@ -441,8 +460,8 @@ If you have multiple requirement files make sure you create a hook for each file
             args: [requirements-lint.in]
             files: ^requirements-lint\.(in|txt)$
           - id: pip-compile
-            name: pip-compile requirements.txt
-            args: [requirements.txt]
+            name: pip-compile requirements.in
+            args: [requirements.in]
             files: ^requirements\.(in|txt)$
 
 
