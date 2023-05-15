@@ -443,7 +443,8 @@ def cli(
 
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified
     # (= default invocation)
-    if not upgrade and os.path.exists(output_file.name):
+    output_file_exists = os.path.exists(output_file.name)
+    if not upgrade and output_file_exists:
         output_file_is_empty = os.path.getsize(output_file.name) == 0
         if upgrade_install_reqs and output_file_is_empty:
             log.warning(
