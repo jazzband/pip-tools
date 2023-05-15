@@ -389,22 +389,22 @@ Sample `.pre-commit-config.yaml`:
 
 ```yaml
 repos:
-    - repo: https://github.com/jazzband/pip-tools
-    rev: 6.13.0
-    hooks:
-        - id: pip-compile
+- repo: https://github.com/jazzband/pip-tools
+  rev: 6.13.0
+  hooks:
+    - id: pip-compile
 ```
 
 You might want to customize `pip-compile` args by configuring `args` and/or `files`, for example:
 
 ```yaml
 repos:
-    - repo: https://github.com/jazzband/pip-tools
-    rev: 6.13.0
-    hooks:
-        - id: pip-compile
-        files: ^requirements/production\.(in|txt)$
-        args: [--index-url=https://example.com, requirements/production.in]
+- repo: https://github.com/jazzband/pip-tools
+  rev: 6.13.0
+  hooks:
+    - id: pip-compile
+      files: ^requirements/production\.(in|txt)$
+      args: [--index-url=https://example.com, requirements/production.in]
 ```
 
 If you have multiple requirement files make sure you create a hook for each file.
@@ -412,23 +412,23 @@ If you have multiple requirement files make sure you create a hook for each file
 ```yaml
 repos:
     - repo: https://github.com/jazzband/pip-tools
-    rev: 6.13.0
-    hooks:
+      rev: 6.13.0
+      hooks:
         - id: pip-compile
-        name: pip-compile setup.py
-        files: ^(setup\.py|requirements\.txt)$
+          name: pip-compile setup.py
+          files: ^(setup\.py|requirements\.txt)$
         - id: pip-compile
-        name: pip-compile requirements-dev.in
-        args: [requirements-dev.in]
-        files: ^requirements-dev\.(in|txt)$
+          name: pip-compile requirements-dev.in
+          args: [requirements-dev.in]
+          files: ^requirements-dev\.(in|txt)$
         - id: pip-compile
-        name: pip-compile requirements-lint.in
-        args: [requirements-lint.in]
-        files: ^requirements-lint\.(in|txt)$
+          name: pip-compile requirements-lint.in
+          args: [requirements-lint.in]
+          files: ^requirements-lint\.(in|txt)$
         - id: pip-compile
-        name: pip-compile requirements.txt
-        args: [requirements.txt]
-        files: ^requirements\.(in|txt)$
+          name: pip-compile requirements.txt
+          args: [requirements.txt]
+          files: ^requirements\.(in|txt)$
 ```
 
 ### Example usage for `pip-sync`
@@ -498,13 +498,13 @@ The dependencies of a package can change depending on the Python environment in 
 is installed. Here, we define a Python environment as the combination of Operating
 System, Python version (3.7, 3.8, etc.), and Python implementation (CPython, PyPy,
 etc.). For an exact definition, refer to the possible combinations of [PEP 508
-environment markers](https://peps.python.org/pep-0508/#environment-markers).
+environment markers][environment-markers].
 
 As the resulting `requirements.txt` can differ for each environment, users must
 execute `pip-compile` **on each Python environment separately** to generate a
 `requirements.txt` valid for each said environment. The same `requirements.in` can
 be used as the source file for all environments, using
-[PEP 508 environment markers](https://peps.python.org/pep-0508/#environment-markers) as
+[PEP 508 environment markers][environment-markers] as
 needed, the same way it would be done for regular `pip` cross-environment usage.
 
 If the generated `requirements.txt` remains exactly the same for all Python
@@ -578,3 +578,4 @@ versions as the required `pip` versions.
 [codecov]: https://codecov.io/gh/jazzband/pip-tools
 [codecov-image]: https://codecov.io/gh/jazzband/pip-tools/branch/main/graph/badge.svg
 [pip-tools-overview]: https://github.com/jazzband/pip-tools/raw/main/img/pip-tools-overview.svg
+[environment-markers]: https://peps.python.org/pep-0508/#environment-markers
