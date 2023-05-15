@@ -444,7 +444,8 @@ def cli(
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified
     # (= default invocation)
     if not upgrade and os.path.exists(output_file.name):
-        if upgrade_install_reqs and os.path.getsize(output_file.name) == 0:
+        output_file_is_empty = os.path.getsize(output_file.name) == 0
+        if upgrade_install_reqs and output_file_is_empty:
             log.warning(
                 f"WARNING: the output file {output_file.name} exists but is empty. "
                 "Pip-tools cannot upgrade only specific packages (using -P/--upgrade-package) "
