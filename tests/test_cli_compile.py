@@ -858,6 +858,27 @@ def test_upgrade_packages_option_no_existing_file(pip_conf, runner):
     assert out.exit_code == 0
     assert "small-fake-a==0.2" in out.stderr.splitlines()
     assert "small-fake-b==0.3" in out.stderr.splitlines()
+    assert (
+        "WARNING: the output file requirements.txt exists but is empty"
+        not in out.stderr
+    )
+
+
+def test_upgrade_packages_empty_target_file_warning(pip_conf, runner):
+    """
+    piptools warns the user if --upgrade-package/-P is specified and the
+    output file exists, but is empty.
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write("small-fake-a==0.2")
+    with open("requirements.txt", "w") as req_txt:
+        req_txt.write("")
+
+    out = runner.invoke(cli, ["--no-annotate", "-P", "small-fake-a"])
+
+    assert out.exit_code == 0
+    assert "small-fake-a==0.2" in out.stderr.splitlines()
+    assert "WARNING: the output file requirements.txt exists but is empty" in out.stderr
 
 
 @pytest.mark.parametrize(
