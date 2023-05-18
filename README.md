@@ -188,6 +188,7 @@ And it will produce your `requirements.txt`, with all the Django dependencies
 (and all underlying dependencies) pinned.
 
 (updating-requirements)=
+
 ### Updating requirements
 
 `pip-compile` generates a `requirements.txt` file using the latest versions
@@ -390,46 +391,46 @@ Sample `.pre-commit-config.yaml`:
 
 ```yaml
 repos:
-- repo: https://github.com/jazzband/pip-tools
-  rev: 6.13.0
-  hooks:
-    - id: pip-compile
+  - repo: https://github.com/jazzband/pip-tools
+    rev: 6.13.0
+    hooks:
+      - id: pip-compile
 ```
 
 You might want to customize `pip-compile` args by configuring `args` and/or `files`, for example:
 
 ```yaml
 repos:
-- repo: https://github.com/jazzband/pip-tools
-  rev: 6.13.0
-  hooks:
-    - id: pip-compile
-      files: ^requirements/production\.(in|txt)$
-      args: [--index-url=https://example.com, requirements/production.in]
+  - repo: https://github.com/jazzband/pip-tools
+    rev: 6.13.0
+    hooks:
+      - id: pip-compile
+        files: ^requirements/production\.(in|txt)$
+        args: [--index-url=https://example.com, requirements/production.in]
 ```
 
 If you have multiple requirement files make sure you create a hook for each file.
 
 ```yaml
 repos:
-    - repo: https://github.com/jazzband/pip-tools
-      rev: 6.13.0
-      hooks:
-        - id: pip-compile
-          name: pip-compile setup.py
-          files: ^(setup\.py|requirements\.txt)$
-        - id: pip-compile
-          name: pip-compile requirements-dev.in
-          args: [requirements-dev.in]
-          files: ^requirements-dev\.(in|txt)$
-        - id: pip-compile
-          name: pip-compile requirements-lint.in
-          args: [requirements-lint.in]
-          files: ^requirements-lint\.(in|txt)$
-        - id: pip-compile
-          name: pip-compile requirements.in
-          args: [requirements.in]
-          files: ^requirements\.(in|txt)$
+  - repo: https://github.com/jazzband/pip-tools
+    rev: 6.13.0
+    hooks:
+      - id: pip-compile
+        name: pip-compile setup.py
+        files: ^(setup\.py|requirements\.txt)$
+      - id: pip-compile
+        name: pip-compile requirements-dev.in
+        args: [requirements-dev.in]
+        files: ^requirements-dev\.(in|txt)$
+      - id: pip-compile
+        name: pip-compile requirements-lint.in
+        args: [requirements-lint.in]
+        files: ^requirements-lint\.(in|txt)$
+      - id: pip-compile
+        name: pip-compile requirements.in
+        args: [requirements.in]
+        files: ^requirements\.(in|txt)$
 ```
 
 ### Example usage for `pip-sync`
