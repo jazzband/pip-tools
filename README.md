@@ -1,16 +1,16 @@
-[![jazzband][jazzband-image]](jazzband)
-[![pypi][pypi-image]](pypi)
-[![pyversions][pyversions-image]](pyversions)
-[![pre-commit][pre-commit-image]](pre-commit)
-[![buildstatus-gha][buildstatus-gha-image]](buildstatus-gha)
-[![codecov][codecov-image]](codecov)
+[![jazzband][jazzband-image]][jazzband]
+[![pypi][pypi-image]][pypi]
+[![pyversions][pyversions-image]][pyversions]
+[![pre-commit][pre-commit-image]][pre-commit]
+[![buildstatus-gha][buildstatus-gha-image]][buildstatus-gha]
+[![codecov][codecov-image]][codecov]
 
 # pip-tools = pip-compile + pip-sync
 
 A set of command line tools to help you keep your `pip`-based packages fresh,
 even when you've pinned them. You do pin them, right? (In building your Python application and its dependencies for production, you want to make sure that your builds are predictable and deterministic.)
 
-[![pip-tools overview for phase II][pip-tools-overview]](pip-tools-overview)
+[![pip-tools overview for phase II][pip-tools-overview]][pip-tools-overview]
 
 ## Installation
 
@@ -187,6 +187,7 @@ sqlparse==0.4.3
 And it will produce your `requirements.txt`, with all the Django dependencies
 (and all underlying dependencies) pinned.
 
+(updating-requirements)=
 ### Updating requirements
 
 `pip-compile` generates a `requirements.txt` file using the latest versions
