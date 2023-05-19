@@ -47,6 +47,25 @@ COMPILE_EXCLUDE_OPTIONS = {
     "--no-reuse-hashes",
 }
 
+# Only certain environment markers are allowed in requirement specifications.
+# Validate that overrides use a valid marker in order to provide better debug
+# feedback to the user.
+PEP508_ENVIRONMENT_MARKERS = [
+    "os_name",
+    "sys_platform",
+    "platform_machine",
+    "platform_python_implementation",
+    "platform_release",
+    "platform_system",
+    "platform_version",
+    "python_version",
+    "python_full_version",
+    "implementation_name",
+    "implementation_version",
+    # Note that 'extra' is omitted here because that should be set at the wheel
+    # level, not the runtime level.
+]
+
 
 def key_from_ireq(ireq: InstallRequirement) -> str:
     """Get a standardized key for an InstallRequirement."""
@@ -389,13 +408,18 @@ def get_compile_command(click_ctx: click.Context) -> str:
             else:
                 if isinstance(val, str) and is_url(val):
                     val = redact_auth_from_url(val)
+
                 if option.name == "pip_args_str":
                     # shlex.quote() would produce functional but noisily quoted results,
                     # e.g. --pip-args='--cache-dir='"'"'/tmp/with spaces'"'"''
                     # Instead, we try to get more legible quoting via repr:
-                    left_args.append(f"{option_long_name}={repr(val)}")
+                    quoted_val = repr(val)
+                elif isinstance(val, (tuple, list)):
+                    quoted_val = " ".join([shlex.quote(str(v)) for v in val])
                 else:
-                    left_args.append(f"{option_long_name}={shlex.quote(str(val))}")
+                    quoted_val = shlex.quote(str(val))
+
+                left_args.append(f"{option_long_name}={quoted_val}")
 
     return " ".join(["pip-compile", *sorted(left_args), *sorted(right_args)])
 
@@ -522,3 +546,16 @@ def parse_requirements_from_wheel_metadata(
             markers=parts.markers,
             extras=parts.extras,
         )
+
+
+def validate_environment_overrides(
+    _ctx: click.Context,
+    _param: str,
+    value: list[tuple[str, str]],
+) -> list[tuple[str, str]]:
+    for key, _ in value:
+        if key not in PEP508_ENVIRONMENT_MARKERS:
+            raise click.BadParameter(
+                f"Override key '{key}' must be one of " f"{PEP508_ENVIRONMENT_MARKERS}!"
+            )
+    return value

@@ -8,13 +8,14 @@ import tempfile
 from typing import IO, Any, BinaryIO, cast
 
 import click
-from build import BuildBackendException
 from build.util import project_wheel_metadata
 from click.utils import LazyFile, safecall
 from pip._internal.commands import create_command
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
+
+from build import BuildBackendException
 
 from .._compat import parse_requirements
 from ..cache import DependencyCache
@@ -25,12 +26,14 @@ from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..repositories.base import BaseRepository
 from ..resolver import BacktrackingResolver, LegacyResolver
 from ..utils import (
+    PEP508_ENVIRONMENT_MARKERS,
     UNSAFE_PACKAGES,
     dedup,
     drop_extras,
     is_pinned_requirement,
     key_from_ireq,
     parse_requirements_from_wheel_metadata,
+    validate_environment_overrides,
 )
 from ..writer import OutputWriter
 
@@ -308,6 +311,7 @@ def _determine_linesep(
     type=(str, str),
     help="Specify an environment marker to override."
     "This can be used to fetch requirements for a different platform",
+    callback=validate_environment_overrides,
 )
 def cli(
     ctx: click.Context,
@@ -347,7 +351,7 @@ def cli(
     emit_index_url: bool,
     emit_options: bool,
     unsafe_package: tuple[str, ...],
-    override_environment: tuple[tuple[str, str], ...],
+    override_environment: dict[str, str],
 ) -> None:
     """
     Compiles requirements.txt from requirements.in, pyproject.toml, setup.cfg,
@@ -447,20 +451,7 @@ def cli(
 
         def overriden_environment() -> dict[str, str]:
             return {
-                k: env_dict.get(k, default_env[k])
-                for k in [
-                    "implementation_name",
-                    "implementation_version",
-                    "os_name",
-                    "platform_machine",
-                    "platform_release",
-                    "platform_system",
-                    "platform_version",
-                    "python_full_version",
-                    "platform_python_implementation",
-                    "python_version",
-                    "sys_platform",
-                ]
+                k: env_dict.get(k, default_env[k]) for k in PEP508_ENVIRONMENT_MARKERS
             }
 
         pip._vendor.packaging.markers.default_environment = overriden_environment
