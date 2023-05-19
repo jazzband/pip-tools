@@ -2966,7 +2966,7 @@ def test_cross_fetch_top_level(fake_dists, runner, platform):
             small-fake-a==0.1 ; sys_platform == "darwin"
             """
         )
-    elif platform == "linux":
+    else:
         expected_output = dedent(
             """\
             small-fake-b==0.2 ; sys_platform == "linux"
