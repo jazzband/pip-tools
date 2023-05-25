@@ -459,10 +459,13 @@ def _reset_log():
 @pytest.fixture
 def make_config_file(tmpdir_cwd):
     """
-    Make a config file for pip-tools with a given parameter set to a specific 
+    Make a config file for pip-tools with a given parameter set to a specific
     value, returning a `pathlib.Path` to the config file.
     """
-    def _maker(pyproject_param: str, new_default: Any, config_file_name: str = CONFIG_FILE_NAME) -> Path:
+
+    def _maker(
+        pyproject_param: str, new_default: Any, config_file_name: str = CONFIG_FILE_NAME
+    ) -> Path:
         # Make a config file with this one config default override
         config_path = Path(tmpdir_cwd) / pyproject_param
         config_file = config_path / config_file_name
