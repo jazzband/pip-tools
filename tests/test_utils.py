@@ -652,5 +652,5 @@ def test_callback_config_file_defaults_unreadable_toml(make_config_file):
         determine_config_file(
             ctx,
             "config",
-            "/path/does/not/exist/my-config.toml",
+            "/dev/null/path/does/not/exist/my-config.toml",
         )
