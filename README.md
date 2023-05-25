@@ -424,8 +424,8 @@ repos:
         args: [requirements-lint.in]
         files: ^requirements-lint\.(in|txt)$
         - id: pip-compile
-        name: pip-compile requirements.txt
-        args: [requirements.txt]
+        name: pip-compile requirements.in
+        args: [requirements.in]
         files: ^requirements\.(in|txt)$
 ```
 
