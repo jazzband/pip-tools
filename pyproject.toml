@@ -8,7 +8,7 @@ requires-python = ">=3.7"
 dynamic = ["version"]
 name = "pip-tools"
 description = "pip-tools keeps your pinned dependencies fresh."
-readme = "README.rst"
+readme = "README.md"
 authors = [{ "name" = "Vincent Driessen", "email" = "me@nvie.com" }]
 license = { text = "BSD" }
 classifiers = [

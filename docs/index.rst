@@ -7,7 +7,7 @@
 Welcome to pip-tools' documentation!
 ====================================
 
-.. include:: ../README.rst
+.. include:: ../README.md
 
 .. toctree::
    :hidden:
