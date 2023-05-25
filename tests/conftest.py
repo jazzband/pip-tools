@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from functools import partial
 from pathlib import Path
 from textwrap import dedent
+from typing import Any
 
 import pytest
 import tomli_w
@@ -457,15 +458,17 @@ def _reset_log():
 
 @pytest.fixture
 def make_config_file(tmpdir_cwd):
-    def _maker(pyproject_param, new_default, config_file_name=CONFIG_FILE_NAME):
+    """
+    Make a config file for pip-tools with a given parameter set to a specific 
+    value, returning a `pathlib.Path` to the config file.
+    """
+    def _maker(pyproject_param: str, new_default: Any, config_file_name: str = CONFIG_FILE_NAME) -> Path:
         # Make a config file with this one config default override
         config_path = Path(tmpdir_cwd) / pyproject_param
         config_file = config_path / config_file_name
         config_path.mkdir(exist_ok=True)
 
-        config_to_dump = {"pip-tools": {pyproject_param: new_default}}
-        if config_file_name == "pyproject.toml":
-            config_to_dump = {"tool": config_to_dump}
+        config_to_dump = {"tool": {"pip-tools": {pyproject_param: new_default}}}
         config_file.write_text(tomli_w.dumps(config_to_dump))
         return config_file
 

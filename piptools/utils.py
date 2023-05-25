@@ -536,9 +536,9 @@ def parse_requirements_from_wheel_metadata(
 def determine_config_file(
     ctx: click.Context, param: click.Parameter, value: str | None
 ) -> Path | None:
-    """
-    Returns the path to the config file with defaults being used, or `None` if no such file is
-    found.
+    """Return the config file path.
+
+    ``None`` is returned if no such file is found.
 
     Defaults for `click.Command` parameters should be override-able in a config file. `pip-tools`
     will use the first file found, searching in this order: an explicitly given config file, a
@@ -555,8 +555,6 @@ def determine_config_file(
     config = parse_config_file(config_file)
     if config:
         _assign_config_to_cli_context(ctx, config)
-    else:
-        return None
 
     return config_file
 
@@ -625,7 +623,7 @@ MULTIPLE_VALUE_OPTIONS = [
 ]
 
 
-@functools.lru_cache()
+@functools.lru_cache
 def parse_config_file(config_file: Path) -> dict[str, Any]:
     try:
         config = tomllib.loads(config_file.read_text(encoding="utf-8"))
@@ -640,11 +638,8 @@ def parse_config_file(config_file: Path) -> dict[str, Any]:
             hint=f"Could not parse '{config_file !s}': {value_err !s}",
         )
 
-    # In a pyproject.toml file, we expect the config to be under `[tool.pip-tools]`, but in our
-    # native configuration, it would be just `[pip-tools]`.
-    if config_file.name == "pyproject.toml":
-        config = config.get("tool", {})
-    piptools_config: dict[str, Any] = config.get("pip-tools", {})
+    # In a TOML file, we expect the config to be under `[tool.pip-tools]`
+    piptools_config: dict[str, Any] = config.get("tool", {}).get("pip-tools", {})
     piptools_config = {
         get_click_dest_for_option(k): v for k, v in piptools_config.items()
     }
