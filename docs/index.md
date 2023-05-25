@@ -1,7 +1,7 @@
 # Welcome to pip-tools' documentation!
 
-```{include} ../README.rst
-
+```{eval-rst}
+.. include:: ../README.rst
 ```
 
 ```{toctree}
