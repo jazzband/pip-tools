@@ -1,4 +1,4 @@
-[![jazzband][jazzband-image]][jazzband]
+[![jazzband-image]][jazzband]
 [![pypi][pypi-image]][pypi]
 [![pyversions][pyversions-image]][pyversions]
 [![pre-commit][pre-commit-image]][pre-commit]
