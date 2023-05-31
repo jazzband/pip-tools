@@ -460,7 +460,7 @@ def _reset_log():
 def make_config_file(tmpdir_cwd):
     """
     Make a config file for pip-tools with a given parameter set to a specific
-    value, returning a `pathlib.Path` to the config file.
+    value, returning a ``pathlib.Path`` to the config file.
     """
 
     def _maker(

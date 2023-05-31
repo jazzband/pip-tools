@@ -540,10 +540,11 @@ def determine_config_file(
 
     ``None`` is returned if no such file is found.
 
-    Defaults for `click.Command` parameters should be override-able in a config file. `pip-tools`
-    will use the first file found, searching in this order: an explicitly given config file, a
-    `.pip-tools.toml`, a `pyproject.toml` file. Those files are searched for in the same directory
-    as the requirements input file.
+    Defaults for ``click.Command`` parameters should be override-able in a config
+    file. ``pip-tools`` will use the first file found, searching in this order:
+    an explicitly given config file, a ``.pip-tools.toml``, a ``pyproject.toml``
+    file. Those files are searched for in the same directory as the requirements
+    input file.
     """
     if value is None:
         config_file = select_config_file(ctx.params.get("src_files", ()))
@@ -571,7 +572,7 @@ def _assign_config_to_cli_context(
 
 def select_config_file(src_files: tuple[str, ...]) -> Path | None:
     """
-    Returns the config file to use for defaults given `src_files` provided.
+    Returns the config file to use for defaults given ``src_files`` provided.
     """
     # NOTE: If no src_files were specified, consider the current directory the
     # NOTE: only config file lookup candidate. This usually happens when a
@@ -604,7 +605,9 @@ NON_STANDARD_OPTION_DEST_MAP: dict[str, str] = {
 
 
 def get_click_dest_for_option(option_name: str) -> str:
-    """Returns the click `dest` value for the given option name."""
+    """
+    Returns the click ``dest`` value for the given option name.
+    """
     # Format the keys properly
     option_name = option_name.lstrip("-").replace("-", "_").lower()
     # Some options have dest values that are overrides from the click generated default
@@ -623,7 +626,7 @@ MULTIPLE_VALUE_OPTIONS = [
 ]
 
 
-@functools.lru_cache
+@functools.lru_cache()
 def parse_config_file(config_file: Path) -> dict[str, Any]:
     try:
         config = tomllib.loads(config_file.read_text(encoding="utf-8"))
