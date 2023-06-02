@@ -362,6 +362,20 @@ def test_is_url_requirement_filename(caplog, from_line, line):
             ["--pip-args", "--disable-pip-version-check --isolated"],
             "pip-compile --pip-args='--disable-pip-version-check --isolated'",
         ),
+        (
+            ["--override-environment", "os_name", "posix"],
+            "pip-compile --override-environment=os_name posix",
+        ),
+        # Check that an override value with spaces and an empty override are
+        # properly escaped.
+        (
+            ["--override-environment", "platform_version", "multiple words"],
+            "pip-compile --override-environment=platform_version 'multiple words'",
+        ),
+        (
+            ["--override-environment", "platform_release", ""],
+            "pip-compile --override-environment=platform_release ''",
+        ),
         pytest.param(
             ["--extra-index-url", "https://username:password@example.com/"],
             "pip-compile --extra-index-url='https://username:****@example.com/'",

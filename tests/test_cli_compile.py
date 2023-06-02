@@ -2925,3 +2925,252 @@ small-fake-b==0.3
 """
     assert out.exit_code == 0
     assert expected == out.stderr
+
+
+@pytest.mark.parametrize(
+    "platform",
+    (
+        "linux",
+        "darwin",
+    ),
+)
+def test_cross_fetch_top_level(fake_dists, runner, platform):
+    """
+    test passing `--override-environment` evaluates top level
+    requirements correctly.
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write('small-fake-a==0.1 ; sys_platform == "darwin"\n')
+        req_in.write('small-fake-b==0.2 ; sys_platform == "linux"\n')
+
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--find-links",
+            fake_dists,
+            "--no-annotate",
+            "--no-emit-options",
+            "--no-header",
+            "--override-environment",
+            "sys_platform",
+            platform,
+        ],
+    )
+
+    if platform == "darwin":
+        expected_output = dedent(
+            """\
+            small-fake-a==0.1 ; sys_platform == "darwin"
+            """
+        )
+    else:
+        expected_output = dedent(
+            """\
+            small-fake-b==0.2 ; sys_platform == "linux"
+            """
+        )
+
+    assert out.exit_code == 0, out.stderr
+    assert expected_output == out.stdout
+
+
+@pytest.mark.network
+@pytest.mark.parametrize(
+    "platform",
+    (
+        "linux",
+        "darwin",
+    ),
+)
+def test_cross_fetch_transitive_deps(
+    runner, make_package, make_wheel, tmpdir, platform
+):
+    """
+    test passing `--override-environment` selects the correct
+    transitive dependencies.
+    """
+    with open("requirements.in", "w") as req_in:
+        req_in.write("package-b\n")
+
+    package_a = make_package("package-a", version="1.0")
+    package_b = make_package(
+        "package-b",
+        version="1.0",
+        install_requires=['package-a ; sys_platform == "darwin"'],
+    )
+
+    dists_dir = tmpdir / "dists"
+    for pkg in [package_a, package_b]:
+        make_wheel(pkg, dists_dir)
+
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--find-links",
+            dists_dir,
+            "--no-annotate",
+            "--no-emit-options",
+            "--no-header",
+            "--override-environment",
+            "sys_platform",
+            platform,
+        ],
+    )
+
+    print(out.stdout)
+
+    expected_output = dedent(
+        """\
+        package-b==1.0
+        """
+    )
+
+    if platform == "darwin":
+        expected_output = (
+            dedent(
+                """\
+            package-a==1.0
+            """
+            )
+            + expected_output
+        )
+
+    assert out.exit_code == 0, out.stderr
+    assert expected_output == out.stdout
+
+
+def test_multiple_env_overrides(fake_dists, runner):
+    """
+    test passing multiple `--override-environment` evaluates top level
+    requirements correctly.
+    """
+
+    # Use arbitrary values for the markers that aren't reasonable values that
+    # might come from the test environment.
+    with open("requirements.in", "w") as req_in:
+        req_in.write('small-fake-a==0.1 ; sys_platform == "foo"\n')
+        req_in.write('small-fake-b==0.2 ; sys_platform == "bar"\n')
+        req_in.write('small-fake-c==0.3 ; implementation_name == "baz"\n')
+
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--find-links",
+            fake_dists,
+            "--no-annotate",
+            "--no-emit-options",
+            "--no-header",
+            "--override-environment",
+            "sys_platform",
+            "foo",
+            "--override-environment",
+            "implementation_name",
+            "baz",
+        ],
+    )
+
+    expected_output = dedent(
+        """\
+        small-fake-a==0.1 ; sys_platform == "foo"
+        small-fake-c==0.3 ; implementation_name == "baz"
+        """
+    )
+
+    assert out.exit_code == 0, out.stderr
+    assert expected_output == out.stdout
+
+
+@pytest.mark.parametrize(
+    "marker",
+    (
+        "os_name",
+        "sys_platform",
+        "platform_machine",
+        "platform_python_implementation",
+        "platform_release",
+        "platform_version",
+        "python_version",
+        "python_full_version",
+        "implementation_name",
+        "implementation_version",
+    ),
+)
+def test_all_env_overrides(fake_dists, runner, marker):
+    """
+    test that each valid `--override-environment` key can be used to select
+    requirements.
+    """
+
+    # Use arbitrary values for the markers that aren't reasonable values that
+    # might come from the test environment.
+    with open("requirements.in", "w") as req_in:
+        req_in.write(f'small-fake-a==0.1 ; {marker} == "foo"\n')
+        req_in.write(f'small-fake-b==0.2 ; {marker} == "bar"\n')
+
+    for marker_value in ["foo", "bar"]:
+        out = runner.invoke(
+            cli,
+            [
+                "--output-file",
+                "-",
+                "--quiet",
+                "--find-links",
+                fake_dists,
+                "--no-annotate",
+                "--no-emit-options",
+                "--no-header",
+                "--override-environment",
+                marker,
+                marker_value,
+            ],
+        )
+
+        if marker_value == "foo":
+            expected_output = dedent(
+                f"""\
+                small-fake-a==0.1 ; {marker} == "foo"
+                """
+            )
+        else:
+            expected_output = dedent(
+                f"""\
+                small-fake-b==0.2 ; {marker} == "bar"
+                """
+            )
+
+        assert out.exit_code == 0, out.stderr
+        assert expected_output == out.stdout
+
+
+def test_invalid_env_override(runner):
+    """
+    test passing an invalid `--override-environment` key triggers an error.
+    """
+
+    with open("requirements.in", "w"):
+        pass
+
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--override-environment",
+            "foo",
+            "bar",
+        ],
+    )
+
+    expected_error = "Invalid value for '--override-environment'"
+
+    assert out.exit_code == 2
+    assert expected_error in out.stderr

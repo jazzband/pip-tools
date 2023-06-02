@@ -60,7 +60,8 @@ Windows and ``pythonX.Y -m piptools compile`` on other systems.
 ``pip-compile`` should be run from the same virtual environment as your
 project so conditional dependencies that require a specific Python version,
 or other environment markers, resolve relative to your project's
-environment.
+environment. If you need to resolve dependencies for a different environment,
+see `Cross-environment`_ for some solutions.
 
 **Note**: If ``pip-compile`` finds an existing ``requirements.txt`` file that
 fulfils the dependencies then no changes will be made, even if updates are
@@ -529,6 +530,8 @@ We suggest to use the ``{env}-requirements.txt`` format
 (ex: ``win32-py3.7-requirements.txt``, ``macos-py3.10-requirements.txt``, etc.).
 
 
+.. _Cross-environment:
+
 Cross-environment usage of ``requirements.in``/``requirements.txt`` and ``pip-compile``
 =======================================================================================
 
@@ -539,7 +542,7 @@ etc.). For an exact definition, refer to the possible combinations of `PEP 508
 environment markers`_.
 
 As the resulting ``requirements.txt`` can differ for each environment, users must
-execute ``pip-compile`` **on each Python environment separately** to generate a
+execute ``pip-compile`` **for each Python environment separately** to generate a
 ``requirements.txt`` valid for each said environment.  The same ``requirements.in`` can
 be used as the source file for all environments, using `PEP 508 environment markers`_ as
 needed, the same way it would be done for regular ``pip`` cross-environment usage.
@@ -551,7 +554,29 @@ dependencies, making any newly generated ``requirements.txt`` environment-depend
 As a general rule, it's advised that users should still always execute ``pip-compile``
 on each targeted Python environment to avoid issues.
 
+There is a feature (``--override-environment``) that can be used to
+specify the environment when gathering dependencies, allowing for cross-environment
+fetching. However, a different ``requirements.txt`` must still be generated per
+environment. It is recommended to override all keys in `PEP 508 environment markers`_
+when targetting a different environment so the environment is fully defined.
+
 .. _PEP 508 environment markers: https://www.python.org/dev/peps/pep-0508/#environment-markers
+
+For example, if you wanted to evaluate ``requirements.in`` for a typical Linux machine:
+
+.. code-block:: bash
+
+    $ pip-compile requirements.in \
+        --override-environment os_name posix \
+        --override-environment sys_platform linux \
+        --override-environment platform_machine x86_64 \
+        --override-environment platform_python_implementation CPython \
+        --override-environment platform_release '' \
+        --override-environment platform_version '' \
+        --override-environment python_version 3.11 \
+        --override-environment python_full_version 3.11.0 \
+        --override-environment implementation_name cpython \
+        --override-environment implementation_version 3.11.0
 
 Other useful tools
 ==================
