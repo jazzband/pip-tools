@@ -16,7 +16,6 @@ from piptools.scripts.compile import cli as compile_cli
 from piptools.utils import (
     as_tuple,
     dedup,
-    override_defaults_from_config_file,
     drop_extras,
     flat_map,
     format_requirement,
@@ -31,6 +30,7 @@ from piptools.utils import (
     key_from_ireq,
     lookup_table,
     lookup_table_from_tuples,
+    override_defaults_from_config_file,
 )
 
 

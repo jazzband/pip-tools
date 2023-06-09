@@ -22,11 +22,11 @@ from ..locations import CONFIG_FILE_NAME
 from ..logging import log
 from ..repositories import PyPIRepository
 from ..utils import (
-    override_defaults_from_config_file,
     flat_map,
     get_pip_version_for_python_executable,
     get_required_pip_specification,
     get_sys_path_for_python_executable,
+    override_defaults_from_config_file,
 )
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"

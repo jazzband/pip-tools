@@ -28,10 +28,10 @@ from ..resolver import BacktrackingResolver, LegacyResolver
 from ..utils import (
     UNSAFE_PACKAGES,
     dedup,
-    override_defaults_from_config_file,
     drop_extras,
     is_pinned_requirement,
     key_from_ireq,
+    override_defaults_from_config_file,
     parse_requirements_from_wheel_metadata,
 )
 from ..writer import OutputWriter
