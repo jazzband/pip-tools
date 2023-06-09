@@ -16,7 +16,7 @@ from piptools.scripts.compile import cli as compile_cli
 from piptools.utils import (
     as_tuple,
     dedup,
-    determine_config_file,
+    override_defaults_from_config_file,
     drop_extras,
     flat_map,
     format_requirement,
@@ -596,7 +596,7 @@ def test_callback_config_file_defaults(pyproject_param, new_default, make_config
     # Create a "compile" run example pointing to the config file
     ctx = Context(compile_cli)
     ctx.params["src_files"] = (str(config_file),)
-    found_config_file = determine_config_file(ctx, "config", None)
+    found_config_file = override_defaults_from_config_file(ctx, "config", None)
     assert found_config_file == config_file
     # Make sure the default has been updated
     lookup_param = get_click_dest_for_option(pyproject_param)
@@ -619,7 +619,7 @@ def test_callback_config_file_defaults_multi_value_options(mv_option, make_confi
     ctx = Context(compile_cli)
     ctx.params["src_files"] = (str(config_file),)
     with pytest.raises(BadOptionUsage, match="must be a list"):
-        determine_config_file(ctx, "config", None)
+        override_defaults_from_config_file(ctx, "config", None)
 
 
 def test_callback_config_file_defaults_bad_toml(make_config_file):
@@ -631,7 +631,7 @@ def test_callback_config_file_defaults_bad_toml(make_config_file):
     ctx = Context(compile_cli)
     ctx.params["src_files"] = (str(config_file),)
     with pytest.raises(FileError, match="Could not parse "):
-        determine_config_file(ctx, "config", None)
+        override_defaults_from_config_file(ctx, "config", None)
 
 
 def test_callback_config_file_defaults_precedence(make_config_file):
@@ -639,7 +639,7 @@ def test_callback_config_file_defaults_precedence(make_config_file):
     project_config_file = make_config_file("newline", "CRLF", "pyproject.toml")
     ctx = Context(compile_cli)
     ctx.params["src_files"] = (str(project_config_file),)
-    found_config_file = determine_config_file(ctx, "config", None)
+    found_config_file = override_defaults_from_config_file(ctx, "config", None)
     # The pip-tools specific config file should take precedence over pyproject.toml
     assert found_config_file == piptools_config_file
     lookup_param = get_click_dest_for_option("newline")
@@ -649,7 +649,7 @@ def test_callback_config_file_defaults_precedence(make_config_file):
 def test_callback_config_file_defaults_unreadable_toml(make_config_file):
     ctx = Context(compile_cli)
     with pytest.raises(FileError, match="Could not read "):
-        determine_config_file(
+        override_defaults_from_config_file(
             ctx,
             "config",
             "/dev/null/path/does/not/exist/my-config.toml",

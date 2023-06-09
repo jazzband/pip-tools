@@ -533,18 +533,20 @@ def parse_requirements_from_wheel_metadata(
         )
 
 
-def determine_config_file(
+def override_defaults_from_config_file(
     ctx: click.Context, param: click.Parameter, value: str | None
 ) -> Path | None:
-    """Return the config file path.
+    """
+    Overrides ``click.Command`` defaults based on specified or discovered config
+    file, returning the ``pathlib.Path`` of that config file if specified or
+    discovered.
 
     ``None`` is returned if no such file is found.
 
-    Defaults for ``click.Command`` parameters should be override-able in a config
-    file. ``pip-tools`` will use the first file found, searching in this order:
-    an explicitly given config file, a ``.pip-tools.toml``, a ``pyproject.toml``
+    ``pip-tools`` will use the first config file found, searching in this order:
+    an explicitly given config file, a d``.pip-tools.toml``, a ``pyproject.toml``
     file. Those files are searched for in the same directory as the requirements
-    input file.
+    input file, or the current working directory if requirements come via stdin.
     """
     if value is None:
         config_file = select_config_file(ctx.params.get("src_files", ()))
