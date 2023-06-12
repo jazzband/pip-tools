@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 # https://peps.python.org/pep-0621/#readme
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 dynamic = ["version"]
 name = "pip-tools"
 description = "pip-tools keeps your pinned dependencies fresh."
@@ -22,7 +22,6 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.7",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: Implementation :: CPython",

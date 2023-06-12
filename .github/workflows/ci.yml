@@ -48,13 +48,12 @@ jobs:
           - "3.10"
           - "3.9"
           - "3.8"
-          - "3.7"
         pip-version:
           - "latest"
           - "previous"
         include:
           - os: Ubuntu
-            python-version: 3.7
+            python-version: 3.8
             pip-version: main
     env:
       TOXENV: pip${{ matrix.pip-version }}-coverage
@@ -122,7 +121,7 @@ jobs:
           - MacOS
           - Windows
         python-version:
-          - pypy-3.7
+          - pypy-3.8
         pip-version:
           - latest
     env:
