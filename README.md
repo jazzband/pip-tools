@@ -283,7 +283,7 @@ $ pip-compile requirements.in --pip-args "--retries 10 --timeout 30"
 
 You can define project-level defaults for `pip-compile` and `pip-sync` by
 writing them to a configuration file in the same directory as your requirements
-input files (or the current working directory if piping input from stdin). 
+input files (or the current working directory if piping input from stdin).
 By default, both `pip-compile` and `pip-sync` will look first
 for a `.pip-tools.toml` file and then in your `pyproject.toml`. You can
 also specify an alternate TOML configuration file with the `--config` option.
@@ -294,6 +294,7 @@ requirements file output, you can specify in a configuration file
 ```toml
 [tool.pip-tools]
 generate-hashes = true
+
 ```
 
 Options to `pip-compile` and `pip-sync` that may be used more than once
