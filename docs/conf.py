@@ -54,7 +54,7 @@ default_role = "any"
 nitpicky = True
 
 linkcheck_ignore = [
-    r'^https://matrix\.to/#',
+    r"^https://matrix\.to/#",
 ]
 
 suppress_warnings = ["myst.xref_missing"]
