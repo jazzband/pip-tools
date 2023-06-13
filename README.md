@@ -4,6 +4,8 @@
 [![pre-commit][pre-commit-image]][pre-commit]
 [![buildstatus-gha][buildstatus-gha-image]][buildstatus-gha]
 [![codecov][codecov-image]][codecov]
+[![Matrix Room Badge]][Matrix Room]
+[![Matrix Space Badge]][Matrix Space]
 
 # pip-tools = pip-compile + pip-sync
 
@@ -579,5 +581,9 @@ versions as the required `pip` versions.
 [buildstatus-gha-image]: https://github.com/jazzband/pip-tools/workflows/CI/badge.svg
 [codecov]: https://codecov.io/gh/jazzband/pip-tools
 [codecov-image]: https://codecov.io/gh/jazzband/pip-tools/branch/main/graph/badge.svg
+[Matrix Room Badge]: https://img.shields.io/matrix/pip-tools:matrix.org?label=Discuss%20on%20Matrix%20at%20%23pip-tools%3Amatrix.org&logo=matrix&server_fqdn=matrix.org&style=flat
+[Matrix Room]: https://matrix.to/#/%23pip-tools:matrix.org
+[Matrix Space Badge]: https://img.shields.io/matrix/jazzband:matrix.org?label=Discuss%20on%20Matrix%20at%20%23jazzband%3Amatrix.org&logo=matrix&server_fqdn=matrix.org&style=flat
+[Matrix Space]: https://matrix.to/#/%23jazzband:matrix.org
 [pip-tools-overview]: https://github.com/jazzband/pip-tools/raw/main/img/pip-tools-overview.svg
 [environment-markers]: https://peps.python.org/pep-0508/#environment-markers
