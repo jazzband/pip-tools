@@ -8,9 +8,12 @@ import sys
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from functools import partial
+from pathlib import Path
 from textwrap import dedent
+from typing import Any
 
 import pytest
+import tomli_w
 from click.testing import CliRunner
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
@@ -26,6 +29,7 @@ from pip._vendor.pkg_resources import Requirement
 from piptools._compat.pip_compat import PIP_VERSION, uses_pkg_resources
 from piptools.cache import DependencyCache
 from piptools.exceptions import NoCandidateFound
+from piptools.locations import CONFIG_FILE_NAME
 from piptools.logging import log
 from piptools.repositories import PyPIRepository
 from piptools.repositories.base import BaseRepository
@@ -450,3 +454,25 @@ def _reset_log():
     with other tests that depend on it.
     """
     log.reset()
+
+
+@pytest.fixture
+def make_config_file(tmpdir_cwd):
+    """
+    Make a config file for pip-tools with a given parameter set to a specific
+    value, returning a ``pathlib.Path`` to the config file.
+    """
+
+    def _maker(
+        pyproject_param: str, new_default: Any, config_file_name: str = CONFIG_FILE_NAME
+    ) -> Path:
+        # Make a config file with this one config default override
+        config_path = Path(tmpdir_cwd) / pyproject_param
+        config_file = config_path / config_file_name
+        config_path.mkdir(exist_ok=True)
+
+        config_to_dump = {"tool": {"pip-tools": {pyproject_param: new_default}}}
+        config_file.write_text(tomli_w.dumps(config_to_dump))
+        return config_file
+
+    return _maker

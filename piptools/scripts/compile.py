@@ -5,6 +5,7 @@ import os
 import shlex
 import sys
 import tempfile
+from pathlib import Path
 from typing import IO, Any, BinaryIO, cast
 
 import click
@@ -19,7 +20,7 @@ from pip._internal.utils.misc import redact_auth_from_url
 from .._compat import parse_requirements
 from ..cache import DependencyCache
 from ..exceptions import NoCandidateFound, PipToolsError
-from ..locations import CACHE_DIR
+from ..locations import CACHE_DIR, CONFIG_FILE_NAME
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..repositories.base import BaseRepository
@@ -30,6 +31,7 @@ from ..utils import (
     drop_extras,
     is_pinned_requirement,
     key_from_ireq,
+    override_defaults_from_config_file,
     parse_requirements_from_wheel_metadata,
 )
 from ..writer import OutputWriter
@@ -302,6 +304,21 @@ def _determine_linesep(
     help="Specify a package to consider unsafe; may be used more than once. "
     f"Replaces default unsafe packages: {', '.join(sorted(UNSAFE_PACKAGES))}",
 )
+@click.option(
+    "--config",
+    type=click.Path(
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+        allow_dash=False,
+        path_type=str,
+    ),
+    help=f"Read configuration from TOML file. By default, looks for a {CONFIG_FILE_NAME} or "
+    "pyproject.toml.",
+    is_eager=True,
+    callback=override_defaults_from_config_file,
+)
 def cli(
     ctx: click.Context,
     verbose: int,
@@ -340,6 +357,7 @@ def cli(
     emit_index_url: bool,
     emit_options: bool,
     unsafe_package: tuple[str, ...],
+    config: Path | None,
 ) -> None:
     """
     Compiles requirements.txt from requirements.in, pyproject.toml, setup.cfg,
@@ -390,6 +408,9 @@ def cli(
         raise click.BadArgumentUsage(
             f"input and output filenames must not be matched: {output_file.name}"
         )
+
+    if config:
+        log.info(f"Using pip-tools configuration defaults found in '{config !s}'.")
 
     if resolver_name == "legacy":
         log.warning(

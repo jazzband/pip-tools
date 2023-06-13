@@ -5,6 +5,7 @@ import os
 import shlex
 import shutil
 import sys
+from pathlib import Path
 from typing import cast
 
 import click
@@ -17,6 +18,7 @@ from .. import sync
 from .._compat import parse_requirements
 from .._compat.pip_compat import Distribution
 from ..exceptions import PipToolsError
+from ..locations import CONFIG_FILE_NAME
 from ..logging import log
 from ..repositories import PyPIRepository
 from ..utils import (
@@ -24,6 +26,7 @@ from ..utils import (
     get_pip_version_for_python_executable,
     get_required_pip_specification,
     get_sys_path_for_python_executable,
+    override_defaults_from_config_file,
 )
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
@@ -86,6 +89,21 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 )
 @click.argument("src_files", required=False, type=click.Path(exists=True), nargs=-1)
 @click.option("--pip-args", help="Arguments to pass directly to pip install.")
+@click.option(
+    "--config",
+    type=click.Path(
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+        allow_dash=False,
+        path_type=str,
+    ),
+    help=f"Read configuration from TOML file. By default, looks for a {CONFIG_FILE_NAME} or "
+    "pyproject.toml.",
+    is_eager=True,
+    callback=override_defaults_from_config_file,
+)
 def cli(
     ask: bool,
     dry_run: bool,
@@ -103,6 +121,7 @@ def cli(
     client_cert: str | None,
     src_files: tuple[str, ...],
     pip_args: str | None,
+    config: Path | None,
 ) -> None:
     """Synchronize virtual environment with requirements.txt."""
     log.verbosity = verbose - quiet
@@ -126,6 +145,9 @@ def cli(
         else:
             log.error("ERROR: " + msg)
             sys.exit(2)
+
+    if config:
+        log.info(f"Using pip-tools configuration defaults found in '{config !s}'.")
 
     if python_executable:
         _validate_python_executable(python_executable)
