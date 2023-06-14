@@ -19,7 +19,6 @@ else:
 
 import click
 from click.utils import LazyFile
-from ._compat.pip_compat import Distribution
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line, parse_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
@@ -33,6 +32,8 @@ from pip._vendor.pkg_resources import Requirement, get_distribution
 from piptools._compat import PIP_VERSION
 from piptools.locations import CONFIG_FILE_NAME
 from piptools.subprocess_utils import run_python_snippet
+
+from ._compat.pip_compat import Distribution
 
 if TYPE_CHECKING:
     from typing import Protocol
