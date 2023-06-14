@@ -128,6 +128,8 @@ class FakeRepository(BaseRepository):
 
 
 class InnerFakeInstalledDistribution:
+    # Emulate relevant parts of the _dist attribute of
+    # piptools._compat.pip_compat.Distribution.
     def __init__(self, req, version, deps=None):
         self.req = req
         self.version = version
@@ -153,16 +155,14 @@ class InnerFakeInstalledDistribution:
 
 
 class FakeInstalledDistribution:
+    # Emulate relevant parts of piptools._compat.pip_compat.Distribution.
     def __init__(self, line, deps=None):
         req = Requirement.parse(line)
         if "==" in line:
             version = line.split("==")[1]
         else:
             version = "0+unknown"
-
         self._dist = InnerFakeInstalledDistribution(req, version, deps)
-        self.key = self._dist.key
-        self.canonical_name = self._dist.req.project_name
         self.version = version
         if req.url:
             self.direct_url = direct_url_from_link(Link(req.url))

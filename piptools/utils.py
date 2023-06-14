@@ -69,11 +69,16 @@ def key_from_ireq(ireq: InstallRequirement) -> str:
 
 def key_from_req(req: InstallRequirement | Distribution | Requirement) -> str:
     """Get an all-lowercase version of the requirement's name."""
-    if isinstance(req, Distribution):
-        # Use the wrapped distribution object, not the pip internal one.
+    if (
+        isinstance(req, Distribution)
+        or req.__class__.__name__ == "FakeInstalledDistribution"
+    ):
+        # If this is a pip internal installed distribution (or the fake
+        # installed distribution used in tests), use the wrapped distribution
+        # object, not the pip internal one.
         req = req._dist
     if hasattr(req, "key"):
-        # from pkg_resources, such as installed dists for pip-sync.
+        # from pkg_resources, such as installed dists for pip-sync
         key = req.key
     else:
         # from packaging, such as install requirements from requirements.txt
