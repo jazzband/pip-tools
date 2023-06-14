@@ -68,11 +68,17 @@ def key_from_ireq(ireq: InstallRequirement) -> str:
 def key_from_req(req: InstallRequirement | Distribution | Requirement) -> str:
     """Get an all-lowercase version of the requirement's name."""
     if hasattr(req, "key"):
-        # from pkg_resources, such as installed dists for pip-sync
+        # From pkg_resources, such as installed dists for pip-sync.
         key = req.key
     else:
-        # from packaging, such as install requirements from requirements.txt
-        key = req.name
+        # From packaging, such as install requirements from requirements.txt.
+        # For installed distributions, pip internal backends derive from
+        # pip._internal.metadata.BaseDistribution, and have canonical_name
+        # instead of name.
+        if hasattr(req, "canonical_name"):
+            key = req.canonical_name
+        else:
+            key = req.name
     return str(canonicalize_name(key))
 
 

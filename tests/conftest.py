@@ -18,11 +18,13 @@ from click.testing import CliRunner
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.models.candidate import InstallationCandidate
+from pip._internal.models.link import Link
 from pip._internal.network.session import PipSession
 from pip._internal.req.constructors import (
     install_req_from_editable,
     install_req_from_line,
 )
+from pip._internal.utils.direct_url_helpers import direct_url_from_link
 from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Requirement
 
@@ -125,19 +127,16 @@ class FakeRepository(BaseRepository):
         """Not used"""
 
 
-class FakeInstalledDistribution:
-    def __init__(self, line, deps=None):
+class InnerFakeInstalledDistribution:
+    def __init__(self, req, version, deps=None):
+        self.req = req
+        self.version = version
         if deps is None:
             deps = []
         self.dep_strs = deps
         self.deps = [Requirement.parse(d) for d in deps]
-
-        self.req = Requirement.parse(line)
-
         self.key = key_from_req(self.req)
         self.specifier = self.req.specifier
-
-        self.version = line.split("==")[1]
 
     # The Distribution interface has changed between pkg_resources and
     # importlib.metadata.
@@ -151,6 +150,22 @@ class FakeInstalledDistribution:
         @property
         def requires(self):
             return self.dep_strs
+
+
+class FakeInstalledDistribution:
+    def __init__(self, line, deps=None):
+        req = Requirement.parse(line)
+        if "==" in line:
+            version = line.split("==")[1]
+        else:
+            version = "0+unknown"
+
+        self._dist = InnerFakeInstalledDistribution(req, version, deps)
+        self.key = self._dist.key
+        self.canonical_name = self._dist.req.project_name
+        self.version = version
+        if req.url:
+            self.direct_url = direct_url_from_link(Link(req.url))
 
 
 def pytest_collection_modifyitems(config, items):

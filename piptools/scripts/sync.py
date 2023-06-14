@@ -303,4 +303,4 @@ def _get_installed_distributions(
         user_only=user_only,
         skip=[],
     )
-    return [cast(Distribution, dist)._dist for dist in dists]
+    return [cast(Distribution, dist) for dist in dists]

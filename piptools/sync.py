@@ -9,8 +9,13 @@ from typing import Deque, Iterable, Mapping, ValuesView
 
 import click
 from pip._internal.commands.freeze import DEV_PKGS
+from pip._internal.models.direct_url import ArchiveInfo
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.compat import stdlib_pkgs
+from pip._internal.utils.direct_url_helpers import (
+    direct_url_as_pep440_direct_reference,
+    direct_url_from_link,
+)
 
 from ._compat.pip_compat import Distribution, dist_requires
 from .exceptions import IncompatibleRequirements
@@ -120,10 +125,10 @@ def diff_key_from_ireq(ireq: InstallRequirement) -> str:
     """
     Calculate a key for comparing a compiled requirement with installed modules.
     For URL requirements, only provide a useful key if the url includes
-    #egg=name==version, which will set ireq.req.name and ireq.specifier.
+    a hash, e.g. #sha1=..., in any of the supported hash algorithms.
     Otherwise return ireq.link so the key will not match and the package will
     reinstall. Reinstall is necessary to ensure that packages will reinstall
-    if the URL is changed but the version is not.
+    if the contents at the URL have changed but the version has not.
     """
     if is_url_requirement(ireq):
         if (
@@ -132,8 +137,29 @@ def diff_key_from_ireq(ireq: InstallRequirement) -> str:
             and ireq.specifier
         ):
             return key_from_ireq(ireq)
+        if getattr(ireq.req, "name", None) and ireq.link.has_hash:
+            return str(
+                direct_url_as_pep440_direct_reference(
+                    direct_url_from_link(ireq.link), ireq.req.name
+                )
+            )
+        # TODO: Also support VCS and editable installs.
         return str(ireq.link)
     return key_from_ireq(ireq)
+
+
+def diff_key_from_req(req: Distribution) -> str:
+    """Get a unique key for the requirement."""
+    key = key_from_req(req)
+    if (
+        hasattr(req, "direct_url")
+        and req.direct_url
+        and type(req.direct_url.info) == ArchiveInfo
+        and req.direct_url.info.hash
+    ):
+        key = direct_url_as_pep440_direct_reference(req.direct_url, key)
+    # TODO: Also support VCS and editable installs.
+    return key
 
 
 def diff(
@@ -152,7 +178,7 @@ def diff(
 
     pkgs_to_ignore = get_dists_to_ignore(installed_dists)
     for dist in installed_dists:
-        key = key_from_req(dist)
+        key = diff_key_from_req(dist)
         if key not in requirements_lut or not requirements_lut[key].match_markers():
             to_uninstall.add(key)
         elif requirements_lut[key].specifier.contains(dist.version):

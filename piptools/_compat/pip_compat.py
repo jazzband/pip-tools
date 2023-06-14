@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import optparse
-from typing import Callable, Iterable, Iterator, cast
+from typing import Iterable, Iterator
 
 import pip
 from pip._internal.cache import WheelCache
@@ -52,13 +52,12 @@ def _uses_pkg_resources() -> bool:
 uses_pkg_resources = _uses_pkg_resources()
 
 if uses_pkg_resources:
-    from operator import methodcaller
-
     from pip._vendor.pkg_resources import Distribution
 
-    dist_requires = cast(
-        Callable[[Distribution], Iterable[Requirement]], methodcaller("requires")
-    )
+    def dist_requires(dist: Distribution) -> Iterable[Requirement]:
+        res: Iterable[Requirement] = dist._dist.requires()
+        return res
+
 else:
     from pip._internal.metadata import select_backend
 
@@ -68,7 +67,7 @@ else:
         """Mimics pkg_resources.Distribution.requires for the case of no
         extras. This doesn't fulfill that API's `extras` parameter but
         satisfies the needs of pip-tools."""
-        reqs = (Requirement.parse(req) for req in (dist.requires or ()))
+        reqs = (Requirement.parse(req) for req in (dist._dist.requires or ()))
         return [
             req
             for req in reqs
