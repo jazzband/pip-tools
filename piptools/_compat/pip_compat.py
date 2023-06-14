@@ -52,7 +52,7 @@ def _uses_pkg_resources() -> bool:
 uses_pkg_resources = _uses_pkg_resources()
 
 if uses_pkg_resources:
-    from pip._vendor.pkg_resources import Distribution
+    from pip._internal.metadata.pkg_resources import Distribution
 
     def dist_requires(dist: Distribution) -> Iterable[Requirement]:
         res: Iterable[Requirement] = dist._dist.requires()
@@ -60,8 +60,9 @@ if uses_pkg_resources:
 
 else:
     from pip._internal.metadata import select_backend
+    from pip._internal.metadata.importlib import Distribution
 
-    Distribution = select_backend().Distribution
+    assert select_backend().Distribution is Distribution
 
     def dist_requires(dist: Distribution) -> Iterable[Requirement]:
         """Mimics pkg_resources.Distribution.requires for the case of no

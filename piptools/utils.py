@@ -19,6 +19,7 @@ else:
 
 import click
 from click.utils import LazyFile
+from ._compat.pip_compat import Distribution
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line, parse_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
@@ -27,7 +28,7 @@ from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.specifiers import SpecifierSet
 from pip._vendor.packaging.utils import canonicalize_name
 from pip._vendor.packaging.version import Version
-from pip._vendor.pkg_resources import Distribution, Requirement, get_distribution
+from pip._vendor.pkg_resources import Requirement, get_distribution
 
 from piptools._compat import PIP_VERSION
 from piptools.locations import CONFIG_FILE_NAME
@@ -67,18 +68,15 @@ def key_from_ireq(ireq: InstallRequirement) -> str:
 
 def key_from_req(req: InstallRequirement | Distribution | Requirement) -> str:
     """Get an all-lowercase version of the requirement's name."""
+    if isinstance(req, Distribution):
+        # Use the wrapped distribution object, not the pip internal one.
+        req = req._dist
     if hasattr(req, "key"):
-        # From pkg_resources, such as installed dists for pip-sync.
+        # from pkg_resources, such as installed dists for pip-sync.
         key = req.key
     else:
-        # From packaging, such as install requirements from requirements.txt.
-        # For installed distributions, pip internal backends derive from
-        # pip._internal.metadata.BaseDistribution, and have canonical_name
-        # instead of name.
-        if hasattr(req, "canonical_name"):
-            key = req.canonical_name
-        else:
-            key = req.name
+        # from packaging, such as install requirements from requirements.txt
+        key = req.name
     return str(canonicalize_name(key))
 
 
