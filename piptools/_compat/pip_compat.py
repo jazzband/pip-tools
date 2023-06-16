@@ -25,12 +25,13 @@ PIP_VERSION = tuple(map(int, parse_version(pip.__version__).base_version.split("
 # pattern. In pip 22.1, importlib.metadata became the default on Python 3.11
 # (and later), but is overridable. `select_backend` returns what's being used.
 
+
 @dataclass(frozen=True)
 class Distribution:
     key: str
     version: str
     requires: Iterable[Requirement]
-    direct_url: Optional[DirectUrl]
+    direct_url: DirectUrl | None
 
     @classmethod
     def from_pip_distribution(cls, dist: BaseDistribution) -> Distribution:
