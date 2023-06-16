@@ -8,7 +8,9 @@ sphinx:
   configuration: docs/conf.py
   fail_on_warning: true
 
-formats: all
+formats:
+  - pdf
+  - htmlzip
 
 build:
   os: ubuntu-22.04
