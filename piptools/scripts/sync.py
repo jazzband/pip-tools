@@ -15,8 +15,7 @@ from pip._internal.index.package_finder import PackageFinder
 from pip._internal.metadata import get_environment
 
 from .. import sync
-from .._compat import parse_requirements
-from .._compat.pip_compat import Distribution
+from .._compat import Distribution, parse_requirements
 from ..exceptions import PipToolsError
 from ..locations import CONFIG_FILE_NAME
 from ..logging import log
@@ -303,4 +302,4 @@ def _get_installed_distributions(
         user_only=user_only,
         skip=[],
     )
-    return [cast(Distribution, dist) for dist in dists]
+    return [Distribution.from_pip_distribution(dist) for dist in dists]

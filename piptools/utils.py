@@ -24,16 +24,15 @@ from pip._internal.req.constructors import install_req_from_line, parse_req_from
 from pip._internal.utils.misc import redact_auth_from_url
 from pip._internal.vcs import is_url
 from pip._vendor.packaging.markers import Marker
+from pip._vendor.packaging.requirements import Requirement
 from pip._vendor.packaging.specifiers import SpecifierSet
 from pip._vendor.packaging.utils import canonicalize_name
 from pip._vendor.packaging.version import Version
-from pip._vendor.pkg_resources import Requirement, get_distribution
+from pip._vendor.pkg_resources import get_distribution
 
-from piptools._compat import PIP_VERSION
+from piptools._compat import PIP_VERSION, Distribution
 from piptools.locations import CONFIG_FILE_NAME
 from piptools.subprocess_utils import run_python_snippet
-
-from ._compat.pip_compat import Distribution
 
 if TYPE_CHECKING:
     from typing import Protocol
@@ -69,14 +68,6 @@ def key_from_ireq(ireq: InstallRequirement) -> str:
 
 def key_from_req(req: InstallRequirement | Distribution | Requirement) -> str:
     """Get an all-lowercase version of the requirement's name."""
-    if (
-        isinstance(req, Distribution)
-        or req.__class__.__name__ == "FakeInstalledDistribution"
-    ):
-        # If this is a pip internal installed distribution (or the fake
-        # installed distribution used in tests), use the wrapped distribution
-        # object, not the pip internal one.
-        req = req._dist
     if hasattr(req, "key"):
         # from pkg_resources, such as installed dists for pip-sync
         key = req.key

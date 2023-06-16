@@ -28,7 +28,7 @@ from pip._internal.utils.direct_url_helpers import direct_url_from_link
 from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Requirement
 
-from piptools._compat.pip_compat import PIP_VERSION, uses_pkg_resources
+from piptools._compat import PIP_VERSION, Distribution
 from piptools.cache import DependencyCache
 from piptools.exceptions import NoCandidateFound
 from piptools.locations import CONFIG_FILE_NAME
@@ -40,7 +40,6 @@ from piptools.utils import (
     as_tuple,
     is_url_requirement,
     key_from_ireq,
-    key_from_req,
     make_install_requirement,
 )
 
@@ -127,51 +126,18 @@ class FakeRepository(BaseRepository):
         """Not used"""
 
 
-class InnerFakeInstalledDistribution:
-    # Emulate relevant parts of the _dist attribute of
-    # piptools._compat.pip_compat.Distribution. See note below in
-    # FakeInstalledDistribution.
-    def __init__(self, req, version, deps=None):
-        self.req = req
-        self.version = version
-        if deps is None:
-            deps = []
-        self.dep_strs = deps
-        self.deps = [Requirement.parse(d) for d in deps]
-        self.key = key_from_req(self.req)
-        self.specifier = self.req.specifier
-
-    # The Distribution interface has changed between pkg_resources and
-    # importlib.metadata.
-    if uses_pkg_resources:
-
-        def requires(self):
-            return self.deps
-
+def parse_fake_distribution(line, deps=[]):
+    req = Requirement.parse(line)
+    key = req.key
+    if "==" in line:
+        version = line.split("==")[1]
     else:
-
-        @property
-        def requires(self):
-            return self.dep_strs
-
-
-class FakeInstalledDistribution:
-    # Emulate relevant parts of piptools._compat.pip_compat.Distribution, which
-    # is currently aliasing a pip internal class implementing the protocol
-    # pip._internal.metadata.base.BaseDistribution.
-    # piptools uses only the version and direct_url fields directly from this
-    # type, and uses the delegate instance in the _dist attribute for the other
-    # values.
-    def __init__(self, line, deps=None):
-        req = Requirement.parse(line)
-        if "==" in line:
-            version = line.split("==")[1]
-        else:
-            version = "0+unknown"
-        self._dist = InnerFakeInstalledDistribution(req, version, deps)
-        self.version = version
-        if req.url:
-            self.direct_url = direct_url_from_link(Link(req.url))
+        version = "0+unknown"
+    requires = [Requirement.parse(d) for d in deps]
+    direct_url = None
+    if req.url:
+        direct_url = direct_url_from_link(Link(req.url))
+    return Distribution(key, version, requires, direct_url)
 
 
 def pytest_collection_modifyitems(config, items):
@@ -183,7 +149,7 @@ def pytest_collection_modifyitems(config, items):
 
 @pytest.fixture
 def fake_dist():
-    return FakeInstalledDistribution
+    return parse_fake_distribution
 
 
 @pytest.fixture

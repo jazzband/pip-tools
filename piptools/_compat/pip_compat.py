@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 import optparse
-from typing import Iterable, Iterator
+from dataclasses import dataclass
+from typing import Iterable, Iterator, Optional
 
 import pip
 from pip._internal.cache import WheelCache
 from pip._internal.index.package_finder import PackageFinder
+from pip._internal.metadata import BaseDistribution
+from pip._internal.metadata.importlib import Distribution as _ImportLibDist
+from pip._internal.metadata.pkg_resources import Distribution as _PkgResourcesDist
+from pip._internal.models.direct_url import DirectUrl
 from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement
 from pip._internal.req import parse_requirements as _parse_requirements
@@ -15,11 +20,48 @@ from pip._vendor.pkg_resources import Requirement
 
 PIP_VERSION = tuple(map(int, parse_version(pip.__version__).base_version.split(".")))
 
-__all__ = [
-    "dist_requires",
-    "uses_pkg_resources",
-    "Distribution",
-]
+# The Distribution interface has changed between pkg_resources and
+# importlib.metadata, so this compat layer allows for a consistent access
+# pattern. In pip 22.1, importlib.metadata became the default on Python 3.11
+# (and later), but is overridable. `select_backend` returns what's being used.
+
+@dataclass(frozen=True)
+class Distribution:
+    key: str
+    version: str
+    requires: Iterable[Requirement]
+    direct_url: Optional[DirectUrl]
+
+    @classmethod
+    def from_pip_distribution(cls, dist: BaseDistribution) -> Distribution:
+        # TODO: Use only the BaseDistribution protocol properties and methods
+        # instead of specializing by type.
+        if isinstance(dist, _PkgResourcesDist):
+            return cls._from_pkg_resources(dist)
+        if isinstance(dist, _ImportLibDist):
+            return cls._from_importlib(dist)
+        raise ValueError(
+            f"unsupported installed distribution class ({dist.__class__}): {dist}"
+        )
+
+    @classmethod
+    def _from_pkg_resources(cls, dist: _PkgResourcesDist) -> Distribution:
+        return cls(
+            dist._dist.key, dist._dist.version, dist._dist.requires(), dist.direct_url
+        )
+
+    @classmethod
+    def _from_importlib(cls, dist: _ImportLibDist) -> Distribution:
+        """Mimics pkg_resources.Distribution.requires for the case of no
+        extras. This doesn't fulfill that API's `extras` parameter but
+        satisfies the needs of pip-tools."""
+        reqs = (Requirement.parse(req) for req in (dist._dist.requires or ()))
+        requires = [
+            req
+            for req in reqs
+            if not req.marker or req.marker.evaluate({"extra": None})
+        ]
+        return cls(dist._dist.name, dist._dist.version, requires, dist.direct_url)
 
 
 def parse_requirements(
@@ -34,46 +76,6 @@ def parse_requirements(
         filename, session, finder=finder, options=options, constraint=constraint
     ):
         yield install_req_from_parsed_requirement(parsed_req, isolated=isolated)
-
-
-# The Distribution interface has changed between pkg_resources and
-# importlib.metadata, so this compat layer allows for a consistent access
-# pattern. In pip 22.1, importlib.metadata became the default on Python 3.11
-# (and later), but is overridable. `select_backend` returns what's being used.
-
-
-def _uses_pkg_resources() -> bool:
-    from pip._internal.metadata import select_backend
-    from pip._internal.metadata.pkg_resources import Distribution as _Dist
-
-    return select_backend().Distribution is _Dist
-
-
-uses_pkg_resources = _uses_pkg_resources()
-
-if uses_pkg_resources:
-    from pip._internal.metadata.pkg_resources import Distribution
-
-    def dist_requires(dist: Distribution) -> Iterable[Requirement]:
-        res: Iterable[Requirement] = dist._dist.requires()
-        return res
-
-else:
-    from pip._internal.metadata import select_backend
-    from pip._internal.metadata.importlib import Distribution
-
-    assert select_backend().Distribution is Distribution
-
-    def dist_requires(dist: Distribution) -> Iterable[Requirement]:
-        """Mimics pkg_resources.Distribution.requires for the case of no
-        extras. This doesn't fulfill that API's `extras` parameter but
-        satisfies the needs of pip-tools."""
-        reqs = (Requirement.parse(req) for req in (dist._dist.requires or ()))
-        return [
-            req
-            for req in reqs
-            if not req.marker or req.marker.evaluate({"extra": None})
-        ]
 
 
 def create_wheel_cache(cache_dir: str, format_control: str | None = None) -> WheelCache:

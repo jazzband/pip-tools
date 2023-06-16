@@ -17,7 +17,7 @@ from pip._internal.utils.direct_url_helpers import (
     direct_url_from_link,
 )
 
-from ._compat.pip_compat import Distribution, dist_requires
+from ._compat import Distribution
 from .exceptions import IncompatibleRequirements
 from .logging import log
 from .utils import (
@@ -66,7 +66,7 @@ def dependency_tree(
 
         dependencies.add(key)
 
-        for dep_specifier in dist_requires(v):
+        for dep_specifier in v.requires:
             dep_name = key_from_req(dep_specifier)
             if dep_name in installed_keys:
                 dep = installed_keys[dep_name]
@@ -131,12 +131,6 @@ def diff_key_from_ireq(ireq: InstallRequirement) -> str:
     if the contents at the URL have changed but the version has not.
     """
     if is_url_requirement(ireq):
-        if (
-            ireq.req
-            and (getattr(ireq.req, "key", None) or getattr(ireq.req, "name", None))
-            and ireq.specifier
-        ):
-            return key_from_ireq(ireq)
         if getattr(ireq.req, "name", None) and ireq.link.has_hash:
             return str(
                 direct_url_as_pep440_direct_reference(

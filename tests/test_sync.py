@@ -68,7 +68,7 @@ def mocked_tmp_req_file(mocked_tmp_file):
 )
 def test_dependency_tree(fake_dist, installed, root, expected):
     installed = {
-        distribution._dist.key: distribution
+        distribution.key: distribution
         for distribution in (fake_dist(name, deps) for name, deps in installed)
     }
 
