@@ -129,7 +129,8 @@ class FakeRepository(BaseRepository):
 
 class InnerFakeInstalledDistribution:
     # Emulate relevant parts of the _dist attribute of
-    # piptools._compat.pip_compat.Distribution.
+    # piptools._compat.pip_compat.Distribution. See note below in
+    # FakeInstalledDistribution.
     def __init__(self, req, version, deps=None):
         self.req = req
         self.version = version
@@ -155,7 +156,12 @@ class InnerFakeInstalledDistribution:
 
 
 class FakeInstalledDistribution:
-    # Emulate relevant parts of piptools._compat.pip_compat.Distribution.
+    # Emulate relevant parts of piptools._compat.pip_compat.Distribution, which
+    # is currently aliasing a pip internal class implementing the protocol
+    # pip._internal.metadata.base.BaseDistribution.
+    # piptools uses only the version and direct_url fields directly from this
+    # type, and uses the delegate instance in the _dist attribute for the other
+    # values.
     def __init__(self, line, deps=None):
         req = Requirement.parse(line)
         if "==" in line:
