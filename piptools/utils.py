@@ -68,7 +68,9 @@ def key_from_ireq(ireq: InstallRequirement) -> str:
 
 def key_from_req(req: InstallRequirement | Distribution | Requirement) -> str:
     """Get an all-lowercase version of the requirement's name."""
-    if hasattr(req, "key"):
+    if isinstance(req, Distribution):
+        key = req.key
+    elif hasattr(req, "key"):
         # from pkg_resources, such as installed dists for pip-sync
         key = req.key
     else:
