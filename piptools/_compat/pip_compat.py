@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import optparse
 from dataclasses import dataclass
-from typing import Iterable, Iterator, Optional
+from typing import Iterable, Iterator
 
 import pip
 from pip._internal.cache import WheelCache
