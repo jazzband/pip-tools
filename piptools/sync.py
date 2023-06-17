@@ -60,7 +60,7 @@ def dependency_tree(
 
     while queue:
         v = queue.popleft()
-        key = key_from_req(v)
+        key = v.key
         if key in dependencies:
             continue
 
@@ -86,7 +86,7 @@ def get_dists_to_ignore(installed: Iterable[Distribution]) -> list[str]:
     locally, click should also be installed/uninstalled depending on the given
     requirements.
     """
-    installed_keys = {key_from_req(r): r for r in installed}
+    installed_keys = {r.key: r for r in installed}
     return list(
         flat_map(lambda req: dependency_tree(installed_keys, req), PACKAGES_TO_IGNORE)
     )
@@ -144,10 +144,9 @@ def diff_key_from_ireq(ireq: InstallRequirement) -> str:
 
 def diff_key_from_req(req: Distribution) -> str:
     """Get a unique key for the requirement."""
-    key = key_from_req(req)
+    key = req.key
     if (
-        hasattr(req, "direct_url")
-        and req.direct_url
+        req.direct_url
         and type(req.direct_url.info) == ArchiveInfo
         and req.direct_url.info.hash
     ):
