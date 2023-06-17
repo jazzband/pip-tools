@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import optparse
 from dataclasses import dataclass
-from typing import Iterable, Iterator, TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable, Iterator
 
 import pip
 from pip._internal.cache import WheelCache
@@ -25,6 +25,7 @@ PIP_VERSION = tuple(map(int, parse_version(pip.__version__).base_version.split("
 # (and later), but is overridable. `select_backend` returns what's being used.
 if TYPE_CHECKING:
     from pip._internal.metadata.importlib import Distribution as _ImportLibDist
+
 
 @dataclass(frozen=True)
 class Distribution:
@@ -49,7 +50,7 @@ class Distribution:
         )
 
     @classmethod
-    def _from_importlib(cls, dist: "_ImportLibDist") -> Distribution:
+    def _from_importlib(cls, dist: _ImportLibDist) -> Distribution:
         """Mimics pkg_resources.Distribution.requires for the case of no
         extras. This doesn't fulfill that API's `extras` parameter but
         satisfies the needs of pip-tools."""
