@@ -8,7 +8,6 @@ import pip
 from pip._internal.cache import WheelCache
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.metadata import BaseDistribution
-from pip._internal.metadata.importlib import Distribution as _ImportLibDist
 from pip._internal.metadata.pkg_resources import Distribution as _PkgResourcesDist
 from pip._internal.models.direct_url import DirectUrl
 from pip._internal.network.session import PipSession
@@ -39,11 +38,8 @@ class Distribution:
         # instead of specializing by type.
         if isinstance(dist, _PkgResourcesDist):
             return cls._from_pkg_resources(dist)
-        if isinstance(dist, _ImportLibDist):
+        else:
             return cls._from_importlib(dist)
-        raise ValueError(
-            f"unsupported installed distribution class ({dist.__class__}): {dist}"
-        )
 
     @classmethod
     def _from_pkg_resources(cls, dist: _PkgResourcesDist) -> Distribution:
@@ -52,7 +48,7 @@ class Distribution:
         )
 
     @classmethod
-    def _from_importlib(cls, dist: _ImportLibDist) -> Distribution:
+    def _from_importlib(cls, dist) -> Distribution:
         """Mimics pkg_resources.Distribution.requires for the case of no
         extras. This doesn't fulfill that API's `extras` parameter but
         satisfies the needs of pip-tools."""
