@@ -1908,6 +1908,34 @@ def test_upgrade_package_doesnt_remove_annotation(pip_conf, runner):
             """
         )
 
+@pytest.mark.parametrize(("num_inputs"), (2, 3, 10))
+def test_many_inputs_includes_all_annotations(pip_conf, runner, num_inputs):
+    """
+    Tests that an entry required by multiple input files is attributed to all of them in the annotation.
+    See: https://github.com/jazzband/pip-tools/issues/1853
+    """
+    in_files = [f"requirements{n:02d}.in" for n in range(1, num_inputs + 1)]
+
+    for in_file in in_files:
+        with open(in_file, "w") as req_in:
+            req_in.write("small-fake-a==0.1\n")
+
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--no-header",
+            "--no-emit-find-links",
+        ] + in_files,
+    )
+    assert out.exit_code == 0, out.stderr
+    assert out.stdout == "\n".join([
+        "small-fake-a==0.1",
+        "    # via",
+    ] + [f"    #   -r {in_file}" for in_file in in_files]) + "\n"
+
 
 @pytest.mark.parametrize(
     "options",
