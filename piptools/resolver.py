@@ -504,7 +504,9 @@ class BacktrackingResolver(BaseResolver):
         self.existing_constraints = existing_constraints
 
         # Categorize InstallRequirements into sets by key
-        constraints_sets: DefaultDict[str, set[InstallRequirement]] = collections.defaultdict(set)
+        constraints_sets: DefaultDict[
+            str, set[InstallRequirement]
+        ] = collections.defaultdict(set)
         for ireq in constraints:
             constraints_sets[key_from_ireq(ireq)].add(ireq)
         # Collapse each set of InstallRequirements using combine_install_requirements

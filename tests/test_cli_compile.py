@@ -1908,6 +1908,7 @@ def test_upgrade_package_doesnt_remove_annotation(pip_conf, runner):
             """
         )
 
+
 @pytest.mark.parametrize(("num_inputs"), (2, 3, 10))
 def test_many_inputs_includes_all_annotations(pip_conf, runner, num_inputs):
     """
@@ -1928,13 +1929,21 @@ def test_many_inputs_includes_all_annotations(pip_conf, runner, num_inputs):
             "--quiet",
             "--no-header",
             "--no-emit-find-links",
-        ] + in_files,
+        ]
+        + in_files,
     )
     assert out.exit_code == 0, out.stderr
-    assert out.stdout == "\n".join([
-        "small-fake-a==0.1",
-        "    # via",
-    ] + [f"    #   -r {in_file}" for in_file in in_files]) + "\n"
+    assert (
+        out.stdout
+        == "\n".join(
+            [
+                "small-fake-a==0.1",
+                "    # via",
+            ]
+            + [f"    #   -r {in_file}" for in_file in in_files]
+        )
+        + "\n"
+    )
 
 
 @pytest.mark.parametrize(
