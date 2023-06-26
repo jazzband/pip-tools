@@ -1912,7 +1912,8 @@ def test_upgrade_package_doesnt_remove_annotation(pip_conf, runner):
 @pytest.mark.parametrize(("num_inputs"), (2, 3, 10))
 def test_many_inputs_includes_all_annotations(pip_conf, runner, num_inputs):
     """
-    Tests that an entry required by multiple input files is attributed to all of them in the annotation.
+    Tests that an entry required by multiple input files is attributed to all of them in the
+    annotation.
     See: https://github.com/jazzband/pip-tools/issues/1853
     """
     in_files = [f"requirements{n:02d}.in" for n in range(1, num_inputs + 1)]
