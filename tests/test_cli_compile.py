@@ -1916,11 +1916,9 @@ def test_many_inputs_includes_all_annotations(pip_conf, runner, num_inputs):
     annotation.
     See: https://github.com/jazzband/pip-tools/issues/1853
     """
-    in_files = [f"requirements{n:02d}.in" for n in range(1, num_inputs + 1)]
-
+    in_files = [tmp_path / f"requirements{n:02d}.in" for n in range(num_inputs)]
     for in_file in in_files:
-        with open(in_file, "w") as req_in:
-            req_in.write("small-fake-a==0.1\n")
+        req_in.write_text("small-fake-a==0.1\n")
 
     out = runner.invoke(
         cli,
