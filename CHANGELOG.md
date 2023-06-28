@@ -1,3 +1,21 @@
+## 6.14.0 (2023-06-28)
+
+Features:
+
+- Support config defaults using `.pip-tools.toml` or `pyproject.toml`
+  ([#1863](https://github.com/jazzband/pip-tools/pull/1863)). Thanks @j00bar
+- Log a warning if the user specifies `-P` and the output file is present but empty
+  ([#1822](https://github.com/jazzband/pip-tools/pull/1822)). Thanks @davidmreed
+- Improve warning for `pip-compile` if no `--allow-unsafe` was passed
+  ([#1867](https://github.com/jazzband/pip-tools/pull/1867)). Thanks @chrysle
+
+Other Changes:
+
+- Correct in README `pre-commit` hook to run off `requirements.in`
+  ([#1847](https://github.com/jazzband/pip-tools/pull/1847)). Thanks @atugushev
+- Add pyprojects.toml example for using setuptools
+  ([#1851](https://github.com/jazzband/pip-tools/pull/1851)). Thanks @shatakshiiii
+
 ## 6.13.0 (2023-04-07)
 
 Features:
