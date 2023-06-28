@@ -149,6 +149,7 @@ def fake_dist():
         if req.url:
             direct_url = direct_url_from_link(Link(req.url))
         return Distribution(key, version, requires, direct_url)
+
     return _fake_dist
 
 
