@@ -1916,8 +1916,8 @@ def test_many_inputs_includes_all_annotations(pip_conf, runner, num_inputs):
     annotation.
     See: https://github.com/jazzband/pip-tools/issues/1853
     """
-    in_files = [tmp_path / f"requirements{n:02d}.in" for n in range(num_inputs)]
-    for in_file in in_files:
+    req_ins = [tmp_path / f"requirements{n:02d}.in" for n in range(num_inputs)]
+    for req_in in req_ins:
         req_in.write_text("small-fake-a==0.1\n")
 
     out = runner.invoke(
@@ -1929,7 +1929,7 @@ def test_many_inputs_includes_all_annotations(pip_conf, runner, num_inputs):
             "--no-header",
             "--no-emit-find-links",
         ]
-        + in_files,
+        + req_ins,
     )
     assert out.exit_code == 0, out.stderr
     assert (
@@ -1939,7 +1939,7 @@ def test_many_inputs_includes_all_annotations(pip_conf, runner, num_inputs):
                 "small-fake-a==0.1",
                 "    # via",
             ]
-            + [f"    #   -r {in_file}" for in_file in in_files]
+            + [f"    #   -r {req_in}" for req_in in req_ins]
         )
         + "\n"
     )
