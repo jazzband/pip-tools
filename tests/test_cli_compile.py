@@ -1929,7 +1929,7 @@ def test_many_inputs_includes_all_annotations(pip_conf, runner, tmp_path, num_in
             "--no-header",
             "--no-emit-find-links",
         ]
-        + req_ins,
+        + [str(r) for r in req_ins],
     )
     assert out.exit_code == 0, out.stderr
     assert (
