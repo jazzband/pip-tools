@@ -147,7 +147,7 @@ def diff_key_from_req(req: Distribution) -> str:
     key = req.key
     if (
         req.direct_url
-        and type(req.direct_url.info) == ArchiveInfo
+        and isinstance(req.direct_url.info, ArchiveInfo)
         and req.direct_url.info.hash
     ):
         key = direct_url_as_pep440_direct_reference(req.direct_url, key)
