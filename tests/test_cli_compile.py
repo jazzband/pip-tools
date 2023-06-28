@@ -1910,7 +1910,7 @@ def test_upgrade_package_doesnt_remove_annotation(pip_conf, runner):
 
 
 @pytest.mark.parametrize(("num_inputs"), (2, 3, 10))
-def test_many_inputs_includes_all_annotations(pip_conf, runner, num_inputs):
+def test_many_inputs_includes_all_annotations(pip_conf, runner, tmp_path, num_inputs):
     """
     Tests that an entry required by multiple input files is attributed to all of them in the
     annotation.
