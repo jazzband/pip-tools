@@ -290,8 +290,8 @@ def test_diff_with_unequal_url_hash(fake_dist, from_line):
     # if URL hashes mismatch, assume the contents have
     # changed and reinstall
     line = "example@file:///example.zip#"
-    installed = [fake_dist(line + "#sha1=abc")]
-    reqs = [from_line(line + "#sha1=def")]
+    installed = [fake_dist(line + "sha1=abc")]
+    reqs = [from_line(line + "sha1=def")]
 
     to_install, to_uninstall = diff(reqs, installed)
     assert to_install == set(reqs)

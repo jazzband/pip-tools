@@ -126,20 +126,6 @@ class FakeRepository(BaseRepository):
         """Not used"""
 
 
-def parse_fake_distribution(line, deps=[]):
-    req = Requirement.parse(line)
-    key = req.key
-    if "==" in line:
-        version = line.split("==")[1]
-    else:
-        version = "0+unknown"
-    requires = [Requirement.parse(d) for d in deps]
-    direct_url = None
-    if req.url:
-        direct_url = direct_url_from_link(Link(req.url))
-    return Distribution(key, version, requires, direct_url)
-
-
 def pytest_collection_modifyitems(config, items):
     for item in items:
         # Mark network tests as flaky
@@ -149,7 +135,21 @@ def pytest_collection_modifyitems(config, items):
 
 @pytest.fixture
 def fake_dist():
-    return parse_fake_distribution
+    def _fake_dist(line, deps=None):
+        if deps is None:
+            deps = []
+        req = Requirement.parse(line)
+        key = req.key
+        if "==" in line:
+            version = line.split("==")[1]
+        else:
+            version = "0+unknown"
+        requires = [Requirement.parse(d) for d in deps]
+        direct_url = None
+        if req.url:
+            direct_url = direct_url_from_link(Link(req.url))
+        return Distribution(key, version, requires, direct_url)
+    return _fake_dist
 
 
 @pytest.fixture
