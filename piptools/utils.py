@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import collections
 import copy
-import functools
 import itertools
 import json
 import os
@@ -366,6 +365,12 @@ def get_compile_command(click_ctx: click.Context) -> str:
         if option_long_name in COMPILE_EXCLUDE_OPTIONS:
             continue
 
+        # Exclude config option if it's the default one
+        if option_long_name == "--config":
+            default_config = select_config_file(click_ctx.params.get("src_files", ()))
+            if value == default_config:
+                continue
+
         # Skip options without a value
         if option.default is None and not value:
             continue
@@ -594,7 +599,7 @@ def select_config_file(src_files: tuple[str, ...]) -> Path | None:
         ),
         None,
     )
-    return config_file_path
+    return config_file_path.relative_to(working_directory) if config_file_path else None
 
 
 # Some of the defined click options have different `dest` values than the defaults
@@ -628,7 +633,6 @@ MULTIPLE_VALUE_OPTIONS = [
 ]
 
 
-@functools.lru_cache()
 def parse_config_file(config_file: Path) -> dict[str, Any]:
     try:
         config = tomllib.loads(config_file.read_text(encoding="utf-8"))
