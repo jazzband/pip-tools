@@ -599,7 +599,14 @@ def select_config_file(src_files: tuple[str, ...]) -> Path | None:
         ),
         None,
     )
-    return config_file_path.relative_to(working_directory) if config_file_path else None
+    if config_file_path is None:
+        return None
+
+    return (
+        config_file_path.relative_to(working_directory)
+        if config_file_path.is_relative_to(working_directory)
+        else config_file_path
+    )
 
 
 # Some of the defined click options have different `dest` values than the defaults
