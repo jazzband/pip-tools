@@ -2972,4 +2972,12 @@ def test_config_option(pip_conf, runner, tmp_path, make_config_file):
     out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
 
     assert out.exit_code == 0
-    assert "Dry-run, so nothing updated" in out.stderr
+    dry_run_message = "Dry-run, so nothing updated"
+    assert dry_run_message in out.stderr
+
+    out = runner.invoke(
+        cli, [req_in.as_posix(), "--no-config", "--config", config_file.as_posix()]
+    )
+
+    assert out.exit_code == 0
+    assert dry_run_message not in out.stderr

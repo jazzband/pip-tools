@@ -384,4 +384,10 @@ def test_config_option(run, runner, make_config_file):
     out = runner.invoke(cli, ["--config", config_file.as_posix()])
 
     assert out.exit_code == 1
-    assert "Would install:" in out.stdout
+    dry_run_message = "Would install:"
+    assert dry_run_message in out.stdout
+
+    out = runner.invoke(cli, ["--no-config", "--config", config_file.as_posix()])
+
+    assert out.exit_code == 0
+    assert dry_run_message not in out.stdout
