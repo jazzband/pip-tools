@@ -628,7 +628,7 @@ MULTIPLE_VALUE_OPTIONS = [
 ]
 
 
-@functools.lru_cache()
+@functools.lru_cache
 def parse_config_file(config_file: Path) -> dict[str, Any]:
     try:
         config = tomllib.loads(config_file.read_text(encoding="utf-8"))
