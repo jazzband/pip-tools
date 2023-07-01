@@ -385,3 +385,16 @@ def test_config_option(run, runner, make_config_file):
 
     assert out.exit_code == 1
     assert "Would install:" in out.stdout
+
+
+@mock.patch("piptools.sync.run")
+def test_no_config_option_overrides_config_with_defaults(run, runner, make_config_file):
+    config_file = make_config_file("dry-run", True)
+
+    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as reqs_txt:
+        reqs_txt.write("six==1.10.0")
+
+    out = runner.invoke(cli, ["--no-config", "--config", config_file.as_posix()])
+
+    assert out.exit_code == 0
+    assert "Would install:" not in out.stdout
