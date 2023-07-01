@@ -2975,7 +2975,9 @@ def test_config_option(pip_conf, runner, tmp_path, make_config_file):
     assert "Dry-run, so nothing updated" in out.stderr
 
 
-def test_no_config_option_overrides_config_with_defaults(pip_conf, runner, tmp_path, make_config_file):
+def test_no_config_option_overrides_config_with_defaults(
+    pip_conf, runner, tmp_path, make_config_file
+):
     config_file = make_config_file("dry-run", True)
 
     req_in = tmp_path / "requirements.in"
