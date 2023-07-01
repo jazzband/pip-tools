@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import collections
 import copy
-import functools
 import itertools
 import json
 import os
@@ -366,6 +365,12 @@ def get_compile_command(click_ctx: click.Context) -> str:
         if option_long_name in COMPILE_EXCLUDE_OPTIONS:
             continue
 
+        # Exclude config option if it's the default one
+        if option_long_name == "--config":
+            default_config = select_config_file(click_ctx.params.get("src_files", ()))
+            if value == default_config:
+                continue
+
         # Skip options without a value
         if option.default is None and not value:
             continue
@@ -594,7 +599,14 @@ def select_config_file(src_files: tuple[str, ...]) -> Path | None:
         ),
         None,
     )
-    return config_file_path
+    if config_file_path is None:
+        return None
+
+    return (
+        config_file_path.relative_to(working_directory)
+        if is_path_relative_to(config_file_path, working_directory)
+        else config_file_path
+    )
 
 
 # Some of the defined click options have different `dest` values than the defaults
@@ -628,7 +640,6 @@ MULTIPLE_VALUE_OPTIONS = [
 ]
 
 
-@functools.lru_cache()
 def parse_config_file(config_file: Path) -> dict[str, Any]:
     try:
         config = tomllib.loads(config_file.read_text(encoding="utf-8"))
@@ -656,3 +667,14 @@ def parse_config_file(config_file: Path) -> dict[str, Any]:
                 original_option, f"Config key '{original_option}' must be a list"
             )
     return piptools_config
+
+
+def is_path_relative_to(path1: Path, path2: Path) -> bool:
+    """Return True if ``path1`` is relative to ``path2``."""
+    # TODO: remove this function in favor of Path.is_relative_to()
+    #       when we drop support for Python 3.8
+    try:
+        path1.relative_to(path2)
+    except ValueError:
+        return False
+    return True

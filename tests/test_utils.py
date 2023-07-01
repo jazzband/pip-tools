@@ -386,6 +386,30 @@ def test_get_compile_command(tmpdir_cwd, cli_args, expected_command):
         assert get_compile_command(ctx) == expected_command
 
 
+@pytest.mark.parametrize(
+    ("config_file", "expected_command"),
+    (
+        pytest.param(
+            "pyproject.toml", "pip-compile", id="exclude default pyproject.toml"
+        ),
+        pytest.param(
+            ".pip-tools.toml", "pip-compile", id="exclude default .pip-tools.toml"
+        ),
+        pytest.param(
+            "my-config.toml",
+            "pip-compile --config=my-config.toml",
+            id="include non-default my-config.toml",
+        ),
+    ),
+)
+def test_get_compile_command_with_config(tmpdir_cwd, config_file, expected_command):
+    """Test that get_compile_command excludes or includes config file."""
+    with open(config_file, "w"):
+        pass
+    with compile_cli.make_context("pip-compile", ["--config", config_file]) as ctx:
+        assert get_compile_command(ctx) == expected_command
+
+
 def test_get_compile_command_escaped_filenames(tmpdir_cwd):
     """
     Test that get_compile_command output (re-)escapes ' -- '-escaped filenames.
