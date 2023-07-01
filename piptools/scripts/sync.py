@@ -146,7 +146,7 @@ def cli(
             sys.exit(2)
 
     if config:
-        log.info(f"Using pip-tools configuration defaults found in '{config !s}'.")
+        log.debug(f"Using pip-tools configuration defaults found in '{config !s}'.")
 
     if python_executable:
         _validate_python_executable(python_executable)
