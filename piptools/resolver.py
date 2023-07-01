@@ -502,7 +502,18 @@ class BacktrackingResolver(BaseResolver):
         self.unsafe_constraints: set[InstallRequirement] = set()
 
         self.existing_constraints = existing_constraints
-        self._constraints_map = {key_from_ireq(ireq): ireq for ireq in constraints}
+
+        # Categorize InstallRequirements into sets by key
+        constraints_sets: DefaultDict[
+            str, set[InstallRequirement]
+        ] = collections.defaultdict(set)
+        for ireq in constraints:
+            constraints_sets[key_from_ireq(ireq)].add(ireq)
+        # Collapse each set of InstallRequirements using combine_install_requirements
+        self._constraints_map = {
+            ireq_key: combine_install_requirements(ireqs)
+            for ireq_key, ireqs in constraints_sets.items()
+        }
 
         # Make sure there is no enabled legacy resolver
         options.deprecated_features_enabled = omit_list_value(
@@ -759,9 +770,14 @@ class BacktrackingResolver(BaseResolver):
         ireq_key = key_from_ireq(ireq)
         pinned_ireq._required_by = reverse_dependencies.get(ireq_key, set())
 
-        # Save source for annotation
-        source_ireq = self._constraints_map.get(ireq_key)
-        if source_ireq is not None:
-            pinned_ireq._source_ireqs = [source_ireq]
+        # Save sources for annotation
+        constraint_ireq = self._constraints_map.get(ireq_key)
+        if constraint_ireq is not None:
+            if hasattr(constraint_ireq, "_source_ireqs"):
+                # If the constraint is combined (has _source_ireqs), use those
+                pinned_ireq._source_ireqs = constraint_ireq._source_ireqs
+            else:
+                # Otherwise (the constraint is not combined) it is the source
+                pinned_ireq._source_ireqs = [constraint_ireq]
 
         return pinned_ireq
