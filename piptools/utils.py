@@ -23,10 +23,11 @@ from pip._internal.req.constructors import install_req_from_line, parse_req_from
 from pip._internal.utils.misc import redact_auth_from_url
 from pip._internal.vcs import is_url
 from pip._vendor.packaging.markers import Marker
+from pip._vendor.packaging.requirements import Requirement
 from pip._vendor.packaging.specifiers import SpecifierSet
 from pip._vendor.packaging.utils import canonicalize_name
 from pip._vendor.packaging.version import Version
-from pip._vendor.pkg_resources import Distribution, Requirement, get_distribution
+from pip._vendor.pkg_resources import get_distribution
 
 from piptools._compat import PIP_VERSION
 from piptools.locations import CONFIG_FILE_NAME
@@ -64,15 +65,9 @@ def key_from_ireq(ireq: InstallRequirement) -> str:
         return key_from_req(ireq.req)
 
 
-def key_from_req(req: InstallRequirement | Distribution | Requirement) -> str:
+def key_from_req(req: InstallRequirement | Requirement) -> str:
     """Get an all-lowercase version of the requirement's name."""
-    if hasattr(req, "key"):
-        # from pkg_resources, such as installed dists for pip-sync
-        key = req.key
-    else:
-        # from packaging, such as install requirements from requirements.txt
-        key = req.name
-    return str(canonicalize_name(key))
+    return str(canonicalize_name(req.name))
 
 
 def comment(text: str) -> str:

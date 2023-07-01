@@ -263,25 +263,39 @@ def test_diff_with_editable(fake_dist, from_editable):
     assert package.link.url == path_to_url(path_to_package)
 
 
-def test_diff_with_matching_url_versions(fake_dist, from_line):
+def test_diff_with_matching_url_hash(fake_dist, from_line):
     # if URL version is explicitly provided, use it to avoid reinstalling
-    installed = [fake_dist("example==1.0")]
-    reqs = [from_line("file:///example.zip#egg=example==1.0")]
+    line = "example@file:///example.zip#sha1=abc"
+    installed = [fake_dist(line)]
+    reqs = [from_line(line)]
 
     to_install, to_uninstall = diff(reqs, installed)
     assert to_install == set()
     assert to_uninstall == set()
 
 
-def test_diff_with_no_url_versions(fake_dist, from_line):
-    # if URL version is not provided, assume the contents have
+def test_diff_with_no_url_hash(fake_dist, from_line):
+    # if URL hash is not provided, assume the contents have
     # changed and reinstall
-    installed = [fake_dist("example==1.0")]
-    reqs = [from_line("file:///example.zip#egg=example")]
+    line = "example@file:///example.zip"
+    installed = [fake_dist(line)]
+    reqs = [from_line(line)]
 
     to_install, to_uninstall = diff(reqs, installed)
     assert to_install == set(reqs)
     assert to_uninstall == {"example"}
+
+
+def test_diff_with_unequal_url_hash(fake_dist, from_line):
+    # if URL hashes mismatch, assume the contents have
+    # changed and reinstall
+    line = "example@file:///example.zip#"
+    installed = [fake_dist(line + "sha1=abc")]
+    reqs = [from_line(line + "sha1=def")]
+
+    to_install, to_uninstall = diff(reqs, installed)
+    assert to_install == set(reqs)
+    assert to_uninstall == {"example @ file:///example.zip#sha1=abc"}
 
 
 def test_sync_install_temporary_requirement_file(
