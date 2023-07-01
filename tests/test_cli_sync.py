@@ -372,3 +372,16 @@ def test_default_python_executable_option(run, runner):
             "-r",
         ]
     ]
+
+
+@mock.patch("piptools.sync.run")
+def test_config_option(run, runner, make_config_file):
+    config_file = make_config_file("dry-run", True)
+
+    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as reqs_txt:
+        reqs_txt.write("six==1.10.0")
+
+    out = runner.invoke(cli, ["--config", config_file.as_posix()])
+
+    assert out.exit_code == 1
+    assert "Would install:" in out.stdout

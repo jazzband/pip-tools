@@ -410,7 +410,7 @@ def cli(
         )
 
     if config:
-        log.info(f"Using pip-tools configuration defaults found in '{config !s}'.")
+        log.debug(f"Using pip-tools configuration defaults found in '{config !s}'.")
 
     if resolver_name == "legacy":
         log.warning(
