@@ -152,4 +152,5 @@ jobs:
       - name: Decide whether the needed jobs succeeded or failed
         uses: re-actors/alls-green@13b4244b312e8a314951e03958a2f91519a6a3c9
         with:
+          allowed-failures: pypy # FIXME: drop once updated to `pypy-3.8`
           jobs: ${{ toJSON(needs) }}
