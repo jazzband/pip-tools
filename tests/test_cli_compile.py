@@ -2925,3 +2925,15 @@ small-fake-b==0.3
 """
     assert out.exit_code == 0
     assert expected == out.stderr
+
+
+def test_config_option(pip_conf, runner, tmp_path, make_config_file):
+    config_file = make_config_file("dry-run", True)
+
+    req_in = tmp_path / "requirements.in"
+    req_in.touch()
+
+    out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
+
+    assert out.exit_code == 0
+    assert "Dry-run, so nothing updated" in out.stderr

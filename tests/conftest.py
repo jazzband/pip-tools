@@ -473,6 +473,6 @@ def make_config_file(tmpdir_cwd):
 
         config_to_dump = {"tool": {"pip-tools": {pyproject_param: new_default}}}
         config_file.write_text(tomli_w.dumps(config_to_dump))
-        return config_file
+        return config_file.relative_to(tmpdir_cwd)
 
     return _maker
