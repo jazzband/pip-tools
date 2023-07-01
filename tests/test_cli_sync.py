@@ -388,7 +388,7 @@ def test_config_option(run, runner, make_config_file):
 
 
 @mock.patch("piptools.sync.run")
-def test_no_config_option(run, runner, make_config_file):
+def test_no_config_option_overrides_config_with_defaults(run, runner, make_config_file):
     config_file = make_config_file("dry-run", True)
 
     with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as reqs_txt:
