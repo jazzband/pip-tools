@@ -38,6 +38,10 @@ env:
     PRE_COMMIT_COLOR
 
 jobs:
+  linters:
+    name: Linters
+    uses: ./.github/workflows/reusable-qa.yml
+
   test:
     name: ${{ matrix.os }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
     runs-on: ${{ matrix.os }}-latest
@@ -181,6 +185,7 @@ jobs:
     if: always()
 
     needs:
+      - linters
       - pypy
       - test
 
