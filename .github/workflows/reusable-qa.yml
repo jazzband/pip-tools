@@ -1,15 +1,7 @@
 name: QA
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
-    tags:
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: true
+  workflow_call:
 
 jobs:
   qa:
