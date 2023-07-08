@@ -410,6 +410,29 @@ def test_get_compile_command_with_config(tmpdir_cwd, config_file, expected_comma
         assert get_compile_command(ctx) == expected_command
 
 
+def test_get_compile_command_does_not_include_default_config_if_reqs_file_in_subdir(
+    tmpdir_cwd,
+):
+    """
+    Test that ``get_compile_command`` does not include default config file
+    if requirements file is in a subdirectory.
+    Regression test for issue GH-1903.
+    """
+    default_config_file = Path("pyproject.toml")
+    default_config_file.touch()
+
+    (tmpdir_cwd / "subdir").mkdir()
+    req_file = Path("subdir/requirements.in")
+    req_file.touch()
+
+    with open(req_file, "w"):
+        pass
+
+    # Make sure that the default config file is not included
+    with compile_cli.make_context("pip-compile", [req_file.as_posix()]) as ctx:
+        assert get_compile_command(ctx) == f"pip-compile {req_file.as_posix()}"
+
+
 def test_get_compile_command_escaped_filenames(tmpdir_cwd):
     """
     Test that get_compile_command output (re-)escapes ' -- '-escaped filenames.

@@ -86,7 +86,9 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
     help="Path to SSL client certificate, a single file containing "
     "the private key and the certificate in PEM format.",
 )
-@click.argument("src_files", required=False, type=click.Path(exists=True), nargs=-1)
+@click.argument(
+    "src_files", required=False, type=click.Path(exists=True), nargs=-1, is_eager=True
+)
 @click.option("--pip-args", help="Arguments to pass directly to pip install.")
 @click.option(
     "--config",
@@ -100,7 +102,6 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
     ),
     help=f"Read configuration from TOML file. By default, looks for a {CONFIG_FILE_NAME} or "
     "pyproject.toml.",
-    is_eager=True,
     callback=override_defaults_from_config_file,
 )
 @click.option(

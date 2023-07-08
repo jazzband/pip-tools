@@ -251,7 +251,9 @@ def _determine_linesep(
     default=10,
     help="Maximum number of rounds before resolving the requirements aborts.",
 )
-@click.argument("src_files", nargs=-1, type=click.Path(exists=True, allow_dash=True))
+@click.argument(
+    "src_files", nargs=-1, type=click.Path(exists=True, allow_dash=True), is_eager=True
+)
 @click.option(
     "--build-isolation/--no-build-isolation",
     is_flag=True,
@@ -316,7 +318,6 @@ def _determine_linesep(
     ),
     help=f"Read configuration from TOML file. By default, looks for a {CONFIG_FILE_NAME} or "
     "pyproject.toml.",
-    is_eager=True,
     callback=override_defaults_from_config_file,
 )
 @click.option(
