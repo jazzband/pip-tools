@@ -410,16 +410,25 @@ def test_get_compile_command_with_config(tmpdir_cwd, config_file, expected_comma
         assert get_compile_command(ctx) == expected_command
 
 
+@pytest.mark.parametrize("config_file", ("pyproject.toml", ".pip-tools.toml"))
+@pytest.mark.parametrize(
+    "config_file_content",
+    (
+        pytest.param("", id="empty config file"),
+        pytest.param("[tool.pip-tools]", id="empty config section"),
+        pytest.param("[tool.pip-tools]\ndry-run = True", id="non-empty config section"),
+    ),
+)
 def test_get_compile_command_does_not_include_default_config_if_reqs_file_in_subdir(
-    tmpdir_cwd,
+    tmpdir_cwd, config_file, config_file_content
 ):
     """
     Test that ``get_compile_command`` does not include default config file
     if requirements file is in a subdirectory.
     Regression test for issue GH-1903.
     """
-    default_config_file = Path("pyproject.toml")
-    default_config_file.touch()
+    default_config_file = Path(config_file)
+    default_config_file.write_text(config_file_content)
 
     (tmpdir_cwd / "subdir").mkdir()
     req_file = Path("subdir/requirements.in")
