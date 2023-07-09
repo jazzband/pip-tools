@@ -424,9 +424,7 @@ def test_get_compile_command_does_not_include_default_config_if_reqs_file_in_sub
     (tmpdir_cwd / "subdir").mkdir()
     req_file = Path("subdir/requirements.in")
     req_file.touch()
-
-    with open(req_file, "w"):
-        pass
+    req_file.write_bytes(b"")
 
     # Make sure that the default config file is not included
     with compile_cli.make_context("pip-compile", [req_file.as_posix()]) as ctx:
