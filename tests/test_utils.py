@@ -6,6 +6,7 @@ import os
 import shlex
 import sys
 from pathlib import Path
+from textwrap import dedent
 
 import pip
 import pytest
@@ -31,6 +32,7 @@ from piptools.utils import (
     lookup_table,
     lookup_table_from_tuples,
     override_defaults_from_config_file,
+    select_config_file,
 )
 
 
@@ -708,3 +710,52 @@ def test_callback_config_file_defaults_unreadable_toml(make_config_file):
             "config",
             "/dev/null/path/does/not/exist/my-config.toml",
         )
+
+
+def test_select_config_file_no_files(tmpdir_cwd):
+    assert select_config_file(()) is None
+
+
+@pytest.mark.parametrize("filename", ("pyproject.toml", ".pip-tools.toml"))
+def test_select_config_file_returns_config_in_cwd(make_config_file, filename):
+    config_file = make_config_file("dry-run", True, filename)
+    assert select_config_file(()) == config_file
+
+
+def test_select_config_file_returns_empty_config_file_in_cwd(tmpdir_cwd):
+    config_file = Path(".pip-tools.toml")
+    config_file.touch()
+
+    assert select_config_file(()) == config_file
+
+
+def test_select_config_file_cannot_find_config_in_cwd(tmpdir_cwd, make_config_file):
+    make_config_file("dry-run", True, "subdir/pyproject.toml")
+    assert select_config_file(()) is None
+
+
+def test_select_config_file_with_config_file_in_subdir(tmpdir_cwd, make_config_file):
+    config_file = make_config_file("dry-run", True, "subdir/.pip-tools.toml")
+
+    requirement_file = Path("subdir/requirements.in")
+    requirement_file.touch()
+
+    assert select_config_file((requirement_file.as_posix(),)) == config_file
+
+
+def test_select_config_file_prefers_pip_tools_toml_over_pyproject_toml(tmpdir_cwd):
+    pip_tools_file = Path(".pip-tools.toml")
+    pip_tools_file.touch()
+
+    pyproject_file = Path("pyproject.toml")
+    pyproject_file.write_text(
+        dedent(
+            """\
+        [build-system]
+        requires = ["setuptools>=63", "setuptools_scm[toml]>=7"]
+        build-backend = "setuptools.build_meta"
+        """
+        )
+    )
+
+    assert select_config_file(()) == pip_tools_file

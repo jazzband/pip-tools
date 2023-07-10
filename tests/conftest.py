@@ -454,11 +454,12 @@ def make_config_file(tmpdir_cwd):
     def _maker(
         pyproject_param: str, new_default: Any, config_file_name: str = CONFIG_FILE_NAME
     ) -> Path:
-        # Make a config file with this one config default override
-        config_path = Path(tmpdir_cwd) / pyproject_param
-        config_file = config_path / config_file_name
-        config_path.mkdir(exist_ok=True)
+        # Create a nested directory structure if config_file_name includes directories
+        config_dir = Path(tmpdir_cwd / config_file_name).parent
+        config_dir.mkdir(exist_ok=True, parents=True)
 
+        # Make a config file with this one config default override
+        config_file = Path(tmpdir_cwd / config_file_name)
         config_to_dump = {"tool": {"pip-tools": {pyproject_param: new_default}}}
         config_file.write_text(tomli_w.dumps(config_to_dump))
         return config_file.relative_to(tmpdir_cwd)
