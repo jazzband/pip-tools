@@ -8,7 +8,6 @@ from subprocess import run  # nosec
 from typing import Deque, Iterable, Mapping, ValuesView
 
 import click
-from pip._internal.commands.freeze import DEV_PKGS
 from pip._internal.models.direct_url import ArchiveInfo
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.compat import stdlib_pkgs
@@ -17,7 +16,7 @@ from pip._internal.utils.direct_url_helpers import (
     direct_url_from_link,
 )
 
-from ._compat import Distribution
+from ._compat import Distribution, get_dev_pkgs
 from .exceptions import IncompatibleRequirements
 from .logging import log
 from .utils import (
@@ -36,7 +35,7 @@ PACKAGES_TO_IGNORE = [
     "pip-review",
     "pkg-resources",
     *stdlib_pkgs,
-    *DEV_PKGS,
+    *get_dev_pkgs(),
 ]
 
 

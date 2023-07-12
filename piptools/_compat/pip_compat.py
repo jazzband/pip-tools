@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import optparse
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Iterable, Iterator
+from typing import TYPE_CHECKING, Iterable, Iterator, Set, cast
 
 import pip
 from pip._internal.cache import WheelCache
@@ -82,3 +82,14 @@ def create_wheel_cache(cache_dir: str, format_control: str | None = None) -> Whe
     if PIP_VERSION[:2] <= (23, 0):
         kwargs["format_control"] = format_control
     return WheelCache(**kwargs)
+
+
+def get_dev_pkgs() -> set[str]:
+    if PIP_VERSION[:2] <= (23, 1):
+        from pip._internal.commands.freeze import DEV_PKGS
+
+        return cast(Set[str], DEV_PKGS)
+
+    from pip._internal.commands.freeze import _dev_pkgs
+
+    return cast(Set[str], _dev_pkgs())
