@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import collections
 import copy
+import difflib
 import itertools
 import json
 import os
@@ -561,6 +562,7 @@ def override_defaults_from_config_file(
 
     config = parse_config_file(config_file)
     if config:
+        _validate_config(ctx, config)
         _assign_config_to_cli_context(ctx, config)
 
     return config_file
@@ -574,6 +576,39 @@ def _assign_config_to_cli_context(
         click_context.default_map = {}
 
     click_context.default_map.update(cli_config_mapping)
+
+
+def _validate_config(
+    click_context: click.Context,
+    config: dict[str, Any],
+) -> None:
+    """Validate parsed config against click command params."""
+    params = {
+        param.name: param
+        for param in click_context.command.params
+        if param.name is not None
+    }
+    for key, value in config.items():
+        # Validate key
+        if key not in params:
+            possibilities = difflib.get_close_matches(key, params.keys())
+            raise click.NoSuchOption(
+                option_name=key,
+                message=f"No such config key {key!r}.",
+                possibilities=possibilities,
+                ctx=click_context,
+            )
+
+        # Validate value
+        param = params[key]
+        try:
+            param.type.convert(value=value, param=param, ctx=click_context)
+        except Exception as e:
+            raise click.BadOptionUsage(
+                option_name=key,
+                message=f"Invalid value for config key {key!r}: {value!r}",
+                ctx=click_context,
+            ) from e
 
 
 def select_config_file(src_files: tuple[str, ...]) -> Path | None:
