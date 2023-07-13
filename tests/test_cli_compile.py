@@ -2989,3 +2989,31 @@ def test_no_config_option_overrides_config_with_defaults(
 
     assert out.exit_code == 0
     assert "Dry-run, so nothing updated" not in out.stderr
+
+
+def test_raise_error_on_unknown_config_option(
+    pip_conf, runner, tmp_path, make_config_file
+):
+    config_file = make_config_file("unknown-option", True)
+
+    req_in = tmp_path / "requirements.in"
+    req_in.touch()
+
+    out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
+
+    assert out.exit_code == 2
+    assert "No such config key 'unknown_option'" in out.stderr
+
+
+def test_raise_error_on_invalid_config_option(
+    pip_conf, runner, tmp_path, make_config_file
+):
+    config_file = make_config_file("dry-run", ["invalid", "value"])
+
+    req_in = tmp_path / "requirements.in"
+    req_in.touch()
+
+    out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
+
+    assert out.exit_code == 2
+    assert "Invalid value for config key 'dry_run': ['invalid', 'value']" in out.stderr
