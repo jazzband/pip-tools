@@ -649,6 +649,7 @@ NON_STANDARD_OPTION_DEST_MAP: dict[str, str] = {
     "upgrade_package": "upgrade_packages",
     "resolver": "resolver_name",
     "user": "user_only",
+    "pip_args": "pip_args_str",
 }
 
 

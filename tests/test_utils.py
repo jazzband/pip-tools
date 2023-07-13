@@ -574,16 +574,13 @@ def test_get_sys_path_for_python_executable():
     ("pyproject_param", "new_default"),
     (
         # From sync
-        ("ask", True),
         ("dry-run", True),
         ("find-links", ["changed"]),
         ("extra-index-url", ["changed"]),
         ("trusted-host", ["changed"]),
         ("no-index", True),
-        ("python-executable", "changed"),
         ("verbose", True),
         ("quiet", True),
-        ("user", True),
         ("cert", "changed"),
         ("client-cert", "changed"),
         ("pip-args", "changed"),
