@@ -573,7 +573,6 @@ def test_get_sys_path_for_python_executable():
 @pytest.mark.parametrize(
     ("pyproject_param", "new_default"),
     (
-        # From sync
         ("dry-run", True),
         ("find-links", ["changed"]),
         ("extra-index-url", ["changed"]),
@@ -584,7 +583,6 @@ def test_get_sys_path_for_python_executable():
         ("cert", "changed"),
         ("client-cert", "changed"),
         ("pip-args", "changed"),
-        # From compile, unless also in sync
         ("pre", True),
         ("rebuild", True),
         ("extras", ["changed"]),

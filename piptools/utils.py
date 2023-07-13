@@ -583,15 +583,16 @@ def _validate_config(
     config: dict[str, Any],
 ) -> None:
     """Validate parsed config against click command params."""
-    params = {
+    cli_params = {
         param.name: param
         for param in click_context.command.params
         if param.name is not None
     }
+
     for key, value in config.items():
-        # Validate key
-        if key not in params:
-            possibilities = difflib.get_close_matches(key, params.keys())
+        # Validate unknown keys
+        if key not in cli_params:
+            possibilities = difflib.get_close_matches(key, cli_params.keys())
             raise click.NoSuchOption(
                 option_name=key,
                 message=f"No such config key {key!r}.",
@@ -599,14 +600,14 @@ def _validate_config(
                 ctx=click_context,
             )
 
-        # Validate value
-        param = params[key]
+        # Validate invalid values
+        param = cli_params[key]
         try:
             param.type.convert(value=value, param=param, ctx=click_context)
         except Exception as e:
             raise click.BadOptionUsage(
                 option_name=key,
-                message=f"Invalid value for config key {key!r}: {value!r}",
+                message=f"Invalid value for config key {key!r}: {value!r}.",
                 ctx=click_context,
             ) from e
 
