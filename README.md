@@ -6,6 +6,7 @@
 [![codecov][codecov-image]][codecov]
 [![Matrix Room Badge]][Matrix Room]
 [![Matrix Space Badge]][Matrix Space]
+[![discord-chat-image]][discord-chat]
 
 # pip-tools = pip-compile + pip-sync
 
@@ -607,3 +608,5 @@ versions as the required `pip` versions.
 [Matrix Space]: https://matrix.to/#/%23jazzband:matrix.org
 [pip-tools-overview]: https://github.com/jazzband/pip-tools/raw/main/img/pip-tools-overview.svg
 [environment-markers]: https://peps.python.org/pep-0508/#environment-markers
+[discord-chat]: https://discord.gg/pypa
+[discord-chat-image]: https://img.shields.io/discord/803025117553754132?label=Discord%20chat%20%23pip-tools&style=flat-square

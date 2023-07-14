@@ -6,9 +6,14 @@ on:
     branches:
       - main
     tags:
-  schedule:
-    # Run everyday at 03:53 UTC
-    - cron: 53 3 * * *
+  workflow_call:
+    inputs:
+      cpython-pip-version:
+        description: >-
+          A JSON string with pip versions
+          to test against under CPython.
+        required: true
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -33,6 +38,10 @@ env:
     PRE_COMMIT_COLOR
 
 jobs:
+  linters:
+    name: Linters
+    uses: ./.github/workflows/reusable-qa.yml
+
   test:
     name: ${{ matrix.os }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
     runs-on: ${{ matrix.os }}-latest
@@ -48,15 +57,30 @@ jobs:
           - "3.10"
           - "3.9"
           - "3.8"
-        pip-version:
-          - "latest"
-          - "previous"
+        pip-version: >-
+          ${{
+            fromJSON(
+              github.job_workflow_sha
+              && inputs.cpython-pip-version
+              || '["latest", "previous"]'
+            )
+          }}
         include:
           - os: Ubuntu
-            python-version: 3.8
+            python-version: >-
+              ${{
+                github.job_workflow_sha
+                && '3.12-dev'
+                || '3.8'
+              }}
             pip-version: main
     env:
-      TOXENV: pip${{ matrix.pip-version }}-coverage
+      TOXENV: >-
+        pip${{ matrix.pip-version }}${{
+          !github.job_workflow_sha
+          && '-coverage'
+          || ''
+        }}
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }} from GitHub
@@ -95,6 +119,8 @@ jobs:
       - name: Test pip ${{ matrix.pip-version }}
         run: tox
       - name: Upload coverage to Codecov
+        if: >-
+          !github.job_workflow_sha
         uses: codecov/codecov-action@v3
         with:
           files: ./coverage.xml
@@ -132,6 +158,22 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Get pip cache dir
+        id: pip-cache
+        shell: bash
+        run: |
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+      - name: Pip cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: >-
+            ${{ runner.os }}-pip-${{ hashFiles('setup.cfg') }}-${{
+            hashFiles('pyproject.toml') }}-${{ hashFiles('tox.ini') }}-${{
+            hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
       - name: Install tox
         run: pip install tox
       - name: Prepare test environment
@@ -143,6 +185,7 @@ jobs:
     if: always()
 
     needs:
+      - linters
       - pypy
       - test
 
@@ -150,6 +193,6 @@ jobs:
 
     steps:
       - name: Decide whether the needed jobs succeeded or failed
-        uses: re-actors/alls-green@13b4244b312e8a314951e03958a2f91519a6a3c9
+        uses: re-actors/alls-green@afee1c1eac2a506084c274e9c02c8e0687b48d9e
         with:
           jobs: ${{ toJSON(needs) }}

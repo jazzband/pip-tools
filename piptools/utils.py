@@ -54,6 +54,7 @@ COMPILE_EXCLUDE_OPTIONS = {
     "--verbose",
     "--cache-dir",
     "--no-reuse-hashes",
+    "--no-config",
 }
 
 
@@ -548,6 +549,9 @@ def override_defaults_from_config_file(
     file. Those files are searched for in the same directory as the requirements
     input file, or the current working directory if requirements come via stdin.
     """
+    if ctx.params.get("no_config"):
+        return None
+
     if value is None:
         config_file = select_config_file(ctx.params.get("src_files", ()))
         if config_file is None:

@@ -319,6 +319,13 @@ def _determine_linesep(
     is_eager=True,
     callback=override_defaults_from_config_file,
 )
+@click.option(
+    "--no-config",
+    is_flag=True,
+    default=False,
+    help="Do not read any config file.",
+    is_eager=True,
+)
 def cli(
     ctx: click.Context,
     verbose: int,
@@ -358,6 +365,7 @@ def cli(
     emit_options: bool,
     unsafe_package: tuple[str, ...],
     config: Path | None,
+    no_config: bool,
 ) -> None:
     """
     Compiles requirements.txt from requirements.in, pyproject.toml, setup.cfg,

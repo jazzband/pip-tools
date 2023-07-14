@@ -103,6 +103,13 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
     is_eager=True,
     callback=override_defaults_from_config_file,
 )
+@click.option(
+    "--no-config",
+    is_flag=True,
+    default=False,
+    help="Do not read any config file.",
+    is_eager=True,
+)
 def cli(
     ask: bool,
     dry_run: bool,
@@ -121,6 +128,7 @@ def cli(
     src_files: tuple[str, ...],
     pip_args: str | None,
     config: Path | None,
+    no_config: bool,
 ) -> None:
     """Synchronize virtual environment with requirements.txt."""
     log.verbosity = verbose - quiet
