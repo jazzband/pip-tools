@@ -6,6 +6,11 @@ from __future__ import annotations
 from importlib.metadata import version as get_version
 from pathlib import Path
 
+from sphinx.util import logging
+from sphinx.util.console import bold
+
+logger = logging.getLogger(__name__)
+
 # -- Path setup --------------------------------------------------------------
 
 PROJECT_ROOT_DIR = Path(__file__).parents[1].resolve()
@@ -23,8 +28,8 @@ release = get_version(project)
 # The short X.Y version
 version = ".".join(release.split(".")[:3])
 
-print("pip-tools version:", version)
-print("pip-tools release:", release)
+logger.info(bold("%s version: %s"), project, version)
+logger.info(bold("%s release: %s"), project, release)
 
 # -- General configuration ---------------------------------------------------
 
