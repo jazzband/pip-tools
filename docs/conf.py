@@ -3,15 +3,12 @@
 
 from __future__ import annotations
 
-from functools import partial
+from importlib.metadata import version as get_version
 from pathlib import Path
-
-from setuptools_scm import get_version
 
 # -- Path setup --------------------------------------------------------------
 
 PROJECT_ROOT_DIR = Path(__file__).parents[1].resolve()
-get_scm_version = partial(get_version, root=PROJECT_ROOT_DIR)
 
 
 # -- Project information -----------------------------------------------------
@@ -20,18 +17,11 @@ project = "pip-tools"
 author = f"{project} Contributors"
 copyright = f"The {author}"
 
-# The short X.Y version
-version = ".".join(
-    get_scm_version(
-        local_scheme="no-local-version",
-    ).split(
-        "."
-    )[:3],
-)
-
 # The full version, including alpha/beta/rc tags
-release = get_scm_version()
+release = get_version(project)
 
+# The short X.Y version
+version = ".".join(release.split(".")[:3])
 
 # -- General configuration ---------------------------------------------------
 
