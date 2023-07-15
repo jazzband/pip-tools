@@ -23,6 +23,9 @@ release = get_version(project)
 # The short X.Y version
 version = ".".join(release.split(".")[:3])
 
+print("pip-tools version:", version)
+print("pip-tools release:", release)
+
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -37,6 +40,7 @@ extensions = ["myst_parser"]
 # a list of builtin themes.
 #
 html_theme = "furo"
+html_title = f"<nobr>{project}</nobr> documentation v{release}"
 
 
 # -------------------------------------------------------------------------
