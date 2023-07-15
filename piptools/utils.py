@@ -177,7 +177,7 @@ def format_specifier(ireq: InstallRequirement) -> str:
     specs = ireq.specifier if ireq.req is not None else SpecifierSet()
     # FIXME: remove ignore type marker once the following issue get fixed
     #        https://github.com/python/mypy/issues/9656
-    specs = sorted(specs, key=lambda x: x.version)  # type: ignore
+    specs = sorted(specs, key=lambda x: x.version)
     return ",".join(str(s) for s in specs) or "<any>"
 
 
