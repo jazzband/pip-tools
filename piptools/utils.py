@@ -582,7 +582,12 @@ def _validate_config(
     click_context: click.Context,
     config: dict[str, Any],
 ) -> None:
-    """Validate parsed config against click command params."""
+    """
+    Validate parsed config against click command params.
+
+    :raises click.NoSuchOption: if config contains unknown keys.
+    :raises click.BadOptionUsage: if config contains invalid values.
+    """
     cli_params = {
         param.name: param
         for param in click_context.command.params
