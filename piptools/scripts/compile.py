@@ -282,7 +282,7 @@ def _determine_linesep(
     "--resolver",
     "resolver_name",
     type=click.Choice(("legacy", "backtracking")),
-    default="legacy",
+    default="backtracking",
     envvar="PIP_TOOLS_RESOLVER",
     help="Choose the dependency resolver.",
 )
@@ -423,9 +423,7 @@ def cli(
     if resolver_name == "legacy":
         log.warning(
             "WARNING: the legacy dependency resolver is deprecated and will be removed"
-            " in future versions of pip-tools. The default resolver will be changed to"
-            " 'backtracking' in pip-tools 7.0.0. Specify --resolver=backtracking to"
-            " silence this warning."
+            " in future versions of pip-tools."
         )
 
     ###

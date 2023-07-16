@@ -110,3 +110,4 @@ markers = ["network: mark tests that require internet access"]
 include = ["piptools*"]
 
 [tool.setuptools_scm]
+local_scheme = "dirty-tag"
