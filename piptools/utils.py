@@ -699,7 +699,9 @@ def parse_config_file(
     try:
         piptools_config = {
             cli_opts["--" + k].name: (
-                not v if k.startswith("no-") and not k == "no-index" and isinstance(v, bool) else v
+                not v
+                if k.startswith("no-") and not k == "no-index" and isinstance(v, bool)
+                else v
             )
             for k, v in piptools_config.items()
         }

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+import itertools
 import logging
 import operator
 import os
 import shlex
 import sys
 from pathlib import Path
-import itertools
 
 import pip
 import pytest
