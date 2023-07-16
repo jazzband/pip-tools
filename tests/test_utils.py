@@ -6,6 +6,7 @@ import os
 import shlex
 import sys
 from pathlib import Path
+import itertools
 
 import pip
 import pytest
@@ -20,7 +21,6 @@ from piptools.utils import (
     flat_map,
     format_requirement,
     format_specifier,
-    get_click_dest_for_option,
     get_compile_command,
     get_hashes_from_ireq,
     get_pip_version_for_python_executable,
@@ -585,7 +585,7 @@ def test_get_sys_path_for_python_executable():
         ("pip-args", "changed"),
         ("pre", True),
         ("rebuild", True),
-        ("extras", ["changed"]),
+        ("extra", ["changed"]),
         ("all-extras", True),
         ("index-url", "changed"),
         ("header", False),
@@ -615,10 +615,15 @@ def test_callback_config_file_defaults(pyproject_param, new_default, make_config
     # Create a "compile" run example pointing to the config file
     ctx = Context(compile_cli)
     ctx.params["src_files"] = (str(config_file),)
+    cli_opts = {
+        opt: option
+        for option in ctx.command.params
+        for opt in itertools.chain(option.opts, option.secondary_opts)
+    }
     found_config_file = override_defaults_from_config_file(ctx, "config", None)
     assert found_config_file == config_file
     # Make sure the default has been updated
-    lookup_param = get_click_dest_for_option(pyproject_param)
+    lookup_param = cli_opts["--" + pyproject_param].name
     assert ctx.default_map[lookup_param] == new_default
 
 
@@ -661,8 +666,7 @@ def test_callback_config_file_defaults_precedence(make_config_file):
     found_config_file = override_defaults_from_config_file(ctx, "config", None)
     # The pip-tools specific config file should take precedence over pyproject.toml
     assert found_config_file == piptools_config_file
-    lookup_param = get_click_dest_for_option("newline")
-    assert ctx.default_map[lookup_param] == "LF"
+    assert ctx.default_map["newline"] == "LF"
 
 
 def test_callback_config_file_defaults_unreadable_toml(make_config_file):

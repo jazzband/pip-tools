@@ -3002,13 +3002,13 @@ def test_raise_error_on_unknown_config_option(
     out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
 
     assert out.exit_code == 2
-    assert "No such config key 'unknown_option'" in out.stderr
+    assert "No such config key 'unknown-option'" in out.stderr
 
 
 def test_raise_error_on_invalid_config_option(
     pip_conf, runner, tmp_path, make_config_file
 ):
-    config_file = make_config_file("dry-run", ["invalid", "value"])
+    config_file = make_config_file("dry_run", ["invalid", "value"])
 
     req_in = tmp_path / "requirements.in"
     req_in.touch()
@@ -3030,7 +3030,7 @@ def test_cli_boolean_flag_config_option_has_valid_context(
     out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
 
     assert out.exit_code == 0
-    assert "No such config key 'no_annotate'." not in out.stderr
+    assert "No such config key 'no-annotate'." not in out.stderr
 
 
 def test_invalid_cli_boolean_flag_config_option_captured(

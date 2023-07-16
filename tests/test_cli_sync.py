@@ -410,7 +410,7 @@ def test_raise_error_on_unknown_config_option(run, runner, tmp_path, make_config
     out = runner.invoke(cli, ["--config", config_file.as_posix()])
 
     assert out.exit_code == 2
-    assert "No such config key 'unknown_option'" in out.stderr
+    assert "No such config key 'unknown-option'" in out.stderr
 
 
 @mock.patch("piptools.sync.run")
