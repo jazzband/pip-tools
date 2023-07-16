@@ -608,11 +608,14 @@ def _validate_config(
         # Validate invalid values
         param = cli_params[key]
         try:
-            param.type.convert(value=value, param=param, ctx=click_context)
+            param.type_cast_value(value=value, ctx=click_context)
         except Exception as e:
             raise click.BadOptionUsage(
                 option_name=key,
-                message=f"Invalid value for config key {key!r}: {value!r}.",
+                message=(
+                    f"Invalid value for config key {key!r}: {value!r}.{os.linesep}"
+                    f"Details: {e}"
+                ),
                 ctx=click_context,
             ) from e
 
@@ -670,17 +673,6 @@ def get_click_dest_for_option(option_name: str) -> str:
     return option_name
 
 
-# Ensure that any default overrides for these click options are lists, supporting multiple values
-MULTIPLE_VALUE_OPTIONS = [
-    "extras",
-    "upgrade_packages",
-    "unsafe_package",
-    "find_links",
-    "extra_index_url",
-    "trusted_host",
-]
-
-
 def parse_config_file(config_file: Path) -> dict[str, Any]:
     try:
         config = tomllib.loads(config_file.read_text(encoding="utf-8"))
@@ -700,13 +692,6 @@ def parse_config_file(config_file: Path) -> dict[str, Any]:
     piptools_config = {
         get_click_dest_for_option(k): v for k, v in piptools_config.items()
     }
-    # Any option with multiple values needs to be a list in the pyproject.toml
-    for mv_option in MULTIPLE_VALUE_OPTIONS:
-        if not isinstance(piptools_config.get(mv_option), (list, type(None))):
-            original_option = mv_option.replace("_", "-")
-            raise click.BadOptionUsage(
-                original_option, f"Config key '{original_option}' must be a list"
-            )
     return piptools_config
 
 

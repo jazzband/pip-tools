@@ -623,21 +623,25 @@ def test_callback_config_file_defaults(pyproject_param, new_default, make_config
 
 
 @pytest.mark.parametrize(
-    "mv_option",
+    ("param", "value"),
     (
-        "extra",
-        "upgrade-package",
-        "unsafe-package",
-        "find-links",
-        "extra-index-url",
-        "trusted-host",
+        ("extra", "not-a-list"),
+        ("upgrade_package", "not-a-list"),
+        ("unsafe_package", "not-a-list"),
+        ("find_links", "not-a-list"),
+        ("extra_index_url", "not-a-list"),
+        ("trusted_host", "not-a-list"),
+        ("annotate", "not-a-bool"),
+        ("max_rounds", "not-an-int"),
     ),
 )
-def test_callback_config_file_defaults_multi_value_options(mv_option, make_config_file):
-    config_file = make_config_file(mv_option, "not-a-list")
+def test_callback_config_file_defaults_multi_validate_value(
+    param, value, make_config_file
+):
+    config_file = make_config_file(param, value)
     ctx = Context(compile_cli)
     ctx.params["src_files"] = (str(config_file),)
-    with pytest.raises(BadOptionUsage, match="must be a list"):
+    with pytest.raises(BadOptionUsage, match="Invalid value for config key"):
         override_defaults_from_config_file(ctx, "config", None)
 
 
