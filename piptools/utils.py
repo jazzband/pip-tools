@@ -670,6 +670,16 @@ MULTIPLE_VALUE_OPTIONS = [
 ]
 
 
+def get_cli_options(ctx: click.Context) -> dict[str, click.Parameter]:
+    cli_opts = {
+        opt: option
+        for option in ctx.command.params
+        for opt in itertools.chain(option.opts, option.secondary_opts)
+        if opt.startswith("--")
+    }
+    return cli_opts
+
+
 def parse_config_file(
     click_context: click.Context, config_file: Path
 ) -> dict[str, Any]:
@@ -686,11 +696,7 @@ def parse_config_file(
             hint=f"Could not parse '{config_file !s}': {value_err !s}",
         )
 
-    cli_opts = {
-        opt: option
-        for option in click_context.command.params
-        for opt in itertools.chain(option.opts, option.secondary_opts)
-    }
+    cli_opts = get_cli_options(click_context)
 
     # In a TOML file, we expect the config to be under `[tool.pip-tools]`
     piptools_config: dict[str, Any] = config.get("tool", {}).get("pip-tools", {})
@@ -698,8 +704,14 @@ def parse_config_file(
     # Replace boolean flags like ``--no-annotate`` with their equivalents
     try:
         piptools_config = {
-            cli_opts["--" + k].name: (
-                not v if k.startswith("no-") and not k == "no-index" and isinstance(v, bool) else v
+            cli_opts["--" + k].name
+            if ("--" + k) in cli_opts.keys()
+            else k.lstrip("-")
+            .replace("-", "_")
+            .lower(): (
+                not v
+                if k.startswith("no-") and not k == "no-index" and isinstance(v, bool)
+                else v
             )
             for k, v in piptools_config.items()
         }

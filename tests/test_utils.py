@@ -6,7 +6,6 @@ import os
 import shlex
 import sys
 from pathlib import Path
-import itertools
 
 import pip
 import pytest
@@ -21,6 +20,7 @@ from piptools.utils import (
     flat_map,
     format_requirement,
     format_specifier,
+    get_cli_options,
     get_compile_command,
     get_hashes_from_ireq,
     get_pip_version_for_python_executable,
@@ -615,11 +615,7 @@ def test_callback_config_file_defaults(pyproject_param, new_default, make_config
     # Create a "compile" run example pointing to the config file
     ctx = Context(compile_cli)
     ctx.params["src_files"] = (str(config_file),)
-    cli_opts = {
-        opt: option
-        for option in ctx.command.params
-        for opt in itertools.chain(option.opts, option.secondary_opts)
-    }
+    cli_opts = get_cli_options(ctx)
     found_config_file = override_defaults_from_config_file(ctx, "config", None)
     assert found_config_file == config_file
     # Make sure the default has been updated
