@@ -3017,3 +3017,31 @@ def test_raise_error_on_invalid_config_option(
 
     assert out.exit_code == 2
     assert "Invalid value for config key 'dry_run': ['invalid', 'value']" in out.stderr
+
+
+def test_cli_boolean_flag_config_option_has_valid_context(
+    pip_conf, runner, tmp_path, make_config_file
+):
+    config_file = make_config_file("no-annotate", True)
+
+    req_in = tmp_path / "requirements.in"
+    req_in.touch()
+
+    out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
+
+    assert out.exit_code == 0
+    assert "No such config key 'no_annotate'." not in out.stderr
+
+
+def test_invalid_cli_boolean_flag_config_option_captured(
+    pip_conf, runner, tmp_path, make_config_file
+):
+    config_file = make_config_file("no-annnotate", True)
+
+    req_in = tmp_path / "requirements.in"
+    req_in.touch()
+
+    out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
+
+    assert out.exit_code == 2
+    assert "No such config key 'no-annnotate'." in out.stderr

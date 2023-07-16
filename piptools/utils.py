@@ -560,7 +560,7 @@ def override_defaults_from_config_file(
     else:
         config_file = Path(value)
 
-    config = parse_config_file(config_file)
+    config = parse_config_file(ctx, config_file)
     if config:
         _validate_config(ctx, config)
         _assign_config_to_cli_context(ctx, config)
@@ -659,17 +659,6 @@ NON_STANDARD_OPTION_DEST_MAP: dict[str, str] = {
 }
 
 
-def get_click_dest_for_option(option_name: str) -> str:
-    """
-    Returns the click ``dest`` value for the given option name.
-    """
-    # Format the keys properly
-    option_name = option_name.lstrip("-").replace("-", "_").lower()
-    # Some options have dest values that are overrides from the click generated default
-    option_name = NON_STANDARD_OPTION_DEST_MAP.get(option_name, option_name)
-    return option_name
-
-
 # Ensure that any default overrides for these click options are lists, supporting multiple values
 MULTIPLE_VALUE_OPTIONS = [
     "extras",
@@ -681,7 +670,9 @@ MULTIPLE_VALUE_OPTIONS = [
 ]
 
 
-def parse_config_file(config_file: Path) -> dict[str, Any]:
+def parse_config_file(
+    click_context: click.Context, config_file: Path
+) -> dict[str, Any]:
     try:
         config = tomllib.loads(config_file.read_text(encoding="utf-8"))
     except OSError as os_err:
@@ -695,11 +686,25 @@ def parse_config_file(config_file: Path) -> dict[str, Any]:
             hint=f"Could not parse '{config_file !s}': {value_err !s}",
         )
 
+    cli_opts = {
+        opt: option
+        for option in click_context.command.params
+        for opt in itertools.chain(option.opts, option.secondary_opts)
+    }
+
     # In a TOML file, we expect the config to be under `[tool.pip-tools]`
     piptools_config: dict[str, Any] = config.get("tool", {}).get("pip-tools", {})
-    piptools_config = {
-        get_click_dest_for_option(k): v for k, v in piptools_config.items()
-    }
+
+    # Replace boolean flags like ``--no-annotate`` with their equivalents
+    try:
+        piptools_config = {
+            cli_opts["--" + k].name: (
+                not v if k.startswith("no-") and isinstance(v, bool) else v
+            )
+            for k, v in piptools_config.items()
+        }
+    except KeyError:
+        pass
     # Any option with multiple values needs to be a list in the pyproject.toml
     for mv_option in MULTIPLE_VALUE_OPTIONS:
         if not isinstance(piptools_config.get(mv_option), (list, type(None))):
