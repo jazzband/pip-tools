@@ -8,7 +8,6 @@ from subprocess import run  # nosec
 from typing import Deque, Iterable, Mapping, ValuesView
 
 import click
-from packaging.utils import canonicalize_name
 from pip._internal.models.direct_url import ArchiveInfo
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.compat import stdlib_pkgs
@@ -16,6 +15,7 @@ from pip._internal.utils.direct_url_helpers import (
     direct_url_as_pep440_direct_reference,
     direct_url_from_link,
 )
+from pip._vendor.packaging.utils import canonicalize_name
 
 from ._compat import Distribution, get_dev_pkgs
 from .exceptions import IncompatibleRequirements
