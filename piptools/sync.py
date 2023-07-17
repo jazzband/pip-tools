@@ -8,6 +8,7 @@ from subprocess import run  # nosec
 from typing import Deque, Iterable, Mapping, ValuesView
 
 import click
+from packaging.utils import canonicalize_name
 from pip._internal.models.direct_url import ArchiveInfo
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.compat import stdlib_pkgs
@@ -59,7 +60,7 @@ def dependency_tree(
 
     while queue:
         v = queue.popleft()
-        key = v.key
+        key = str(canonicalize_name(v.key))
         if key in dependencies:
             continue
 
@@ -85,7 +86,7 @@ def get_dists_to_ignore(installed: Iterable[Distribution]) -> list[str]:
     locally, click should also be installed/uninstalled depending on the given
     requirements.
     """
-    installed_keys = {r.key: r for r in installed}
+    installed_keys = {str(canonicalize_name(r.key)): r for r in installed}
     return list(
         flat_map(lambda req: dependency_tree(installed_keys, req), PACKAGES_TO_IGNORE)
     )
@@ -143,7 +144,7 @@ def diff_key_from_ireq(ireq: InstallRequirement) -> str:
 
 def diff_key_from_req(req: Distribution) -> str:
     """Get a unique key for the requirement."""
-    key = req.key
+    key = str(canonicalize_name(req.key))
     if (
         req.direct_url
         and isinstance(req.direct_url.info, ArchiveInfo)
