@@ -415,7 +415,7 @@ Sample `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/jazzband/pip-tools
-    rev: 7.0.0
+    rev: 7.1.0
     hooks:
       - id: pip-compile
 ```
@@ -425,7 +425,7 @@ You might want to customize `pip-compile` args by configuring `args` and/or `fil
 ```yaml
 repos:
   - repo: https://github.com/jazzband/pip-tools
-    rev: 7.0.0
+    rev: 7.1.0
     hooks:
       - id: pip-compile
         files: ^requirements/production\.(in|txt)$
@@ -437,7 +437,7 @@ If you have multiple requirement files make sure you create a hook for each file
 ```yaml
 repos:
   - repo: https://github.com/jazzband/pip-tools
-    rev: 7.0.0
+    rev: 7.1.0
     hooks:
       - id: pip-compile
         name: pip-compile setup.py
