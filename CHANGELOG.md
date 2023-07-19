@@ -1,3 +1,15 @@
+## 7.1.0 (2023-07-18)
+
+Features:
+
+- Validate parsed config against CLI options
+  ([#1910](https://github.com/jazzband/pip-tools/pull/1910)). Thanks @atugushev
+
+Bug Fixes:
+
+- Fix a bug where pip-sync would unexpectedly uninstall some packages
+  ([#1919](https://github.com/jazzband/pip-tools/pull/1919)). Thanks @atugushev
+
 ## 7.0.0 (2023-07-14)
 
 Backwards Incompatible Changes:
