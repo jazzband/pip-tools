@@ -114,16 +114,16 @@ class FakeRepository(BaseRepository):
         return self._options
 
     @property
-    def session(self) -> PipSession:
-        raise NotImplementedError("not used")
+    def session(self) -> PipSession:  # type: ignore
+        """not used"""
 
     @property
-    def finder(self) -> PackageFinder:
-        raise NotImplementedError("not used")
+    def finder(self) -> PackageFinder:  # type: ignore
+        """not used"""
 
     @property
-    def command(self) -> InstallCommand:
-        raise NotImplementedError("not used")
+    def command(self) -> InstallCommand:  # type: ignore
+        """not used"""
 
 
 def pytest_collection_modifyitems(config, items):
