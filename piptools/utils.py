@@ -22,12 +22,12 @@ from click.utils import LazyFile
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line, parse_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
-from pip._internal.vcs import is_url
+from pip._internal.vcs import is_url  # type: ignore[attr-defined]
 from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.requirements import Requirement
 from pip._vendor.packaging.specifiers import SpecifierSet
 from pip._vendor.packaging.utils import canonicalize_name
-from pip._vendor.packaging.version import Version
+from pip._vendor.packaging.version import LegacyVersion, Version
 from pip._vendor.pkg_resources import get_distribution
 
 from piptools._compat import PIP_VERSION
@@ -64,11 +64,13 @@ def key_from_ireq(ireq: InstallRequirement) -> str:
     if ireq.req is None and ireq.link is not None:
         return str(ireq.link)
     else:
+        assert ireq.req is not None
         return key_from_req(ireq.req)
 
 
 def key_from_req(req: InstallRequirement | Requirement) -> str:
     """Get an all-lowercase version of the requirement's name."""
+    assert req.name is not None
     return str(canonicalize_name(req.name))
 
 
@@ -77,7 +79,7 @@ def comment(text: str) -> str:
 
 
 def make_install_requirement(
-    name: str, version: str | Version, ireq: InstallRequirement
+    name: str, version: str | Version | LegacyVersion, ireq: InstallRequirement
 ) -> InstallRequirement:
     # If no extras are specified, the extras string is blank
     extras_string = ""
@@ -117,12 +119,14 @@ def format_requirement(
     in a less verbose way than using its `__str__` method.
     """
     if ireq.editable:
+        assert ireq.link is not None
         line = f"-e {ireq.link.url}"
     elif is_url_requirement(ireq):
         line = _build_direct_reference_best_efforts(ireq)
     else:
         # Canonicalize the requirement name
         # https://packaging.pypa.io/en/latest/utils.html#packaging.utils.canonicalize_name
+        assert ireq.req is not None
         req = copy.copy(ireq.req)
         req.name = canonicalize_name(req.name)
         line = str(req)
@@ -142,13 +146,15 @@ def _build_direct_reference_best_efforts(ireq: InstallRequirement) -> str:
     Returns a string of a direct reference URI, whenever possible.
     See https://www.python.org/dev/peps/pep-0508/
     """
+    assert ireq.link is not None
+
     # If the requirement has no name then we cannot build a direct reference.
     if not ireq.name:
-        return cast(str, ireq.link.url)
+        return ireq.link.url
 
     # Look for a relative file path, the direct reference currently does not work with it.
     if ireq.link.is_file and not ireq.link.path.startswith("/"):
-        return cast(str, ireq.link.url)
+        return ireq.link.url
 
     # If we get here then we have a requirement that supports direct reference.
     # We need to remove the egg if it exists and keep the rest of the fragments.
@@ -176,10 +182,8 @@ def format_specifier(ireq: InstallRequirement) -> str:
     """
     # TODO: Ideally, this is carried over to the pip library itself
     specs = ireq.specifier if ireq.req is not None else SpecifierSet()
-    # FIXME: remove ignore type marker once the following issue get fixed
-    #        https://github.com/python/mypy/issues/9656
-    specs = sorted(specs, key=lambda x: x.version)
-    return ",".join(str(s) for s in specs) or "<any>"
+    sorted_specs = sorted(specs, key=lambda x: x.version)
+    return ",".join(str(s) for s in sorted_specs) or "<any>"
 
 
 def is_pinned_requirement(ireq: InstallRequirement) -> bool:
@@ -422,7 +426,7 @@ def get_required_pip_specification() -> SpecifierSet:
     assert (
         requirement is not None
     ), "'pip' is expected to be in the list of pip-tools requirements"
-    return requirement.specifier
+    return cast(SpecifierSet, requirement.specifier)
 
 
 def get_pip_version_for_python_executable(python_executable: str) -> Version:
@@ -467,7 +471,7 @@ def copy_install_requirement(
 ) -> InstallRequirement:
     """Make a copy of a template ``InstallRequirement`` with extra kwargs."""
     # Prepare install requirement kwargs.
-    kwargs = {
+    kwargs: dict[str, Any] = {
         "comes_from": template.comes_from,
         "editable": template.editable,
         "link": template.link,
@@ -483,7 +487,7 @@ def copy_install_requirement(
     kwargs.update(extra_kwargs)
 
     if PIP_VERSION[:2] <= (23, 0):
-        kwargs["install_options"] = template.install_options
+        kwargs["install_options"] = template.install_options  # type: ignore[attr-defined]
 
     # Original link does not belong to install requirements constructor,
     # pop it now to update later.
@@ -517,6 +521,7 @@ def parse_requirements_from_wheel_metadata(
 
     for req in metadata.get_all("Requires-Dist") or []:
         parts = parse_req_from_line(req, comes_from)
+        assert parts.requirement is not None
         if parts.requirement.name == package_name:
             package_dir = os.path.dirname(os.path.abspath(src_file))
             # Replace package name with package directory in the requirement
