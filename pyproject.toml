@@ -95,7 +95,10 @@ module = ["tests.*"]
 disallow_untyped_defs = false
 
 [[tool.mypy.overrides]]
-module = ["pip._vendor.requests.*", "pip._vendor.pkg_resources.*"]
+module = [
+  "pip._vendor.pkg_resources.*",
+  "pip._vendor.requests.*",
+]
 follow_imports = "skip"
 
 [tool.pytest.ini_options]
