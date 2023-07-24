@@ -1,4 +1,4 @@
-# CLI Reference
+# Command Line Reference
 
 This page provides a reference for the `pip-tools` command-line interface (CLI):
 
