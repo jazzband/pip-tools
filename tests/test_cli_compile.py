@@ -3017,3 +3017,17 @@ def test_raise_error_on_invalid_config_option(
 
     assert out.exit_code == 2
     assert "Invalid value for config key 'dry_run': ['invalid', 'value']" in out.stderr
+
+
+def test_allow_in_config_pip_sync_option(pip_conf, runner, tmp_path, make_config_file):
+    config_file = make_config_file("--ask", True)  # pip-sync's option
+
+    req_in = tmp_path / "requirements.in"
+    req_in.touch()
+
+    out = runner.invoke(
+        cli, [req_in.as_posix(), "--verbose", "--config", config_file.as_posix()]
+    )
+
+    assert out.exit_code == 0
+    assert "Using pip-tools configuration defaults found" in out.stderr
