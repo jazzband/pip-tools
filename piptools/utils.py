@@ -58,6 +58,9 @@ COMPILE_EXCLUDE_OPTIONS = {
     "--no-config",
 }
 
+# Set of option that are only negative, i.e. --no-<option>
+ONLY_NEGATIVE_OPTIONS = {"--no-index"}
+
 
 def key_from_ireq(ireq: InstallRequirement) -> str:
     """Get a standardized key for an InstallRequirement."""
@@ -675,7 +678,7 @@ def get_cli_options(ctx: click.Context) -> dict[str, click.Parameter]:
         opt: option
         for option in ctx.command.params
         for opt in itertools.chain(option.opts, option.secondary_opts)
-        if opt.startswith("--")
+        if opt.startswith("--") and option.name is not None
     }
     return cli_opts
 
@@ -696,27 +699,15 @@ def parse_config_file(
             hint=f"Could not parse '{config_file !s}': {value_err !s}",
         )
 
-    cli_opts = get_cli_options(click_context)
-
     # In a TOML file, we expect the config to be under `[tool.pip-tools]`
     piptools_config: dict[str, Any] = config.get("tool", {}).get("pip-tools", {})
 
-    # Replace boolean flags like ``--no-annotate`` with their equivalents
-    try:
-        piptools_config = {
-            cli_opts["--" + k].name
-            if ("--" + k) in cli_opts.keys()
-            else k.lstrip("-")
-            .replace("-", "_")
-            .lower(): (
-                not v
-                if k.startswith("no-") and not k == "no-index" and isinstance(v, bool)
-                else v
-            )
-            for k, v in piptools_config.items()
-        }
-    except KeyError:
-        pass
+    piptools_config = _normalize_keys_in_config(piptools_config)
+    piptools_config = _invert_negative_bool_options_in_config(
+        ctx=click_context,
+        config=piptools_config,
+    )
+
     # Any option with multiple values needs to be a list in the pyproject.toml
     for mv_option in MULTIPLE_VALUE_OPTIONS:
         if not isinstance(piptools_config.get(mv_option), (list, type(None))):
@@ -725,6 +716,45 @@ def parse_config_file(
                 original_option, f"Config key '{original_option}' must be a list"
             )
     return piptools_config
+
+
+def _normalize_keys_in_config(config: dict[str, Any]) -> dict[str, Any]:
+    return {_normalize_config_key(key): value for key, value in config.items()}
+
+
+def _invert_negative_bool_options_in_config(
+    ctx: click.Context, config: dict[str, Any]
+) -> dict[str, Any]:
+    new_config = {}
+    cli_opts = get_cli_options(ctx)
+
+    for key, value in config.items():
+        # Transform config key to its equivalent in the CLI
+        long_option = _convert_to_long_option(key)
+        new_key = cli_opts[long_option].name if long_option in cli_opts else key
+        assert new_key is not None
+
+        # Invert negative boolean according to the CLI
+        new_value = (
+            not value
+            if long_option.startswith("--no-")
+            and long_option not in ONLY_NEGATIVE_OPTIONS
+            and isinstance(value, bool)
+            else value
+        )
+        new_config[new_key] = new_value
+
+    return new_config
+
+
+def _normalize_config_key(key: str) -> str:
+    """Transform given ``some-key`` into ``some_key``."""
+    return key.lstrip("-").replace("-", "_").lower()
+
+
+def _convert_to_long_option(key: str) -> str:
+    """Transform given ``some-key`` into ``--some-key``."""
+    return "--" + key.lstrip("-").replace("_", "-").lower()
 
 
 def is_path_relative_to(path1: Path, path2: Path) -> bool:
