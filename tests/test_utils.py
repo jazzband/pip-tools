@@ -631,6 +631,7 @@ def test_callback_config_file_defaults(pyproject_param, new_default, make_config
         "find-links",
         "extra-index-url",
         "trusted-host",
+        "constraint",
     ),
 )
 def test_callback_config_file_defaults_multi_value_options(mv_option, make_config_file):

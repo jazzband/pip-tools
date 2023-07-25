@@ -678,6 +678,7 @@ MULTIPLE_VALUE_OPTIONS = [
     "find_links",
     "extra_index_url",
     "trusted_host",
+    "constraint",
 ]
 
 
