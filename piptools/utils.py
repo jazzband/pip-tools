@@ -625,7 +625,7 @@ def _validate_config(
         # Validate value against types of all associated params
         for param in associated_params:
             try:
-                param.type.convert(value=value, param=param, ctx=click_context)
+                param.type_cast_value(value=value, ctx=click_context)
             except Exception as e:
                 raise click.BadOptionUsage(
                     option_name=key,
