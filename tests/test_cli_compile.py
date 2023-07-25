@@ -3049,3 +3049,41 @@ def test_constraint_option(pip_conf, runner, tmpdir_cwd, make_config_file, optio
             #   -r requirements.in
         """
     )
+
+
+def test_cli_boolean_flag_config_option_has_valid_context(
+    pip_conf, runner, tmp_path, make_config_file
+):
+    config_file = make_config_file("no-annotate", True)
+
+    req_in = tmp_path / "requirements.in"
+    req_in.write_text("small-fake-a==0.1")
+    out = runner.invoke(
+        cli,
+        [
+            req_in.as_posix(),
+            "--config",
+            config_file.as_posix(),
+            "--no-emit-options",
+            "--no-header",
+            "--output-file",
+            "-",
+        ],
+    )
+    assert out.exit_code == 0
+    assert out.stdout == "small-fake-a==0.1\n"
+
+
+def test_invalid_cli_boolean_flag_config_option_captured(
+    pip_conf, runner, tmp_path, make_config_file
+):
+    config_file = make_config_file("no-annnotate", True)
+
+    req_in = tmp_path / "requirements.in"
+    req_in.touch()
+
+    out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
+
+    assert out.exit_code == 2
+    assert "No such config key 'no_annnotate'." in out.stderr
+    
