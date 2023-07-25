@@ -139,7 +139,7 @@ def fake_dist():
         if deps is None:
             deps = []
         req = Requirement.parse(line)
-        key = req.key
+        key = req.name
         if "==" in line:
             version = line.split("==")[1]
         else:
