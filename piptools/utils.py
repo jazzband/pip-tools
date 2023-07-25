@@ -673,17 +673,6 @@ NON_STANDARD_OPTION_DEST_MAP: dict[str, str] = {
 }
 
 
-# Ensure that any default overrides for these click options are lists, supporting multiple values
-MULTIPLE_VALUE_OPTIONS = [
-    "extras",
-    "upgrade_packages",
-    "unsafe_package",
-    "find_links",
-    "extra_index_url",
-    "trusted_host",
-]
-
-
 def get_cli_options(ctx: click.Context) -> dict[str, click.Parameter]:
     cli_opts = {
         opt: option
@@ -712,20 +701,11 @@ def parse_config_file(
 
     # In a TOML file, we expect the config to be under `[tool.pip-tools]`
     piptools_config: dict[str, Any] = config.get("tool", {}).get("pip-tools", {})
-
     piptools_config = _normalize_keys_in_config(piptools_config)
     piptools_config = _invert_negative_bool_options_in_config(
         ctx=click_context,
         config=piptools_config,
     )
-
-    # Any option with multiple values needs to be a list in the pyproject.toml
-    for mv_option in MULTIPLE_VALUE_OPTIONS:
-        if not isinstance(piptools_config.get(mv_option), (list, type(None))):
-            original_option = mv_option.replace("_", "-")
-            raise click.BadOptionUsage(
-                original_option, f"Config key '{original_option}' must be a list"
-            )
     return piptools_config
 
 
