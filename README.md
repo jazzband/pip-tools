@@ -302,12 +302,12 @@ must be defined as lists in a configuration file, even if they only have one
 value.
 
 `pip-tools` supports default values vor [all valid command-line flags](/cli/index.md)
-of its subcommands. Also, it is possible to specify configuration keys in
-command-line manner, for example:
+of its subcommands. Configuration keys may contain underscores instead of dashes,
+so the above could also be specified in this format:
 
 ```toml
 [tool.pip-tools]
---generate-hashes = true
+generate_hashes = true
 ```
 
 You might be wrapping the `pip-compile` command in another script. To avoid
