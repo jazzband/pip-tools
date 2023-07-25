@@ -3086,4 +3086,3 @@ def test_invalid_cli_boolean_flag_config_option_captured(
 
     assert out.exit_code == 2
     assert "No such config key 'no_annnotate'." in out.stderr
-    
