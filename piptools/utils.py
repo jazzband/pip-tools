@@ -626,7 +626,10 @@ def _validate_config(
             except Exception as e:
                 raise click.BadOptionUsage(
                     option_name=key,
-                    message=f"Invalid value for config key {key!r}: {value!r}.",
+                    message=(
+                        f"Invalid value for config key {key!r}: {value!r}.{os.linesep}"
+                        f"Details: {e}"
+                    ),
                     ctx=click_context,
                 ) from e
 
