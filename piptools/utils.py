@@ -615,12 +615,15 @@ def _validate_config(
                 ctx=click_context,
             )
 
-        # Validate values for both compile and sync
-        for cli_params in (compile_cli_params, sync_cli_params):
-            param = cli_params.get(key)
-            if param is None:
-                continue
+        # Get all params associated with this key in both compile and sync
+        associated_params = (
+            cli_params[key]
+            for cli_params in (compile_cli_params, sync_cli_params)
+            if key in cli_params
+        )
 
+        # Validate value against types of all associated params
+        for param in associated_params:
             try:
                 param.type.convert(value=value, param=param, ctx=click_context)
             except Exception as e:
