@@ -591,16 +591,23 @@ def _validate_config(
     :raises click.NoSuchOption: if config contains unknown keys.
     :raises click.BadOptionUsage: if config contains invalid values.
     """
-    cli_params = {
-        param.name: param
-        for param in click_context.command.params
-        if param.name is not None
+    from piptools.scripts.compile import cli as compile_cli
+    from piptools.scripts.sync import cli as sync_cli
+
+    compile_cli_params = {
+        param.name: param for param in compile_cli.params if param.name is not None
     }
 
+    sync_cli_params = {
+        param.name: param for param in sync_cli.params if param.name is not None
+    }
+
+    all_keys = set(compile_cli_params) | set(sync_cli_params)
+
     for key, value in config.items():
-        # Validate unknown keys
-        if key not in cli_params:
-            possibilities = difflib.get_close_matches(key, cli_params.keys())
+        # Validate unknown keys in both compile and sync
+        if key not in all_keys:
+            possibilities = difflib.get_close_matches(key, all_keys)
             raise click.NoSuchOption(
                 option_name=key,
                 message=f"No such config key {key!r}.",
@@ -608,16 +615,26 @@ def _validate_config(
                 ctx=click_context,
             )
 
-        # Validate invalid values
-        param = cli_params[key]
-        try:
-            param.type.convert(value=value, param=param, ctx=click_context)
-        except Exception as e:
-            raise click.BadOptionUsage(
-                option_name=key,
-                message=f"Invalid value for config key {key!r}: {value!r}.",
-                ctx=click_context,
-            ) from e
+        # Get all params associated with this key in both compile and sync
+        associated_params = (
+            cli_params[key]
+            for cli_params in (compile_cli_params, sync_cli_params)
+            if key in cli_params
+        )
+
+        # Validate value against types of all associated params
+        for param in associated_params:
+            try:
+                param.type_cast_value(value=value, ctx=click_context)
+            except Exception as e:
+                raise click.BadOptionUsage(
+                    option_name=key,
+                    message=(
+                        f"Invalid value for config key {key!r}: {value!r}.{os.linesep}"
+                        f"Details: {e}"
+                    ),
+                    ctx=click_context,
+                ) from e
 
 
 def select_config_file(src_files: tuple[str, ...]) -> Path | None:
@@ -662,18 +679,6 @@ NON_STANDARD_OPTION_DEST_MAP: dict[str, str] = {
 }
 
 
-# Ensure that any default overrides for these click options are lists, supporting multiple values
-MULTIPLE_VALUE_OPTIONS = [
-    "extras",
-    "upgrade_packages",
-    "unsafe_package",
-    "find_links",
-    "extra_index_url",
-    "trusted_host",
-    "constraint",
-]
-
-
 def get_cli_options(ctx: click.Context) -> dict[str, click.Parameter]:
     cli_opts = {
         opt: option
@@ -702,20 +707,11 @@ def parse_config_file(
 
     # In a TOML file, we expect the config to be under `[tool.pip-tools]`
     piptools_config: dict[str, Any] = config.get("tool", {}).get("pip-tools", {})
-
     piptools_config = _normalize_keys_in_config(piptools_config)
     piptools_config = _invert_negative_bool_options_in_config(
         ctx=click_context,
         config=piptools_config,
     )
-
-    # Any option with multiple values needs to be a list in the pyproject.toml
-    for mv_option in MULTIPLE_VALUE_OPTIONS:
-        if not isinstance(piptools_config.get(mv_option), (list, type(None))):
-            original_option = mv_option.replace("_", "-")
-            raise click.BadOptionUsage(
-                original_option, f"Config key '{original_option}' must be a list"
-            )
     return piptools_config
 
 

@@ -3051,6 +3051,20 @@ def test_constraint_option(pip_conf, runner, tmpdir_cwd, make_config_file, optio
     )
 
 
+def test_allow_in_config_pip_sync_option(pip_conf, runner, tmp_path, make_config_file):
+    config_file = make_config_file("--ask", True)  # pip-sync's option
+
+    req_in = tmp_path / "requirements.in"
+    req_in.touch()
+
+    out = runner.invoke(
+        cli, [req_in.as_posix(), "--verbose", "--config", config_file.as_posix()]
+    )
+
+    assert out.exit_code == 0
+    assert "Using pip-tools configuration defaults found" in out.stderr
+
+
 def test_cli_boolean_flag_config_option_has_valid_context(
     pip_conf, runner, tmp_path, make_config_file
 ):
