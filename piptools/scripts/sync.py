@@ -17,7 +17,7 @@ from pip._internal.metadata import get_environment
 from .. import sync
 from .._compat import Distribution, parse_requirements
 from ..exceptions import PipToolsError
-from ..locations import CONFIG_FILE_NAME
+from ..locations import DEFAULT_CONFIG_FILE_NAMES
 from ..logging import log
 from ..repositories import PyPIRepository
 from ..utils import (
@@ -86,9 +86,7 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
     help="Path to SSL client certificate, a single file containing "
     "the private key and the certificate in PEM format.",
 )
-@click.argument(
-    "src_files", required=False, type=click.Path(exists=True), nargs=-1, is_eager=True
-)
+@click.argument("src_files", required=False, type=click.Path(exists=True), nargs=-1)
 @click.option("--pip-args", help="Arguments to pass directly to pip install.")
 @click.option(
     "--config",
@@ -100,9 +98,12 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
         allow_dash=False,
         path_type=str,
     ),
-    help=f"Read configuration from TOML file. By default, looks for a {CONFIG_FILE_NAME} or "
-    "pyproject.toml.",
+    help=(
+        f"Read configuration from TOML file. By default, looks for the following "
+        f"files in the given order: {', '.join(DEFAULT_CONFIG_FILE_NAMES)}. "
+    ),
     callback=override_defaults_from_config_file,
+    is_eager=True,
 )
 @click.option(
     "--no-config",

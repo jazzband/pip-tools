@@ -31,7 +31,7 @@ from pip._vendor.pkg_resources import Requirement
 from piptools._compat import PIP_VERSION, Distribution
 from piptools.cache import DependencyCache
 from piptools.exceptions import NoCandidateFound
-from piptools.locations import CONFIG_FILE_NAME
+from piptools.locations import DEFAULT_CONFIG_FILE_NAMES
 from piptools.logging import log
 from piptools.repositories import PyPIRepository
 from piptools.repositories.base import BaseRepository
@@ -452,7 +452,9 @@ def make_config_file(tmpdir_cwd):
     """
 
     def _maker(
-        pyproject_param: str, new_default: Any, config_file_name: str = CONFIG_FILE_NAME
+        pyproject_param: str,
+        new_default: Any,
+        config_file_name: str = DEFAULT_CONFIG_FILE_NAMES[0],
     ) -> Path:
         # Create a nested directory structure if config_file_name includes directories
         config_dir = Path(tmpdir_cwd / config_file_name).parent

@@ -418,7 +418,7 @@ def test_get_compile_command_with_config(tmpdir_cwd, config_file, expected_comma
     (
         pytest.param("", id="empty config file"),
         pytest.param("[tool.pip-tools]", id="empty config section"),
-        pytest.param("[tool.pip-tools]\ndry-run = True", id="non-empty config section"),
+        pytest.param("[tool.pip-tools]\ndry-run = true", id="non-empty config section"),
     ),
 )
 def test_get_compile_command_does_not_include_default_config_if_reqs_file_in_subdir(

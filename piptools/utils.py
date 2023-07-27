@@ -12,6 +12,8 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Iterator, TypeVar, cast
 
+from click.core import ParameterSource
+
 if sys.version_info >= (3, 11):
     import tomllib
 else:
@@ -31,7 +33,7 @@ from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import get_distribution
 
 from piptools._compat import PIP_VERSION
-from piptools.locations import CONFIG_FILE_NAME
+from piptools.locations import DEFAULT_CONFIG_FILE_NAMES
 from piptools.subprocess_utils import run_python_snippet
 
 if TYPE_CHECKING:
@@ -367,8 +369,11 @@ def get_compile_command(click_ctx: click.Context) -> str:
 
         # Exclude config option if it's the default one
         if option_long_name == "--config":
-            default_config = select_config_file(click_ctx.params.get("src_files", ()))
-            if value == default_config:
+            parameter_source = click_ctx.get_parameter_source(option_name)
+            if (
+                str(value) in DEFAULT_CONFIG_FILE_NAMES
+                or parameter_source == ParameterSource.DEFAULT
+            ):
                 continue
 
         # Skip options without a value
@@ -654,7 +659,7 @@ def select_config_file(src_files: tuple[str, ...]) -> Path | None:
         (
             candidate_dir / config_file
             for candidate_dir in candidate_dirs
-            for config_file in (CONFIG_FILE_NAME, "pyproject.toml")
+            for config_file in DEFAULT_CONFIG_FILE_NAMES
             if (candidate_dir / config_file).is_file()
         ),
         None,

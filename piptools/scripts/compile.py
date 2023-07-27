@@ -20,7 +20,7 @@ from pip._internal.utils.misc import redact_auth_from_url
 from .._compat import parse_requirements
 from ..cache import DependencyCache
 from ..exceptions import NoCandidateFound, PipToolsError
-from ..locations import CACHE_DIR, CONFIG_FILE_NAME
+from ..locations import CACHE_DIR, DEFAULT_CONFIG_FILE_NAMES
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..repositories.base import BaseRepository
@@ -251,9 +251,7 @@ def _determine_linesep(
     default=10,
     help="Maximum number of rounds before resolving the requirements aborts.",
 )
-@click.argument(
-    "src_files", nargs=-1, type=click.Path(exists=True, allow_dash=True), is_eager=True
-)
+@click.argument("src_files", nargs=-1, type=click.Path(exists=True, allow_dash=True))
 @click.option(
     "--build-isolation/--no-build-isolation",
     is_flag=True,
@@ -316,9 +314,12 @@ def _determine_linesep(
         allow_dash=False,
         path_type=str,
     ),
-    help=f"Read configuration from TOML file. By default, looks for a {CONFIG_FILE_NAME} or "
-    "pyproject.toml.",
+    help=(
+        f"Read configuration from TOML file. By default, looks for the following "
+        f"files in the given order: {', '.join(DEFAULT_CONFIG_FILE_NAMES)}. "
+    ),
     callback=override_defaults_from_config_file,
+    is_eager=True,
 )
 @click.option(
     "--no-config",
