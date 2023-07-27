@@ -21,7 +21,7 @@ from piptools.utils import (
     flat_map,
     format_requirement,
     format_specifier,
-    get_click_dest_for_option,
+    get_cli_options,
     get_compile_command,
     get_hashes_from_ireq,
     get_pip_version_for_python_executable,
@@ -605,24 +605,19 @@ def test_get_sys_path_for_python_executable():
 @pytest.mark.parametrize(
     ("pyproject_param", "new_default"),
     (
-        # From sync
-        ("ask", True),
         ("dry-run", True),
         ("find-links", ["changed"]),
         ("extra-index-url", ["changed"]),
         ("trusted-host", ["changed"]),
         ("no-index", True),
-        ("python-executable", "changed"),
         ("verbose", True),
         ("quiet", True),
-        ("user", True),
         ("cert", "changed"),
         ("client-cert", "changed"),
         ("pip-args", "changed"),
-        # From compile, unless also in sync
         ("pre", True),
         ("rebuild", True),
-        ("extras", ["changed"]),
+        ("extra", ["changed"]),
         ("all-extras", True),
         ("index-url", "changed"),
         ("header", False),
@@ -652,29 +647,34 @@ def test_callback_config_file_defaults(pyproject_param, new_default, make_config
     # Create a "compile" run example pointing to the config file
     ctx = Context(compile_cli)
     ctx.params["src_files"] = (str(config_file),)
+    cli_opts = get_cli_options(ctx)
     found_config_file = override_defaults_from_config_file(ctx, "config", None)
     assert found_config_file == config_file
     # Make sure the default has been updated
-    lookup_param = get_click_dest_for_option(pyproject_param)
+    lookup_param = cli_opts["--" + pyproject_param].name
     assert ctx.default_map[lookup_param] == new_default
 
 
 @pytest.mark.parametrize(
-    "mv_option",
+    ("param", "value"),
     (
-        "extra",
-        "upgrade-package",
-        "unsafe-package",
-        "find-links",
-        "extra-index-url",
-        "trusted-host",
+        ("extra", "not-a-list"),
+        ("upgrade_package", "not-a-list"),
+        ("unsafe_package", "not-a-list"),
+        ("find_links", "not-a-list"),
+        ("extra_index_url", "not-a-list"),
+        ("trusted_host", "not-a-list"),
+        ("annotate", "not-a-bool"),
+        ("max_rounds", "not-an-int"),
     ),
 )
-def test_callback_config_file_defaults_multi_value_options(mv_option, make_config_file):
-    config_file = make_config_file(mv_option, "not-a-list")
+def test_callback_config_file_defaults_multi_validate_value(
+    param, value, make_config_file
+):
+    config_file = make_config_file(param, value)
     ctx = Context(compile_cli)
     ctx.params["src_files"] = (str(config_file),)
-    with pytest.raises(BadOptionUsage, match="must be a list"):
+    with pytest.raises(BadOptionUsage, match="Invalid value for config key"):
         override_defaults_from_config_file(ctx, "config", None)
 
 
@@ -698,8 +698,7 @@ def test_callback_config_file_defaults_precedence(make_config_file):
     found_config_file = override_defaults_from_config_file(ctx, "config", None)
     # The pip-tools specific config file should take precedence over pyproject.toml
     assert found_config_file == piptools_config_file
-    lookup_param = get_click_dest_for_option("newline")
-    assert ctx.default_map[lookup_param] == "LF"
+    assert ctx.default_map["newline"] == "LF"
 
 
 def test_callback_config_file_defaults_unreadable_toml(make_config_file):

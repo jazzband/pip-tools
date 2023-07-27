@@ -3,15 +3,17 @@
 
 from __future__ import annotations
 
-from functools import partial
+from importlib.metadata import version as get_version
 from pathlib import Path
 
-from setuptools_scm import get_version
+from sphinx.util import logging
+from sphinx.util.console import bold
+
+logger = logging.getLogger(__name__)
 
 # -- Path setup --------------------------------------------------------------
 
 PROJECT_ROOT_DIR = Path(__file__).parents[1].resolve()
-get_scm_version = partial(get_version, root=PROJECT_ROOT_DIR)
 
 
 # -- Project information -----------------------------------------------------
@@ -20,25 +22,21 @@ project = "pip-tools"
 author = f"{project} Contributors"
 copyright = f"The {author}"
 
-# The short X.Y version
-version = ".".join(
-    get_scm_version(
-        local_scheme="no-local-version",
-    ).split(
-        "."
-    )[:3],
-)
-
 # The full version, including alpha/beta/rc tags
-release = get_scm_version()
+release = get_version(project)
 
+# The short X.Y version
+version = ".".join(release.split(".")[:3])
+
+logger.info(bold("%s version: %s"), project, version)
+logger.info(bold("%s release: %s"), project, release)
 
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ["myst_parser"]
+extensions = ["myst_parser", "sphinxcontrib.programoutput"]
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -47,6 +45,7 @@ extensions = ["myst_parser"]
 # a list of builtin themes.
 #
 html_theme = "furo"
+html_title = f"<nobr>{project}</nobr> documentation v{release}"
 
 
 # -------------------------------------------------------------------------

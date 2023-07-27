@@ -3001,3 +3001,82 @@ def test_no_config_option_overrides_config_with_defaults(
 
     assert out.exit_code == 0
     assert "Dry-run, so nothing updated" not in out.stderr
+
+
+def test_raise_error_on_unknown_config_option(
+    pip_conf, runner, tmp_path, make_config_file
+):
+    config_file = make_config_file("unknown-option", True)
+
+    req_in = tmp_path / "requirements.in"
+    req_in.touch()
+
+    out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
+
+    assert out.exit_code == 2
+    assert "No such config key 'unknown_option'" in out.stderr
+
+
+def test_raise_error_on_invalid_config_option(
+    pip_conf, runner, tmp_path, make_config_file
+):
+    config_file = make_config_file("dry-run", ["invalid", "value"])
+
+    req_in = tmp_path / "requirements.in"
+    req_in.touch()
+
+    out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
+
+    assert out.exit_code == 2
+    assert "Invalid value for config key 'dry_run': ['invalid', 'value']" in out.stderr
+
+
+def test_allow_in_config_pip_sync_option(pip_conf, runner, tmp_path, make_config_file):
+    config_file = make_config_file("--ask", True)  # pip-sync's option
+
+    req_in = tmp_path / "requirements.in"
+    req_in.touch()
+
+    out = runner.invoke(
+        cli, [req_in.as_posix(), "--verbose", "--config", config_file.as_posix()]
+    )
+
+    assert out.exit_code == 0
+    assert "Using pip-tools configuration defaults found" in out.stderr
+
+
+def test_cli_boolean_flag_config_option_has_valid_context(
+    pip_conf, runner, tmp_path, make_config_file
+):
+    config_file = make_config_file("no-annotate", True)
+
+    req_in = tmp_path / "requirements.in"
+    req_in.write_text("small-fake-a==0.1")
+    out = runner.invoke(
+        cli,
+        [
+            req_in.as_posix(),
+            "--config",
+            config_file.as_posix(),
+            "--no-emit-options",
+            "--no-header",
+            "--output-file",
+            "-",
+        ],
+    )
+    assert out.exit_code == 0
+    assert out.stdout == "small-fake-a==0.1\n"
+
+
+def test_invalid_cli_boolean_flag_config_option_captured(
+    pip_conf, runner, tmp_path, make_config_file
+):
+    config_file = make_config_file("no-annnotate", True)
+
+    req_in = tmp_path / "requirements.in"
+    req_in.touch()
+
+    out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
+
+    assert out.exit_code == 2
+    assert "No such config key 'no_annnotate'." in out.stderr

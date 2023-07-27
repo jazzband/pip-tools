@@ -1,3 +1,38 @@
+## 7.1.0 (2023-07-18)
+
+Features:
+
+- Validate parsed config against CLI options
+  ([#1910](https://github.com/jazzband/pip-tools/pull/1910)). Thanks @atugushev
+
+Bug Fixes:
+
+- Fix a bug where pip-sync would unexpectedly uninstall some packages
+  ([#1919](https://github.com/jazzband/pip-tools/pull/1919)). Thanks @atugushev
+
+## 7.0.0 (2023-07-14)
+
+Backwards Incompatible Changes:
+
+- Default to `--resolver=backtracking`
+  ([#1897](https://github.com/jazzband/pip-tools/pull/1897)). Thanks @atugushev
+- Drop support for Python 3.7
+  ([#1879](https://github.com/jazzband/pip-tools/pull/1879)). Thanks @chrysle
+
+Features:
+
+- Add support for `pip==23.2` where refactored out `DEV_PKGS`
+  ([#1906](https://github.com/jazzband/pip-tools/pull/1906)). Thanks @atugushev
+- Add `--no-config` option ([#1896](https://github.com/jazzband/pip-tools/pull/1896)).
+  Thanks @atugushev
+
+Bug Fixes:
+
+- Sync direct references with hashes
+  ([#1885](https://github.com/jazzband/pip-tools/pull/1885)). Thanks @siddharthab
+- Fix missing `via`s when more than two input files are used
+  ([#1890](https://github.com/jazzband/pip-tools/pull/1890)). Thanks @lpulley
+
 ## 6.14.0 (2023-06-28)
 
 Features:
