@@ -2979,7 +2979,7 @@ def test_default_config_option(pip_conf, runner, make_config_file, tmpdir_cwd):
     make_config_file("dry-run", True)
 
     req_in = tmpdir_cwd / "requirements.in"
-    req_in.ensure()
+    req_in.touch()
 
     out = runner.invoke(cli)
 
