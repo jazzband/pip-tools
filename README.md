@@ -98,7 +98,6 @@ dependencies = ["django"]
 
 [project.optional-dependencies]
 dev = ["pytest"]
-
 ```
 
 You can produce your pin files as easily as:
