@@ -750,10 +750,10 @@ def test_select_config_file_prefers_pip_tools_toml_over_pyproject_toml(tmpdir_cw
     pyproject_file.write_text(
         dedent(
             """\
-        [build-system]
-        requires = ["setuptools>=63", "setuptools_scm[toml]>=7"]
-        build-backend = "setuptools.build_meta"
-        """
+            [build-system]
+            requires = ["setuptools>=63", "setuptools_scm[toml]>=7"]
+            build-backend = "setuptools.build_meta"
+            """
         )
     )
 
