@@ -461,7 +461,7 @@ def make_config_file(tmpdir_cwd):
         config_dir.mkdir(exist_ok=True, parents=True)
 
         # Make a config file with this one config default override
-        config_file = Path(tmpdir_cwd / config_file_name)
+        config_file = tmpdir_cwd / config_file_name
         config_to_dump = {"tool": {"pip-tools": {pyproject_param: new_default}}}
         config_file.write_text(tomli_w.dumps(config_to_dump))
         return cast(Path, config_file.relative_to(tmpdir_cwd))
