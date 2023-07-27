@@ -338,10 +338,7 @@ def _determine_linesep(
         path_type=str,
     ),
     multiple=True,
-    help=(
-        "Constrain versions using the given constraints file. "
-        "This option can be used multiple times."
-    ),
+    help="Constrain versions using the given constraints file; may be used more than once.",
 )
 def cli(
     ctx: click.Context,
