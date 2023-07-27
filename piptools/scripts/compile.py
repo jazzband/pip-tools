@@ -328,6 +328,20 @@ def _determine_linesep(
     help="Do not read any config file.",
     is_eager=True,
 )
+@click.option(
+    "-c",
+    "--constraint",
+    type=click.Path(
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+        allow_dash=False,
+        path_type=str,
+    ),
+    multiple=True,
+    help="Constrain versions using the given constraints file; may be used more than once.",
+)
 def cli(
     ctx: click.Context,
     verbose: int,
@@ -368,6 +382,7 @@ def cli(
     unsafe_package: tuple[str, ...],
     config: Path | None,
     no_config: bool,
+    constraint: tuple[str, ...],
 ) -> None:
     """
     Compiles requirements.txt from requirements.in, pyproject.toml, setup.cfg,
@@ -562,6 +577,18 @@ def cli(
                     options=repository.options,
                 )
             )
+
+    # Parse all constraints from `--constraint` files
+    for filename in constraint:
+        constraints.extend(
+            parse_requirements(
+                filename,
+                constraint=True,
+                finder=repository.finder,
+                options=repository.options,
+                session=repository.session,
+            )
+        )
 
     if upgrade_packages:
         constraints_file = tempfile.NamedTemporaryFile(mode="wt", delete=False)

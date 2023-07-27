@@ -666,6 +666,7 @@ def test_callback_config_file_defaults(pyproject_param, new_default, make_config
         ("trusted_host", "not-a-list"),
         ("annotate", "not-a-bool"),
         ("max_rounds", "not-an-int"),
+        ("constraint", "not-an-list"),
     ),
 )
 def test_callback_config_file_defaults_multi_validate_value(

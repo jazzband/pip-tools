@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from functools import partial
 from pathlib import Path
 from textwrap import dedent
-from typing import Any
+from typing import Any, cast
 
 import pytest
 import tomli_w
@@ -234,7 +234,7 @@ def runner():
 @pytest.fixture
 def tmpdir_cwd(tmpdir):
     with tmpdir.as_cwd():
-        yield tmpdir
+        yield Path(tmpdir)
 
 
 @pytest.fixture
@@ -464,6 +464,6 @@ def make_config_file(tmpdir_cwd):
         config_file = Path(tmpdir_cwd / config_file_name)
         config_to_dump = {"tool": {"pip-tools": {pyproject_param: new_default}}}
         config_file.write_text(tomli_w.dumps(config_to_dump))
-        return config_file.relative_to(tmpdir_cwd)
+        return cast(Path, config_file.relative_to(tmpdir_cwd))
 
     return _maker

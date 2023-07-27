@@ -3031,6 +3031,38 @@ def test_raise_error_on_invalid_config_option(
     assert "Invalid value for config key 'dry_run': ['invalid', 'value']" in out.stderr
 
 
+@pytest.mark.parametrize("option", ("-c", "--constraint"))
+def test_constraint_option(pip_conf, runner, tmpdir_cwd, make_config_file, option):
+    req_in = tmpdir_cwd / "requirements.in"
+    req_in.write_text("small-fake-a")
+
+    constraints_txt = tmpdir_cwd / "constraints.txt"
+    constraints_txt.write_text("small-fake-a==0.1")
+
+    out = runner.invoke(
+        cli,
+        [
+            req_in.name,
+            option,
+            constraints_txt.name,
+            "--output-file",
+            "-",
+            "--no-header",
+            "--no-emit-options",
+        ],
+    )
+
+    assert out.exit_code == 0
+    assert out.stdout == dedent(
+        """\
+        small-fake-a==0.1
+            # via
+            #   -c constraints.txt
+            #   -r requirements.in
+        """
+    )
+
+
 def test_allow_in_config_pip_sync_option(pip_conf, runner, tmp_path, make_config_file):
     config_file = make_config_file("--ask", True)  # pip-sync's option
 
