@@ -669,16 +669,6 @@ def select_config_file(src_files: tuple[str, ...]) -> Path | None:
     )
 
 
-# Some of the defined click options have different `dest` values than the defaults
-NON_STANDARD_OPTION_DEST_MAP: dict[str, str] = {
-    "extra": "extras",
-    "upgrade_package": "upgrade_packages",
-    "resolver": "resolver_name",
-    "user": "user_only",
-    "pip_args": "pip_args_str",
-}
-
-
 def get_cli_options(ctx: click.Context) -> dict[str, click.Parameter]:
     cli_opts = {
         opt: option
