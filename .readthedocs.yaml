@@ -17,6 +17,9 @@ build:
   tools:
     python: >-
       3.11
+  jobs:
+    post_checkout:
+      - git fetch --unshallow || true
 
 python:
   install:
