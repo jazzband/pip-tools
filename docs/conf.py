@@ -3,11 +3,18 @@
 
 from __future__ import annotations
 
+import os
+import sys
 from importlib.metadata import version as get_version
 from pathlib import Path
 
+from sphinx.application import Sphinx
 from sphinx.util import logging
 from sphinx.util.console import bold
+
+# Add the docs/ directory to sys.path to be able to import utils
+docs_dir = os.path.dirname(os.path.dirname(__file__))
+sys.path.insert(0, docs_dir)
 
 logger = logging.getLogger(__name__)
 
@@ -57,3 +64,9 @@ linkcheck_ignore = [
 ]
 
 suppress_warnings = ["myst.xref_missing"]
+
+
+def setup(app: Sphinx) -> None:
+    from docs.utils import TransformSectionIdToName
+
+    app.add_transform(TransformSectionIdToName)
