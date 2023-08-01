@@ -300,7 +300,7 @@ Options to `pip-compile` and `pip-sync` that may be used more than once
 must be defined as lists in a configuration file, even if they only have one
 value.
 
-`pip-tools` supports default values vor [all valid command-line flags](/cli/index.md)
+`pip-tools` supports default values for [all valid command-line flags](/cli/index.md)
 of its subcommands. Configuration keys may contain underscores instead of dashes,
 so the above could also be specified in this format:
 
