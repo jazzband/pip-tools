@@ -1,3 +1,24 @@
+## v7.2.0
+
+02 Aug 2023
+
+Features:
+
+- Add `-c/--constraint` option to `pip-compile`
+  ([#1936](https://github.com/jazzband/pip-tools/pull/1936)). Thanks @atugushev
+
+Bug Fixes:
+
+- Allow options in config from both `pip-compile` and `pip-sync`
+  ([#1933](https://github.com/jazzband/pip-tools/pull/1933)). Thanks @atugushev
+- Fix rejection of negating CLI boolean flags in config
+  ([#1913](https://github.com/jazzband/pip-tools/pull/1913)). Thanks @chrysle
+
+Other Changes:
+
+- Add Command Line Reference section to docs
+  ([#1934](https://github.com/jazzband/pip-tools/pull/1934)). Thanks @atugushev
+
 ## v7.1.0
 
 18 Jul 2023
