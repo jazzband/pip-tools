@@ -559,26 +559,22 @@ on each targeted Python environment to avoid issues.
 
 This section lists `pip-tools` features that are currently deprecated.
 
-- In future versions, the `--allow-unsafe` behavior will be enabled by
-  default. Use `--no-allow-unsafe` to keep the old behavior. It is
-  recommended to pass the `--allow-unsafe` now to adapt to the upcoming
-  change.
-- Legacy resolver is deprecated and will be removed in future versions.
-  Use `--resolver=backtracking` instead.
+- In the next major release, the `--allow-unsafe` behavior will be enabled by
+  default (https://github.com/jazzband/pip-tools/issues/989).
+  Use `--no-allow-unsafe` to keep the old behavior. It is recommended
+  to pass the `--allow-unsafe` now to adapt to the upcoming change.
+- The legacy resolver is deprecated and will be removed in future versions.
+  The new default is `--resolver=backtracking`.
 
 ### A Note on Resolvers
 
-You can choose from either the legacy or the backtracking resolver.
-The backtracking resolver is recommended, and will become the default
-with the 7.0 release.
-
-Use it now with the `--resolver=backtracking` option to `pip-compile`.
+You can choose from either default backtracking resolver or the deprecated legacy resolver.
 
 The legacy resolver will occasionally fail to resolve dependencies. The
-backtracking resolver is more robust, but can take longer to run in
-general.
+backtracking resolver is more robust, but can take longer to run in general.
 
-You can continue using the legacy resolver with `--resolver=legacy`.
+You can continue using the legacy resolver with `--resolver=legacy` although
+note that it is deprecated and will be removed in a future release.
 
 ### Versions and compatibility
 
