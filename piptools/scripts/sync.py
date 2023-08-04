@@ -17,7 +17,6 @@ from pip._internal.metadata import get_environment
 from .. import sync
 from .._compat import Distribution, parse_requirements
 from ..exceptions import PipToolsError
-from ..locations import CONFIG_FILE_NAME
 from ..logging import log
 from ..repositories import PyPIRepository
 from ..utils import (
@@ -25,91 +24,32 @@ from ..utils import (
     get_pip_version_for_python_executable,
     get_required_pip_specification,
     get_sys_path_for_python_executable,
-    override_defaults_from_config_file,
 )
+from . import options
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 
 
-@click.command(context_settings={"help_option_names": ("-h", "--help")})
-@click.version_option(package_name="pip-tools")
-@click.option(
-    "-a",
-    "--ask",
-    is_flag=True,
-    help="Show what would happen, then ask whether to continue",
-)
-@click.option(
-    "-n",
-    "--dry-run",
-    is_flag=True,
-    help="Only show what would happen, don't change anything",
-)
-@click.option("--force", is_flag=True, help="Proceed even if conflicts are found")
-@click.option(
-    "-f",
-    "--find-links",
-    multiple=True,
-    help="Look for archives in this directory or on this HTML page; may be used more than once",
-)
-@click.option("-i", "--index-url", help="Change index URL (defaults to PyPI)")
-@click.option(
-    "--extra-index-url",
-    multiple=True,
-    help="Add another index URL to search; may be used more than once",
-)
-@click.option(
-    "--trusted-host",
-    multiple=True,
-    help=(
-        "Mark this host as trusted, even though it does not have valid or any HTTPS"
-        "; may be used more than once"
-    ),
-)
-@click.option(
-    "--no-index",
-    is_flag=True,
-    help="Ignore package index (only looking at --find-links URLs instead)",
-)
-@click.option(
-    "--python-executable",
-    help="Custom python executable path if targeting an environment other than current.",
-)
-@click.option("-v", "--verbose", count=True, help="Show more output")
-@click.option("-q", "--quiet", count=True, help="Give less output")
-@click.option(
-    "--user", "user_only", is_flag=True, help="Restrict attention to user directory"
-)
-@click.option("--cert", help="Path to alternate CA bundle.")
-@click.option(
-    "--client-cert",
-    help="Path to SSL client certificate, a single file containing "
-    "the private key and the certificate in PEM format.",
-)
-@click.argument("src_files", required=False, type=click.Path(exists=True), nargs=-1)
-@click.option("--pip-args", help="Arguments to pass directly to pip install.")
-@click.option(
-    "--config",
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        dir_okay=False,
-        readable=True,
-        allow_dash=False,
-        path_type=str,
-    ),
-    help=f"Read configuration from TOML file. By default, looks for a {CONFIG_FILE_NAME} or "
-    "pyproject.toml.",
-    is_eager=True,
-    callback=override_defaults_from_config_file,
-)
-@click.option(
-    "--no-config",
-    is_flag=True,
-    default=False,
-    help="Do not read any config file.",
-    is_eager=True,
-)
+@click.command(context_settings={"help_option_names": options.help_option_names})
+@options.version
+@options.ask
+@options.dry_run
+@options.force
+@options.find_links
+@options.index_url
+@options.extra_index_url
+@options.trusted_host
+@options.no_index
+@options.python_executable
+@options.verbose
+@options.quiet
+@options.user
+@options.cert
+@options.client_cert
+@options.src_files
+@options.pip_args
+@options.config
+@options.no_config
 def cli(
     ask: bool,
     dry_run: bool,
@@ -126,7 +66,7 @@ def cli(
     cert: str | None,
     client_cert: str | None,
     src_files: tuple[str, ...],
-    pip_args: str | None,
+    pip_args_str: str | None,
     config: Path | None,
     no_config: bool,
 ) -> None:
@@ -198,7 +138,7 @@ def cli(
         user_only=user_only,
         cert=cert,
         client_cert=client_cert,
-    ) + shlex.split(pip_args or "")
+    ) + shlex.split(pip_args_str or "")
     sys.exit(
         sync.sync(
             to_install,
