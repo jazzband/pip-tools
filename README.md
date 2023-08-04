@@ -578,23 +578,6 @@ backtracking resolver is more robust, but can take longer to run in general.
 You can continue using the legacy resolver with `--resolver=legacy` although
 note that it is deprecated and will be removed in a future release.
 
-### Versions and compatibility
-
-The table below summarizes the latest `pip-tools` versions with the required
-`pip` and Python versions. Generally, `pip-tools` supports the same Python
-versions as the required `pip` versions.
-
-| pip-tools      | pip            | Python         |
-| -------------- | -------------- | -------------- |
-| 4.5.\*         | 8.1.3 - 20.0.2 | 2.7, 3.5 - 3.8 |
-| 5.0.0 - 5.3.0  | 20.0 - 20.1.1  | 2.7, 3.5 - 3.8 |
-| 5.4.0          | 20.1 - 20.3.\* | 2.7, 3.5 - 3.8 |
-| 5.5.0          | 20.1 - 20.3.\* | 2.7, 3.5 - 3.9 |
-| 6.0.0 - 6.3.1  | 20.3 - 21.2.\* | 3.6 - 3.9      |
-| 6.4.0          | 21.2 - 21.3.\* | 3.6 - 3.10     |
-| 6.5.0 - 6.10.0 | 21.2 - 22.3.\* | 3.7 - 3.11     |
-| 6.11.0+        | 22.2+          | 3.7 - 3.11     |
-
 [jazzband]: https://jazzband.co/
 [jazzband-image]: https://jazzband.co/static/img/badge.svg
 [pypi]: https://pypi.org/project/pip-tools/
