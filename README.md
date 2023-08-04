@@ -34,7 +34,9 @@ The `pip-compile` command lets you compile a `requirements.txt` file from
 your dependencies, specified in either `pyproject.toml`, `setup.cfg`,
 `setup.py`, or `requirements.in`.
 
-Run it with `pip-compile` or `python -m piptools compile`. If you use
+Run it with `pip-compile` or `python -m piptools compile` (or
+`pipx run --spec pip-tools pip-compile` if you have
+[configured](#configuration) `pip-tools` appropriately). If you use
 multiple Python versions, you can also run `py -X.Y -m piptools compile` on
 Windows and `pythonX.Y -m piptools compile` on other systems.
 
