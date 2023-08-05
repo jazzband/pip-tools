@@ -84,7 +84,6 @@ class OutputWriter:
         emit_trusted_host: bool,
         annotate: bool,
         annotation_style: str,
-        strip_extras: bool,
         generate_hashes: bool,
         default_index_url: str,
         index_urls: Iterable[str],
@@ -280,8 +279,7 @@ class OutputWriter:
         ireq_hashes = (hashes if hashes is not None else {}).get(ireq)
 
         line = format_requirement(ireq, marker=marker, hashes=ireq_hashes)
-        if self.strip_extras:
-            line = strip_extras(line)
+        line = strip_extras(line)
 
         if not self.annotate:
             return line
@@ -309,8 +307,7 @@ class OutputWriter:
                 sep = "\n    " if ireq_hashes else "  "
             else:  # pragma: no cover
                 raise ValueError("Invalid value for annotation style")
-            if self.strip_extras:
-                annotation = strip_extras(annotation)
+            annotation = strip_extras(annotation)
             # 24 is one reasonable column size to use here, that we've used in the past
             lines = f"{line:24}{sep}{comment(annotation)}".splitlines()
             line = "\n".join(ln.rstrip() for ln in lines)

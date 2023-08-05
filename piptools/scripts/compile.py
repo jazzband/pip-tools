@@ -441,6 +441,12 @@ def cli(
             " in future versions of pip-tools."
         )
 
+    if strip_extras:
+        log.warning(
+            "WARNING: --strip-extras is deprecated. It has no effect and "
+            "will be removed in future versions of pip-tools."
+        )
+
     ###
     # Setup
     ###
@@ -689,7 +695,6 @@ def cli(
         emit_trusted_host=emit_trusted_host,
         annotate=annotate,
         annotation_style=annotation_style,
-        strip_extras=strip_extras,
         generate_hashes=generate_hashes,
         default_index_url=repository.DEFAULT_INDEX_URL,
         index_urls=repository.finder.index_urls,

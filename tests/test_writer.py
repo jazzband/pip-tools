@@ -48,7 +48,6 @@ def writer(tmpdir_cwd):
             allow_unsafe=False,
             find_links=[],
             emit_find_links=True,
-            strip_extras=False,
             emit_options=True,
         )
         yield writer

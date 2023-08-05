@@ -1002,7 +1002,7 @@ def test_upgrade_package_with_extra(runner, make_package, make_sdist, tmpdir):
     assert (
         dedent(
             """\
-            test-package-1[more]==0.1
+            test-package-1==0.1
             test-package-2==0.1
             """
         )
@@ -2385,7 +2385,7 @@ def test_combine_different_extras_of_the_same_package(
             """\
         fake-colorful==0.3
             # via fake-ray
-        fake-ray[default,tune]==0.1
+        fake-ray==0.1
             # via
             #   -r requirements.in
             #   fake-tune-sklearn
@@ -2748,9 +2748,16 @@ def test_extras_fail_with_requirements_in(runner, tmpdir):
     assert exp in out.stderr
 
 
-def test_cli_compile_strip_extras(runner, make_package, make_sdist, tmpdir):
+@pytest.mark.parametrize(
+    "options",
+    (
+        pytest.param([], id="strip extras by default"),
+        pytest.param(["--strip-extras"], id="explicitly strip extras"),
+    ),
+)
+def test_cli_compile_strips_extras(runner, make_package, make_sdist, tmpdir, options):
     """
-    Assures that --strip-extras removes mention of extras from output.
+    Test that pip-compile removes mention of extras from output.
     """
     test_package_1 = make_package(
         "test_package_1", version="0.1", extras_require={"more": "test_package_2"}
@@ -2767,11 +2774,42 @@ def test_cli_compile_strip_extras(runner, make_package, make_sdist, tmpdir):
     with open("requirements.in", "w") as reqs_out:
         reqs_out.write("test_package_1[more]")
 
-    out = runner.invoke(cli, ["--strip-extras", "--find-links", str(dists_dir)])
+    out = runner.invoke(
+        cli,
+        options
+        + [
+            "--find-links",
+            str(dists_dir),
+            "--output-file",
+            "-",
+            "--no-header",
+            "--no-emit-options",
+        ],
+    )
 
     assert out.exit_code == 0, out
-    assert "test-package-2==0.1" in out.stderr
-    assert "[more]" not in out.stderr
+    assert out.stdout == dedent(
+        """\
+        test-package-1==0.1
+            # via -r requirements.in
+        test-package-2==0.1
+            # via test-package-1
+        """
+    )
+
+
+def test_deprecated_strip_extras_option(runner, make_package, make_sdist, tmp_path):
+    req_in = tmp_path / "requirements.in"
+    req_in.touch()
+
+    out = runner.invoke(cli, [req_in.as_posix(), "--strip-extras"])
+
+    assert out.exit_code == 0
+    expected_warning = (
+        "WARNING: --strip-extras is deprecated. It has no effect and "
+        "will be removed in future versions of pip-tools."
+    )
+    assert expected_warning in out.stderr
 
 
 def test_resolution_failure(runner):

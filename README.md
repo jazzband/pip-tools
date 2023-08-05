@@ -567,6 +567,7 @@ This section lists `pip-tools` features that are currently deprecated.
   to pass the `--allow-unsafe` now to adapt to the upcoming change.
 - The legacy resolver is deprecated and will be removed in future versions.
   The new default is `--resolver=backtracking`.
+- `--strip-extras` is deprecated. It has no effect and will be removed in future versions.
 
 ### A Note on Resolvers
 
