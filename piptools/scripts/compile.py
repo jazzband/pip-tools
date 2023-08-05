@@ -240,7 +240,7 @@ def _determine_linesep(
 @click.option(
     "--reuse-hashes/--no-reuse-hashes",
     is_flag=True,
-    default=True,
+    default=False,
     help=(
         "Improve the speed of --generate-hashes by reusing the hashes from an "
         "existing output file."
