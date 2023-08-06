@@ -2947,12 +2947,14 @@ def test_compile_recursive_extras(runner, tmp_path, current_resolver):
         [
             "--no-header",
             "--no-annotate",
-            "--no-emit-find-links",
+            "--no-emit-options",
             "--extra",
             "dev",
             "--find-links",
             os.fspath(MINIMAL_WHEELS_PATH),
             os.fspath(tmp_path / "pyproject.toml"),
+            "--output-file",
+            "-",
         ],
     )
     expected = rf"""foo @ {tmp_path.as_uri()}
@@ -2960,7 +2962,7 @@ small-fake-a==0.2
 small-fake-b==0.3
 """
     assert out.exit_code == 0
-    assert expected == out.stderr
+    assert expected == out.stdout
 
 
 def test_config_option(pip_conf, runner, tmp_path, make_config_file):
