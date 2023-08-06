@@ -679,8 +679,8 @@ def cli(
     if strip_extras is None:
         strip_extras = False
         log.warning(
-            "WARNING: --strip-extras is becoming the default. "
-            "To silence this warning, "
+            "WARNING: --strip-extras is becoming the default "
+            "in version 8.0.0. To silence this warning, "
             "either use --strip-extras to opt into the new default "
             "or use --no-strip-extras to retain the existing behavior."
         )
