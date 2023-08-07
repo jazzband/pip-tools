@@ -2958,7 +2958,7 @@ def test_compile_recursive_extras(runner, tmp_path, current_resolver):
             os.fspath(tmp_path / "pyproject.toml"),
         ],
     )
-    expected = rf"""foo @ {tmp_path.as_uri()}
+    expected = rf"""foo[footest] @ {tmp_path.as_uri()}
 small-fake-a==0.2
 small-fake-b==0.3
 """
