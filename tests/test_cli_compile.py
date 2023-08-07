@@ -2978,6 +2978,18 @@ def test_config_option(pip_conf, runner, tmp_path, make_config_file):
     assert "Dry-run, so nothing updated" in out.stderr
 
 
+def test_default_config_option(pip_conf, runner, make_config_file, tmpdir_cwd):
+    make_config_file("dry-run", True)
+
+    req_in = tmpdir_cwd / "requirements.in"
+    req_in.touch()
+
+    out = runner.invoke(cli)
+
+    assert out.exit_code == 0
+    assert "Dry-run, so nothing updated" in out.stderr
+
+
 def test_no_config_option_overrides_config_with_defaults(
     pip_conf, runner, tmp_path, make_config_file
 ):
