@@ -779,7 +779,10 @@ def test_direct_reference_with_extras(runner):
         )
     out = runner.invoke(cli, ["-n", "--rebuild", "--no-build-isolation"])
     assert out.exit_code == 0
-    assert "pip-tools @ git+https://github.com/jazzband/pip-tools@6.2.0" in out.stderr
+    assert (
+        "pip-tools[coverage,testing] @ git+https://github.com/jazzband/pip-tools@6.2.0"
+        in out.stderr
+    )
     assert "pytest==" in out.stderr
     assert "pytest-cov==" in out.stderr
 
@@ -2955,7 +2958,7 @@ def test_compile_recursive_extras(runner, tmp_path, current_resolver):
             os.fspath(tmp_path / "pyproject.toml"),
         ],
     )
-    expected = rf"""foo @ {tmp_path.as_uri()}
+    expected = rf"""foo[footest] @ {tmp_path.as_uri()}
 small-fake-a==0.2
 small-fake-b==0.3
 """
