@@ -157,7 +157,9 @@ def _build_direct_reference_best_efforts(ireq: InstallRequirement) -> str:
 
     # If we get here then we have a requirement that supports direct reference.
     # We need to remove the egg if it exists and keep the rest of the fragments.
-    direct_reference = f"{ireq.name.lower()} @ {ireq.link.url_without_fragment}"
+    lowered_ireq_name = canonicalize_name(ireq.name)
+    extras = f"[{','.join(sorted(ireq.extras))}]" if ireq.extras else ""
+    direct_reference = f"{lowered_ireq_name}{extras} @ {ireq.link.url_without_fragment}"
     fragments = []
 
     # Check if there is any fragment to add to the URI.
@@ -672,16 +674,6 @@ def select_config_file(src_files: tuple[str, ...]) -> Path | None:
         if is_path_relative_to(config_file_path, working_directory)
         else config_file_path
     )
-
-
-# Some of the defined click options have different `dest` values than the defaults
-NON_STANDARD_OPTION_DEST_MAP: dict[str, str] = {
-    "extra": "extras",
-    "upgrade_package": "upgrade_packages",
-    "resolver": "resolver_name",
-    "user": "user_only",
-    "pip_args": "pip_args_str",
-}
 
 
 def get_cli_options(ctx: click.Context) -> dict[str, click.Parameter]:

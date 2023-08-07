@@ -34,9 +34,11 @@ The `pip-compile` command lets you compile a `requirements.txt` file from
 your dependencies, specified in either `pyproject.toml`, `setup.cfg`,
 `setup.py`, or `requirements.in`.
 
-Run it with `pip-compile` or `python -m piptools compile`. If you use
-multiple Python versions, you can also run `py -X.Y -m piptools compile` on
-Windows and `pythonX.Y -m piptools compile` on other systems.
+Run it with `pip-compile` or `python -m piptools compile` (or
+`pipx run --spec pip-tools pip-compile` if `pipx` was installed with the
+appropriate Python version). If you use multiple Python versions, you can also
+run `py -X.Y -m piptools compile` on Windows and `pythonX.Y -m piptools compile`
+on other systems.
 
 `pip-compile` should be run from the same virtual environment as your
 project so conditional dependencies that require a specific Python version,
@@ -300,7 +302,7 @@ Options to `pip-compile` and `pip-sync` that may be used more than once
 must be defined as lists in a configuration file, even if they only have one
 value.
 
-`pip-tools` supports default values vor [all valid command-line flags](/cli/index.md)
+`pip-tools` supports default values for [all valid command-line flags](/cli/index.md)
 of its subcommands. Configuration keys may contain underscores instead of dashes,
 so the above could also be specified in this format:
 
@@ -422,7 +424,7 @@ Sample `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/jazzband/pip-tools
-    rev: 7.1.0
+    rev: 7.2.0
     hooks:
       - id: pip-compile
 ```
@@ -432,7 +434,7 @@ You might want to customize `pip-compile` args by configuring `args` and/or `fil
 ```yaml
 repos:
   - repo: https://github.com/jazzband/pip-tools
-    rev: 7.1.0
+    rev: 7.2.0
     hooks:
       - id: pip-compile
         files: ^requirements/production\.(in|txt)$
@@ -444,7 +446,7 @@ If you have multiple requirement files make sure you create a hook for each file
 ```yaml
 repos:
   - repo: https://github.com/jazzband/pip-tools
-    rev: 7.1.0
+    rev: 7.2.0
     hooks:
       - id: pip-compile
         name: pip-compile setup.py
@@ -559,43 +561,22 @@ on each targeted Python environment to avoid issues.
 
 This section lists `pip-tools` features that are currently deprecated.
 
-- In future versions, the `--allow-unsafe` behavior will be enabled by
-  default. Use `--no-allow-unsafe` to keep the old behavior. It is
-  recommended to pass the `--allow-unsafe` now to adapt to the upcoming
-  change.
-- Legacy resolver is deprecated and will be removed in future versions.
-  Use `--resolver=backtracking` instead.
+- In the next major release, the `--allow-unsafe` behavior will be enabled by
+  default (https://github.com/jazzband/pip-tools/issues/989).
+  Use `--no-allow-unsafe` to keep the old behavior. It is recommended
+  to pass the `--allow-unsafe` now to adapt to the upcoming change.
+- The legacy resolver is deprecated and will be removed in future versions.
+  The new default is `--resolver=backtracking`.
 
 ### A Note on Resolvers
 
-You can choose from either the legacy or the backtracking resolver.
-The backtracking resolver is recommended, and will become the default
-with the 7.0 release.
-
-Use it now with the `--resolver=backtracking` option to `pip-compile`.
+You can choose from either default backtracking resolver or the deprecated legacy resolver.
 
 The legacy resolver will occasionally fail to resolve dependencies. The
-backtracking resolver is more robust, but can take longer to run in
-general.
+backtracking resolver is more robust, but can take longer to run in general.
 
-You can continue using the legacy resolver with `--resolver=legacy`.
-
-### Versions and compatibility
-
-The table below summarizes the latest `pip-tools` versions with the required
-`pip` and Python versions. Generally, `pip-tools` supports the same Python
-versions as the required `pip` versions.
-
-| pip-tools      | pip            | Python         |
-| -------------- | -------------- | -------------- |
-| 4.5.\*         | 8.1.3 - 20.0.2 | 2.7, 3.5 - 3.8 |
-| 5.0.0 - 5.3.0  | 20.0 - 20.1.1  | 2.7, 3.5 - 3.8 |
-| 5.4.0          | 20.1 - 20.3.\* | 2.7, 3.5 - 3.8 |
-| 5.5.0          | 20.1 - 20.3.\* | 2.7, 3.5 - 3.9 |
-| 6.0.0 - 6.3.1  | 20.3 - 21.2.\* | 3.6 - 3.9      |
-| 6.4.0          | 21.2 - 21.3.\* | 3.6 - 3.10     |
-| 6.5.0 - 6.10.0 | 21.2 - 22.3.\* | 3.7 - 3.11     |
-| 6.11.0+        | 22.2+          | 3.7 - 3.11     |
+You can continue using the legacy resolver with `--resolver=legacy` although
+note that it is deprecated and will be removed in a future release.
 
 [jazzband]: https://jazzband.co/
 [jazzband-image]: https://jazzband.co/static/img/badge.svg

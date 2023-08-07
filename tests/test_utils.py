@@ -82,6 +82,11 @@ def test_format_requirement(from_line):
             id="direct reference with egg in query",
         ),
         pytest.param(
+            "example[b,c,a] @ https://example.com/example.zip",
+            "example[a,b,c] @ https://example.com/example.zip",
+            id="direct reference with optional dependency",
+        ),
+        pytest.param(
             "file:./vendor/package.zip",
             "file:./vendor/package.zip",
             id="file scheme relative path",
