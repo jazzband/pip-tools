@@ -1,26 +1,26 @@
 repos:
   - repo: https://github.com/psf/black
-    rev: 22.1.0
+    rev: 23.7.0
     hooks:
       - id: black
-        args: [--target-version=py36]
+        args: [--target-version=py38]
   - repo: https://github.com/PyCQA/isort
-    rev: 5.10.1
+    rev: 5.12.0
     hooks:
       - id: isort
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.31.0
+    rev: v3.10.1
     hooks:
       - id: pyupgrade
-        args: [--py37-plus]
+        args: [--py38-plus]
   - repo: https://github.com/PyCQA/flake8
-    rev: 4.0.1
+    rev: 6.1.0
     hooks:
       - id: flake8
         additional_dependencies:
           - flake8-pytest-style
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.931
+    rev: v1.4.1
     hooks:
       - id: mypy
         # Avoid error: Duplicate module named 'setup'
@@ -32,13 +32,17 @@ repos:
           - pep517==0.10.0
           - toml==0.10.2
           - pip==20.3.4
+          - build==0.9.0
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.2
+    rev: 1.7.5
     hooks:
       - id: bandit
         args: [--ini, .bandit]
         exclude: ^tests/
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v2.5.1
+    rev: v3.0.0
     hooks:
       - id: prettier
+        additional_dependencies:
+          - "prettier"
+          - "prettier-plugin-toml"

@@ -8,10 +8,20 @@ sphinx:
   configuration: docs/conf.py
   fail_on_warning: true
 
-formats: all
+formats:
+  - pdf
+  - htmlzip
+
+build:
+  os: ubuntu-22.04
+  tools:
+    python: >-
+      3.11
+  jobs:
+    post_checkout:
+      - git fetch --unshallow || true
 
 python:
-  version: 3.8
   install:
     - requirements: docs/requirements.txt
     - method: pip

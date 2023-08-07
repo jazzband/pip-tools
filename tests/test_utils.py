@@ -1,11 +1,15 @@
+from __future__ import annotations
+
 import logging
 import operator
 import os
 import shlex
 import sys
+from pathlib import Path
 
 import pip
 import pytest
+from click import BadOptionUsage, Context, FileError
 from pip._vendor.packaging.version import Version
 
 from piptools.scripts.compile import cli as compile_cli
@@ -16,6 +20,7 @@ from piptools.utils import (
     flat_map,
     format_requirement,
     format_specifier,
+    get_cli_options,
     get_compile_command,
     get_hashes_from_ireq,
     get_pip_version_for_python_executable,
@@ -25,6 +30,7 @@ from piptools.utils import (
     key_from_ireq,
     lookup_table,
     lookup_table_from_tuples,
+    override_defaults_from_config_file,
 )
 
 
@@ -234,13 +240,11 @@ def test_dedup():
 def test_get_hashes_from_ireq(from_line):
     ireq = from_line(
         "pytz==2017.2",
-        options={
-            "hashes": {
-                "sha256": [
-                    "d1d6729c85acea5423671382868627129432fba9a89ecbb248d8d1c7a9f01c67",
-                    "f5c056e8f62d45ba8215e5cb8f50dfccb198b4b9fbea8500674f3443e4689589",
-                ]
-            }
+        hash_options={
+            "sha256": [
+                "d1d6729c85acea5423671382868627129432fba9a89ecbb248d8d1c7a9f01c67",
+                "f5c056e8f62d45ba8215e5cb8f50dfccb198b4b9fbea8500674f3443e4689589",
+            ]
         },
     )
     expected = {
@@ -287,7 +291,7 @@ def test_key_from_ireq_normalization(from_line):
         ("file:///example.zip", True),
         ("https://example.com/example.zip", True),
         ("https://example.com/example.zip#egg=example", True),
-        ("git+https://github.com/jazzband/pip-tools@master", True),
+        ("git+https://github.com/jazzband/pip-tools@main", True),
     ),
 )
 def test_is_url_requirement(caplog, from_line, line, expected):
@@ -384,6 +388,30 @@ def test_get_compile_command(tmpdir_cwd, cli_args, expected_command):
     Test general scenarios for the get_compile_command function.
     """
     with compile_cli.make_context("pip-compile", cli_args) as ctx:
+        assert get_compile_command(ctx) == expected_command
+
+
+@pytest.mark.parametrize(
+    ("config_file", "expected_command"),
+    (
+        pytest.param(
+            "pyproject.toml", "pip-compile", id="exclude default pyproject.toml"
+        ),
+        pytest.param(
+            ".pip-tools.toml", "pip-compile", id="exclude default .pip-tools.toml"
+        ),
+        pytest.param(
+            "my-config.toml",
+            "pip-compile --config=my-config.toml",
+            id="include non-default my-config.toml",
+        ),
+    ),
+)
+def test_get_compile_command_with_config(tmpdir_cwd, config_file, expected_command):
+    """Test that get_compile_command excludes or includes config file."""
+    with open(config_file, "w"):
+        pass
+    with compile_cli.make_context("pip-compile", ["--config", config_file]) as ctx:
         assert get_compile_command(ctx) == expected_command
 
 
@@ -545,3 +573,113 @@ def test_get_sys_path_for_python_executable():
     # not testing for equality, because pytest adds extra paths into current sys.path
     for path in result:
         assert path in sys.path
+
+
+@pytest.mark.parametrize(
+    ("pyproject_param", "new_default"),
+    (
+        ("dry-run", True),
+        ("find-links", ["changed"]),
+        ("extra-index-url", ["changed"]),
+        ("trusted-host", ["changed"]),
+        ("no-index", True),
+        ("verbose", True),
+        ("quiet", True),
+        ("cert", "changed"),
+        ("client-cert", "changed"),
+        ("pip-args", "changed"),
+        ("pre", True),
+        ("rebuild", True),
+        ("extra", ["changed"]),
+        ("all-extras", True),
+        ("index-url", "changed"),
+        ("header", False),
+        ("emit-trusted-host", False),
+        ("annotate", False),
+        ("annotation-style", "line"),
+        ("upgrade", True),
+        ("upgrade-package", ["changed"]),
+        ("output-file", "changed"),
+        ("newline", "native"),
+        ("allow-unsafe", True),
+        ("strip-extras", True),
+        ("generate-hashes", True),
+        ("reuse-hashes", False),
+        ("max-rounds", 100),
+        ("build-isolation", False),
+        ("emit-find-links", False),
+        ("cache-dir", "changed"),
+        ("resolver", "backtracking"),
+        ("emit-index-url", False),
+        ("emit-options", False),
+        ("unsafe-package", ["changed"]),
+    ),
+)
+def test_callback_config_file_defaults(pyproject_param, new_default, make_config_file):
+    config_file = make_config_file(pyproject_param, new_default)
+    # Create a "compile" run example pointing to the config file
+    ctx = Context(compile_cli)
+    ctx.params["src_files"] = (str(config_file),)
+    cli_opts = get_cli_options(ctx)
+    found_config_file = override_defaults_from_config_file(ctx, "config", None)
+    assert found_config_file == config_file
+    # Make sure the default has been updated
+    lookup_param = cli_opts["--" + pyproject_param].name
+    assert ctx.default_map[lookup_param] == new_default
+
+
+@pytest.mark.parametrize(
+    ("param", "value"),
+    (
+        ("extra", "not-a-list"),
+        ("upgrade_package", "not-a-list"),
+        ("unsafe_package", "not-a-list"),
+        ("find_links", "not-a-list"),
+        ("extra_index_url", "not-a-list"),
+        ("trusted_host", "not-a-list"),
+        ("annotate", "not-a-bool"),
+        ("max_rounds", "not-an-int"),
+        ("constraint", "not-an-list"),
+    ),
+)
+def test_callback_config_file_defaults_multi_validate_value(
+    param, value, make_config_file
+):
+    config_file = make_config_file(param, value)
+    ctx = Context(compile_cli)
+    ctx.params["src_files"] = (str(config_file),)
+    with pytest.raises(BadOptionUsage, match="Invalid value for config key"):
+        override_defaults_from_config_file(ctx, "config", None)
+
+
+def test_callback_config_file_defaults_bad_toml(make_config_file):
+    config_file = make_config_file("verbose", True)
+    # Simple means of making invalid TOML: have duplicate keys
+    with Path(config_file).open("r+") as fs:
+        config_text_lines = fs.readlines()
+        fs.write(config_text_lines[-1])
+    ctx = Context(compile_cli)
+    ctx.params["src_files"] = (str(config_file),)
+    with pytest.raises(FileError, match="Could not parse "):
+        override_defaults_from_config_file(ctx, "config", None)
+
+
+def test_callback_config_file_defaults_precedence(make_config_file):
+    piptools_config_file = make_config_file("newline", "LF")
+    project_config_file = make_config_file("newline", "CRLF", "pyproject.toml")
+    ctx = Context(compile_cli)
+    ctx.params["src_files"] = (str(project_config_file),)
+    found_config_file = override_defaults_from_config_file(ctx, "config", None)
+    # The pip-tools specific config file should take precedence over pyproject.toml
+    assert found_config_file == piptools_config_file
+    assert ctx.default_map["newline"] == "LF"
+
+
+def test_callback_config_file_defaults_unreadable_toml(make_config_file):
+    ctx = Context(compile_cli)
+    with pytest.raises(FileError, match="Could not read "):
+        override_defaults_from_config_file(
+            ctx,
+            "config",
+            "/dev/null/path/does/not/exist/my-config.toml",
+        )

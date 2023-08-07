@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import contextlib
 import logging
 import sys
@@ -14,9 +16,9 @@ class LogContext:
     stream = sys.stderr
 
     def __init__(self, verbosity: int = 0, indent_width: int = 2):
-        self.verbosity = verbosity
-        self.current_indent = 0
-        self._indent_width = indent_width
+        self.verbosity = self._initial_verbosity = verbosity
+        self.current_indent = self._initial_indent = 0
+        self._indent_width = self._initial_indent_width = indent_width
 
     def log(self, message: str, *args: Any, **kwargs: Any) -> None:
         kwargs.setdefault("err", True)
@@ -55,6 +57,12 @@ class LogContext:
             yield
         finally:
             self._dedent()
+
+    def reset(self) -> None:
+        """Reset logger to initial state."""
+        self.verbosity = self._initial_verbosity
+        self.current_indent = self._initial_indent
+        self._indent_width = self._initial_indent_width
 
 
 log = LogContext()

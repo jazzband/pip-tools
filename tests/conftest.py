@@ -1,34 +1,45 @@
+from __future__ import annotations
+
 import json
-import optparse
 import os
+import platform
 import subprocess
 import sys
 from contextlib import contextmanager
+from dataclasses import dataclass, field
 from functools import partial
+from pathlib import Path
 from textwrap import dedent
+from typing import Any, cast
 
 import pytest
+import tomli_w
 from click.testing import CliRunner
+from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.models.candidate import InstallationCandidate
+from pip._internal.models.link import Link
 from pip._internal.network.session import PipSession
 from pip._internal.req.constructors import (
     install_req_from_editable,
     install_req_from_line,
 )
+from pip._internal.utils.direct_url_helpers import direct_url_from_link
 from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Requirement
 
+from piptools._compat import PIP_VERSION, Distribution
 from piptools.cache import DependencyCache
 from piptools.exceptions import NoCandidateFound
+from piptools.locations import CONFIG_FILE_NAME
+from piptools.logging import log
 from piptools.repositories import PyPIRepository
 from piptools.repositories.base import BaseRepository
-from piptools.resolver import Resolver
+from piptools.resolver import BacktrackingResolver, LegacyResolver
 from piptools.utils import (
     as_tuple,
     is_url_requirement,
     key_from_ireq,
-    key_from_req,
     make_install_requirement,
 )
 
@@ -36,8 +47,17 @@ from .constants import MINIMAL_WHEELS_PATH, TEST_DATA_PATH
 from .utils import looks_like_ci
 
 
+@dataclass
+class FakeOptions:
+    features_enabled: list[str] = field(default_factory=list)
+    deprecated_features_enabled: list[str] = field(default_factory=list)
+    target_dir: str | None = None
+
+
 class FakeRepository(BaseRepository):
-    def __init__(self):
+    def __init__(self, options: FakeOptions):
+        self._options = options
+
         with open(os.path.join(TEST_DATA_PATH, "fake-index.json")) as f:
             self.index = json.load(f)
 
@@ -90,8 +110,8 @@ class FakeRepository(BaseRepository):
         yield
 
     @property
-    def options(self) -> optparse.Values:
-        """Not used"""
+    def options(self):
+        return self._options
 
     @property
     def session(self) -> PipSession:
@@ -101,22 +121,9 @@ class FakeRepository(BaseRepository):
     def finder(self) -> PackageFinder:
         """Not used"""
 
-
-class FakeInstalledDistribution:
-    def __init__(self, line, deps=None):
-        if deps is None:
-            deps = []
-        self.deps = [Requirement.parse(d) for d in deps]
-
-        self.req = Requirement.parse(line)
-
-        self.key = key_from_req(self.req)
-        self.specifier = self.req.specifier
-
-        self.version = line.split("==")[1]
-
-    def requires(self):
-        return self.deps
+    @property
+    def command(self) -> InstallCommand:
+        """Not used"""
 
 
 def pytest_collection_modifyitems(config, items):
@@ -128,18 +135,40 @@ def pytest_collection_modifyitems(config, items):
 
 @pytest.fixture
 def fake_dist():
-    return FakeInstalledDistribution
+    def _fake_dist(line, deps=None):
+        if deps is None:
+            deps = []
+        req = Requirement.parse(line)
+        key = req.name
+        if "==" in line:
+            version = line.split("==")[1]
+        else:
+            version = "0+unknown"
+        requires = [Requirement.parse(d) for d in deps]
+        direct_url = None
+        if req.url:
+            direct_url = direct_url_from_link(Link(req.url))
+        return Distribution(key, version, requires, direct_url)
+
+    return _fake_dist
 
 
 @pytest.fixture
 def repository():
-    return FakeRepository()
+    return FakeRepository(
+        options=FakeOptions(deprecated_features_enabled=["legacy-resolver"])
+    )
 
 
 @pytest.fixture
 def pypi_repository(tmpdir):
     return PyPIRepository(
-        ["--index-url", PyPIRepository.DEFAULT_INDEX_URL],
+        [
+            "--index-url",
+            PyPIRepository.DEFAULT_INDEX_URL,
+            "--use-deprecated",
+            "legacy-resolver",
+        ],
         cache_dir=(tmpdir / "pypi-repo"),
     )
 
@@ -154,17 +183,40 @@ def resolver(depcache, repository):
     # TODO: It'd be nicer if Resolver instance could be set up and then
     #       use .resolve(...) on the specset, instead of passing it to
     #       the constructor like this (it's not reusable)
-    return partial(Resolver, repository=repository, cache=depcache)
+    return partial(
+        LegacyResolver, repository=repository, cache=depcache, existing_constraints={}
+    )
+
+
+@pytest.fixture
+def backtracking_resolver(depcache):
+    # TODO: It'd be nicer if Resolver instance could be set up and then
+    #       use .resolve(...) on the specset, instead of passing it to
+    #       the constructor like this (it's not reusable)
+    return partial(
+        BacktrackingResolver,
+        repository=FakeRepository(options=FakeOptions()),
+        cache=depcache,
+        existing_constraints={},
+    )
 
 
 @pytest.fixture
 def base_resolver(depcache):
-    return partial(Resolver, cache=depcache)
+    return partial(LegacyResolver, cache=depcache, existing_constraints={})
 
 
 @pytest.fixture
 def from_line():
-    return install_req_from_line
+    def _from_line(*args, **kwargs):
+        if PIP_VERSION[:2] <= (23, 0):
+            hash_options = kwargs.pop("hash_options", {})
+            options = kwargs.pop("options", {})
+            options["hashes"] = hash_options
+            kwargs["options"] = options
+        return install_req_from_line(*args, **kwargs)
+
+    return _from_line
 
 
 @pytest.fixture
@@ -182,7 +234,7 @@ def runner():
 @pytest.fixture
 def tmpdir_cwd(tmpdir):
     with tmpdir.as_cwd():
-        yield tmpdir
+        yield Path(tmpdir)
 
 
 @pytest.fixture
@@ -241,7 +293,6 @@ def make_package(tmp_path):
     """
 
     def _make_package(name, version="0.1", install_requires=None, extras_require=None):
-
         if install_requires is None:
             install_requires = []
 
@@ -337,6 +388,18 @@ def make_module(tmpdir):
         path = os.path.join(tmpdir, "sample_lib", "__init__.py")
         with open(path, "w") as stream:
             stream.write("'example module'\n__version__ = '1.2.3'")
+        if fname == "setup.cfg":
+            path = os.path.join(tmpdir, "pyproject.toml")
+            with open(path, "w") as stream:
+                stream.write(
+                    "\n".join(
+                        (
+                            "[build-system]",
+                            'requires = ["setuptools"]',
+                            'build-backend = "setuptools.build_meta"',
+                        )
+                    )
+                )
         path = os.path.join(tmpdir, fname)
         with open(path, "w") as stream:
             stream.write(dedent(content))
@@ -355,10 +418,49 @@ def fake_dists(tmpdir, make_package, make_wheel):
         make_package("small-fake-a", version="0.1"),
         make_package("small-fake-b", version="0.2"),
         make_package("small-fake-c", version="0.3"),
-        make_package("small-fake-d", version="0.4"),
-        make_package("small-fake-e", version="0.5"),
-        make_package("small-fake-f", version="0.6"),
     ]
     for pkg in pkgs:
         make_wheel(pkg, dists_path)
     return dists_path
+
+
+@pytest.fixture
+def venv(tmp_path):
+    """Create a temporary venv and get the path of its directory of executables."""
+    subprocess.run(
+        [sys.executable, "-m", "venv", os.fspath(tmp_path)],
+        check=True,
+    )
+    return tmp_path / ("Scripts" if platform.system() == "Windows" else "bin")
+
+
+@pytest.fixture(autouse=True)
+def _reset_log():
+    """
+    Since piptools.logging.log is a global variable we have to restore its initial
+    state. Some tests can change logger verbosity which might cause a conflict
+    with other tests that depend on it.
+    """
+    log.reset()
+
+
+@pytest.fixture
+def make_config_file(tmpdir_cwd):
+    """
+    Make a config file for pip-tools with a given parameter set to a specific
+    value, returning a ``pathlib.Path`` to the config file.
+    """
+
+    def _maker(
+        pyproject_param: str, new_default: Any, config_file_name: str = CONFIG_FILE_NAME
+    ) -> Path:
+        # Make a config file with this one config default override
+        config_path = tmpdir_cwd / pyproject_param
+        config_file = config_path / config_file_name
+        config_path.mkdir(exist_ok=True)
+
+        config_to_dump = {"tool": {"pip-tools": {pyproject_param: new_default}}}
+        config_file.write_text(tomli_w.dumps(config_to_dump))
+        return cast(Path, config_file.relative_to(tmpdir_cwd))
+
+    return _maker

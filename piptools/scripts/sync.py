@@ -1,20 +1,23 @@
+from __future__ import annotations
+
 import itertools
 import os
 import shlex
 import shutil
 import sys
-from typing import List, Optional, Tuple, cast
+from pathlib import Path
+from typing import cast
 
 import click
 from pip._internal.commands import create_command
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.metadata import get_environment
-from pip._vendor.pkg_resources import Distribution
 
 from .. import sync
-from .._compat import IS_CLICK_VER_8_PLUS, parse_requirements
+from .._compat import Distribution, parse_requirements
 from ..exceptions import PipToolsError
+from ..locations import CONFIG_FILE_NAME
 from ..logging import log
 from ..repositories import PyPIRepository
 from ..utils import (
@@ -22,16 +25,14 @@ from ..utils import (
     get_pip_version_for_python_executable,
     get_required_pip_specification,
     get_sys_path_for_python_executable,
+    override_defaults_from_config_file,
 )
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 
-# TODO: drop click 7 and remove this block, pass directly to version_option
-version_option_kwargs = {"package_name": "pip-tools"} if IS_CLICK_VER_8_PLUS else {}
-
 
 @click.command(context_settings={"help_option_names": ("-h", "--help")})
-@click.version_option(**version_option_kwargs)
+@click.version_option(package_name="pip-tools")
 @click.option(
     "-a",
     "--ask",
@@ -87,23 +88,47 @@ version_option_kwargs = {"package_name": "pip-tools"} if IS_CLICK_VER_8_PLUS els
 )
 @click.argument("src_files", required=False, type=click.Path(exists=True), nargs=-1)
 @click.option("--pip-args", help="Arguments to pass directly to pip install.")
+@click.option(
+    "--config",
+    type=click.Path(
+        exists=True,
+        file_okay=True,
+        dir_okay=False,
+        readable=True,
+        allow_dash=False,
+        path_type=str,
+    ),
+    help=f"Read configuration from TOML file. By default, looks for a {CONFIG_FILE_NAME} or "
+    "pyproject.toml.",
+    is_eager=True,
+    callback=override_defaults_from_config_file,
+)
+@click.option(
+    "--no-config",
+    is_flag=True,
+    default=False,
+    help="Do not read any config file.",
+    is_eager=True,
+)
 def cli(
     ask: bool,
     dry_run: bool,
     force: bool,
-    find_links: Tuple[str, ...],
-    index_url: Optional[str],
-    extra_index_url: Tuple[str, ...],
-    trusted_host: Tuple[str, ...],
+    find_links: tuple[str, ...],
+    index_url: str | None,
+    extra_index_url: tuple[str, ...],
+    trusted_host: tuple[str, ...],
     no_index: bool,
-    python_executable: Optional[str],
+    python_executable: str | None,
     verbose: int,
     quiet: int,
     user_only: bool,
-    cert: Optional[str],
-    client_cert: Optional[str],
-    src_files: Tuple[str, ...],
-    pip_args: Optional[str],
+    cert: str | None,
+    client_cert: str | None,
+    src_files: tuple[str, ...],
+    pip_args: str | None,
+    config: Path | None,
+    no_config: bool,
 ) -> None:
     """Synchronize virtual environment with requirements.txt."""
     log.verbosity = verbose - quiet
@@ -127,6 +152,9 @@ def cli(
         else:
             log.error("ERROR: " + msg)
             sys.exit(2)
+
+    if config:
+        log.debug(f"Using pip-tools configuration defaults found in '{config !s}'.")
 
     if python_executable:
         _validate_python_executable(python_executable)
@@ -210,14 +238,14 @@ def _validate_python_executable(python_executable: str) -> None:
 def _compose_install_flags(
     finder: PackageFinder,
     no_index: bool,
-    index_url: Optional[str],
-    extra_index_url: Tuple[str, ...],
-    trusted_host: Tuple[str, ...],
-    find_links: Tuple[str, ...],
+    index_url: str | None,
+    extra_index_url: tuple[str, ...],
+    trusted_host: tuple[str, ...],
+    find_links: tuple[str, ...],
     user_only: bool,
-    cert: Optional[str],
-    client_cert: Optional[str],
-) -> List[str]:
+    cert: str | None,
+    client_cert: str | None,
+) -> list[str]:
     """
     Compose install flags with the given finder and CLI options.
     """
@@ -272,10 +300,9 @@ def _compose_install_flags(
 def _get_installed_distributions(
     local_only: bool = True,
     user_only: bool = False,
-    paths: Optional[List[str]] = None,
-) -> List[Distribution]:
+    paths: list[str] | None = None,
+) -> list[Distribution]:
     """Return a list of installed Distribution objects."""
-    from pip._internal.metadata.pkg_resources import Distribution as _Dist
 
     env = get_environment(paths)
     dists = env.iter_installed_distributions(
@@ -283,4 +310,4 @@ def _get_installed_distributions(
         user_only=user_only,
         skip=[],
     )
-    return [cast(_Dist, dist)._dist for dist in dists]
+    return [Distribution.from_pip_distribution(dist) for dist in dists]

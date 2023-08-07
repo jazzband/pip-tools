@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 
 from piptools.subprocess_utils import run_python_snippet

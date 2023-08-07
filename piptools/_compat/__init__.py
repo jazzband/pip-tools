@@ -1,4 +1,17 @@
-from .click import IS_CLICK_VER_8_PLUS
-from .pip_compat import PIP_VERSION, parse_requirements
+from __future__ import annotations
 
-__all__ = ["PIP_VERSION", "IS_CLICK_VER_8_PLUS", "parse_requirements"]
+from .pip_compat import (
+    PIP_VERSION,
+    Distribution,
+    create_wheel_cache,
+    get_dev_pkgs,
+    parse_requirements,
+)
+
+__all__ = [
+    "PIP_VERSION",
+    "Distribution",
+    "parse_requirements",
+    "create_wheel_cache",
+    "get_dev_pkgs",
+]

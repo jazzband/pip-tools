@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import io
 import os
 import sys
@@ -113,6 +115,26 @@ def test_merge_urls(from_line):
     )
 
 
+@pytest.mark.parametrize(
+    "install_req",
+    (
+        "from_line",
+        "from_editable",
+    ),
+)
+def test_merge_no_name_urls(install_req, request):
+    install_req = request.getfixturevalue(install_req)
+    url = "file:///example.zip"
+    requirements = [
+        install_req(url),
+        install_req(url),
+    ]
+
+    assert Counter(requirements[1:]) == Counter(
+        merge(requirements, ignore_conflicts=False)
+    )
+
+
 def test_diff_should_do_nothing():
     installed = []  # empty env
     reqs = []  # no requirements
@@ -204,16 +226,18 @@ def test_diff_leave_packaging_packages_alone(fake_dist, from_line):
     assert to_uninstall == {"first"}
 
 
-def test_diff_leave_piptools_alone(fake_dist, from_line):
+def test_diff_leave_piptools_and_its_dependencies_alone(fake_dist, from_line):
     # Suppose an env contains Django, and pip-tools itself (including all of
     # its dependencies)
     installed = [
         fake_dist("django==1.7"),
         fake_dist("first==2.0.1"),
-        fake_dist("pip-tools==1.1.1", ["click>=4", "first", "six"]),
+        fake_dist("pip-tools==1.1.1", ["click>=4", "first", "six", "build"]),
         fake_dist("six==1.9.0"),
         fake_dist("click==4.1"),
         fake_dist("foobar==0.3.6"),
+        fake_dist("build==0.10.0", ["pyproject_hooks"]),
+        fake_dist("pyproject_hooks==1.0.0"),
     ]
 
     # Then this Django-only requirement should keep pip around (i.e. NOT
@@ -241,25 +265,60 @@ def test_diff_with_editable(fake_dist, from_editable):
     assert package.link.url == path_to_url(path_to_package)
 
 
-def test_diff_with_matching_url_versions(fake_dist, from_line):
+def test_diff_with_matching_url_hash(fake_dist, from_line):
     # if URL version is explicitly provided, use it to avoid reinstalling
-    installed = [fake_dist("example==1.0")]
-    reqs = [from_line("file:///example.zip#egg=example==1.0")]
+    line = "example@file:///example.zip#sha1=abc"
+    installed = [fake_dist(line)]
+    reqs = [from_line(line)]
 
     to_install, to_uninstall = diff(reqs, installed)
     assert to_install == set()
     assert to_uninstall == set()
 
 
-def test_diff_with_no_url_versions(fake_dist, from_line):
-    # if URL version is not provided, assume the contents have
+@pytest.mark.parametrize(
+    ("installed_dist", "compiled_req"),
+    (
+        pytest.param("Django==1.7", "django==1.7", id="case insensitive"),
+        pytest.param(
+            "jaraco.classes==3.2",
+            "jaraco-classes==3.2",
+            id="different namespace notation",
+        ),
+    ),
+)
+def test_diff_respects_canonical_package_names(
+    fake_dist, from_line, installed_dist, compiled_req
+):
+    installed = [fake_dist(installed_dist)]
+    reqs = [from_line(compiled_req)]
+    to_install, to_uninstall = diff(reqs, installed)
+    assert to_install == set()
+    assert to_uninstall == set()
+
+
+def test_diff_with_no_url_hash(fake_dist, from_line):
+    # if URL hash is not provided, assume the contents have
     # changed and reinstall
-    installed = [fake_dist("example==1.0")]
-    reqs = [from_line("file:///example.zip#egg=example")]
+    line = "example@file:///example.zip"
+    installed = [fake_dist(line)]
+    reqs = [from_line(line)]
 
     to_install, to_uninstall = diff(reqs, installed)
     assert to_install == set(reqs)
     assert to_uninstall == {"example"}
+
+
+def test_diff_with_unequal_url_hash(fake_dist, from_line):
+    # if URL hashes mismatch, assume the contents have
+    # changed and reinstall
+    line = "example@file:///example.zip#"
+    installed = [fake_dist(line + "sha1=abc")]
+    reqs = [from_line(line + "sha1=def")]
+
+    to_install, to_uninstall = diff(reqs, installed)
+    assert to_install == set(reqs)
+    assert to_uninstall == {"example @ file:///example.zip#sha1=abc"}
 
 
 def test_sync_install_temporary_requirement_file(
@@ -313,37 +372,31 @@ def test_sync_requirement_file_with_hashes(
         to_install = {
             from_line(
                 "django==1.8",
-                options={
-                    "hashes": {
-                        "sha256": [
-                            "6a03ce2feafdd193a0ba8a26dbd9773e"
-                            "757d2e5d5e7933a62eac129813bd381a"
-                        ]
-                    }
+                hash_options={
+                    "sha256": [
+                        "6a03ce2feafdd193a0ba8a26dbd9773e"
+                        "757d2e5d5e7933a62eac129813bd381a"
+                    ]
                 },
             ),
             from_line(
                 "click==4.0",
-                options={
-                    "hashes": {
-                        "sha256": [
-                            "9ab1d313f99b209f8f71a629f3683303"
-                            "0c8d7c72282cf7756834baf567dca662"
-                        ]
-                    }
+                hash_options={
+                    "sha256": [
+                        "9ab1d313f99b209f8f71a629f3683303"
+                        "0c8d7c72282cf7756834baf567dca662"
+                    ]
                 },
             ),
             from_line(
                 "pytz==2017.2",
-                options={
-                    "hashes": {
-                        "sha256": [
-                            "d1d6729c85acea542367138286862712"
-                            "9432fba9a89ecbb248d8d1c7a9f01c67",
-                            "f5c056e8f62d45ba8215e5cb8f50dfcc"
-                            "b198b4b9fbea8500674f3443e4689589",
-                        ]
-                    }
+                hash_options={
+                    "sha256": [
+                        "d1d6729c85acea542367138286862712"
+                        "9432fba9a89ecbb248d8d1c7a9f01c67",
+                        "f5c056e8f62d45ba8215e5cb8f50dfcc"
+                        "b198b4b9fbea8500674f3443e4689589",
+                    ]
                 },
             ),
         }

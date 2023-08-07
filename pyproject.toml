@@ -1,0 +1,113 @@
+[build-system]
+requires = ["setuptools>=63", "setuptools_scm[toml]>=7"]
+build-backend = "setuptools.build_meta"
+
+[project]
+# https://peps.python.org/pep-0621/#readme
+requires-python = ">=3.8"
+dynamic = ["version"]
+name = "pip-tools"
+description = "pip-tools keeps your pinned dependencies fresh."
+readme = "README.md"
+authors = [{ "name" = "Vincent Driessen", "email" = "me@nvie.com" }]
+license = { text = "BSD" }
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: System Administrators",
+  "License :: OSI Approved :: BSD License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+  "Programming Language :: Python",
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Software Development :: Testing",
+  "Topic :: System :: Systems Administration",
+  "Topic :: Utilities",
+  "Typing :: Typed",
+]
+keywords = ["pip", "requirements", "packaging"]
+dependencies = [
+  # direct dependencies
+  "build",
+  "click >= 8",
+  "pip >= 22.2",
+  "tomli; python_version < '3.11'",
+  # indirect dependencies
+  "setuptools", # typically needed when pip-tools invokes setup.py
+  "wheel", # pip plugin needed by pip-tools
+
+]
+
+[project.urls]
+homepage = "https://github.com/jazzband/pip-tools/"
+documentation = "https://pip-tools.readthedocs.io/en/latest/"
+repository = "https://github.com/jazzband/pip-tools"
+changelog = "https://github.com/jazzband/pip-tools/releases"
+
+[project.optional-dependencies]
+testing = [
+  "pytest >= 7.2.0",
+  "pytest-rerunfailures",
+  "pytest-xdist",
+  "tomli-w",
+  # build deps for tests
+  "flit_core >=2,<4",
+  "poetry_core>=1.0.0",
+]
+coverage = ["covdefaults", "pytest-cov"]
+
+[project.scripts]
+pip-compile = "piptools.scripts.compile:cli"
+pip-sync = "piptools.scripts.sync:cli"
+
+[tool.isort]
+profile = "black"
+add_imports = "from __future__ import annotations"
+
+[tool.mypy]
+disallow_untyped_defs = true
+disallow_any_generics = true
+disallow_incomplete_defs = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+ignore_missing_imports = true
+no_implicit_optional = true
+no_implicit_reexport = true
+strict_equality = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unused_configs = true
+warn_unused_ignores = true
+# Avoid error: Duplicate module named 'setup'
+# https://github.com/python/mypy/issues/4008
+exclude = "^tests/test_data/"
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+addopts = [
+  # `pytest-xdist`:
+  "--numprocesses=auto"
+]
+norecursedirs = ".* build dist venv test_data piptools/_compat/*"
+testpaths = "tests piptools"
+filterwarnings = ["always"]
+markers = ["network: mark tests that require internet access"]
+
+[tool.setuptools.packages.find]
+# needed only because we did not adopt src layout yet
+include = ["piptools*"]
+
+[tool.setuptools_scm]
+local_scheme = "dirty-tag"
