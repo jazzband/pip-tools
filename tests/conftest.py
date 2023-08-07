@@ -457,7 +457,7 @@ def make_config_file(tmpdir_cwd):
         config_file_name: str = DEFAULT_CONFIG_FILE_NAMES[0],
     ) -> Path:
         # Create a nested directory structure if config_file_name includes directories
-        config_dir = Path(tmpdir_cwd / config_file_name).parent
+        config_dir = (tmpdir_cwd / config_file_name).parent
         config_dir.mkdir(exist_ok=True, parents=True)
 
         # Make a config file with this one config default override
