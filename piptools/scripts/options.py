@@ -6,7 +6,7 @@ import click
 from pip._internal.commands import create_command
 from pip._internal.utils.misc import redact_auth_from_url
 
-from piptools.locations import CACHE_DIR, CONFIG_FILE_NAME
+from piptools.locations import CACHE_DIR, DEFAULT_CONFIG_FILE_NAMES
 from piptools.utils import UNSAFE_PACKAGES, override_defaults_from_config_file
 
 
@@ -312,8 +312,8 @@ config = click.option(
         path_type=str,
     ),
     help=(
-        f"Read configuration from TOML file. By default, looks for a {CONFIG_FILE_NAME}"
-        " or pyproject.toml."
+        f"Read configuration from TOML file. By default, looks for the following "
+        f"files in the given order: {', '.join(DEFAULT_CONFIG_FILE_NAMES)}."
     ),
     is_eager=True,
     callback=override_defaults_from_config_file,
