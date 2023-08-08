@@ -200,9 +200,9 @@ allow_unsafe = click.option(
 )
 
 strip_extras = click.option(
-    "--strip-extras",
+    "--strip-extras/--no-strip-extras",
     is_flag=True,
-    default=False,
+    default=None,
     help="Assure output file is constraints compatible, avoiding use of extras.",
 )
 

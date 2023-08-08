@@ -139,7 +139,7 @@ def cli(
     output_file: LazyFile | IO[Any] | None,
     newline: str,
     allow_unsafe: bool,
-    strip_extras: bool,
+    strip_extras: bool | None,
     generate_hashes: bool,
     reuse_hashes: bool,
     src_files: tuple[str, ...],
@@ -449,6 +449,15 @@ def cli(
     linesep = _determine_linesep(
         strategy=newline, filenames=(output_file.name, *src_files)
     )
+
+    if strip_extras is None:
+        strip_extras = False
+        log.warning(
+            "WARNING: --strip-extras is becoming the default "
+            "in version 8.0.0. To silence this warning, "
+            "either use --strip-extras to opt into the new default "
+            "or use --no-strip-extras to retain the existing behavior."
+        )
 
     ##
     # Output

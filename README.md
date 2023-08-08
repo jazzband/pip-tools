@@ -424,7 +424,7 @@ Sample `.pre-commit-config.yaml`:
 ```yaml
 repos:
   - repo: https://github.com/jazzband/pip-tools
-    rev: 7.2.0
+    rev: 7.3.0
     hooks:
       - id: pip-compile
 ```
@@ -434,7 +434,7 @@ You might want to customize `pip-compile` args by configuring `args` and/or `fil
 ```yaml
 repos:
   - repo: https://github.com/jazzband/pip-tools
-    rev: 7.2.0
+    rev: 7.3.0
     hooks:
       - id: pip-compile
         files: ^requirements/production\.(in|txt)$
@@ -446,7 +446,7 @@ If you have multiple requirement files make sure you create a hook for each file
 ```yaml
 repos:
   - repo: https://github.com/jazzband/pip-tools
-    rev: 7.2.0
+    rev: 7.3.0
     hooks:
       - id: pip-compile
         name: pip-compile setup.py
@@ -564,9 +564,12 @@ This section lists `pip-tools` features that are currently deprecated.
 - In the next major release, the `--allow-unsafe` behavior will be enabled by
   default (https://github.com/jazzband/pip-tools/issues/989).
   Use `--no-allow-unsafe` to keep the old behavior. It is recommended
-  to pass the `--allow-unsafe` now to adapt to the upcoming change.
+  to pass `--allow-unsafe` now to adapt to the upcoming change.
 - The legacy resolver is deprecated and will be removed in future versions.
   The new default is `--resolver=backtracking`.
+- In the next major release, the `--strip-extras` behavior will be enabled by
+  default (https://github.com/jazzband/pip-tools/issues/1613).
+  Use `--no-strip-extras` to keep the old behavior.
 
 ### A Note on Resolvers
 

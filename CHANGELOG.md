@@ -1,3 +1,26 @@
+## v7.3.0
+
+09 Aug 2023
+
+Features:
+
+- Add `--no-strip-extras` and warn about strip extras by default
+  ([#1954](https://github.com/jazzband/pip-tools/pull/1954)). Thanks @ryanhiebert
+
+Bug Fixes:
+
+- Fix revealed default config in header if requirements in subfolder
+  ([#1904](https://github.com/jazzband/pip-tools/pull/1904)). Thanks @atugushev
+- Direct references show extra requirements in .txt files
+  ([#1582](https://github.com/jazzband/pip-tools/pull/1582)). Thanks @FlorentJeannot
+
+Other Changes:
+
+- Document how to run under `pipx run`
+  ([#1951](https://github.com/jazzband/pip-tools/pull/1951)). Thanks @brettcannon
+- Document that the backtracking resolver is the current default
+  ([#1948](https://github.com/jazzband/pip-tools/pull/1948)). Thanks @jeffwidman
+
 ## v7.2.0
 
 02 Aug 2023

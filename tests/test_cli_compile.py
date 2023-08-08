@@ -2950,12 +2950,14 @@ def test_compile_recursive_extras(runner, tmp_path, current_resolver):
         [
             "--no-header",
             "--no-annotate",
-            "--no-emit-find-links",
+            "--no-emit-options",
             "--extra",
             "dev",
             "--find-links",
             os.fspath(MINIMAL_WHEELS_PATH),
             os.fspath(tmp_path / "pyproject.toml"),
+            "--output-file",
+            "-",
         ],
     )
     expected = rf"""foo[footest] @ {tmp_path.as_uri()}
@@ -2963,7 +2965,7 @@ small-fake-a==0.2
 small-fake-b==0.3
 """
     assert out.exit_code == 0
-    assert expected == out.stderr
+    assert expected == out.stdout
 
 
 def test_config_option(pip_conf, runner, tmp_path, make_config_file):
@@ -3115,3 +3117,33 @@ def test_invalid_cli_boolean_flag_config_option_captured(
 
     assert out.exit_code == 2
     assert "No such config key 'no_annnotate'." in out.stderr
+
+
+strip_extras_warning = (
+    "WARNING: --strip-extras is becoming the default in version 8.0.0."
+)
+
+
+def test_show_warning_on_default_strip_extras_option(
+    runner, make_package, make_sdist, tmp_path
+):
+    req_in = tmp_path / "requirements.in"
+    req_in.touch()
+
+    out = runner.invoke(cli, req_in.as_posix())
+
+    assert out.exit_code == 0
+    assert strip_extras_warning in out.stderr
+
+
+@pytest.mark.parametrize("option", ("--strip-extras", "--no-strip-extras"))
+def test_do_not_show_warning_on_explicit_strip_extras_option(
+    runner, make_package, make_sdist, tmp_path, option
+):
+    req_in = tmp_path / "requirements.in"
+    req_in.touch()
+
+    out = runner.invoke(cli, [option, req_in.as_posix()])
+
+    assert out.exit_code == 0
+    assert strip_extras_warning not in out.stderr
