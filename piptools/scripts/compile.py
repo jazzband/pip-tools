@@ -20,7 +20,7 @@ from pip._internal.utils.misc import redact_auth_from_url
 from .._compat import parse_requirements
 from ..cache import DependencyCache
 from ..exceptions import NoCandidateFound, PipToolsError
-from ..locations import CACHE_DIR, CONFIG_FILE_NAME
+from ..locations import CACHE_DIR, DEFAULT_CONFIG_FILE_NAMES
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..repositories.base import BaseRepository
@@ -314,8 +314,10 @@ def _determine_linesep(
         allow_dash=False,
         path_type=str,
     ),
-    help=f"Read configuration from TOML file. By default, looks for a {CONFIG_FILE_NAME} or "
-    "pyproject.toml.",
+    help=(
+        f"Read configuration from TOML file. By default, looks for the following "
+        f"files in the given order: {', '.join(DEFAULT_CONFIG_FILE_NAMES)}."
+    ),
     is_eager=True,
     callback=override_defaults_from_config_file,
 )
