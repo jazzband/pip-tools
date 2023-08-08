@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import itertools
 import os
 import shlex
 import sys
@@ -82,6 +81,7 @@ def _determine_linesep(
 @options.rebuild
 @options.extra
 @options.all_extras
+@options.only_extra
 @options.find_links
 @options.index_url
 @options.no_index
@@ -123,6 +123,7 @@ def cli(
     rebuild: bool,
     extras: tuple[str, ...],
     all_extras: bool,
+    only_extras: tuple[str, ...],
     find_links: tuple[str, ...],
     index_url: str,
     no_index: bool,
@@ -383,11 +384,26 @@ def cli(
             req.comes_from = None
         constraints.extend(reqs)
 
-    extras = tuple(itertools.chain.from_iterable(ex.split(",") for ex in extras))
+    extra_options_lookup = {
+        options.EXTRA_OPTION: extras,
+        options.ONLY_EXTRA_OPTION: only_extras,
+        options.ALL_EXTRAS_OPTION: all_extras,
+    }
 
-    if extras and not setup_file_found:
-        msg = "--extra has effect only with setup.py and PEP-517 input formats"
-        raise click.BadParameter(msg)
+    if not setup_file_found:
+        for option, value in extra_options_lookup.items():
+            if value:
+                raise click.BadParameter(
+                    f"{option} has effect only with setup.py and PEP-517 input formats"
+                )
+
+    if only_extras:
+        # Note, the order is important here because --all-extra flag populates extras
+        for option in (options.ALL_EXTRAS_OPTION, options.EXTRA_OPTION):
+            if extra_options_lookup[option]:
+                raise click.BadParameter(
+                    f"{option} and --only-extra are mutually exclusive."
+                )
 
     primary_packages = {
         key_from_ireq(ireq) for ireq in constraints if not ireq.constraint
@@ -397,7 +413,15 @@ def cli(
         ireq for key, ireq in upgrade_install_reqs.items() if key in primary_packages
     )
 
-    constraints = [req for req in constraints if req.match_markers(extras)]
+    if only_extras:
+        constraints = [
+            req
+            for req in constraints
+            if req.markers is not None and req.match_markers(only_extras)
+        ]
+    else:
+        constraints = [req for req in constraints if req.match_markers(extras)]
+
     for req in constraints:
         drop_extras(req)
 

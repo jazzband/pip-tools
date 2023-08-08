@@ -2710,6 +2710,108 @@ def test_all_extras(fake_dists, runner, make_module, fname, content):
     )
 
 
+@pytest.mark.network
+@pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
+def test_only_extras(fake_dists, runner, make_module, fname, content):
+    """
+    Test passing `--only-extra` includes only the specified extra.
+    """
+    meta_path = make_module(fname=fname, content=content)
+    out = runner.invoke(
+        cli,
+        [
+            "--only-extra",
+            "dev",
+            "--output-file",
+            "-",
+            "--quiet",
+            "--find-links",
+            fake_dists,
+            "--no-annotate",
+            "--no-emit-options",
+            "--no-header",
+            "--no-build-isolation",
+            meta_path,
+        ],
+    )
+    assert out.exit_code == 0, out
+    assert out.stdout == "small-fake-b==0.2\n"
+
+
+@pytest.mark.network
+@pytest.mark.parametrize(
+    "extra_opts",
+    (
+        pytest.param(("--only-extra", "dev", "--only-extra", "test"), id="singular"),
+        pytest.param(("--only-extra", "dev,test"), id="comma-separated"),
+    ),
+)
+@pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
+def test_multiple_only_extras(
+    fake_dists, runner, make_module, fname, content, extra_opts
+):
+    """
+    Test passing multiple `--only-extra` params.
+    """
+    meta_path = make_module(fname=fname, content=content)
+    out = runner.invoke(
+        cli,
+        [
+            *extra_opts,
+            "--output-file",
+            "-",
+            "--quiet",
+            "--find-links",
+            fake_dists,
+            "--no-annotate",
+            "--no-emit-options",
+            "--no-header",
+            "--no-build-isolation",
+            meta_path,
+        ],
+    )
+    assert out.exit_code == 0, out.stderr
+    assert out.stdout == dedent(
+        """\
+        small-fake-b==0.2
+        small-fake-c==0.3
+        """
+    )
+
+
+# This should not depend on the metadata format so testing all cases is wasteful
+@pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES[:1])
+@pytest.mark.parametrize(
+    "extra_opts",
+    (
+        pytest.param(("--extra", "test"), id="extra and only_extra"),
+        pytest.param(("--all-extras",), id="all_extras and only_extra"),
+    ),
+)
+def test_raise_error_when_mutual_exclusive_extra_options_are_passed(
+    fake_dists, runner, tmp_path, make_module, fname, content, extra_opts
+):
+    meta_path = make_module(fname=fname, content=content)
+    out = runner.invoke(
+        cli,
+        [
+            *extra_opts,
+            "--only-extra",
+            "dev",
+            "--find-links",
+            fake_dists,
+            "--no-build-isolation",
+            meta_path,
+            "--output-file",
+            "-",
+        ],
+    )
+
+    assert out.exit_code == 2
+    expected = f"{extra_opts[0]} and --only-extra are mutually exclusive."
+    assert expected in out.stderr
+
+
 # This should not depend on the metadata format so testing all cases is wasteful
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES[:1])
 def test_all_extras_fail_with_extra(fake_dists, runner, make_module, fname, content):
@@ -2738,16 +2840,24 @@ def test_all_extras_fail_with_extra(fake_dists, runner, make_module, fname, cont
     assert exp in out.stderr
 
 
-def test_extras_fail_with_requirements_in(runner, tmpdir):
+@pytest.mark.parametrize(
+    "options",
+    (
+        pytest.param(["--extra", "something"], id="extra"),
+        pytest.param(["--only-extra", "something"], id="only_extra"),
+        pytest.param(["--all-extras"], id="all_extras"),
+    ),
+)
+def test_extras_fail_with_requirements_in(runner, tmpdir, options):
     """
-    Test that passing `--extra` with `requirements.in` input file fails.
+    Test that passing any extra options with `requirements.in` input file fails.
     """
     path = os.path.join(tmpdir, "requirements.in")
     with open(path, "w") as stream:
         stream.write("\n")
-    out = runner.invoke(cli, ["-n", "--extra", "something", path])
+    out = runner.invoke(cli, options + ["-n", path])
     assert out.exit_code == 2
-    exp = "--extra has effect only with setup.py and PEP-517 input formats"
+    exp = f"{options[0]} has effect only with setup.py and PEP-517 input formats"
     assert exp in out.stderr
 
 
