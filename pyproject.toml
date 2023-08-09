@@ -98,7 +98,10 @@ disallow_untyped_defs = false
 [tool.pytest.ini_options]
 addopts = [
   # `pytest-xdist`:
-  "--numprocesses=auto"
+  "--numprocesses=auto",
+
+  # Show 20 slowest invocations:
+  "--durations=20",
 ]
 norecursedirs = ".* build dist venv test_data piptools/_compat/*"
 testpaths = "tests piptools"
