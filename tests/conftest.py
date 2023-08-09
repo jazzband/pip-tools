@@ -286,8 +286,8 @@ def pip_with_index_conf(make_pip_conf):
     )
 
 
-@pytest.fixture
-def make_package(tmp_path):
+@pytest.fixture(scope="session")
+def make_package(tmp_path_factory):
     """
     Make a package from a given name, version and list of required packages.
     """
@@ -303,7 +303,7 @@ def make_package(tmp_path):
             ",".join(f"{package!r}" for package in install_requires)
         )
 
-        package_dir = tmp_path / "packages" / name / version
+        package_dir = tmp_path_factory.mktemp("packages") / name / version
         package_dir.mkdir(parents=True)
 
         with (package_dir / "setup.py").open("w") as fp:
@@ -332,7 +332,7 @@ def make_package(tmp_path):
     return _make_package
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def run_setup_file():
     """
     Run a setup.py file from a given package dir.
@@ -350,7 +350,7 @@ def run_setup_file():
     return _run_setup_file
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def make_wheel(run_setup_file):
     """
     Make a wheel distribution from a given package dir.
@@ -408,12 +408,12 @@ def make_module(tmpdir):
     return _make_module
 
 
-@pytest.fixture
-def fake_dists(tmpdir, make_package, make_wheel):
+@pytest.fixture(scope="session")
+def fake_dists(tmp_path_factory, make_package, make_wheel):
     """
-    Generate distribution packages `small-fake-{a..f}`
+    Generate distribution packages `small-fake-*`
     """
-    dists_path = os.path.join(tmpdir, "dists")
+    dists_path = tmp_path_factory.mktemp("dists")
     pkgs = [
         make_package("small-fake-a", version="0.1"),
         make_package("small-fake-b", version="0.2"),

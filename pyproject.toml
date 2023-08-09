@@ -99,6 +99,7 @@ disallow_untyped_defs = false
 addopts = [
   # `pytest-xdist`:
   "--numprocesses=auto",
+  "--dist=worksteal",
 
   # Show 20 slowest invocations:
   "--durations=20",

@@ -2948,6 +2948,7 @@ def test_compile_recursive_extras(runner, tmp_path, current_resolver):
     out = runner.invoke(
         cli,
         [
+            "--no-build-isolation",
             "--no-header",
             "--no-annotate",
             "--no-emit-options",
