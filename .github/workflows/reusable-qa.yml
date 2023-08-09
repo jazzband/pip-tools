@@ -51,6 +51,6 @@ jobs:
       - name: Install tox
         run: pip install tox
       - name: Prepare test environment
-        run: tox --notest -p auto --parallel-live
+        run: tox -vv --notest -p auto --parallel-live
       - name: Test ${{ matrix.toxenv }}
-        run: tox
+        run: tox --skip-pkg-install
