@@ -12,7 +12,6 @@ import click
 from build import BuildBackendException
 from build.util import project_wheel_metadata
 from click.utils import LazyFile, safecall
-from pip._internal.commands import create_command
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
@@ -20,21 +19,19 @@ from pip._internal.utils.misc import redact_auth_from_url
 from .._compat import parse_requirements
 from ..cache import DependencyCache
 from ..exceptions import NoCandidateFound, PipToolsError
-from ..locations import CACHE_DIR, DEFAULT_CONFIG_FILE_NAMES
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..repositories.base import BaseRepository
 from ..resolver import BacktrackingResolver, LegacyResolver
 from ..utils import (
-    UNSAFE_PACKAGES,
     dedup,
     drop_extras,
     is_pinned_requirement,
     key_from_ireq,
-    override_defaults_from_config_file,
     parse_requirements_from_wheel_metadata,
 )
 from ..writer import OutputWriter
+from . import options
 
 DEFAULT_REQUIREMENTS_FILES = (
     "requirements.in",
@@ -44,16 +41,6 @@ DEFAULT_REQUIREMENTS_FILES = (
 )
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 METADATA_FILENAMES = frozenset({"setup.py", "setup.cfg", "pyproject.toml"})
-
-
-def _get_default_option(option_name: str) -> Any:
-    """
-    Get default value of the pip's option (including option from pip.conf)
-    by a given option name.
-    """
-    install_command = create_command("install")
-    default_values = install_command.parser.get_default_values()
-    return getattr(default_values, option_name)
 
 
 def _determine_linesep(
@@ -85,263 +72,48 @@ def _determine_linesep(
     }[strategy]
 
 
-@click.command(context_settings={"help_option_names": ("-h", "--help")})
-@click.version_option(package_name="pip-tools")
+@click.command(context_settings={"help_option_names": options.help_option_names})
 @click.pass_context
-@click.option("-v", "--verbose", count=True, help="Show more output")
-@click.option("-q", "--quiet", count=True, help="Give less output")
-@click.option(
-    "-n",
-    "--dry-run",
-    is_flag=True,
-    help="Only show what would happen, don't change anything",
-)
-@click.option(
-    "-p",
-    "--pre",
-    is_flag=True,
-    default=None,
-    help="Allow resolving to prereleases (default is not)",
-)
-@click.option(
-    "-r",
-    "--rebuild",
-    is_flag=True,
-    help="Clear any caches upfront, rebuild from scratch",
-)
-@click.option(
-    "--extra",
-    "extras",
-    multiple=True,
-    help="Name of an extras_require group to install; may be used more than once",
-)
-@click.option(
-    "--all-extras",
-    is_flag=True,
-    default=False,
-    help="Install all extras_require groups",
-)
-@click.option(
-    "-f",
-    "--find-links",
-    multiple=True,
-    help="Look for archives in this directory or on this HTML page; may be used more than once",
-)
-@click.option(
-    "-i",
-    "--index-url",
-    help="Change index URL (defaults to {index_url})".format(
-        index_url=redact_auth_from_url(_get_default_option("index_url"))
-    ),
-)
-@click.option(
-    "--no-index",
-    is_flag=True,
-    help="Ignore package index (only looking at --find-links URLs instead).",
-)
-@click.option(
-    "--extra-index-url",
-    multiple=True,
-    help="Add another index URL to search; may be used more than once",
-)
-@click.option("--cert", help="Path to alternate CA bundle.")
-@click.option(
-    "--client-cert",
-    help="Path to SSL client certificate, a single file containing "
-    "the private key and the certificate in PEM format.",
-)
-@click.option(
-    "--trusted-host",
-    multiple=True,
-    help="Mark this host as trusted, even though it does not have "
-    "valid or any HTTPS; may be used more than once",
-)
-@click.option(
-    "--header/--no-header",
-    is_flag=True,
-    default=True,
-    help="Add header to generated file",
-)
-@click.option(
-    "--emit-trusted-host/--no-emit-trusted-host",
-    is_flag=True,
-    default=True,
-    help="Add trusted host option to generated file",
-)
-@click.option(
-    "--annotate/--no-annotate",
-    is_flag=True,
-    default=True,
-    help="Annotate results, indicating where dependencies come from",
-)
-@click.option(
-    "--annotation-style",
-    type=click.Choice(("line", "split")),
-    default="split",
-    help="Choose the format of annotation comments",
-)
-@click.option(
-    "-U",
-    "--upgrade/--no-upgrade",
-    is_flag=True,
-    default=False,
-    help="Try to upgrade all dependencies to their latest versions",
-)
-@click.option(
-    "-P",
-    "--upgrade-package",
-    "upgrade_packages",
-    nargs=1,
-    multiple=True,
-    help="Specify a particular package to upgrade; may be used more than once",
-)
-@click.option(
-    "-o",
-    "--output-file",
-    nargs=1,
-    default=None,
-    type=click.File("w+b", atomic=True, lazy=True),
-    help=(
-        "Output file name. Required if more than one input file is given. "
-        "Will be derived from input file otherwise."
-    ),
-)
-@click.option(
-    "--newline",
-    type=click.Choice(("LF", "CRLF", "native", "preserve"), case_sensitive=False),
-    default="preserve",
-    help="Override the newline control characters used",
-)
-@click.option(
-    "--allow-unsafe/--no-allow-unsafe",
-    is_flag=True,
-    default=False,
-    help=(
-        "Pin packages considered unsafe: {}.\n\n"
-        "WARNING: Future versions of pip-tools will enable this behavior by default. "
-        "Use --no-allow-unsafe to keep the old behavior. It is recommended to pass the "
-        "--allow-unsafe now to adapt to the upcoming change.".format(
-            ", ".join(sorted(UNSAFE_PACKAGES))
-        )
-    ),
-)
-@click.option(
-    "--strip-extras/--no-strip-extras",
-    is_flag=True,
-    default=None,
-    help="Assure output file is constraints compatible, avoiding use of extras.",
-)
-@click.option(
-    "--generate-hashes",
-    is_flag=True,
-    default=False,
-    help="Generate pip 8 style hashes in the resulting requirements file.",
-)
-@click.option(
-    "--reuse-hashes/--no-reuse-hashes",
-    is_flag=True,
-    default=True,
-    help=(
-        "Improve the speed of --generate-hashes by reusing the hashes from an "
-        "existing output file."
-    ),
-)
-@click.option(
-    "--max-rounds",
-    default=10,
-    help="Maximum number of rounds before resolving the requirements aborts.",
-)
-@click.argument("src_files", nargs=-1, type=click.Path(exists=True, allow_dash=True))
-@click.option(
-    "--build-isolation/--no-build-isolation",
-    is_flag=True,
-    default=True,
-    help="Enable isolation when building a modern source distribution. "
-    "Build dependencies specified by PEP 518 must be already installed "
-    "if build isolation is disabled.",
-)
-@click.option(
-    "--emit-find-links/--no-emit-find-links",
-    is_flag=True,
-    default=True,
-    help="Add the find-links option to generated file",
-)
-@click.option(
-    "--cache-dir",
-    help="Store the cache data in DIRECTORY.",
-    default=CACHE_DIR,
-    envvar="PIP_TOOLS_CACHE_DIR",
-    show_default=True,
-    show_envvar=True,
-    type=click.Path(file_okay=False, writable=True),
-)
-@click.option(
-    "--pip-args", "pip_args_str", help="Arguments to pass directly to the pip command."
-)
-@click.option(
-    "--resolver",
-    "resolver_name",
-    type=click.Choice(("legacy", "backtracking")),
-    default="backtracking",
-    envvar="PIP_TOOLS_RESOLVER",
-    help="Choose the dependency resolver.",
-)
-@click.option(
-    "--emit-index-url/--no-emit-index-url",
-    is_flag=True,
-    default=True,
-    help="Add index URL to generated file",
-)
-@click.option(
-    "--emit-options/--no-emit-options",
-    is_flag=True,
-    default=True,
-    help="Add options to generated file",
-)
-@click.option(
-    "--unsafe-package",
-    multiple=True,
-    help="Specify a package to consider unsafe; may be used more than once. "
-    f"Replaces default unsafe packages: {', '.join(sorted(UNSAFE_PACKAGES))}",
-)
-@click.option(
-    "--config",
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        dir_okay=False,
-        readable=True,
-        allow_dash=False,
-        path_type=str,
-    ),
-    help=(
-        f"Read configuration from TOML file. By default, looks for the following "
-        f"files in the given order: {', '.join(DEFAULT_CONFIG_FILE_NAMES)}."
-    ),
-    is_eager=True,
-    callback=override_defaults_from_config_file,
-)
-@click.option(
-    "--no-config",
-    is_flag=True,
-    default=False,
-    help="Do not read any config file.",
-    is_eager=True,
-)
-@click.option(
-    "-c",
-    "--constraint",
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        dir_okay=False,
-        readable=True,
-        allow_dash=False,
-        path_type=str,
-    ),
-    multiple=True,
-    help="Constrain versions using the given constraints file; may be used more than once.",
-)
+@options.version
+@options.verbose
+@options.quiet
+@options.dry_run
+@options.pre
+@options.rebuild
+@options.extra
+@options.all_extras
+@options.find_links
+@options.index_url
+@options.no_index
+@options.extra_index_url
+@options.cert
+@options.client_cert
+@options.trusted_host
+@options.header
+@options.emit_trusted_host
+@options.annotate
+@options.annotation_style
+@options.upgrade
+@options.upgrade_package
+@options.output_file
+@options.newline
+@options.allow_unsafe
+@options.strip_extras
+@options.generate_hashes
+@options.reuse_hashes
+@options.max_rounds
+@options.src_files
+@options.build_isolation
+@options.emit_find_links
+@options.cache_dir
+@options.pip_args
+@options.resolver
+@options.emit_index_url
+@options.emit_options
+@options.unsafe_package
+@options.config
+@options.no_config
+@options.constraint
 def cli(
     ctx: click.Context,
     verbose: int,
