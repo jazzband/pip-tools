@@ -532,7 +532,7 @@ def override_defaults_from_config_file(
     ``None`` is returned if no such file is found.
 
     ``pip-tools`` will use the first config file found, searching in this order:
-    an explicitly given config file, a d``.pip-tools.toml``, a ``pyproject.toml``
+    an explicitly given config file, a ``.pip-tools.toml``, a ``pyproject.toml``
     file. Those files are searched for in the same directory as the requirements
     input file, or the current working directory if requirements come via stdin.
     """
@@ -546,10 +546,21 @@ def override_defaults_from_config_file(
     else:
         config_file = Path(value)
 
-    config = parse_config_file(ctx, config_file)
-    if config:
-        _validate_config(ctx, config)
-        _assign_config_to_cli_context(ctx, config)
+    piptools_config, pipcompile_config, pipsync_config = parse_config_file(
+        ctx, config_file
+    )
+
+    configs = [piptools_config]
+
+    if ctx.command.name == "pip-compile":
+        configs.append(pipcompile_config)
+    elif ctx.command.name == "pip-sync":
+        configs.append(pipsync_config)
+
+    for config in configs:
+        if config:
+            _validate_config(ctx, config)
+            _assign_config_to_cli_context(ctx, config)
 
     return config_file
 
@@ -664,7 +675,7 @@ def get_cli_options(ctx: click.Context) -> dict[str, click.Parameter]:
 
 def parse_config_file(
     click_context: click.Context, config_file: Path
-) -> dict[str, Any]:
+) -> tuple[dict[str, Any], ...]:
     try:
         config = tomllib.loads(config_file.read_text(encoding="utf-8"))
     except OSError as os_err:
@@ -678,14 +689,24 @@ def parse_config_file(
             hint=f"Could not parse '{config_file !s}': {value_err !s}",
         )
 
-    # In a TOML file, we expect the config to be under `[tool.pip-tools]`
+    # In a TOML file, we expect the config to be under `[tool.pip-tools]`,
+    # `[tool.pip-compile]` or `[tool.pip-sync]`
     piptools_config: dict[str, Any] = config.get("tool", {}).get("pip-tools", {})
-    piptools_config = _normalize_keys_in_config(piptools_config)
-    piptools_config = _invert_negative_bool_options_in_config(
-        ctx=click_context,
-        config=piptools_config,
-    )
-    return piptools_config
+    pipcompile_config: dict[str, Any] = config.get("tool", {}).get("pip-compile", {})
+    pipsync_config: dict[str, Any] = config.get("tool", {}).get("pip-sync", {})
+
+    configs = []
+
+    for config in (piptools_config, pipcompile_config, pipsync_config):
+        if config:
+            config = _normalize_keys_in_config(config)
+            config = _invert_negative_bool_options_in_config(
+                ctx=click_context,
+                config=config,
+            )
+        configs.append(config)
+
+    return tuple(configs)
 
 
 def _normalize_keys_in_config(config: dict[str, Any]) -> dict[str, Any]:

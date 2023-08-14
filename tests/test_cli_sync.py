@@ -450,3 +450,16 @@ def test_allow_in_config_pip_compile_option(run, runner, tmp_path, make_config_f
 
     assert out.exit_code == 0
     assert "Using pip-tools configuration defaults found" in out.stderr
+
+
+@mock.patch("piptools.sync.run")
+def test_tool_specific_config_option(run, runner, make_config_file):
+    config_file = make_config_file("dry-run", True, section="pip-sync")
+
+    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as reqs_txt:
+        reqs_txt.write("six==1.10.0")
+
+    out = runner.invoke(cli, ["--config", config_file.as_posix()])
+
+    assert out.exit_code == 1
+    assert "Would install:" in out.stdout
