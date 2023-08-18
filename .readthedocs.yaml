@@ -23,7 +23,7 @@ build:
 
 python:
   install:
-    - requirements: docs/requirements.txt
+    - requirements: requirements/docs.txt
     - method: pip
       path: .
   system_packages: false
