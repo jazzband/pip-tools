@@ -1208,15 +1208,16 @@ def test_preserve_newline_from_input(runner, linesep, must_exclude):
     assert must_exclude not in txt
 
 
-@pytest.mark.network
-def test_generate_hashes_with_split_style_annotations(runner):
-    with open("requirements.in", "w") as fp:
-        fp.write("Django==1.11.29\n")
-        fp.write("django-debug-toolbar==1.11\n")
-        fp.write("django-storages==1.9.1\n")
-        fp.write("django-taggit==0.24.0\n")
-        fp.write("pytz==2020.4\n")
-        fp.write("sqlparse==0.3.1\n")
+def test_generate_hashes_with_split_style_annotations(pip_conf, runner, tmpdir_cwd):
+    reqs_in = tmpdir_cwd / "requirements.in"
+    reqs_in.write_text(
+        dedent(
+            """\
+            small_fake_with_deps
+            small-fake-a
+            """
+        )
+    )
 
     out = runner.invoke(
         cli,
@@ -1225,58 +1226,37 @@ def test_generate_hashes_with_split_style_annotations(runner):
             "-",
             "--quiet",
             "--no-header",
+            "--no-emit-options",
             "--generate-hashes",
             "--annotation-style",
             "split",
         ],
     )
+
     assert out.stdout == dedent(
         """\
-        django==1.11.29 \\
-            --hash=sha256:014e3392058d94f40569206a24523ce254d55ad2f9f46c6550b0fe2e4f94cf3f \\
-            --hash=sha256:4200aefb6678019a0acf0005cd14cfce3a5e6b9b90d06145fcdd2e474ad4329c
+        small-fake-a==0.1 \\
+            --hash=sha256:5e6071ee6e4c59e0d0408d366fe9b66781d2cf01be9a6e19a2433bb3c5336330
             # via
             #   -r requirements.in
-            #   django-debug-toolbar
-            #   django-storages
-            #   django-taggit
-        django-debug-toolbar==1.11 \\
-            --hash=sha256:89d75b60c65db363fb24688d977e5fbf0e73386c67acf562d278402a10fc3736 \\
-            --hash=sha256:c2b0134119a624f4ac9398b44f8e28a01c7686ac350a12a74793f3dd57a9eea0
+            #   small-fake-with-deps
+        small-fake-with-deps==0.1 \\
+            --hash=sha256:71403033c0545516cc5066c9196d9490affae65a865af3198438be6923e4762e
             # via -r requirements.in
-        django-storages==1.9.1 \\
-            --hash=sha256:3103991c2ee8cef8a2ff096709973ffe7106183d211a79f22cf855f33533d924 \\
-            --hash=sha256:a59e9923cbce7068792f75344ed7727021ee4ac20f227cf17297d0d03d141e91
-            # via -r requirements.in
-        django-taggit==0.24.0 \\
-            --hash=sha256:710b4d15ec1996550cc68a0abbc41903ca7d832540e52b1336e6858737e410d8 \\
-            --hash=sha256:bb8f27684814cd1414b2af75b857b5e26a40912631904038a7ecacd2bfafc3ac
-            # via -r requirements.in
-        pytz==2020.4 \\
-            --hash=sha256:3e6b7dd2d1e0a59084bcee14a17af60c5c562cdc16d828e8eba2e683d3a7e268 \\
-            --hash=sha256:5c55e189b682d420be27c6995ba6edce0c0a77dd67bfbe2ae6607134d5851ffd
-            # via
-            #   -r requirements.in
-            #   django
-        sqlparse==0.3.1 \\
-            --hash=sha256:022fb9c87b524d1f7862b3037e541f68597a730a8843245c349fc93e1643dc4e \\
-            --hash=sha256:e162203737712307dfe78860cc56c8da8a852ab2ee33750e33aeadf38d12c548
-            # via
-            #   -r requirements.in
-            #   django-debug-toolbar
         """
     )
 
 
-@pytest.mark.network
-def test_generate_hashes_with_line_style_annotations(runner):
-    with open("requirements.in", "w") as fp:
-        fp.write("Django==1.11.29\n")
-        fp.write("django-debug-toolbar==1.11\n")
-        fp.write("django-storages==1.9.1\n")
-        fp.write("django-taggit==0.24.0\n")
-        fp.write("pytz==2020.4\n")
-        fp.write("sqlparse==0.3.1\n")
+def test_generate_hashes_with_line_style_annotations(pip_conf, runner, tmpdir_cwd):
+    reqs_in = tmpdir_cwd / "requirements.in"
+    reqs_in.write_text(
+        dedent(
+            """\
+            small_fake_with_deps
+            small-fake-a
+            """
+        )
+    )
 
     out = runner.invoke(
         cli,
@@ -1285,37 +1265,21 @@ def test_generate_hashes_with_line_style_annotations(runner):
             "-",
             "--quiet",
             "--no-header",
+            "--no-emit-options",
             "--generate-hashes",
             "--annotation-style",
             "line",
         ],
     )
+
     assert out.stdout == dedent(
         """\
-        django==1.11.29 \\
-            --hash=sha256:014e3392058d94f40569206a24523ce254d55ad2f9f46c6550b0fe2e4f94cf3f \\
-            --hash=sha256:4200aefb6678019a0acf0005cd14cfce3a5e6b9b90d06145fcdd2e474ad4329c
-            # via -r requirements.in, django-debug-toolbar, django-storages, django-taggit
-        django-debug-toolbar==1.11 \\
-            --hash=sha256:89d75b60c65db363fb24688d977e5fbf0e73386c67acf562d278402a10fc3736 \\
-            --hash=sha256:c2b0134119a624f4ac9398b44f8e28a01c7686ac350a12a74793f3dd57a9eea0
+        small-fake-a==0.1 \\
+            --hash=sha256:5e6071ee6e4c59e0d0408d366fe9b66781d2cf01be9a6e19a2433bb3c5336330
+            # via -r requirements.in, small-fake-with-deps
+        small-fake-with-deps==0.1 \\
+            --hash=sha256:71403033c0545516cc5066c9196d9490affae65a865af3198438be6923e4762e
             # via -r requirements.in
-        django-storages==1.9.1 \\
-            --hash=sha256:3103991c2ee8cef8a2ff096709973ffe7106183d211a79f22cf855f33533d924 \\
-            --hash=sha256:a59e9923cbce7068792f75344ed7727021ee4ac20f227cf17297d0d03d141e91
-            # via -r requirements.in
-        django-taggit==0.24.0 \\
-            --hash=sha256:710b4d15ec1996550cc68a0abbc41903ca7d832540e52b1336e6858737e410d8 \\
-            --hash=sha256:bb8f27684814cd1414b2af75b857b5e26a40912631904038a7ecacd2bfafc3ac
-            # via -r requirements.in
-        pytz==2020.4 \\
-            --hash=sha256:3e6b7dd2d1e0a59084bcee14a17af60c5c562cdc16d828e8eba2e683d3a7e268 \\
-            --hash=sha256:5c55e189b682d420be27c6995ba6edce0c0a77dd67bfbe2ae6607134d5851ffd
-            # via -r requirements.in, django
-        sqlparse==0.3.1 \\
-            --hash=sha256:022fb9c87b524d1f7862b3037e541f68597a730a8843245c349fc93e1643dc4e \\
-            --hash=sha256:e162203737712307dfe78860cc56c8da8a852ab2ee33750e33aeadf38d12c548
-            # via -r requirements.in, django-debug-toolbar
         """
     )
 
@@ -2948,6 +2912,7 @@ def test_compile_recursive_extras(runner, tmp_path, current_resolver):
     out = runner.invoke(
         cli,
         [
+            "--no-build-isolation",
             "--no-header",
             "--no-annotate",
             "--no-emit-options",
