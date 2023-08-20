@@ -36,6 +36,11 @@ from piptools.utils import (
 )
 
 
+def test_can_import_pyproject_hooks():
+    # TODO: Remove this test when there is code using this package
+    from pip._vendor import pyproject_hooks  # noqa: F401
+
+
 def test_format_requirement(from_line):
     ireq = from_line("test==1.2")
     assert format_requirement(ireq) == "test==1.2"

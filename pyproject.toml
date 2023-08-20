@@ -38,7 +38,7 @@ dependencies = [
   # direct dependencies
   "build",
   "click >= 8",
-  "pip >= 22.2",
+  "pip >= 23",
   "tomli; python_version < '3.11'",
   # indirect dependencies
   "setuptools", # typically needed when pip-tools invokes setup.py
