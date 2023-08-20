@@ -151,7 +151,7 @@ jobs:
         pip-version:
           - latest
     env:
-      TOXENV: pip${{ matrix.pip-version }}-coverage
+      TOXENV: pip${{ matrix.pip-version }}
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python ${{ matrix.python-version }}
