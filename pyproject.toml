@@ -99,6 +99,9 @@ disallow_untyped_defs = false
 addopts = [
   # `pytest-xdist`:
   "--numprocesses=auto",
+
+  # This distribution method is useful if the run times of different tests vary greatly,
+  # as it ensures more efficient resource usage, improving the performance of testing.
   "--dist=worksteal",
 
   # Show 20 slowest invocations:
