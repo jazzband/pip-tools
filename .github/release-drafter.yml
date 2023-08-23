@@ -25,6 +25,8 @@ categories:
 
 category-template: "$TITLE:"
 change-template: "- $TITLE ([#$NUMBER](https://github.com/jazzband/pip-tools/pull/$NUMBER)). Thanks @$AUTHOR"
+exclude-contributors:
+  - "pre-commit-ci"
 exclude-labels:
   - "skip-changelog"
   - "maintenance"
