@@ -131,11 +131,10 @@ def diff_key_from_ireq(ireq: InstallRequirement) -> str:
     if the contents at the URL have changed but the version has not.
     """
     if is_url_requirement(ireq):
-        if getattr(ireq.req, "name", None) and ireq.link.has_hash:
-            return str(
-                direct_url_as_pep440_direct_reference(
-                    direct_url_from_link(ireq.link), ireq.req.name
-                )
+        req_name = getattr(ireq.req, "name", None)
+        if req_name is not None and ireq.link is not None and ireq.link.has_hash:
+            return direct_url_as_pep440_direct_reference(
+                direct_url_from_link(ireq.link), req_name
             )
         # TODO: Also support VCS and editable installs.
         return str(ireq.link)
@@ -189,7 +188,7 @@ def diff(
 
 def sync(
     to_install: Iterable[InstallRequirement],
-    to_uninstall: Iterable[InstallRequirement],
+    to_uninstall: Iterable[str],
     dry_run: bool = False,
     install_flags: list[str] | None = None,
     ask: bool = False,

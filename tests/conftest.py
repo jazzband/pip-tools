@@ -114,16 +114,16 @@ class FakeRepository(BaseRepository):
         return self._options
 
     @property
-    def session(self) -> PipSession:
-        """Not used"""
+    def session(self) -> PipSession:  # type: ignore
+        """not used"""
 
     @property
-    def finder(self) -> PackageFinder:
-        """Not used"""
+    def finder(self) -> PackageFinder:  # type: ignore
+        """not used"""
 
     @property
-    def command(self) -> InstallCommand:
-        """Not used"""
+    def command(self) -> InstallCommand:  # type: ignore
+        """not used"""
 
 
 def pytest_collection_modifyitems(config, items):

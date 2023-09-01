@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import optparse
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Iterable, Iterator, Set, cast
+from typing import Iterable, Iterator, Set, cast
 
 import pip
 from pip._internal.cache import WheelCache
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.metadata import BaseDistribution
+from pip._internal.metadata.importlib import Distribution as _ImportLibDist
 from pip._internal.metadata.pkg_resources import Distribution as _PkgResourcesDist
 from pip._internal.models.direct_url import DirectUrl
 from pip._internal.network.session import PipSession
@@ -23,8 +24,6 @@ PIP_VERSION = tuple(map(int, parse_version(pip.__version__).base_version.split("
 # importlib.metadata, so this compat layer allows for a consistent access
 # pattern. In pip 22.1, importlib.metadata became the default on Python 3.11
 # (and later), but is overridable. `select_backend` returns what's being used.
-if TYPE_CHECKING:
-    from pip._internal.metadata.importlib import Distribution as _ImportLibDist
 
 
 @dataclass(frozen=True)
@@ -40,8 +39,10 @@ class Distribution:
         # instead of specializing by type.
         if isinstance(dist, _PkgResourcesDist):
             return cls._from_pkg_resources(dist)
-        else:
+        elif isinstance(dist, _ImportLibDist):
             return cls._from_importlib(dist)
+        else:
+            raise NotImplementedError
 
     @classmethod
     def _from_pkg_resources(cls, dist: _PkgResourcesDist) -> Distribution:
@@ -78,15 +79,15 @@ def parse_requirements(
 
 
 def create_wheel_cache(cache_dir: str, format_control: str | None = None) -> WheelCache:
-    kwargs: dict[str, str | None] = {"cache_dir": cache_dir}
+    kwargs: dict[str, str] = {"cache_dir": cache_dir}
     if PIP_VERSION[:2] <= (23, 0):
-        kwargs["format_control"] = format_control
+        kwargs["format_control"] = format_control  # type: ignore
     return WheelCache(**kwargs)
 
 
 def get_dev_pkgs() -> set[str]:
     if PIP_VERSION[:2] <= (23, 1):
-        from pip._internal.commands.freeze import DEV_PKGS
+        from pip._internal.commands.freeze import DEV_PKGS  # type: ignore
 
         return cast(Set[str], DEV_PKGS)
 

@@ -7,7 +7,7 @@ import optparse
 import os
 from contextlib import contextmanager
 from shutil import rmtree
-from typing import Any, BinaryIO, ContextManager, Iterator, NamedTuple
+from typing import Any, BinaryIO, ContextManager, Iterable, Iterator, NamedTuple
 
 from click import progressbar
 from pip._internal.cache import WheelCache
@@ -21,6 +21,7 @@ from pip._internal.models.wheel import Wheel
 from pip._internal.network.session import PipSession
 from pip._internal.operations.build.build_tracker import get_build_tracker
 from pip._internal.req import InstallRequirement, RequirementSet
+from pip._internal.resolution.legacy.resolver import Resolver
 from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.logging import indent_log, setup_logging
 from pip._internal.utils.misc import normalize_path
@@ -64,7 +65,9 @@ class PyPIRepository(BaseRepository):
         # Use pip's parser for pip.conf management and defaults.
         # General options (find_links, index_url, extra_index_url, trusted_host,
         # and pre) are deferred to pip.
-        self._command: InstallCommand = create_command("install")
+        command = create_command("install")
+        assert isinstance(command, InstallCommand)
+        self._command = command
 
         options, _ = self.command.parse_args(pip_args)
         if options.cache_dir:
@@ -136,6 +139,7 @@ class PyPIRepository(BaseRepository):
         if ireq.editable or is_url_requirement(ireq):
             return ireq  # return itself as the best match
 
+        assert ireq.name is not None
         all_candidates = self.find_all_candidates(ireq.name)
         candidates_by_version = lookup_table(all_candidates, key=candidate_version)
         matching_versions = ireq.specifier.filter(
@@ -155,6 +159,7 @@ class PyPIRepository(BaseRepository):
         best_candidate = best_candidate_result.best_candidate
 
         # Turn the candidate into a pinned InstallRequirement
+        assert best_candidate is not None
         return make_install_requirement(
             best_candidate.name,
             best_candidate.version,
@@ -166,11 +171,11 @@ class PyPIRepository(BaseRepository):
         download_dir: str | None,
         ireq: InstallRequirement,
         wheel_cache: WheelCache,
-    ) -> set[InstallationCandidate]:
+    ) -> set[InstallRequirement]:
         with get_build_tracker() as build_tracker, TempDirectory(
             kind="resolver"
         ) as temp_dir, indent_log():
-            preparer_kwargs = {
+            preparer_kwargs: dict[str, Any] = {
                 "temp_build_dir": temp_dir,
                 "options": self.options,
                 "session": self.session,
@@ -199,6 +204,7 @@ class PyPIRepository(BaseRepository):
                 force_reinstall=False,
                 upgrade_strategy="to-satisfy-only",
             )
+            assert isinstance(resolver, Resolver)
             results = resolver._resolve_one(reqset, ireq)
             if not ireq.prepared:
                 # If still not prepared, e.g. a constraint, do enough to assign
@@ -323,6 +329,7 @@ class PyPIRepository(BaseRepository):
         if not is_pinned_requirement(ireq):
             raise TypeError(f"Expected pinned requirement, got {ireq}")
 
+        assert ireq.name is not None
         log.debug(ireq.name)
 
         with log.indentation():
@@ -385,6 +392,7 @@ class PyPIRepository(BaseRepository):
         # We need to get all of the candidates that match our current version
         # pin, these will represent all of the files that could possibly
         # satisfy this constraint.
+        assert ireq.name is not None
         all_candidates = self.find_all_candidates(ireq.name)
         candidates_by_version = lookup_table(all_candidates, key=candidate_version)
         matching_versions = list(
@@ -431,11 +439,11 @@ class PyPIRepository(BaseRepository):
         the previous non-patched calls will interfere.
         """
 
-        def _wheel_supported(self: Wheel, tags: list[Tag]) -> bool:
+        def _wheel_supported(self: Wheel, tags: Iterable[Tag]) -> bool:
             # Ignore current platform. Support everything.
             return True
 
-        def _wheel_support_index_min(self: Wheel, tags: list[Tag]) -> int:
+        def _wheel_support_index_min(self: Wheel, tags: Iterable[Tag]) -> int:
             # All wheels are equal priority for sorting.
             return 0
 
@@ -443,8 +451,8 @@ class PyPIRepository(BaseRepository):
         original_support_index_min = Wheel.support_index_min
         original_cache = self._available_candidates_cache
 
-        Wheel.supported = _wheel_supported
-        Wheel.support_index_min = _wheel_support_index_min
+        Wheel.supported = _wheel_supported  # type: ignore[method-assign]
+        Wheel.support_index_min = _wheel_support_index_min  # type: ignore[method-assign]
         self._available_candidates_cache = {}
 
         # If we don't clear this cache then it can contain results from an
@@ -454,8 +462,8 @@ class PyPIRepository(BaseRepository):
         try:
             yield
         finally:
-            Wheel.supported = original_wheel_supported
-            Wheel.support_index_min = original_support_index_min
+            Wheel.supported = original_wheel_supported  # type: ignore[method-assign]
+            Wheel.support_index_min = original_support_index_min  # type: ignore[method-assign]
             self._available_candidates_cache = original_cache
 
 

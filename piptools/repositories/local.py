@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import optparse
 from contextlib import contextmanager
-from typing import Iterator, Mapping, cast
+from typing import Iterator, Mapping
 
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
-from pip._internal.models.candidate import InstallationCandidate
 from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.hashes import FAVORITE_HASH
@@ -18,17 +17,18 @@ from .pypi import PyPIRepository
 
 
 def ireq_satisfied_by_existing_pin(
-    ireq: InstallRequirement, existing_pin: InstallationCandidate
+    ireq: InstallRequirement, existing_pin: InstallRequirement
 ) -> bool:
     """
     Return True if the given InstallationRequirement is satisfied by the
     previously encountered version pin.
     """
+    assert ireq.req is not None
+    assert existing_pin.req is not None
     version = next(iter(existing_pin.req.specifier)).version
-    result = ireq.req.specifier.contains(
+    return ireq.req.specifier.contains(
         version, prereleases=existing_pin.req.specifier.prereleases
     )
-    return cast(bool, result)
 
 
 class LocalRequirementsRepository(BaseRepository):
@@ -44,7 +44,7 @@ class LocalRequirementsRepository(BaseRepository):
 
     def __init__(
         self,
-        existing_pins: Mapping[str, InstallationCandidate],
+        existing_pins: Mapping[str, InstallRequirement],
         proxied_repository: PyPIRepository,
         reuse_hashes: bool = True,
     ):
@@ -74,7 +74,7 @@ class LocalRequirementsRepository(BaseRepository):
 
     def find_best_match(
         self, ireq: InstallRequirement, prereleases: bool | None = None
-    ) -> InstallationCandidate:
+    ) -> InstallRequirement:
         key = key_from_ireq(ireq)
         existing_pin = self.existing_pins.get(key)
         if existing_pin and ireq_satisfied_by_existing_pin(ireq, existing_pin):

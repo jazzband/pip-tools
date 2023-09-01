@@ -5,7 +5,7 @@ import click
 from piptools.scripts import compile, sync
 
 
-@click.group()
+@click.group
 def cli() -> None:
     pass
 
