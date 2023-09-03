@@ -11,6 +11,7 @@ from typing import IO, Any, BinaryIO, cast
 import click
 from build import BuildBackendException
 from build.util import project_wheel_metadata
+from pyproject_hooks import default_subprocess_runner
 from click.utils import LazyFile, safecall
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
@@ -323,6 +324,7 @@ def cli(
                 metadata = project_wheel_metadata(
                     os.path.dirname(os.path.abspath(src_file)),
                     isolated=build_isolation,
+                    runner=default_subprocess_runner,
                 )
             except BuildBackendException as e:
                 log.error(str(e))
