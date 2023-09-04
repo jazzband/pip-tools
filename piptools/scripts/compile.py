@@ -15,7 +15,7 @@ from click.utils import LazyFile, safecall
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
-from pyproject_hooks import default_subprocess_runner
+from pyproject_hooks import default_subprocess_runner, quiet_subprocess_runner
 
 from .._compat import parse_requirements
 from ..cache import DependencyCache
@@ -320,11 +320,14 @@ def cli(
             constraints.extend(reqs)
         elif is_setup_file:
             setup_file_found = True
+            build_runner = quiet_subprocess_runner
+            if verbose:
+                build_runner = default_subprocess_runner
             try:
                 metadata = project_wheel_metadata(
                     os.path.dirname(os.path.abspath(src_file)),
                     isolated=build_isolation,
-                    runner=default_subprocess_runner,
+                    runner=build_runner,
                 )
             except BuildBackendException as e:
                 log.error(str(e))
