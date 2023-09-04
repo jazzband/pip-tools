@@ -2582,35 +2582,28 @@ def test_input_formats(fake_dists, runner, make_module, fname, content):
     assert "extra ==" not in out.stderr
 
 
-@pytest.mark.network
 def test_error_in_pyproject_toml(fake_dists, runner, make_module, capfd):
     """
     Test that an error in pyproject.toml is reported.
     """
     fname = "pyproject.toml"
-    content = """
-            [build-system]
-            requires = ["flit_core >=2,<4"]
-            build-backend = "flit_core.buildapi"
-
-            [tool.flit.metadata]
-            module = "sample_lib"
-            author = "Vincent Driessen"
-            author-email = "me@nvie.com"
-            requires = ["small-fake-a==0.1"]
-    """
-    content += """
-            maintainer = ["Vincent Driessen <nvie>"]  # error is here
-    """
-    meta_path = make_module(fname=fname, content=content)
+    invalid_content = dedent(
+        """\
+            [project]
+            invalid = "metadata"
+            """
+    )
+    meta_path = make_module(fname=fname, content=invalid_content)
     out = runner.invoke(
         cli, ["-n", "--no-build-isolation", "--find-links", fake_dists, meta_path]
     )
     assert out.exit_code == 2, out.stderr
-    assert (
-        "ConfigError: Expected a string for maintainer field, found"
-        in capfd.readouterr().err
+    assert "`project` must contain ['name'] properties" not in capfd.readouterr().err
+    out = runner.invoke(
+        cli, ["-n", "--no-build-isolation", "-v", "--find-links", fake_dists, meta_path]
     )
+    assert out.exit_code == 2, out.stderr
+    assert "`project` must contain ['name'] properties" in capfd.readouterr().err
 
 
 @pytest.mark.network
