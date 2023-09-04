@@ -205,6 +205,10 @@ def cli(
                 ).format(", ".join(DEFAULT_REQUIREMENTS_FILES))
             )
 
+    if all_extras and extras:
+        msg = "--extra has no effect when used with --all-extras"
+        raise click.BadParameter(msg)
+
     if not output_file:
         # An output file must be provided for stdin
         if src_files == ("-",):
@@ -372,10 +376,7 @@ def cli(
             if not only_build_deps:
                 constraints.extend(metadata.requirements)
                 if all_extras:
-                    if extras:
-                        msg = "--extra has no effect when used with --all-extras"
-                        raise click.BadParameter(msg)
-                    extras = metadata.extras
+                    extras += metadata.extras
             if build_deps_targets:
                 constraints.extend(metadata.build_requirements)
         else:
