@@ -320,14 +320,15 @@ def cli(
             constraints.extend(reqs)
         elif is_setup_file:
             setup_file_found = True
-            build_runner = quiet_subprocess_runner
-            if verbose:
-                build_runner = default_subprocess_runner
             try:
                 metadata = project_wheel_metadata(
                     os.path.dirname(os.path.abspath(src_file)),
                     isolated=build_isolation,
-                    runner=build_runner,
+                    runner=(
+                        default_subprocess_runner
+                        if verbose
+                        else quiet_subprocess_runner
+                    ),
                 )
             except BuildBackendException as e:
                 log.error(str(e))
