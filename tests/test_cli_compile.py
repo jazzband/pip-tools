@@ -2603,7 +2603,8 @@ def test_error_in_pyproject_toml(fake_dists, runner, make_module, capfd):
         cli, ["-n", "--no-build-isolation", "-v", "--find-links", fake_dists, meta_path]
     )
     assert out.exit_code == 2, out.stderr
-    assert "`project` must contain ['name'] properties" in capfd.readouterr().err
+    captured = capfd.readouterr()
+    assert "`project` must contain ['name'] properties" in captured.err
 
 
 @pytest.mark.network
