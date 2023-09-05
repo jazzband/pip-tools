@@ -26,4 +26,3 @@ python:
     - requirements: docs/requirements.txt
     - method: pip
       path: .
-  system_packages: false
