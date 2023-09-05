@@ -2582,7 +2582,10 @@ def test_input_formats(fake_dists, runner, make_module, fname, content):
     assert "extra ==" not in out.stderr
 
 
-def test_error_in_pyproject_toml(fake_dists, runner, make_module, capfd):
+@pytest.mark.parametrize("verbose_option", (True, False))
+def test_error_in_pyproject_toml(
+    fake_dists, runner, make_module, capfd, verbose_option
+):
     """
     Test that an error in pyproject.toml is reported.
     """
@@ -2594,17 +2597,23 @@ def test_error_in_pyproject_toml(fake_dists, runner, make_module, capfd):
         """
     )
     meta_path = make_module(fname=fname, content=invalid_content)
-    out = runner.invoke(
-        cli, ["-n", "--no-build-isolation", "--find-links", fake_dists, meta_path]
+
+    options = []
+    if verbose_option:
+        options = ["--verbose"]
+
+    options.extend(
+        ["-n", "--no-build-isolation", "--find-links", fake_dists, meta_path]
     )
-    assert out.exit_code == 2, out.stderr
-    assert "`project` must contain ['name'] properties" not in capfd.readouterr().err
-    out = runner.invoke(
-        cli, ["-n", "--no-build-isolation", "-v", "--find-links", fake_dists, meta_path]
-    )
+
+    out = runner.invoke(cli, options)
+
     assert out.exit_code == 2, out.stderr
     captured = capfd.readouterr()
-    assert "`project` must contain ['name'] properties" in captured.err
+
+    assert (
+        "`project` must contain ['name'] properties" in captured.err
+    ) is verbose_option
 
 
 @pytest.mark.network
