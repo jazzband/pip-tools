@@ -2589,9 +2589,9 @@ def test_error_in_pyproject_toml(fake_dists, runner, make_module, capfd):
     fname = "pyproject.toml"
     invalid_content = dedent(
         """\
-            [project]
-            invalid = "metadata"
-            """
+        [project]
+        invalid = "metadata"
+        """
     )
     meta_path = make_module(fname=fname, content=invalid_content)
     out = runner.invoke(
