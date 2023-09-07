@@ -39,7 +39,7 @@ from .utils import (
     is_pinned_requirement,
     is_url_requirement,
     key_from_ireq,
-    key_from_req,
+    key_no_extra_from_req,
     omit_list_value,
     strip_extras,
 )
@@ -648,7 +648,7 @@ class BacktrackingResolver(BaseResolver):
 
             # Collect all incompatible install requirement names
             cause_ireq_names = {
-                key_from_req(cause.requirement) for cause in cause_exc.causes
+                key_no_extra_from_req(cause.requirement) for cause in cause_exc.causes
             }
 
             # Looks like resolution is impossible, try to fix

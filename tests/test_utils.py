@@ -11,6 +11,8 @@ from textwrap import dedent
 import pip
 import pytest
 from click import BadOptionUsage, Context, FileError
+from pip._internal.resolution.resolvelib.base import Requirement as PipRequirement
+from pip._internal.resolution.resolvelib.requirements import SpecifierRequirement
 from pip._vendor.packaging.version import Version
 
 from piptools.scripts.compile import cli as compile_cli
@@ -29,6 +31,7 @@ from piptools.utils import (
     is_pinned_requirement,
     is_url_requirement,
     key_from_ireq,
+    key_no_extra_from_req,
     lookup_table,
     lookup_table_from_tuples,
     override_defaults_from_config_file,
@@ -283,6 +286,30 @@ def test_key_from_ireq_normalization(from_line):
     for line in ("zope.event", "zope-event", "zope_event", "ZOPE.event"):
         keys.add(key_from_ireq(from_line(line)))
     assert len(keys) == 1
+
+
+@pytest.fixture(params=["InstallRequirement", "SpecifierRequirement"])
+def req_factory(from_line, request):
+    def specified_requirement(line: str) -> PipRequirement:
+        return SpecifierRequirement(from_line(line))
+
+    if request.param == "SpecifierRequirement":
+        return specified_requirement
+    return from_line
+
+
+@pytest.mark.parametrize(
+    ("line", "expected"),
+    (
+        ("build", "build"),
+        ("cachecontrol[filecache]", "cachecontrol"),
+        ("some-package[a,b]", "some-package"),
+    ),
+)
+def test_key_no_extra_from_req(req_factory, line, expected):
+    result = key_no_extra_from_req(req_factory(line))
+
+    assert result == expected
 
 
 @pytest.mark.parametrize(

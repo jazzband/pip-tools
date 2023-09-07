@@ -23,6 +23,7 @@ import click
 from click.utils import LazyFile
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line, parse_req_from_line
+from pip._internal.resolution.resolvelib.base import Requirement as PipRequirement
 from pip._internal.utils.misc import redact_auth_from_url
 from pip._internal.vcs import is_url
 from pip._vendor.packaging.markers import Marker
@@ -75,6 +76,16 @@ def key_from_ireq(ireq: InstallRequirement) -> str:
 def key_from_req(req: InstallRequirement | Requirement) -> str:
     """Get an all-lowercase version of the requirement's name."""
     return str(canonicalize_name(req.name))
+
+
+def key_no_extra_from_req(
+    req: InstallRequirement | Requirement | PipRequirement,
+) -> str:
+    """Get an all-lowercase version of the requirement's name without any extras."""
+    name = req.name
+    extra_start_index = name.find("[")
+    package_name = name if extra_start_index == -1 else name[:extra_start_index]
+    return str(canonicalize_name(package_name))
 
 
 def comment(text: str) -> str:
