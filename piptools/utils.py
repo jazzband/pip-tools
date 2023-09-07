@@ -83,8 +83,7 @@ def key_no_extra_from_req(
 ) -> str:
     """Get an all-lowercase version of the requirement's name without any extras."""
     name = req.name
-    extra_start_index = name.find("[")
-    package_name = name if extra_start_index == -1 else name[:extra_start_index]
+    package_name = name.split("[", 1)[0]
     return str(canonicalize_name(package_name))
 
 

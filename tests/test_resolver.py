@@ -651,7 +651,7 @@ def test_backtracking_resolver_drops_existing_conflicting_constraints(
     # resolver has been rigged to raise a DistributionNotFound exception with
     # a cause that refers to the entries of conflicting_ireqs.
     # We expect _do_resolve() to handle this exception by dropping
-    # the these entries from existing_constraints and returning False.
+    # these entries from existing_constraints and returning False.
     # It should _not_ drop any compatible constraint or re-raise
     # the DistributionNotFound exception.
     result = bt_resolver._do_resolve(resolver, existing_constraints)
