@@ -620,16 +620,15 @@ def test_backtracking_resolver_drops_existing_conflicting_constraints(
         Raise a ``DistributionNotFound`` exception that has a ``ResolutionImpossible``
         exception as its cause.
         """
-        try:
-            causes = [
-                NonCallableMock(
-                    requirement=SpecifierRequirement(existing_constraints[ireq.name])
-                )
-                for ireq in conflicting_ireqs
-            ]
-            raise ResolutionImpossible(causes)
-        except ResolutionImpossible as e:
-            raise DistributionNotFound("resolution impossible") from e
+        causes = [
+            NonCallableMock(
+                requirement=SpecifierRequirement(existing_constraints[ireq.name])
+            )
+            for ireq in conflicting_ireqs
+        ]
+        raise DistributionNotFound("resolution impossible") from ResolutionImpossible(
+            causes
+        )
 
     constraint_ireqs = [from_line(req, constraint=False) for req in constraints]
     conflicting_ireqs = [
