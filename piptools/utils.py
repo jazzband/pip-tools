@@ -78,7 +78,17 @@ def key_from_req(
     *,
     remove_extras: bool = False,
 ) -> str:
-    """Get an all-lowercase version of the requirement's name."""
+    """
+    Get an all-lowercase version of the requirement's name.
+
+    :param req: the requirement the key is computed for
+    :param remove_extras: if this parameter evaluates as ``True``,
+                          then any extras specification that is
+                          part of the requirement's name is stripped
+                          off the result.
+    :return: the canonical name of the requirement, optionally
+             with any extras specification removed
+    """
     name = req.name
     if remove_extras:
         name = strip_extras(name)
