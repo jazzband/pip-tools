@@ -7,11 +7,12 @@ import shlex
 import sys
 from pathlib import Path
 from textwrap import dedent
+from typing import Callable
 
 import pip
 import pytest
 from click import BadOptionUsage, Context, FileError
-from pip._internal.resolution.resolvelib.base import Requirement as PipRequirement
+from pip._internal.req import InstallRequirement
 from pip._internal.resolution.resolvelib.requirements import SpecifierRequirement
 from pip._vendor.packaging.version import Version
 
@@ -31,7 +32,7 @@ from piptools.utils import (
     is_pinned_requirement,
     is_url_requirement,
     key_from_ireq,
-    key_no_extra_from_req,
+    key_from_req,
     lookup_table,
     lookup_table_from_tuples,
     override_defaults_from_config_file,
@@ -288,26 +289,49 @@ def test_key_from_ireq_normalization(from_line):
     assert len(keys) == 1
 
 
-@pytest.fixture(params=["InstallRequirement", "SpecifierRequirement"])
-def req_factory(from_line, request):
-    def specified_requirement(line: str) -> PipRequirement:
-        return SpecifierRequirement(from_line(line))
-
-    if request.param == "SpecifierRequirement":
-        return specified_requirement
-    return from_line
-
-
+@pytest.mark.parametrize("remove_extras", (True, False))
 @pytest.mark.parametrize(
     ("line", "expected"),
     (
         ("build", "build"),
         ("cachecontrol[filecache]", "cachecontrol"),
-        ("some-package[a,b]", "some-package"),
+        ("some-package[a-b,c_d]", "some-package"),
+        ("other_package[a.b]", "other-package"),
     ),
 )
-def test_key_no_extra_from_req(req_factory, line, expected):
-    result = key_no_extra_from_req(req_factory(line))
+def test_key_from_req_on_install_requirement(
+    from_line: Callable[[str], InstallRequirement],
+    line: str,
+    expected: str,
+    remove_extras: bool,
+) -> None:
+    ireq = from_line(line)
+    result = key_from_req(ireq, remove_extras=remove_extras)
+
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    ("line", "expected", "remove_extras"),
+    (
+        ("build", "build", False),
+        ("build", "build", True),
+        ("cachecontrol[filecache]", "cachecontrol[filecache]", False),
+        ("cachecontrol[filecache]", "cachecontrol", True),
+        ("some-package[a-b,c_d]", "some-package[a-b,c-d]", False),
+        ("some-package[a-b,c_d]", "some-package", True),
+        ("other_package[a.b]", "other-package[a-b]", False),
+        ("other_package[a.b]", "other-package", True),
+    ),
+)
+def test_key_from_req_on_specifier_requirement(
+    from_line: Callable[[str], InstallRequirement],
+    line: str,
+    expected: str,
+    remove_extras: bool,
+) -> None:
+    req = SpecifierRequirement(from_line(line))
+    result = key_from_req(req, remove_extras=remove_extras)
 
     assert result == expected
 

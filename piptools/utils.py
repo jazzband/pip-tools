@@ -73,18 +73,16 @@ def key_from_ireq(ireq: InstallRequirement) -> str:
         return key_from_req(ireq.req)
 
 
-def key_from_req(req: InstallRequirement | Requirement) -> str:
-    """Get an all-lowercase version of the requirement's name."""
-    return str(canonicalize_name(req.name))
-
-
-def key_no_extra_from_req(
+def key_from_req(
     req: InstallRequirement | Requirement | PipRequirement,
+    *,
+    remove_extras: bool = False,
 ) -> str:
-    """Get an all-lowercase version of the requirement's name without any extras."""
+    """Get an all-lowercase version of the requirement's name."""
     name = req.name
-    package_name = name.split("[", 1)[0]
-    return str(canonicalize_name(package_name))
+    if remove_extras:
+        name = strip_extras(name)
+    return str(canonicalize_name(name))
 
 
 def comment(text: str) -> str:
