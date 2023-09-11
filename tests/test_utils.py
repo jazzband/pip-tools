@@ -289,7 +289,6 @@ def test_key_from_ireq_normalization(from_line):
     assert len(keys) == 1
 
 
-@pytest.mark.parametrize("remove_extras", (True, False))
 @pytest.mark.parametrize(
     ("line", "expected"),
     (
@@ -303,35 +302,29 @@ def test_key_from_req_on_install_requirement(
     from_line: Callable[[str], InstallRequirement],
     line: str,
     expected: str,
-    remove_extras: bool,
 ) -> None:
     ireq = from_line(line)
-    result = key_from_req(ireq, remove_extras=remove_extras)
+    result = key_from_req(ireq)
 
     assert result == expected
 
 
 @pytest.mark.parametrize(
-    ("line", "expected", "remove_extras"),
+    ("line", "expected"),
     (
-        ("build", "build", False),
-        ("build", "build", True),
-        ("cachecontrol[filecache]", "cachecontrol[filecache]", False),
-        ("cachecontrol[filecache]", "cachecontrol", True),
-        ("some-package[a-b,c_d]", "some-package[a-b,c-d]", False),
-        ("some-package[a-b,c_d]", "some-package", True),
-        ("other_package[a.b]", "other-package[a-b]", False),
-        ("other_package[a.b]", "other-package", True),
+        ("build", "build"),
+        ("cachecontrol[filecache]", "cachecontrol[filecache]"),
+        ("some-package[a-b,c_d]", "some-package[a-b,c-d]"),
+        ("other_package[a.b]", "other-package[a-b]"),
     ),
 )
 def test_key_from_req_on_specifier_requirement(
     from_line: Callable[[str], InstallRequirement],
     line: str,
     expected: str,
-    remove_extras: bool,
 ) -> None:
     req = SpecifierRequirement(from_line(line))
-    result = key_from_req(req, remove_extras=remove_extras)
+    result = key_from_req(req)
 
     assert result == expected
 

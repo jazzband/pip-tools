@@ -73,26 +73,21 @@ def key_from_ireq(ireq: InstallRequirement) -> str:
         return key_from_req(ireq.req)
 
 
-def key_from_req(
-    req: InstallRequirement | Requirement | PipRequirement,
-    *,
-    remove_extras: bool = False,
-) -> str:
+def key_from_req(req: InstallRequirement | Requirement | PipRequirement) -> str:
     """
     Get an all-lowercase version of the requirement's name.
 
+    **Note:** If the argument is an instance of
+    ``pip._internal.resolution.resolvelib.base.Requirement`` (like
+    ``pip._internal.resolution.resolvelib.requirements.SpecifierRequirement``),
+    then the name might include an extras specification.
+    Apply :py:func:`strip_extras` to the result of this function if you need
+    the package name only.
+
     :param req: the requirement the key is computed for
-    :param remove_extras: if this parameter evaluates as ``True``,
-                          then any extras specification that is
-                          part of the requirement's name is stripped
-                          off the result.
-    :return: the canonical name of the requirement, optionally
-             with any extras specification removed
+    :return: the canonical name of the requirement
     """
-    name = req.name
-    if remove_extras:
-        name = strip_extras(name)
-    return str(canonicalize_name(name))
+    return str(canonicalize_name(req.name))
 
 
 def comment(text: str) -> str:
