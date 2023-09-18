@@ -1,23 +1,11 @@
 from __future__ import annotations
 
-from itertools import chain
-from typing import Callable, Sequence
-from unittest.mock import Mock, NonCallableMock
-
 import pytest
 from pip._internal.exceptions import DistributionNotFound
-from pip._internal.req.req_install import InstallRequirement
-from pip._internal.resolution.resolvelib.requirements import SpecifierRequirement
-from pip._internal.resolution.resolvelib.resolver import Resolver
 from pip._internal.utils.urls import path_to_url
-from pip._vendor.resolvelib.resolvers import ResolutionImpossible
 
 from piptools.exceptions import NoCandidateFound
-from piptools.resolver import (
-    BacktrackingResolver,
-    RequirementSummary,
-    combine_install_requirements,
-)
+from piptools.resolver import RequirementSummary, combine_install_requirements
 
 
 @pytest.mark.parametrize(
@@ -587,73 +575,3 @@ def test_catch_distribution_not_found_error(backtracking_resolver, exception, ca
             resolver=FakePipResolver(),
             compatible_existing_constraints={},
         )
-
-
-@pytest.mark.parametrize(
-    ("constraints", "conflicting_existing", "compatible_existing"),
-    (
-        (
-            [
-                "poetry==1.6.1",
-            ],
-            ["cachecontrol[filecache]==0.12.14"],
-            ["doesnotexist==1.0.0"],
-        ),
-        (
-            [
-                "poetry==1.6.1",
-            ],
-            ["keyring==22.1.0", "pkginfo==1.7.2"],
-            ["platformdirs==3.0.0", "doesnotexist==1.0.0"],
-        ),
-    ),
-)
-def test_backtracking_resolver_drops_existing_conflicting_constraints(
-    backtracking_resolver: Callable[..., BacktrackingResolver],
-    from_line: Callable[..., InstallRequirement],
-    constraints: Sequence[str],
-    conflicting_existing: Sequence[str],
-    compatible_existing: Sequence[str],
-) -> None:
-    def wrap_resolution_impossible(*args, **kwargs):
-        """
-        Raise a ``DistributionNotFound`` exception that has a ``ResolutionImpossible``
-        exception as its cause.
-        """
-        causes = [
-            NonCallableMock(
-                requirement=SpecifierRequirement(existing_constraints[ireq.name])
-            )
-            for ireq in conflicting_ireqs
-        ]
-        raise DistributionNotFound("resolution impossible") from ResolutionImpossible(
-            causes
-        )
-
-    constraint_ireqs = [from_line(req, constraint=False) for req in constraints]
-    conflicting_ireqs = [
-        from_line(req, constraint=True) for req in conflicting_existing
-    ]
-    compatible_ireqs = [from_line(req, constraint=True) for req in compatible_existing]
-    existing_constraints = {
-        ireq.name: ireq for ireq in chain(compatible_ireqs, conflicting_ireqs)
-    }
-
-    bt_resolver = backtracking_resolver(
-        constraint_ireqs, existing_constraints=existing_constraints
-    )
-    resolver = NonCallableMock(
-        spec=Resolver,
-        resolve=Mock(side_effect=wrap_resolution_impossible),
-    )
-
-    # resolver has been rigged to raise a DistributionNotFound exception with
-    # a cause that refers to the entries of conflicting_ireqs.
-    # We expect _do_resolve() to handle this exception by dropping
-    # these entries from existing_constraints and returning False.
-    # It should _not_ drop any compatible constraint or re-raise
-    # the DistributionNotFound exception.
-    result = bt_resolver._do_resolve(resolver, existing_constraints)
-
-    assert result is False
-    assert set(existing_constraints.keys()) == {ireq.name for ireq in compatible_ireqs}

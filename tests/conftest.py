@@ -44,7 +44,12 @@ from piptools.utils import (
 )
 
 from .constants import MINIMAL_WHEELS_PATH, TEST_DATA_PATH
-from .utils import looks_like_ci
+from .utils import (
+    MakePackageProtocol,
+    MakeSDistProtocol,
+    RunSetupFileProtocol,
+    looks_like_ci,
+)
 
 
 @dataclass
@@ -287,7 +292,7 @@ def pip_with_index_conf(make_pip_conf):
 
 
 @pytest.fixture(scope="session")
-def make_package(tmp_path_factory):
+def make_package(tmp_path_factory: pytest.TempPathFactory) -> MakePackageProtocol:
     """
     Make a package from a given name, version and list of required packages.
     """
@@ -333,12 +338,14 @@ def make_package(tmp_path_factory):
 
 
 @pytest.fixture(scope="session")
-def run_setup_file():
+def run_setup_file() -> RunSetupFileProtocol:
     """
     Run a setup.py file from a given package dir.
     """
 
-    def _run_setup_file(package_dir_path, *args):
+    def _run_setup_file(
+        package_dir_path: Path, *args: str
+    ) -> subprocess.CompletedProcess[bytes]:
         setup_file = package_dir_path / "setup.py"
         return subprocess.run(
             [sys.executable, str(setup_file), *args],
@@ -365,12 +372,14 @@ def make_wheel(run_setup_file):
 
 
 @pytest.fixture
-def make_sdist(run_setup_file):
+def make_sdist(run_setup_file: RunSetupFileProtocol) -> MakeSDistProtocol:
     """
     Make a source distribution from a given package dir.
     """
 
-    def _make_sdist(package_dir, dist_dir, *args):
+    def _make_sdist(
+        package_dir: Path, dist_dir: str | Path, *args: str
+    ) -> subprocess.CompletedProcess[bytes]:
         return run_setup_file(package_dir, "sdist", "--dist-dir", str(dist_dir), *args)
 
     return _make_sdist
