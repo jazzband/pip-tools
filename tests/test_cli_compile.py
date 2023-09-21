@@ -5,12 +5,10 @@ import os
 import shutil
 import subprocess
 import sys
-from pathlib import Path
 from textwrap import dedent
 from unittest import mock
 
 import pytest
-from click.testing import CliRunner
 from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.urls import path_to_url
 
@@ -18,7 +16,6 @@ from piptools.scripts.compile import cli
 from piptools.utils import COMPILE_EXCLUDE_OPTIONS
 
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
-from .utils import MakePackageArgs, MakePackageProtocol, MakeSDistProtocol
 
 legacy_resolver_only = pytest.mark.parametrize(
     "current_resolver",
@@ -2872,14 +2869,14 @@ def test_cli_compile_strip_extras(runner, make_package, make_sdist, tmpdir):
     ids=("no-extra", "extra-stripped-from-existing", "with-extra-in-existing"),
 )
 def test_resolver_drops_existing_conflicting_constraint(
-    runner: CliRunner,
-    make_package: MakePackageProtocol,
-    make_sdist: MakeSDistProtocol,
-    tmpdir: Path,
-    package_specs: list[MakePackageArgs],
-    constraints: str,
-    existing_reqs: str,
-    expected_reqs: str,
+    runner,
+    make_package,
+    make_sdist,
+    tmpdir,
+    package_specs,
+    constraints,
+    existing_reqs,
+    expected_reqs,
 ) -> None:
     """
     Test that the resolver will find a solution even if some of the existing
