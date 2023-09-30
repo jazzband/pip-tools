@@ -648,7 +648,8 @@ class BacktrackingResolver(BaseResolver):
 
             # Collect all incompatible install requirement names
             cause_ireq_names = {
-                key_from_req(cause.requirement) for cause in cause_exc.causes
+                strip_extras(key_from_req(cause.requirement))
+                for cause in cause_exc.causes
             }
 
             # Looks like resolution is impossible, try to fix

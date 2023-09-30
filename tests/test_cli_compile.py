@@ -2779,6 +2779,139 @@ def test_cli_compile_strip_extras(runner, make_package, make_sdist, tmpdir):
     assert "[more]" not in out.stderr
 
 
+@pytest.mark.parametrize(
+    ("package_specs", "constraints", "existing_reqs", "expected_reqs"),
+    (
+        (
+            [
+                {
+                    "name": "test_package_1",
+                    "version": "1.1",
+                    "install_requires": ["test_package_2 ~= 1.1"],
+                },
+                {
+                    "name": "test_package_2",
+                    "version": "1.1",
+                    "extras_require": {"more": "test_package_3"},
+                },
+            ],
+            """
+            test_package_1 == 1.1
+            """,
+            """
+            test_package_1 == 1.0
+            test_package_2 == 1.0
+            """,
+            """
+            test-package-1==1.1
+            test-package-2==1.1
+            """,
+        ),
+        (
+            [
+                {
+                    "name": "test_package_1",
+                    "version": "1.1",
+                    "install_requires": ["test_package_2[more] ~= 1.1"],
+                },
+                {
+                    "name": "test_package_2",
+                    "version": "1.1",
+                    "extras_require": {"more": "test_package_3"},
+                },
+                {
+                    "name": "test_package_3",
+                    "version": "0.1",
+                },
+            ],
+            """
+            test_package_1 == 1.1
+            """,
+            """
+            test_package_1 == 1.0
+            test_package_2 == 1.0
+            test_package_3 == 0.1
+            """,
+            """
+            test-package-1==1.1
+            test-package-2==1.1
+            test-package-3==0.1
+            """,
+        ),
+        (
+            [
+                {
+                    "name": "test_package_1",
+                    "version": "1.1",
+                    "install_requires": ["test_package_2[more] ~= 1.1"],
+                },
+                {
+                    "name": "test_package_2",
+                    "version": "1.1",
+                    "extras_require": {"more": "test_package_3"},
+                },
+                {
+                    "name": "test_package_3",
+                    "version": "0.1",
+                },
+            ],
+            """
+            test_package_1 == 1.1
+            """,
+            """
+            test_package_1 == 1.0
+            test_package_2[more] == 1.0
+            test_package_3 == 0.1
+            """,
+            """
+            test-package-1==1.1
+            test-package-2==1.1
+            test-package-3==0.1
+            """,
+        ),
+    ),
+    ids=("no-extra", "extra-stripped-from-existing", "with-extra-in-existing"),
+)
+def test_resolver_drops_existing_conflicting_constraint(
+    runner,
+    make_package,
+    make_sdist,
+    tmpdir,
+    package_specs,
+    constraints,
+    existing_reqs,
+    expected_reqs,
+) -> None:
+    """
+    Test that the resolver will find a solution even if some of the existing
+    (indirect) requirements are incompatible with the new constraints.
+
+    This must succeed even if the conflicting requirement includes some extra,
+    no matter whether the extra is mentioned in the existing requirements
+    or not (cf. `issue #1977 <https://github.com/jazzband/pip-tools/issues/1977>`_).
+    """
+    expected_requirements = {line.strip() for line in expected_reqs.splitlines()}
+    dists_dir = tmpdir / "dists"
+
+    packages = [make_package(**spec) for spec in package_specs]
+    for pkg in packages:
+        make_sdist(pkg, dists_dir)
+
+    with open("requirements.txt", "w") as existing_reqs_out:
+        existing_reqs_out.write(dedent(existing_reqs))
+
+    with open("requirements.in", "w") as constraints_out:
+        constraints_out.write(dedent(constraints))
+
+    out = runner.invoke(cli, ["--strip-extras", "--find-links", str(dists_dir)])
+
+    assert out.exit_code == 0, out
+
+    with open("requirements.txt") as req_txt:
+        req_txt_content = req_txt.read()
+        assert expected_requirements.issubset(req_txt_content.splitlines())
+
+
 def test_resolution_failure(runner):
     """Test resolution impossible for unknown package."""
     with open("requirements.in", "w") as reqs_out:

@@ -95,6 +95,7 @@ exclude = "^tests/test_data/"
 [[tool.mypy.overrides]]
 module = ["tests.*"]
 disallow_untyped_defs = false
+disallow_incomplete_defs = false
 
 [tool.pytest.ini_options]
 addopts = [

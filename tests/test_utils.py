@@ -7,10 +7,13 @@ import shlex
 import sys
 from pathlib import Path
 from textwrap import dedent
+from typing import Callable
 
 import pip
 import pytest
 from click import BadOptionUsage, Context, FileError
+from pip._internal.req import InstallRequirement
+from pip._internal.resolution.resolvelib.requirements import SpecifierRequirement
 from pip._vendor.packaging.version import Version
 
 from piptools.scripts.compile import cli as compile_cli
@@ -29,6 +32,7 @@ from piptools.utils import (
     is_pinned_requirement,
     is_url_requirement,
     key_from_ireq,
+    key_from_req,
     lookup_table,
     lookup_table_from_tuples,
     override_defaults_from_config_file,
@@ -283,6 +287,46 @@ def test_key_from_ireq_normalization(from_line):
     for line in ("zope.event", "zope-event", "zope_event", "ZOPE.event"):
         keys.add(key_from_ireq(from_line(line)))
     assert len(keys) == 1
+
+
+@pytest.mark.parametrize(
+    ("line", "expected"),
+    (
+        ("build", "build"),
+        ("cachecontrol[filecache]", "cachecontrol"),
+        ("some-package[a-b,c_d]", "some-package"),
+        ("other_package[a.b]", "other-package"),
+    ),
+)
+def test_key_from_req_on_install_requirement(
+    from_line: Callable[[str], InstallRequirement],
+    line: str,
+    expected: str,
+) -> None:
+    ireq = from_line(line)
+    result = key_from_req(ireq)
+
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    ("line", "expected"),
+    (
+        ("build", "build"),
+        ("cachecontrol[filecache]", "cachecontrol[filecache]"),
+        ("some-package[a-b,c_d]", "some-package[a-b,c-d]"),
+        ("other_package[a.b]", "other-package[a-b]"),
+    ),
+)
+def test_key_from_req_on_specifier_requirement(
+    from_line: Callable[[str], InstallRequirement],
+    line: str,
+    expected: str,
+) -> None:
+    req = SpecifierRequirement(from_line(line))
+    result = key_from_req(req)
+
+    assert result == expected
 
 
 @pytest.mark.parametrize(
