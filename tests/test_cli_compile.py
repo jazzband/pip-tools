@@ -11,9 +11,13 @@ from unittest import mock
 import pytest
 from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.urls import path_to_url
+from pip._vendor.packaging.version import Version
 
 from piptools.scripts.compile import cli
-from piptools.utils import COMPILE_EXCLUDE_OPTIONS
+from piptools.utils import (
+    COMPILE_EXCLUDE_OPTIONS,
+    get_pip_version_for_python_executable,
+)
 
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
 
@@ -2925,7 +2929,14 @@ def test_pass_pip_cache_to_pip_args(tmpdir, runner, current_resolver):
         cli, ["--cache-dir", str(cache_dir), "--resolver", current_resolver]
     )
     assert out.exit_code == 0
-    assert os.listdir(os.path.join(str(cache_dir), "http"))
+    # TODO: Remove hack once testing only on v23.3+
+    pip_current_version = get_pip_version_for_python_executable(sys.executable)
+    pip_breaking_version = Version("23.3.dev0")
+    if pip_current_version >= pip_breaking_version:
+        pip_http_cache_dir = "http-v2"
+    else:
+        pip_http_cache_dir = "http"
+    assert os.listdir(os.path.join(str(cache_dir), pip_http_cache_dir))
 
 
 @backtracking_resolver_only
