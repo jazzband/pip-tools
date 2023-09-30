@@ -550,6 +550,7 @@ on each targeted Python environment to avoid issues.
 
 ### Other useful tools
 
+- [pip-compile-multi](https://pip-compile-multi.readthedocs.io/en/latest/) - pip-compile command wrapper for multiple cross-referencing requirements files.
 - [pipdeptree](https://github.com/tox-dev/pipdeptree) to print the dependency tree of the installed packages.
 - `requirements.in`/`requirements.txt` syntax highlighting:
 
