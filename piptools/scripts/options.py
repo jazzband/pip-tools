@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 from typing import Any
 
 import click
@@ -8,6 +9,10 @@ from pip._internal.utils.misc import redact_auth_from_url
 
 from piptools.locations import CACHE_DIR, DEFAULT_CONFIG_FILE_NAMES
 from piptools.utils import UNSAFE_PACKAGES, override_defaults_from_config_file
+
+EXTRA_OPTION = "--extra"
+ALL_EXTRAS_OPTION = "--all-extras"
+ONLY_EXTRA_OPTION = "--only-extra"
 
 
 def _get_default_option(option_name: str) -> Any:
@@ -18,6 +23,12 @@ def _get_default_option(option_name: str) -> Any:
     install_command = create_command("install")
     default_values = install_command.parser.get_default_values()
     return getattr(default_values, option_name)
+
+
+def _flatten_comma_separated_values(
+    ctx: click.Context, param: click.Parameter, value: tuple[str, ...]
+) -> tuple[str, ...]:
+    return tuple(itertools.chain.from_iterable(v.split(",") for v in value))
 
 
 help_option_names = ("-h", "--help")
@@ -62,14 +73,15 @@ rebuild = click.option(
 )
 
 extra = click.option(
-    "--extra",
+    EXTRA_OPTION,
     "extras",
     multiple=True,
+    callback=_flatten_comma_separated_values,
     help="Name of an extras_require group to install; may be used more than once",
 )
 
 all_extras = click.option(
-    "--all-extras",
+    ALL_EXTRAS_OPTION,
     is_flag=True,
     default=False,
     help="Install all extras_require groups",
@@ -363,4 +375,12 @@ user = click.option(
     "user_only",
     is_flag=True,
     help="Restrict attention to user directory",
+)
+
+only_extra = click.option(
+    ONLY_EXTRA_OPTION,
+    "only_extras",
+    multiple=True,
+    callback=_flatten_comma_separated_values,
+    help="Name of the only extras_require group to install; may be used more than once",
 )
