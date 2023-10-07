@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 import sys
+import venv
 from textwrap import dedent
 from unittest import mock
 
@@ -32,6 +33,12 @@ backtracking_resolver_only = pytest.mark.parametrize(
     ("backtracking",),
     indirect=("current_resolver",),
 )
+
+
+@pytest.fixture(autouse=True)
+def mock_run():
+    with mock.patch("piptools.scripts.compile.run") as mock_run:
+        yield mock_run
 
 
 @pytest.fixture(
@@ -3290,3 +3297,11 @@ def test_do_not_show_warning_on_explicit_strip_extras_option(
 
     assert out.exit_code == 0
     assert strip_extras_warning not in out.stderr
+
+
+@mock.patch("piptools.scripts.compile.cli_runner")
+def test_pip_compile_run_with_env_python(mock_cli_runner, mock_run, runner, tmpdir):
+    venv.EnvBuilder(with_pip=True, symlinks=True).create(tmpdir)
+    runner.invoke(cli, ["--verbose"], env={"PATH": f"{tmpdir}/bin"})
+    mock_run.assert_called()
+    mock_cli_runner.assert_not_called()
