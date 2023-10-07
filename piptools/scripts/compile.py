@@ -12,14 +12,13 @@ from subprocess import run  # nosec
 from typing import IO, Any, BinaryIO, cast
 
 import click
+from build import BuildBackendException
 from build.util import project_wheel_metadata
 from click.utils import LazyFile, safecall
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 from pyproject_hooks import default_subprocess_runner, quiet_subprocess_runner
-
-from build import BuildBackendException
 
 from .._compat import parse_requirements
 from ..cache import DependencyCache
