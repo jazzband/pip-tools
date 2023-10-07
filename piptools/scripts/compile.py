@@ -3,9 +3,12 @@ from __future__ import annotations
 import itertools
 import os
 import shlex
+import shutil
 import sys
 import tempfile
+import typing
 from pathlib import Path
+from subprocess import run  # nosec
 from typing import IO, Any, BinaryIO, cast
 
 import click
@@ -79,9 +82,9 @@ def _determine_linesep(
 )
 @click.pass_context
 @options.version
-@options.color
 @options.verbose
 @options.quiet
+@options.color
 @options.dry_run
 @options.pre
 @options.rebuild
@@ -122,11 +125,69 @@ def _determine_linesep(
 @options.build_deps_for
 @options.all_build_deps
 @options.only_build_deps
+@typing.no_type_check
 def cli(
-    ctx: click.Context,
-    color: bool | None,
+    *args,
     verbose: int,
     quiet: int,
+    **kwargs,
+):
+    """
+    Compiles requirements.txt from requirements.in, pyproject.toml, setup.cfg,
+    or setup.py specs.
+    """
+    log.verbosity = verbose - quiet
+    current_python = sys.executable
+    log.debug(f"{current_python=}")
+    env_python = shutil.which("python")
+    log.debug(f"{env_python=}")
+    if current_python != env_python:
+        # pip-tools probably installed globally (e.g. via pipx)
+        # install pip-tools in a venv made by env_python and run it there
+        click.echo("Installing pip-tools in temporary venv...", err=True)
+        with tempfile.TemporaryDirectory(prefix="pip-tools-env-") as venv_path:
+            log.debug(f"Installing venv at {venv_path}")
+            run(  # nosec
+                [
+                    env_python,
+                    "-m",
+                    "venv",
+                    venv_path,
+                ],
+                capture_output=(not log.verbosity),
+                check=True,
+            )
+            temp_python = venv_path + "/bin/python"
+            log.debug(f"{temp_python=}")
+            run(  # nosec
+                [
+                    temp_python,
+                    "-m",
+                    "pip",
+                    "install",
+                    "pip-tools",  # TODO fix to this version of pip-tools?
+                ],
+                capture_output=(not log.verbosity),
+                check=True,
+            )
+            env = {**os.environ, "PATH": f"{venv_path}/bin:{os.environ['PATH']}"}
+            run(  # nosec
+                [
+                    "pip-compile",
+                    *sys.argv[1:],
+                ],
+                env=env,
+            )
+    else:
+        # pip-tools running in current env python
+        cli_runner(*args, verbose, quiet, **kwargs)
+
+
+def cli_runner(
+    ctx: click.Context,
+    verbose: int,
+    quiet: int,
+    color: bool | None,
     dry_run: bool,
     pre: bool,
     rebuild: bool,
