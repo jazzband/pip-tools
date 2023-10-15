@@ -136,7 +136,7 @@ def _prepare_requirements(
             # string so that pip can find the package as self-referential.
             # Note the string can contain extras, so we need to replace only
             # the package name, not the whole string.
-            replaced_package_name = req.replace(package_name, package_dir, 1)
+            replaced_package_name = req.replace(package_name, str(package_dir), 1)
             parts = parse_req_from_line(replaced_package_name, comes_from)
 
         yield InstallRequirement(

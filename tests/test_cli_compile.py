@@ -11,7 +11,6 @@ from unittest import mock
 from unittest.mock import MagicMock
 
 import pytest
-from pytest import MonkeyPatch
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.urls import path_to_url
@@ -2745,7 +2744,7 @@ def test_all_extras_fail_with_extra(fake_dists, runner, make_module, fname, cont
     assert exp in out.stderr
 
 
-def _mock_resolver_cls(monkeypatch: MonkeyPatch) -> MagicMock:
+def _mock_resolver_cls(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     obj = MagicMock()
     obj.resolve = MagicMock(return_value=set())
     obj.resolve_hashes = MagicMock(return_value=dict())
@@ -2757,7 +2756,7 @@ def _mock_resolver_cls(monkeypatch: MonkeyPatch) -> MagicMock:
     return cls
 
 
-def _mock_build_project_metadata(monkeypatch: MonkeyPatch) -> MagicMock:
+def _mock_build_project_metadata(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     func = MagicMock(
         return_value=ProjectMetadata(
             extras=("e",),
