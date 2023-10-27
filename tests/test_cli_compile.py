@@ -3290,3 +3290,53 @@ def test_do_not_show_warning_on_explicit_strip_extras_option(
 
     assert out.exit_code == 0
     assert strip_extras_warning not in out.stderr
+
+
+def test_origin_of_extra_requirement_not_written_to_annotations(
+    pip_conf, runner, make_package, make_wheel, tmp_path, tmpdir
+):
+    req_in = tmp_path / "requirements.in"
+    package_with_extras = make_package(
+        "package_with_extras",
+        version="0.1",
+        extras_require={
+            "extra1": ["small-fake-a==0.1"],
+            "extra2": ["small-fake-b==0.1"],
+        },
+    )
+
+    dists_dir = tmpdir / "dists"
+    make_wheel(package_with_extras, dists_dir)
+
+    with open(req_in, "w") as req_out:
+        req_out.write("package-with-extras[extra1,extra2]")
+
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--no-header",
+            "--find-links",
+            str(dists_dir),
+            "--no-emit-options",
+            "--no-build-isolation",
+            req_in.as_posix(),
+        ],
+    )
+
+    assert out.exit_code == 0, out
+    assert (
+        dedent(
+            f"""\
+        package-with-extras[extra1,extra2]==0.1
+            # via -r {req_in.as_posix()}
+        small-fake-a==0.1
+            # via package-with-extras
+        small-fake-b==0.1
+            # via package-with-extras
+        """
+        )
+        == out.stdout
+    )

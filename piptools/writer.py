@@ -295,8 +295,11 @@ class OutputWriter:
                 if src_ireq.comes_from
             }
 
-        # Filter out the origin install requirements for extras. See https://github.com/jazzband/pip-tools/issues/2003
-        if ireq.comes_from and (isinstance(ireq.comes_from, str) or ireq.comes_from.name != ireq.name):
+        # Filter out the origin install requirements for extras.
+        # See https://github.com/jazzband/pip-tools/issues/2003
+        if ireq.comes_from and (
+            isinstance(ireq.comes_from, str) or ireq.comes_from.name != ireq.name
+        ):
             required_by.add(_comes_from_as_string(ireq.comes_from))
 
         required_by |= set(getattr(ireq, "_required_by", set()))
