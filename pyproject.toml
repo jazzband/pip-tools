@@ -37,9 +37,9 @@ keywords = ["pip", "requirements", "packaging"]
 dependencies = [
   # direct dependencies
   "build >= 1.0.0",
-  "pyproject_hooks",
   "click >= 8",
   "pip >= 22.2",
+  "pyproject_hooks",
   "tomli; python_version < '3.11'",
   # indirect dependencies
   "setuptools", # typically needed when pip-tools invokes setup.py

@@ -35,6 +35,7 @@ repos:
           - build==1.0.0
           - pyproject_hooks==1.0.0
           - pytest==7.4.2
+        language_version: python3.8
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.5
     hooks:

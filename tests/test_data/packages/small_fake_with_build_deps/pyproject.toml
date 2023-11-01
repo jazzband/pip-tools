@@ -1,0 +1,8 @@
+[build-system]
+requires = [
+    "setuptools==68.1.2",
+    "wheel==0.41.1",
+    "fake_static_build_dep"
+]
+build-backend = "backend"
+backend-path = ["backend"]
