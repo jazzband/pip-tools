@@ -15,7 +15,7 @@ import pyproject_hooks
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import parse_req_from_line
 
-from ._compat import canonicalize_ireq, install_req_from_line
+from .utils import canonicalize_ireq, install_req_from_line
 
 PYPROJECT_TOML = "pyproject.toml"
 
@@ -139,15 +139,15 @@ def _prepare_requirements(
             replaced_package_name = req.replace(package_name, str(package_dir), 1)
             parts = parse_req_from_line(replaced_package_name, comes_from)
 
-        ireq = InstallRequirement(
-            parts.requirement,
-            comes_from,
-            link=parts.link,
-            markers=parts.markers,
-            extras=parts.extras,
+        yield canonicalize_ireq(
+            InstallRequirement(
+                parts.requirement,
+                comes_from,
+                link=parts.link,
+                markers=parts.markers,
+                extras=parts.extras,
+            )
         )
-        canonicalize_ireq(ireq)
-        yield ireq
 
 
 def _prepare_build_requirements(

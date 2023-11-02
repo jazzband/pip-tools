@@ -20,8 +20,12 @@ else:
     import tomli as tomllib
 
 import click
+import pip
 from click.utils import LazyFile
 from pip._internal.req import InstallRequirement
+from pip._internal.req.constructors import (
+    install_req_from_line as _install_req_from_line,
+)
 from pip._internal.resolution.resolvelib.base import Requirement as PipRequirement
 from pip._internal.utils.misc import redact_auth_from_url
 from pip._internal.vcs import is_url
@@ -30,9 +34,9 @@ from pip._vendor.packaging.requirements import Requirement
 from pip._vendor.packaging.specifiers import SpecifierSet
 from pip._vendor.packaging.utils import canonicalize_name
 from pip._vendor.packaging.version import Version
+from pip._vendor.packaging.version import parse as parse_version
 from pip._vendor.pkg_resources import get_distribution
 
-from piptools._compat import PIP_VERSION, install_req_from_line
 from piptools.locations import DEFAULT_CONFIG_FILE_NAMES
 from piptools.subprocess_utils import run_python_snippet
 
@@ -40,6 +44,8 @@ _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
 _T = TypeVar("_T")
 _S = TypeVar("_S")
+
+PIP_VERSION = tuple(map(int, parse_version(pip.__version__).base_version.split(".")))
 
 UNSAFE_PACKAGES = {"setuptools", "distribute", "pip"}
 COMPILE_EXCLUDE_OPTIONS = {
@@ -85,6 +91,22 @@ def key_from_req(req: InstallRequirement | Requirement | PipRequirement) -> str:
 
 def comment(text: str) -> str:
     return click.style(text, fg="green")
+
+
+def canonicalize_ireq(ireq: InstallRequirement) -> InstallRequirement:
+    """
+    Return a copy of ireq with canonicalized extras strings
+    """
+    ireq = copy_install_requirement(
+        ireq, extras=set(map(canonicalize_name, ireq.extras))
+    )
+    if ireq.req:
+        ireq.req.extras = set(ireq.extras)
+    return ireq
+
+
+def install_req_from_line(*args: Any, **kwargs: Any) -> InstallRequirement:
+    return canonicalize_ireq(_install_req_from_line(*args, **kwargs))
 
 
 def make_install_requirement(

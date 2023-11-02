@@ -28,7 +28,7 @@ from pip._internal.utils.direct_url_helpers import direct_url_from_link
 from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Requirement
 
-from piptools._compat import PIP_VERSION, Distribution
+from piptools._compat import Distribution
 from piptools.cache import DependencyCache
 from piptools.exceptions import NoCandidateFound
 from piptools.locations import DEFAULT_CONFIG_FILE_NAMES
@@ -37,6 +37,7 @@ from piptools.repositories import PyPIRepository
 from piptools.repositories.base import BaseRepository
 from piptools.resolver import BacktrackingResolver, LegacyResolver
 from piptools.utils import (
+    PIP_VERSION,
     as_tuple,
     is_url_requirement,
     key_from_ireq,
