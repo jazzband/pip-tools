@@ -14,7 +14,6 @@ from pip._internal.operations.build.build_tracker import (
     update_env_context_manager,
 )
 from pip._internal.req import InstallRequirement
-from pip._internal.req.constructors import install_req_from_line
 from pip._internal.resolution.resolvelib.base import Candidate
 from pip._internal.resolution.resolvelib.candidates import ExtrasCandidate
 from pip._internal.resolution.resolvelib.resolver import Resolver
@@ -27,7 +26,7 @@ from pip._vendor.resolvelib.resolvers import ResolutionImpossible, Result
 from piptools.cache import DependencyCache
 from piptools.repositories.base import BaseRepository
 
-from ._compat import create_wheel_cache
+from ._compat import create_wheel_cache, install_req_from_line
 from .exceptions import PipToolsError
 from .logging import log
 from .utils import (

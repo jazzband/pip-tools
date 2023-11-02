@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import optparse
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Iterable, Iterator, Set, cast
+from typing import TYPE_CHECKING, Any, Iterable, Iterator, Set, cast
 
 import pip
 from pip._internal.cache import WheelCache
@@ -13,7 +13,11 @@ from pip._internal.models.direct_url import DirectUrl
 from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement
 from pip._internal.req import parse_requirements as _parse_requirements
+from pip._internal.req.constructors import (
+    install_req_from_line as _install_req_from_line,
+)
 from pip._internal.req.constructors import install_req_from_parsed_requirement
+from pip._vendor.packaging.utils import canonicalize_name
 from pip._vendor.packaging.version import parse as parse_version
 from pip._vendor.pkg_resources import Requirement
 
@@ -63,6 +67,19 @@ class Distribution:
         return cls(dist._dist.name, dist._dist.version, requires, dist.direct_url)
 
 
+def canonicalize_ireq(ireq: InstallRequirement) -> None:
+    if hasattr(ireq.req, "extras") and ireq.req.extras:
+        ireq.req.extras = set(map(canonicalize_name, ireq.req.extras))
+    if hasattr(ireq, "extras") and ireq.extras:
+        ireq.extras = set(map(canonicalize_name, ireq.extras))
+
+
+def install_req_from_line(*args: Any, **kwargs: Any) -> InstallRequirement:
+    ireq = _install_req_from_line(*args, **kwargs)
+    canonicalize_ireq(ireq)
+    return ireq
+
+
 def parse_requirements(
     filename: str,
     session: PipSession,
@@ -74,7 +91,9 @@ def parse_requirements(
     for parsed_req in _parse_requirements(
         filename, session, finder=finder, options=options, constraint=constraint
     ):
-        yield install_req_from_parsed_requirement(parsed_req, isolated=isolated)
+        ireq = install_req_from_parsed_requirement(parsed_req, isolated=isolated)
+        canonicalize_ireq(ireq)
+        yield ireq
 
 
 def create_wheel_cache(cache_dir: str, format_control: str | None = None) -> WheelCache:
