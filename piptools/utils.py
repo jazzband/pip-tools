@@ -703,9 +703,12 @@ def _invert_negative_bool_options_in_config(
         long_option = _convert_to_long_option(key)
         new_key = cli_opts[long_option].name if long_option in cli_opts else key
         negative_option_prefix = "no_"
-        if new_key.startswith(negative_option_prefix):
-            new_key = new_key[len(negative_option_prefix):]
         assert new_key is not None
+        if (
+            new_key.startswith(negative_option_prefix)
+            and long_option not in ONLY_NEGATIVE_OPTIONS
+        ):
+            new_key = new_key[len(negative_option_prefix) :]
 
         # Invert negative boolean according to the CLI
         new_value = (
