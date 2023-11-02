@@ -14,7 +14,7 @@ from click.utils import LazyFile, safecall
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.misc import redact_auth_from_url
 
-from .._compat import install_req_from_line, parse_requirements
+from .._compat import parse_requirements
 from ..build import ProjectMetadata, build_project_metadata
 from ..cache import DependencyCache
 from ..exceptions import NoCandidateFound, PipToolsError
@@ -22,7 +22,13 @@ from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..repositories.base import BaseRepository
 from ..resolver import BacktrackingResolver, LegacyResolver
-from ..utils import dedup, drop_extras, is_pinned_requirement, key_from_ireq
+from ..utils import (
+    dedup,
+    drop_extras,
+    install_req_from_line,
+    is_pinned_requirement,
+    key_from_ireq,
+)
 from ..writer import OutputWriter
 from . import options
 from .options import BuildTargetT

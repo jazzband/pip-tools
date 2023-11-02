@@ -26,7 +26,7 @@ from pip._vendor.resolvelib.resolvers import ResolutionImpossible, Result
 from piptools.cache import DependencyCache
 from piptools.repositories.base import BaseRepository
 
-from ._compat import create_wheel_cache, install_req_from_line
+from ._compat import create_wheel_cache
 from .exceptions import PipToolsError
 from .logging import log
 from .utils import (
@@ -35,6 +35,7 @@ from .utils import (
     copy_install_requirement,
     format_requirement,
     format_specifier,
+    install_req_from_line,
     is_pinned_requirement,
     is_url_requirement,
     key_from_ireq,

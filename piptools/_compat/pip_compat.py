@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import optparse
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Iterable, Iterator, Set, cast
+from typing import TYPE_CHECKING, Iterable, Iterator, Set, cast
 
-import pip
 from pip._internal.cache import WheelCache
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.metadata import BaseDistribution
@@ -14,15 +13,8 @@ from pip._internal.models.link import Link
 from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement
 from pip._internal.req import parse_requirements as _parse_requirements
-from pip._internal.req.constructors import (
-    install_req_from_line as _install_req_from_line,
-)
 from pip._internal.req.constructors import install_req_from_parsed_requirement
-from pip._vendor.packaging.utils import canonicalize_name
-from pip._vendor.packaging.version import parse as parse_version
 from pip._vendor.pkg_resources import Requirement
-
-PIP_VERSION = tuple(map(int, parse_version(pip.__version__).base_version.split(".")))
 
 # The Distribution interface has changed between pkg_resources and
 # importlib.metadata, so this compat layer allows for a consistent access
@@ -30,6 +22,8 @@ PIP_VERSION = tuple(map(int, parse_version(pip.__version__).base_version.split("
 # (and later), but is overridable. `select_backend` returns what's being used.
 if TYPE_CHECKING:
     from pip._internal.metadata.importlib import Distribution as _ImportLibDist
+
+from ..utils import PIP_VERSION, canonicalize_ireq
 
 
 @dataclass(frozen=True)
@@ -75,19 +69,6 @@ class FileLink(Link):  # type: ignore[misc]
     def file_path(self) -> str:
         # overriding the actual property to bypass some validation
         return self._url
-
-
-def canonicalize_ireq(ireq: InstallRequirement) -> None:
-    if hasattr(ireq.req, "extras") and ireq.req.extras:
-        ireq.req.extras = set(map(canonicalize_name, ireq.req.extras))
-    if hasattr(ireq, "extras") and ireq.extras:
-        ireq.extras = set(map(canonicalize_name, ireq.extras))
-
-
-def install_req_from_line(*args: Any, **kwargs: Any) -> InstallRequirement:
-    ireq = _install_req_from_line(*args, **kwargs)
-    canonicalize_ireq(ireq)
-    return ireq
 
 
 def parse_requirements(
