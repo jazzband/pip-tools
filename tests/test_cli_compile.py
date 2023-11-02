@@ -2375,6 +2375,49 @@ def test_combine_different_extras_of_the_same_package(
     )
 
 
+def test_canonicalize_extras(pip_conf, runner, tmp_path, make_package, make_wheel):
+    """
+    Ensure extras are written in a consistent format.
+    """
+    pkgs = [
+        make_package(
+            "fake-sqlalchemy",
+            version="0.1",
+            extras_require={"fake-postgresql_psycoPG2BINARY": ["fake-greenlet"]},
+        ),
+        make_package(
+            "fake-greenlet",
+            version="0.2",
+        ),
+    ]
+
+    dists_dir = tmp_path / "dists"
+    for pkg in pkgs:
+        make_wheel(pkg, dists_dir)
+
+    with open("requirements.in", "w") as req_in:
+        req_in.write("fake-sqlalchemy[FAKE_postgresql-psycopg2binary]\n")
+
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--find-links",
+            str(dists_dir),
+            "--no-header",
+            "--no-emit-options",
+            "--no-annotate",
+            "--no-strip-extras",
+        ],
+    )
+    assert out.exit_code == 0
+    assert (
+        "fake-sqlalchemy[fake-postgresql-psycopg2binary]==0.1"
+        in out.stdout.splitlines()
+    )
+
+
 @pytest.mark.parametrize(
     ("pkg2_install_requires", "req_in_content", "out_expected_content"),
     (
