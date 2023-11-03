@@ -171,6 +171,10 @@ def cli(
         ctx.color = color
     log.verbosity = verbose - quiet
 
+    # src-files provided in a config file
+    if ctx.default_map and "src_files" in ctx.default_map:
+        src_files = ctx.default_map["src_files"]
+
     if all_build_deps and build_deps_targets:
         raise click.BadParameter(
             "--build-deps-for has no effect when used with --all-build-deps"
