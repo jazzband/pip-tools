@@ -2,17 +2,21 @@ from __future__ import annotations
 
 import hashlib
 import os
+import pathlib
 import shutil
 import subprocess
 import sys
 from textwrap import dedent
 from unittest import mock
+from unittest.mock import MagicMock
 
 import pytest
+from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.urls import path_to_url
 from pip._vendor.packaging.version import Version
 
+from piptools.build import ProjectMetadata
 from piptools.scripts.compile import cli
 from piptools.utils import (
     COMPILE_EXCLUDE_OPTIONS,
@@ -1691,13 +1695,13 @@ def test_parse_requirements_build_isolation_option(
     ("option", "expected"),
     (("--build-isolation", True), ("--no-build-isolation", False)),
 )
-@mock.patch("piptools.scripts.compile.project_wheel_metadata")
-def test_project_wheel_metadata_isolation_option(
-    project_wheel_metadata, runner, option, expected
+@mock.patch("piptools.scripts.compile.build_project_metadata")
+def test_build_project_metadata_isolation_option(
+    build_project_metadata, runner, option, expected
 ):
     """
     A value of the --build-isolation/--no-build-isolation flag
-    must be passed to project_wheel_metadata().
+    must be passed to build_project_metadata().
     """
 
     with open("setup.py", "w") as package:
@@ -1712,8 +1716,8 @@ def test_project_wheel_metadata_isolation_option(
 
     runner.invoke(cli, [option])
 
-    # Ensure the options in project_wheel_metadata has the isolated kwarg
-    _, kwargs = project_wheel_metadata.call_args
+    # Ensure the options in build_project_metadata has the isolated kwarg
+    _, kwargs = build_project_metadata.call_args
     assert kwargs["isolated"] is expected
 
 
@@ -2624,7 +2628,7 @@ def test_error_in_pyproject_toml(
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
 def test_one_extra(fake_dists, runner, make_module, fname, content):
     """
-    Test one `--extra` (dev) passed, other extras (test) must be ignored.
+    Test one ``--extra`` (dev) passed, other extras (test) must be ignored.
     """
     meta_path = make_module(fname=fname, content=content)
     out = runner.invoke(
@@ -2656,7 +2660,7 @@ def test_one_extra(fake_dists, runner, make_module, fname, content):
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
 def test_multiple_extras(fake_dists, runner, make_module, fname, content, extra_opts):
     """
-    Test passing multiple `--extra` params.
+    Test passing multiple ``--extra`` params.
     """
     meta_path = make_module(fname=fname, content=content)
     out = runner.invoke(
@@ -2680,7 +2684,7 @@ def test_multiple_extras(fake_dists, runner, make_module, fname, content, extra_
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES)
 def test_all_extras(fake_dists, runner, make_module, fname, content):
     """
-    Test passing `--all-extras` includes all applicable extras.
+    Test passing ``--all-extras`` includes all applicable extras.
     """
     meta_path = make_module(fname=fname, content=content)
     out = runner.invoke(
@@ -2716,7 +2720,7 @@ def test_all_extras(fake_dists, runner, make_module, fname, content):
 @pytest.mark.parametrize(("fname", "content"), METADATA_TEST_CASES[:1])
 def test_all_extras_fail_with_extra(fake_dists, runner, make_module, fname, content):
     """
-    Test that passing `--all-extras` and `--extra` fails.
+    Test that passing ``--all-extras`` and ``--extra`` fails.
     """
     meta_path = make_module(fname=fname, content=content)
     out = runner.invoke(
@@ -2740,14 +2744,232 @@ def test_all_extras_fail_with_extra(fake_dists, runner, make_module, fname, cont
     assert exp in out.stderr
 
 
+def _mock_resolver_cls(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
+    obj = MagicMock()
+    obj.resolve = MagicMock(return_value=set())
+    obj.resolve_hashes = MagicMock(return_value=dict())
+    cls = MagicMock(return_value=obj)
+
+    monkeypatch.setattr("piptools.scripts.compile.BacktrackingResolver", cls)
+    monkeypatch.setattr("piptools.scripts.compile.LegacyResolver", cls)
+
+    return cls
+
+
+def _mock_build_project_metadata(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
+    func = MagicMock(
+        return_value=ProjectMetadata(
+            extras=("e",),
+            requirements=(
+                install_req_from_line("rdep0"),
+                install_req_from_line("rdep1; extra=='e'"),
+            ),
+            build_requirements=(install_req_from_line("bdep0"),),
+        )
+    )
+
+    monkeypatch.setattr("piptools.scripts.compile.build_project_metadata", func)
+
+    return func
+
+
+@backtracking_resolver_only
+@pytest.mark.network
+def test_all_extras_and_all_build_deps(
+    fake_dists_with_build_deps,
+    runner,
+    tmp_path,
+    monkeypatch,
+    current_resolver,
+):
+    """
+    Test that trying to lock all dependencies gives the expected output.
+    """
+    src_pkg_path = pathlib.Path(PACKAGES_PATH) / "small_fake_with_build_deps"
+    # When used as argument to the runner it is not passed to pip
+    monkeypatch.setenv("PIP_FIND_LINKS", fake_dists_with_build_deps)
+
+    with runner.isolated_filesystem(tmp_path) as tmp_pkg_path:
+        shutil.copytree(src_pkg_path, tmp_pkg_path, dirs_exist_ok=True)
+        out = runner.invoke(
+            cli,
+            [
+                "--allow-unsafe",
+                "--output-file",
+                "-",
+                "--quiet",
+                "--no-emit-options",
+                "--no-header",
+                "--all-extras",
+                "--all-build-deps",
+            ],
+        )
+
+    assert out.exit_code == 0
+    # Note that the build dependencies of our build dependencies are not resolved.
+    # This means that if our build dependencies are not available as wheels then we will not get
+    # reproducible results.
+    assert "fake_transient_build_dep" not in out.stdout
+    assert out.stdout == dedent(
+        """\
+        fake-direct-extra-runtime-dep==0.2
+            # via small-fake-with-build-deps (setup.py)
+        fake-direct-runtime-dep==0.1
+            # via small-fake-with-build-deps (setup.py)
+        fake-dynamic-build-dep-for-all==0.2
+            # via
+            #   small-fake-with-build-deps (pyproject.toml::build-system.backend::editable)
+            #   small-fake-with-build-deps (pyproject.toml::build-system.backend::sdist)
+            #   small-fake-with-build-deps (pyproject.toml::build-system.backend::wheel)
+        fake-dynamic-build-dep-for-editable==0.5
+            # via small-fake-with-build-deps (pyproject.toml::build-system.backend::editable)
+        fake-dynamic-build-dep-for-sdist==0.3
+            # via small-fake-with-build-deps (pyproject.toml::build-system.backend::sdist)
+        fake-dynamic-build-dep-for-wheel==0.4
+            # via small-fake-with-build-deps (pyproject.toml::build-system.backend::wheel)
+        fake-static-build-dep==0.1
+            # via small-fake-with-build-deps (pyproject.toml::build-system.requires)
+        fake-transient-run-dep==0.3
+            # via fake-static-build-dep
+        wheel==0.41.1
+            # via
+            #   small-fake-with-build-deps (pyproject.toml::build-system.backend::wheel)
+            #   small-fake-with-build-deps (pyproject.toml::build-system.requires)
+
+        # The following packages are considered to be unsafe in a requirements file:
+        setuptools==68.1.2
+            # via small-fake-with-build-deps (pyproject.toml::build-system.requires)
+        """
+    )
+
+
+@backtracking_resolver_only
+def test_all_build_deps(runner, tmp_path, monkeypatch):
+    """
+    Test that ``--all-build-deps`` is equivalent to specifying every
+    ``--build-deps-for``.
+    """
+    func = _mock_build_project_metadata(monkeypatch)
+    _mock_resolver_cls(monkeypatch)
+
+    src_file = tmp_path / "pyproject.toml"
+    src_file.touch()
+
+    out = runner.invoke(
+        cli,
+        [
+            "--all-build-deps",
+            os.fspath(src_file),
+        ],
+    )
+    assert out.exit_code == 0
+    assert func.call_args.kwargs["build_targets"] == (
+        "editable",
+        "sdist",
+        "wheel",
+    )
+
+
+@backtracking_resolver_only
+def test_only_build_deps(runner, tmp_path, monkeypatch):
+    """
+    Test that ``--only-build-deps`` excludes dependencies other than build dependencies.
+    """
+    _mock_build_project_metadata(monkeypatch)
+    cls = _mock_resolver_cls(monkeypatch)
+
+    src_file = tmp_path / "pyproject.toml"
+    src_file.touch()
+
+    out = runner.invoke(
+        cli,
+        [
+            "--all-build-deps",
+            "--only-build-deps",
+            os.fspath(src_file),
+        ],
+    )
+    assert out.exit_code == 0
+    assert [c.name for c in cls.call_args.kwargs["constraints"]] == ["bdep0"]
+
+
+@backtracking_resolver_only
+def test_all_build_deps_fail_with_build_target(runner):
+    """
+    Test that passing ``--all-build-deps`` and ``--build-deps-for`` fails.
+    """
+    out = runner.invoke(
+        cli,
+        [
+            "--all-build-deps",
+            "--build-deps-for",
+            "sdist",
+        ],
+    )
+    exp = "--build-deps-for has no effect when used with --all-build-deps"
+    assert out.exit_code == 2
+    assert exp in out.stderr
+
+
+@backtracking_resolver_only
+def test_only_build_deps_fails_without_any_build_deps(runner):
+    """
+    Test that passing ``--only-build-deps`` fails when it is not specified how build deps should
+    be gathered.
+    """
+    out = runner.invoke(
+        cli,
+        ["--only-build-deps"],
+    )
+    exp = "--only-build-deps requires either --build-deps-for or --all-build-deps"
+    assert out.exit_code == 2
+    assert exp in out.stderr
+
+
+@backtracking_resolver_only
+@pytest.mark.parametrize("option", ("--all-extras", "--extra=foo"))
+def test_only_build_deps_fails_with_conflicting_options(runner, option):
+    """
+    Test that passing ``--all-build-deps`` and conflicting option fails.
+    """
+    out = runner.invoke(
+        cli,
+        [
+            "--all-build-deps",
+            "--only-build-deps",
+            option,
+        ],
+    )
+    exp = "--only-build-deps cannot be used with any of --extra, --all-extras"
+    assert out.exit_code == 2
+    assert exp in out.stderr
+
+
+@backtracking_resolver_only
+@pytest.mark.parametrize("option", ("--all-build-deps", "--build-deps-for=wheel"))
+def test_build_deps_fail_without_setup_file(runner, tmpdir, option):
+    """
+    Test that passing ``--build-deps-for`` or ``--all-build-deps`` fails when used with a
+    requirements file as opposed to a setup file.
+    """
+    path = pathlib.Path(tmpdir) / "requirements.in"
+    path.write_text("\n")
+    out = runner.invoke(cli, ["-n", option, os.fspath(path)])
+    exp = (
+        "--build-deps-for and --all-build-deps can be used only with the "
+        "setup.py, setup.cfg and pyproject.toml specs."
+    )
+    assert out.exit_code == 2
+    assert exp in out.stderr
+
+
 def test_extras_fail_with_requirements_in(runner, tmpdir):
     """
-    Test that passing `--extra` with `requirements.in` input file fails.
+    Test that passing ``--extra`` with ``requirements.in`` input file fails.
     """
-    path = os.path.join(tmpdir, "requirements.in")
-    with open(path, "w") as stream:
-        stream.write("\n")
-    out = runner.invoke(cli, ["-n", "--extra", "something", path])
+    path = pathlib.Path(tmpdir) / "requirements.in"
+    path.write_text("\n")
+    out = runner.invoke(cli, ["-n", "--extra", "something", os.fspath(path)])
     assert out.exit_code == 2
     exp = "--extra has effect only with setup.py and PEP-517 input formats"
     assert exp in out.stderr
@@ -2755,7 +2977,7 @@ def test_extras_fail_with_requirements_in(runner, tmpdir):
 
 def test_cli_compile_strip_extras(runner, make_package, make_sdist, tmpdir):
     """
-    Assures that --strip-extras removes mention of extras from output.
+    Assures that ``--strip-extras`` removes mention of extras from output.
     """
     test_package_1 = make_package(
         "test_package_1", version="0.1", extras_require={"more": "test_package_2"}
@@ -3290,3 +3512,53 @@ def test_do_not_show_warning_on_explicit_strip_extras_option(
 
     assert out.exit_code == 0
     assert strip_extras_warning not in out.stderr
+
+
+def test_origin_of_extra_requirement_not_written_to_annotations(
+    pip_conf, runner, make_package, make_wheel, tmp_path, tmpdir
+):
+    req_in = tmp_path / "requirements.in"
+    package_with_extras = make_package(
+        "package_with_extras",
+        version="0.1",
+        extras_require={
+            "extra1": ["small-fake-a==0.1"],
+            "extra2": ["small-fake-b==0.1"],
+        },
+    )
+
+    dists_dir = tmpdir / "dists"
+    make_wheel(package_with_extras, dists_dir)
+
+    with open(req_in, "w") as req_out:
+        req_out.write("package-with-extras[extra1,extra2]")
+
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--no-header",
+            "--find-links",
+            str(dists_dir),
+            "--no-emit-options",
+            "--no-build-isolation",
+            req_in.as_posix(),
+        ],
+    )
+
+    assert out.exit_code == 0, out
+    assert (
+        dedent(
+            f"""\
+        package-with-extras[extra1,extra2]==0.1
+            # via -r {req_in.as_posix()}
+        small-fake-a==0.1
+            # via package-with-extras
+        small-fake-b==0.1
+            # via package-with-extras
+        """
+        )
+        == out.stdout
+    )
