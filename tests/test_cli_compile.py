@@ -2396,7 +2396,7 @@ def test_canonicalize_extras(pip_conf, runner, tmp_path, make_package, make_whee
         make_wheel(pkg, dists_dir)
 
     with open("requirements.in", "w") as req_in:
-        req_in.write("fake-sqlalchemy[fake-postgresql_psycoPG2BINARY]\n")
+        req_in.write("fake-sqlalchemy[FAKE_postgresql-psycopg2binary]\n")
 
     out = runner.invoke(
         cli,
