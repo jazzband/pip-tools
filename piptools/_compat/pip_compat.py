@@ -22,7 +22,7 @@ from pip._vendor.pkg_resources import Requirement
 if TYPE_CHECKING:
     from pip._internal.metadata.importlib import Distribution as _ImportLibDist
 
-from ..utils import PIP_VERSION, canonicalize_ireq
+from ..utils import PIP_VERSION, copy_install_requirement
 
 
 @dataclass(frozen=True)
@@ -72,7 +72,7 @@ def parse_requirements(
     for parsed_req in _parse_requirements(
         filename, session, finder=finder, options=options, constraint=constraint
     ):
-        yield canonicalize_ireq(
+        yield copy_install_requirement(
             install_req_from_parsed_requirement(parsed_req, isolated=isolated)
         )
 
