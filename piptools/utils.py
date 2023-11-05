@@ -93,20 +93,8 @@ def comment(text: str) -> str:
     return click.style(text, fg="green")
 
 
-def canonicalize_ireq(ireq: InstallRequirement) -> InstallRequirement:
-    """
-    Return a copy of ireq with canonicalized extras strings
-    """
-    ireq = copy_install_requirement(
-        ireq, extras=set(map(canonicalize_name, ireq.extras))
-    )
-    if ireq.req:
-        ireq.req.extras = set(ireq.extras)
-    return ireq
-
-
 def install_req_from_line(*args: Any, **kwargs: Any) -> InstallRequirement:
-    return canonicalize_ireq(_install_req_from_line(*args, **kwargs))
+    return copy_install_requirement(_install_req_from_line(*args, **kwargs))
 
 
 def make_install_requirement(
@@ -535,6 +523,10 @@ def copy_install_requirement(
     # Copy template.req if not specified in extra kwargs.
     if "req" not in kwargs:
         kwargs["req"] = copy.deepcopy(template.req)
+
+    kwargs["extras"] = set(map(canonicalize_name, kwargs["extras"]))
+    if kwargs["req"]:
+        kwargs["req"].extras = set(kwargs["extras"])
 
     ireq = InstallRequirement(**kwargs)
 

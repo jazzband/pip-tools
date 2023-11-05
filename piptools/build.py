@@ -17,7 +17,7 @@ from pip._internal.req.constructors import parse_req_from_line
 from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.requirements import Requirement
 
-from .utils import canonicalize_ireq, install_req_from_line
+from .utils import copy_install_requirement, install_req_from_line
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -231,7 +231,7 @@ def _prepare_requirements(
             replaced_package_name = req.replace(package_name, str(package_dir), 1)
             parts = parse_req_from_line(replaced_package_name, comes_from)
 
-        yield canonicalize_ireq(
+        yield copy_install_requirement(
             InstallRequirement(
                 parts.requirement,
                 comes_from,

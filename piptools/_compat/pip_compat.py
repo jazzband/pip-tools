@@ -23,7 +23,7 @@ from pip._vendor.pkg_resources import Requirement
 if TYPE_CHECKING:
     from pip._internal.metadata.importlib import Distribution as _ImportLibDist
 
-from ..utils import PIP_VERSION, canonicalize_ireq
+from ..utils import PIP_VERSION, copy_install_requirement
 
 
 @dataclass(frozen=True)
@@ -89,8 +89,7 @@ def parse_requirements(
             file_link = FileLink(install_req.link.url)
             file_link._url = parsed_req.requirement
             install_req.link = file_link
-        canonicalize_ireq(install_req)
-        yield install_req
+        yield copy_install_requirement(install_req)
 
 
 def create_wheel_cache(cache_dir: str, format_control: str | None = None) -> WheelCache:
