@@ -171,8 +171,10 @@ def cli(
         ctx.color = color
     log.verbosity = verbose - quiet
 
-    # src-files provided in a config file
-    if ctx.default_map and "src_files" in ctx.default_map:
+    # If `src-files` was not provided as input, but rather as config,
+    # it will be part of the click Context `ctx`.
+    # However, is `src_files` is specified, then we want to use that.
+    if not src_files and ctx.default_map and "src_files" in ctx.default_map:
         src_files = ctx.default_map["src_files"]
 
     if all_build_deps and build_deps_targets:
