@@ -3455,15 +3455,12 @@ def test_use_src_files_from_config_if_option_is_not_specified_from_cli(
 
     config_file = make_config_file("src-files", [foo_in.as_posix()])
 
-    with open(req_in, "w") as f:
-        f.write("small-fake-a==0.1")
-
-    with open(foo_in, "w") as f:
-        f.write("small-fake-b==0.1")
+    req_in.write_text("small-fake-a==0.1", encoding="utf-8")
+    foo_in.write_text("small-fake-b==0.1", encoding="utf-8")
 
     out = runner.invoke(cli, ["--config", config_file.as_posix()])
 
-    assert out.exit_code == 0
+    assert out.exit_code == 0, out
     assert "small-fake-b" in out.stderr
     assert "small-fake-a" not in out.stderr
 
@@ -3476,15 +3473,12 @@ def test_use_src_files_from_cli_if_option_is_specified_in_both_config_and_cli(
 
     config_file = make_config_file("src-files", [foo_in.as_posix()])
 
-    with open(req_in, "w") as f:
-        f.write("small-fake-a==0.1")
-
-    with open(foo_in, "w") as f:
-        f.write("small-fake-b==0.1")
+    req_in.write_text("small-fake-a==0.1", encoding="utf-8")
+    foo_in.write_text("small-fake-b==0.1", encoding="utf-8")
 
     out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
 
-    assert out.exit_code == 0
+    assert out.exit_code == 0, out
     assert "small-fake-a" in out.stderr
     assert "small-fake-b" not in out.stderr
 
