@@ -3164,6 +3164,7 @@ def test_resolver_drops_existing_conflicting_constraint(
         req_txt_content = req_txt.read()
         assert expected_requirements.issubset(req_txt_content.splitlines())
 
+
 def test_resolution_failure(runner):
     """Test resolution impossible for unknown package."""
     with open("requirements.in", "w") as reqs_out:
