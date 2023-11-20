@@ -251,3 +251,7 @@ def _get_installed_distributions(
         skip=[],
     )
     return [Distribution.from_pip_distribution(dist) for dist in dists]
+
+
+if __name__ == "__main__":
+    cli()
