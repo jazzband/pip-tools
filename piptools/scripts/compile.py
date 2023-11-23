@@ -15,18 +15,18 @@ from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 
-from .._compat import parse_requirements
-from ..build import build_project_metadata
-from ..cache import DependencyCache
-from ..exceptions import NoCandidateFound, PipToolsError
-from ..logging import log
-from ..repositories import LocalRequirementsRepository, PyPIRepository
-from ..repositories.base import BaseRepository
-from ..resolver import BacktrackingResolver, LegacyResolver
-from ..utils import dedup, drop_extras, is_pinned_requirement, key_from_ireq
-from ..writer import OutputWriter
-from . import options
-from .options import BuildTargetT
+import piptools.scripts.options as options
+from piptools._compat import parse_requirements
+from piptools.build import build_project_metadata
+from piptools.cache import DependencyCache
+from piptools.exceptions import NoCandidateFound, PipToolsError
+from piptools.logging import log
+from piptools.repositories import LocalRequirementsRepository, PyPIRepository
+from piptools.repositories.base import BaseRepository
+from piptools.resolver import BacktrackingResolver, LegacyResolver
+from piptools.scripts.options import BuildTargetT
+from piptools.utils import dedup, drop_extras, is_pinned_requirement, key_from_ireq
+from piptools.writer import OutputWriter
 
 DEFAULT_REQUIREMENTS_FILES = (
     "requirements.in",
