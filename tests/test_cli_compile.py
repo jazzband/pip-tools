@@ -3563,8 +3563,9 @@ def test_origin_of_extra_requirement_not_written_to_annotations(
         == out.stdout
     )
 
+
 def test_tool_specific_config_option(pip_conf, runner, tmp_path, make_config_file):
-    config_file = make_config_file("dry-run", True, section="pip-compile")
+    config_file = make_config_file("dry-run", True, section="pip-tools.compile")
 
     req_in = tmp_path / "requirements.in"
     req_in.touch()
