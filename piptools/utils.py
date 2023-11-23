@@ -546,9 +546,7 @@ def override_defaults_from_config_file(
     else:
         config_file = Path(value)
 
-    config = parse_config_file(
-        ctx, config_file
-    )
+    config = parse_config_file(ctx, config_file)
 
     _validate_config(ctx, config)
     _assign_config_to_cli_context(ctx, config)
@@ -683,26 +681,29 @@ def parse_config_file(
     # In a TOML file, we expect the config to be under `[tool.pip-tools]`,
     # `[tool.pip-compile]` or `[tool.pip-sync]`
     piptools_config: dict[str, Any] = config.get("tool", {}).get("pip-tools", {})
-    pipcompile_config: dict[str, Any] = config.get("tool", {}).get("pip-tools", {}).get("compile", {})
-    pipsync_config: dict[str, Any] = config.get("tool", {}).get("pip-tools", {}).get("sync", {})
+    pipcompile_config: dict[str, Any] = (
+        config.get("tool", {}).get("pip-tools", {}).get("compile", {})
+    )
+    pipsync_config: dict[str, Any] = (
+        config.get("tool", {}).get("pip-tools", {}).get("sync", {})
+    )
 
     config = piptools_config
-    
+
     if click_context.command.name == "pip-compile":
-        config.pop("compile")
-        config.update(pipcompile_config)
+        if pipcompile_config:
+            config.pop("compile")
+            config.update(pipcompile_config)
     elif click_context.command.name == "pip-sync":
-        config.pop("sync")
-        config.update(pipsync_config)
+        if pipsync_config:
+            config.pop("sync")
+            config.update(pipsync_config)
 
-    print(config)
-
-    if config:
-        config = _normalize_keys_in_config(config)
-        config = _invert_negative_bool_options_in_config(
-            ctx=click_context,
-            config=config,
-        )
+    config = _normalize_keys_in_config(config)
+    config = _invert_negative_bool_options_in_config(
+        ctx=click_context,
+        config=config,
+    )
 
     return config
 

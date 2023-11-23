@@ -321,8 +321,8 @@ dry-run = true
 ```
 
 This does not affect the `pip-sync` command, which also has a `--dry-run` option.
-Note that local settings take preference over the global ones of the same name, 
-whenever both are declared, thus this would also make `pip-compile` generate hashes, 
+Note that local settings take preference over the global ones of the same name,
+whenever both are declared, thus this would also make `pip-compile` generate hashes,
 but discard the global dry-run setting:
 
 ```toml

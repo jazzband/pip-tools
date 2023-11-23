@@ -502,6 +502,7 @@ def make_config_file(tmpdir_cwd):
         new_default: Any,
         config_file_name: str = DEFAULT_CONFIG_FILE_NAMES[0],
         section: str = "pip-tools",
+        subsection: str | None = None,
     ) -> Path:
         # Create a nested directory structure if config_file_name includes directories
         config_dir = (tmpdir_cwd / config_file_name).parent
@@ -509,7 +510,13 @@ def make_config_file(tmpdir_cwd):
 
         # Make a config file with this one config default override
         config_file = tmpdir_cwd / config_file_name
-        config_to_dump = {"tool": {section: {pyproject_param: new_default}}}
+
+        if subsection:
+            config_to_dump = {
+                "tool": {section: {subsection: {pyproject_param: new_default}}}
+            }
+        else:
+            config_to_dump = {"tool": {section: {pyproject_param: new_default}}}
         config_file.write_text(tomli_w.dumps(config_to_dump))
         return cast(Path, config_file.relative_to(tmpdir_cwd))
 
