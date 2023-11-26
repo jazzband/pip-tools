@@ -3481,7 +3481,7 @@ def test_invalid_cli_boolean_flag_config_option_captured(
     out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
 
     assert out.exit_code == 2
-    assert "No such config key 'no_annnotate'." in out.stderr
+    assert "No such config key 'annnotate'." in out.stderr
 
 
 strip_extras_warning = (
