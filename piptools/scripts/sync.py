@@ -14,18 +14,18 @@ from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.metadata import get_environment
 
-from .. import sync
-from .._compat import Distribution, parse_requirements
-from ..exceptions import PipToolsError
-from ..logging import log
-from ..repositories import PyPIRepository
-from ..utils import (
+import piptools.scripts.options as options
+import piptools.sync as sync
+from piptools._compat import Distribution, parse_requirements
+from piptools.exceptions import PipToolsError
+from piptools.logging import log
+from piptools.repositories import PyPIRepository
+from piptools.utils import (
     flat_map,
     get_pip_version_for_python_executable,
     get_required_pip_specification,
     get_sys_path_for_python_executable,
 )
-from . import options
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 
