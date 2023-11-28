@@ -521,3 +521,7 @@ def cli(
 
     if dry_run:
         log.info("Dry-run, so nothing updated.")
+
+
+if __name__ == "__main__":
+    cli()
