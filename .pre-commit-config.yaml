@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/psf/black
-    rev: 23.10.1
+    rev: 23.11.0
     hooks:
       - id: black
         args: [--target-version=py38]
@@ -20,7 +20,7 @@ repos:
         additional_dependencies:
           - flake8-pytest-style
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.6.1
+    rev: v1.7.1
     hooks:
       - id: mypy
         # Avoid error: Duplicate module named 'setup'
@@ -43,7 +43,7 @@ repos:
         args: [--ini, .bandit]
         exclude: ^tests/
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.0.3
+    rev: v3.1.0
     hooks:
       - id: prettier
         additional_dependencies:
