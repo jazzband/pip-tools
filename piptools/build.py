@@ -48,6 +48,67 @@ class ProjectMetadata:
     build_requirements: tuple[InstallRequirement, ...]
 
 
+def maybe_statically_parse_project_metadata(
+    src_file: pathlib.Path,
+) -> ProjectMetadata | None:
+    """
+    Return the metadata for a project, if it can be statically parsed from pyproject.toml.
+
+    This function is typically significantly faster than invoking a build backend.
+    Returns None if the project metadata cannot be statically parsed.
+    """
+    if src_file.name != PYPROJECT_TOML:
+        return None
+
+    try:
+        with open(src_file, "rb") as f:
+            pyproject_contents = tomllib.load(f)
+    except tomllib.TOMLDecodeError:
+        pyproject_contents = {}
+
+    # Not valid PEP 621 metadata
+    if (
+        "project" not in pyproject_contents
+        or "name" not in pyproject_contents["project"]
+    ):
+        return None
+
+    # Dynamic dependencies require build invocation
+    dynamic = pyproject_contents["project"].get("dynamic", [])
+    if "dependencies" in dynamic or "optional-dependencies" in dynamic:
+        return None
+
+    package_name = pyproject_contents["project"]["name"]
+    comes_from = f"{package_name} ({src_file})"
+
+    extras = pyproject_contents["project"].get("optional-dependencies", {}).keys()
+    install_requirements = [
+        InstallRequirement(Requirement(req), comes_from)
+        for req in pyproject_contents["project"].get("dependencies", [])
+    ]
+    for extra, reqs in (
+        pyproject_contents.get("project", {}).get("optional-dependencies", {}).items()
+    ):
+        for req in reqs:
+            requirement = Requirement(req)
+            # Note we don't need to modify `requirement` to include this extra
+            marker = Marker(f"extra == '{extra}'")
+            install_requirements.append(
+                InstallRequirement(requirement, comes_from, markers=marker)
+            )
+
+    comes_from = f"{package_name} ({src_file}::build-system.requires)"
+    build_requirements = [
+        InstallRequirement(Requirement(req), comes_from)
+        for req in pyproject_contents.get("build-system", {}).get("requires", [])
+    ]
+    return ProjectMetadata(
+        extras=tuple(extras),
+        requirements=tuple(install_requirements),
+        build_requirements=tuple(build_requirements),
+    )
+
+
 def build_project_metadata(
     src_file: pathlib.Path,
     build_targets: tuple[str, ...],
@@ -57,6 +118,8 @@ def build_project_metadata(
 ) -> ProjectMetadata:
     """
     Return the metadata for a project.
+
+    Attempts to determine the metadata statically from the pyproject.toml file.
 
     Uses the ``prepare_metadata_for_build_wheel`` hook for the wheel metadata
     if available, otherwise ``build_wheel``.
@@ -73,53 +136,9 @@ def build_project_metadata(
     :param quiet: Whether to suppress the output of subprocesses.
     """
 
-    if src_file.name == PYPROJECT_TOML:
-        try:
-            with open(src_file, "rb") as f:
-                pyproject_contents = tomllib.load(f)
-        except tomllib.TOMLDecodeError:
-            pyproject_contents = {}
-
-        if "project" in pyproject_contents and "name" in pyproject_contents["project"]:
-            dynamic = pyproject_contents["project"].get("dynamic", [])
-            if "dependencies" not in dynamic and "optional-dependencies" not in dynamic:
-                package_name = pyproject_contents["project"]["name"]
-                comes_from = f"{package_name} ({src_file})"
-
-                extras = (
-                    pyproject_contents["project"]
-                    .get("optional-dependencies", {})
-                    .keys()
-                )
-                requirements = [
-                    InstallRequirement(Requirement(req), comes_from)
-                    for req in pyproject_contents["project"].get("dependencies", [])
-                ]
-                for extra, reqs in (
-                    pyproject_contents.get("project", {})
-                    .get("optional-dependencies", {})
-                    .items()
-                ):
-                    for req in reqs:
-                        requirement = Requirement(req)
-                        # Note we don't need to modify `requirement` to include this extra
-                        marker = Marker(f"extra == '{extra}'")
-                        requirements.append(
-                            InstallRequirement(requirement, comes_from, markers=marker)
-                        )
-
-                comes_from = f"{package_name} ({src_file}::build-system.requires)"
-                build_requirements = [
-                    InstallRequirement(Requirement(req), comes_from)
-                    for req in pyproject_contents.get("build-system", {}).get(
-                        "requires", []
-                    )
-                ]
-                return ProjectMetadata(
-                    extras=tuple(extras),
-                    requirements=tuple(requirements),
-                    build_requirements=tuple(build_requirements),
-                )
+    project_metadata = maybe_statically_parse_project_metadata(src_file)
+    if project_metadata is not None:
+        return project_metadata
 
     src_dir = src_file.parent
     with _create_project_builder(src_dir, isolated=isolated, quiet=quiet) as builder:
