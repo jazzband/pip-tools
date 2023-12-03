@@ -12,8 +12,15 @@ from typing import Any, Iterator, Protocol, TypeVar, overload
 import build
 import build.env
 import pyproject_hooks
+from pip._vendor.packaging.markers import Marker
+from pip._vendor.packaging.requirements import Requirement
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line, parse_req_from_line
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
 
 PYPROJECT_TOML = "pyproject.toml"
 
@@ -65,6 +72,49 @@ def build_project_metadata(
                      there.
     :param quiet: Whether to suppress the output of subprocesses.
     """
+
+    if src_file.name == PYPROJECT_TOML:
+        try:
+            with open(src_file, "rb") as f:
+                pyproject_contents = tomllib.load(f)
+        except tomllib.TOMLDecodeError:
+            pyproject_contents = {}
+
+        if "project" in pyproject_contents and "name" in pyproject_contents["project"]:
+            dynamic = pyproject_contents["project"].get("dynamic", [])
+            if (
+                "dependencies" not in dynamic
+                and "optional-dependencies" not in dynamic
+            ):
+                package_name = pyproject_contents["project"]["name"]
+                comes_from = f"{package_name} ({src_file})"
+
+                extras = pyproject_contents["project"].get("optional-dependencies", {}).keys()
+                requirements = [
+                    InstallRequirement(Requirement(req), comes_from)
+                    for req in pyproject_contents["project"].get("dependencies", [])
+                ]
+                for extra, reqs in (
+                    pyproject_contents.get("project", {}).get("optional-dependencies", {}).items()
+                ):
+                    for req in reqs:
+                        requirement = Requirement(req)
+                        # Note we don't need to modify `requirement` to include this extra
+                        marker = Marker(f"extra == '{extra}'")
+                        requirements.append(
+                            InstallRequirement(requirement, comes_from, markers=marker)
+                        )
+
+                comes_from = f"{package_name} ({src_file}::build-system.requires)"
+                build_requirements = [
+                    InstallRequirement(Requirement(req), comes_from)
+                    for req in pyproject_contents.get("build-system", {}).get("requires", [])
+                ]
+                return ProjectMetadata(
+                    extras=tuple(extras),
+                    requirements=tuple(requirements),
+                    build_requirements=tuple(build_requirements),
+                )
 
     src_dir = src_file.parent
     with _create_project_builder(src_dir, isolated=isolated, quiet=quiet) as builder:
