@@ -12,10 +12,10 @@ from typing import Any, Iterator, Protocol, TypeVar, overload
 import build
 import build.env
 import pyproject_hooks
-from pip._vendor.packaging.markers import Marker
-from pip._vendor.packaging.requirements import Requirement
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line, parse_req_from_line
+from pip._vendor.packaging.markers import Marker
+from pip._vendor.packaging.requirements import Requirement
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -82,20 +82,23 @@ def build_project_metadata(
 
         if "project" in pyproject_contents and "name" in pyproject_contents["project"]:
             dynamic = pyproject_contents["project"].get("dynamic", [])
-            if (
-                "dependencies" not in dynamic
-                and "optional-dependencies" not in dynamic
-            ):
+            if "dependencies" not in dynamic and "optional-dependencies" not in dynamic:
                 package_name = pyproject_contents["project"]["name"]
                 comes_from = f"{package_name} ({src_file})"
 
-                extras = pyproject_contents["project"].get("optional-dependencies", {}).keys()
+                extras = (
+                    pyproject_contents["project"]
+                    .get("optional-dependencies", {})
+                    .keys()
+                )
                 requirements = [
                     InstallRequirement(Requirement(req), comes_from)
                     for req in pyproject_contents["project"].get("dependencies", [])
                 ]
                 for extra, reqs in (
-                    pyproject_contents.get("project", {}).get("optional-dependencies", {}).items()
+                    pyproject_contents.get("project", {})
+                    .get("optional-dependencies", {})
+                    .items()
                 ):
                     for req in reqs:
                         requirement = Requirement(req)
@@ -108,7 +111,9 @@ def build_project_metadata(
                 comes_from = f"{package_name} ({src_file}::build-system.requires)"
                 build_requirements = [
                     InstallRequirement(Requirement(req), comes_from)
-                    for req in pyproject_contents.get("build-system", {}).get("requires", [])
+                    for req in pyproject_contents.get("build-system", {}).get(
+                        "requires", []
+                    )
                 ]
                 return ProjectMetadata(
                     extras=tuple(extras),
