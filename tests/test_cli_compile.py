@@ -3564,7 +3564,6 @@ def test_origin_of_extra_requirement_not_written_to_annotations(
     )
 
 
-
 def test_tool_specific_config_option(pip_conf, runner, tmp_path, make_config_file):
     config_file = make_config_file(
         "dry-run", True, section="pip-tools", subsection="compile"
@@ -3581,11 +3580,10 @@ def test_tool_specific_config_option(pip_conf, runner, tmp_path, make_config_fil
 
 @mock.patch("piptools.scripts.compile.parse_requirements")
 def test_stdout_should_not_be_read_when_stdin_is_not_a_plain_file(
-         parse_req,
-         runner,
-         tmp_path,
-    ):
-
+    parse_req,
+    runner,
+    tmp_path,
+):
     parse_req.side_effect = AssertionError("Must not be called when output is a fifo")
 
     req_in = tmp_path / "requirements.txt"
@@ -3598,4 +3596,3 @@ def test_stdout_should_not_be_read_when_stdin_is_not_a_plain_file(
     out = runner.invoke(cli, [req_in.as_posix(), "--output-file", fifo.as_posix()])
 
     assert out.exit_code == 0, out
-
