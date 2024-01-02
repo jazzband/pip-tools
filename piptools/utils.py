@@ -682,8 +682,8 @@ def parse_config_file(
     # `[tool.pip-tools.compile]` or `[tool.pip-tools.sync]`
     piptools_config: dict[str, Any] = config.get("tool", {}).get("pip-tools", {})
 
-    # TODO: Replace with `str.removeprefix()` once dropped 3.8
     assert click_context.command.name is not None
+    # TODO: Replace with `str.removeprefix()` once dropped 3.8
     config_section_name = click_context.command.name[len("pip-") :]
 
     piptools_config.update(piptools_config.pop(config_section_name, {}))
