@@ -3578,6 +3578,7 @@ def test_tool_specific_config_option(pip_conf, runner, tmp_path, make_config_fil
     assert "Dry-run, so nothing updated" in out.stderr
 
 
+@pytest.mark.xfail(reason="https://github.com/jazzband/pip-tools/issues/2012")
 @mock.patch("piptools.scripts.compile.parse_requirements")
 def test_stdout_should_not_be_read_when_stdin_is_not_a_plain_file(
     parse_req,
