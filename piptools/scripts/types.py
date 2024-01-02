@@ -24,7 +24,8 @@ class EnhancedPath(click.Path):
     ) -> str | bytes | os.PathLike[str]:
         if isinstance(value, os.PathLike) or not EnhancedPath.is_url(value):
             return typing.cast(
-                Union[str, bytes, os.PathLike[str]], super().convert(value, param, ctx)
+                Union[str, bytes, "os.PathLike[str]"],
+                super().convert(value, param, ctx),
             )
 
         if EnhancedPath.is_file_scheme(value):
@@ -67,7 +68,7 @@ class EnhancedPath(click.Path):
             )
 
         try:
-            urlopen(value)
+            urlopen(value)  # nosec
             return value
         except URLError as e:
             if isinstance(e, HTTPError):
