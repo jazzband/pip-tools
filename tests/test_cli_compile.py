@@ -3569,9 +3569,6 @@ def test_tool_specific_config_option(pip_conf, runner, tmp_path, make_config_fil
         "dry-run", True, section="pip-tools", subsection="compile"
     )
 
-    with open(config_file.as_posix()) as f:
-        print(f.read())
-
     req_in = tmp_path / "requirements.in"
     req_in.touch()
 

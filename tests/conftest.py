@@ -511,12 +511,10 @@ def make_config_file(tmpdir_cwd):
         # Make a config file with this one config default override
         config_file = tmpdir_cwd / config_file_name
 
+        nested_config = {pyproject_param: new_default}
         if subsection:
-            config_to_dump = {
-                "tool": {section: {subsection: {pyproject_param: new_default}}}
-            }
-        else:
-            config_to_dump = {"tool": {section: {pyproject_param: new_default}}}
+            nested_config = {subsection: nested_config}
+        config_to_dump = {"tool": {section: nested_config}}
         config_file.write_text(tomli_w.dumps(config_to_dump))
         return cast(Path, config_file.relative_to(tmpdir_cwd))
 

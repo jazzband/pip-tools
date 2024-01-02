@@ -679,33 +679,24 @@ def parse_config_file(
         )
 
     # In a TOML file, we expect the config to be under `[tool.pip-tools]`,
-    # `[tool.pip-compile]` or `[tool.pip-sync]`
+    # `[tool.pip-tools.compile]` or `[tool.pip-tools.sync]`
     piptools_config: dict[str, Any] = config.get("tool", {}).get("pip-tools", {})
-    pipcompile_config: dict[str, Any] = (
-        config.get("tool", {}).get("pip-tools", {}).get("compile", {})
-    )
-    pipsync_config: dict[str, Any] = (
-        config.get("tool", {}).get("pip-tools", {}).get("sync", {})
-    )
 
-    config = piptools_config
+    # TODO: Replace with `str.removeprefix()` once dropped 3.8
+    assert click_context.command.name is not None
+    config_section_name = click_context.command.name[len("pip-"):]
 
-    if click_context.command.name == "pip-compile":
-        if pipcompile_config:
-            config.pop("compile")
-            config.update(pipcompile_config)
-    elif click_context.command.name == "pip-sync":
-        if pipsync_config:
-            config.pop("sync")
-            config.update(pipsync_config)
+    piptools_config.update(piptools_config.pop(config_section_name, {}))
+    piptools_config.pop("compile", {})
+    piptools_config.pop("sync", {})
 
-    config = _normalize_keys_in_config(config)
-    config = _invert_negative_bool_options_in_config(
+    piptools_config = _normalize_keys_in_config(piptools_config)
+    piptools_config = _invert_negative_bool_options_in_config(
         ctx=click_context,
-        config=config,
+        config=piptools_config,
     )
 
-    return config
+    return piptools_config
 
 
 def _normalize_keys_in_config(config: dict[str, Any]) -> dict[str, Any]:
