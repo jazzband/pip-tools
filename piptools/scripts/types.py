@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import typing
 from gettext import gettext
-from typing import Any, Optional, Union
+from typing import Any
 
 import click
 
