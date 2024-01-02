@@ -684,7 +684,7 @@ def parse_config_file(
 
     # TODO: Replace with `str.removeprefix()` once dropped 3.8
     assert click_context.command.name is not None
-    config_section_name = click_context.command.name[len("pip-"):]
+    config_section_name = click_context.command.name[len("pip-") :]
 
     piptools_config.update(piptools_config.pop(config_section_name, {}))
     piptools_config.pop("compile", {})
