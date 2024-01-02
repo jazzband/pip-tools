@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+import os
 import typing
 from gettext import gettext
+from typing import Any, Optional, Union
 
 import click
-import os
-from typing import Union, Optional, Any
 
 
 class EnhancedPath(click.Path):
@@ -18,10 +18,10 @@ class EnhancedPath(click.Path):
 
     def convert(
         self,
-        value: Union[str, os.PathLike[str]],
-        param: Optional[click.Parameter],
-        ctx: Optional[click.Context],
-    ) -> Union[str, bytes, os.PathLike[str]]:
+        value: str | os.PathLike[str],
+        param: click.Parameter | None,
+        ctx: click.Context | None,
+    ) -> str | bytes | os.PathLike[str]:
         if isinstance(value, os.PathLike) or not EnhancedPath.is_url(value):
             return typing.cast(
                 Union[str, bytes, os.PathLike[str]], super().convert(value, param, ctx)
@@ -31,8 +31,8 @@ class EnhancedPath(click.Path):
             super().convert(EnhancedPath.file_url_to_path(value), param, ctx)
             return value
 
-        from urllib.request import urlopen
         from urllib.error import HTTPError, URLError
+        from urllib.request import urlopen
 
         def handle_http_error(
             http_error: HTTPError,
