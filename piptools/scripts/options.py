@@ -9,6 +9,8 @@ from pip._internal.utils.misc import redact_auth_from_url
 from piptools.locations import CACHE_DIR, DEFAULT_CONFIG_FILE_NAMES
 from piptools.utils import UNSAFE_PACKAGES, override_defaults_from_config_file
 
+from .types import EnhancedPath
+
 BuildTargetT = Literal["sdist", "wheel", "editable"]
 ALL_BUILD_TARGETS: tuple[BuildTargetT, ...] = (
     "editable",
@@ -337,7 +339,7 @@ no_config = click.option(
 constraint = click.option(
     "-c",
     "--constraint",
-    type=click.Path(
+    type=EnhancedPath(
         exists=True,
         file_okay=True,
         dir_okay=False,
