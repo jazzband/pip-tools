@@ -3585,7 +3585,7 @@ def test_stdout_should_not_be_read_when_stdin_is_not_a_plain_file(
     runner,
     tmp_path,
 ):
-    parse_req.side_effect = AssertionError("Must not be called when output is a fifo")
+    parse_req.side_effect = pytest.fail("Must not be called when output is a fifo")
 
     req_in = tmp_path / "requirements.txt"
     req_in.touch()
