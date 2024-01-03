@@ -532,7 +532,7 @@ def override_defaults_from_config_file(
     ``None`` is returned if no such file is found.
 
     ``pip-tools`` will use the first config file found, searching in this order:
-    an explicitly given config file, a d``.pip-tools.toml``, a ``pyproject.toml``
+    an explicitly given config file, a ``.pip-tools.toml``, a ``pyproject.toml``
     file. Those files are searched for in the same directory as the requirements
     input file, or the current working directory if requirements come via stdin.
     """
@@ -547,9 +547,9 @@ def override_defaults_from_config_file(
         config_file = Path(value)
 
     config = parse_config_file(ctx, config_file)
-    if config:
-        _validate_config(ctx, config)
-        _assign_config_to_cli_context(ctx, config)
+
+    _validate_config(ctx, config)
+    _assign_config_to_cli_context(ctx, config)
 
     return config_file
 
@@ -678,13 +678,24 @@ def parse_config_file(
             hint=f"Could not parse '{config_file !s}': {value_err !s}",
         )
 
-    # In a TOML file, we expect the config to be under `[tool.pip-tools]`
+    # In a TOML file, we expect the config to be under `[tool.pip-tools]`,
+    # `[tool.pip-tools.compile]` or `[tool.pip-tools.sync]`
     piptools_config: dict[str, Any] = config.get("tool", {}).get("pip-tools", {})
+
+    assert click_context.command.name is not None
+    # TODO: Replace with `str.removeprefix()` once dropped 3.8
+    config_section_name = click_context.command.name[len("pip-") :]
+
+    piptools_config.update(piptools_config.pop(config_section_name, {}))
+    piptools_config.pop("compile", {})
+    piptools_config.pop("sync", {})
+
     piptools_config = _normalize_keys_in_config(piptools_config)
     piptools_config = _invert_negative_bool_options_in_config(
         ctx=click_context,
         config=piptools_config,
     )
+
     return piptools_config
 
 

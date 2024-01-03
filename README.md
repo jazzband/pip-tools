@@ -290,6 +290,7 @@ By default, both `pip-compile` and `pip-sync` will look first
 for a `.pip-tools.toml` file and then in your `pyproject.toml`. You can
 also specify an alternate TOML configuration file with the `--config` option.
 
+It is possible to specify configuration values both globally and command-specific.
 For example, to by default generate `pip` hashes in the resulting
 requirements file output, you can specify in a configuration file:
 
@@ -309,6 +310,28 @@ so the above could also be specified in this format:
 ```toml
 [tool.pip-tools]
 generate_hashes = true
+```
+
+Configuration defaults specific to `pip-compile` and `pip-sync` can be put beneath
+separate sections. For example, to by default perform a dry-run with `pip-compile`:
+
+```toml
+[tool.pip-tools.compile] # "sync" for pip-sync
+dry-run = true
+```
+
+This does not affect the `pip-sync` command, which also has a `--dry-run` option.
+Note that local settings take preference over the global ones of the same name,
+whenever both are declared, thus this would also make `pip-compile` generate hashes,
+but discard the global dry-run setting:
+
+```toml
+[tool.pip-tools]
+generate-hashes = true
+dry-run = true
+
+[tool.pip-tools.compile]
+dry-run = false
 ```
 
 You might be wrapping the `pip-compile` command in another script. To avoid

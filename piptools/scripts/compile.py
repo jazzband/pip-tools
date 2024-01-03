@@ -68,7 +68,10 @@ def _determine_linesep(
     }[strategy]
 
 
-@click.command(context_settings={"help_option_names": options.help_option_names})
+@click.command(
+    name="pip-compile",
+    context_settings={"help_option_names": options.help_option_names},
+)
 @click.pass_context
 @options.version
 @options.verbose
