@@ -33,6 +33,12 @@ help_option_names = ("-h", "--help")
 
 version = click.version_option(package_name="pip-tools")
 
+color = click.option(
+    "--color/--no-color",
+    default=None,
+    help="Force output to be colorized or not, instead of auto-detecting color support",
+)
+
 verbose = click.option(
     "-v",
     "--verbose",

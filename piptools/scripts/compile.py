@@ -74,6 +74,7 @@ def _determine_linesep(
 )
 @click.pass_context
 @options.version
+@options.color
 @options.verbose
 @options.quiet
 @options.dry_run
@@ -118,6 +119,7 @@ def _determine_linesep(
 @options.only_build_deps
 def cli(
     ctx: click.Context,
+    color: bool | None,
     verbose: int,
     quiet: int,
     dry_run: bool,
@@ -165,6 +167,8 @@ def cli(
     Compiles requirements.txt from requirements.in, pyproject.toml, setup.cfg,
     or setup.py specs.
     """
+    if color is not None:
+        ctx.color = color
     log.verbosity = verbose - quiet
 
     if all_build_deps and build_deps_targets:
