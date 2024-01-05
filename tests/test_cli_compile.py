@@ -3576,3 +3576,26 @@ def test_tool_specific_config_option(pip_conf, runner, tmp_path, make_config_fil
 
     assert out.exit_code == 0
     assert "Dry-run, so nothing updated" in out.stderr
+
+
+@pytest.mark.xfail(reason="https://github.com/jazzband/pip-tools/issues/2012")
+@mock.patch("piptools.scripts.compile.parse_requirements")
+def test_stdout_should_not_be_read_when_stdin_is_not_a_plain_file(
+    parse_req,
+    runner,
+    tmp_path,
+):
+    parse_req.side_effect = lambda fname, finder, options, session: pytest.fail(
+        "Must not be called when output is a fifo"
+    )
+
+    req_in = tmp_path / "requirements.txt"
+    req_in.touch()
+
+    fifo = tmp_path / "fifo"
+
+    os.mkfifo(fifo)
+
+    out = runner.invoke(cli, [req_in.as_posix(), "--output-file", fifo.as_posix()])
+
+    assert out.exit_code == 0, out
