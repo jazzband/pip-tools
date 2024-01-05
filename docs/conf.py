@@ -54,6 +54,7 @@ nitpicky = True
 
 linkcheck_ignore = [
     r"^https://matrix\.to/#",
+    r"^https://img.shields.io/matrix",
 ]
 
 suppress_warnings = ["myst.xref_missing"]
