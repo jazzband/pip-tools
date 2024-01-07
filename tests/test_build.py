@@ -5,7 +5,11 @@ import shutil
 
 import pytest
 
-from piptools.build import StaticProjectMetadata, ProjectMetadata, build_project_metadata
+from piptools.build import (
+    ProjectMetadata,
+    StaticProjectMetadata,
+    build_project_metadata,
+)
 from tests.constants import PACKAGES_PATH
 
 
@@ -50,7 +54,7 @@ def test_build_project_metadata_static(tmp_path):
     requirements = [(r.name, r.extras, str(r.markers)) for r in metadata.requirements]
     requirements.sort(key=lambda x: x[0])
     assert requirements == [
-        ('fake_direct_extra_runtime_dep', {"with_its_own_extra"}, 'extra == "x"'),
-        ('fake_direct_runtime_dep', set(), 'None')
+        ("fake_direct_extra_runtime_dep", {"with_its_own_extra"}, 'extra == "x"'),
+        ("fake_direct_runtime_dep", set(), "None"),
     ]
     assert metadata.extras == ("x",)
