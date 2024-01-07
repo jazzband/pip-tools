@@ -42,6 +42,12 @@ else:
 
 
 @dataclass
+class StaticProjectMetadata:
+    extras: tuple[str, ...]
+    requirements: tuple[InstallRequirement, ...]
+
+
+@dataclass
 class ProjectMetadata:
     extras: tuple[str, ...]
     requirements: tuple[InstallRequirement, ...]
@@ -50,7 +56,7 @@ class ProjectMetadata:
 
 def maybe_statically_parse_project_metadata(
     src_file: pathlib.Path,
-) -> ProjectMetadata | None:
+) -> StaticProjectMetadata | None:
     """
     Return the metadata for a project, if it can be statically parsed from pyproject.toml.
 
@@ -97,15 +103,9 @@ def maybe_statically_parse_project_metadata(
                 InstallRequirement(requirement, comes_from, markers=marker)
             )
 
-    comes_from = f"{package_name} ({src_file}::build-system.requires)"
-    build_requirements = [
-        InstallRequirement(Requirement(req), comes_from)
-        for req in pyproject_contents.get("build-system", {}).get("requires", [])
-    ]
-    return ProjectMetadata(
+    return StaticProjectMetadata(
         extras=tuple(extras),
         requirements=tuple(install_requirements),
-        build_requirements=tuple(build_requirements),
     )
 
 
@@ -113,13 +113,16 @@ def build_project_metadata(
     src_file: pathlib.Path,
     build_targets: tuple[str, ...],
     *,
+    attempt_static_parse: bool,
     isolated: bool,
     quiet: bool,
-) -> ProjectMetadata:
+) -> ProjectMetadata | StaticProjectMetadata:
     """
     Return the metadata for a project.
 
-    Attempts to determine the metadata statically from the pyproject.toml file.
+    First, optionally attempt to determine the metadata statically from the
+    pyproject.toml file. This will not work if build_targets are specified,
+    since we cannot determine build requirements statically.
 
     Uses the ``prepare_metadata_for_build_wheel`` hook for the wheel metadata
     if available, otherwise ``build_wheel``.
@@ -130,15 +133,24 @@ def build_project_metadata(
     :param src_file: Project source file
     :param build_targets: A tuple of build targets to get the dependencies
                                 of (``sdist`` or ``wheel`` or ``editable``).
+    :param attempt_static_parse: Whether to attempt to statically parse the
+                                 project metadata from pyproject.toml.
+                                 Cannot be used with ``build_targets``.
     :param isolated: Whether to run invoke the backend in the current
                      environment or to create an isolated one and invoke it
                      there.
     :param quiet: Whether to suppress the output of subprocesses.
     """
 
-    project_metadata = maybe_statically_parse_project_metadata(src_file)
-    if project_metadata is not None:
-        return project_metadata
+    if attempt_static_parse:
+        if build_targets:
+            raise AssertionError(
+                "Cannot execute the PEP 517 optional get_requires_for_build* "
+                "hooks statically"
+            )
+        project_metadata = maybe_statically_parse_project_metadata(src_file)
+        if project_metadata is not None:
+            return project_metadata
 
     src_dir = src_file.parent
     with _create_project_builder(src_dir, isolated=isolated, quiet=quiet) as builder:

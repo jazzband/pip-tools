@@ -5,7 +5,7 @@ import shutil
 
 import pytest
 
-from piptools.build import build_project_metadata
+from piptools.build import ProjectMetadata, build_project_metadata
 from tests.constants import PACKAGES_PATH
 
 
@@ -25,8 +25,9 @@ def test_build_project_metadata_resolved_correct_build_dependencies(
     shutil.copytree(src_pkg_path, tmp_path, dirs_exist_ok=True)
     src_file = tmp_path / "setup.py"
     metadata = build_project_metadata(
-        src_file, ("editable",), isolated=True, quiet=False
+        src_file, ("editable",), attempt_static_parse=False, isolated=True, quiet=False
     )
+    assert isinstance(metadata, ProjectMetadata)
     build_requirements = sorted(r.name for r in metadata.build_requirements)
     assert build_requirements == [
         "fake_dynamic_build_dep_for_all",
