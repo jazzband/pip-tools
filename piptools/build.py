@@ -148,7 +148,7 @@ def build_project_metadata(
 
     if attempt_static_parse:
         if build_targets:
-            raise AssertionError(
+            raise ValueError(
                 "Cannot execute the PEP 517 optional get_requires_for_build* "
                 "hooks statically"
             )

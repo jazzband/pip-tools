@@ -58,3 +58,19 @@ def test_build_project_metadata_static(tmp_path):
         ("fake_direct_runtime_dep", set(), "None"),
     ]
     assert metadata.extras == ("x",)
+
+
+def test_build_project_metadata_raises_error(tmp_path):
+    src_pkg_path = pathlib.Path(PACKAGES_PATH) / "small_fake_with_build_deps"
+    shutil.copytree(src_pkg_path, tmp_path, dirs_exist_ok=True)
+    src_file = tmp_path / "setup.py"
+    with pytest.raises(
+        ValueError, match="Cannot execute the PEP 517 optional.* hooks statically"
+    ):
+        build_project_metadata(
+            src_file,
+            ("editable",),
+            attempt_static_parse=True,
+            isolated=True,
+            quiet=False,
+        )
