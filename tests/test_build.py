@@ -9,6 +9,7 @@ from piptools.build import (
     ProjectMetadata,
     StaticProjectMetadata,
     build_project_metadata,
+    maybe_statically_parse_project_metadata,
 )
 from tests.constants import PACKAGES_PATH
 
@@ -74,3 +75,56 @@ def test_build_project_metadata_raises_error(tmp_path):
             isolated=True,
             quiet=False,
         )
+
+
+def test_static_parse(tmp_path):
+    src_file = tmp_path / "pyproject.toml"
+
+    valid = """
+[project]
+name = "foo"
+version = "0.1.0"
+dependencies = ["bar>=1"]
+[project.optional-dependencies]
+baz = ["qux[extra]"]
+"""
+    src_file.write_text(valid)
+    metadata = maybe_statically_parse_project_metadata(src_file)
+    assert isinstance(metadata, StaticProjectMetadata)
+    assert [str(r.req) for r in metadata.requirements] == ["bar>=1", "qux[extra]"]
+    assert metadata.extras == ("baz",)
+
+    no_pep621 = """
+[build-system]
+requires = ["setuptools"]
+"""
+    src_file.write_text(no_pep621)
+    assert maybe_statically_parse_project_metadata(src_file) is None
+
+    invalid_pep621 = """
+[project]
+# no name
+version = "0.1.0"
+"""
+    src_file.write_text(invalid_pep621)
+    assert maybe_statically_parse_project_metadata(src_file) is None
+
+    dynamic_deps = """
+[project]
+name = "foo"
+dynamic = ["dependencies"]
+"""
+    src_file.write_text(dynamic_deps)
+    assert maybe_statically_parse_project_metadata(src_file) is None
+
+    dynamic_optional_deps = """
+[project]
+name = "foo"
+dynamic = ["optional-dependencies"]
+"""
+    src_file.write_text(dynamic_optional_deps)
+    assert maybe_statically_parse_project_metadata(src_file) is None
+
+    src_file = tmp_path / "setup.py"
+    src_file.write_text("print('hello')")
+    assert maybe_statically_parse_project_metadata(src_file) is None
