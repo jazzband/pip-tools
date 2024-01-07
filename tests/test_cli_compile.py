@@ -3332,7 +3332,7 @@ small-fake-b==0.3
     try:
         assert out.exit_code == 0
         assert expected == out.stdout
-    except Exception:
+    except Exception:  # pragma: no cover
         print(out.stdout)
         print(out.stderr)
         raise
@@ -3382,7 +3382,7 @@ wheel==0.42.0
     try:
         assert out.exit_code == 0
         assert expected == out.stdout
-    except Exception:
+    except Exception:  # pragma: no cover
         print(out.stdout)
         print(out.stderr)
         raise
