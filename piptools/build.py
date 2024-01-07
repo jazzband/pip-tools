@@ -100,7 +100,7 @@ def maybe_statically_parse_project_metadata(
             if requirement.name == package_name:
                 # Similar to logic for handling self-referential requirements
                 # from _prepare_requirements
-                requirement.url = f"file://{src_file.parent.as_posix()}"
+                requirement.url = src_file.parent.as_uri()
             # Note we don't need to modify `requirement` to include this extra
             marker = Marker(f"extra == '{extra}'")
             install_requirements.append(
