@@ -1,0 +1,8 @@
+[project]
+name="small_fake_with_pyproject"
+version=0.1
+dependencies=[
+    "fake_direct_runtime_dep",
+]
+[project.optional-dependencies]
+x = ["fake_direct_extra_runtime_dep[with_its_own_extra]"]

@@ -3295,7 +3295,7 @@ def test_pass_pip_cache_to_pip_args(tmpdir, runner, current_resolver):
 
 
 @backtracking_resolver_only
-def test_compile_recursive_extras(runner, tmp_path, current_resolver):
+def test_compile_recursive_extras_static(runner, tmp_path, current_resolver):
     (tmp_path / "pyproject.toml").write_text(
         dedent(
             """
@@ -3329,8 +3329,63 @@ def test_compile_recursive_extras(runner, tmp_path, current_resolver):
 small-fake-a==0.2
 small-fake-b==0.3
 """
-    assert out.exit_code == 0
-    assert expected == out.stdout
+    try:
+        assert out.exit_code == 0
+        assert expected == out.stdout
+    except Exception:
+        print(out.stdout)
+        print(out.stderr)
+        raise
+
+
+@backtracking_resolver_only
+def test_compile_recursive_extras_build_targets(runner, tmp_path, current_resolver):
+    (tmp_path / "pyproject.toml").write_text(
+        dedent(
+            """
+            [project]
+            name = "foo"
+            version = "0.0.1"
+            dependencies = ["small-fake-a"]
+            [project.optional-dependencies]
+            footest = ["small-fake-b"]
+            dev = ["foo[footest]"]
+            """
+        )
+    )
+    out = runner.invoke(
+        cli,
+        [
+            "--no-build-isolation",
+            "--no-header",
+            "--no-annotate",
+            "--no-emit-options",
+            "--extra",
+            "dev",
+            "--build-deps-for",
+            "wheel",
+            "--find-links",
+            os.fspath(MINIMAL_WHEELS_PATH),
+            os.fspath(tmp_path / "pyproject.toml"),
+            "--output-file",
+            "-",
+        ],
+    )
+    expected = rf"""foo[footest] @ {tmp_path.as_uri()}
+small-fake-a==0.2
+small-fake-b==0.3
+wheel==0.42.0
+
+# The following packages are considered to be unsafe in a requirements file:
+# setuptools
+"""
+    try:
+        assert out.exit_code == 0
+        assert expected == out.stdout
+    except Exception:
+        print(out.stdout)
+        print(out.stderr)
+        raise
 
 
 def test_config_option(pip_conf, runner, tmp_path, make_config_file):

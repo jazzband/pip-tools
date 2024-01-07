@@ -5,7 +5,7 @@ import shutil
 
 import pytest
 
-from piptools.build import ProjectMetadata, build_project_metadata
+from piptools.build import StaticProjectMetadata, ProjectMetadata, build_project_metadata
 from tests.constants import PACKAGES_PATH
 
 
@@ -36,3 +36,21 @@ def test_build_project_metadata_resolved_correct_build_dependencies(
         "setuptools",
         "wheel",
     ]
+
+
+def test_build_project_metadata_static(tmp_path):
+    """Test static parsing branch of build_project_metadata"""
+    src_pkg_path = pathlib.Path(PACKAGES_PATH) / "small_fake_with_pyproject"
+    shutil.copytree(src_pkg_path, tmp_path, dirs_exist_ok=True)
+    src_file = tmp_path / "pyproject.toml"
+    metadata = build_project_metadata(
+        src_file, (), attempt_static_parse=True, isolated=True, quiet=False
+    )
+    assert isinstance(metadata, StaticProjectMetadata)
+    requirements = [(r.name, r.extras, str(r.markers)) for r in metadata.requirements]
+    requirements.sort(key=lambda x: x[0])
+    assert requirements == [
+        ('fake_direct_extra_runtime_dep', {"with_its_own_extra"}, 'extra == "x"'),
+        ('fake_direct_runtime_dep', set(), 'None')
+    ]
+    assert metadata.extras == ("x",)
