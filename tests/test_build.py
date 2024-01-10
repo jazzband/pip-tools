@@ -94,6 +94,10 @@ baz = ["qux[extra]"]
     assert [str(r.req) for r in metadata.requirements] == ["bar>=1", "qux[extra]"]
     assert metadata.extras == ("baz",)
 
+    invalid_toml = """this is not valid toml"""
+    src_file.write_text(invalid_toml)
+    assert maybe_statically_parse_project_metadata(src_file) is None
+
     no_pep621 = """
 [build-system]
 requires = ["setuptools"]

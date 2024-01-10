@@ -70,7 +70,7 @@ def maybe_statically_parse_project_metadata(
         with open(src_file, "rb") as f:
             pyproject_contents = tomllib.load(f)
     except tomllib.TOMLDecodeError:
-        pyproject_contents = {}
+        return None
 
     # Not valid PEP 621 metadata
     if (
