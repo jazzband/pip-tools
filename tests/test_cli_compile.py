@@ -3447,6 +3447,42 @@ def test_allow_in_config_pip_sync_option(pip_conf, runner, tmp_path, make_config
     assert "Using pip-tools configuration defaults found" in out.stderr
 
 
+def test_use_src_files_from_config_if_option_is_not_specified_from_cli(
+    pip_conf, runner, tmp_path, make_config_file
+):
+    foo_in = tmp_path / "foo.in"
+    req_in = tmp_path / "requirements.in"
+
+    config_file = make_config_file("src-files", [foo_in.as_posix()])
+
+    req_in.write_text("small-fake-a==0.1", encoding="utf-8")
+    foo_in.write_text("small-fake-b==0.1", encoding="utf-8")
+
+    out = runner.invoke(cli, ["--config", config_file.as_posix()])
+
+    assert out.exit_code == 0, out
+    assert "small-fake-b" in out.stderr
+    assert "small-fake-a" not in out.stderr
+
+
+def test_use_src_files_from_cli_if_option_is_specified_in_both_config_and_cli(
+    pip_conf, runner, tmp_path, make_config_file
+):
+    foo_in = tmp_path / "foo.in"
+    req_in = tmp_path / "requirements.in"
+
+    config_file = make_config_file("src-files", [foo_in.as_posix()])
+
+    req_in.write_text("small-fake-a==0.1", encoding="utf-8")
+    foo_in.write_text("small-fake-b==0.1", encoding="utf-8")
+
+    out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
+
+    assert out.exit_code == 0, out
+    assert "small-fake-a" in out.stderr
+    assert "small-fake-b" not in out.stderr
+
+
 def test_cli_boolean_flag_config_option_has_valid_context(
     pip_conf, runner, tmp_path, make_config_file
 ):

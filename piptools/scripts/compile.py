@@ -171,6 +171,12 @@ def cli(
         ctx.color = color
     log.verbosity = verbose - quiet
 
+    # If ``src-files` was not provided as an input, but rather as config,
+    # it will be part of the click context ``ctx``.
+    # However, if ``src_files`` is specified, then we want to use that.
+    if not src_files and ctx.default_map and "src_files" in ctx.default_map:
+        src_files = ctx.default_map["src_files"]
+
     if all_build_deps and build_deps_targets:
         raise click.BadParameter(
             "--build-deps-for has no effect when used with --all-build-deps"
