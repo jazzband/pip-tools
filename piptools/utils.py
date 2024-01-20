@@ -630,7 +630,7 @@ def select_config_file(src_files: tuple[str, ...]) -> Path | None:
     # NOTE: input.
     working_directory = Path.cwd()
     src_files_as_paths = (
-        (working_directory / src_file).resolve() for src_file in src_files or (".",)
+        (working_directory / src_file).resolve() for src_file in src_files + (".",)
     )
     candidate_dirs = (src if src.is_dir() else src.parent for src in src_files_as_paths)
     config_file_path = next(
