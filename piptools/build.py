@@ -79,18 +79,20 @@ def maybe_statically_parse_project_metadata(
     ):
         return None
 
+    project_table = pyproject_contents["project"]
+
     # Dynamic dependencies require build invocation
-    dynamic = pyproject_contents["project"].get("dynamic", [])
+    dynamic = project_table.get("dynamic", [])
     if "dependencies" in dynamic or "optional-dependencies" in dynamic:
         return None
 
-    package_name = pyproject_contents["project"]["name"]
+    package_name = project_table["name"]
     comes_from = f"{package_name} ({src_file})"
 
-    extras = pyproject_contents["project"].get("optional-dependencies", {}).keys()
+    extras = project_table.get("optional-dependencies", {}).keys()
     install_requirements = [
         InstallRequirement(Requirement(req), comes_from)
-        for req in pyproject_contents["project"].get("dependencies", [])
+        for req in project_table.get("dependencies", [])
     ]
     for extra, reqs in (
         pyproject_contents.get("project", {}).get("optional-dependencies", {}).items()
