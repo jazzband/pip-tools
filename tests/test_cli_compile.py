@@ -3030,6 +3030,9 @@ def test_cli_compile_all_extras_with_multiple_packages(
     )
 
     assert out.exit_code == 0, out
+    assert "--all-extras" in out.stderr
+    assert "test_package_1/0.1/setup.py" in out.stderr
+    assert "test_package_2/0.1/setup.py" in out.stderr
 
 
 @pytest.mark.parametrize(
