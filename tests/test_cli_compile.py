@@ -3353,9 +3353,6 @@ def test_default_config_option(pip_conf, runner, make_config_file, tmpdir_cwd):
 
     out = runner.invoke(cli)
 
-    print(out.stdout)
-    print(out.stderr)
-
     assert out.exit_code == 0
     assert "Dry-run, so nothing updated" in out.stderr
 
