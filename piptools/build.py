@@ -127,7 +127,7 @@ def build_project_metadata(
     Return the metadata for a project.
 
     First, optionally attempt to determine the metadata statically from the
-    pyproject.toml file. This will not work if build_targets are specified,
+    ``pyproject.toml`` file. This will not work if build_targets are specified,
     since we cannot determine build requirements statically.
 
     Uses the ``prepare_metadata_for_build_wheel`` hook for the wheel metadata
@@ -140,7 +140,7 @@ def build_project_metadata(
     :param build_targets: A tuple of build targets to get the dependencies
                                 of (``sdist`` or ``wheel`` or ``editable``).
     :param attempt_static_parse: Whether to attempt to statically parse the
-                                 project metadata from pyproject.toml.
+                                 project metadata from ``pyproject.toml``.
                                  Cannot be used with ``build_targets``.
     :param isolated: Whether to run invoke the backend in the current
                      environment or to create an isolated one and invoke it
