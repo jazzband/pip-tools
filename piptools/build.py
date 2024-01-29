@@ -58,7 +58,7 @@ def maybe_statically_parse_project_metadata(
     src_file: pathlib.Path,
 ) -> StaticProjectMetadata | None:
     """
-    Return the metadata for a project, if it can be statically parsed from pyproject.toml.
+    Return the metadata for a project, if it can be statically parsed from ``pyproject.toml``.
 
     This function is typically significantly faster than invoking a build backend.
     Returns None if the project metadata cannot be statically parsed.
