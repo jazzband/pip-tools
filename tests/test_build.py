@@ -77,7 +77,7 @@ def test_build_project_metadata_raises_error(tmp_path):
         )
 
 
-def test_static_parse(tmp_path):
+def test_static_parse_valid(tmp_path):
     src_file = tmp_path / "pyproject.toml"
 
     valid = """
@@ -93,6 +93,10 @@ baz = ["qux[extra]"]
     assert isinstance(metadata, StaticProjectMetadata)
     assert [str(r.req) for r in metadata.requirements] == ["bar>=1", "qux[extra]"]
     assert metadata.extras == ("baz",)
+
+
+def test_static_parse_invalid(tmp_path):
+    src_file = tmp_path / "pyproject.toml"
 
     invalid_toml = """this is not valid toml"""
     src_file.write_text(invalid_toml)
