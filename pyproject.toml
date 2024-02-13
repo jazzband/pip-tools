@@ -43,7 +43,7 @@ dependencies = [
   "tomli; python_version < '3.11'",
   # indirect dependencies
   "setuptools", # typically needed when pip-tools invokes setup.py
-  "wheel", # pip plugin needed by pip-tools
+  "wheel",      # pip plugin needed by pip-tools
 
 ]
 

@@ -80,7 +80,6 @@ dynamic = ["dependencies", "optional-dependencies"]
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.in"] }
 optional-dependencies.test = { file = ["requirements-test.txt"] }
-
 ```
 
 If you have a Django application that is packaged using `Hatch`, and you

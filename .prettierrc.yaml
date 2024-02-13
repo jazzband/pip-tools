@@ -3,3 +3,5 @@ overrides:
   - files: "CHANGELOG.md"
     options:
       proseWrap: always
+plugins:
+  - "prettier-plugin-toml"
