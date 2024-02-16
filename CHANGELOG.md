@@ -1,3 +1,32 @@
+## v7.4.0
+
+Features:
+
+- Allow force-enabling or force-disabling colorized output
+  ([#2041](https://github.com/jazzband/pip-tools/pull/2041)). Thanks @aneeshusa
+- Add support for command-specific configuration sections
+  ([#1966](https://github.com/jazzband/pip-tools/pull/1966)). Thanks @chrysle
+- Add options for including build dependencies in compiled output
+  ([#1681](https://github.com/jazzband/pip-tools/pull/1681)). Thanks @apljungquist
+
+Bug Fixes:
+
+- Fix for `src-files` not being used when specified in a config file
+  ([#2015](https://github.com/jazzband/pip-tools/pull/2015)). Thanks @csalerno-asml
+- Fix ignorance of inverted CLI options in config for `pip-sync`
+  ([#1989](https://github.com/jazzband/pip-tools/pull/1989)). Thanks @chrysle
+- Filter out origin ireqs for extra requirements before writing output annotations
+  ([#2011](https://github.com/jazzband/pip-tools/pull/2011)). Thanks @chrysle
+- Make BacktrackingResolver ignore extras when dropping existing constraints
+  ([#1984](https://github.com/jazzband/pip-tools/pull/1984)). Thanks @chludwig-haufe
+- Display `pyproject.toml`'s metatada parsing errors in verbose mode
+  ([#1979](https://github.com/jazzband/pip-tools/pull/1979)). Thanks @szobov
+
+Other Changes:
+
+- Add mention of pip-compile-multi in Other useful tools README section
+  ([#1986](https://github.com/jazzband/pip-tools/pull/1986)). Thanks @peterdemin
+
 ## v7.3.0
 
 09 Aug 2023
