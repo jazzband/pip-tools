@@ -420,8 +420,9 @@ def test_emit_index_url_option(runner, option, expected_output):
 
 
 @pytest.mark.network
-def test_realistic_complex_sub_dependencies(runner):
-    wheels_dir = "wheels"
+def test_realistic_complex_sub_dependencies(runner, tmp_path):
+    wheels_dir = tmp_path / "wheels"
+    wheels_dir.mkdir()
 
     # make a temporary wheel of a fake package
     subprocess.run(
@@ -439,7 +440,7 @@ def test_realistic_complex_sub_dependencies(runner):
     with open("requirements.in", "w") as req_in:
         req_in.write("fake_with_deps")  # require fake package
 
-    out = runner.invoke(cli, ["-n", "--rebuild", "-f", wheels_dir])
+    out = runner.invoke(cli, ["-n", "--rebuild", "-f", wheels_dir.as_posix()])
 
     assert out.exit_code == 0
 
