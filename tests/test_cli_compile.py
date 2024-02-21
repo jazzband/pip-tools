@@ -3002,6 +3002,40 @@ def test_cli_compile_strip_extras(runner, make_package, make_sdist, tmpdir):
     assert "[more]" not in out.stderr
 
 
+def test_cli_compile_all_extras_with_multiple_packages(
+    runner, make_package, make_sdist, tmpdir
+):
+    """
+    Assures that ``--all-extras`` works when multiple sources are specified.
+    """
+    test_package_1 = make_package(
+        "test_package_1",
+        version="0.1",
+        extras_require={"more": []},
+    )
+    test_package_2 = make_package(
+        "test_package_2",
+        version="0.1",
+        extras_require={"more": []},
+    )
+
+    out = runner.invoke(
+        cli,
+        [
+            "--all-extras",
+            "--output-file",
+            "requirements.txt",
+            str(test_package_1 / "setup.py"),
+            str(test_package_2 / "setup.py"),
+        ],
+    )
+
+    assert out.exit_code == 0, out
+    assert "--all-extras" in out.stderr
+    assert f"test_package_1{os.path.sep}0.1{os.path.sep}setup.py" in out.stderr
+    assert f"test_package_2{os.path.sep}0.1{os.path.sep}setup.py" in out.stderr
+
+
 @pytest.mark.parametrize(
     ("package_specs", "constraints", "existing_reqs", "expected_reqs"),
     (
