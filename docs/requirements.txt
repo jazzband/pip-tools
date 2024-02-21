@@ -19,12 +19,12 @@ docutils==0.20.1
     #   myst-parser
     #   sphinx
 furo==2023.8.17
-    # via -r docs/requirements.in
+    # via -r requirements.in
 idna==3.4
     # via requests
 imagesize==1.4.1
     # via sphinx
-jinja2==3.1.2
+jinja2==3.1.3
     # via
     #   myst-parser
     #   sphinx
@@ -39,7 +39,7 @@ mdit-py-plugins==0.4.0
 mdurl==0.1.2
     # via markdown-it-py
 myst-parser==2.0.0
-    # via -r docs/requirements.in
+    # via -r requirements.in
 packaging==23.1
     # via
     #   setuptools-scm
@@ -53,14 +53,14 @@ pyyaml==6.0.1
 requests==2.31.0
     # via sphinx
 setuptools-scm==7.1.0
-    # via -r docs/requirements.in
+    # via -r requirements.in
 snowballstemmer==2.2.0
     # via sphinx
 soupsieve==2.4.1
     # via beautifulsoup4
 sphinx==7.2.2
     # via
-    #   -r docs/requirements.in
+    #   -r requirements.in
     #   furo
     #   myst-parser
     #   sphinx-basic-ng
@@ -81,7 +81,7 @@ sphinxcontrib-htmlhelp==2.0.4
 sphinxcontrib-jsmath==1.0.1
     # via sphinx
 sphinxcontrib-programoutput==0.17
-    # via -r docs/requirements.in
+    # via -r requirements.in
 sphinxcontrib-qthelp==1.0.6
     # via sphinx
 sphinxcontrib-serializinghtml==1.1.8
