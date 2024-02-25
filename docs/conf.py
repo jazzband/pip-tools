@@ -36,7 +36,11 @@ logger.info(bold("%s release: %s"), project, release)
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ["myst_parser", "sphinxcontrib.programoutput", "sphinxcontrib.apidoc"]
+extensions = [
+    "myst_parser",
+    "sphinxcontrib.apidoc",
+    "sphinxcontrib.programoutput",
+]
 
 
 # -- Options for HTML output -------------------------------------------------
