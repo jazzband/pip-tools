@@ -39,6 +39,7 @@ logger.info(bold("%s release: %s"), project, release)
 extensions = [
     "myst_parser",
     "sphinxcontrib.apidoc",
+    "sphinx.ext.intersphinx",
     "sphinxcontrib.programoutput",
 ]
 
@@ -52,6 +53,14 @@ html_theme = "furo"
 html_title = f"<nobr>{project}</nobr> documentation v{release}"
 
 
+# -- Options for intersphinx ----------------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html#configuration
+
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+}
+
+
 # -------------------------------------------------------------------------
 default_role = "any"
 nitpicky = True
@@ -60,8 +69,6 @@ linkcheck_ignore = [
     r"^https://matrix\.to/#",
     r"^https://img.shields.io/matrix",
 ]
-
-suppress_warnings = ["myst.xref_missing"]
 
 nitpick_ignore_regex = [
     ("py:class", "pip.*"),
@@ -75,14 +82,17 @@ nitpick_ignore_regex = [
     ("py:exc", "click.*"),
 ]
 
+suppress_warnings = ["myst.xref_missing"]
+
 # -- Apidoc options -------------------------------------------------------
+
 apidoc_excluded_paths: list[str] = []
 apidoc_extra_args = [
     "--implicit-namespaces",
     "--private",  # include “_private” modules
 ]
-apidoc_module_dir = "../piptools"
 apidoc_module_first = False
+apidoc_module_dir = "../piptools"
 apidoc_output_dir = "pkg"
 apidoc_separate_modules = True
 apidoc_toc_file = None
