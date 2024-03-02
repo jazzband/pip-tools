@@ -39,7 +39,6 @@ logger.info(bold("%s release: %s"), project, release)
 extensions = [
     # Stdlib extensions:
     "sphinx.ext.intersphinx",
-
     # Third-party extensions:
     "myst_parser",
     "sphinxcontrib.apidoc",
