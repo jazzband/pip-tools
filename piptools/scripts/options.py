@@ -343,14 +343,6 @@ no_config = click.option(
 constraint = click.option(
     "-c",
     "--constraint",
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        dir_okay=False,
-        readable=True,
-        allow_dash=False,
-        path_type=str,
-    ),
     multiple=True,
     help="Constrain versions using the given constraints file; may be used more than once.",
 )
