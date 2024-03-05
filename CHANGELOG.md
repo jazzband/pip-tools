@@ -6,7 +6,7 @@ Bug Fixes:
 
 - Skip constraint path check ([#2038](https://github.com/jazzband/pip-tools/pull/2038)).
   Thanks @honnix
-- 🐛 Fix collecting deps for all extras in multiple input packages
+- Fix collecting deps for all extras in multiple input packages
   ([#1981](https://github.com/jazzband/pip-tools/pull/1981)). Thanks @dragly
 
 ## v7.4.0
