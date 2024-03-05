@@ -371,9 +371,14 @@ def get_compile_command(click_ctx: click.Context) -> str:
         # Get the latest option name (usually it'll be a long name)
         option_long_name = option.opts[-1]
 
+        negative_option = None
+        if option.is_flag and option.secondary_opts:
+            # get inverse flag --no-{option_long_name}
+            negative_option = option.secondary_opts[-1]
+
         # Exclude one-off options (--upgrade/--upgrade-package/--rebuild/...)
         # or options that don't change compile behaviour (--verbose/--dry-run/...)
-        if option_long_name in COMPILE_EXCLUDE_OPTIONS:
+        if {option_long_name, negative_option} & COMPILE_EXCLUDE_OPTIONS:
             continue
 
         # Exclude config option if it's the default one

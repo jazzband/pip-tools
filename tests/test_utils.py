@@ -374,6 +374,8 @@ def test_is_url_requirement_filename(caplog, from_line, line):
         (["--upgrade"], "pip-compile"),
         (["-P", "django"], "pip-compile"),
         (["--upgrade-package", "django"], "pip-compile"),
+        (["--reuse-hashes"], "pip-compile"),
+        (["--no-reuse-hashes"], "pip-compile"),
         # Check options
         (["--max-rounds", "42"], "pip-compile --max-rounds=42"),
         (["--index-url", "https://foo"], "pip-compile --index-url=https://foo"),
