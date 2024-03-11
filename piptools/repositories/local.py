@@ -21,7 +21,7 @@ def ireq_satisfied_by_existing_pin(
     ireq: InstallRequirement, existing_pin: InstallationCandidate
 ) -> bool:
     """
-    Return True if the given InstallationRequirement is satisfied by the
+    Return :py:data:`True` if the given ``InstallRequirement`` is satisfied by the
     previously encountered version pin.
     """
     version = next(iter(existing_pin.req.specifier)).version

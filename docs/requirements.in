@@ -2,4 +2,5 @@ furo
 myst-parser
 setuptools-scm
 sphinx
+sphinxcontrib-apidoc
 sphinxcontrib-programoutput
