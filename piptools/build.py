@@ -81,7 +81,7 @@ def maybe_statically_parse_project_metadata(
 
     project_table = pyproject_contents["project"]
 
-    # Dynamic dependencies require build invocation
+    # Dynamic dependencies require build backend invocation
     dynamic = project_table.get("dynamic", [])
     if "dependencies" in dynamic or "optional-dependencies" in dynamic:
         return None
@@ -152,7 +152,7 @@ def build_project_metadata(
         if build_targets:
             raise ValueError(
                 "Cannot execute the PEP 517 optional get_requires_for_build* "
-                "hooks statically"
+                "hooks statically, as build requirements are requested"
             )
         project_metadata = maybe_statically_parse_project_metadata(src_file)
         if project_metadata is not None:
