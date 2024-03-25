@@ -3388,6 +3388,7 @@ def test_compile_recursive_extras_build_targets(runner, tmp_path, current_resolv
             """
         )
     )
+    (tmp_path / "constraints.txt").write_text("wheel<0.43")
     out = runner.invoke(
         cli,
         [
@@ -3402,6 +3403,8 @@ def test_compile_recursive_extras_build_targets(runner, tmp_path, current_resolv
             "--find-links",
             os.fspath(MINIMAL_WHEELS_PATH),
             os.fspath(tmp_path / "pyproject.toml"),
+            "--constraint",
+            os.fspath(tmp_path / "constraints.txt"),
             "--output-file",
             "-",
         ],
