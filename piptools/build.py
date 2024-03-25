@@ -14,6 +14,13 @@ import build.env
 import pyproject_hooks
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line, parse_req_from_line
+from pip._vendor.packaging.markers import Marker
+from pip._vendor.packaging.requirements import Requirement
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
 
 PYPROJECT_TOML = "pyproject.toml"
 
@@ -33,21 +40,93 @@ else:
 
 
 @dataclass
+class StaticProjectMetadata:
+    extras: tuple[str, ...]
+    requirements: tuple[InstallRequirement, ...]
+
+
+@dataclass
 class ProjectMetadata:
     extras: tuple[str, ...]
     requirements: tuple[InstallRequirement, ...]
     build_requirements: tuple[InstallRequirement, ...]
 
 
+def maybe_statically_parse_project_metadata(
+    src_file: pathlib.Path,
+) -> StaticProjectMetadata | None:
+    """
+    Return the metadata for a project, if it can be statically parsed from ``pyproject.toml``.
+
+    This function is typically significantly faster than invoking a build backend.
+    Returns None if the project metadata cannot be statically parsed.
+    """
+    if src_file.name != PYPROJECT_TOML:
+        return None
+
+    try:
+        with open(src_file, "rb") as f:
+            pyproject_contents = tomllib.load(f)
+    except tomllib.TOMLDecodeError:
+        return None
+
+    # Not valid PEP 621 metadata
+    if (
+        "project" not in pyproject_contents
+        or "name" not in pyproject_contents["project"]
+    ):
+        return None
+
+    project_table = pyproject_contents["project"]
+
+    # Dynamic dependencies require build backend invocation
+    dynamic = project_table.get("dynamic", [])
+    if "dependencies" in dynamic or "optional-dependencies" in dynamic:
+        return None
+
+    package_name = project_table["name"]
+    comes_from = f"{package_name} ({src_file})"
+
+    extras = project_table.get("optional-dependencies", {}).keys()
+    install_requirements = [
+        InstallRequirement(Requirement(req), comes_from)
+        for req in project_table.get("dependencies", [])
+    ]
+    for extra, reqs in (
+        pyproject_contents.get("project", {}).get("optional-dependencies", {}).items()
+    ):
+        for req in reqs:
+            requirement = Requirement(req)
+            if requirement.name == package_name:
+                # Similar to logic for handling self-referential requirements
+                # from _prepare_requirements
+                requirement.url = src_file.parent.as_uri()
+            # Note we don't need to modify `requirement` to include this extra
+            marker = Marker(f"extra == '{extra}'")
+            install_requirements.append(
+                InstallRequirement(requirement, comes_from, markers=marker)
+            )
+
+    return StaticProjectMetadata(
+        extras=tuple(extras),
+        requirements=tuple(install_requirements),
+    )
+
+
 def build_project_metadata(
     src_file: pathlib.Path,
     build_targets: tuple[str, ...],
     *,
+    attempt_static_parse: bool,
     isolated: bool,
     quiet: bool,
-) -> ProjectMetadata:
+) -> ProjectMetadata | StaticProjectMetadata:
     """
     Return the metadata for a project.
+
+    First, optionally attempt to determine the metadata statically from the
+    ``pyproject.toml`` file. This will not work if build_targets are specified,
+    since we cannot determine build requirements statically.
 
     Uses the ``prepare_metadata_for_build_wheel`` hook for the wheel metadata
     if available, otherwise ``build_wheel``.
@@ -58,11 +137,24 @@ def build_project_metadata(
     :param src_file: Project source file
     :param build_targets: A tuple of build targets to get the dependencies
                                 of (``sdist`` or ``wheel`` or ``editable``).
+    :param attempt_static_parse: Whether to attempt to statically parse the
+                                 project metadata from ``pyproject.toml``.
+                                 Cannot be used with ``build_targets``.
     :param isolated: Whether to run invoke the backend in the current
                      environment or to create an isolated one and invoke it
                      there.
     :param quiet: Whether to suppress the output of subprocesses.
     """
+
+    if attempt_static_parse:
+        if build_targets:
+            raise ValueError(
+                "Cannot execute the PEP 517 optional get_requires_for_build* "
+                "hooks statically, as build requirements are requested"
+            )
+        project_metadata = maybe_statically_parse_project_metadata(src_file)
+        if project_metadata is not None:
+            return project_metadata
 
     src_dir = src_file.parent
     with _create_project_builder(src_dir, isolated=isolated, quiet=quiet) as builder:

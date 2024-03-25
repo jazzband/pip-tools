@@ -16,7 +16,7 @@ from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 
 from .._compat import parse_requirements
-from ..build import build_project_metadata
+from ..build import ProjectMetadata, build_project_metadata
 from ..cache import DependencyCache
 from ..exceptions import NoCandidateFound, PipToolsError
 from ..logging import log
@@ -365,6 +365,7 @@ def cli(
                 metadata = build_project_metadata(
                     src_file=Path(src_file),
                     build_targets=build_deps_targets,
+                    attempt_static_parse=not bool(build_deps_targets),
                     isolated=build_isolation,
                     quiet=log.verbosity <= 0,
                 )
@@ -378,6 +379,7 @@ def cli(
                 if all_extras:
                     extras += metadata.extras
             if build_deps_targets:
+                assert isinstance(metadata, ProjectMetadata)
                 constraints.extend(metadata.build_requirements)
         else:
             constraints.extend(
