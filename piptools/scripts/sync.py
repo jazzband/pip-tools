@@ -30,7 +30,9 @@ from . import options
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 
 
-@click.command(context_settings={"help_option_names": options.help_option_names})
+@click.command(
+    name="pip-sync", context_settings={"help_option_names": options.help_option_names}
+)
 @options.version
 @options.ask
 @options.dry_run

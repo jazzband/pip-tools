@@ -33,6 +33,12 @@ help_option_names = ("-h", "--help")
 
 version = click.version_option(package_name="pip-tools")
 
+color = click.option(
+    "--color/--no-color",
+    default=None,
+    help="Force output to be colorized or not, instead of auto-detecting color support",
+)
+
 verbose = click.option(
     "-v",
     "--verbose",
@@ -337,14 +343,6 @@ no_config = click.option(
 constraint = click.option(
     "-c",
     "--constraint",
-    type=click.Path(
-        exists=True,
-        file_okay=True,
-        dir_okay=False,
-        readable=True,
-        allow_dash=False,
-        path_type=str,
-    ),
     multiple=True,
     help="Constrain versions using the given constraints file; may be used more than once.",
 )

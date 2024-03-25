@@ -68,9 +68,13 @@ def _determine_linesep(
     }[strategy]
 
 
-@click.command(context_settings={"help_option_names": options.help_option_names})
+@click.command(
+    name="pip-compile",
+    context_settings={"help_option_names": options.help_option_names},
+)
 @click.pass_context
 @options.version
+@options.color
 @options.verbose
 @options.quiet
 @options.dry_run
@@ -115,6 +119,7 @@ def _determine_linesep(
 @options.only_build_deps
 def cli(
     ctx: click.Context,
+    color: bool | None,
     verbose: int,
     quiet: int,
     dry_run: bool,
@@ -162,7 +167,15 @@ def cli(
     Compiles requirements.txt from requirements.in, pyproject.toml, setup.cfg,
     or setup.py specs.
     """
+    if color is not None:
+        ctx.color = color
     log.verbosity = verbose - quiet
+
+    # If ``src-files` was not provided as an input, but rather as config,
+    # it will be part of the click context ``ctx``.
+    # However, if ``src_files`` is specified, then we want to use that.
+    if not src_files and ctx.default_map and "src_files" in ctx.default_map:
+        src_files = ctx.default_map["src_files"]
 
     if all_build_deps and build_deps_targets:
         raise click.BadParameter(
@@ -191,6 +204,10 @@ def cli(
                     "If you do not specify an input file, the default is one of: {}"
                 ).format(", ".join(DEFAULT_REQUIREMENTS_FILES))
             )
+
+    if all_extras and extras:
+        msg = "--extra has no effect when used with --all-extras"
+        raise click.BadParameter(msg)
 
     if not output_file:
         # An output file must be provided for stdin
@@ -360,10 +377,7 @@ def cli(
             if not only_build_deps:
                 constraints.extend(metadata.requirements)
                 if all_extras:
-                    if extras:
-                        msg = "--extra has no effect when used with --all-extras"
-                        raise click.BadParameter(msg)
-                    extras = metadata.extras
+                    extras += metadata.extras
             if build_deps_targets:
                 assert isinstance(metadata, ProjectMetadata)
                 constraints.extend(metadata.build_requirements)

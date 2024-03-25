@@ -420,8 +420,9 @@ def test_emit_index_url_option(runner, option, expected_output):
 
 
 @pytest.mark.network
-def test_realistic_complex_sub_dependencies(runner):
-    wheels_dir = "wheels"
+def test_realistic_complex_sub_dependencies(runner, tmp_path):
+    wheels_dir = tmp_path / "wheels"
+    wheels_dir.mkdir()
 
     # make a temporary wheel of a fake package
     subprocess.run(
@@ -439,7 +440,7 @@ def test_realistic_complex_sub_dependencies(runner):
     with open("requirements.in", "w") as req_in:
         req_in.write("fake_with_deps")  # require fake package
 
-    out = runner.invoke(cli, ["-n", "--rebuild", "-f", wheels_dir])
+    out = runner.invoke(cli, ["-n", "--rebuild", "-f", wheels_dir.as_posix()])
 
     assert out.exit_code == 0
 
@@ -3001,6 +3002,40 @@ def test_cli_compile_strip_extras(runner, make_package, make_sdist, tmpdir):
     assert "[more]" not in out.stderr
 
 
+def test_cli_compile_all_extras_with_multiple_packages(
+    runner, make_package, make_sdist, tmpdir
+):
+    """
+    Assures that ``--all-extras`` works when multiple sources are specified.
+    """
+    test_package_1 = make_package(
+        "test_package_1",
+        version="0.1",
+        extras_require={"more": []},
+    )
+    test_package_2 = make_package(
+        "test_package_2",
+        version="0.1",
+        extras_require={"more": []},
+    )
+
+    out = runner.invoke(
+        cli,
+        [
+            "--all-extras",
+            "--output-file",
+            "requirements.txt",
+            str(test_package_1 / "setup.py"),
+            str(test_package_2 / "setup.py"),
+        ],
+    )
+
+    assert out.exit_code == 0, out
+    assert "--all-extras" in out.stderr
+    assert f"test_package_1{os.path.sep}0.1{os.path.sep}setup.py" in out.stderr
+    assert f"test_package_2{os.path.sep}0.1{os.path.sep}setup.py" in out.stderr
+
+
 @pytest.mark.parametrize(
     ("package_specs", "constraints", "existing_reqs", "expected_reqs"),
     (
@@ -3502,6 +3537,42 @@ def test_allow_in_config_pip_sync_option(pip_conf, runner, tmp_path, make_config
     assert "Using pip-tools configuration defaults found" in out.stderr
 
 
+def test_use_src_files_from_config_if_option_is_not_specified_from_cli(
+    pip_conf, runner, tmp_path, make_config_file
+):
+    foo_in = tmp_path / "foo.in"
+    req_in = tmp_path / "requirements.in"
+
+    config_file = make_config_file("src-files", [foo_in.as_posix()])
+
+    req_in.write_text("small-fake-a==0.1", encoding="utf-8")
+    foo_in.write_text("small-fake-b==0.1", encoding="utf-8")
+
+    out = runner.invoke(cli, ["--config", config_file.as_posix()])
+
+    assert out.exit_code == 0, out
+    assert "small-fake-b" in out.stderr
+    assert "small-fake-a" not in out.stderr
+
+
+def test_use_src_files_from_cli_if_option_is_specified_in_both_config_and_cli(
+    pip_conf, runner, tmp_path, make_config_file
+):
+    foo_in = tmp_path / "foo.in"
+    req_in = tmp_path / "requirements.in"
+
+    config_file = make_config_file("src-files", [foo_in.as_posix()])
+
+    req_in.write_text("small-fake-a==0.1", encoding="utf-8")
+    foo_in.write_text("small-fake-b==0.1", encoding="utf-8")
+
+    out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
+
+    assert out.exit_code == 0, out
+    assert "small-fake-a" in out.stderr
+    assert "small-fake-b" not in out.stderr
+
+
 def test_cli_boolean_flag_config_option_has_valid_context(
     pip_conf, runner, tmp_path, make_config_file
 ):
@@ -3617,3 +3688,40 @@ def test_origin_of_extra_requirement_not_written_to_annotations(
         )
         == out.stdout
     )
+
+
+def test_tool_specific_config_option(pip_conf, runner, tmp_path, make_config_file):
+    config_file = make_config_file(
+        "dry-run", True, section="pip-tools", subsection="compile"
+    )
+
+    req_in = tmp_path / "requirements.in"
+    req_in.touch()
+
+    out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
+
+    assert out.exit_code == 0
+    assert "Dry-run, so nothing updated" in out.stderr
+
+
+@pytest.mark.xfail(reason="https://github.com/jazzband/pip-tools/issues/2012")
+@mock.patch("piptools.scripts.compile.parse_requirements")
+def test_stdout_should_not_be_read_when_stdin_is_not_a_plain_file(
+    parse_req,
+    runner,
+    tmp_path,
+):
+    parse_req.side_effect = lambda fname, finder, options, session: pytest.fail(
+        "Must not be called when output is a fifo"
+    )
+
+    req_in = tmp_path / "requirements.txt"
+    req_in.touch()
+
+    fifo = tmp_path / "fifo"
+
+    os.mkfifo(fifo)
+
+    out = runner.invoke(cli, [req_in.as_posix(), "--output-file", fifo.as_posix()])
+
+    assert out.exit_code == 0, out
