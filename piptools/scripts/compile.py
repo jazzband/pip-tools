@@ -332,13 +332,6 @@ def cli(
     setup_file_found = False
     for src_file in src_files:
         is_setup_file = os.path.basename(src_file) in METADATA_FILENAMES
-        if not is_setup_file and build_deps_targets:
-            msg = (
-                "--build-deps-for and --all-build-deps can be used only with the "
-                "setup.py, setup.cfg and pyproject.toml specs."
-            )
-            raise click.BadParameter(msg)
-
         if src_file == "-":
             # pip requires filenames and not files. Since we want to support
             # piping from stdin, we need to briefly save the input from stdin
@@ -428,6 +421,13 @@ def cli(
 
     if extras and not setup_file_found:
         msg = "--extra has effect only with setup.py and PEP-517 input formats"
+        raise click.BadParameter(msg)
+
+    if build_deps_targets and not setup_file_found:
+        msg = (
+            "--build-deps-for and --all-build-deps can be used only with the "
+            "setup.py, setup.cfg and pyproject.toml specs."
+        )
         raise click.BadParameter(msg)
 
     primary_packages = {
