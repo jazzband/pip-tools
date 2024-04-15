@@ -3050,7 +3050,7 @@ def test_build_deps_does_not_error_when_multiple_setup_included_in_source_files(
                 "--no-header",
                 option,
                 os.fspath(pyproject_toml_path),
-                os.fspath(pyproject_toml_2_path)
+                os.fspath(pyproject_toml_2_path),
             ],
         )
 
