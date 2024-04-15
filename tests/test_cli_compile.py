@@ -3025,7 +3025,7 @@ def test_build_deps_does_not_error_when_multiple_setup_included_in_source_files(
 ):
     """
     Test that passing ``--build-deps-for`` or ``--all-build-deps`` does not emit an
-    error as long as at least one file in the sources list is a setup file.
+    error as long when multiple setup files are included in the source files list.
     """
     src_pkg_path = pathlib.Path(PACKAGES_PATH) / "small_fake_with_build_deps"
     # When used as argument to the runner it is not passed to pip
@@ -3050,7 +3050,7 @@ def test_build_deps_does_not_error_when_multiple_setup_included_in_source_files(
                 "--no-header",
                 option,
                 os.fspath(pyproject_toml_path),
-                os.fspath(pyproject_toml_2_path)
+                os.fspath(pyproject_toml_2_path),
             ],
         )
 
