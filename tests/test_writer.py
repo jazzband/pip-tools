@@ -302,8 +302,8 @@ def test_write_format_controls(writer):
 
 
 @pytest.mark.parametrize(
-    ["no_binary", "only_binary", "expected_lines"],
-    [
+    ("no_binary", "only_binary", "expected_lines"),
+    (
         (
             [":all:"],
             ["django"],
@@ -320,7 +320,7 @@ def test_write_format_controls(writer):
                 "--no-binary django",
             ],
         ),
-    ],
+    ),
 )
 def test_write_format_controls_all(writer, no_binary, only_binary, expected_lines):
     """
