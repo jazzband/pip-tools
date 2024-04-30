@@ -301,6 +301,37 @@ def test_write_format_controls(writer):
     assert lines == expected_lines
 
 
+def test_write_format_controls_all(writer):
+    """
+    Tests --no-binary/--only-binary options
+    with the value of :all:
+    """
+
+    # We want to preserve the FormatControl behavior
+    # so we emit :all: first before packages.
+    writer.format_control = FormatControl(
+        no_binary=[":all:"], only_binary=["django"]
+    )
+    lines = list(writer.write_format_controls())
+
+    expected_lines = [
+        "--no-binary :all:",
+        "--only-binary django",
+    ]
+    assert lines == expected_lines
+
+    writer.format_control = FormatControl(
+        no_binary=["django"], only_binary=[":all:"]
+    )
+    lines = list(writer.write_format_controls())
+
+    expected_lines = [
+        "--only-binary :all:",
+        "--no-binary django",
+    ]
+    assert lines == expected_lines
+
+
 @pytest.mark.parametrize(
     ("index_urls", "expected_lines"),
     (
