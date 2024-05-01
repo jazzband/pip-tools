@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import operator
 from typing import Iterable
 
 from pip._internal.index.package_finder import PackageFinder
@@ -27,7 +28,9 @@ class NoCandidateFound(PipToolsError):
         versions = []
         pre_versions = []
 
-        for candidate in sorted(self.candidates_tried):
+        for candidate in sorted(
+            self.candidates_tried, key=operator.attrgetter("version")
+        ):
             version = str(candidate.version)
             if candidate.version.is_prerelease:
                 pre_versions.append(version)
