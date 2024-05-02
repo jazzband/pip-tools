@@ -148,9 +148,27 @@ class OutputWriter:
                 yield f"--trusted-host {trusted_host}"
 
     def write_format_controls(self) -> Iterator[str]:
-        for nb in dedup(sorted(self.format_control.no_binary)):
+        # The ordering of output needs to preserve the behavior of pip's
+        # FormatControl.get_allowed_formats(). The behavior is the following:
+        #
+        #   * Parsing of CLI options happens first to last.
+        #   * --only-binary takes precedence over --no-binary
+        #   * Package names take precedence over :all:
+        #   * We'll never see :all: in both due to mutual exclusion.
+        #
+        # So in summary, we want to emit :all: first and then package names later.
+        no_binary = self.format_control.no_binary.copy()
+        only_binary = self.format_control.only_binary.copy()
+
+        if ":all:" in no_binary:
+            yield "--no-binary :all:"
+            no_binary.remove(":all:")
+        if ":all:" in only_binary:
+            yield "--only-binary :all:"
+            only_binary.remove(":all:")
+        for nb in dedup(sorted(no_binary)):
             yield f"--no-binary {nb}"
-        for ob in dedup(sorted(self.format_control.only_binary)):
+        for ob in dedup(sorted(only_binary)):
             yield f"--only-binary {ob}"
 
     def write_find_links(self) -> Iterator[str]:
