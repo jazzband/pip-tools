@@ -191,8 +191,6 @@ sqlparse==0.4.3
 And it will produce your `requirements.txt`, with all the Django dependencies
 (and all underlying dependencies) pinned.
 
-(updating-requirements)=
-
 ### Updating requirements
 
 `pip-compile` generates a `requirements.txt` file using the latest versions
