@@ -34,6 +34,7 @@ def writer(tmpdir_cwd):
             dst_file=ctx.params["output_file"],
             click_ctx=ctx,
             dry_run=True,
+            json_output=False,
             emit_header=True,
             emit_index_url=True,
             emit_trusted_host=True,
@@ -108,11 +109,11 @@ def test_format_requirement_environment_marker(from_line, writer):
 
 
 @pytest.mark.parametrize("allow_unsafe", ((True,), (False,)))
-def test_iter_lines__unsafe_dependencies(writer, from_line, allow_unsafe):
+def test_iter_ireqs__unsafe_dependencies(writer, from_line, allow_unsafe):
     writer.allow_unsafe = allow_unsafe
     writer.emit_header = False
 
-    lines = writer._iter_lines(
+    lines = writer._iter_ireqs(
         {from_line("test==1.2")},
         {from_line("setuptools==1.10.0")},
         unsafe_packages=set(),
@@ -128,14 +129,14 @@ def test_iter_lines__unsafe_dependencies(writer, from_line, allow_unsafe):
     assert tuple(lines) == expected_lines
 
 
-def test_iter_lines__unsafe_with_hashes(capsys, writer, from_line):
+def test_iter_ireqs__unsafe_with_hashes(capsys, writer, from_line):
     writer.allow_unsafe = False
     writer.emit_header = False
     ireqs = [from_line("test==1.2")]
     unsafe_ireqs = [from_line("setuptools==1.10.0")]
     hashes = {ireqs[0]: {"FAKEHASH"}, unsafe_ireqs[0]: set()}
 
-    lines = writer._iter_lines(
+    lines = writer._iter_ireqs(
         ireqs, unsafe_ireqs, unsafe_packages=set(), markers={}, hashes=hashes
     )
 
@@ -151,13 +152,13 @@ def test_iter_lines__unsafe_with_hashes(capsys, writer, from_line):
     assert captured.err.strip() == MESSAGE_UNINSTALLABLE
 
 
-def test_iter_lines__hash_missing(capsys, writer, from_line):
+def test_iter_ireqs__hash_missing(capsys, writer, from_line):
     writer.allow_unsafe = False
     writer.emit_header = False
     ireqs = [from_line("test==1.2"), from_line("file:///example/#egg=example")]
     hashes = {ireqs[0]: {"FAKEHASH"}, ireqs[1]: set()}
 
-    lines = writer._iter_lines(
+    lines = writer._iter_ireqs(
         ireqs,
         hashes=hashes,
         unsafe_requirements=set(),
@@ -176,7 +177,7 @@ def test_iter_lines__hash_missing(capsys, writer, from_line):
     assert captured.err.strip() == MESSAGE_UNINSTALLABLE
 
 
-def test_iter_lines__no_warn_if_only_unhashable_packages(writer, from_line):
+def test_iter_ireqs__no_warn_if_only_unhashable_packages(writer, from_line):
     """
     There shouldn't be MESSAGE_UNHASHED_PACKAGE warning if there are only unhashable
     packages. See GH-1101.
@@ -189,7 +190,7 @@ def test_iter_lines__no_warn_if_only_unhashable_packages(writer, from_line):
     ]
     hashes = {ireq: set() for ireq in ireqs}
 
-    lines = writer._iter_lines(
+    lines = writer._iter_ireqs(
         ireqs,
         hashes=hashes,
         unsafe_requirements=set(),
@@ -453,7 +454,7 @@ def test_write_order(writer, from_line):
         "package-b==2.3.4",
         "package2==7.8.9",
     ]
-    result = writer._iter_lines(
+    result = writer._iter_ireqs(
         packages, unsafe_requirements=set(), unsafe_packages=set(), markers={}
     )
     assert list(result) == expected_lines

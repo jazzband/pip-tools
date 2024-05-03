@@ -83,6 +83,7 @@ def _determine_linesep(
 @options.color
 @options.verbose
 @options.quiet
+@options.json
 @options.dry_run
 @options.pre
 @options.rebuild
@@ -128,6 +129,7 @@ def cli(
     color: bool | None,
     verbose: int,
     quiet: int,
+    json: bool,
     dry_run: bool,
     pre: bool,
     rebuild: bool,
@@ -517,6 +519,7 @@ def cli(
         cast(BinaryIO, output_file),
         click_ctx=ctx,
         dry_run=dry_run,
+        json_output=json,
         emit_header=header,
         emit_index_url=emit_index_url,
         emit_trusted_host=emit_trusted_host,

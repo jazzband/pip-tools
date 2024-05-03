@@ -58,6 +58,7 @@ COMPILE_EXCLUDE_OPTIONS = {
     "--cache-dir",
     "--no-reuse-hashes",
     "--no-config",
+    "--json",
 }
 
 # Set of option that are only negative, i.e. --no-<option>
@@ -351,7 +352,7 @@ def get_compile_command(click_ctx: click.Context) -> str:
         - removing values that are already default
         - sorting the arguments
         - removing one-off arguments like '--upgrade'
-        - removing arguments that don't change build behaviour like '--verbose'
+        - removing arguments that don't change build behaviour like '--verbose' or '--json'
     """
     from piptools.scripts.compile import cli
 
