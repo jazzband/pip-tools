@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import json
 import os
 import re
 import sys
@@ -79,6 +80,7 @@ class OutputWriter:
         dst_file: BinaryIO,
         click_ctx: Context,
         dry_run: bool,
+        json_output: bool,
         emit_header: bool,
         emit_index_url: bool,
         emit_trusted_host: bool,
@@ -99,6 +101,7 @@ class OutputWriter:
         self.dst_file = dst_file
         self.click_ctx = click_ctx
         self.dry_run = dry_run
+        self.json_output = json_output
         self.emit_header = emit_header
         self.emit_index_url = emit_index_url
         self.emit_trusted_host = emit_trusted_host
@@ -191,14 +194,61 @@ class OutputWriter:
         if emitted:
             yield ""
 
-    def _iter_lines(
+    def _get_json(
+        self,
+        ireq: InstallRequirement,
+        line: str,
+        hashes: dict[InstallRequirement, set[str]] | None = None,
+        unsafe: bool = False,
+    ) -> dict[str, str]:
+        """Get a JSON representation for an ``InstallRequirement``."""
+        output_hashes = []
+        if hashes:
+            ireq_hashes = hashes.get(ireq)
+            if ireq_hashes:
+                assert isinstance(ireq_hashes, set)
+                output_hashes = list(ireq_hashes)
+        hashable = True
+        if ireq.link:
+            if ireq.link.is_vcs or (ireq.link.is_file and ireq.link.is_existing_dir()):
+                hashable = False
+        markers = ""
+        if ireq.markers:
+            markers = str(ireq.markers)
+        # Retrieve parent requirements from constructed line
+        splitted_line = [m.strip() for m in unstyle(line).split("#")]
+        try:
+            via = splitted_line[splitted_line.index("via") + 1 :]
+        except ValueError:
+            via = [splitted_line[-1][len("via ") :]]
+            if via[0].startswith("-r"):
+                req_files = re.split(r"\s|,", via[0])
+                del req_files[0]
+                via = ["-r"]
+                for req_file in req_files:
+                    via.append(os.path.abspath(req_file))
+        ireq_json = {
+            "name": ireq.name,
+            "version": str(ireq.specifier).lstrip("=="),
+            "requirement": str(ireq.req),
+            "via": via,
+            "line": unstyle(line),
+            "hashable": hashable,
+            "editable": ireq.editable,
+            "hashes": output_hashes,
+            "markers": markers,
+            "unsafe": unsafe,
+        }
+        return ireq_json
+
+    def _iter_ireqs(
         self,
         results: set[InstallRequirement],
         unsafe_requirements: set[InstallRequirement],
         unsafe_packages: set[str],
         markers: dict[str, Marker],
         hashes: dict[InstallRequirement, set[str]] | None = None,
-    ) -> Iterator[str]:
+    ) -> Iterator[str, dict[str, str]]:
         # default values
         unsafe_packages = unsafe_packages if self.allow_unsafe else set()
         hashes = hashes or {}
@@ -209,12 +259,11 @@ class OutputWriter:
         has_hashes = hashes and any(hash for hash in hashes.values())
 
         yielded = False
-
         for line in self.write_header():
-            yield line
+            yield line, {}
             yielded = True
         for line in self.write_flags():
-            yield line
+            yield line, {}
             yielded = True
 
         unsafe_requirements = unsafe_requirements or {
@@ -225,36 +274,36 @@ class OutputWriter:
         if packages:
             for ireq in sorted(packages, key=self._sort_key):
                 if has_hashes and not hashes.get(ireq):
-                    yield MESSAGE_UNHASHED_PACKAGE
+                    yield MESSAGE_UNHASHED_PACKAGE, {}
                     warn_uninstallable = True
                 line = self._format_requirement(
                     ireq, markers.get(key_from_ireq(ireq)), hashes=hashes
                 )
-                yield line
+                yield line, self._get_json(ireq, line, hashes=hashes)
             yielded = True
 
         if unsafe_requirements:
-            yield ""
+            yield "", {}
             yielded = True
             if has_hashes and not self.allow_unsafe:
-                yield MESSAGE_UNSAFE_PACKAGES_UNPINNED
+                yield MESSAGE_UNSAFE_PACKAGES_UNPINNED, {}
                 warn_uninstallable = True
             else:
-                yield MESSAGE_UNSAFE_PACKAGES
+                yield MESSAGE_UNSAFE_PACKAGES, {}
 
             for ireq in sorted(unsafe_requirements, key=self._sort_key):
                 ireq_key = key_from_ireq(ireq)
                 if not self.allow_unsafe:
-                    yield comment(f"# {ireq_key}")
+                    yield comment(f"# {ireq_key}"), {}
                 else:
                     line = self._format_requirement(
                         ireq, marker=markers.get(ireq_key), hashes=hashes
                     )
-                    yield line
+                    yield line, self._get_json(ireq, line, unsafe=True)
 
         # Yield even when there's no real content, so that blank files are written
         if not yielded:
-            yield ""
+            yield "", {}
 
         if warn_uninstallable:
             log.warning(MESSAGE_UNINSTALLABLE)
@@ -267,7 +316,8 @@ class OutputWriter:
         markers: dict[str, Marker],
         hashes: dict[InstallRequirement, set[str]] | None,
     ) -> None:
-        if not self.dry_run:
+        output_structure = []
+        if not self.dry_run or self.json_output:
             dst_file = io.TextIOWrapper(
                 self.dst_file,
                 encoding="utf8",
@@ -275,19 +325,24 @@ class OutputWriter:
                 line_buffering=True,
             )
         try:
-            for line in self._iter_lines(
+            for line, ireq in self._iter_ireqs(
                 results, unsafe_requirements, unsafe_packages, markers, hashes
             ):
                 if self.dry_run:
                     # Bypass the log level to always print this during a dry run
                     log.log(line)
                 else:
-                    log.info(line)
+                    if not self.json_output:
+                        log.info(line)
                     dst_file.write(unstyle(line))
                     dst_file.write("\n")
+                if self.json_output and ireq:
+                    output_structure.append(ireq)
         finally:
-            if not self.dry_run:
+            if not self.dry_run or self.json_output:
                 dst_file.detach()
+            if self.json_output:
+                print(json.dumps(output_structure, indent=4))
 
     def _format_requirement(
         self,
