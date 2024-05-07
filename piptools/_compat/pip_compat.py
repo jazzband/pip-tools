@@ -10,6 +10,7 @@ from pip._internal.index.package_finder import PackageFinder
 from pip._internal.metadata import BaseDistribution
 from pip._internal.metadata.pkg_resources import Distribution as _PkgResourcesDist
 from pip._internal.models.direct_url import DirectUrl
+from pip._internal.models.link import Link
 from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement
 from pip._internal.req import parse_requirements as _parse_requirements
@@ -62,6 +63,12 @@ class Distribution:
         ]
         return cls(dist._dist.name, dist._dist.version, requires, dist.direct_url)
 
+class FileLink(Link):
+
+    @property
+    def file_path(self) -> str:
+        # overriding the actual property to bypass some validation
+        return self._url
 
 def parse_requirements(
     filename: str,
@@ -74,7 +81,14 @@ def parse_requirements(
     for parsed_req in _parse_requirements(
         filename, session, finder=finder, options=options, constraint=constraint
     ):
-        yield install_req_from_parsed_requirement(parsed_req, isolated=isolated)
+        install_req = install_req_from_parsed_requirement(parsed_req, isolated=isolated)
+        if install_req.editable:
+            # link.url is what is saved to the output file
+            # we set the url directly to undo the transformation in pip's Link class
+            file_link = FileLink(install_req.link.url)
+            file_link._url = parsed_req.requirement
+            install_req.link = file_link
+        yield install_req
 
 
 def create_wheel_cache(cache_dir: str, format_control: str | None = None) -> WheelCache:
