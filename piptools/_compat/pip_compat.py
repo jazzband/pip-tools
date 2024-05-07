@@ -63,12 +63,14 @@ class Distribution:
         ]
         return cls(dist._dist.name, dist._dist.version, requires, dist.direct_url)
 
+
 class FileLink(Link):
 
     @property
     def file_path(self) -> str:
         # overriding the actual property to bypass some validation
         return self._url
+
 
 def parse_requirements(
     filename: str,
