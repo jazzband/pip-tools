@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+from pathlib import Path, PurePosixPath
 
 import pytest
 
@@ -11,21 +12,21 @@ from piptools.repositories import PyPIRepository
 from .constants import PACKAGES_RELATIVE_PATH
 
 
-@pytest.fixture
-def repository():
-    with tempfile.TemporaryDirectory() as cache_dir:
-        yield PyPIRepository([], cache_dir=cache_dir)
-
-
 def test_parse_requirements_preserve_editable_relative(repository):
-    test_package_path = os.path.join(PACKAGES_RELATIVE_PATH, "small_fake_a")
+    test_package_path = str(
+        PurePosixPath(Path(PACKAGES_RELATIVE_PATH)) / "small_fake_a"
+    )
 
-    with tempfile.NamedTemporaryFile("w") as infile:
+    infile = tempfile.NamedTemporaryFile("w", delete=False)
+    try:
         infile.write(f"-e {test_package_path}")
-        infile.flush()
+        infile.close()
+
         [install_requirement] = parse_requirements(
             infile.name, session=repository.session
         )
+    finally:
+        os.unlink(infile.name)
 
     assert install_requirement.link.url == test_package_path
     assert install_requirement.link.file_path == test_package_path
