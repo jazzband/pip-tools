@@ -84,7 +84,7 @@ def parse_requirements(
         filename, session, finder=finder, options=options, constraint=constraint
     ):
         install_req = install_req_from_parsed_requirement(parsed_req, isolated=isolated)
-        if install_req.editable:
+        if install_req.editable and not parsed_req.requirement.startswith('file://'):
             # link.url is what is saved to the output file
             # we set the url directly to undo the transformation in pip's Link class
             file_link = FileLink(install_req.link.url)
