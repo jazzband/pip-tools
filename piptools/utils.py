@@ -22,7 +22,6 @@ else:
 import click
 from click.utils import LazyFile
 from pip._internal.req import InstallRequirement
-from pip._internal.req.constructors import install_req_from_line
 from pip._internal.resolution.resolvelib.base import Requirement as PipRequirement
 from pip._internal.utils.misc import redact_auth_from_url
 from pip._internal.vcs import is_url
@@ -33,7 +32,7 @@ from pip._vendor.packaging.utils import canonicalize_name
 from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import get_distribution
 
-from piptools._compat import PIP_VERSION
+from piptools._compat import PIP_VERSION, install_req_from_line
 from piptools.locations import DEFAULT_CONFIG_FILE_NAMES
 from piptools.subprocess_utils import run_python_snippet
 

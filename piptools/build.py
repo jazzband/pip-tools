@@ -13,9 +13,11 @@ import build
 import build.env
 import pyproject_hooks
 from pip._internal.req import InstallRequirement
-from pip._internal.req.constructors import install_req_from_line, parse_req_from_line
+from pip._internal.req.constructors import parse_req_from_line
 from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.requirements import Requirement
+
+from ._compat import canonicalize_ireq, install_req_from_line
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -229,13 +231,15 @@ def _prepare_requirements(
             replaced_package_name = req.replace(package_name, str(package_dir), 1)
             parts = parse_req_from_line(replaced_package_name, comes_from)
 
-        yield InstallRequirement(
+        ireq = InstallRequirement(
             parts.requirement,
             comes_from,
             link=parts.link,
             markers=parts.markers,
             extras=parts.extras,
         )
+        canonicalize_ireq(ireq)
+        yield ireq
 
 
 def _prepare_build_requirements(
