@@ -18,7 +18,7 @@ def test_parse_requirements_preserve_editable_relative_path(tmp_path, repository
     )
     requirements_in_path = str(tmp_path / "requirements.in")
 
-    with open(requirements_in_path, 'w') as requirements_in_file:
+    with open(requirements_in_path, "w") as requirements_in_file:
         requirements_in_file.write(f"-e {test_package_path}")
 
     [install_requirement] = parse_requirements(
