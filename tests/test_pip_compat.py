@@ -12,7 +12,7 @@ from piptools.repositories import PyPIRepository
 from .constants import PACKAGES_RELATIVE_PATH
 
 
-def test_parse_requirements_preserve_editable_relative(repository):
+def test_parse_requirements_preserve_editable_relative_path(repository):
     test_package_path = str(
         PurePosixPath(Path(PACKAGES_RELATIVE_PATH)) / "small_fake_a"
     )
