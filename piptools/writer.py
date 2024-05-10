@@ -194,53 +194,6 @@ class OutputWriter:
         if emitted:
             yield ""
 
-    def _get_json(
-        self,
-        ireq: InstallRequirement,
-        line: str,
-        hashes: dict[InstallRequirement, set[str]] | None = None,
-        unsafe: bool = False,
-    ) -> dict[str, str]:
-        """Get a JSON representation for an ``InstallRequirement``."""
-        output_hashes = []
-        if hashes:
-            ireq_hashes = hashes.get(ireq)
-            if ireq_hashes:
-                assert isinstance(ireq_hashes, set)
-                output_hashes = list(ireq_hashes)
-        hashable = True
-        if ireq.link:
-            if ireq.link.is_vcs or (ireq.link.is_file and ireq.link.is_existing_dir()):
-                hashable = False
-        markers = ""
-        if ireq.markers:
-            markers = str(ireq.markers)
-        # Retrieve parent requirements from constructed line
-        splitted_line = [m.strip() for m in unstyle(line).split("#")]
-        try:
-            via = splitted_line[splitted_line.index("via") + 1 :]
-        except ValueError:
-            via = [splitted_line[-1][len("via ") :]]
-            if via[0].startswith("-r"):
-                req_files = re.split(r"\s|,", via[0])
-                del req_files[0]
-                via = ["-r"]
-                for req_file in req_files:
-                    via.append(os.path.abspath(req_file))
-        ireq_json = {
-            "name": ireq.name,
-            "version": str(ireq.specifier).lstrip("=="),
-            "requirement": str(ireq.req),
-            "via": via,
-            "line": unstyle(line),
-            "hashable": hashable,
-            "editable": ireq.editable,
-            "hashes": output_hashes,
-            "markers": markers,
-            "unsafe": unsafe,
-        }
-        return ireq_json
-
     def _iter_ireqs(
         self,
         results: set[InstallRequirement],
@@ -276,10 +229,10 @@ class OutputWriter:
                 if has_hashes and not hashes.get(ireq):
                     yield MESSAGE_UNHASHED_PACKAGE, {}
                     warn_uninstallable = True
-                line = self._format_requirement(
+                line, json = self._format_requirement(
                     ireq, markers.get(key_from_ireq(ireq)), hashes=hashes
                 )
-                yield line, self._get_json(ireq, line, hashes=hashes)
+                yield line, json
             yielded = True
 
         if unsafe_requirements:
@@ -296,10 +249,10 @@ class OutputWriter:
                 if not self.allow_unsafe:
                     yield comment(f"# {ireq_key}"), {}
                 else:
-                    line = self._format_requirement(
+                    line, json = self._format_requirement(
                         ireq, marker=markers.get(ireq_key), hashes=hashes
                     )
-                    yield line, self._get_json(ireq, line, unsafe=True)
+                    yield line, json
 
         # Yield even when there's no real content, so that blank files are written
         if not yielded:
@@ -349,15 +302,13 @@ class OutputWriter:
         ireq: InstallRequirement,
         marker: Marker | None = None,
         hashes: dict[InstallRequirement, set[str]] | None = None,
-    ) -> str:
+        unsafe: bool = False,
+    ) -> tuple[str, dict[str, str | list[str]]]:
         ireq_hashes = (hashes if hashes is not None else {}).get(ireq)
 
         line = format_requirement(ireq, marker=marker, hashes=ireq_hashes)
         if self.strip_extras:
             line = strip_extras(line)
-
-        if not self.annotate:
-            return line
 
         # Annotate what packages or reqs-ins this package is required by
         required_by = set()
@@ -390,6 +341,39 @@ class OutputWriter:
                 annotation = strip_extras(annotation)
             # 24 is one reasonable column size to use here, that we've used in the past
             lines = f"{line:24}{sep}{comment(annotation)}".splitlines()
-            line = "\n".join(ln.rstrip() for ln in lines)
+            if self.annotate:
+                line = "\n".join(ln.rstrip() for ln in lines)
 
-        return line
+        hashable = True
+        if ireq.link:
+            if ireq.link.is_vcs or (ireq.link.is_file and ireq.link.is_existing_dir()):
+                hashable = False
+        output_marker = ""
+        if marker:
+            output_marker = str(marker)
+        via = []
+        for parent_req in required_by:
+            if parent_req.startswith("-r "):
+                # Ensure paths to requirements files given are absolute
+                reqs_in_path = os.path.abspath(parent_req[len("-r ") :])
+                via.append(f"-r {reqs_in_path}")
+            else:
+                via.append(parent_req)
+        output_hashes = []
+        if ireq_hashes:
+            output_hashes = list(ireq_hashes)
+
+        ireq_json = {
+            "name": ireq.name,
+            "version": str(ireq.specifier).lstrip("=="),
+            "requirement": str(ireq.req),
+            "via": via,
+            "line": unstyle(line),
+            "hashable": hashable,
+            "editable": ireq.editable,
+            "hashes": output_hashes,
+            "marker": output_marker,
+            "unsafe": unsafe,
+        }
+
+        return line, ireq_json
