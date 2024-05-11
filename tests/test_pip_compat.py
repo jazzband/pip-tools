@@ -1,13 +1,8 @@
 from __future__ import annotations
 
-import os
-import tempfile
 from pathlib import Path, PurePosixPath
 
-import pytest
-
 from piptools._compat.pip_compat import parse_requirements
-from piptools.repositories import PyPIRepository
 
 from .constants import PACKAGES_RELATIVE_PATH
 
