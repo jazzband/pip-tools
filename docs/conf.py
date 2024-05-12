@@ -37,9 +37,11 @@ logger.info(bold("%s release: %s"), project, release)
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    # Stdlib extensions:
+    "sphinx.ext.intersphinx",
+    # Third-party extensions:
     "myst_parser",
     "sphinxcontrib.apidoc",
-    "sphinx.ext.intersphinx",
     "sphinxcontrib.programoutput",
 ]
 
