@@ -456,7 +456,7 @@ def test_run_as_module_compile():
 
     # Should have run pip-compile successfully.
     assert result.stdout.startswith(b"Usage:")
-    assert b"Compiles requirements.txt from requirements.in" in result.stdout
+    assert b"Compile requirements.txt from source files" in result.stdout
 
 
 def test_editable_package(pip_conf, runner):
