@@ -43,14 +43,15 @@ PACKAGES_TO_IGNORE = [
 def dependency_tree(
     installed_keys: Mapping[str, Distribution], root_key: str
 ) -> set[str]:
-    """Calculate the dependency tree for a package
+    """Calculate the dependency tree for a package.
 
     Return a collection of all of the package's dependencies.
     Uses a DFS traversal algorithm.
 
     ``installed_keys`` should be a {key: requirement} mapping, e.g.
     {'django': from_line('django==1.8')}
-    ``root_key`` should be the key to return the dependency tree for.
+    :param root_key: the key to return the dependency tree for
+    :type root_key: str
     """
     dependencies = set()
     queue: Deque[Distribution] = collections.deque()
@@ -127,7 +128,7 @@ def diff_key_from_ireq(ireq: InstallRequirement) -> str:
 
     For URL requirements, only provide a useful key if the url includes
     a hash, e.g. #sha1=..., in any of the supported hash algorithms.
-    Otherwise return ireq.link so the key will not match and the package will
+    Otherwise return ``ireq.link`` so the key will not match and the package will
     reinstall. Reinstall is necessary to ensure that packages will reinstall
     if the contents at the URL have changed but the version has not.
     """
