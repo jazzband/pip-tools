@@ -81,6 +81,7 @@ nitpick_ignore_regex = [
     ("py:class", "_ImportLibDist"),
     ("py:class", "PackageMetadata"),
     ("py:class", "importlib.*"),
+    ("py:class", "IndexContent"),
     ("py:exc", "click.*"),
 ]
 

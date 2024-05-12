@@ -152,10 +152,10 @@ class BaseResolver(metaclass=ABCMeta):
 
     @abstractmethod
     def resolve(self, max_rounds: int) -> set[InstallRequirement]:
-        """
+        r"""
         Find concrete package versions for all the given InstallRequirements
-        and their recursive dependencies and return a set of pinned
-        ``InstallRequirement``'s.
+        and their recursive dependencies.
+        :returns: a set of pinned ``InstallRequirement``\ s.
         """
 
     def resolve_hashes(
@@ -199,9 +199,24 @@ class LegacyResolver(BaseResolver):
         allow_unsafe: bool = False,
         unsafe_packages: set[str] | None = None,
     ) -> None:
-        """
-        Make sure the legacy resolver is enabled and no backtracking resolver
-        is present.
+        """Initialize LegacyResolver.
+
+        :param constraints: the constraints given
+        :type constraints: Iterable[InstallRequirement]
+        :param existing_constraints: constraints already present
+        :param repository: the repository to get the constraints from
+        :type repository: BaseRepository
+        :param cache: the cache to be used
+        :param prereleases: whether prereleases should be taken into account when resolving
+            (default is :py:data:`False`)
+        :param clear_caches: whether to clear repository and dependency caches before resolving
+            (default is :py:data:`False`)
+        :param allow_unsafe: whether unsafe packages should be allowed in the resulting requirements
+            (default is :py:data:`False`)
+        :param unsafe_packages: packages to be considered as unsafe
+            (default is :py:data:`None`)
+        :type unsafe_packages: set[str]
+        :raises: ``PipToolsError`` if the legacy resolver is not enabled
         """
         self.our_constraints = set(constraints)
         self.their_constraints: set[InstallRequirement] = set()
@@ -230,13 +245,15 @@ class LegacyResolver(BaseResolver):
 
     def resolve(self, max_rounds: int = 10) -> set[InstallRequirement]:
         r"""
-        Find concrete package versions for all the given InstallRequirements
+        Find concrete package versions for all the given ``InstallRequirement``\ s
         and their recursive dependencies and return a set of pinned
         ``InstallRequirement``\ s.
 
         Resolves constraints one round at a time, until they don't change
-        anymore.  Protects against infinite loops by breaking out after a max
-        number rounds.
+        anymore.
+
+        :param max_rounds: break out of resolution process after the given number of rounds
+            to prevent infinite loops (default is 10)
         """
         if self.clear_caches:
             self.dependency_cache.clear()
@@ -324,9 +341,9 @@ class LegacyResolver(BaseResolver):
         package versions.  Some of these constraints may be new
         or updated.
 
-        Returns whether new constraints appeared in this round.  If no
-        constraints were added or changed, this indicates a stable
-        configuration.
+        :returns: whether new constraints appeared in this round.  If no
+            constraints were added or changed, this indicates a stable
+            configuration.
         """
         # Sort this list for readability of terminal output
         constraints = sorted(self.constraints, key=key_from_ireq)
@@ -536,8 +553,9 @@ class BacktrackingResolver(BaseResolver):
         Resolve given ireqs.
 
         Find concrete package versions for all the given InstallRequirements
-        and their recursive dependencies and return a set of pinned
-        ``InstallRequirement``\ s.
+        and their recursive dependencies.
+
+        :returns: A set of pinned ``InstallRequirement``\ s.
         """
         with update_env_context_manager(
             PIP_EXISTS_ACTION="i"
@@ -644,8 +662,9 @@ class BacktrackingResolver(BaseResolver):
         """
         Resolve dependencies based on resolvelib ``Resolver``.
 
-        Return :py:data:`True` on successful resolution, otherwise remove problematic
-        requirements from existing constraints and return false.
+        :returns: :py:data:`True` on successful resolution, otherwise removes
+            problematic requirements from existing constraints and
+            returns :py:data:`False`.
         """
         try:
             resolver.resolve(
