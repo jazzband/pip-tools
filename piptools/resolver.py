@@ -185,9 +185,7 @@ class BaseResolver(metaclass=ABCMeta):
 
 class LegacyResolver(BaseResolver):
     """
-    Resolve a given set of constraints (a collection of
-    InstallRequirement objects) by consulting the given Repository and the
-    DependencyCache.
+    Wrapper for the (deprecated) legacy dependency resolver.
     """
 
     def __init__(
@@ -201,6 +199,10 @@ class LegacyResolver(BaseResolver):
         allow_unsafe: bool = False,
         unsafe_packages: set[str] | None = None,
     ) -> None:
+        """
+        Make sure the legacy resolver is enabled and no backtracking resolver
+        is present.
+        """
         self.our_constraints = set(constraints)
         self.their_constraints: set[InstallRequirement] = set()
         self.repository = repository
@@ -423,7 +425,7 @@ class LegacyResolver(BaseResolver):
         self, ireq: InstallRequirement
     ) -> Iterator[InstallRequirement]:
         """
-        Collect all secondary dependencies for an ireq.
+        Emit all secondary dependencies for an ireq.
 
         Given a pinned, url, or editable InstallRequirement, collects all the
         secondary dependencies for them, either by looking them up in a local
@@ -640,9 +642,9 @@ class BacktrackingResolver(BaseResolver):
         compatible_existing_constraints: dict[str, InstallRequirement],
     ) -> bool:
         """
-        Actual resolution process.
+        Resolve dependencies based on resolvelib ``Resolver``.
 
-        Return True on successful resolution, otherwise remove problematic
+        Return :py:data:`True` on successful resolution, otherwise remove problematic
         requirements from existing constraints and return false.
         """
         try:
