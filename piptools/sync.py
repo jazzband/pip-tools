@@ -43,9 +43,10 @@ PACKAGES_TO_IGNORE = [
 def dependency_tree(
     installed_keys: Mapping[str, Distribution], root_key: str
 ) -> set[str]:
-    """
-    Calculate the dependency tree for the package ``root_key`` and return
-    a collection of all its dependencies. Uses a DFS traversal algorithm.
+    """Calculate the dependency tree for a package
+
+    Return a collection of all of the package's dependencies.
+    Uses a DFS traversal algorithm.
 
     ``installed_keys`` should be a {key: requirement} mapping, e.g.
     {'django': from_line('django==1.8')}
@@ -78,9 +79,9 @@ def dependency_tree(
 
 
 def get_dists_to_ignore(installed: Iterable[Distribution]) -> list[str]:
-    """
-    Returns a collection of package names to ignore when performing pip-sync,
-    based on the currently installed environment.  For example, when pip-tools
+    """Return a collection of package names to ignore by ``pip-sync``.
+
+    Based on the currently installed environment.  For example, when pip-tools
     is installed in the local environment, it should be ignored, including all
     of its dependencies (e.g. click).  When pip-tools is not installed
     locally, click should also be installed/uninstalled depending on the given
@@ -122,8 +123,8 @@ def merge(
 
 
 def diff_key_from_ireq(ireq: InstallRequirement) -> str:
-    """
-    Calculate a key for comparing a compiled requirement with installed modules.
+    """Calculate key for comparing a compiled requirement with installed modules.
+
     For URL requirements, only provide a useful key if the url includes
     a hash, e.g. #sha1=..., in any of the supported hash algorithms.
     Otherwise return ireq.link so the key will not match and the package will
@@ -159,9 +160,10 @@ def diff(
     compiled_requirements: Iterable[InstallRequirement],
     installed_dists: Iterable[Distribution],
 ) -> tuple[set[InstallRequirement], set[str]]:
-    """
-    Calculate which packages should be installed or uninstalled, given a set
-    of compiled requirements and a list of currently installed modules.
+    """Calculate which packages should be installed or uninstalled.
+
+    Compared are the compiled requirements and a list of currently
+    installed modules.
     """
     requirements_lut = {diff_key_from_ireq(r): r for r in compiled_requirements}
 
@@ -195,9 +197,7 @@ def sync(
     ask: bool = False,
     python_executable: str | None = None,
 ) -> int:
-    """
-    Install and uninstalls the given sets of modules.
-    """
+    """Install and uninstall the given sets of modules."""
     exit_code = 0
 
     python_executable = python_executable or sys.executable
