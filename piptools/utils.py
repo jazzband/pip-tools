@@ -122,9 +122,9 @@ def make_install_requirement(
 
 def is_url_requirement(ireq: InstallRequirement) -> bool:
     """
-    Return True if requirement was specified as a path or URL.
+    Return :py:data:`True` if requirement was specified as a path or URL.
 
-    ireq.original_link will have been set by InstallRequirement.__init__
+    ``ireq.original_link`` will have been set by ``InstallRequirement.__init__``
     """
     return bool(ireq.original_link)
 
@@ -544,7 +544,7 @@ def override_defaults_from_config_file(
     file, returning the ``pathlib.Path`` of that config file if specified or
     discovered.
 
-    Return ``None`` if no such file is found.
+    Return :py:data:`None` if no such file is found.
 
     ``pip-tools`` will use the first config file found, searching in this order:
     an explicitly given config file, a ``.pip-tools.toml``, a ``pyproject.toml``
