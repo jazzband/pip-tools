@@ -3,3 +3,4 @@ myst-parser
 setuptools-scm
 sphinx
 sphinxcontrib-programoutput
+sphinxcontrib-apidoc

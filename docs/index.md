@@ -13,3 +13,10 @@ cli/index
 contributing
 changelog
 ```
+
+```{toctree}
+:hidden:
+:caption: Private API reference
+
+pkg/modules
+```

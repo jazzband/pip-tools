@@ -36,7 +36,7 @@ logger.info(bold("%s release: %s"), project, release)
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ["myst_parser", "sphinxcontrib.programoutput"]
+extensions = ["myst_parser", "sphinxcontrib.programoutput", "sphinxcontrib.apidoc"]
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -58,3 +58,27 @@ linkcheck_ignore = [
 ]
 
 suppress_warnings = ["myst.xref_missing"]
+
+nitpick_ignore_regex = [
+    ("py:class", "pip.*"),
+    ("py:class", "pathlib.*"),
+    ("py:class", "click.*"),
+    ("py:class", "build.*"),
+    ("py:class", "optparse.*"),
+    ("py:class", "_ImportLibDist"),
+    ("py:class", "PackageMetadata"),
+    ("py:class", "importlib.*"),
+    ("py:exc", "click.*"),
+]
+
+# -- Apidoc options -------------------------------------------------------
+apidoc_excluded_paths: list[str] = []
+apidoc_extra_args = [
+    "--implicit-namespaces",
+    "--private",  # include “_private” modules
+]
+apidoc_module_dir = "../piptools"
+apidoc_module_first = False
+apidoc_output_dir = "pkg"
+apidoc_separate_modules = True
+apidoc_toc_file = None
