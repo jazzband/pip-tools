@@ -123,6 +123,7 @@ def make_install_requirement(
 def is_url_requirement(ireq: InstallRequirement) -> bool:
     """
     Return True if requirement was specified as a path or URL.
+
     ireq.original_link will have been set by InstallRequirement.__init__
     """
     return bool(ireq.original_link)
@@ -160,7 +161,8 @@ def format_requirement(
 
 def _build_direct_reference_best_efforts(ireq: InstallRequirement) -> str:
     """
-    Returns a string of a direct reference URI, whenever possible.
+    Return a string of a direct reference URI, whenever possible.
+
     See https://www.python.org/dev/peps/pep-0508/
     """
     # If the requirement has no name then we cannot build a direct reference.
@@ -207,7 +209,7 @@ def format_specifier(ireq: InstallRequirement) -> str:
 
 def is_pinned_requirement(ireq: InstallRequirement) -> bool:
     """
-    Returns whether an InstallRequirement is a "pinned" requirement.
+    Return whether an InstallRequirement is a "pinned" requirement.
 
     An InstallRequirement is considered pinned if:
 
@@ -234,7 +236,7 @@ def is_pinned_requirement(ireq: InstallRequirement) -> bool:
 
 def as_tuple(ireq: InstallRequirement) -> tuple[str, str, tuple[str, ...]]:
     """
-    Pulls out the (name: str, version:str, extras:(str)) tuple from
+    Pull out the (name: str, version:str, extras:(str)) tuple from
     the pinned InstallRequirement.
     """
     if not is_pinned_requirement(ireq):
@@ -254,9 +256,7 @@ def flat_map(
 
 
 def lookup_table_from_tuples(values: Iterable[tuple[_KT, _VT]]) -> dict[_KT, set[_VT]]:
-    """
-    Builds a dict-based lookup table (index) elegantly.
-    """
+    """Build a dict-based lookup table (index) elegantly."""
     lut: dict[_KT, set[_VT]] = collections.defaultdict(set)
     for k, v in values:
         lut[k].add(v)
@@ -266,14 +266,13 @@ def lookup_table_from_tuples(values: Iterable[tuple[_KT, _VT]]) -> dict[_KT, set
 def lookup_table(
     values: Iterable[_VT], key: Callable[[_VT], _KT]
 ) -> dict[_KT, set[_VT]]:
-    """
-    Builds a dict-based lookup table (index) elegantly.
-    """
+    """Build a dict-based lookup table (index) elegantly."""
     return lookup_table_from_tuples((key(v), v) for v in values)
 
 
 def dedup(iterable: Iterable[_T]) -> Iterable[_T]:
-    """Deduplicate an iterable object like iter(set(iterable)) but
+    """
+    Deduplicate an iterable object like iter(set(iterable)) but
     order-preserved.
     """
     return iter(dict.fromkeys(iterable))
@@ -345,7 +344,7 @@ def get_hashes_from_ireq(ireq: InstallRequirement) -> set[str]:
 
 def get_compile_command(click_ctx: click.Context) -> str:
     """
-    Returns a normalized compile command depending on cli context.
+    Return a normalized compile command depending on cli context.
 
     The command will be normalized by:
         - expanding options short to long
@@ -444,7 +443,7 @@ def get_compile_command(click_ctx: click.Context) -> str:
 
 def get_required_pip_specification() -> SpecifierSet:
     """
-    Returns pip version specifier requested by current pip-tools installation.
+    Return pip version specifier requested by current pip-tools installation.
     """
     project_dist = get_distribution("pip-tools")
     requirement = next(
@@ -457,9 +456,7 @@ def get_required_pip_specification() -> SpecifierSet:
 
 
 def get_pip_version_for_python_executable(python_executable: str) -> Version:
-    """
-    Returns pip version for the given python executable.
-    """
+    """Return pip version for the given python executable."""
     str_version = run_python_snippet(
         python_executable, "import pip;print(pip.__version__)"
     )
@@ -468,7 +465,7 @@ def get_pip_version_for_python_executable(python_executable: str) -> Version:
 
 def get_sys_path_for_python_executable(python_executable: str) -> list[str]:
     """
-    Returns sys.path list for the given python executable.
+    Return sys.path list for the given python executable.
     """
     result = run_python_snippet(
         python_executable, "import sys;import json;print(json.dumps(sys.path))"
@@ -543,11 +540,11 @@ def override_defaults_from_config_file(
     ctx: click.Context, param: click.Parameter, value: str | None
 ) -> Path | None:
     """
-    Overrides ``click.Command`` defaults based on specified or discovered config
+    Override ``click.Command`` defaults based on specified or discovered config
     file, returning the ``pathlib.Path`` of that config file if specified or
     discovered.
 
-    ``None`` is returned if no such file is found.
+    Return ``None`` if no such file is found.
 
     ``pip-tools`` will use the first config file found, searching in this order:
     an explicitly given config file, a ``.pip-tools.toml``, a ``pyproject.toml``
@@ -640,7 +637,7 @@ def _validate_config(
 
 def select_config_file(src_files: tuple[str, ...]) -> Path | None:
     """
-    Returns the config file to use for defaults given ``src_files`` provided.
+    Return the config file to use for defaults given ``src_files`` provided.
     """
     # NOTE: If no src_files were specified, consider the current directory the
     # NOTE: only config file lookup candidate. This usually happens when a
