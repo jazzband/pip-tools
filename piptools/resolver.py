@@ -161,7 +161,9 @@ class BaseResolver(metaclass=ABCMeta):
     def resolve_hashes(
         self, ireqs: set[InstallRequirement]
     ) -> dict[InstallRequirement, set[str]]:
-        """Find acceptable hashes for all of the given ``InstallRequirement``s."""
+        """
+        Find acceptable hashes for all of the given ``InstallRequirement``'s.
+        """
         log.debug("")
         log.debug("Generating hashes:")
         with self.repository.allow_all_wheels(), log.indentation():

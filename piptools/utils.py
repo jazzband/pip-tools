@@ -135,7 +135,7 @@ def format_requirement(
 ) -> str:
     """
     Generic formatter for pretty printing InstallRequirements to the terminal
-    in a less verbose way than using its `__str__` method.
+    in a less verbose way than using its ``__str__`` method.
     """
     if ireq.editable:
         line = f"-e {ireq.link.url}"

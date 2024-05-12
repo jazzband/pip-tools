@@ -44,12 +44,12 @@ def dependency_tree(
     installed_keys: Mapping[str, Distribution], root_key: str
 ) -> set[str]:
     """
-    Calculate the dependency tree for the package `root_key` and return
-    a collection of all its dependencies.  Uses a DFS traversal algorithm.
+    Calculate the dependency tree for the package ``root_key`` and return
+    a collection of all its dependencies. Uses a DFS traversal algorithm.
 
-    `installed_keys` should be a {key: requirement} mapping, e.g.
-        {'django': from_line('django==1.8')}
-    `root_key` should be the key to return the dependency tree for.
+    ``installed_keys`` should be a {key: requirement} mapping, e.g.
+    {'django': from_line('django==1.8')}
+    ``root_key`` should be the key to return the dependency tree for.
     """
     dependencies = set()
     queue: Deque[Distribution] = collections.deque()
