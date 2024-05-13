@@ -12,7 +12,6 @@ import click
 from build import BuildBackendException
 from click.utils import LazyFile, safecall
 from pip._internal.req import InstallRequirement
-from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.misc import redact_auth_from_url
 
 from .._compat import parse_requirements
@@ -23,7 +22,13 @@ from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..repositories.base import BaseRepository
 from ..resolver import BacktrackingResolver, LegacyResolver
-from ..utils import dedup, drop_extras, is_pinned_requirement, key_from_ireq
+from ..utils import (
+    dedup,
+    drop_extras,
+    install_req_from_line,
+    is_pinned_requirement,
+    key_from_ireq,
+)
 from ..writer import OutputWriter
 from . import options
 from .options import BuildTargetT

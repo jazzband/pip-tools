@@ -14,7 +14,6 @@ from pip._internal.operations.build.build_tracker import (
     update_env_context_manager,
 )
 from pip._internal.req import InstallRequirement
-from pip._internal.req.constructors import install_req_from_line
 from pip._internal.resolution.resolvelib.base import Candidate
 from pip._internal.resolution.resolvelib.candidates import ExtrasCandidate
 from pip._internal.resolution.resolvelib.resolver import Resolver
@@ -36,6 +35,7 @@ from .utils import (
     copy_install_requirement,
     format_requirement,
     format_specifier,
+    install_req_from_line,
     is_pinned_requirement,
     is_url_requirement,
     key_from_ireq,

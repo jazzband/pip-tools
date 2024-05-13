@@ -4,7 +4,6 @@ import optparse
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Iterable, Iterator, Set, cast
 
-import pip
 from pip._internal.cache import WheelCache
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.metadata import BaseDistribution
@@ -15,10 +14,7 @@ from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement
 from pip._internal.req import parse_requirements as _parse_requirements
 from pip._internal.req.constructors import install_req_from_parsed_requirement
-from pip._vendor.packaging.version import parse as parse_version
 from pip._vendor.pkg_resources import Requirement
-
-PIP_VERSION = tuple(map(int, parse_version(pip.__version__).base_version.split(".")))
 
 # The Distribution interface has changed between pkg_resources and
 # importlib.metadata, so this compat layer allows for a consistent access
@@ -26,6 +22,8 @@ PIP_VERSION = tuple(map(int, parse_version(pip.__version__).base_version.split("
 # (and later), but is overridable. `select_backend` returns what's being used.
 if TYPE_CHECKING:
     from pip._internal.metadata.importlib import Distribution as _ImportLibDist
+
+from ..utils import PIP_VERSION, copy_install_requirement
 
 
 @dataclass(frozen=True)
@@ -91,7 +89,7 @@ def parse_requirements(
             file_link = FileLink(install_req.link.url)
             file_link._url = parsed_req.requirement
             install_req.link = file_link
-        yield install_req
+        yield copy_install_requirement(install_req)
 
 
 def create_wheel_cache(cache_dir: str, format_control: str | None = None) -> WheelCache:
