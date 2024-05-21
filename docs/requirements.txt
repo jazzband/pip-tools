@@ -50,7 +50,7 @@ pygments==2.16.1
     #   sphinx
 pyyaml==6.0.1
     # via myst-parser
-requests==2.31.0
+requests==2.32.0
     # via sphinx
 setuptools-scm==7.1.0
     # via -r requirements.in
