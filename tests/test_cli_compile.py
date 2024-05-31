@@ -3498,7 +3498,9 @@ def test_default_config_option(pip_conf, runner, make_config_file, tmpdir_cwd):
 def test_default_config_in_requirements_dir(
     pip_conf, runner, make_config_file, tmpdir_cwd, config_file_name
 ):
-    make_config_file("dry-run", True, config_file_name=f"requirements/{config_file_name}")
+    make_config_file(
+        "dry-run", True, config_file_name=f"requirements/{config_file_name}"
+    )
 
     req_dir = tmpdir_cwd / "requirements"
     req_dir.mkdir(exist_ok=True, parents=True)
