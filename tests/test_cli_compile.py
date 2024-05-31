@@ -17,6 +17,7 @@ from pip._internal.utils.urls import path_to_url
 from pip._vendor.packaging.version import Version
 
 from piptools.build import ProjectMetadata
+from piptools.locations import DEFAULT_CONFIG_FILE_NAMES
 from piptools.scripts.compile import cli
 from piptools.utils import (
     COMPILE_EXCLUDE_OPTIONS,
@@ -3490,6 +3491,23 @@ def test_default_config_option(pip_conf, runner, make_config_file, tmpdir_cwd):
     out = runner.invoke(cli)
 
     assert out.exit_code == 0
+    assert "Dry-run, so nothing updated" in out.stderr
+
+
+@pytest.mark.parametrize("config_file_name", DEFAULT_CONFIG_FILE_NAMES)
+def test_default_config_in_requirements_dir(
+    pip_conf, runner, make_config_file, tmpdir_cwd, config_file_name
+):
+    make_config_file("dry-run", True, config_file_name=f"requirements/{config_file_name}")
+
+    req_dir = tmpdir_cwd / "requirements"
+    req_dir.mkdir(exist_ok=True, parents=True)
+    req_in = req_dir / "requirements.in"
+    req_in.touch()
+
+    out = runner.invoke(cli, [req_in.as_posix()])
+
+    assert out.exit_code == 0, out.stderr
     assert "Dry-run, so nothing updated" in out.stderr
 
 

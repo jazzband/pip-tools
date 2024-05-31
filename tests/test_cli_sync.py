@@ -8,6 +8,7 @@ from unittest import mock
 import pytest
 from pip._vendor.packaging.version import Version
 
+from piptools.locations import DEFAULT_CONFIG_FILE_NAMES
 from piptools.scripts import sync
 from piptools.scripts.sync import cli
 
@@ -384,6 +385,24 @@ def test_default_config_option(run, runner, make_config_file, tmpdir_cwd):
     out = runner.invoke(cli)
 
     assert out.exit_code == 1
+    assert "Would install:" in out.stdout
+
+
+@pytest.mark.parametrize("config_file_name", DEFAULT_CONFIG_FILE_NAMES)
+@mock.patch("piptools.sync.run")
+def test_default_config_in_requirements_dir(
+    run, runner, make_config_file, tmpdir_cwd, config_file_name
+):
+    make_config_file("dry-run", True, config_file_name=f"requirements/{config_file_name}")
+
+    req_dir = tmpdir_cwd / "requirements"
+    req_dir.mkdir(exist_ok=True, parents=True)
+    req_in = req_dir / "requirements.txt"
+    req_in.write_text("six==1.10.0")
+
+    out = runner.invoke(cli, [req_in.as_posix()])
+
+    assert out.exit_code == 1, out.stderr
     assert "Would install:" in out.stdout
 
 
