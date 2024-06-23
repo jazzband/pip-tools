@@ -168,10 +168,7 @@ def test_diff_should_not_uninstall(fake_dist):
         "pip-tools==1.1.1",
         "pip-review==1.1.1",
         "pkg-resources==0.0.0",
-        "setuptools==34.0.0",
-        "wheel==0.29.0",
         "python==3.0",
-        "distribute==0.1",
         "wsgiref==0.1",
         "argparse==0.1",
     )
