@@ -8,19 +8,12 @@ import json
 import os
 import re
 import shlex
-import sys
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, TypeVar, cast
 
-from click.core import ParameterSource
-
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    import tomli as tomllib
-
 import click
 import pip
+from click.core import ParameterSource
 from click.utils import LazyFile
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import (
@@ -39,6 +32,8 @@ from pip._vendor.pkg_resources import get_distribution
 
 from piptools.locations import DEFAULT_CONFIG_FILE_NAMES
 from piptools.subprocess_utils import run_python_snippet
+
+from ._compat import tomllib
 
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
