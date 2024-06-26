@@ -17,6 +17,7 @@ from pip._internal.utils.urls import path_to_url
 from pip._vendor.packaging.version import Version
 
 from piptools.build import ProjectMetadata
+from piptools.exceptions import PipToolsError
 from piptools.scripts.compile import cli
 from piptools.utils import (
     COMPILE_EXCLUDE_OPTIONS,
@@ -3837,3 +3838,70 @@ def test_stdout_should_not_be_read_when_stdin_is_not_a_plain_file(
     out = runner.invoke(cli, [req_in.as_posix(), "--output-file", fifo.as_posix()])
 
     assert out.exit_code == 0, out
+
+
+def test_compile_inline_script_metadata(runner, tmp_path, current_resolver):
+    (tmp_path / "script.py").write_text(
+        dedent(
+            """
+            # /// script
+            # dependencies = [
+            #   "small-fake-with-deps",
+            # ]
+            # ///
+            """
+        )
+    )
+    out = runner.invoke(
+        cli,
+        [
+            "--no-build-isolation",
+            "--no-header",
+            "--no-emit-options",
+            "--find-links",
+            os.fspath(MINIMAL_WHEELS_PATH),
+            os.fspath(tmp_path / "script.py"),
+            "--output-file",
+            "-",
+        ],
+    )
+    expected = r"""small-fake-a==0.1
+    # via small-fake-with-deps
+small-fake-with-deps==0.1
+    # via script.py (inline script metadata)
+"""
+    assert out.exit_code == 0
+    assert expected == out.stdout
+
+
+def test_compile_inline_script_metadata_invalid(runner, tmp_path, current_resolver):
+    (tmp_path / "script.py").write_text(
+        dedent(
+            """
+            # /// invalid-name
+            # dependencies = [
+            #   "small-fake-a",
+            #   "small-fake-b",
+            # ]
+            # ///
+            """
+        )
+    )
+    with pytest.raises(
+        PipToolsError, match="does not contain valid inline script metadata"
+    ):
+        runner.invoke(
+            cli,
+            [
+                "--no-build-isolation",
+                "--no-header",
+                "--no-annotate",
+                "--no-emit-options",
+                "--find-links",
+                os.fspath(MINIMAL_WHEELS_PATH),
+                os.fspath(tmp_path / "script.py"),
+                "--output-file",
+                "-",
+            ],
+            catch_exceptions=False,
+        )
