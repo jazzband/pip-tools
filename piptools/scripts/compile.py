@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import itertools
 import os
+import re
 import shlex
 import sys
 import tempfile
@@ -33,6 +34,11 @@ from ..writer import OutputWriter
 from . import options
 from .options import BuildTargetT
 
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
+
 DEFAULT_REQUIREMENTS_FILES = (
     "requirements.in",
     "setup.py",
@@ -42,6 +48,10 @@ DEFAULT_REQUIREMENTS_FILES = (
 DEFAULT_REQUIREMENTS_FILE = "requirements.in"
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 METADATA_FILENAMES = frozenset({"setup.py", "setup.cfg", "pyproject.toml"})
+
+INLINE_SCRIPT_METADATA_REGEX = (
+    r"(?m)^# /// (?P<type>[a-zA-Z0-9-]+)$\s(?P<content>(^#(| .*)$\s)+)^# ///$"
+)
 
 
 def _determine_linesep(
@@ -170,7 +180,8 @@ def cli(
 ) -> None:
     """
     Compiles requirements.txt from requirements.in, pyproject.toml, setup.cfg,
-    or setup.py specs.
+    or setup.py specs, as well as Python scripts containing inline script
+    metadata.
     """
     if color is not None:
         ctx.color = color
@@ -344,14 +355,50 @@ def cli(
             )
             raise click.BadParameter(msg)
 
-        if src_file == "-":
-            # pip requires filenames and not files. Since we want to support
-            # piping from stdin, we need to briefly save the input from stdin
-            # to a temporary file and have pip read that.  also used for
+        if src_file == "-" or (
+            os.path.basename(src_file).endswith(".py") and not is_setup_file
+        ):
+            # pip requires filenames and not files.  Since we want to support
+            # piping from stdin, and inline script metadadata within Python
+            # scripts, we need to briefly save the input or extracted script
+            # dependencies to a temporary file and have pip read that.  Also used for
             # reading requirements from install_requires in setup.py.
+            if os.path.basename(src_file).endswith(".py"):
+                # Probably contains inline script metadata
+                with open(src_file, encoding="utf-8") as f:
+                    script = f.read()
+                name = "script"
+                matches = list(
+                    filter(
+                        lambda m: m.group("type") == name,
+                        re.finditer(INLINE_SCRIPT_METADATA_REGEX, script),
+                    )
+                )
+                if len(matches) > 1:
+                    raise ValueError(f"Multiple {name} blocks found")
+                elif len(matches) == 1:
+                    content = "".join(
+                        line[2:] if line.startswith("# ") else line[1:]
+                        for line in matches[0]
+                        .group("content")
+                        .splitlines(keepends=True)
+                    )
+                    metadata = tomllib.loads(content)
+                    reqs_str = metadata.get("dependencies", [])
+                    tmpfile = tempfile.NamedTemporaryFile(mode="wt", delete=False)
+                    input_reqs = "\n".join(reqs_str)
+                    comes_from = (
+                        f"{os.path.basename(src_file)} (inline script metadata)"
+                    )
+                else:
+                    raise PipToolsError(
+                        "Input script does not contain valid inline script metadata!"
+                    )
+            else:
+                input_reqs = sys.stdin.read()
+                comes_from = "-r -"
             tmpfile = tempfile.NamedTemporaryFile(mode="wt", delete=False)
-            tmpfile.write(sys.stdin.read())
-            comes_from = "-r -"
+            tmpfile.write(input_reqs)
             tmpfile.flush()
             reqs = list(
                 parse_requirements(
