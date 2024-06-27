@@ -28,6 +28,7 @@ from ..utils import (
     install_req_from_line,
     is_pinned_requirement,
     key_from_ireq,
+    render_requirements_json_txt,
 )
 from ..writer import OutputWriter
 from . import options
@@ -312,7 +313,7 @@ def cli(
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified
     # (= default invocation)
     output_file_exists = os.path.exists(output_file.name)
-    if not (upgrade or json) and output_file_exists:
+    if not upgrade and output_file_exists:
         output_file_is_empty = os.path.getsize(output_file.name) == 0
         if upgrade_install_reqs and output_file_is_empty:
             log.warning(
@@ -323,11 +324,16 @@ def cli(
                 "as any existing content is truncated."
             )
 
+        if json:
+            # Render contents of JSON output file to a temporary requirements
+            # file in text format in order to make it readable by ``pip``
+            tmpfile_name = render_requirements_json_txt(output_file.name)
+
         # Use a temporary repository to ensure outdated(removed) options from
         # existing requirements.txt wouldn't get into the current repository.
         tmp_repository = PyPIRepository(pip_args, cache_dir=cache_dir)
         ireqs = parse_requirements(
-            output_file.name,
+            tmpfile_name if json else output_file.name,
             finder=tmp_repository.finder,
             session=tmp_repository.session,
             options=tmp_repository.options,

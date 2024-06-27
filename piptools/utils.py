@@ -9,6 +9,7 @@ import os
 import re
 import shlex
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, TypeVar, cast
 
@@ -769,3 +770,18 @@ def is_path_relative_to(path1: Path, path2: Path) -> bool:
     except ValueError:
         return False
     return True
+
+
+def render_requirements_json_txt(filename: str) -> str:
+    """Render a given ``requirements.json`` file to a temporary
+    ``requirements.txt`` file and return its name.
+    """
+    with open(filename, encoding="utf-8") as f:
+        reqs = json.load(f)
+    tmpfile = tempfile.NamedTemporaryFile(mode="w+t", encoding="utf-8", delete=False)
+    for req in reqs:
+        tmpfile.write(req["line"])
+        tmpfile.write("\n")
+    tmpfile.flush()
+
+    return tmpfile.name
