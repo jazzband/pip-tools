@@ -49,6 +49,7 @@ def _determine_linesep(
 ) -> str:
     """
     Determine and return linesep string for OutputWriter to use.
+
     Valid strategies: "LF", "CRLF", "native", "preserve"
     When preserving, files are checked in order for existing newlines.
     """
@@ -169,7 +170,9 @@ def cli(
     only_build_deps: bool,
 ) -> None:
     """
-    Compiles requirements.txt from requirements.in, pyproject.toml, setup.cfg,
+    Compile requirements.txt from source files.
+
+    Valid sources are requirements.in, pyproject.toml, setup.cfg,
     or setup.py specs.
     """
     if color is not None:
