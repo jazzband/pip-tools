@@ -272,7 +272,7 @@ def lookup_table(
 
 def dedup(iterable: Iterable[_T]) -> Iterable[_T]:
     """
-    Deduplicate an iterable object like iter(set(iterable)) but
+    Deduplicate an iterable object like ``iter(set(iterable))`` but
     order-preserved.
     """
     return iter(dict.fromkeys(iterable))
@@ -544,7 +544,7 @@ def override_defaults_from_config_file(
     file, returning the ``pathlib.Path`` of that config file if specified or
     discovered.
 
-    :returns: :py:data:`None` if no such file is found.
+    :returns: :py:data:`None` if no such file is found, else returns the path.
 
     ``pip-tools`` will use the first config file found, searching in this order:
     an explicitly given config file, a ``.pip-tools.toml``, a ``pyproject.toml``
