@@ -3428,6 +3428,9 @@ def test_compile_recursive_extras_build_targets(runner, tmp_path, current_resolv
             [project.optional-dependencies]
             footest = ["small-fake-b"]
             dev = ["foo[footest]"]
+            [build-system]
+            requires = ["setuptools == 70.0.0"]
+            build-backend = "setuptools.build_meta"
             """
         )
     )
