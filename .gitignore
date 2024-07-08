@@ -2,6 +2,7 @@
 *.t.err
 
 # Python cruft
+__pycache__
 *.pyc
 
 # Virtualenvs
