@@ -92,5 +92,5 @@ urllib3==2.0.4
     # via requests
 
 # The following packages are considered to be unsafe in a requirements file:
-setuptools==68.1.2
+setuptools==70.0.0
     # via setuptools-scm
