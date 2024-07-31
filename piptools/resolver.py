@@ -673,10 +673,12 @@ class BacktrackingResolver(BaseResolver):
 
         except MetadataGenerationFailed as err:
             # Find (part of) broken package name in the error message
-            match = re.search('name\s*=\s*"(\w+)"', str(err.__cause__.context))
+            match = re.search(r'name\s*=\s*"(\w+)"', str(err.__cause__.context))
             if match:
                 partial_name = match.group(1)
-                possible_constraints = [c for c in self.constraints if partial_name in c.name]
+                possible_constraints = [
+                    c for c in self.constraints if partial_name in c.name
+                ]
                 for constraint in possible_constraints:
                     # Remove existing constraint that *might* cause the error
                     log.warning(
