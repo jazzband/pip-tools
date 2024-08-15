@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import collections
 import contextlib
+import os
 import pathlib
 import sys
 import tempfile
@@ -119,6 +120,7 @@ def build_project_metadata(
     src_file: pathlib.Path,
     build_targets: tuple[str, ...],
     *,
+    upgrade_packages: tuple[str, ...] | None = None,
     attempt_static_parse: bool,
     isolated: bool,
     quiet: bool,
@@ -159,7 +161,9 @@ def build_project_metadata(
             return project_metadata
 
     src_dir = src_file.parent
-    with _create_project_builder(src_dir, isolated=isolated, quiet=quiet) as builder:
+    with _create_project_builder(
+        src_dir, upgrade_packages=upgrade_packages, isolated=isolated, quiet=quiet
+    ) as builder:
         metadata = _build_project_wheel_metadata(builder)
         extras = tuple(metadata.get_all("Provides-Extra") or ())
         requirements = tuple(
@@ -182,7 +186,11 @@ def build_project_metadata(
 
 @contextlib.contextmanager
 def _create_project_builder(
-    src_dir: pathlib.Path, *, isolated: bool, quiet: bool
+    src_dir: pathlib.Path,
+    *,
+    upgrade_packages: tuple[str, ...] | None = None,
+    isolated: bool,
+    quiet: bool,
 ) -> Iterator[build.ProjectBuilder]:
     if quiet:
         runner = pyproject_hooks.quiet_subprocess_runner
@@ -192,6 +200,15 @@ def _create_project_builder(
     if not isolated:
         yield build.ProjectBuilder(src_dir, runner=runner)
         return
+
+    if upgrade_packages is not None:
+        # Write packages to upgrade to a temporary file to set as
+        # constraints for the installation to the builder environment,
+        # in case build requirements are among them
+        tmpfile = tempfile.NamedTemporaryFile(mode="w+t", delete=False)
+        tmpfile.write("\n".join(package for package in upgrade_packages))
+        tmpfile.flush()
+        os.environ["PIP_CONSTRAINT"] = tmpfile.name
 
     with build.env.DefaultIsolatedEnv() as env:
         builder = build.ProjectBuilder.from_isolated_env(env, src_dir, runner)

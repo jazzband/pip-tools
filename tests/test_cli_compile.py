@@ -684,8 +684,8 @@ def test_url_package(runner, line, dependency, generate_hashes):
         ["-n", "--rebuild", "--no-build-isolation"]
         + (["--generate-hashes"] if generate_hashes else []),
     )
-    assert out.exit_code == 0
     assert dependency in out.stderr
+    assert out.exit_code == 0
 
 
 @pytest.mark.parametrize(
@@ -787,13 +787,13 @@ def test_direct_reference_with_extras(runner):
             "pip-tools[testing,coverage] @ git+https://github.com/jazzband/pip-tools@6.2.0"
         )
     out = runner.invoke(cli, ["-n", "--rebuild", "--no-build-isolation"])
-    assert out.exit_code == 0
     assert (
         "pip-tools[coverage,testing] @ git+https://github.com/jazzband/pip-tools@6.2.0"
         in out.stderr
     )
     assert "pytest==" in out.stderr
     assert "pytest-cov==" in out.stderr
+    assert out.exit_code == 0
 
 
 def test_input_file_without_extension(pip_conf, runner):
@@ -3431,7 +3431,6 @@ def test_compile_recursive_extras_build_targets(runner, tmp_path, current_resolv
             """
         )
     )
-    (tmp_path / "constraints.txt").write_text("wheel<0.43")
     out = runner.invoke(
         cli,
         [
@@ -3446,8 +3445,6 @@ def test_compile_recursive_extras_build_targets(runner, tmp_path, current_resolv
             "--find-links",
             os.fspath(MINIMAL_WHEELS_PATH),
             os.fspath(tmp_path / "pyproject.toml"),
-            "--constraint",
-            os.fspath(tmp_path / "constraints.txt"),
             "--output-file",
             "-",
         ],
@@ -3455,6 +3452,60 @@ def test_compile_recursive_extras_build_targets(runner, tmp_path, current_resolv
     expected = rf"""foo[footest] @ {tmp_path.as_uri()}
 small-fake-a==0.2
 small-fake-b==0.3
+
+# The following packages are considered to be unsafe in a requirements file:
+# setuptools
+"""
+    try:
+        assert out.exit_code == 0
+        assert expected == out.stdout
+    except Exception:  # pragma: no cover
+        print(out.stdout)
+        print(out.stderr)
+        raise
+
+
+@backtracking_resolver_only
+def test_compile_build_targets_setuptools_no_wheel_dep(
+    runner, tmp_path, current_resolver
+):
+    """
+    Regression test for https://github.com/jazzband/pip-tools/pull/1681#issuecomment-2212541289
+    """
+    (tmp_path / "pyproject.toml").write_text(
+        dedent(
+            """
+            [project]
+            name = "foo"
+            version = "0.0.1"
+            dependencies = ["small-fake-a"]
+            """
+        )
+    )
+    (tmp_path / "constraints.txt").write_text("wheel<0.43")
+    out = runner.invoke(
+        cli,
+        [
+            "--build-isolation",
+            "--no-header",
+            "--no-annotate",
+            "--no-emit-options",
+            "--extra",
+            "dev",
+            "--build-deps-for",
+            "wheel",
+            "--find-links",
+            os.fspath(MINIMAL_WHEELS_PATH),
+            os.fspath(tmp_path / "pyproject.toml"),
+            "--constraint",
+            os.fspath(tmp_path / "constraints.txt"),
+            "--upgrade-package",
+            "setuptools < 70.1.0",  # setuptools>=70.1.0 doesn't require wheel any more
+            "--output-file",
+            "-",
+        ],
+    )
+    expected = r"""small-fake-a==0.2
 wheel==0.42.0
 
 # The following packages are considered to be unsafe in a requirements file:
