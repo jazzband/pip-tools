@@ -3443,6 +3443,8 @@ def test_compile_recursive_extras_build_targets(runner, tmp_path, current_resolv
             "dev",
             "--build-deps-for",
             "wheel",
+            "--unsafe-package=wheel",
+            "--unsafe-package=setuptools",
             "--find-links",
             os.fspath(MINIMAL_WHEELS_PATH),
             os.fspath(tmp_path / "pyproject.toml"),
@@ -3455,7 +3457,6 @@ def test_compile_recursive_extras_build_targets(runner, tmp_path, current_resolv
     expected = rf"""foo[footest] @ {tmp_path.as_uri()}
 small-fake-a==0.2
 small-fake-b==0.3
-wheel==0.42.0
 
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
