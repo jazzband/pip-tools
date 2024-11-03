@@ -45,14 +45,14 @@ jobs:
 
   test:
     name: ${{ matrix.os }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os:
-          - Ubuntu
-          - Windows
-          - macOS
+          - ubuntu-latest
+          - windows-latest
+          - macos-14
         python-version:
           - "3.11"
           - "3.10"
@@ -67,7 +67,7 @@ jobs:
             )
           }}
         include:
-          - os: Ubuntu
+          - os: ubuntu-latest
             python-version: >-
               ${{
                 github.job_workflow_sha
@@ -139,14 +139,14 @@ jobs:
 
   pypy:
     name: ${{ matrix.os }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os:
-          - Ubuntu
-          - MacOS
-          - Windows
+          - ubuntu-latest
+          - macos-14
+          - windows-latest
         python-version:
           - pypy-3.8
         pip-version:
