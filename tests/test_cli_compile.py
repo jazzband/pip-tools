@@ -10,6 +10,7 @@ from textwrap import dedent
 from unittest import mock
 from unittest.mock import MagicMock
 
+import pip
 import pytest
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.hashes import FAVORITE_HASH
@@ -1476,6 +1477,10 @@ def test_multiple_input_files_without_output_file(runner):
     assert out.exit_code == 2
 
 
+@pytest.mark.xfail(
+    Version(pip.__version__) >= Version("24.3"),
+    reason="known issue in pip versions 24.3 and later (issue #2131)",
+)
 @pytest.mark.parametrize(
     ("options", "expected"),
     (
@@ -3232,6 +3237,10 @@ def test_resolver_reaches_max_rounds(runner):
     assert out.exit_code != 0, out
 
 
+@pytest.mark.xfail(
+    Version(pip.__version__) >= Version("24.3"),
+    reason="known issue in pip versions 24.3 and later (issue #2131)",
+)
 def test_preserve_via_requirements_constrained_dependencies_when_run_twice(
     pip_conf, runner
 ):
