@@ -63,7 +63,7 @@ jobs:
             fromJSON(
               inputs.cpython-pip-version
               && inputs.cpython-pip-version
-              || '["latest", "lowest"]'
+              || '["supported", "lowest"]'
             )
           }}
     env:
@@ -141,7 +141,7 @@ jobs:
         python-version:
           - pypy-3.8
         pip-version:
-          - latest
+          - supported
     env:
       TOXENV: pip${{ matrix.pip-version }}
     steps:
