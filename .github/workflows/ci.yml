@@ -61,7 +61,7 @@ jobs:
         pip-version: >-
           ${{
             fromJSON(
-              github.job_workflow_sha
+              inputs.cpython-pip-version
               && inputs.cpython-pip-version
               || '["latest", "previous"]'
             )
@@ -69,7 +69,7 @@ jobs:
     env:
       TOXENV: >-
         pip${{ matrix.pip-version }}${{
-          !github.job_workflow_sha
+          !inputs.cpython-pip-version
           && '-coverage'
           || ''
         }}
@@ -112,7 +112,7 @@ jobs:
         run: tox --skip-pkg-install
       - name: Upload coverage to Codecov
         if: >-
-          !github.job_workflow_sha
+          !inputs.cpython-pip-version
         uses: codecov/codecov-action@v3
         with:
           files: ./coverage.xml
