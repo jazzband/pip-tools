@@ -148,7 +148,7 @@ jobs:
           - MacOS
           - Windows
         python-version:
-          - pypy-3.8
+          - pypy-3.9
         pip-version:
           - latest
     env:
