@@ -63,7 +63,7 @@ jobs:
             fromJSON(
               inputs.cpython-pip-version
               && inputs.cpython-pip-version
-              || '["latest", "previous"]'
+              || '["latest", "lowest"]'
             )
           }}
     env:
