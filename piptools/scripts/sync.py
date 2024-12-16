@@ -98,6 +98,15 @@ def cli(
     if config:
         log.debug(f"Using pip-tools configuration defaults found in '{config !s}'.")
 
+    current_python = sys.executable
+    log.debug(f"{current_python=}")
+    env_python = shutil.which("python")
+    log.debug(f"{env_python=}")
+
+    if python_executable is None and current_python != env_python:
+        # pip-tools probably installed globally (e.g. via pipx)
+        python_executable = env_python
+
     if python_executable:
         _validate_python_executable(python_executable)
 
