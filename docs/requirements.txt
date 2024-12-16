@@ -88,7 +88,7 @@ sphinxcontrib-serializinghtml==1.1.8
     # via sphinx
 typing-extensions==4.7.1
     # via setuptools-scm
-urllib3==2.0.4
+urllib3==2.2.2
     # via requests
 
 # The following packages are considered to be unsafe in a requirements file:
