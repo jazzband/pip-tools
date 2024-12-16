@@ -11,4 +11,4 @@ jobs:
     uses: ./.github/workflows/ci.yml
     with:
       cpython-pip-version: >-
-        ["main", "latest", "previous"]
+        ["main", "latest", "supported", "lowest"]
