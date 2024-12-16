@@ -370,6 +370,7 @@ def cli(
                 metadata = build_project_metadata(
                     src_file=Path(src_file),
                     build_targets=build_deps_targets,
+                    upgrade_packages=upgrade_packages,
                     attempt_static_parse=not bool(build_deps_targets),
                     isolated=build_isolation,
                     quiet=log.verbosity <= 0,
