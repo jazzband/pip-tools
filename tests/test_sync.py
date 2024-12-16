@@ -12,6 +12,7 @@ from pip._internal.utils.urls import path_to_url
 
 from piptools.exceptions import IncompatibleRequirements
 from piptools.sync import dependency_tree, diff, merge, sync
+from piptools.utils import PIP_VERSION
 
 from .constants import PACKAGES_PATH
 
@@ -168,13 +169,20 @@ def test_diff_should_not_uninstall(fake_dist):
         "pip-tools==1.1.1",
         "pip-review==1.1.1",
         "pkg-resources==0.0.0",
-        "setuptools==34.0.0",
-        "wheel==0.29.0",
         "python==3.0",
-        "distribute==0.1",
         "wsgiref==0.1",
         "argparse==0.1",
     )
+    if PIP_VERSION[:3] < (23, 2) or sys.version_info < (3, 12):
+        # github.com/jazzband/pip-tools/pull/2148#issuecomment-2545479219
+        # Python 3.12 removed vendored `setuptools` and pip 23.2 reacted
+        # with stopping special-casing excluding the following projects:
+        ignored += (
+            "setuptools==34.0.0",
+            "wheel==0.29.0",
+            "distribute==0.1",
+        )
+
     installed = [fake_dist(pkg) for pkg in ignored]
     reqs = []
 
