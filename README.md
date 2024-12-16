@@ -32,7 +32,8 @@ project's virtual environment.
 
 The `pip-compile` command lets you compile a `requirements.txt` file from
 your dependencies, specified in either `pyproject.toml`, `setup.cfg`,
-`setup.py`, or `requirements.in`.
+`setup.py`, `requirements.in`, or pure-Python scripts containing
+[inline script metadata](https://packaging.python.org/en/latest/specifications/inline-script-metadata/).
 
 Run it with `pip-compile` or `python -m piptools compile` (or
 `pipx run --spec pip-tools pip-compile` if `pipx` was installed with the
