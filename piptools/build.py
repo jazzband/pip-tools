@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import collections
 import contextlib
+import os
 import pathlib
 import sys
 import tempfile
@@ -119,6 +120,7 @@ def build_project_metadata(
     src_file: pathlib.Path,
     build_targets: tuple[str, ...],
     *,
+    upgrade_packages: tuple[str, ...] | None = None,
     attempt_static_parse: bool,
     isolated: bool,
     quiet: bool,
@@ -159,7 +161,12 @@ def build_project_metadata(
             return project_metadata
 
     src_dir = src_file.parent
-    with _create_project_builder(src_dir, isolated=isolated, quiet=quiet) as builder:
+    with _create_project_builder(
+        src_dir,
+        upgrade_packages=upgrade_packages,
+        isolated=isolated,
+        quiet=quiet,
+    ) as builder:
         metadata = _build_project_wheel_metadata(builder)
         extras = tuple(metadata.get_all("Provides-Extra") or ())
         requirements = tuple(
@@ -181,8 +188,79 @@ def build_project_metadata(
 
 
 @contextlib.contextmanager
+def _env_var(
+    env_var_name: str,
+    env_var_value: str,
+    /,
+) -> Iterator[None]:
+    sentinel = object()
+    original_pip_constraint = os.getenv(env_var_name, sentinel)
+    pip_constraint_was_unset = original_pip_constraint is sentinel
+
+    os.environ[env_var_name] = env_var_value
+    try:
+        yield
+    finally:
+        if pip_constraint_was_unset:
+            del os.environ[env_var_name]
+            return
+
+        # Assert here is necessary because MyPy can't infer type
+        # narrowing in the complex case.
+        assert isinstance(original_pip_constraint, str)
+        os.environ[env_var_name] = original_pip_constraint
+
+
+@contextlib.contextmanager
+def _temporary_constraints_file_set_for_pip(
+    upgrade_packages: tuple[str, ...],
+) -> Iterator[None]:
+    with tempfile.NamedTemporaryFile(
+        mode="w+t",
+        delete=False,  # FIXME: switch to `delete_on_close` in Python 3.12+
+    ) as tmpfile:
+        # NOTE: `delete_on_close=False` here (or rather `delete=False`,
+        # NOTE: temporarily) is important for cross-platform execution. It is
+        # NOTE: required on Windows so that the underlying `pip install`
+        # NOTE: invocation by pypa/build will be able to access the constraint
+        # NOTE: file via a subprocess and not fail installing it due to a
+        # NOTE: permission error related to this file handle still open in our
+        # NOTE: parent process. To achieve this, we `.close()` the file
+        # NOTE: descriptor before we hand off the control to the build frontend
+        # NOTE: and with `delete_on_close=False`, the
+        # NOTE: `tempfile.NamedTemporaryFile()` context manager does not remove
+        # NOTE: it from disk right away.
+        # NOTE: Due to support of versions below Python 3.12, we are forced to
+        # NOTE: temporarily resort to using `delete=False`, meaning that the CM
+        # NOTE: never attempts removing the file from disk, not even on exit.
+        # NOTE: So we do this manually until we can migrate to using the more
+        # NOTE: ergonomic argument `delete_on_close=False`.
+
+        # Write packages to upgrade to a temporary file to set as
+        # constraints for the installation to the builder environment,
+        # in case build requirements are among them
+        tmpfile.write("\n".join(upgrade_packages))
+
+        # FIXME: replace `delete` with `delete_on_close` in Python 3.12+
+        # FIXME: and replace `.close()` with `.flush()`
+        tmpfile.close()
+
+        try:
+            with _env_var("PIP_CONSTRAINT", tmpfile.name):
+                yield
+        finally:
+            # FIXME: replace `delete` with `delete_on_close` in Python 3.12+
+            # FIXME: and drop this manual deletion
+            os.unlink(tmpfile.name)
+
+
+@contextlib.contextmanager
 def _create_project_builder(
-    src_dir: pathlib.Path, *, isolated: bool, quiet: bool
+    src_dir: pathlib.Path,
+    *,
+    upgrade_packages: tuple[str, ...] | None = None,
+    isolated: bool,
+    quiet: bool,
 ) -> Iterator[build.ProjectBuilder]:
     if quiet:
         runner = pyproject_hooks.quiet_subprocess_runner
@@ -193,7 +271,13 @@ def _create_project_builder(
         yield build.ProjectBuilder(src_dir, runner=runner)
         return
 
-    with build.env.DefaultIsolatedEnv() as env:
+    maybe_pip_constrained_context = (
+        contextlib.nullcontext()
+        if upgrade_packages is None
+        else _temporary_constraints_file_set_for_pip(upgrade_packages)
+    )
+
+    with maybe_pip_constrained_context, build.env.DefaultIsolatedEnv() as env:
         builder = build.ProjectBuilder.from_isolated_env(env, src_dir, runner)
         env.install(builder.build_system_requires)
         env.install(builder.get_requires_for_build("wheel"))

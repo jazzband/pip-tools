@@ -61,24 +61,15 @@ jobs:
         pip-version: >-
           ${{
             fromJSON(
-              github.job_workflow_sha
+              inputs.cpython-pip-version
               && inputs.cpython-pip-version
-              || '["latest", "previous"]'
+              || '["supported", "lowest"]'
             )
           }}
-        include:
-          - os: Ubuntu
-            python-version: >-
-              ${{
-                github.job_workflow_sha
-                && '3.12-dev'
-                || '3.8'
-              }}
-            pip-version: main
     env:
       TOXENV: >-
         pip${{ matrix.pip-version }}${{
-          !github.job_workflow_sha
+          !inputs.cpython-pip-version
           && '-coverage'
           || ''
         }}
@@ -121,7 +112,7 @@ jobs:
         run: tox --skip-pkg-install
       - name: Upload coverage to Codecov
         if: >-
-          !github.job_workflow_sha
+          !inputs.cpython-pip-version
         uses: codecov/codecov-action@v3
         with:
           files: ./coverage.xml
@@ -148,9 +139,9 @@ jobs:
           - MacOS
           - Windows
         python-version:
-          - pypy-3.8
+          - pypy-3.10
         pip-version:
-          - latest
+          - supported
     env:
       TOXENV: pip${{ matrix.pip-version }}
     steps:
