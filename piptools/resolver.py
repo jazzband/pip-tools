@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import collections
 import copy
+import re
 from abc import ABCMeta, abstractmethod
 from functools import partial
 from itertools import chain, count, groupby
 from typing import Any, Container, DefaultDict, Iterable, Iterator
 
 import click
-from pip._internal.exceptions import DistributionNotFound
+from pip._internal.exceptions import DistributionNotFound, MetadataGenerationFailed
 from pip._internal.operations.build.build_tracker import (
     get_build_tracker,
     update_env_context_manager,
@@ -703,6 +704,37 @@ class BacktrackingResolver(BaseResolver):
                 del compatible_existing_constraints[cause_ireq_name]
 
             return False
+
+        except MetadataGenerationFailed as err:
+            # Find (part of) broken package name in the error message
+            match = re.search(r'name\s*=\s*"(\w+)"', str(err.__cause__.context))
+            if match:
+                partial_name = match.group(1)
+                possible_constraints = [
+                    c for c in self.constraints if partial_name in c.name
+                ]
+                for constraint in possible_constraints:
+                    # Remove existing constraint that *might* cause the error
+                    log.warning(
+                        f"Discarding {constraint} to proceed the resolution.\n"
+                        "It looks like it has a release with broken metadata, causing this resolver to fail.\n"
+                        "You may try to pin that package's version (probably to a recent one), "
+                        "so the resolver doesn't consider the broken release."
+                    )
+                    self.constraints.remove(constraint)
+
+                    # We remove only one constraint at a time.
+                    # If there are multiple candidates, we'll find them in the next round.
+                    return False
+
+            # We also get here if there was a match, but possible_constraints is an empty list.
+            log.error(
+                "A package release has broken metadata, but we can't tell which package it is.\n "
+                "Try reading the error message above to identify the package.\n"
+                "Next, you may try to pin that package's version (probably to a recent one), "
+                "so the resolver doesn't consider the broken release."
+            )
+            raise
 
         return True
 
