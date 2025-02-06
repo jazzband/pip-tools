@@ -38,7 +38,8 @@ dependencies = [
   # direct dependencies
   "build >= 1.0.0",
   "click >= 8",
-  "pip >= 22.2",
+  "pip >= 23.1; python_version >= '3.12'",
+  "pip >= 22.2; python_version < '3.12'",
   "pyproject_hooks",
   "tomli; python_version < '3.11'",
   # indirect dependencies
