@@ -810,3 +810,16 @@ def test_select_config_file_prefers_pip_tools_toml_over_pyproject_toml(tmpdir_cw
     )
 
     assert select_config_file(()) == pip_tools_file
+
+
+def test_select_config_file_with_config_file_in_different_directory(
+    tmpdir_cwd, make_config_file
+):
+    config_file = make_config_file("dry-run", True, ".pip-tools.toml")
+
+    (tmpdir_cwd / "subdir").mkdir()
+
+    requirement_file = Path("subdir/requirements.in")
+    requirement_file.touch()
+
+    assert select_config_file((requirement_file.as_posix(),)) == config_file
