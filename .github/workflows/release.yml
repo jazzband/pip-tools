@@ -1,4 +1,5 @@
-name: Release
+---
+name: 📦 Packaging
 
 on:
   push:
@@ -8,36 +9,134 @@ on:
     types:
       - published
 
+env:
+  FORCE_COLOR: 1 # Request colored output from CLI tools supporting it
+  MYPY_FORCE_COLOR: 1 # MyPy's color enforcement
+  PIP_DISABLE_PIP_VERSION_CHECK: 1 # Hide "there's a newer pip" message
+  PIP_NO_PYTHON_VERSION_WARNING: 1 # Hide "this Python is deprecated" message
+  PIP_NO_WARN_SCRIPT_LOCATION: 1 # Hide "script dir is not in $PATH" message
+  PRE_COMMIT_COLOR: always
+  PROJECT_NAME: pip-tools
+  PY_COLORS: 1 # Recognized by the `py` package, dependency of `pytest`
+  PYTHONIOENCODING: utf-8
+  PYTHONUTF8: 1
+  TOX_PARALLEL_NO_SPINNER: 1 # Disable tox's parallel run spinner animation
+  TOX_TESTENV_PASSENV: >- # Make tox-wrapped tools see color requests
+    FORCE_COLOR
+    MYPY_FORCE_COLOR
+    NO_COLOR
+    PIP_DISABLE_PIP_VERSION_CHECK
+    PIP_NO_PYTHON_VERSION_WARNING
+    PIP_NO_WARN_SCRIPT_LOCATION
+    PRE_COMMIT_COLOR
+    PY_COLORS
+    PYTEST_THEME
+    PYTEST_THEME_MODE
+    PYTHONIOENCODING
+    PYTHONLEGACYWINDOWSSTDIO
+    PYTHONUTF8
+  UPSTREAM_REPOSITORY_ID: >-
+    5746963
+
+run-name: >-
+  ${{
+    github.event.action == 'published'
+    && format('📦 Releasing v{0}...', github.ref_name)
+    || format('🌱 Smoke-testing packaging for commit {0}', github.sha)
+  }}
+  triggered by: ${{ github.event_name }} of ${{
+    github.ref
+  }} ${{
+    github.ref_type
+  }}
+  (workflow run ID: ${{
+    github.run_id
+  }}; number: ${{
+    github.run_number
+  }}; attempt: ${{
+    github.run_attempt
+  }})
+
 jobs:
   build:
-    if: github.repository == 'jazzband/pip-tools'
+    name: >-
+      📦 v${{ github.ref_name }}
+      [mode: ${{
+        github.event.action == 'published'
+        && 'release' || 'nightly'
+      }}]
+
     runs-on: ubuntu-latest
 
+    timeout-minutes: 2
+
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: 3.9
 
       - name: Install dependencies
         run: |
-          python -m pip install -U pip
-          python -m pip install -U twine build setuptools-scm
+          python -Im pip install -U twine build setuptools-scm
 
       - name: Build package
         run: |
-          python -m setuptools_scm
-          python -m build
+          python -Im setuptools_scm
+          python -Im build
           twine check --strict dist/*
 
-      - name: Upload packages to Jazzband
-        if: github.event.action == 'published'
-        uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Store the distribution packages
+        uses: actions/upload-artifact@v4
         with:
-          user: jazzband
-          password: ${{ secrets.JAZZBAND_RELEASE_KEY }}
-          repository_url: https://jazzband.co/projects/pip-tools/upload
+          name: python-package-distributions
+          # NOTE: Exact expected file names are specified here
+          # NOTE: as a safety measure — if anything weird ends
+          # NOTE: up being in this dir or not all dists will be
+          # NOTE: produced, this will fail the workflow.
+          path: |
+            dist/*.tar.gz
+            dist/*.whl
+          retention-days: >-
+            ${{
+                github.event.action == 'published'
+                && 90 || 30
+            }}
+
+  publish-pypi:
+    name: >-
+      📦
+      Publish v${{ github.ref_name }} to PyPI
+    needs:
+      - build
+    if: >-
+      github.event.action == 'published'
+      && '5746963' == github.repository_id
+
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 2 # docker+network are slow sometimes
+
+    environment:
+      name: pypi
+      url: >-
+        https://pypi.org/project/${{ env.PROJECT_NAME }}/${{ github.ref_name }}
+
+    permissions:
+      id-token: write # PyPI Trusted Publishing (OIDC)
+
+    steps:
+      - name: Download all the dists
+        uses: actions/download-artifact@v4
+        with:
+          name: python-package-distributions
+          path: dist/
+      - name: >-
+          📦
+          Publish v${{ github.ref_name }} to PyPI
+          🔏
+        uses: pypa/gh-action-pypi-publish@release/v1
