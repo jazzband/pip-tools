@@ -205,9 +205,9 @@ def test_pip_install_flags(run, cli_flags, expected_install_flags, runner):
 
     call_args = [call[0][0] for call in run.call_args_list]
     called_install_options = [args[6:] for args in call_args if args[3] == "install"]
-    assert called_install_options == [expected_install_flags], "Called args: {}".format(
-        call_args
-    )
+    assert called_install_options == [
+        expected_install_flags
+    ], f"Called args: {call_args}"
 
 
 @pytest.mark.parametrize(
