@@ -5,7 +5,7 @@ import os
 import sys
 import tempfile
 from subprocess import run  # nosec
-from typing import Deque, Iterable, Mapping, ValuesView
+from typing import Iterable, Mapping, ValuesView
 
 import click
 from pip._internal.models.direct_url import ArchiveInfo
@@ -54,7 +54,7 @@ def dependency_tree(
     :type root_key: str
     """
     dependencies = set()
-    queue: Deque[Distribution] = collections.deque()
+    queue: collections.deque[Distribution] = collections.deque()
 
     if root_key in installed_keys:
         dep = installed_keys[root_key]

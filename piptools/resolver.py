@@ -5,7 +5,7 @@ import copy
 from abc import ABCMeta, abstractmethod
 from functools import partial
 from itertools import chain, count, groupby
-from typing import Any, Container, DefaultDict, Iterable, Iterator
+from typing import Any, Container, Iterable, Iterator
 
 import click
 from pip._internal.exceptions import DistributionNotFound
@@ -532,7 +532,7 @@ class BacktrackingResolver(BaseResolver):
         self.existing_constraints = existing_constraints
 
         # Categorize InstallRequirements into sets by key
-        constraints_sets: DefaultDict[str, set[InstallRequirement]] = (
+        constraints_sets: collections.defaultdict[str, set[InstallRequirement]] = (
             collections.defaultdict(set)
         )
         for ireq in constraints:
@@ -746,7 +746,9 @@ class BacktrackingResolver(BaseResolver):
     def _get_reverse_dependencies(
         resolver_result: Result,
     ) -> dict[str, set[str]]:
-        reverse_dependencies: DefaultDict[str, set[str]] = collections.defaultdict(set)
+        reverse_dependencies: collections.defaultdict[str, set[str]] = (
+            collections.defaultdict(set)
+        )
 
         for candidate in resolver_result.mapping.values():
             stripped_name = strip_extras(canonicalize_name(candidate.name))
