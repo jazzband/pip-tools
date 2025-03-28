@@ -127,6 +127,7 @@ Examples:
 @options.reuse_hashes
 @options.max_rounds
 @options.src_files
+@options.group
 @options.build_isolation
 @options.emit_find_links
 @options.cache_dir
@@ -171,6 +172,7 @@ def cli(
     generate_hashes: bool,
     reuse_hashes: bool,
     src_files: tuple[str, ...],
+    group: tuple[tuple[str, str], ...],
     max_rounds: int,
     build_isolation: bool,
     emit_find_links: bool,
