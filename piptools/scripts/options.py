@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pathlib
 from typing import Any, Literal
 
 import click
@@ -8,7 +7,11 @@ from pip._internal.commands import create_command
 from pip._internal.utils.misc import redact_auth_from_url
 
 from piptools.locations import CACHE_DIR, DEFAULT_CONFIG_FILE_NAMES
-from piptools.utils import UNSAFE_PACKAGES, override_defaults_from_config_file
+from piptools.utils import (
+    UNSAFE_PACKAGES,
+    DependencyGroupParamType,
+    override_defaults_from_config_file,
+)
 
 BuildTargetT = Literal["sdist", "wheel", "editable"]
 ALL_BUILD_TARGETS: tuple[BuildTargetT, ...] = (
@@ -16,44 +19,6 @@ ALL_BUILD_TARGETS: tuple[BuildTargetT, ...] = (
     "sdist",
     "wheel",
 )
-
-
-class DependencyGroupParam(click.ParamType):
-    def get_metavar(self, param: click.Parameter) -> str:
-        return "[pyproject-path::]groupname"
-
-    def convert(
-        self, value: str, param: click.Parameter | None, ctx: click.Context | None
-    ) -> tuple[str, str]:
-        """
-        Parse a dependency group input.
-
-        Splits on the rightmost ":", and validates that the path (if present) ends
-        in `pyproject.toml`. Defaults the path to `pyproject.toml` when one is not given.
-
-        `:` cannot appear in dependency group names, so this is a safe and simple parse.
-
-        If the path portion ends in ":", then the ":" is removed, effectively resulting in
-        a split on "::" when that is used.
-
-        The following conversions are expected:
-            'foo' -> ('pyproject.toml', 'foo')
-            'foo/pyproject.toml:bar' -> ('foo/pyproject.toml', 'bar')
-            'foo/pyproject.toml::bar' -> ('foo/pyproject.toml', 'bar')
-        """
-        path, sep, groupname = value.rpartition(":")
-        if not sep:
-            path = "pyproject.toml"
-        else:
-            # strip a rightmost ":" if one was present
-            if path.endswith(":"):
-                path = path[:-1]
-            # check for 'pyproject.toml' filenames using pathlib
-            if pathlib.PurePath(path).name != "pyproject.toml":
-                msg = "group paths use 'pyproject.toml' filenames"
-                raise click.UsageError(msg)
-
-        return (path, groupname)
 
 
 def _get_default_option(option_name: str) -> Any:
@@ -290,7 +255,7 @@ src_files = click.argument(
 group = click.option(
     "--group",
     "groups",
-    type=DependencyGroupParam(),
+    type=DependencyGroupParamType(),
     multiple=True,
     help=(
         'Specify a named dependency-group from a "pyproject.toml" file. '

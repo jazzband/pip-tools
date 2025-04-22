@@ -24,6 +24,7 @@ from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..repositories.base import BaseRepository
 from ..resolver import BacktrackingResolver, LegacyResolver
 from ..utils import (
+    ParsedDependencyGroupParam,
     dedup,
     drop_extras,
     install_req_from_line,
@@ -155,7 +156,7 @@ def cli(
     generate_hashes: bool,
     reuse_hashes: bool,
     src_files: tuple[str, ...],
-    groups: tuple[tuple[str, str], ...],
+    groups: tuple[ParsedDependencyGroupParam, ...],
     max_rounds: int,
     build_isolation: bool,
     emit_find_links: bool,

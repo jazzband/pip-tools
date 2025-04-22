@@ -8,6 +8,8 @@ from dependency_groups import DependencyGroupResolver
 from pip._internal.req import InstallRequirement
 from pip._vendor.packaging.requirements import Requirement
 
+from .utils import ParsedDependencyGroupParam
+
 if sys.version_info >= (3, 11):
     import tomllib
 else:
@@ -15,23 +17,24 @@ else:
 
 
 def parse_dependency_groups(
-    group_specs: tuple[tuple[str, str], ...],
+    params: tuple[ParsedDependencyGroupParam, ...],
 ) -> list[InstallRequirement]:
-    resolvers = _build_resolvers(path for (path, _) in group_specs)
+    resolvers = _build_resolvers(param.path for param in params)
     reqs: list[InstallRequirement] = []
-    for path, groupname in group_specs:
-        resolver = resolvers[path]
+    for param in params:
+        resolver = resolvers[param.path]
         try:
             reqs.extend(
                 InstallRequirement(
-                    Requirement(str(req)), comes_from=f"--group '{path}:{groupname}'"
+                    Requirement(str(req)),
+                    comes_from=f"--group '{param.path}:{param.group}'",
                 )
-                for req in resolver.resolve(groupname)
+                for req in resolver.resolve(param.group)
             )
         except (ValueError, TypeError, LookupError) as e:
             raise click.UsageError(
-                f"[dependency-groups] resolution failed for '{groupname}' "
-                f"from '{path}': {e}"
+                f"[dependency-groups] resolution failed for '{param.group}' "
+                f"from '{param.path}': {e}"
             ) from e
     return reqs
 
