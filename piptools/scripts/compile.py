@@ -17,6 +17,7 @@ from .._compat import canonicalize_name, parse_requirements, tempfile_compat
 from .._internal import _pip_api
 from ..build import ProjectMetadata, build_project_metadata
 from ..cache import DependencyCache
+from ..dependency_groups import parse_dependency_groups
 from ..exceptions import NoCandidateFound, PipToolsError
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
@@ -172,7 +173,7 @@ def cli(
     generate_hashes: bool,
     reuse_hashes: bool,
     src_files: tuple[str, ...],
-    group: tuple[tuple[str, str], ...],
+    groups: tuple[tuple[str, str], ...],
     max_rounds: int,
     build_isolation: bool,
     emit_find_links: bool,
@@ -419,6 +420,9 @@ def cli(
                     options=repository.options,
                 )
             )
+
+    # Parse `--group` dependency-groups and add them to constraints
+    constraints.extend(parse_dependency_groups(groups))
 
     # Parse all constraints from `--constraint` files
     for filename in constraint:
