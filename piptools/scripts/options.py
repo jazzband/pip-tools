@@ -289,6 +289,7 @@ src_files = click.argument(
 
 group = click.option(
     "--group",
+    "groups",
     type=DependencyGroupParam(),
     multiple=True,
     help=(
