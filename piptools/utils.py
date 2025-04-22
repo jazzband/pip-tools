@@ -6,6 +6,7 @@ import difflib
 import itertools
 import json
 import os
+import pathlib
 import re
 import shlex
 import typing as _t
@@ -14,6 +15,10 @@ from pathlib import Path
 
 import click
 from click.core import ParameterSource
+
+import click
+from click.core import ParameterSource
+
 from click.utils import LazyFile
 from pip._internal.req import InstallRequirement
 from pip._internal.resolution.resolvelib.base import Requirement as PipRequirement
@@ -375,6 +380,10 @@ def get_compile_command(click_ctx: click.Context) -> str:
             value = [value]
 
         for val in value:
+            # use the input value for --group params
+            if isinstance(val, ParsedDependencyGroupParam):
+                val = val.input_arg
+
             # Flags don't have a value, thus add to args true or false option long name
             if option.is_flag:
                 # If there are false-options, choose an option name depending on a value
@@ -662,3 +671,50 @@ def _normalize_config_key(key: str) -> str:
 def _convert_to_long_option(key: str) -> str:
     """Transform given ``some-key`` into ``--some-key``."""
     return "--" + key.lstrip("-").replace("_", "-").lower()
+
+
+class DependencyGroupParamType(click.ParamType):
+    def get_metavar(self, param: click.Parameter) -> str:
+        return "[pyproject-path::]groupname"
+
+    def convert(
+        self, value: str, param: click.Parameter | None, ctx: click.Context | None
+    ) -> ParsedDependencyGroupParam:
+        return ParsedDependencyGroupParam(value)
+
+
+class ParsedDependencyGroupParam:
+    """
+    Parse a dependency group input, but retain the input value.
+
+    Splits on the rightmost ":", and validates that the path (if present) ends
+    in `pyproject.toml`. Defaults the path to `pyproject.toml` when one is not given.
+
+    `:` cannot appear in dependency group names, so this is a safe and simple parse.
+
+    If the path portion ends in ":", then the ":" is removed, effectively resulting in
+    a split on "::" when that is used.
+
+    The following conversions are expected:
+        'foo' -> ('pyproject.toml', 'foo')
+        'foo/pyproject.toml:bar' -> ('foo/pyproject.toml', 'bar')
+        'foo/pyproject.toml::bar' -> ('foo/pyproject.toml', 'bar')
+    """
+
+    def __init__(self, value: str) -> None:
+        self.input_arg = value
+
+        path, sep, groupname = value.rpartition(":")
+        if not sep:
+            path = "pyproject.toml"
+        else:
+            # strip a rightmost ":" if one was present
+            if path.endswith(":"):
+                path = path[:-1]
+            # check for 'pyproject.toml' filenames using pathlib
+            if pathlib.PurePath(path).name != "pyproject.toml":
+                msg = "group paths use 'pyproject.toml' filenames"
+                raise click.UsageError(msg)
+
+        self.path = path
+        self.group = groupname
