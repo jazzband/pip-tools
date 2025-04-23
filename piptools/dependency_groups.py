@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import sys
-from typing import Any, Iterable, Iterator
+from typing import Any, Iterable
 
 import click
 from dependency_groups import DependencyGroupResolver
@@ -27,7 +27,7 @@ def parse_dependency_groups(
             reqs.extend(
                 InstallRequirement(
                     Requirement(str(req)),
-                    comes_from=f"--group '{param.path}:{param.group}'",
+                    comes_from=f"--group '{param}'",
                 )
                 for req in resolver.resolve(param.group)
             )
@@ -37,24 +37,6 @@ def parse_dependency_groups(
                 f"from '{param.path}': {e}"
             ) from e
     return reqs
-
-
-def _resolve_all_groups(
-    resolvers: dict[str, DependencyGroupResolver], groups: list[tuple[str, str]]
-) -> Iterator[str]:
-    """
-    Run all resolution, converting any error from `DependencyGroupResolver` into
-    a UsageError.
-    """
-    for path, groupname in groups:
-        resolver = resolvers[path]
-        try:
-            yield from (str(req) for req in resolver.resolve(groupname))
-        except (ValueError, TypeError, LookupError) as e:
-            raise click.UsageError(
-                f"[dependency-groups] resolution failed for '{groupname}' "
-                f"from '{path}': {e}"
-            ) from e
 
 
 def _build_resolvers(paths: Iterable[str]) -> dict[str, Any]:
