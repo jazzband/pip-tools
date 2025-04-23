@@ -1458,6 +1458,133 @@ def test_stdin(pip_conf, runner):
     )
 
 
+@pytest.mark.parametrize(
+    "groupspec", ["mygroup", "pyproject.toml:mygroup", "pyproject.toml::mygroup"]
+)
+def test_dependency_group_resolution(pip_conf, runner, tmpdir_cwd, groupspec):
+    """
+    Test compile requirements from pyproject.toml [dependency-groups].
+    """
+    pyproj = tmpdir_cwd / "pyproject.toml"
+    pyproj.write_text(
+        dedent(
+            """\
+            [project]
+            name = "foo"
+            version = "1.0"
+
+            [dependency-groups]
+            mygroup = ["small-fake-a==0.1"]
+            """
+        )
+    )
+
+    out = runner.invoke(
+        cli,
+        [
+            "--group",
+            groupspec,
+            "--output-file",
+            "-",
+            "--quiet",
+            "--no-emit-options",
+            "--no-header",
+        ],
+    )
+    assert out.exit_code == 0, out.stderr
+
+    assert out.stdout == dedent(
+        f"""\
+        small-fake-a==0.1
+            # via --group '{groupspec}'
+        """
+    )
+
+
+@pytest.mark.parametrize(
+    "pyproject_content, group_arg, expect_error",
+    [
+        pytest.param(None, "mygroup", "pyproject.toml not found", id="missing-file"),
+        pytest.param(
+            """\
+            [project]
+            name = "foo"
+            version = "1.0"
+            """,
+            "mygroup",
+            "[dependency-groups] table was missing from 'pyproject.toml'",
+            id="missing-table",
+        ),
+        pytest.param(
+            # the malformed-toml test case needs to be in a non-cwd directory
+            # so that it properly tests malformed file parsing in this context
+            # if it's in the cwd, pip-compile will attempt to parse `./pyproject.toml` first
+            # (which will fail in a separate location)
+            """\
+            [project
+            name = "foo"
+            version = "1.0"
+            """,
+            "./foo/pyproject.toml:mygroup",
+            "Error parsing ./foo/pyproject.toml",
+            id="malformed-toml",
+        ),
+        pytest.param(
+            """\
+            [project]
+            name = "foo"
+            version = "1.0"
+            [dependency-groups]
+            mygroup = [{include-group = "mygroup"}]
+            """,
+            "mygroup",
+            "[dependency-groups] resolution failed for 'mygroup' from 'pyproject.toml'",
+            id="cyclic",
+        ),
+        pytest.param(
+            """\
+            [project]
+            name = "foo"
+            version = "1.0"
+            [[dependency-groups]]
+            mygroup = "foo"
+            """,
+            "mygroup",
+            (
+                "[dependency-groups] table was malformed in pyproject.toml. "
+                "Cannot resolve '--group' option."
+            ),
+            id="improper-table",
+        ),
+    ],
+)
+def test_dependency_group_resolution_fails_due_to_bad_data(
+    pip_conf, runner, tmpdir_cwd, pyproject_content, group_arg, expect_error
+):
+    if ":" in group_arg:
+        path, _, _ = group_arg.partition(":")
+        (tmpdir_cwd / path).parent.mkdir(parents=True)
+    else:
+        path = "pyproject.toml"
+    pyproj = tmpdir_cwd / path
+    if pyproject_content is not None:
+        pyproj.write_text(dedent(pyproject_content))
+    out = runner.invoke(
+        cli,
+        [
+            "--group",
+            group_arg,
+            "--output-file",
+            "-",
+            "--quiet",
+            "--no-emit-options",
+            "--no-header",
+        ],
+    )
+    assert out.exit_code == 2
+    assert expect_error in out.stderr
+
+
 def test_multiple_input_files_without_output_file(runner):
     """
     The --output-file option is required for multiple requirement input files.

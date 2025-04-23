@@ -820,3 +820,6 @@ class ParsedDependencyGroupParam:
 
         self.path = path
         self.group = groupname
+
+    def __str__(self) -> str:
+        return self.input_arg

@@ -205,7 +205,7 @@ def cli(
             "--only-build-deps cannot be used with any of --extra, --all-extras"
         )
 
-    if len(src_files) == 0:
+    if len(src_files) == 0 and len(groups) == 0:
         for file_path in DEFAULT_REQUIREMENTS_FILES:
             if os.path.exists(file_path):
                 src_files = (file_path,)
@@ -231,7 +231,7 @@ def cli(
                 os.path.dirname(src_files[0]), DEFAULT_REQUIREMENTS_OUTPUT_FILE
             )
         # An output file must be provided if there are multiple source files
-        elif len(src_files) > 1:
+        elif len(src_files) + len(groups) > 1:
             raise click.BadParameter(
                 "--output-file is required if two or more input files are given."
             )
