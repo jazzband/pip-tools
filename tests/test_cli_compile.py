@@ -1571,7 +1571,8 @@ def test_tmpfile_for_stdin_is_cleaned_up(pip_conf, runner):
 
 
 @pytest.mark.parametrize(
-    "groupspec", ["mygroup", "pyproject.toml:mygroup", "pyproject.toml::mygroup"]
+    "groupspec",
+    ("mygroup", "pyproject.toml:mygroup", "pyproject.toml::mygroup"),
 )
 def test_dependency_group_resolution(pip_conf, runner, tmpdir_cwd, groupspec):
     """
@@ -1614,8 +1615,8 @@ def test_dependency_group_resolution(pip_conf, runner, tmpdir_cwd, groupspec):
 
 
 @pytest.mark.parametrize(
-    "pyproject_content, group_arg, expect_error",
-    [
+    ("pyproject_content", "group_arg", "expect_error"),
+    (
         pytest.param(None, "mygroup", "pyproject.toml not found", id="missing-file"),
         pytest.param(
             """\
@@ -1668,7 +1669,7 @@ def test_dependency_group_resolution(pip_conf, runner, tmpdir_cwd, groupspec):
             ),
             id="improper-table",
         ),
-    ],
+    ),
 )
 def test_dependency_group_resolution_fails_due_to_bad_data(
     pip_conf, runner, tmpdir_cwd, pyproject_content, group_arg, expect_error
