@@ -782,6 +782,7 @@ class DependencyGroupParamType(click.ParamType):
     def convert(
         self, value: str, param: click.Parameter | None, ctx: click.Context | None
     ) -> ParsedDependencyGroupParam:
+        """Parse a ``[dependency-groups]`` group reference."""
         return ParsedDependencyGroupParam(value)
 
 
@@ -790,14 +791,15 @@ class ParsedDependencyGroupParam:
     Parse a dependency group input, but retain the input value.
 
     Splits on the rightmost ":", and validates that the path (if present) ends
-    in `pyproject.toml`. Defaults the path to `pyproject.toml` when one is not given.
+    in ``pyproject.toml``. Defaults the path to ``pyproject.toml`` when one is not given.
 
-    `:` cannot appear in dependency group names, so this is a safe and simple parse.
+    ``:`` cannot appear in dependency group names, so this is a safe and simple parse.
 
     If the path portion ends in ":", then the ":" is removed, effectively resulting in
     a split on "::" when that is used.
 
-    The following conversions are expected:
+    The following conversions are expected::
+
         'foo' -> ('pyproject.toml', 'foo')
         'foo/pyproject.toml:bar' -> ('foo/pyproject.toml', 'bar')
         'foo/pyproject.toml::bar' -> ('foo/pyproject.toml', 'bar')
