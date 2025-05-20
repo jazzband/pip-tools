@@ -78,15 +78,14 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.9
+          python-version: 3.12
 
       - name: Install dependencies
         run: |
-          python -Im pip install -U twine build setuptools-scm
+          python -Im pip install -U twine build
 
       - name: Build package
         run: |
-          python -Im setuptools_scm
           python -Im build
           twine check --strict dist/*
 
@@ -115,7 +114,7 @@ jobs:
       - build
     if: >-
       github.event.action == 'published'
-      && '5746963' == github.repository_id
+      && env.UPSTREAM_REPOSITORY_ID == github.repository_id
 
     runs-on: ubuntu-latest
 
@@ -140,3 +139,9 @@ jobs:
           Publish v${{ github.ref_name }} to PyPI
           🔏
         uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Upload packages to Jazzband
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: jazzband
+          password: ${{ secrets.JAZZBAND_RELEASE_KEY }}
+          repository_url: https://jazzband.co/projects/pip-tools/upload
