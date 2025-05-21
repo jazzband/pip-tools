@@ -37,7 +37,7 @@ keywords = ["pip", "requirements", "packaging"]
 dependencies = [
   # direct dependencies
   "build >= 1.0.0",
-  "click >= 8",
+  "click >= 8 , < 8.2",
   "pip >= 22.2",
   "pyproject_hooks",
   "tomli; python_version < '3.11'",
