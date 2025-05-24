@@ -438,7 +438,9 @@ def test_trusted_host_envvar(monkeypatch, pip_conf, runner):
 def test_all_no_emit_options(runner, options):
     with open("requirements.in", "w"):
         pass
-    out = runner.invoke(cli, ["--output-file", "-", "--no-header", *options])
+    out = runner.invoke(
+        cli, ["--output-file", "-", "--no-header", "--strip-extras", *options]
+    )
     assert out.stdout.strip().splitlines() == []
 
 
