@@ -333,7 +333,12 @@ def test_invalid_pip_version_in_python_executable(
     with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as req_in:
         req_in.write("small-fake-a==1.10.0")
 
-    custom_executable = tmp_path / "custom_executable"
+    # a dummy executable on Windows needs to end in `.exe` in order for
+    # `shutil.which` to find it
+    executable_name = (
+        "custom_executable.exe" if os.name == "nt" else "custom_executable"
+    )
+    custom_executable = tmp_path / executable_name
     custom_executable.write_text("")
 
     custom_executable.chmod(0o700)
