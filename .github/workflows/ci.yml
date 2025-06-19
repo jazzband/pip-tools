@@ -108,9 +108,21 @@ jobs:
       - name: Install test dependencies
         run: python -m pip install -U tox virtualenv
       - name: Prepare test environment
+        # NOTE: `--parallel-live` is a workaround for the regression in
+        # NOTE: the upstream tox project that made the
+        # NOTE: `TOX_PARALLEL_NO_SPINNER=1` env var auto-enable parallelism
+        # NOTE: and disable output from the tox environments.
+        #
+        # Ref: https://github.com/tox-dev/tox/issues/3193
         run: tox -vv --notest -p auto --parallel-live
       - name: Test pip ${{ matrix.pip-version }}
-        run: tox --skip-pkg-install
+        # NOTE: `--parallel-live` is a workaround for the regression in
+        # NOTE: the upstream tox project that made the
+        # NOTE: `TOX_PARALLEL_NO_SPINNER=1` env var auto-enable parallelism
+        # NOTE: and disable output from the tox environments.
+        #
+        # Ref: https://github.com/tox-dev/tox/issues/3193
+        run: tox --skip-pkg-install --parallel-live
       - name: Upload coverage to Codecov
         if: >-
           !inputs.cpython-pip-version
@@ -170,9 +182,21 @@ jobs:
       - name: Install tox
         run: pip install tox
       - name: Prepare test environment
+        # NOTE: `--parallel-live` is a workaround for the regression in
+        # NOTE: the upstream tox project that made the
+        # NOTE: `TOX_PARALLEL_NO_SPINNER=1` env var auto-enable parallelism
+        # NOTE: and disable output from the tox environments.
+        #
+        # Ref: https://github.com/tox-dev/tox/issues/3193
         run: tox --notest -p auto --parallel-live
       - name: Test pip ${{ matrix.pip-version }}
-        run: tox
+        # NOTE: `--parallel-live` is a workaround for the regression in
+        # NOTE: the upstream tox project that made the
+        # NOTE: `TOX_PARALLEL_NO_SPINNER=1` env var auto-enable parallelism
+        # NOTE: and disable output from the tox environments.
+        #
+        # Ref: https://github.com/tox-dev/tox/issues/3193
+        run: tox --skip-pkg-install --parallel-live
 
   check: # This job does nothing and is only used for the branch protection
     if: always()
