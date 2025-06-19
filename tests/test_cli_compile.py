@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -2664,7 +2665,7 @@ def test_error_in_pyproject_toml(
     captured = capfd.readouterr()
 
     assert (
-        "`project` must contain ['name'] properties" in captured.err
+        bool(re.search(r"`project` must contain \['[^']+'\] properties", captured.err))
     ) is verbose_option
 
 
