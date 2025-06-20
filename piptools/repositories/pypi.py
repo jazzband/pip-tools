@@ -447,9 +447,13 @@ class PyPIRepository(BaseRepository):
         Wheel.support_index_min = _wheel_support_index_min
         self._available_candidates_cache = {}
 
-        # If we don't clear this cache then it can contain results from an
-        # earlier call when allow_all_wheels wasn't active. See GH-1532
-        self.finder.find_all_candidates.cache_clear()
+        # Finder internally caches results, and there is no public method to
+        # clear the cache, so we re-create the object here. If we don't clear
+        # this cache then it can contain results from an earlier call when
+        # allow_all_wheels wasn't active. See GH-1532
+        self._finder = self.command._build_package_finder(
+            options=self.options, session=self.session
+        )
 
         try:
             yield
