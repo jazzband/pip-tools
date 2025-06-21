@@ -3838,3 +3838,13 @@ def test_stdout_should_not_be_read_when_stdin_is_not_a_plain_file(
     out = runner.invoke(cli, [req_in.as_posix(), "--output-file", fifo.as_posix()])
 
     assert out.exit_code == 0, out
+
+
+def test_config_option_not_unnecessarily_added_in_output_header(runner, tmpdir_cwd):
+    req_in = tmpdir_cwd / "requirements.in"
+    req_in.touch()
+
+    out = runner.invoke(cli)
+
+    assert out.exit_code == 0, out
+    assert "--config" not in out.stderr
