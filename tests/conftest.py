@@ -8,6 +8,7 @@ import sys
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from functools import partial
+from importlib.metadata import version as version_of
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, cast
@@ -227,7 +228,10 @@ def from_editable():
 
 @pytest.fixture
 def runner():
-    cli_runner = CliRunner(mix_stderr=False)
+    if Version(version_of("click")) < Version("8.2"):
+        cli_runner = CliRunner(mix_stderr=False)
+    else:
+        cli_runner = CliRunner()
     with cli_runner.isolated_filesystem():
         yield cli_runner
 
