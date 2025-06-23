@@ -295,6 +295,7 @@ emit_index_url = click.option(
     "--emit-index-url/--no-emit-index-url",
     is_flag=True,
     default=True,
+    envvar="PIP_TOOLS_EMIT_INDEX_URL",
     help="Add index URL to generated file",
 )
 
