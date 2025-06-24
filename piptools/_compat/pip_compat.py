@@ -125,18 +125,18 @@ def parse_requirements(
 def _filename_is_abspath(filename: str) -> bool:
     """
     Check if a path is an absolute path, using exactly the normalization
-    used in pip>24.3 in order to ensure consistent results.
+    used in ``pip>=24.3`` in order to ensure consistent results.
     """
     return os.path.abspath(filename) == filename
 
 
 def _rewrite_absolute_comes_from_location(original_comes_from: str, /) -> str:
     """
-    This is the rewrite rule used when `-r` or `-c` appears in `comes_from` data
-    with an absolute path.
+    This is the rewrite rule used when ``-r`` or ``-c`` appears in
+    ``comes_from`` data with an absolute path.
 
-    The `-r` or `-c` qualifier is retained, and the path is relativized with
-    respect to the CWD.
+    The ``-r`` or ``-c`` qualifier is retained, and the path is relativized
+    with respect to the CWD.
     """
     # require `-r` or `-c` as the source
     if not original_comes_from.startswith(("-r ", "-c ")):
