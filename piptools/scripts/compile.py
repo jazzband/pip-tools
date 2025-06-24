@@ -9,10 +9,11 @@ from pathlib import Path
 from typing import IO, Any, BinaryIO, cast
 
 import click
-from build import BuildBackendException
 from click.utils import LazyFile, safecall
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.misc import redact_auth_from_url
+
+from build import BuildBackendException
 
 from .._compat import parse_requirements
 from ..build import ProjectMetadata, build_project_metadata
@@ -354,7 +355,6 @@ def cli(
             # reading requirements from install_requires in setup.py.
             tmpfile = tempfile.NamedTemporaryFile(mode="wt", delete=False)
             tmpfile.write(sys.stdin.read())
-            comes_from = "-r -"
             tmpfile.flush()
             reqs = list(
                 parse_requirements(
@@ -362,10 +362,9 @@ def cli(
                     finder=repository.finder,
                     session=repository.session,
                     options=repository.options,
+                    comes_from_stdin=True,
                 )
             )
-            for req in reqs:
-                req.comes_from = comes_from
             constraints.extend(reqs)
         elif is_setup_file:
             setup_file_found = True

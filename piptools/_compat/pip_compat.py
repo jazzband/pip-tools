@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import optparse
+import os
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Iterable, Iterator, Set, cast
+from typing import TYPE_CHECKING, Callable, Iterable, Iterator, Set, cast
 
 from pip._internal.cache import WheelCache
 from pip._internal.index.package_finder import PackageFinder
@@ -83,7 +84,24 @@ def parse_requirements(
     options: optparse.Values | None = None,
     constraint: bool = False,
     isolated: bool = False,
+    comes_from_stdin: bool = False,
 ) -> Iterator[InstallRequirement]:
+    # the `comes_from` data will be rewritten based on a number of conditions
+    #
+    #   None        do not rewrite
+    #   callable    programmatic rewrite
+    #   str         fixed rewrite
+    rewrite_comes_from: str | Callable[[str], str] | None = None
+
+    if comes_from_stdin:
+        # if data is coming from stdin, then `comes_from="-r -"`
+        rewrite_comes_from = "-r -"
+    else:
+        # if the input was a relative path, set the rewrite rule to rewrite
+        # absolute paths to be relative
+        if not _filename_is_abspath(filename):
+            rewrite_comes_from = _rewrite_absolute_comes_from_location
+
     for parsed_req in _parse_requirements(
         filename, session, finder=finder, options=options, constraint=constraint
     ):
@@ -94,7 +112,46 @@ def parse_requirements(
             file_link = FileLink(install_req.link.url)
             file_link._url = parsed_req.requirement
             install_req.link = file_link
-        yield copy_install_requirement(install_req)
+        install_req = copy_install_requirement(install_req)
+        if rewrite_comes_from is None:
+            pass
+        elif isinstance(rewrite_comes_from, str):
+            install_req.comes_from = rewrite_comes_from
+        else:
+            install_req.comes_from = rewrite_comes_from(install_req.comes_from)
+        yield install_req
+
+
+def _filename_is_abspath(filename: str) -> bool:
+    """
+    Check if a path is an absolute path, using exactly the normalization
+    used in pip>24.3 in order to ensure consistent results.
+    """
+    return os.path.abspath(filename) == filename
+
+
+def _rewrite_absolute_comes_from_location(original_comes_from: str, /) -> str:
+    """
+    This is the rewrite rule used when `-r` or `-c` appears in `comes_from` data
+    with an absolute path.
+
+    The `-r` or `-c` qualifier is retained, and the path is relativized with
+    respect to the CWD.
+    """
+    # require `-r` or `-c` as the source
+    if not original_comes_from.startswith(("-r ", "-c ")):
+        return original_comes_from
+
+    # split on the space
+    prefix, _, suffix = original_comes_from.partition(" ")
+
+    # if the path was not absolute, bail out
+    if not _filename_is_abspath(suffix):
+        return original_comes_from
+
+    # make it relative to the current working dir
+    suffix = os.path.relpath(suffix)
+    return f"{prefix} {suffix}"
 
 
 def create_wheel_cache(cache_dir: str, format_control: str | None = None) -> WheelCache:
