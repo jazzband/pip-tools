@@ -9,11 +9,10 @@ from pathlib import Path
 from typing import IO, Any, BinaryIO, cast
 
 import click
+from build import BuildBackendException
 from click.utils import LazyFile, safecall
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.misc import redact_auth_from_url
-
-from build import BuildBackendException
 
 from .._compat import parse_requirements
 from ..build import ProjectMetadata, build_project_metadata
