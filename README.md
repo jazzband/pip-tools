@@ -640,7 +640,6 @@ This will be indicated in the output with one of the following suffixes:
 - [pip-compile-multi](https://pip-compile-multi.readthedocs.io/en/latest/) - pip-compile command wrapper for multiple cross-referencing requirements files.
 - [pipdeptree](https://github.com/tox-dev/pipdeptree) to print the dependency tree of the installed packages.
 - `requirements.in`/`requirements.txt` syntax highlighting:
-
   - [requirements.txt.vim](https://github.com/raimon49/requirements.txt.vim) for Vim.
   - [Python extension for VS Code](https://marketplace.visualstudio.com/items?itemName=ms-python.python) for VS Code.
   - [pip-requirements.el](https://github.com/Wilfred/pip-requirements.el) for Emacs.
