@@ -42,10 +42,3 @@ repos:
       - id: bandit
         args: [--ini, .bandit]
         exclude: ^tests/
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v4.0.0-alpha.8
-    hooks:
-      - id: prettier
-        additional_dependencies:
-          - "prettier"
-          - "prettier-plugin-toml"
