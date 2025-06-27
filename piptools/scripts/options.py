@@ -245,6 +245,7 @@ max_rounds = click.option(
 src_files = click.argument(
     "src_files",
     nargs=-1,
+    is_eager=True,
     type=click.Path(exists=True, allow_dash=True),
 )
 
