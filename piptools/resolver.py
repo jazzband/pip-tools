@@ -266,8 +266,8 @@ class LegacyResolver(BaseResolver):
                     raise RuntimeError(
                         "No stable configuration of concrete packages "
                         "could be found for the given constraints after "
-                        "{max_rounds} rounds of resolving.\n"
-                        "This is likely a bug.".format(max_rounds=max_rounds)
+                        f"{max_rounds} rounds of resolving.\n"
+                        "This is likely a bug."
                     )
 
                 log.debug("")
@@ -429,9 +429,9 @@ class LegacyResolver(BaseResolver):
 
         # Format the best match
         log.debug(
-            "found candidate {} (constraint was {})".format(
-                format_requirement(best_match), format_specifier(ireq)
-            )
+            "found candidate %s (constraint was %s)",
+            format_requirement(best_match),
+            format_specifier(ireq),
         )
         best_match.comes_from = ireq.comes_from
         if hasattr(ireq, "_source_ireqs"):
