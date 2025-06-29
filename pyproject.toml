@@ -119,6 +119,22 @@ testpaths = "tests piptools"
 filterwarnings = ["always"]
 markers = ["network: mark tests that require internet access"]
 
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+extend-select = [
+  "PT001",
+  "PT006",
+  "PT007",
+  "PT023",
+]
+
+[tool.ruff.lint.flake8-pytest-style]
+parametrize-names-type = "tuple"
+parametrize-values-type = "tuple"
+parametrize-values-row-type = "tuple"
+
 [tool.setuptools.packages.find]
 # needed only because we did not adopt src layout yet
 include = ["piptools*"]
