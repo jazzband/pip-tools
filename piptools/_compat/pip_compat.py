@@ -91,16 +91,17 @@ def parse_requirements(
     #   None        do not rewrite
     #   callable    programmatic rewrite
     #   str         fixed rewrite
-    rewrite_comes_from: str | Callable[[str], str] | None = None
+    rewrite_comes_from: str | Callable[[str], str] | None
 
     if comes_from_stdin:
         # if data is coming from stdin, then `comes_from="-r -"`
         rewrite_comes_from = "-r -"
+    elif _filename_is_abspath(filename):
+        rewrite_comes_from = None
     else:
         # if the input was a relative path, set the rewrite rule to rewrite
         # absolute paths to be relative
-        if not _filename_is_abspath(filename):
-            rewrite_comes_from = _rewrite_absolute_comes_from_location
+        rewrite_comes_from = _rewrite_absolute_comes_from_location
 
     for parsed_req in _parse_requirements(
         filename, session, finder=finder, options=options, constraint=constraint
