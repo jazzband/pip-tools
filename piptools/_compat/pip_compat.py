@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import optparse
-import os
+import pathlib
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, Iterable, Iterator, Set, cast
 
@@ -96,7 +96,7 @@ def parse_requirements(
     if comes_from_stdin:
         # if data is coming from stdin, then `comes_from="-r -"`
         rewrite_comes_from = "-r -"
-    elif _filename_is_abspath(filename):
+    elif pathlib.Path(filename).is_absolute():
         rewrite_comes_from = None
     else:
         # if the input was a relative path, set the rewrite rule to rewrite
@@ -123,14 +123,6 @@ def parse_requirements(
         yield install_req
 
 
-def _filename_is_abspath(filename: str) -> bool:
-    """
-    Check if a path is an absolute path, using exactly the normalization
-    used in ``pip>=24.3`` in order to ensure consistent results.
-    """
-    return os.path.abspath(filename) == filename
-
-
 def _rewrite_absolute_comes_from_location(original_comes_from: str, /) -> str:
     """
     This is the rewrite rule used when ``-r`` or ``-c`` appears in
@@ -146,12 +138,14 @@ def _rewrite_absolute_comes_from_location(original_comes_from: str, /) -> str:
     # split on the space
     prefix, _, suffix = original_comes_from.partition(" ")
 
+    file_path = pathlib.Path(suffix)
+
     # if the path was not absolute, bail out
-    if not _filename_is_abspath(suffix):
+    if not file_path.is_absolute():
         return original_comes_from
 
     # make it relative to the current working dir
-    suffix = os.path.relpath(suffix)
+    suffix = str(file_path.relative_to(pathlib.Path.cwd()))
     return f"{prefix} {suffix}"
 
 
