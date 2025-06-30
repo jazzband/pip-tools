@@ -114,11 +114,9 @@ def parse_requirements(
             file_link._url = parsed_req.requirement
             install_req.link = file_link
         install_req = copy_install_requirement(install_req)
-        if rewrite_comes_from is None:
-            pass
-        elif isinstance(rewrite_comes_from, str):
+        if isinstance(rewrite_comes_from, str):
             install_req.comes_from = rewrite_comes_from
-        else:
+        elif rewrite_comes_from is not None:
             install_req.comes_from = rewrite_comes_from(install_req.comes_from)
         yield install_req
 
