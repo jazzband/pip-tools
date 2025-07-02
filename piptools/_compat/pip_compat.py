@@ -143,7 +143,7 @@ def _rewrite_absolute_comes_from_location(original_comes_from: str, /) -> str:
         return original_comes_from
 
     # make it relative to the current working dir
-    suffix = str(file_path.relative_to(pathlib.Path.cwd()))
+    suffix = file_path.relative_to(pathlib.Path.cwd()).as_posix()
     return f"{prefix} {suffix}"
 
 
