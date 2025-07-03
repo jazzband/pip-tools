@@ -1967,7 +1967,7 @@ def test_many_inputs_includes_all_annotations(pip_conf, runner, tmp_path, num_in
                 "small-fake-a==0.1",
                 "    # via",
             ]
-            + [f"    #   -r {req_in}" for req_in in req_ins]
+            + [f"    #   -r {req_in.as_posix()}" for req_in in req_ins]
         )
         + "\n"
     )
@@ -3931,22 +3931,11 @@ def test_second_order_requirements_path_handling(
     # the input path is given on the CLI as absolute or relative
     # and this determines the expected output path as well
     if input_path_absolute:
-        input_path = str(tmp_path / "requirements.in")
-        output_path = str(tmp_path / "requirements2.in")
+        input_path = (tmp_path / "requirements.in").as_posix()
+        output_path = (tmp_path / "requirements2.in").as_posix()
     else:
         input_path = "requirements.in"
         output_path = "requirements2.in"
-
-    # on older pip versions, in which pip `comes_from` data is not normalized,
-    # override the expected output_path
-    #
-    # the second-order requirement will be preserved verbatim if the both paths
-    # are absolute on these pip versions
-    both_paths_are_absolute = (
-        input_path_absolute and test_files_collection.name == "absolute_include"
-    )
-    if not pip_produces_absolute_paths and both_paths_are_absolute:
-        output_path = (tmp_path / "requirements.in").read_text().partition(" ")[-1]
 
     with monkeypatch.context() as m:
         m.chdir(tmp_path)
@@ -4027,18 +4016,10 @@ def test_second_order_requirements_relative_path_in_separate_dir(
     if not pip_produces_absolute_paths:
         # traverse upwards to the root tmp dir, and append the output path to that
         # similar to pathlib.Path.relative_to(..., walk_up=True)
-        #
-        # the join must be done while preserving the original path (which may be posix-style)
-        # and the relative path part will be made in platform-specific path syntax
-        # but then the two parts will be joined with a forward-slash...
-        #
-        # on Windows, this can result in mixed slashes, e.g.
-        # `D:\tempstorage\abcdefg\sbudir/requirements2.in`
-        #
-        # this is the pip behavior, and we inherit it
         relative_segments = len(pathlib.Path(input_path).parents) - 1
-        relpath = str(pathlib.Path(input_path).parent / ("../" * relative_segments))
-        output_path = f"{relpath}/{output_path}"
+        output_path = (
+            pathlib.Path(input_path).parent / ("../" * relative_segments) / output_path
+        ).as_posix()
 
     with monkeypatch.context() as m:
         m.chdir(tmp_path)
