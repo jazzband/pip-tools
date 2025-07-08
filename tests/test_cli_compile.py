@@ -84,9 +84,9 @@ class TestFilesCollection:
     def get_path_to(self, filename: str) -> str:
         """Given a filename, find the (first) path to that filename in the contents."""
         return next(
-            k
-            for k in self.contents.keys()
-            if (k == filename) or k.endswith(f"/{filename}")
+            stub_file_path
+            for stub_file_path in self.contents
+            if (stub_file_path == filename) or stub_file_path.endswith(f"/{filename}")
         )
 
 
@@ -3891,7 +3891,9 @@ def test_stdout_should_not_be_read_when_stdin_is_not_a_plain_file(
     assert out.exit_code == 0, out
 
 
-@pytest.mark.parametrize("input_path_absolute", (True, False))
+@pytest.mark.parametrize(
+    "input_path_absolute", (True, False), ids=("absolute-input", "relative-input")
+)
 @pytest.mark.parametrize(
     "test_files_collection",
     (
@@ -3922,23 +3924,22 @@ def test_second_order_requirements_path_handling(
     test_files_collection,
 ):
     """
-    Given nested requirements files, the internal requirements will be written
-    in the output, and it will be absolute or relative depending only on
-    whether or not the initial path was absolute or relative.
+    Test normalization of ``-r`` includes in output.
+
+    Given nested requirements files, the internal requirements file path will
+    be written in the output, and it will be absolute or relative depending
+    only on whether or not the initial path was absolute or relative.
     """
     test_files_collection.populate(tmp_path)
 
     # the input path is given on the CLI as absolute or relative
     # and this determines the expected output path as well
-    if input_path_absolute:
-        input_path = (tmp_path / "requirements.in").as_posix()
-        output_path = (tmp_path / "requirements2.in").as_posix()
-    else:
-        input_path = "requirements.in"
-        output_path = "requirements2.in"
+    input_dir_path = tmp_path if input_path_absolute else pathlib.Path(".")
+    input_path = (input_dir_path / "requirements.in").as_posix()
+    output_path = (input_dir_path / "requirements2.in").as_posix()
 
-    with monkeypatch.context() as m:
-        m.chdir(tmp_path)
+    with monkeypatch.context() as revertable_ctx:
+        revertable_ctx.chdir(tmp_path)
 
         out = runner.invoke(
             cli,
@@ -3998,13 +3999,11 @@ def test_second_order_requirements_relative_path_in_separate_dir(
     pip_produces_absolute_paths,
 ):
     """
-    As in the above test, nested requirements file path handling.
-    But in this case, the primary variable is the relative location of the two
-    requirements.
+    Test normalization of ``-r`` includes when the requirements files are in
+    distinct directories.
 
-    The expectation is that the output path will be relative to the current
-    working directory, *not* relative to the dir containing the initial
-    requirements file.
+    Confirm that the output path will be relative to the current working
+    directory.
     """
     test_files_collection.populate(tmp_path)
     # the input is the path to 'requirements.in' relative to the starting dir
@@ -4021,8 +4020,8 @@ def test_second_order_requirements_relative_path_in_separate_dir(
             pathlib.Path(input_path).parent / ("../" * relative_segments) / output_path
         ).as_posix()
 
-    with monkeypatch.context() as m:
-        m.chdir(tmp_path)
+    with monkeypatch.context() as revertable_ctx:
+        revertable_ctx.chdir(tmp_path)
         out = runner.invoke(
             cli,
             [

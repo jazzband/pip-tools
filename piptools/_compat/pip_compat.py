@@ -87,12 +87,12 @@ def parse_requirements(
     comes_from_stdin: bool = False,
 ) -> Iterator[InstallRequirement]:
     # the `comes_from` data will be rewritten in different ways in different conditions
-    # each rewrite rule is expressible as a str->str function or as a static replacement
-    rewrite_comes_from: Callable[[str], str] | str
+    # each rewrite rule is expressible as a str->str function
+    rewrite_comes_from: Callable[[str], str]
 
     if comes_from_stdin:
         # if data is coming from stdin, then `comes_from="-r -"`
-        rewrite_comes_from = "-r -"
+        rewrite_comes_from = _rewrite_comes_from_to_hardcoded_stdin_value
     elif pathlib.Path(filename).is_absolute():
         # if the input path is absolute, just normalize paths to posix-style
         rewrite_comes_from = _normalize_comes_from_location
@@ -113,28 +113,32 @@ def parse_requirements(
             install_req.link = file_link
         install_req = copy_install_requirement(install_req)
 
-        if isinstance(rewrite_comes_from, str):
-            install_req.comes_from = rewrite_comes_from
-        else:
-            install_req.comes_from = rewrite_comes_from(install_req.comes_from)
+        install_req.comes_from = rewrite_comes_from(install_req.comes_from)
 
         yield install_req
 
 
+def _rewrite_comes_from_to_hardcoded_stdin_value(_: str, /) -> str:
+    """Produce the hardcoded ``comes_from`` value for stdin."""
+    return "-r -"
+
+
 def _relativize_comes_from_location(original_comes_from: str, /) -> str:
     """
+    Convert a ``comes_from`` path to a relative posix path.
+
     This is the rewrite rule used when ``-r`` or ``-c`` appears in
     ``comes_from`` data with an absolute path.
 
-    The ``-r`` or ``-c`` qualifier is retained, and the path is relativized
-    with respect to the CWD.
+    The ``-r`` or ``-c`` qualifier is retained, the path is relativized
+    with respect to the CWD, and the path is converted to posix style.
     """
     # require `-r` or `-c` as the source
     if not original_comes_from.startswith(("-r ", "-c ")):
         return original_comes_from
 
     # split on the space
-    prefix, _, suffix = original_comes_from.partition(" ")
+    prefix, space_sep, suffix = original_comes_from.partition(" ")
 
     file_path = pathlib.Path(suffix)
 
@@ -144,26 +148,30 @@ def _relativize_comes_from_location(original_comes_from: str, /) -> str:
 
     # make it relative to the current working dir
     suffix = file_path.relative_to(pathlib.Path.cwd()).as_posix()
-    return f"{prefix} {suffix}"
+    return f"{prefix}{space_sep}{suffix}"
 
 
 def _normalize_comes_from_location(original_comes_from: str, /) -> str:
     """
-    This is the rewrite rule when ``-r`` or ``-c`` appears in ``comes_from``
-    data and the input path was absolute, meaning we should not relativize the locations.
+    Convert a ``comes_from`` path to a posix-style path.
 
-    Instead, we apply minimal normalization, ensuring that posix-style paths are used.
+    This is the rewrite rule when ``-r`` or ``-c`` appears in ``comes_from``
+    data and the input path was absolute, meaning we should not relativize the
+    locations.
+
+    The ``-r`` or ``-c`` qualifier is retained, and the path is converted to
+    posix style.
     """
     # require `-r` or `-c` as the source
     if not original_comes_from.startswith(("-r ", "-c ")):
         return original_comes_from
 
     # split on the space
-    prefix, _, suffix = original_comes_from.partition(" ")
+    prefix, space_sep, suffix = original_comes_from.partition(" ")
 
     # convert to a posix-style path
     suffix = pathlib.Path(suffix).as_posix()
-    return f"{prefix} {suffix}"
+    return f"{prefix}{space_sep}{suffix}"
 
 
 def create_wheel_cache(cache_dir: str, format_control: str | None = None) -> WheelCache:
