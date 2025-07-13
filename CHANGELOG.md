@@ -95,7 +95,7 @@ Features:
 
 Bug Fixes:
 
-- Fix a bug where pip-sync would unexpectedly uninstall some packages ({pr}`1919`).
+- Fix a bug where `pip-sync` would unexpectedly uninstall some packages ({pr}`1919`).
   Thanks {user}`atugushev`
 
 ## v7.0.0
@@ -549,29 +549,24 @@ Dependencies:
 
 Features:
 
-- Add Python 3.9 support ([1222](https://github.com/jazzband/pip-tools/pull/1222)).
+- Add Python 3.9 support ({pr}`1222`).
   Thanks {user}`jdufresne`
-- Improve formatting of long "via" annotations
-  ([1237](https://github.com/jazzband/pip-tools/pull/1237)).
+- Improve formatting of long "via" annotations ({pr}`1237`).
   Thanks {user}`jdufresne`
-- Add `--verbose` and `--quiet` options to `pip-sync`
-  ([1241](https://github.com/jazzband/pip-tools/pull/1241)).
+- Add `--verbose` and `--quiet` options to `pip-sync` ({pr}`1241`).
   Thanks {user}`jdufresne`
-- Add `--no-allow-unsafe` option to `pip-compile`
-  ([1265](https://github.com/jazzband/pip-tools/pull/1265)).
+- Add `--no-allow-unsafe` option to `pip-compile` ({pr}`1265`).
   Thanks {user}`jdufresne`
 
 Bug Fixes:
 
 - Restore `PIP_EXISTS_ACTION` environment variable to its previous state when resolve
-  dependencies in `pip-compile`
-  ([1255](https://github.com/jazzband/pip-tools/pull/1255)).
+  dependencies in `pip-compile` ({pr}`1255`).
   Thanks {user}`jdufresne`
 
 Dependencies:
 
-- Remove `six` dependency in favor `pip`'s vendored `six`
-  ([1240](https://github.com/jazzband/pip-tools/pull/1240)).
+- Remove `six` dependency in favor `pip`'s vendored `six` ({pr}`1240`).
   Thanks {user}`jdufresne`
 
 Improved Documentation:
@@ -587,18 +582,15 @@ Improved Documentation:
 
 Features:
 
-- Add `pip>=20.3` support ([1216](https://github.com/jazzband/pip-tools/pull/1216)).
+- Add `pip>=20.3` support ({pr}`1216`).
   Thanks {user}`atugushev` and {user}`AndydeCleyre`
-- Exclude `--no-reuse-hashes` option from «command to run» header
-  ([1197](https://github.com/jazzband/pip-tools/pull/1197)).
+- Exclude `--no-reuse-hashes` option from «command to run» header ({pr}`1197`).
   Thanks {user}`graingert`
 
 Dependencies:
 
-- Bump `pip` minimum version to `>= 20.1`
-  ([1191](https://github.com/jazzband/pip-tools/pull/1191)).
-  Thanks {user}`atugushev` and
-  {user}`AndydeCleyre`
+- Bump `pip` minimum version to `>= 20.1` ({pr}`1191`).
+  Thanks {user}`atugushev` and {user}`AndydeCleyre`
 
 ## v5.3.1
 
@@ -607,8 +599,7 @@ Dependencies:
 Bug Fixes:
 
 - Fix `pip-20.2` compatibility issue that caused `pip-tools` to sometime fail to
-  stabilize in a constant number of rounds
-  ([1194](https://github.com/jazzband/pip-tools/pull/1194)).
+  stabilize in a constant number of rounds ({pr}`1194`).
   Thanks {user}`vphilippon`
 
 ## v5.3.0
@@ -617,19 +608,16 @@ Bug Fixes:
 
 Features:
 
-- Add `-h` alias for `--help` option to `pip-sync` and `pip-compile`
-  ([1163](https://github.com/jazzband/pip-tools/pull/1163)).
+- Add `-h` alias for `--help` option to `pip-sync` and `pip-compile` ({pr}`1163`).
   Thanks {user}`jan25`
-- Add `pip>=20.2` support ([1168](https://github.com/jazzband/pip-tools/pull/1168)).
+- Add `pip>=20.2` support ({pr}`1168`).
   Thanks {user}`atugushev`
-- `pip-sync` now exists with code `1` on `--dry-run`
-  ([1172](https://github.com/jazzband/pip-tools/pull/1172)).
+- `pip-sync` now exists with code `1` on `--dry-run` ({pr}`1172`).
   Thanks {user}`francisbrito`
 - `pip-compile` now doesn't resolve constraints from `-c constraints.txt`that are not
-  (yet) requirements ([1175](https://github.com/jazzband/pip-tools/pull/1175)).
+  (yet) requirements ({pr}`1175`).
   Thanks {user}`clslgrnc`
-- Add `--reuse-hashes/--no-reuse-hashes` options to `pip-compile`
-  ([1177](https://github.com/jazzband/pip-tools/pull/1177)).
+- Add `--reuse-hashes/--no-reuse-hashes` options to `pip-compile` ({pr}`1177`).
   Thanks {user}`graingert`
 
 ## v5.2.1
@@ -639,7 +627,7 @@ Features:
 Bug Fixes:
 
 - Fix a bug where `pip-compile` would lose some dependencies on update a
-  `requirements.txt` ([1159](https://github.com/jazzband/pip-tools/pull/1159)).
+  `requirements.txt` ({pr}`1159`).
   Thanks {user}`richafrank`
 
 ## v5.2.0
@@ -648,36 +636,30 @@ Bug Fixes:
 
 Features:
 
-- Show basename of URLs when `pip-compile` generates hashes in a verbose mode
-  ([1113](https://github.com/jazzband/pip-tools/pull/1113)).
+- Show basename of URLs when `pip-compile` generates hashes in a verbose mode ({pr}`1113`).
   Thanks {user}`atugushev`
-- Add `--emit-index-url/--no-emit-index-url` options to `pip-compile`
-  ([1130](https://github.com/jazzband/pip-tools/pull/1130)).
+- Add `--emit-index-url/--no-emit-index-url` options to `pip-compile` ({pr}`1130`).
   Thanks {user}`atugushev`
 
 Bug Fixes:
 
 - Fix a bug where `pip-compile` would ignore some of package versions when
-  `PIP_PREFER_BINARY` is set on
-  ([1119](https://github.com/jazzband/pip-tools/pull/1119)).
+  `PIP_PREFER_BINARY` is set on ({pr}`1119`).
   Thanks {user}`atugushev`
-- Fix leaked URLs with credentials in the debug output of `pip-compile`.
-  ([1146](https://github.com/jazzband/pip-tools/pull/1146)).
+- Fix leaked URLs with credentials in the debug output of `pip-compile`. ({pr}`1146`).
   Thanks {user}`atugushev`
-- Fix a bug where URL requirements would have name collisions
-  ([1149](https://github.com/jazzband/pip-tools/pull/1149)).
+- Fix a bug where URL requirements would have name collisions ({pr}`1149`).
   Thanks {user}`geokala`
 
 Deprecations:
 
 - Deprecate `--index/--no-index` in favor of `--emit-index-url/--no-emit-index-url`
-  options in `pip-compile` ([1130](https://github.com/jazzband/pip-tools/pull/1130)).
+  options in `pip-compile` ({pr}`1130`).
   Thanks {user}`atugushev`
 
 Other Changes:
 
-- Switch to `setuptools` declarative syntax through `setup.cfg`
-  ([1141](https://github.com/jazzband/pip-tools/pull/1141)).
+- Switch to `setuptools` declarative syntax through `setup.cfg` ({pr}`1141`).
   Thanks {user}`jdufresne`
 
 ## v5.1.2
@@ -686,8 +668,7 @@ Other Changes:
 
 Bug Fixes:
 
-- Fix grouping of editables and non-editables requirements
-  ([1132](https://github.com/jazzband/pip-tools/pull/1132)).
+- Fix grouping of editables and non-editables requirements ({pr}`1132`).
   Thanks {user}`richafrank`
 
 ## v5.1.1
@@ -1101,10 +1082,9 @@ Features:
 Major changes:
 
 - Update `pip-tools` for native `pip` 8, 9, 10 and 18 compatibility, un-vendoring `pip`
-  to use the user-installed `pip`
-  ({pr}`657` and
-  {pr}`672`). Thanks to {user}`techalchemy`,
-  {user}`suutari`, {user}`tysonclugg` and {user}`vphilippon` for contributing on this.
+  to use the user-installed `pip` ({pr}`657` and {pr}`672`).
+  Thanks {user}`techalchemy`, {user}`suutari`, {user}`tysonclugg` and
+  {user}`vphilippon`
 
 Features:
 
@@ -1140,7 +1120,7 @@ Major changes:
 
 Features:
 
-- Improved the speed of pip-compile --generate-hashes by caching the hashes from an
+- Improved the speed of `pip-compile --generate-hashes` by caching the hashes from an
   existing output file ({pr}`641`).
   Thanks {user}`justicz`
 - Added a `pip-sync --user` option to restrict attention to user-local directory ({pr}`642`).
@@ -1183,8 +1163,7 @@ Bug Fixes:
 
 - Fixed bug causing dependencies from invalid wheels for the current platform to be
   included ({pr}`571`).
-- `pip-sync` will respect environment markers in the requirements.txt
-  ([600](https://github.com/jazzband/pip-tools/pull/600)).
+- `pip-sync` will respect environment markers in the `requirements.txt` ({pr}`600`).
   Thanks {user}`hazmat345`
 - Converted the ReadMe to have a nice description rendering on PyPI.
   Thanks {user}`bittner`
@@ -1207,7 +1186,7 @@ Features:
 - `--generate-hashes` now generates hashes for all wheels, not only wheels for the
   currently running platform ({pr}`520`).
   Thanks {user}`jdufresne`
-- Added a `-q`/`--quiet` argument to the pip-sync command to reduce log output.
+- Added a `-q`/`--quiet` argument to the `pip-sync` command to reduce log output.
 
 Bug Fixes:
 
@@ -1216,13 +1195,11 @@ Bug Fixes:
   Thanks {user}`dschaller`
 - Fixed bug where editable PyPI dependencies would have a `download_dir` and be exposed
   to `git-checkout-index`, (thus losing their VCS directory) and
-  `python setup.py egg_info` fails.
-  ([#385](https://github.com/jazzband/pip-tools/pull/385#) and
-  {pr}`538`).
+  `python setup.py egg_info` fails. ({pr}`385`) and {pr}`538`).
   Thanks {user}`blueyed` and {user}`dfee`
 - Fixed bug where some primary dependencies were annotated with "via" info comments. ({pr}`542`).
   Thanks {user}`quantus`
-- Fixed bug where pkg-resources would be removed by pip-sync in Ubuntu. ({pr}`555`).
+- Fixed bug where pkg-resources would be removed by `pip-sync` in Ubuntu. ({pr}`555`).
   Thanks {user}`cemsbr`
 - Fixed bug where the resolver would sometime not stabilize on requirements specifying
   extras. ({pr}`566`).
@@ -1240,30 +1217,29 @@ Bug Fixes:
 Features:
 
 - Added ability to read requirements from `setup.py` instead of just `requirements.in`
-  ({pr}`418`). Thanks to {user}`tysonclugg` and
-  {user}`majuscule`.
-- Added a `--max-rounds` argument to the pip-compile command to allow for solving large
+  ({pr}`418`).
+  Thanks {user}`tysonclugg` and {user}`majuscule`
+- Added a `--max-rounds` argument to the `pip-compile` command to allow for solving large
   requirement sets ({pr}`472`).
   Thanks {user}`derek-miller`.
 - Exclude unsafe packages' dependencies when `--allow-unsafe` is not in use ({pr}`441`).
-  Thanks {user}`jdufresne`.
+  Thanks {user}`jdufresne`
 - Exclude irrelevant pip constraints ({pr}`471`).
   Thanks {user}`derek-miller`.
 - Allow control over emitting trusted-host to the compiled requirements. ({pr}`448`).
-  Thanks {user}`tonyseek`.
-- Allow running as a Python module
-  (#[461](https://github.com/jazzband/pip-tools/pull/461)).
-  Thanks {user}`AndreLouisCaron`.
-- Preserve environment markers in generated requirements.txt. ({pr}`460`).
-  Thanks {user}`barrywhart`.
+  Thanks {user}`tonyseek`
+- Allow running as a Python module ({pr}`461`).
+  Thanks {user}`AndreLouisCaron`
+- Preserve environment markers in generated `requirements.txt`. ({pr}`460`).
+  Thanks {user}`barrywhart`
 
 Bug Fixes:
 
-- Fixed the --upgrade-package option to respect the given package list to update ({pr}`491`).
+- Fixed the `--upgrade-package` option to respect the given package list to update ({pr}`491`).
 - Fixed the default output file name when the source file has no extension ({pr}`488`).
   Thanks {user}`vphilippon`
 - Fixed crash on editable requirements introduced in 1.8.2.
-- Fixed duplicated --trusted-host, --extra-index-url and --index-url in the generated
+- Fixed duplicated `--trusted-host`, `--extra-index-url` and `--index-url` in the generated
   requirements.
 
 ## v1.8.2
@@ -1272,20 +1248,20 @@ Bug Fixes:
 
 - Regression fix: editable reqs were losing their dependencies after first round ({pr}`476`)
   Thanks {user}`mattlong`
-- Remove duplicate index urls in generated requirements.txt ({pr}`468`)
+- Remove duplicate index urls in generated `requirements.txt` ({pr}`468`)
   Thanks {user}`majuscule`
 
 ## v1.8.1
 
 *22 Mar 2017*
 
-- Recalculate secondary dependencies between rounds (#378)
+- Recalculate secondary dependencies between rounds ({pr}`378`)
 - Calculated dependencies could be left with wrong candidates when toplevel requirements
-  happen to be also pinned in sub-dependencies (#450)
-- Fix duplicate entries that could happen in generated requirements.txt (#427)
-- Gracefully report invalid pip version (#457)
-- Fix capitalization in the generated requirements.txt, packages will always be
-  lowercased (#452)
+  happen to be also pinned in sub-dependencies ({pr}`450`)
+- Fix duplicate entries that could happen in generated `requirements.txt` ({pr}`427`)
+- Gracefully report invalid pip version ({pr}`457`)
+- Fix capitalization in the generated `requirements.txt`, packages will always be
+  lowercased ({pr}`452`)
 
 ## v1.8.0
 
@@ -1294,13 +1270,12 @@ Bug Fixes:
 - Adds support for upgrading individual packages with a new option `--upgrade-package`.
   To upgrade a _specific_ package to the latest or a specific version use
   `--upgrade-package <pkg>`. To upgrade all packages, you can still use
-  `pip-compile --upgrade`. (#409)
+  `pip-compile --upgrade`. ({pr}`409`)
 - Adds support for pinning dependencies even further by including the hashes found on
   PyPI at compilation time, which will be re-checked when dependencies are installed at
-  installation time. This adds protection against packages that are tampered with.
-  (#383)
+  installation time. This adds protection against packages that are tampered with. ({pr}`383`)
 - Improve support for extras, like `hypothesis[django]`
-- Drop support for pip < 8
+- Drop support for `pip < 8`
 
 ## v1.7.1
 
@@ -1312,19 +1287,20 @@ Bug Fixes:
 
 *06 Jul 2016*
 
-- Add compatibility with pip >= 8.1.2 (#374) Thanks so much, {user}`jmbowman`!
+- Add compatibility with `pip >= 8.1.2` (#374)
+  Thanks {user}`jmbowman`
 
 ## v1.6.5
 
 *11 May 2016*
 
-- Add warning that pip >= 8.1.2 is not supported until 1.7.x is out
+- Add warning that `pip >= 8.1.2` is not supported until 1.7.x is out
 
 ## v1.6.4
 
 *03 May 2016*
 
-- Incorporate fix for atomic file saving behaviour on the Windows platform (see #351)
+- Incorporate fix for atomic file saving behaviour on the Windows platform (see {issue}`351`)
 
 ## v1.6.3
 
@@ -1336,8 +1312,8 @@ Bug Fixes:
 
 *02 May 2016*
 
-- Respect pip configuration from pip.{ini,conf}
-- Fixes for atomic-saving of output files on Windows (see #351)
+- Respect pip configuration from `pip.{ini,conf}`
+- Fixes for atomic-saving of output files on Windows (see {issue}`351`)
 
 ## v1.6.1
 
@@ -1345,10 +1321,10 @@ Bug Fixes:
 
 Minor changes:
 
-- pip-sync now supports being invoked from within and outside an activated virtualenv
-  (see #317)
-- pip-compile: support -U as a shorthand for --upgrade
-- pip-compile: support pip's --no-binary and --binary-only flags
+- `pip-sync` now supports being invoked from within and outside an activated virtualenv
+  (see {issue}`317`)
+- `pip-compile`: support `-U` as a shorthand for `--upgrade`
+- `pip-compile`: support pip's `--no-binary` and `--binary-only` flags
 
 Fixes:
 
@@ -1360,23 +1336,23 @@ Fixes:
 
 Major change:
 
-- pip-compile will by default try to fulfill package specs by looking at a previously
-  compiled output file first, before checking PyPI. This means pip-compile will only
-  update the requirements.txt when it absolutely has to. To get the old behaviour
+- `pip-compile` will by default try to fulfill package specs by looking at a previously
+  compiled output file first, before checking PyPI. This means `pip-compile` will only
+  update the `requirements.txt` when it absolutely has to. To get the old behaviour
   (picking the latest version of all packages from PyPI), use the new `--upgrade`
   option.
 
 Minor changes:
 
-- Bugfix where pip-compile would lose "via" info when on pip 8 (see #313)
-- Ensure cache dir exists (see #315)
+- Bugfix where `pip-compile` would lose "via" info when on pip 8 (see {issue}`313`)
+- Ensure cache dir exists (see {issue}`315`)
 
 ## v1.5
 
 *23 Jan 2016*
 
-- Add support for pip >= 8
-- Drop support for pip < 7
+- Add support for `pip >= 8`
+- Drop support for `pip < 7`
 - Fix bug where `pip-sync` fails to uninstall packages if you're using the `--no-index`
   (or other) flags
 
@@ -1385,11 +1361,11 @@ Minor changes:
 *20 Jan 2016*
 
 - Add `--no-index` flag to `pip-compile` to avoid emitting `--index-url` into the output
-  (useful if you have configured a different index in your global ~/.pip/pip.conf, for
+  (useful if you have configured a different index in your global `~/.pip/pip.conf`, for
   example)
 - Fix: ignore stdlib backport packages, like `argparse`, when listing which packages
-  will be installed/uninstalled (#286)
-- Fix pip-sync failed uninstalling packages when using `--find-links` (#298)
+  will be installed/uninstalled ({issue}`286`)
+- Fix `pip-sync` failed uninstalling packages when using `--find-links` ({issue}`298`)
 - Explicitly error when pip-tools is used with pip 8.0+ (for now)
 
 ## v1.4.4
@@ -1397,8 +1373,8 @@ Minor changes:
 *11 Jan 2016*
 
 - Fix: unintended change in behaviour where packages installed by `pip-sync` could
-  accidentally get upgraded under certain conditions, even though the requirements.txt
-  would dictate otherwise (see #290)
+  accidentally get upgraded under certain conditions, even though the `requirements.txt`
+  would dictate otherwise (see {issue}`290`)
 
 ## v1.4.3
 
@@ -1411,31 +1387,31 @@ Minor changes:
 
 *13 Dec 2015*
 
-- Fix bug where umask was ignored when writing requirement files (#268)
+- Fix bug where umask was ignored when writing requirement files ({issue}`268`)
 
 ## v1.4.1
 
 *13 Dec 2015*
 
-- Fix bug where successive invocations of pip-sync with editables kept
-  uninstalling/installing them (fixes #270)
+- Fix bug where successive invocations of `pip-sync` with editables kept
+  uninstalling/installing them (fixes {issue}`270`)
 
 ## v1.4.0
 
 *13 Dec 2015*
 
-- Add command line option -f / --find-links
-- Add command line option --no-index
-- Add command line alias -n (for --dry-run)
+- Add command line option `-f` / `--find-links`
+- Add command line option `--no-index`
+- Add command line alias `-n` (for `--dry-run`)
 - Fix a unicode issue
 
 ## v1.3.0
 
 *08 Dec 2015*
 
-- Support multiple requirement files to pip-compile
-- Support requirements from stdin for pip-compile
-- Support --output-file option on pip-compile, to redirect output to a file (or stdout)
+- Support multiple requirement files to `pip-compile`
+- Support requirements from stdin for `pip-compile`
+- Support `--output-file` option on `pip-compile`, to redirect output to a file (or stdout)
 
 ## v1.2.0
 
@@ -1443,6 +1419,6 @@ Minor changes:
 
 - Add CHANGELOG :)
 - Support pip-sync'ing editable requirements
-- Support extras properly (i.e. package[foo] syntax)
+- Support extras properly (i.e. `package[foo]` syntax)
 
 (Anything before 1.2.0 was not recorded.)
