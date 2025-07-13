@@ -39,11 +39,11 @@ logger.info(bold("%s release: %s"), project, release)
 extensions = [
     # Stdlib extensions:
     "sphinx.ext.intersphinx",
-    "sphinx.ext.extlinks",
     # Third-party extensions:
     "myst_parser",
     "sphinxcontrib.apidoc",
     "sphinxcontrib.programoutput",
+    "sphinx_issues",
 ]
 
 
@@ -63,22 +63,7 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
 }
 
-
-# extlinks settings for link roles
-github_url = "https://github.com"
-github_repo_org = "jazzband"
-github_repo_name = "pip-tools"
-github_repo_slug = f"{github_repo_org}/{github_repo_name}"
-github_repo_url = f"{github_url}/{github_repo_slug}"
-github_sponsors_url = f"{github_url}/sponsors"
-
-extlinks = {
-    "issue": (f"{github_repo_url}/issues/%s", "#%s"),
-    "pr": (f"{github_repo_url}/pull/%s", "PR #%s"),
-    "commit": (f"{github_repo_url}/commit/%s", "%s"),
-    "gh": (f"{github_url}/%s", "GitHub: %s"),
-    "user": (f"{github_sponsors_url}/%s", "@%s"),
-}
+issues_github_path = "jazzband/pip-tools"
 
 # -------------------------------------------------------------------------
 default_role = "any"
