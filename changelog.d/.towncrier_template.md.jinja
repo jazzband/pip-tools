@@ -1,0 +1,27 @@
+{%- if versiondata["version"] == "main" -%}
+## Unreleased Changes
+{% else -%}
+## {{ versiondata["version"] }}
+{% endif %}
+
+*{{ versiondata["date"] }}*
+
+{% for section, _ in sections.items() %}
+{% if sections[section] %}
+{% for category, val in definitions.items() if category in sections[section] %}
+
+{{ definitions[category]['name'] }}:
+
+{% for text, values in sections[section][category].items() %}
+- {{ text }}
+  {{ values|join(',\n  ') }}
+{% endfor %}
+
+{% endfor %}
+{% else %}
+No significant changes.
+
+
+{% endif %}
+
+{% endfor %}
