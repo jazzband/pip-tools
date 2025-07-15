@@ -66,6 +66,7 @@ sphinx==7.2.2
     #   furo
     #   myst-parser
     #   sphinx-basic-ng
+    #   sphinx-issues
     #   sphinxcontrib-apidoc
     #   sphinxcontrib-applehelp
     #   sphinxcontrib-devhelp
@@ -75,6 +76,8 @@ sphinx==7.2.2
     #   sphinxcontrib-serializinghtml
 sphinx-basic-ng==1.0.0b2
     # via furo
+sphinx-issues==5.0.1
+    # via -r requirements.in
 sphinxcontrib-apidoc==0.5.0
     # via -r requirements.in
 sphinxcontrib-applehelp==1.0.7
