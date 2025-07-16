@@ -5,7 +5,9 @@
   directory = "changelog.d/"
   title_format = ""
   template = "changelog.d/.towncrier_template.md.jinja"
-  issue_format = "{{issue}}`{issue}`"
+  # the issue format is bare here, but then handled in the template
+  # see changelog.d/.towncrier_template.md.jinja for details
+  issue_format = "{issue}"
   underlines = ["", "", ""]
 
   [[tool.towncrier.section]]
