@@ -1,3 +1,5 @@
+<!-- towncrier release notes start -->
+
 ## v7.4.1
 
 *05 Mar 2024*

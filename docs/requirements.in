@@ -4,4 +4,5 @@ setuptools-scm
 sphinx
 sphinxcontrib-apidoc
 sphinxcontrib-programoutput
+sphinxcontrib-towncrier
 sphinx-issues

@@ -14,6 +14,8 @@ certifi==2024.7.4
     # via requests
 charset-normalizer==3.2.0
     # via requests
+click==8.2.1
+    # via towncrier
 docutils==0.20.1
     # via
     #   myst-parser
@@ -28,6 +30,7 @@ jinja2==3.1.6
     # via
     #   myst-parser
     #   sphinx
+    #   towncrier
 markdown-it-py==3.0.0
     # via
     #   mdit-py-plugins
@@ -74,6 +77,7 @@ sphinx==7.2.2
     #   sphinxcontrib-programoutput
     #   sphinxcontrib-qthelp
     #   sphinxcontrib-serializinghtml
+    #   sphinxcontrib-towncrier
 sphinx-basic-ng==1.0.0b2
     # via furo
 sphinx-issues==5.0.1
@@ -94,6 +98,10 @@ sphinxcontrib-qthelp==1.0.6
     # via sphinx
 sphinxcontrib-serializinghtml==1.1.8
     # via sphinx
+sphinxcontrib-towncrier==0.5.0a0
+    # via -r requirements.in
+towncrier==24.8.0
+    # via sphinxcontrib-towncrier
 typing-extensions==4.7.1
     # via setuptools-scm
 urllib3==2.5.0
