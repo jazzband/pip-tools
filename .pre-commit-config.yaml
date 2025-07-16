@@ -42,3 +42,45 @@ repos:
       - id: bandit
         args: [--ini, .bandit]
         exclude: ^tests/
+
+  - repo: local
+    hooks:
+    - id: changelogs-md
+      name: changelog filenames
+      language: fail
+      entry: >-
+        Changelog files must be named
+        ####.(
+        bugfix
+        | feature
+        | deprecation
+        | breaking
+        | doc
+        | packaging
+        | contrib
+        | misc
+        )(.#)?(.md)?
+      exclude: >-
+        (?x)
+        ^
+          changelog.d/(
+            \.gitignore
+            |\.towncrier_template\.md\.jinja
+            |README\.md
+            |(\d+|[0-9a-f]{8}|[0-9a-f]{7}|[0-9a-f]{40}|\+[^.]+)\.(
+              bugfix
+              |feature
+              |deprecation
+              |breaking
+              |doc
+              |packaging
+              |contrib
+              |misc
+            )(\.\d+)?(\.md)?
+          )
+        $
+      files: ^changelog\.d/
+      types: []
+      types_or:
+      - file
+      - symlink
