@@ -30,5 +30,7 @@ simple rules!
 
 - Prefer the simple past or constructions with "now".
 
+- Include a byline, `` `-- by {user}`github-username` ``
+
 You can preview the changelog by running `tox run -e build-docs` and viewing
 the changelog in the docs.
