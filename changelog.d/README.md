@@ -63,16 +63,16 @@ Do your best and a maintainer can discuss this with you during review.
 Example bugfix, `2082.bugfix.md`:
 
 ```md
-Fixed the ordering of format controls to preserve underlying `pip` behavior.
--- by {user}`sethmlarson`
+Fixed the ordering of format controls to preserve underlying `pip` behavior
+-- by {user}`sethmlarson`.
 ```
 
 Example contributor update, `2202.contrib.md`:
 
 ```md
 `pip-tools` now uses [`sphinx-issues`](https://github.com/sloria/sphinx-issues)
-to link to issues, PRs, commits, and user accounts.
--- by {user}`sirosen`
+to link to issues, PRs, commits, and user accounts
+-- by {user}`sirosen`.
 ```
 
 ### Rationale
