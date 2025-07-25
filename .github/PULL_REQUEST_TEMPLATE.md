@@ -3,7 +3,7 @@
 ##### Contributor checklist
 
 - [ ] Included tests for the changes.
-- [ ] A newsfile is created in `changelog.d/` (see [`changelog.d/README.md`](https://github.com/jazzband/pip-tools/blob/main/changelog.d/#readme) for instructions) or the PR text says "no changelog needed".
+- [ ] A change note is created in `changelog.d/` (see [`changelog.d/README.md`](https://github.com/jazzband/pip-tools/blob/main/changelog.d/#readme) for instructions) or the PR text says "no changelog needed".
 
 ##### Maintainer checklist
 

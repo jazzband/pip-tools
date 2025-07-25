@@ -21,10 +21,10 @@ simple rules!
   - The category is `bugfix`, `feature`, `deprecation`, `breaking`, `doc`,
     `packaging`, `contrib`, or `misc`.
 
-  - For example, if your PR fixes bug #404, the newsfile should be named
+  - For example, if your PR fixes bug #404, the change notes should be named
     `changelog.d/404.bugfix.md`.
 
-- If multiple issues are addressed, create a symlink to the newsfile with
+- If multiple issues are addressed, create a symlink to the change notes with
   another issue number in the name.
   Towncrier will automatically merge files into one entry with multiple links.
 
