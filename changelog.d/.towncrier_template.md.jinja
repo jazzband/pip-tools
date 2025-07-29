@@ -40,21 +40,25 @@
 
 - {{ text }}
 
-  {% if pr_issue_numbers -%}
-  *PRs and issues:* {issue}`{{ pr_issue_numbers|join('`, {issue}`') }}`
+  {{- '\n\n' -}}
+
+  {%- if pr_issue_numbers %}
+  *PRs and issues:* {issue}`{{ pr_issue_numbers | join('`, {issue}`') }}`
   {{- '\n' -}}
   {%- endif -%}
 
-  {% if commit_refs -%}
+  {%- if commit_refs %}
   *Related commits:* {commit}`{{ commit_refs | join('`, {commit}`') }}`
   {{- '\n' -}}
   {%- endif -%}
 
-  {% if arbitrary_refs -%}
+  {%- if arbitrary_refs %}
   *Unlinked references:* {{ arbitrary_refs | join(', ') }}
   {{- '\n' -}}
   {%- endif -%}
+
   {{- '\n' -}}
+
 {% endfor -%}
 
 {% endfor %}
