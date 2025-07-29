@@ -12,7 +12,7 @@
 {% if sections[section] %}
 {% for category, val in definitions.items() if category in sections[section] -%}
 
-{{ definitions[category]['name'] }}:
+### {{ definitions[category]['name'] }}
 
 {% for text, change_note_refs in sections[section][category].items() %}
 
