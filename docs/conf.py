@@ -51,7 +51,6 @@ extensions = [
     "sphinx_issues",
 ]
 
-
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -103,7 +102,14 @@ nitpick_ignore_regex = [
     ("py:exc", "click.*"),
 ]
 
-suppress_warnings = ["myst.xref_missing"]
+suppress_warnings = [
+    "myst.xref_missing",
+    # MyST erroneously flags the draft changelog as having improper header levels
+    # because it starts at H2 instead of H1.
+    # However, it is written only for inclusion in a broader doc, so the heading
+    # levels are actually correct.
+    "myst.header",
+]
 
 # -- Apidoc options -------------------------------------------------------
 

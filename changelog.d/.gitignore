@@ -1,6 +1,7 @@
 *
 !.gitignore
 !.towncrier_template.md.jinja
+!.draft_changelog_partial.md
 !README.md
 !*.bugfix
 !*.bugfix.md

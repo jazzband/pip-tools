@@ -66,6 +66,7 @@ repos:
           changelog.d/(
             \.gitignore
             |\.towncrier_template\.md\.jinja
+            |\.draft_changelog_partial\.md
             |README\.md
             |(\d+|[0-9a-f]{8}|[0-9a-f]{7}|[0-9a-f]{40}|\+[^.]+)\.(
               bugfix
