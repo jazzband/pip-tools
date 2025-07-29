@@ -7,22 +7,17 @@ import os
 from importlib.metadata import version as get_version
 from pathlib import Path
 
+from sphinx.application import Sphinx
 from sphinx.util import logging
 from sphinx.util.console import bold
 
 logger = logging.getLogger(__name__)
-
-# -- Path setup --------------------------------------------------------------
 
 PROJECT_ROOT_DIR = Path(__file__).parents[1].resolve()
 IS_RELEASE_ON_RTD = (
     os.getenv("READTHEDOCS", "False") == "True"
     and os.environ["READTHEDOCS_VERSION_TYPE"] == "tag"
 )
-if IS_RELEASE_ON_RTD:
-    tags: set[str]
-    # pylint: disable-next=used-before-assignment
-    tags.add("is_release")  # noqa: F821
 
 
 # -- Project information -----------------------------------------------------
@@ -122,3 +117,22 @@ apidoc_module_dir = "../piptools"
 apidoc_output_dir = "pkg"
 apidoc_separate_modules = True
 apidoc_toc_file = None
+
+
+# -- Sphinx extension-API `setup()` hook
+
+
+def setup(app: Sphinx) -> dict[str, bool | str]:
+    """Register project-local Sphinx extension-API customizations.
+
+    :param app: Initialized Sphinx app instance.
+    :returns: Extension metadata.
+    """
+    if IS_RELEASE_ON_RTD:
+        app.tags.add("is_release")
+
+    return {
+        "parallel_read_safe": True,
+        "parallel_write_safe": True,
+        "version": release,
+    }

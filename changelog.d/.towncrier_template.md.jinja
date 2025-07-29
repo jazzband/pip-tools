@@ -1,10 +1,12 @@
-{%- if versiondata["version"] == "main" -%}
+{%- set is_draft_preview = versiondata["version"] == "DRAFT_VERSION" -%}
+
+{%- if is_draft_preview -%}
 ## Unreleased Changes
 {% else -%}
 ## {{ versiondata["version"] }}
 {% endif %}
 
-*{{ versiondata["date"] }}*
+*{%- if is_draft_preview -%}Generated for preview on {% endif -%}{{ versiondata["date"] }}*
 
 {% for section, _ in sections.items() %}
 {% if sections[section] %}
@@ -36,18 +38,19 @@
     {%- endfor -%}
   {%- endwith -%}
 
-- {{ text }} {%
-  if pr_issue_numbers -%}
-  ({issue}`{{ pr_issue_numbers|join('`, {issue}`') }}`)
+- {{ text }}
+
+  {% if pr_issue_numbers -%}
+  *PRs and issues:* {issue}`{{ pr_issue_numbers|join('`, {issue}`') }}`
   {{- '\n' -}}
   {%- endif -%}
 
-  {% if commit_refs %}
+  {% if commit_refs -%}
   *Related commits:* {commit}`{{ commit_refs | join('`, {commit}`') }}`
   {{- '\n' -}}
   {%- endif -%}
 
-  {% if arbitrary_refs %}
+  {% if arbitrary_refs -%}
   *Unlinked references:* {{ arbitrary_refs | join(', ') }}
   {{- '\n' -}}
   {%- endif -%}

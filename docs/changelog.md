@@ -2,7 +2,7 @@
 
 ````{only} not is_release
 ```{towncrier-draft-entries}
-main
+DRAFT_VERSION
 ```
 ````
 
