@@ -30,7 +30,7 @@ simple rules!
 
 - Prefer the simple past or constructions with "now".
 
-- Include a byline, `` `-- by {user}`github-username` ``
+- Include a byline, `` -- by {user}`github-username` ``
 
 You can preview the changelog by running `tox run -e build-docs` and viewing
 the changelog in the docs.
@@ -45,13 +45,15 @@ The categories for change notes are defined as follows.
 
 - `deprecation`: A declaration of future removals and breaking changes in behavior.
 
-- `breaking`: A change in behavior which changes or violates established user expectations. e.g., Removing a flag or changing output formatting.
+- `breaking`: A change in behavior which changes or violates established user expectations
+  (e.g., removing a flag or changing output formatting).
 
 - `doc`: Notable updates to the documentation structure or build process.
 
 - `packaging`: Changes in how `pip-tools` itself is packaged and tested which may impact downstreams and redistributors.
 
-- `contrib`: Changes to the contributor experience. e.g., Running tests, building the docs, or setting up a development environment.
+- `contrib`: Changes to the contributor experience
+  (e.g., running tests, building the docs, or setting up a development environment).
 
 - `misc`: Changes that don't fit any of the other categories.
 
@@ -79,11 +81,11 @@ to link to issues, PRs, commits, and user accounts
 
 When making a change to `pip-tools`, it is important to communicate the differences that end-users will experience in a manner that they can understand.
 
-Details of the change that are primarily of interest only to `pip-tools` developers may be irrelevant to most users, and if so, then those details can be omitted from the news fragment.
+Details of the change that are primarily of interest only to `pip-tools` developers may be irrelevant to most users, and if so, then those details can be omitted from the change notes.
 Then, when the maintainers publish a new release, they'll automatically use these records to compose a change log for the respective version.
 
 We write change notes in the past tense because this suits the users who will be reading these notes.
-Combined with others, the notes will be a part of the "news digest" telling the readers what **changed** in a specific version of the library since the previous version.
+Combined with others, the notes will be a part of the "news digest" telling the readers what **changed** in a specific version of `pip-tools` since the previous version.
 
 This methodology has several benefits, including those covered by the
 [Towncrier Philosophy](https://towncrier.readthedocs.io/en/stable/#philosophy):
