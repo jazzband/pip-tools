@@ -77,7 +77,9 @@ to link to issues, PRs, commits, and user accounts
 
 ### Rationale
 
-When somebody makes a change, they must record the bits that would affect end-users only including information that would be useful to them.
+When making a change to `pip-tools`, it is important to communicate the differences that end-users will experience in a manner that they can understand.
+
+Details of the change that are primarily of interest only to `pip-tools` developers may be irrelevant to most users, and if so, then those details can be omitted from the news fragment.
 Then, when the maintainers publish a new release, they'll automatically use these records to compose a change log for the respective version.
 
 We write change notes in the past tense because this suits the users who will be reading these notes.
