@@ -4,6 +4,7 @@ import collections
 import os
 import sys
 import tempfile
+from functools import wraps
 from subprocess import run  # nosec
 from typing import Iterable, Mapping, ValuesView
 
@@ -38,6 +39,38 @@ PACKAGES_TO_IGNORE = [
     *stdlib_pkgs,
     *get_dev_pkgs(),
 ]
+
+
+def patch_match_markers() -> None:
+    """
+    Monkey patches ``pip._internal.req.InstallRequirement.match_markers`` to
+    allow us to pass environment other than "extra".
+    """
+
+    @wraps(InstallRequirement.match_markers)
+    def match_markers(
+        self: InstallRequirement,
+        extras_requested: Iterable[str] | None = None,
+        environment: dict[str, str] = {},
+    ) -> bool:
+        assert "extra" not in environment
+
+        if not extras_requested:
+            # Provide an extra to safely evaluate the markers
+            # without matching any extra
+            extras_requested = ("",)
+        if self.markers is not None:
+            return any(
+                self.markers.evaluate({"extra": extra, **environment})
+                for extra in extras_requested
+            )
+        else:
+            return True
+
+    InstallRequirement.match_markers = match_markers
+
+
+patch_match_markers()
 
 
 def dependency_tree(
@@ -95,7 +128,9 @@ def get_dists_to_ignore(installed: Iterable[Distribution]) -> list[str]:
 
 
 def merge(
-    requirements: Iterable[InstallRequirement], ignore_conflicts: bool
+    requirements: Iterable[InstallRequirement],
+    ignore_conflicts: bool,
+    environment: dict[str, str] = {},
 ) -> ValuesView[InstallRequirement]:
     by_key: dict[str, InstallRequirement] = {}
 
@@ -103,7 +138,7 @@ def merge(
         # Limitation: URL requirements are merged by precise string match, so
         # "file:///example.zip#egg=example", "file:///example.zip", and
         # "example==1.0" will not merge with each other
-        if ireq.match_markers():
+        if ireq.match_markers(environment=environment):
             key = key_from_ireq(ireq)
 
             if not ignore_conflicts:
@@ -160,6 +195,7 @@ def diff_key_from_req(req: Distribution) -> str:
 def diff(
     compiled_requirements: Iterable[InstallRequirement],
     installed_dists: Iterable[Distribution],
+    environment: dict[str, str] = {},
 ) -> tuple[set[InstallRequirement], set[str]]:
     """Calculate which packages should be installed or uninstalled.
 
@@ -175,13 +211,15 @@ def diff(
     pkgs_to_ignore = get_dists_to_ignore(installed_dists)
     for dist in installed_dists:
         key = diff_key_from_req(dist)
-        if key not in requirements_lut or not requirements_lut[key].match_markers():
+        if key not in requirements_lut or not requirements_lut[key].match_markers(
+            environment=environment
+        ):
             to_uninstall.add(key)
         elif requirements_lut[key].specifier.contains(dist.version):
             satisfied.add(key)
 
     for key, requirement in requirements_lut.items():
-        if key not in satisfied and requirement.match_markers():
+        if key not in satisfied and requirement.match_markers(environment=environment):
             to_install.add(requirement)
 
     # Make sure to not uninstall any packages that should be ignored
