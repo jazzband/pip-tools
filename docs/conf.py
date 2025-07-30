@@ -3,17 +3,21 @@
 
 from __future__ import annotations
 
+import os
 from importlib.metadata import version as get_version
 from pathlib import Path
 
+from sphinx.application import Sphinx
 from sphinx.util import logging
 from sphinx.util.console import bold
 
 logger = logging.getLogger(__name__)
 
-# -- Path setup --------------------------------------------------------------
-
 PROJECT_ROOT_DIR = Path(__file__).parents[1].resolve()
+IS_RELEASE_ON_RTD = (
+    os.getenv("READTHEDOCS", "False") == "True"
+    and os.environ["READTHEDOCS_VERSION_TYPE"] == "tag"
+)
 
 
 # -- Project information -----------------------------------------------------
@@ -43,9 +47,9 @@ extensions = [
     "myst_parser",
     "sphinxcontrib.apidoc",
     "sphinxcontrib.programoutput",
+    "sphinxcontrib.towncrier.ext",  # provides `.. towncrier-draft-entries::`
     "sphinx_issues",
 ]
-
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -64,6 +68,11 @@ intersphinx_mapping = {
 }
 
 issues_github_path = "jazzband/pip-tools"
+
+towncrier_draft_autoversion_mode = "draft"
+towncrier_draft_include_empty = True
+towncrier_draft_working_directory = PROJECT_ROOT_DIR
+towncrier_draft_config_path = "towncrier.toml"  # relative to cwd
 
 # -------------------------------------------------------------------------
 default_role = "any"
@@ -93,7 +102,14 @@ nitpick_ignore_regex = [
     ("py:exc", "click.*"),
 ]
 
-suppress_warnings = ["myst.xref_missing"]
+suppress_warnings = [
+    "myst.xref_missing",
+    # MyST erroneously flags the draft changelog as having improper header levels
+    # because it starts at H2 instead of H1.
+    # However, it is written only for inclusion in a broader doc, so the heading
+    # levels are actually correct.
+    "myst.header",
+]
 
 # -- Apidoc options -------------------------------------------------------
 
@@ -107,3 +123,22 @@ apidoc_module_dir = "../piptools"
 apidoc_output_dir = "pkg"
 apidoc_separate_modules = True
 apidoc_toc_file = None
+
+
+# -- Sphinx extension-API `setup()` hook
+
+
+def setup(app: Sphinx) -> dict[str, bool | str]:
+    """Register project-local Sphinx extension-API customizations.
+
+    :param app: Initialized Sphinx app instance.
+    :returns: Extension metadata.
+    """
+    if IS_RELEASE_ON_RTD:
+        app.tags.add("is_release")
+
+    return {
+        "parallel_read_safe": True,
+        "parallel_write_safe": True,
+        "version": release,
+    }
