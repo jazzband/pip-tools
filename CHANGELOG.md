@@ -1,4 +1,109 @@
+
+
 <!-- towncrier release notes start -->
+
+## 7.5.0
+
+*2025-07-30*
+
+### Bug fixes
+
+- Fixed the ordering of format controls to preserve underlying `pip` behavior
+  -- by {user}`sethmlarson`.
+
+  *PRs and issues:* {issue}`2082`
+
+- Fixed `NoCandidateFound` exception to be compatible with `pip >= 24.1`
+  -- by {user}`chrysle`.
+
+  *PRs and issues:* {issue}`2083`
+
+- `pip-compile` now produces relative paths for editable dependencies
+  -- by {user}`macro1`.
+
+  *PRs and issues:* {issue}`2087`
+
+- Fixed crash failures due to incompatibility with `pip >= 25.1`
+  -- by {user}`gkreitz` and {user}`sirosen`.
+
+  *PRs and issues:* {issue}`2176`, {issue}`2178`
+
+### Features
+
+- `pip-compile` now treats package versions requested on the command line as
+  constraints for the underlying `pip` usage.
+  This applies to build deps in addition to normal package requirements.
+
+  -- by {user}`chrysle`
+
+  *PRs and issues:* {issue}`2106`
+
+- `pip-tools` now tests on and officially supports Python 3.12
+  -- by {user}`sirosen`.
+
+  *PRs and issues:* {issue}`2188`
+
+- Requirements file paths in `pip-compile` output are now normalized to
+  POSIX-style, even when `pip-compile` is run on Windows.
+  This provides more consistent output across various platforms.
+
+  -- by {user}`sirosen`
+
+  *PRs and issues:* {issue}`2195`
+
+- `pip-tools` now tests against and supports `pip` up to version `25.1`
+  -- by {user}`sirosen`.
+
+  *PRs and issues:* {issue}`2195`
+
+### Removals and backward incompatible breaking changes
+
+- `pip-compile` will now relativize the requirements paths which are recorded in
+  its output.
+  Paths are made relative to the working directory.
+  This provides more consistent results across `pip` versions.
+
+  -- by {user}`sirosen`
+
+  *PRs and issues:* {issue}`2131`, {issue}`2195`
+
+### Packaging updates and notes for downstreams
+
+- `pip-tools` releases are now configured via Trusted Publishing.
+  This allows for signature and attestation verification via PyPI.
+
+  -- by {user}`webknjaz`
+
+  *PRs and issues:* {issue}`2149`, {issue}`2209`, {issue}`2210`
+
+### Contributor-facing changes
+
+- `pip-tools`'s CI now runs against pinned `pip` versions, declared in `tox`
+  configuration as the "supported" version.
+  This does not change the support policy for `pip` versions, but declares what
+  is tested and known to work.
+
+  -- by {user}`webknjaz`
+
+  *PRs and issues:* {issue}`2142`
+
+- `pip-tools` now tests against PyPy 3.10 as its supported PyPy version
+  -- by {user}`webknjaz`.
+
+  *PRs and issues:* {issue}`2146`
+
+- `pip-tools` now uses Towncrier to manage the changelog
+  -- by {user}`sirosen` and {user}`webknjaz`,
+  with suggestions from {user}`jayaddison`.
+
+  *PRs and issues:* {issue}`2201`, {issue}`2203`
+
+- `pip-tools` now uses [`sphinx-issues`](https://github.com/sloria/sphinx-issues)
+  to link to issues, PRs, commits, and user accounts
+  -- by {user}`sirosen`.
+
+  *PRs and issues:* {issue}`2202`
+
 
 ## v7.4.1
 
