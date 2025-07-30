@@ -139,6 +139,8 @@ jobs:
           Publish v${{ github.ref_name }} to PyPI
           🔏
         uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Clean up the publish attestation leftovers
+        run: rm -fv dist/*.publish.attestation
       - name: Upload packages to Jazzband
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
