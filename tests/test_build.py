@@ -96,7 +96,11 @@ baz = ["qux[extra]"]
     assert metadata.extras == ("baz",)
 
 
-@pytest.mark.parametrize("input_path_is_absolute", (True, False))
+@pytest.mark.parametrize(
+    "input_path_is_absolute",
+    (True, False),
+    ids=("absolute-input", "relative-input"),
+)
 def test_static_parse_of_self_referential_extra(
     tmp_path, monkeypatch, input_path_is_absolute
 ):
