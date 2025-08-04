@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pathlib
 import shutil
+import textwrap
 
 import pytest
 
@@ -93,6 +94,44 @@ baz = ["qux[extra]"]
     assert isinstance(metadata, StaticProjectMetadata)
     assert [str(r.req) for r in metadata.requirements] == ["bar>=1", "qux[extra]"]
     assert metadata.extras == ("baz",)
+
+
+@pytest.mark.parametrize("input_path_is_absolute", (True, False))
+def test_static_parse_of_self_referential_extra(
+    tmp_path, monkeypatch, input_path_is_absolute
+):
+    monkeypatch.chdir(tmp_path)
+
+    src_file = tmp_path / "pyproject.toml"
+    src_file.write_text(
+        textwrap.dedent(
+            """
+            [project]
+            name = "foo"
+            version = "0.1.0"
+            [project.optional-dependencies]
+            ext1 = ["bar"]
+            ext2 = ["foo[ext1]"]
+            """
+        )
+    )
+
+    if input_path_is_absolute:
+        parse_path = src_file
+    else:
+        parse_path = src_file.relative_to(tmp_path)
+
+    metadata = maybe_statically_parse_project_metadata(parse_path)
+    assert isinstance(metadata, StaticProjectMetadata)
+    assert metadata.extras == ("ext1", "ext2")
+    assert len(metadata.requirements) == 2
+
+    assert [r.name for r in metadata.requirements] == ["bar", "foo"]
+    assert [r.comes_from for r in metadata.requirements] == [f"foo ({parse_path})"] * 2
+
+    foo_req = metadata.requirements[1]
+    assert foo_req.extras == {"ext1"}
+    assert foo_req.link.url == tmp_path.as_uri()
 
 
 def test_static_parse_invalid(tmp_path):
