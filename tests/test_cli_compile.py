@@ -4046,12 +4046,16 @@ def test_second_order_requirements_relative_path_in_separate_dir(
     )
 
 
-@pytest.mark.parametrize("pyproject_path_is_absolute", (True, False))
+@pytest.mark.parametrize(
+    "pyproject_path_is_absolute",
+    (True, False),
+    ids=("absolute-input", "relative-input"),
+)
 def test_that_self_referential_pyproject_toml_extra_can_be_compiled(
     pip_conf, runner, tmp_path, monkeypatch, pyproject_path_is_absolute
 ):
     """
-    Test that a `pyproject.toml` source file can use self-referential extras
+    Test that a :file:`pyproject.toml` source file can use self-referential extras
     which point back to the original package name.
 
     This is a regression test for:
