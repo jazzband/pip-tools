@@ -14,6 +14,7 @@ from unittest import mock
 from unittest.mock import MagicMock
 
 import pytest
+from pip._internal.network.session import PipSession
 from pip._internal.req.constructors import install_req_from_line
 from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.urls import path_to_url
@@ -4042,5 +4043,80 @@ def test_second_order_requirements_relative_path_in_separate_dir(
         f"""\
         small-fake-a==0.2
             # via -r {output_path}
+        """
+    )
+
+
+@pytest.mark.parametrize(
+    "input_path_absolute", (True, False), ids=("absolute-input", "relative-input")
+)
+def test_url_constraints_are_not_treated_as_file_paths(
+    pip_conf,
+    make_package,
+    runner,
+    tmp_path,
+    monkeypatch,
+    input_path_absolute,
+):
+    """
+    Test normalization of ``-c`` constraints when the constraints are HTTPS URLs.
+    The constraints should be preserved verbatim.
+
+    This is a regression test for
+    https://github.com/jazzband/pip-tools/issues/2223
+    """
+    reqs_in = tmp_path / "requirements.in"
+    constraints_url = "https://example.com/files/common_constraints.txt"
+    reqs_in.write_text(
+        f"""
+        small-fake-a
+        -c {constraints_url}
+        """
+    )
+
+    input_dir_path = tmp_path if input_path_absolute else pathlib.Path(".")
+    input_path = (input_dir_path / "requirements.in").as_posix()
+
+    # TODO: find a better way of mocking the callout to get the constraints
+    #       file (use `responses`?)
+    #
+    # we need a mock response for `GET https://...` as fetched by pip
+    # although this is fragile, it can be adapted if pip changes
+    def fake_url_get(url):
+        response = mock.Mock()
+        response.reason = "Ok"
+        response.status_code = 200
+        response.url = url
+        response.text = "small-fake-a==0.2"
+        return response
+
+    mock_get = mock.Mock(side_effect=fake_url_get)
+
+    with monkeypatch.context() as revertable_ctx:
+        revertable_ctx.chdir(tmp_path)
+        with mock.patch.object(PipSession, "get", mock_get):
+            out = runner.invoke(
+                cli,
+                [
+                    "--output-file",
+                    "-",
+                    "--quiet",
+                    "--no-header",
+                    "--no-emit-options",
+                    "-r",
+                    input_path,
+                ],
+            )
+
+    # sanity check, pip should have tried to fetch the constraints
+    mock_get.assert_called_once_with(constraints_url)
+
+    assert out.exit_code == 0
+    assert out.stdout == dedent(
+        f"""\
+        small-fake-a==0.2
+            # via
+            #   -c {constraints_url}
+            #   -r {input_path}
         """
     )
