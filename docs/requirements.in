@@ -1,3 +1,7 @@
+# pip-tools itself (and its dependencies)
+# marked as editable to ensure it is treated as a relative path
+-e .
+
 furo
 myst-parser
 setuptools-scm
