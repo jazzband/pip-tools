@@ -1,3 +1,7 @@
+# pip itself is a requirement, so that we keep the version of it pinned
+# for build consistency
+pip
+
 furo
 myst-parser
 setuptools-scm
