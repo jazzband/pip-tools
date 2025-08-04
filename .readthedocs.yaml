@@ -2,27 +2,23 @@
 
 version: 2
 
-# Build documentation in the docs/ directory with Sphinx
-sphinx:
-  builder: dirhtml
-  configuration: docs/conf.py
-  fail_on_warning: true
-
-formats:
-  - pdf
-  - htmlzip
-
 build:
-  os: ubuntu-22.04
-  tools:
-    python: >-
-      3.11
-  jobs:
-    post_checkout:
-      - git fetch --unshallow || true
+  os: ubuntu-24.04
+  tools: {}
 
-python:
-  install:
-    - requirements: docs/requirements.txt
-    - method: pip
-      path: .
+  # in order to have RTD use our tox configuration for the build, we take full
+  # control over 'build.commands'
+  # see also: https://github.com/astral-sh/uv/issues/10074#issuecomment-3128225815
+  commands:
+    # a complete clone is needed for setuptools-scm, and this is the method recommended by RTD
+    # ( https://rtd-with-docsearch.readthedocs.io/en/latest/build-customization.html#unshallow-git-clone )
+    - git fetch --unshallow || true
+    # install uv and use it to get
+    # - Python 3.13
+    # - tox (with tox-uv)
+    - curl -LsSf https://astral.sh/uv/install.sh | sh
+    - ~/.local/bin/uv tool install tox --with tox-uv -p "3.13" --managed-python
+    # create the tox environment (`--notest` skips commands)
+    - ~/.local/bin/tox run -e build-docs --notest -vvvvv
+    # do the actual build step, to the RTD documented output directory
+    - ~/.local/bin/tox run -e build-docs --skip-pkg-install -q -- "${READTHEDOCS_OUTPUT}"/html -b dirhtml
