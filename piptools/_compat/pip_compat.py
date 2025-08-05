@@ -141,8 +141,8 @@ def _relativize_comes_from_location(original_comes_from: str, /) -> str:
     # split on the space
     prefix, space_sep, suffix = original_comes_from.partition(" ")
 
-    # if the value part is a URI, return the original
-    if _is_uri(suffix):
+    # if the value part is a remote URI for pip, return the original
+    if _is_remote_pip_uri(suffix):
         return original_comes_from
 
     file_path = pathlib.Path(suffix)
@@ -174,8 +174,8 @@ def _normalize_comes_from_location(original_comes_from: str, /) -> str:
     # split on the space
     prefix, space_sep, suffix = original_comes_from.partition(" ")
 
-    # if the value part is a URI, return the original
-    if _is_uri(suffix):
+    # if the value part is a remote URI for pip, return the original
+    if _is_remote_pip_uri(suffix):
         return original_comes_from
 
     # convert to a posix-style path
@@ -183,23 +183,15 @@ def _normalize_comes_from_location(original_comes_from: str, /) -> str:
     return f"{prefix}{space_sep}{suffix}"
 
 
-def _is_uri(value: str) -> bool:
+def _is_remote_pip_uri(value: str) -> bool:
     """
-    Test a string to see if it is a URI.
+    Test a string to see if it is a URI treated as a remote file in ``pip``.
+    Specifically this means that it's a 'file', 'http', or 'https' URI.
 
-    The test is performed by trying a URL parse and seeing is a scheme is populated.
-
-    This means that according to this rule, valid URLs such as
-    ``example.com/data/my_pip_constraints.txt`` may fail to count as URIs.
-    However, we cannot safely distinguish such strings from real filesystem paths.
-    e.g., ``./example.com/`` may be a directory.
-
-    Importantly, realistic usage such as
-    ``-c https://example.com/constraints.txt``
-    is properly detected by this technique.
+    The test is performed by trying a URL parse and reading the scheme.
     """
-    parse_result = urllib.parse.urlparse(value)
-    return parse_result.scheme != ""
+    scheme = urllib.parse.urlsplit(value).scheme
+    return scheme in ("http", "https", "file")
 
 
 def create_wheel_cache(cache_dir: str, format_control: str | None = None) -> WheelCache:
