@@ -62,6 +62,13 @@ Do your best and a maintainer can discuss this with you during review.
 
 ### Examples
 
+Example bugfix, [`2223.bugfix.md`](https://github.com/jazzband/pip-tools/pull/2224):
+
+```md
+Fixed a bug which removed slashes from URLs in ``-r`` and ``-c`` in the output
+of ``pip-compile`` -- by {user}`sirosen`.
+```
+
 Example contributor update, [`2214.contrib.md`](https://github.com/jazzband/pip-tools/pull/2214):
 
 ```md
