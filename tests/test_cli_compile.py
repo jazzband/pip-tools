@@ -4065,8 +4065,9 @@ def test_url_constraints_are_not_treated_as_file_paths(
     This is a regression test for
     https://github.com/jazzband/pip-tools/issues/2223
     """
-    reqs_in = tmp_path / "requirements.in"
     constraints_url = "https://example.com/files/common_constraints.txt"
+
+    reqs_in = tmp_path / "requirements.in"
     reqs_in.write_text(
         f"""
         small-fake-a
@@ -4094,19 +4095,19 @@ def test_url_constraints_are_not_treated_as_file_paths(
 
     with monkeypatch.context() as revertable_ctx:
         revertable_ctx.chdir(tmp_path)
-        with mock.patch.object(PipSession, "get", mock_get):
-            out = runner.invoke(
-                cli,
-                [
-                    "--output-file",
-                    "-",
-                    "--quiet",
-                    "--no-header",
-                    "--no-emit-options",
-                    "-r",
-                    input_path,
-                ],
-            )
+        revertable_ctx.setattr(PipSession, "get", mock_get)
+        out = runner.invoke(
+            cli,
+            [
+                "--output-file",
+                "-",
+                "--quiet",
+                "--no-header",
+                "--no-emit-options",
+                "-r",
+                input_path,
+            ],
+        )
 
     # sanity check, pip should have tried to fetch the constraints
     mock_get.assert_called_once_with(constraints_url)

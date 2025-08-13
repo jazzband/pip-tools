@@ -191,7 +191,7 @@ def _is_remote_pip_uri(value: str) -> bool:
     The test is performed by trying a URL parse and reading the scheme.
     """
     scheme = urllib.parse.urlsplit(value).scheme
-    return scheme in ("http", "https", "file")
+    return scheme in {"file", "http", "https"}
 
 
 def create_wheel_cache(cache_dir: str, format_control: str | None = None) -> WheelCache:
