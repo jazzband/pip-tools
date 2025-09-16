@@ -3,9 +3,9 @@
 ##### Contributor checklist
 
 - [ ] Included tests for the changes.
-- [ ] PR title is short, clear, and ready to be included in the user-facing changelog.
+- [ ] A change note is created in `changelog.d/` (see [`changelog.d/README.md`](https://github.com/jazzband/pip-tools/blob/main/changelog.d/#readme) for instructions) or the PR text says "no changelog needed".
 
 ##### Maintainer checklist
 
-- [ ] Verified one of these labels is present: `backwards incompatible`, `feature`, `enhancement`, `deprecation`, `bug`, `dependency`, `docs` or `skip-changelog` as they determine changelog listing.
+- [ ] If no changelog is needed, apply the `skip-changelog` label.
 - [ ] Assign the PR to an existing or new milestone for the target version (following [Semantic Versioning](https://blog.versioneye.com/2014/01/16/semantic-versioning/)).

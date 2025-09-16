@@ -9,7 +9,8 @@ def test_indentation(runner):
     """
     log = LogContext(indent_width=2)
 
-    with runner.isolation() as (_, stderr):
+    with runner.isolation() as streams:
+        stderr = streams[1]
         log.log("Test message 1")
         with log.indentation():
             log.log("Test message 2")

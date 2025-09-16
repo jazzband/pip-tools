@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import optparse
+import pathlib
+import urllib.parse
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Iterable, Iterator, Set, cast
+from typing import TYPE_CHECKING, Callable, Iterable, Iterator, Set, cast
 
 from pip._internal.cache import WheelCache
 from pip._internal.index.package_finder import PackageFinder
@@ -83,7 +85,23 @@ def parse_requirements(
     options: optparse.Values | None = None,
     constraint: bool = False,
     isolated: bool = False,
+    comes_from_stdin: bool = False,
 ) -> Iterator[InstallRequirement]:
+    # the `comes_from` data will be rewritten in different ways in different conditions
+    # each rewrite rule is expressible as a str->str function
+    rewrite_comes_from: Callable[[str], str]
+
+    if comes_from_stdin:
+        # if data is coming from stdin, then `comes_from="-r -"`
+        rewrite_comes_from = _rewrite_comes_from_to_hardcoded_stdin_value
+    elif pathlib.Path(filename).is_absolute():
+        # if the input path is absolute, just normalize paths to posix-style
+        rewrite_comes_from = _normalize_comes_from_location
+    else:
+        # if the input was a relative path, set the rewrite rule to rewrite
+        # absolute paths to be relative
+        rewrite_comes_from = _relativize_comes_from_location
+
     for parsed_req in _parse_requirements(
         filename, session, finder=finder, options=options, constraint=constraint
     ):
@@ -94,7 +112,86 @@ def parse_requirements(
             file_link = FileLink(install_req.link.url)
             file_link._url = parsed_req.requirement
             install_req.link = file_link
-        yield copy_install_requirement(install_req)
+        install_req = copy_install_requirement(install_req)
+
+        install_req.comes_from = rewrite_comes_from(install_req.comes_from)
+
+        yield install_req
+
+
+def _rewrite_comes_from_to_hardcoded_stdin_value(_: str, /) -> str:
+    """Produce the hardcoded ``comes_from`` value for stdin."""
+    return "-r -"
+
+
+def _relativize_comes_from_location(original_comes_from: str, /) -> str:
+    """
+    Convert a ``comes_from`` path to a relative posix path.
+
+    This is the rewrite rule used when ``-r`` or ``-c`` appears in
+    ``comes_from`` data with an absolute path.
+
+    The ``-r`` or ``-c`` qualifier is retained, the path is relativized
+    with respect to the CWD, and the path is converted to posix style.
+    """
+    # require `-r` or `-c` as the source
+    if not original_comes_from.startswith(("-r ", "-c ")):
+        return original_comes_from
+
+    # split on the space
+    prefix, space_sep, suffix = original_comes_from.partition(" ")
+
+    # if the value part is a remote URI for pip, return the original
+    if _is_remote_pip_uri(suffix):
+        return original_comes_from
+
+    file_path = pathlib.Path(suffix)
+
+    # if the path was not absolute, normalize to posix-style and finish processing
+    if not file_path.is_absolute():
+        return f"{prefix} {file_path.as_posix()}"
+
+    # make it relative to the current working dir
+    suffix = file_path.relative_to(pathlib.Path.cwd()).as_posix()
+    return f"{prefix}{space_sep}{suffix}"
+
+
+def _normalize_comes_from_location(original_comes_from: str, /) -> str:
+    """
+    Convert a ``comes_from`` path to a posix-style path.
+
+    This is the rewrite rule when ``-r`` or ``-c`` appears in ``comes_from``
+    data and the input path was absolute, meaning we should not relativize the
+    locations.
+
+    The ``-r`` or ``-c`` qualifier is retained, and the path is converted to
+    posix style.
+    """
+    # require `-r` or `-c` as the source
+    if not original_comes_from.startswith(("-r ", "-c ")):
+        return original_comes_from
+
+    # split on the space
+    prefix, space_sep, suffix = original_comes_from.partition(" ")
+
+    # if the value part is a remote URI for pip, return the original
+    if _is_remote_pip_uri(suffix):
+        return original_comes_from
+
+    # convert to a posix-style path
+    suffix = pathlib.Path(suffix).as_posix()
+    return f"{prefix}{space_sep}{suffix}"
+
+
+def _is_remote_pip_uri(value: str) -> bool:
+    """
+    Test a string to see if it is a URI treated as a remote file in ``pip``.
+    Specifically this means that it's a 'file', 'http', or 'https' URI.
+
+    The test is performed by trying a URL parse and reading the scheme.
+    """
+    scheme = urllib.parse.urlsplit(value).scheme
+    return scheme in {"file", "http", "https"}
 
 
 def create_wheel_cache(cache_dir: str, format_control: str | None = None) -> WheelCache:

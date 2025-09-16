@@ -1,0 +1,67 @@
+[tool.towncrier]
+  package = "piptools"
+  filename = "CHANGELOG.md"
+  start_string = "<!-- towncrier release notes start -->\n"
+  directory = "changelog.d/"
+  title_format = ""
+  template = "changelog.d/.towncrier_template.md.jinja"
+  # the issue format is bare here, but then handled in the template
+  # see changelog.d/.towncrier_template.md.jinja for details
+  issue_format = "{issue}"
+  underlines = ["", "", ""]
+
+  [[tool.towncrier.section]]
+    path = ""
+
+  # Fully redeclare towncrier types to control names and set 'showcontent'
+
+  [[tool.towncrier.type]]
+    # Improper/undesired behavior that got corrected.
+    directory = "bugfix"
+    name = "Bug fixes"
+    showcontent = true
+
+  [[tool.towncrier.type]]
+    # New behaviors, CLI flags, etc.
+    directory = "feature"
+    name = "Features"
+    showcontent = true
+
+  [[tool.towncrier.type]]
+    # Declarations of future removals and breaking changes in behavior.
+    directory = "deprecation"
+    name = "Deprecations (removal in next major release)"
+    showcontent = true
+
+  [[tool.towncrier.type]]
+    # A change in the behavior of a command, such that users may observe the
+    # change purely via their usage and be negatively impacted.
+    directory = "breaking"
+    name = "Removals and backward incompatible breaking changes"
+    showcontent = true
+
+  [[tool.towncrier.type]]
+    # Notable updates to the documentation structure or build process.
+    directory = "doc"
+    name = "Improved documentation"
+    showcontent = true
+
+  [[tool.towncrier.type]]
+    # Notes for downstreams about unobvious side effects and tooling. Changes
+    # in the test invocation considerations and runtime assumptions.
+    directory = "packaging"
+    name = "Packaging updates and notes for downstreams"
+    showcontent = true
+
+  [[tool.towncrier.type]]
+    # Stuff that affects the contributor experience. e.g. Running tests,
+    # building the docs, setting up the development environment.
+    directory = "contrib"
+    name = "Contributor-facing changes"
+    showcontent = true
+
+  [[tool.towncrier.type]]
+    # Changes that are hard to assign to any of the above categories.
+    directory = "misc"
+    name = "Miscellaneous internal changes"
+    showcontent = true

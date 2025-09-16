@@ -1,0 +1,70 @@
+{%- set is_draft_preview = versiondata["version"] == "DRAFT_VERSION" -%}
+
+{%- if is_draft_preview -%}
+## Unreleased Changes
+{% else -%}
+## {{ versiondata["version"] }}
+{% endif %}
+
+*{%- if is_draft_preview -%}Generated for preview on {% endif -%}{{ versiondata["date"] }}*
+
+{% for section, _ in sections.items() %}
+{% if sections[section] %}
+{% for category, val in definitions.items() if category in sections[section] -%}
+
+### {{ definitions[category]['name'] }}
+
+{% for text, change_note_refs in sections[section][category].items() %}
+
+  {%-
+    set pr_issue_numbers = change_note_refs
+    | map('lower')
+    | map('int', default=None)
+    | select('integer')
+    | map('string')
+    | list
+  -%}
+
+  {%- set arbitrary_refs = [] -%}
+  {%- set commit_refs = [] -%}
+  {%- with -%}
+    {%- set commit_ref_candidates = change_note_refs | reject('in', pr_issue_numbers) -%}
+    {%- for cf in commit_ref_candidates -%}
+      {%- if cf | length in (7, 8, 40) and cf | int(default=None, base=16) is not none -%}
+        {%- set _ = commit_refs.append(cf) -%}
+      {%- else -%}
+        {%- set _ = arbitrary_refs.append(cf) -%}
+      {%- endif -%}
+    {%- endfor -%}
+  {%- endwith -%}
+
+- {{ text }}
+
+  {{- '\n\n' -}}
+
+  {%- if pr_issue_numbers %}
+  *PRs and issues:* {issue}`{{ pr_issue_numbers | join('`, {issue}`') }}`
+  {{- '\n' -}}
+  {%- endif -%}
+
+  {%- if commit_refs %}
+  *Related commits:* {commit}`{{ commit_refs | join('`, {commit}`') }}`
+  {{- '\n' -}}
+  {%- endif -%}
+
+  {%- if arbitrary_refs %}
+  *Unlinked references:* {{ arbitrary_refs | join(', ') }}
+  {{- '\n' -}}
+  {%- endif -%}
+
+  {{- '\n' -}}
+
+{% endfor -%}
+
+{% endfor %}
+{% else %}
+No significant changes.
+
+{% endif %}
+
+{% endfor %}

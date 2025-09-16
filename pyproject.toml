@@ -38,7 +38,7 @@ keywords = ["pip", "requirements", "packaging"]
 dependencies = [
   # direct dependencies
   "build >= 1.0.0",
-  "click >= 8, < 8.2",
+  "click >= 8",
   "pip >= 22.2",
   "pyproject_hooks",
   "tomli; python_version < '3.11'",
@@ -72,6 +72,10 @@ pip-sync = "piptools.scripts.sync:cli"
 
 [tool.isort]
 profile = "black"
+# explicitly mark 'build' as a third-party package
+# otherwise, in some executions, `isort` can mistake `piptools.build` for
+# `build` and treat it as a first-party module name
+known_third_party = ["build"]
 add_imports = "from __future__ import annotations"
 
 [tool.mypy]

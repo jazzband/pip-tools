@@ -2,6 +2,7 @@
 name: 📦 Packaging
 
 on:
+  pull_request:
   push:
     branches:
       - main
@@ -70,6 +71,11 @@ jobs:
 
     timeout-minutes: 2
 
+    outputs:
+      # NOTE: These aren't env vars because the `${{ env }}` context is
+      # NOTE: inaccessible when passing inputs to reusable workflows.
+      upstream-repository-id: ${{ env.UPSTREAM_REPOSITORY_ID }}
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -114,7 +120,7 @@ jobs:
       - build
     if: >-
       github.event.action == 'published'
-      && env.UPSTREAM_REPOSITORY_ID == github.repository_id
+      && needs.build.outputs.upstream-repository-id == github.repository_id
 
     runs-on: ubuntu-latest
 
@@ -139,6 +145,8 @@ jobs:
           Publish v${{ github.ref_name }} to PyPI
           🔏
         uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Clean up the publish attestation leftovers
+        run: rm -fv dist/*.publish.attestation
       - name: Upload packages to Jazzband
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
