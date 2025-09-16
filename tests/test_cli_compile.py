@@ -4121,3 +4121,67 @@ def test_url_constraints_are_not_treated_as_file_paths(
             #   -r {input_path}
         """
     )
+
+
+@pytest.mark.parametrize(
+    "pyproject_path_is_absolute",
+    (True, False),
+    ids=("absolute-input", "relative-input"),
+)
+def test_that_self_referential_pyproject_toml_extra_can_be_compiled(
+    pip_conf, runner, tmp_path, monkeypatch, pyproject_path_is_absolute
+):
+    """
+    Test that a :file:`pyproject.toml` source file can use self-referential extras
+    which point back to the original package name.
+
+    This is a regression test for:
+    https://github.com/jazzband/pip-tools/issues/2215
+    """
+    src_file = tmp_path / "pyproject.toml"
+    src_file.write_text(
+        dedent(
+            """
+            [project]
+            name = "foo"
+            version = "0.1.0"
+            [project.optional-dependencies]
+            ext1 = ["small-fake-a"]
+            ext2 = ["foo[ext1]"]
+            """
+        )
+    )
+
+    if pyproject_path_is_absolute:
+        input_path = src_file.as_posix()
+    else:
+        input_path = src_file.relative_to(tmp_path).as_posix()
+
+    with monkeypatch.context() as revertable_ctx:
+        revertable_ctx.chdir(tmp_path)
+        out = runner.invoke(
+            cli,
+            [
+                "--output-file",
+                "-",
+                "--quiet",
+                "--no-header",
+                "--no-emit-options",
+                # use in-process setuptools
+                "--no-build-isolation",
+                # importantly, request the extra which uses the self-reference
+                "--extra",
+                "ext2",
+                input_path,
+            ],
+        )
+
+    assert out.exit_code == 0
+    assert out.stdout == dedent(
+        f"""\
+        foo[ext1] @ {src_file.parent.absolute().as_uri()}
+            # via foo ({input_path})
+        small-fake-a==0.2
+            # via foo
+        """
+    )
