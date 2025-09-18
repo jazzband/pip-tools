@@ -7,7 +7,11 @@ from pip._internal.commands import create_command
 from pip._internal.utils.misc import redact_auth_from_url
 
 from piptools.locations import CACHE_DIR, DEFAULT_CONFIG_FILE_NAMES
-from piptools.utils import UNSAFE_PACKAGES, override_defaults_from_config_file
+from piptools.utils import (
+    UNSAFE_PACKAGES,
+    DependencyGroupParamType,
+    override_defaults_from_config_file,
+)
 
 BuildTargetT = Literal["sdist", "wheel", "editable"]
 ALL_BUILD_TARGETS: tuple[BuildTargetT, ...] = (
@@ -246,6 +250,18 @@ src_files = click.argument(
     "src_files",
     nargs=-1,
     type=click.Path(exists=True, allow_dash=True),
+)
+
+group = click.option(
+    "--group",
+    "groups",
+    type=DependencyGroupParamType(),
+    multiple=True,
+    help=(
+        'Specify a named dependency-group from a "pyproject.toml" file. '
+        'If a path is given, the name of the file must be "pyproject.toml". '
+        'Defaults to using "pyproject.toml" in the current directory.'
+    ),
 )
 
 build_isolation = click.option(
