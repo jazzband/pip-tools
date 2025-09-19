@@ -13,12 +13,15 @@ build:
     # a complete clone is needed for setuptools-scm, and this is the method recommended by RTD
     # ( https://rtd-with-docsearch.readthedocs.io/en/latest/build-customization.html#unshallow-git-clone )
     - git fetch --unshallow || true
-    # install uv and use it to get
+    # install/setup uv
+    - asdf plugin add uv
+    - asdf install uv latest
+    - asdf global uv latest
+    # use uv to get
     # - Python 3.13
     # - tox (with tox-uv)
-    - curl -LsSf https://astral.sh/uv/install.sh | sh
-    - ~/.local/bin/uv tool install tox --with tox-uv -p "3.13" --managed-python
+    - uv tool install tox --with tox-uv --python "3.13" --managed-python
     # create the tox environment (`--notest` skips commands)
-    - ~/.local/bin/tox run -e build-docs --notest -vvvvv
+    - uv tool run tox run -e build-docs --notest -vvvvv
     # do the actual build step, to the RTD documented output directory
-    - ~/.local/bin/tox run -e build-docs --skip-pkg-install -q -- "${READTHEDOCS_OUTPUT}"/html -b dirhtml
+    - uv tool run tox run -e build-docs --skip-pkg-install -q -- "${READTHEDOCS_OUTPUT}"/html -b dirhtml
