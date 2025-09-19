@@ -10,9 +10,6 @@ build:
   # control over 'build.commands'
   # see also: https://github.com/astral-sh/uv/issues/10074#issuecomment-3128225815
   commands:
-    # a complete clone is needed for setuptools-scm, and this is the method recommended by RTD
-    # ( https://rtd-with-docsearch.readthedocs.io/en/latest/build-customization.html#unshallow-git-clone )
-    - git fetch --unshallow || true
     # install/setup uv
     - asdf plugin add uv
     - asdf install uv latest
