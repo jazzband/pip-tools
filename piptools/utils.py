@@ -399,7 +399,7 @@ def get_compile_command(click_ctx: click.Context) -> str:
                 continue
 
         # Skip options without a value
-        if option.default is None and not value:
+        if value is None:
             continue
 
         # Skip options with a default value

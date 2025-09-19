@@ -10,7 +10,6 @@ def test_indentation(runner):
     log = LogContext(indent_width=2)
 
     with runner.isolation() as streams:
-        stderr = streams[1]
         log.log("Test message 1")
         with log.indentation():
             log.log("Test message 2")
@@ -19,7 +18,9 @@ def test_indentation(runner):
             log.log("Test message 4")
         log.log("Test message 5")
 
-    assert stderr.getvalue().decode().splitlines() == [
+        stderr_bytes = streams[1].getvalue()
+
+    assert stderr_bytes.decode().splitlines() == [
         "Test message 1",
         "  Test message 2",
         "    Test message 3",
