@@ -72,7 +72,7 @@ of ``pip-compile`` -- by {user}`sirosen`.
 Example contributor update, [`2214.contrib.md`](https://github.com/jazzband/pip-tools/pull/2214):
 
 ```md
-`pip-tools` now tests on and officially supports `pip` version 25.2 -- by :user:`sirosen`.
+`pip-tools` now tests on and officially supports `pip` version 25.2 -- by {user}`sirosen`.
 ```
 
 ### Rationale
