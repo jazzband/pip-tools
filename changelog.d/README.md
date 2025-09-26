@@ -62,19 +62,17 @@ Do your best and a maintainer can discuss this with you during review.
 
 ### Examples
 
-Example bugfix, `2082.bugfix.md`:
+Example bugfix, [`2223.bugfix.md`](https://github.com/jazzband/pip-tools/pull/2224):
 
 ```md
-Fixed the ordering of format controls to preserve underlying `pip` behavior
--- by {user}`sethmlarson`.
+Fixed a bug which removed slashes from URLs in ``-r`` and ``-c`` in the output
+of ``pip-compile`` -- by {user}`sirosen`.
 ```
 
-Example contributor update, `2202.contrib.md`:
+Example contributor update, [`2214.contrib.md`](https://github.com/jazzband/pip-tools/pull/2214):
 
 ```md
-`pip-tools` now uses [`sphinx-issues`](https://github.com/sloria/sphinx-issues)
-to link to issues, PRs, commits, and user accounts
--- by {user}`sirosen`.
+`pip-tools` now tests on and officially supports `pip` version 25.2 -- by {user}`sirosen`.
 ```
 
 ### Rationale
