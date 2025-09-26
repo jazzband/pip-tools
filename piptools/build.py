@@ -88,7 +88,7 @@ def maybe_statically_parse_project_metadata(
         return None
 
     package_name = project_table["name"]
-    comes_from = f"{package_name} ({src_file})"
+    comes_from = f"{package_name} ({src_file.as_posix()})"
 
     extras = project_table.get("optional-dependencies", {}).keys()
     install_requirements = [
@@ -103,7 +103,8 @@ def maybe_statically_parse_project_metadata(
             if requirement.name == package_name:
                 # Similar to logic for handling self-referential requirements
                 # from _prepare_requirements
-                requirement.url = src_file.parent.as_uri()
+                requirement.url = src_file.parent.absolute().as_uri()
+
             # Note we don't need to modify `requirement` to include this extra
             marker = Marker(f"extra == '{extra}'")
             install_requirements.append(
@@ -302,7 +303,7 @@ def _prepare_requirements(
     metadata: PackageMetadata, src_file: pathlib.Path
 ) -> Iterator[InstallRequirement]:
     package_name = _get_name(metadata)
-    comes_from = f"{package_name} ({src_file})"
+    comes_from = f"{package_name} ({src_file.as_posix()})"
     package_dir = src_file.parent
 
     for req in metadata.get_all("Requires-Dist") or []:
