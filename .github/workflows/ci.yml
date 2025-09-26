@@ -15,6 +15,12 @@ on:
           to test against under CPython.
         required: true
         type: string
+      cpython-versions:
+        description: >-
+          A JSON string with CPython versions
+          to test against.
+        required: true
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -53,12 +59,14 @@ jobs:
           - Ubuntu
           - Windows
           - macOS
-        python-version:
-          - "3.12"
-          - "3.11"
-          - "3.10"
-          - "3.9"
-          - "3.8"
+        python-version: >-
+          ${{
+            fromJSON(
+              inputs.cpython-versions
+              && inputs.cpython-versions
+              || '["3.8", "3.9", "3.10", "3.11", "3.12"]'
+            )
+          }}
         pip-version: >-
           ${{
             fromJSON(
