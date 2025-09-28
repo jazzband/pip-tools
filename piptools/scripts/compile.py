@@ -44,6 +44,18 @@ DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 METADATA_FILENAMES = frozenset({"setup.py", "setup.cfg", "pyproject.toml"})
 
 
+def _filter_dependencies(dependencies, only_from_packages):
+    """
+    Filter dependencies to include only those required by the specified packages.
+    """
+    filtered_dependencies = [
+        dep
+        for dep in dependencies
+        if dep.comes_from and dep.comes_from in only_from_packages
+    ]
+    return set(filtered_dependencies)
+
+
 def _determine_linesep(
     strategy: str = "preserve", filenames: tuple[str, ...] = ()
 ) -> str:
@@ -102,6 +114,7 @@ def _determine_linesep(
 @options.upgrade
 @options.upgrade_package
 @options.output_file
+@options.only_from
 @options.newline
 @options.allow_unsafe
 @options.strip_extras
@@ -147,6 +160,7 @@ def cli(
     upgrade: bool,
     upgrade_packages: tuple[str, ...],
     output_file: LazyFile | IO[Any] | None,
+    only_from: list[str] | None,
     newline: str,
     allow_unsafe: bool,
     strip_extras: bool | None,
@@ -506,6 +520,9 @@ def cli(
             "either use --strip-extras to opt into the new default "
             "or use --no-strip-extras to retain the existing behavior."
         )
+
+    if only_from:
+        results = _filter_dependencies(results, only_from_packages=only_from)
 
     ##
     # Output

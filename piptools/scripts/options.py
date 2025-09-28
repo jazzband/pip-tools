@@ -191,6 +191,12 @@ output_file = click.option(
     ),
 )
 
+only_from = click.option(
+    "--only-from",
+    multiple=True,
+    help="Only include dependencies from given packages; may be used more than once",
+)
+
 newline = click.option(
     "--newline",
     type=click.Choice(("LF", "CRLF", "native", "preserve"), case_sensitive=False),
