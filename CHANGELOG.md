@@ -1,5 +1,3 @@
-
-
 <!-- towncrier release notes start -->
 
 ## v7.5.1
@@ -8,7 +6,7 @@
 
 ### Bug fixes
 
-- Fix static parsing of {file}`pyproject.toml` data when the
+- Fixed static parsing of {file}`pyproject.toml` data when the
   {file}`pyproject.toml` is supplied as a relative path -- by {user}`sirosen`.
 
   *PRs and issues:* {issue}`2215`, {issue}`2221`, {issue}`2233`
@@ -23,28 +21,32 @@
 
   *PRs and issues:* {issue}`2223`
 
-- Fix an incompatibility with ``click >= 8.3`` which made ``pip-compile`` display incorrect
+- Fixed an incompatibility with ``click >= 8.3`` which made ``pip-compile`` display incorrect
   options in the compile command in output headers -- by {user}`sirosen`.
 
   *PRs and issues:* {issue}`2235`
 
+### Features
+
+- `pip-tools` now officially supports `pip` version 25.2 -- by {user}`sirosen`.
+
+  *PRs and issues:* {issue}`2214`
+
 ### Improved documentation
 
-- ReadTheDocs builds for `pip-tools` no longer include htmlzip and pdf outputs -- by :user:`sirosen`.
+- ReadTheDocs builds for `pip-tools` no longer include htmlzip and pdf outputs -- by {user}`sirosen`.
 
   *PRs and issues:* {issue}`2218`
 
 ### Contributor-facing changes
 
-- `pip-tools` now tests on and officially supports `pip` version 25.2 -- by {user}`sirosen`.
+- `pip-tools` now tests on `pip` version 25.2 -- by {user}`sirosen`.
 
   *PRs and issues:* {issue}`2214`
 
-- Documentation build and changelog maintenance -- by {user}`jayaddison` (for OpenCulinary).
+- The changelog documentation for contributors now provides hyperlinks to the source of each example change note -- by {user}`jayaddison` (for OpenCulinary).
 
   *PRs and issues:* {issue}`2217`
-
-### Miscellaneous internal changes
 
 - The CPython versions tested in nightly CI runs are now separate from
   branch and PR CI, and don't include very old versions -- by {user}`sirosen`.
