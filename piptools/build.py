@@ -204,12 +204,11 @@ def _env_var(
     finally:
         if pip_constraint_was_unset:
             del os.environ[env_var_name]
-            return
-
-        # Assert here is necessary because MyPy can't infer type
-        # narrowing in the complex case.
-        assert isinstance(original_pip_constraint, str)
-        os.environ[env_var_name] = original_pip_constraint
+        else:
+            # Assert here is necessary because MyPy can't infer type
+            # narrowing in the complex case.
+            assert isinstance(original_pip_constraint, str)
+            os.environ[env_var_name] = original_pip_constraint
 
 
 @contextlib.contextmanager
