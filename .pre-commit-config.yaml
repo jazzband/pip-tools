@@ -5,11 +5,11 @@ repos:
       - id: black
         args: [--target-version=py38]
   - repo: https://github.com/PyCQA/isort
-    rev: 6.1.0
+    rev: 7.0.0
     hooks:
       - id: isort
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.20.0
+    rev: v3.21.0
     hooks:
       - id: pyupgrade
         args: [--py38-plus]
@@ -35,7 +35,6 @@ repos:
           - build==1.0.0
           - pyproject_hooks==1.0.0
           - pytest==7.4.2
-        language_version: python3.9
   - repo: https://github.com/PyCQA/bandit
     rev: 1.8.6
     hooks:
