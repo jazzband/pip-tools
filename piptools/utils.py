@@ -500,7 +500,6 @@ def copy_install_requirement(
         "editable": template.editable,
         "link": template.link,
         "markers": template.markers,
-        "use_pep517": template.use_pep517,
         "isolated": template.isolated,
         "global_options": template.global_options,
         "hash_options": template.hash_options,

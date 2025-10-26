@@ -614,7 +614,6 @@ class BacktrackingResolver(BaseResolver):
                 ignore_installed=True,
                 ignore_requires_python=False,
                 force_reinstall=False,
-                use_pep517=self.options.use_pep517,
                 upgrade_strategy="to-satisfy-only",
             )
 
