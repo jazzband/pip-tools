@@ -507,7 +507,8 @@ def copy_install_requirement(
         "extras": template.extras,
         "user_supplied": template.user_supplied,
     }
-    if hasattr(template, "use_pep517"):
+    if PIP_VERSION[:2] < (25, 3):
+        # Ref: https://github.com/jazzband/pip-tools/issues/2252
         kwargs["use_pep517"] = template.use_pep517
     kwargs.update(extra_kwargs)
 
