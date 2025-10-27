@@ -507,6 +507,8 @@ def copy_install_requirement(
         "extras": template.extras,
         "user_supplied": template.user_supplied,
     }
+    if hasattr(template, "use_pep517"):
+        kwargs["use_pep517"] = template.use_pep517
     kwargs.update(extra_kwargs)
 
     if PIP_VERSION[:2] <= (23, 0):
