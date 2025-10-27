@@ -606,21 +606,23 @@ class BacktrackingResolver(BaseResolver):
             }
             preparer = self.command.make_requirement_preparer(**preparer_kwargs)
 
-            resolver_kwargs = {
-                "preparer": preparer,
-                "finder": self.finder,
-                "options": self.options,
-                "wheel_cache": wheel_cache,
-                "use_user_site": False,
-                "ignore_installed": True,
-                "ignore_requires_python": False,
-                "force_reinstall": False,
-                "upgrade_strategy": "to-satisfy-only",
-            }
+            extra_resolver_kwargs = {}
             if PIP_VERSION[:2] < (25, 3):
                 # Ref: https://github.com/jazzband/pip-tools/issues/2252
-                resolver_kwargs["use_pep517"] = self.options.use_pep517
-            resolver = self.command.make_resolver(**resolver_kwargs)
+                extra_resolver_kwargs["use_pep517"] = self.options.use_pep517
+
+            resolver = self.command.make_resolver(
+                preparer=preparer,
+                finder=self.finder,
+                options=self.options,
+                wheel_cache=wheel_cache,
+                use_user_site=False,
+                ignore_installed=True,
+                ignore_requires_python=False,
+                force_reinstall=False,
+                upgrade_strategy="to-satisfy-only",
+                **extra_resolver_kwargs,
+            )
 
             self.command.trace_basic_info(self.finder)
 
