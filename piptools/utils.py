@@ -501,7 +501,6 @@ def copy_install_requirement(
         "link": template.link,
         "markers": template.markers,
         "isolated": template.isolated,
-        "global_options": template.global_options,
         "hash_options": template.hash_options,
         "constraint": template.constraint,
         "extras": template.extras,
@@ -510,7 +509,13 @@ def copy_install_requirement(
     if PIP_VERSION[:2] < (25, 3):
         # Ref: https://github.com/jazzband/pip-tools/issues/2252
         kwargs["use_pep517"] = template.use_pep517
+        kwargs["global_options"] = template.global_options
     kwargs.update(extra_kwargs)
+
+    if PIP_VERSION[:2] >= (25, 3):
+        # Ref: https://github.com/jazzband/pip-tools/issues/2252
+        kwargs.pop("use_pep517", None)
+        kwargs.pop("global_options", None)
 
     if PIP_VERSION[:2] <= (23, 0):
         kwargs["install_options"] = template.install_options
