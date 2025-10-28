@@ -131,6 +131,30 @@ jobs:
         #
         # Ref: https://github.com/tox-dev/tox/issues/3193
         run: tox --skip-pkg-install --parallel-live
+      - name: Re-run the failing tests with maximum verbosity
+        if: >-
+          !cancelled()
+          && failure()
+        run: >-  # `exit 1` makes sure that the job remains red with flaky runs
+          python -Xutf8 -Im
+          tox
+          --parallel=auto
+          --parallel-live
+          --skip-missing-interpreters=false
+          --skip-pkg-install
+          -vvvvv
+          --
+          --continue-on-collection-errors
+          --full-trace
+          --last-failed
+          ${{ !inputs.cpython-pip-version && '--no-cov' || '' }}
+          --numprocesses=0
+          --showlocals
+          --trace-config
+          -rA
+          -vvvvv
+          && exit 1
+        shell: bash
       - name: Upload coverage to Codecov
         if: >-
           !inputs.cpython-pip-version
@@ -205,6 +229,29 @@ jobs:
         #
         # Ref: https://github.com/tox-dev/tox/issues/3193
         run: tox --skip-pkg-install --parallel-live
+      - name: Re-run the failing tests with maximum verbosity
+        if: >-
+          !cancelled()
+          && failure()
+        run: >-  # `exit 1` makes sure that the job remains red with flaky runs
+          python -Xutf8 -Im
+          tox
+          --parallel=auto
+          --parallel-live
+          --skip-missing-interpreters=false
+          --skip-pkg-install
+          -vvvvv
+          --
+          --continue-on-collection-errors
+          --full-trace
+          --last-failed
+          --numprocesses=0
+          --showlocals
+          --trace-config
+          -rA
+          -vvvvv
+          && exit 1
+        shell: bash
 
   check: # This job does nothing and is only used for the branch protection
     if: always()
