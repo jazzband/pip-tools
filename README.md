@@ -1,3 +1,4 @@
+<!-- pyml disable-next-line first-line-heading -->
 [![jazzband-image]][jazzband]
 [![pypi][pypi-image]][pypi]
 [![pyversions][pyversions-image]][pyversions]
@@ -11,7 +12,9 @@
 # pip-tools = pip-compile + pip-sync
 
 A set of command line tools to help you keep your `pip`-based packages fresh,
-even when you've pinned them. You do pin them, right? (In building your Python application and its dependencies for production, you want to make sure that your builds are predictable and deterministic.)
+even when you've pinned them. You do pin them, right? (In building your Python
+application and its dependencies for production, you want to make sure that
+your builds are predictable and deterministic.)
 
 [![pip-tools overview for phase II][pip-tools-overview]][pip-tools-overview]
 
@@ -37,8 +40,8 @@ your dependencies, specified in either `pyproject.toml`, `setup.cfg`,
 Run it with `pip-compile` or `python -m piptools compile` (or
 `pipx run --spec pip-tools pip-compile` if `pipx` was installed with the
 appropriate Python version). If you use multiple Python versions, you can also
-run `py -X.Y -m piptools compile` on Windows and `pythonX.Y -m piptools compile`
-on other systems.
+run `py -X.Y -m piptools compile` on Windows and
+`pythonX.Y -m piptools compile` on other systems.
 
 `pip-compile` should be run from the same virtual environment as your
 project so conditional dependencies that require a specific Python version,
@@ -64,8 +67,9 @@ in projects that use modern standards-adhering packaging tools like
 [Setuptools](https://setuptools.pypa.io), [Hatch](https://hatch.pypa.io/)
 or [flit](https://flit.pypa.io/).
 
-Suppose you have a 'foobar' Python application that is packaged using `Setuptools`,
-and you want to pin it for production. You can declare the project metadata as:
+Suppose you have a 'foobar' Python application that is packaged using
+`Setuptools`, and you want to pin it for production. You can declare the
+project metadata as:
 
 ```toml
 [build-system]
@@ -165,7 +169,7 @@ You can also use plain text files for your requirements (e.g. if you don't
 want your application to be a package). To use a `requirements.in` file to
 declare the Django dependency:
 
-```
+```text
 # requirements.in
 django
 ```
@@ -222,6 +226,7 @@ You can combine `--upgrade` and `--upgrade-package` in one command, to
 provide constraints on the allowed upgrades. For example to upgrade all
 packages whilst constraining requests to the latest version less than 3.0:
 
+<!-- pyml disable-num-lines 2 commands-show-output -->
 ```console
 $ pip-compile --upgrade --upgrade-package 'requests<3.0'
 ```
@@ -230,7 +235,8 @@ $ pip-compile --upgrade --upgrade-package 'requests<3.0'
 
 When you run `pip-compile`, it reads any existing output file (e.g.,
 `requirements.txt`) and uses the versions specified there as constraints.
-This ensures that the output is stable -- `pip-compile` will prefer to use existing pinned versions.
+This ensures that the output is stable -- `pip-compile` will prefer to
+use existing pinned versions.
 
 When upgrading packages or adding new packages to the input,
 it is possible for the existing pins to conflict with new packages. In such cases,
@@ -238,6 +244,7 @@ it is possible for the existing pins to conflict with new packages. In such case
 (e.g., `Discarding foo=1.2.3 to proceed`).
 
 In order to resolve dependencies afresh, `pip-compile` provides the following options:
+
 - `--upgrade` / `-U` flag to upgrade all packages
 - `--upgrade-package <package>`/`-P <package>` to upgrade specific packages
 
@@ -246,6 +253,7 @@ In order to resolve dependencies afresh, `pip-compile` provides the following op
 If you would like to use _Hash-Checking Mode_ available in `pip` since
 version 8.0, `pip-compile` offers `--generate-hashes` flag:
 
+<!-- pyml disable-num-lines 18 line-length -->
 ```console
 $ pip-compile --generate-hashes requirements.in
 #
@@ -275,6 +283,7 @@ To output the pinned requirements in a filename other than
 multiple files, for example with different constraints on django to test a
 library with both versions using [tox](https://tox.readthedocs.io/en/latest/):
 
+<!-- pyml disable-num-lines 2 commands-show-output -->
 ```console
 $ pip-compile --upgrade-package 'django<1.0' --output-file requirements-django0x.txt
 $ pip-compile --upgrade-package 'django<2.0' --output-file requirements-django1x.txt
@@ -282,6 +291,7 @@ $ pip-compile --upgrade-package 'django<2.0' --output-file requirements-django1x
 
 Or to output to standard output, use `--output-file=-`:
 
+<!-- pyml disable-num-lines 2 commands-show-output -->
 ```console
 $ pip-compile --output-file=- > requirements.txt
 $ pip-compile - --output-file=- < requirements.in > requirements.txt
@@ -292,6 +302,7 @@ $ pip-compile - --output-file=- < requirements.in > requirements.txt
 Any valid `pip` flags or arguments may be passed on with `pip-compile`'s
 `--pip-args` option, e.g.
 
+<!-- pyml disable-num-lines 2 commands-show-output -->
 ```console
 $ pip-compile requirements.in --pip-args "--retries 10 --timeout 30"
 ```
@@ -305,7 +316,8 @@ By default, both `pip-compile` and `pip-sync` will look first
 for a `.pip-tools.toml` file and then in your `pyproject.toml`. You can
 also specify an alternate TOML configuration file with the `--config` option.
 
-It is possible to specify configuration values both globally and command-specific.
+It is possible to specify configuration values both globally and command-
+specific.
 For example, to by default generate `pip` hashes in the resulting
 requirements file output, you can specify in a configuration file:
 
@@ -318,27 +330,30 @@ Options to `pip-compile` and `pip-sync` that may be used more than once
 must be defined as lists in a configuration file, even if they only have one
 value.
 
-`pip-tools` supports default values for [all valid command-line flags](/cli/index.md)
-of its subcommands. Configuration keys may contain underscores instead of dashes,
-so the above could also be specified in this format:
+`pip-tools` supports default values for [all valid command-line
+flags](/cli/index.md) of its subcommands. Configuration keys may contain
+underscores instead of dashes, so the above could also be specified in this
+format:
 
 ```toml
 [tool.pip-tools]
 generate_hashes = true
 ```
 
-Configuration defaults specific to `pip-compile` and `pip-sync` can be put beneath
-separate sections. For example, to by default perform a dry-run with `pip-compile`:
+Configuration defaults specific to `pip-compile` and `pip-sync` can be put
+beneath separate sections. For example, to by default perform a dry-run with
+`pip-compile`:
 
 ```toml
 [tool.pip-tools.compile] # "sync" for pip-sync
 dry-run = true
 ```
 
-This does not affect the `pip-sync` command, which also has a `--dry-run` option.
+This does not affect the `pip-sync` command, which also has a `--dry-run`
+option.
 Note that local settings take preference over the global ones of the same name,
-whenever both are declared, thus this would also make `pip-compile` generate hashes,
-but discard the global dry-run setting:
+whenever both are declared, thus this would also make `pip-compile` generate
+hashes, but discard the global dry-run setting:
 
 ```toml
 [tool.pip-tools]
@@ -380,7 +395,7 @@ For example, if you have a Django project where you want the newest `2.1`
 release in production and when developing you want to use the Django debug
 toolbar, then you can create two `*.in` files, one for each layer:
 
-```
+```text
 # requirements.in
 django<2.2
 ```
@@ -389,7 +404,7 @@ At the top of the development requirements `dev-requirements.in` you use `-c
 requirements.txt` to constrain the dev requirements to packages already
 selected for production in `requirements.txt`.
 
-```
+```text
 # dev-requirements.in
 -c requirements.txt
 django-debug-toolbar<2.2
@@ -397,7 +412,7 @@ django-debug-toolbar<2.2
 
 First, compile `requirements.txt` as usual:
 
-```
+```text
 $ pip-compile
 #
 # This file is autogenerated by pip-compile with Python 3.10
@@ -443,19 +458,22 @@ the dev environment.
 
 To install requirements in production stage use:
 
+<!-- pyml disable-num-lines 2 commands-show-output -->
 ```console
 $ pip-sync
 ```
 
 You can install requirements in development stage by:
 
+<!-- pyml disable-num-lines 2 commands-show-output -->
 ```console
 $ pip-sync requirements.txt dev-requirements.txt
 ```
 
 ### Version control integration
 
-You might use `pip-compile` as a hook for the [pre-commit](https://github.com/pre-commit/pre-commit).
+You might use `pip-compile` as a hook for the
+[pre-commit](https://github.com/pre-commit/pre-commit).
 See [pre-commit docs](https://pre-commit.com/) for instructions.
 Sample `.pre-commit-config.yaml`:
 
@@ -467,7 +485,8 @@ repos:
       - id: pip-compile
 ```
 
-You might want to customize `pip-compile` args by configuring `args` and/or `files`, for example:
+You might want to customize `pip-compile` args by configuring `args` and/or
+`files`, for example:
 
 ```yaml
 repos:
@@ -479,7 +498,8 @@ repos:
         args: [--index-url=https://example.com, requirements/production.in]
 ```
 
-If you have multiple requirement files make sure you create a hook for each file.
+If you have multiple requirement files make sure you create a hook for each
+file.
 
 ```yaml
 repos:
@@ -537,6 +557,7 @@ Successfully installed click-4.1
 To sync multiple `*.txt` dependency lists, just pass them in via command
 line arguments, e.g.
 
+<!-- pyml disable-num-lines 2 commands-show-output -->
 ```console
 $ pip-sync dev-requirements.txt requirements.txt
 ```
@@ -546,57 +567,67 @@ Passing in empty arguments would cause it to default to `requirements.txt`.
 Any valid `pip install` flags or arguments may be passed with `pip-sync`'s
 `--pip-args` option, e.g.
 
+<!-- pyml disable-num-lines 2 commands-show-output -->
 ```console
 $ pip-sync requirements.txt --pip-args "--no-cache-dir --no-deps"
 ```
 
 **Note**: `pip-sync` will not upgrade or uninstall packaging tools like
-`setuptools`, `pip`, or `pip-tools` itself. Use `python -m pip install --upgrade`
-to upgrade those packages.
+`setuptools`, `pip`, or `pip-tools` itself.
+Use `python -m pip install --upgrade` to upgrade those packages.
 
 ### Should I commit `requirements.in` and `requirements.txt` to source control?
 
-Generally, yes. If you want a reproducible environment installation available from your source control,
-then yes, you should commit both `requirements.in` and `requirements.txt` to source control.
+Generally, yes. If you want a reproducible environment installation available
+from your source control, then yes, you should commit both `requirements.in`
+and `requirements.txt` to source control.
 
-Note that if you are deploying on multiple Python environments (read the section below),
-then you must commit a separate output file for each Python environment.
+Note that if you are deploying on multiple Python environments (read the
+section below), then you must commit a separate output file for each Python
+environment.
 We suggest to use the `{env}-requirements.txt` format
-(ex: `win32-py3.7-requirements.txt`, `macos-py3.10-requirements.txt`, etc.).
+(ex: `win32-py3.7-requirements.txt`, `macos-py3.10-requirements.txt`,
+etc.).
 
 ### Cross-environment usage of `requirements.in`/`requirements.txt` and `pip-compile`
 
-The dependencies of a package can change depending on the Python environment in which it
-is installed. Here, we define a Python environment as the combination of Operating
-System, Python version (3.7, 3.8, etc.), and Python implementation (CPython, PyPy,
-etc.). For an exact definition, refer to the possible combinations of [PEP 508
-environment markers][environment-markers].
+The dependencies of a package can change depending on the Python environment in
+which it is installed. Here, we define a Python environment as the combination
+of Operating System, Python version (3.7, 3.8, etc.), and Python implementation
+(CPython, PyPy, etc.). For an exact definition, refer to the possible
+combinations of [PEP 508 environment markers][environment-markers].
 
 As the resulting `requirements.txt` can differ for each environment, users must
 execute `pip-compile` **on each Python environment separately** to generate a
-`requirements.txt` valid for each said environment. The same `requirements.in` can
-be used as the source file for all environments, using
-[PEP 508 environment markers][environment-markers] as
-needed, the same way it would be done for regular `pip` cross-environment usage.
+`requirements.txt` valid for each said environment. The same `requirements.in`
+can be used as the source file for all environments, using
+[PEP 508 environment markers][environment-markers] as needed, the same way it
+would be done for regular `pip` cross-environment usage.
 
 If the generated `requirements.txt` remains exactly the same for all Python
-environments, then it can be used across Python environments safely. **But** users
-should be careful as any package update can introduce environment-dependent
-dependencies, making any newly generated `requirements.txt` environment-dependent too.
-As a general rule, it's advised that users should still always execute `pip-compile`
-on each targeted Python environment to avoid issues.
+environments, then it can be used across Python environments safely. **But**
+users should be careful as any package update can introduce
+environment-dependent dependencies, making any newly generated
+`requirements.txt` environment-dependent too.
+As a general rule, it's advised that users should still always execute
+`pip-compile` on each targeted Python environment to avoid issues.
 
 ### Maximizing reproducibility
 
 `pip-tools` is a great tool to improve the reproducibility of builds.
 But there are a few things to keep in mind.
 
-- `pip-compile` will produce different results in different environments as described in the previous section.
-- `pip` must be used with the `PIP_CONSTRAINT` environment variable to lock dependencies in build environments as documented in [#8439](https://github.com/pypa/pip/issues/8439).
+- `pip-compile` will produce different results in different environments as
+  described in the previous section.
+- `pip` must be used with the `PIP_CONSTRAINT` environment variable to lock
+  dependencies in build environments as documented in
+  [#8439](https://github.com/pypa/pip/issues/8439).
 - Dependencies come from many sources.
 
-Continuing the `pyproject.toml` example from earlier, creating a single lock file could be done like:
+Continuing the `pyproject.toml` example from earlier, creating a single lock
+file could be done like:
 
+<!-- pyml disable-num-lines 7 line-length -->
 ```console
 $ pip-compile --all-build-deps --all-extras --output-file=constraints.txt --strip-extras pyproject.toml
 #
@@ -643,7 +674,8 @@ tomli==2.0.1
     #   pytest
 ```
 
-Some build backends may also request build dependencies dynamically using the `get_requires_for_build_` hooks described in [PEP 517] and [PEP 660].
+Some build backends may also request build dependencies dynamically using the
+`get_requires_for_build_` hooks described in [PEP 517] and [PEP 660].
 This will be indicated in the output with one of the following suffixes:
 
 - `(pyproject.toml::build-system.backend::editable)`
@@ -652,12 +684,19 @@ This will be indicated in the output with one of the following suffixes:
 
 ### Other useful tools
 
-- [pip-compile-multi](https://pip-compile-multi.readthedocs.io/en/latest/) - pip-compile command wrapper for multiple cross-referencing requirements files.
-- [pipdeptree](https://github.com/tox-dev/pipdeptree) to print the dependency tree of the installed packages.
+- [pip-compile-multi](https://pip-compile-multi.rtfd.io) - pip-compile command
+  wrapper for multiple cross-referencing requirements files.
+- [pipdeptree](https://github.com/tox-dev/pipdeptree) to print the dependency
+  tree of the installed packages.
 - `requirements.in`/`requirements.txt` syntax highlighting:
-  - [requirements.txt.vim](https://github.com/raimon49/requirements.txt.vim) for Vim.
-  - [Python extension for VS Code](https://marketplace.visualstudio.com/items?itemName=ms-python.python) for VS Code.
-  - [pip-requirements.el](https://github.com/Wilfred/pip-requirements.el) for Emacs.
+  - [requirements.txt.vim](https://github.com/raimon49/requirements.txt.vim)
+    for Vim.
+  - [Python extension for VS Code].
+  - [pip-requirements.el](https://github.com/Wilfred/pip-requirements.el) for
+    Emacs.
+
+[Python extension for VS Code]:
+https://marketplace.visualstudio.com/items?itemName=ms-python.python
 
 ### Deprecations
 
@@ -675,7 +714,8 @@ This section lists `pip-tools` features that are currently deprecated.
 
 ### A Note on Resolvers
 
-You can choose from either default backtracking resolver or the deprecated legacy resolver.
+You can choose from either default backtracking resolver or the deprecated
+legacy resolver.
 
 The legacy resolver will occasionally fail to resolve dependencies. The
 backtracking resolver is more robust, but can take longer to run in general.
