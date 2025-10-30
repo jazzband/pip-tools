@@ -84,3 +84,8 @@ repos:
       types_or:
       - file
       - symlink
+
+  - repo: https://github.com/jackdewinter/pymarkdown.git
+    rev: v0.9.33
+    hooks:
+      - id: pymarkdown
