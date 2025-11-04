@@ -1,0 +1,3 @@
+# do not include the `.git_archival.txt` file in sdist builds from repo source
+# this avoids setuptools-scm warnings on development builds
+exclude .git_archival.txt

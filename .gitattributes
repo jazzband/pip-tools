@@ -1,0 +1,2 @@
+# fill in placeholders when `git archive` is used, setuptools-scm support
+.git_archival.txt  export-subst
