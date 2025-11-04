@@ -16,7 +16,7 @@ jobs:
           - linkcheck-docs
           - changelog-draft
         python-version:
-          - "3.x"
+          - "3.13"
     env:
       PY_COLORS: 1
       TOXENV: ${{ matrix.toxenv }}
