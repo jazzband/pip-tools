@@ -5,6 +5,7 @@ import shutil
 import textwrap
 
 import pytest
+from build import BuildBackendException
 
 from piptools.build import (
     ProjectMetadata,
@@ -75,6 +76,36 @@ def test_build_project_metadata_raises_error(tmp_path):
             attempt_static_parse=True,
             isolated=True,
             quiet=False,
+        )
+
+
+def test_build_project_metadata_upgrading_raises_error(tmp_path):
+    """Test build_project_metadata doesn't swallow error."""
+    src_file = tmp_path / "pyproject.toml"
+    src_file.write_text(
+        textwrap.dedent(
+            """
+            [project]
+            # missing name
+            version = "0.1"
+            dependencies=["test_dep"]
+            """
+        ),
+    )
+    with pytest.raises(
+        BuildBackendException,
+        match=(
+            "Backend subprocess exited when trying to invoke "
+            "get_requires_for_build_wheel"
+        ),
+    ):
+        build_project_metadata(
+            src_file,
+            (),
+            attempt_static_parse=False,
+            isolated=True,
+            quiet=False,
+            upgrade_packages=["test_dep"],
         )
 
 
