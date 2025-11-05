@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import optparse
-import os.path
 import pathlib
-import sys
 import urllib.parse
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, Iterable, Iterator, Set, cast
@@ -19,6 +17,8 @@ from pip._internal.req import InstallRequirement
 from pip._internal.req import parse_requirements as _parse_requirements
 from pip._internal.req.constructors import install_req_from_parsed_requirement
 from pip._vendor.pkg_resources import Requirement
+
+from .path_compat import relative_to_walk_up
 
 # The Distribution interface has changed between pkg_resources and
 # importlib.metadata, so this compat layer allows for a consistent access
@@ -154,7 +154,7 @@ def _relativize_comes_from_location(original_comes_from: str, /) -> str:
         return f"{prefix} {file_path.as_posix()}"
 
     # make it relative to the current working dir
-    suffix = _relative_to_walk_up(file_path, pathlib.Path.cwd()).as_posix()
+    suffix = relative_to_walk_up(file_path, pathlib.Path.cwd()).as_posix()
     return f"{prefix}{space_sep}{suffix}"
 
 
@@ -212,18 +212,3 @@ def get_dev_pkgs() -> set[str]:
     from pip._internal.commands.freeze import _dev_pkgs
 
     return cast(Set[str], _dev_pkgs())
-
-
-def _relative_to_walk_up(path: pathlib.Path, start: pathlib.Path) -> pathlib.Path:
-    """
-    Compute a relative path allowing for the input to not be a subpath of the start.
-
-    This is a compatibility helper for ``pathlib.Path.relative_to(..., walk_up=True)``
-    on all Python versions. (``walk_up: bool`` is Python 3.12+)
-    """
-    # prefer `pathlib.Path.relative_to` where available
-    if sys.version_info >= (3, 12):
-        return path.relative_to(start, walk_up=True)
-
-    str_result = os.path.relpath(path, start=start)
-    return pathlib.Path(str_result)
