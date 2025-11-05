@@ -1,0 +1,10 @@
+branch-protection-check-name: Changelog entry
+action-hints:
+  check-title-prefix: "Chronographer: "
+  external-docs-url: https://pip-tools.readthedocs.io/en/stable/contributing/#adding-change-notes-with-prs
+  inline-markdown: >
+    See [the changelog contribution docs](https://pip-tools.readthedocs.io/en/stable/contributing/#adding-change-notes-with-prs) for details.
+enforce-name:
+  suffix: .md
+labels:
+  skip-changelog: skip-changelog
