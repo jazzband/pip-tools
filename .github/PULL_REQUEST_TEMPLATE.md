@@ -7,5 +7,5 @@
 
 ##### Maintainer checklist
 
-- [ ] If no changelog is needed, apply the `skip-changelog` label.
+- [ ] If no changelog is needed, apply the `bot:chronographer:skip` label.
 - [ ] Assign the PR to an existing or new milestone for the target version (following [Semantic Versioning](https://blog.versioneye.com/2014/01/16/semantic-versioning/)).

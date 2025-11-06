@@ -1,0 +1,10 @@
+branch-protection-check-name: Change log entry
+action-hints:
+  check-title-prefix: "Chronographer: "
+  external-docs-url: https://pip-tools.rtfd.io/en/latest/contributing/#adding-change-notes-with-prs
+  inline-markdown: |
+    See [the changelog contribution docs] for news fragment authoring gotchas.
+
+    [the changelog contribution docs]: https://pip-tools.rtfd.io/en/latest/contributing/#adding-change-notes-with-prs
+enforce-name:
+  suffix: .md
