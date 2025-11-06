@@ -8,5 +8,3 @@ action-hints:
     [the changelog contribution docs]: https://pip-tools.rtfd.io/en/latest/contributing/#adding-change-notes-with-prs
 enforce-name:
   suffix: .md
-labels:
-  skip-changelog: skip-changelog
