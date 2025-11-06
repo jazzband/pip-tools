@@ -1,5 +1,5 @@
 """
-Compatibility helpers for working with paths and ``pathlib`` across platforms
+Compatibility helpers for working with paths and :mod:`pathlib` across platforms
 and Python versions.
 """
 
@@ -8,6 +8,8 @@ from __future__ import annotations
 import os.path
 import pathlib
 import sys
+
+__all__ = ("relative_to_walk_up",)
 
 
 def relative_to_walk_up(path: pathlib.Path, start: pathlib.Path) -> pathlib.Path:
