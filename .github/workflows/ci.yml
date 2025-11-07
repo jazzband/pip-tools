@@ -7,6 +7,7 @@ on:
     branches:
       - main
     tags:
+      - v*
   workflow_call:
     inputs:
       cpython-pip-version:
