@@ -84,3 +84,10 @@ repos:
       types_or:
       - file
       - symlink
+
+  - repo: https://github.com/rhysd/actionlint.git
+    rev: v1.7.8
+    hooks:
+      - id: actionlint
+
+...
