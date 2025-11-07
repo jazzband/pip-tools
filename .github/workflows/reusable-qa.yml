@@ -32,7 +32,7 @@ jobs:
         run: |
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
       - name: Pip cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: >-
@@ -45,7 +45,7 @@ jobs:
       - name: Prepare cache key
         id: cache-key
         run: echo "sha-256=$(python -VV | sha256sum | cut -d' ' -f1)" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pre-commit
           key: pre-commit|${{ steps.cache-key.outputs.sha-256 }}|${{ hashFiles('.pre-commit-config.yaml') }}
