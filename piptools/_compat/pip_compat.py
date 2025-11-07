@@ -18,6 +18,8 @@ from pip._internal.req import parse_requirements as _parse_requirements
 from pip._internal.req.constructors import install_req_from_parsed_requirement
 from pip._vendor.pkg_resources import Requirement
 
+from .path_compat import relative_to_walk_up
+
 # The Distribution interface has changed between pkg_resources and
 # importlib.metadata, so this compat layer allows for a consistent access
 # pattern. In pip 22.1, importlib.metadata became the default on Python 3.11
@@ -152,7 +154,7 @@ def _relativize_comes_from_location(original_comes_from: str, /) -> str:
         return f"{prefix} {file_path.as_posix()}"
 
     # make it relative to the current working dir
-    suffix = file_path.relative_to(pathlib.Path.cwd()).as_posix()
+    suffix = relative_to_walk_up(file_path, pathlib.Path.cwd()).as_posix()
     return f"{prefix}{space_sep}{suffix}"
 
 

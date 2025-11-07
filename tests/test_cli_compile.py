@@ -65,9 +65,11 @@ class TestFilesCollection:
     """
 
     # the name for the collection of files
-    name: str
+    name: str = "<unnamed test file collection>"
     # static or computed contents
-    contents: dict[str, str | typing.Callable[[pathlib.Path], str]]
+    contents: dict[str, str | typing.Callable[[pathlib.Path], str]] = dataclasses.field(
+        default_factory=dict
+    )
 
     def __str__(self) -> str:
         return self.name
@@ -4043,6 +4045,50 @@ def test_second_order_requirements_relative_path_in_separate_dir(
         f"""\
         small-fake-a==0.2
             # via -r {output_path}
+        """
+    )
+
+
+def test_second_order_requirements_can_be_in_parent_of_cwd(
+    pip_conf,
+    runner,
+    tmp_path,
+    monkeypatch,
+    pip_produces_absolute_paths,
+):
+    """
+    Test handling of ``-r`` includes when the included requirements file is in the
+    parent of the current working directory.
+    """
+    test_files_collection = TestFilesCollection(
+        contents={
+            "subdir1/requirements.in": "-r ../requirements2.in\n",
+            "requirements2.in": "small-fake-a\n",
+        }
+    )
+    test_files_collection.populate(tmp_path)
+
+    with monkeypatch.context() as revertable_ctx:
+        # cd into the subdir where the initial requirements are
+        revertable_ctx.chdir(tmp_path / "subdir1")
+        out = runner.invoke(
+            cli,
+            [
+                "--output-file",
+                "-",
+                "--quiet",
+                "--no-header",
+                "--no-emit-options",
+                "-r",
+                "requirements.in",
+            ],
+        )
+
+    assert out.exit_code == 0
+    assert out.stdout == dedent(
+        """\
+        small-fake-a==0.2
+            # via -r ../requirements2.in
         """
     )
 
