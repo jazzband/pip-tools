@@ -22,7 +22,7 @@ jobs:
       TOXENV: ${{ matrix.toxenv }}
       TOX_PARALLEL_NO_SPINNER: 1
     steps:
-      - uses: actions/checkout@main
+      - uses: actions/checkout@v5
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
         with:

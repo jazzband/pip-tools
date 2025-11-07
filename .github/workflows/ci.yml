@@ -83,7 +83,7 @@ jobs:
           || ''
         }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - name: Set up Python ${{ matrix.python-version }} from GitHub
         id: python-install
         if: "!endsWith(matrix.python-version, '-dev')"
@@ -190,7 +190,7 @@ jobs:
     env:
       TOXENV: pip${{ matrix.pip-version }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
         with:
