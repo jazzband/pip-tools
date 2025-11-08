@@ -1,0 +1,11 @@
+---
+
+codecov:
+  notify:
+    manual_trigger: true  # prevent notifications until we notify Codecov
+
+  require_ci_to_pass: false
+
+comment: false # avoid spamming reviews
+
+...

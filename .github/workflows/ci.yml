@@ -158,7 +158,8 @@ jobs:
         shell: bash
       - name: Upload coverage to Codecov
         if: >-
-          !inputs.cpython-pip-version
+          !cancelled()
+          && !inputs.cpython-pip-version
         uses: codecov/codecov-action@v5
         with:
           files: ./coverage.xml
@@ -253,6 +254,23 @@ jobs:
           -vvvvv
           && exit 1
         shell: bash
+
+  coverage-summary:
+    name: Coverage processing
+    if: >-
+      !cancelled()
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    needs:
+      - test
+    steps:
+      - name: Notify Codecov that all coverage reports have been uploaded
+        if: >-
+          !cancelled()
+        uses: codecov/codecov-action@v5
+        with:
+          fail_ci_if_error: true
+          run_command: send-notifications
 
   check: # This job does nothing and is only used for the branch protection
     if: always()
