@@ -175,7 +175,7 @@ def test_diff_should_not_uninstall(fake_dist):
     # on Python 3.12 and above, `ensurepip` and `venv` do not default to installing
     # 'setuptools' -- as such, `pip` changes behavior on many Python 3.12 environments
     # to use isolated builds
-    if sys.version_info < (3, 12):
+    if sys.version_info < (3, 12):  # pragma: <3.12 cover
         ignored += (
             "setuptools==34.0.0",
             "wheel==0.29.0",

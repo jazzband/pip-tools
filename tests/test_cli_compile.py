@@ -3501,9 +3501,9 @@ def test_pass_pip_cache_to_pip_args(tmpdir, runner, current_resolver):
     )
     assert out.exit_code == 0
     # TODO: Remove hack once testing only on v23.3+
-    if _pip_api.PIP_VERSION >= Version("23.3.dev0"):
+    if _pip_api.PIP_VERSION >= Version("23.3.dev0"):  # pragma: >=3.12 cover
         pip_http_cache_dir = "http-v2"
-    else:
+    else:  # pragma: <3.12 cover
         pip_http_cache_dir = "http"
     assert os.listdir(os.path.join(str(cache_dir), pip_http_cache_dir))
 
@@ -4101,7 +4101,7 @@ def test_second_order_requirements_relative_path_in_separate_dir(
     output_path = test_files_collection.get_path_to("requirements2.in")
 
     # for older pip versions, recompute the output path to be relative to the input path
-    if not pip_produces_absolute_paths:
+    if not pip_produces_absolute_paths:  # FIXME: figure out how to cover piplowest
         # traverse upwards to the root tmp dir, and append the output path to that
         # similar to pathlib.Path.relative_to(..., walk_up=True)
         relative_segments = len(pathlib.Path(input_path).parents) - 1
