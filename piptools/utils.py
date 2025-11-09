@@ -14,9 +14,9 @@ from typing import Any, Callable, Iterable, Iterator, TypeVar, cast
 
 from click.core import ParameterSource
 
-if sys.version_info >= (3, 11):
+if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     import tomllib
-else:
+else:  # pragma: <3.11 cover
     import tomli as tomllib
 
 import click
@@ -510,7 +510,7 @@ def copy_install_requirement(
     }
     kwargs.update(extra_kwargs)
 
-    if PIP_VERSION[:2] <= (23, 0):
+    if PIP_VERSION[:2] <= (23, 0):  # pragma: <3.12 cover
         kwargs["install_options"] = template.install_options
 
     # Original link does not belong to install requirements constructor,
@@ -763,8 +763,8 @@ def is_path_relative_to(path1: Path, path2: Path) -> bool:
     """Return True if ``path1`` is relative to ``path2``."""
     # TODO: remove this function in favor of Path.is_relative_to()
     #       when we drop support for Python 3.8
-    try:
+    try:  # pragma: >=3.9 cover
         path1.relative_to(path2)
-    except ValueError:
+    except ValueError:  # pragma: <3.9 cover
         return False
     return True

@@ -20,9 +20,9 @@ from pip._vendor.packaging.requirements import Requirement
 
 from .utils import copy_install_requirement, install_req_from_line
 
-if sys.version_info >= (3, 11):
+if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     import tomllib
-else:
+else:  # pragma: <3.11 cover
     import tomli as tomllib
 
 PYPROJECT_TOML = "pyproject.toml"
@@ -30,9 +30,9 @@ PYPROJECT_TOML = "pyproject.toml"
 _T = TypeVar("_T")
 
 
-if sys.version_info >= (3, 10):
+if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
     from importlib.metadata import PackageMetadata
-else:
+else:  # pragma: <3.10 cover
 
     class PackageMetadata(Protocol):
         @overload
