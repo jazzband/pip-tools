@@ -211,7 +211,7 @@ def base_resolver(depcache):
 @pytest.fixture
 def from_line():
     def _from_line(*args, **kwargs):
-        if PIP_VERSION[:2] <= (23, 0):
+        if PIP_VERSION[:2] <= (23, 0):  # pragma: <3.12 cover
             hash_options = kwargs.pop("hash_options", {})
             options = kwargs.pop("options", {})
             options["hashes"] = hash_options
@@ -228,7 +228,8 @@ def from_editable():
 
 @pytest.fixture
 def runner():
-    if Version(version_of("click")) < Version("8.2"):
+    # Coverage is excluded because we only test with the latest Click
+    if Version(version_of("click")) < Version("8.2"):  # pragma: no cover
         cli_runner = CliRunner(mix_stderr=False)
     else:
         cli_runner = CliRunner()

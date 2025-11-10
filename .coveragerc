@@ -4,5 +4,7 @@ omit =
     piptools/_compat/*
 
 [report]
+exclude_also =
+    ^\s*@pytest\.mark\.xfail
 include = piptools/*, tests/*
 fail_under = 99
