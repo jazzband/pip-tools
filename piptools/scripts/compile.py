@@ -31,6 +31,7 @@ from ..utils import (
 )
 from ..writer import OutputWriter
 from . import options
+from ._deprecations import filter_deprecated_pip_args
 from .options import BuildTargetT
 
 DEFAULT_REQUIREMENTS_FILES = (
@@ -287,6 +288,7 @@ def cli(
     if resolver_name == "backtracking" and cache_dir:
         pip_args.extend(["--cache-dir", cache_dir])
     pip_args.extend(right_args)
+    pip_args = filter_deprecated_pip_args(pip_args)
 
     repository: BaseRepository
     repository = PyPIRepository(pip_args, cache_dir=cache_dir)

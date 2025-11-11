@@ -124,6 +124,11 @@ jobs:
         #
         # Ref: https://github.com/tox-dev/tox/issues/3193
         run: tox -vv --notest -p auto --parallel-live
+      - name: Set PYTEST_ADDOPTS for py38
+        if: matrix.python-version == '3.8'
+        shell: bash
+        run: |
+          echo "PYTEST_ADDOPTS=--cov-fail-under=98" >> $GITHUB_ENV
       - name: Test pip ${{ matrix.pip-version }}
         # NOTE: `--parallel-live` is a workaround for the regression in
         # NOTE: the upstream tox project that made the

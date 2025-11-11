@@ -5,6 +5,7 @@ import hashlib
 import os
 import pathlib
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -165,7 +166,7 @@ def test_command_line_overrides_pip_conf(pip_with_index_conf, runner):
     ),
 )
 def test_command_line_setuptools_read(
-    runner, make_package, install_requires, expected_output
+    runner, make_package, minimal_wheels_path, install_requires, expected_output
 ):
     package_dir = make_package(
         name="fake-setuptools-a",
@@ -177,7 +178,7 @@ def test_command_line_setuptools_read(
         (
             str(package_dir / "setup.py"),
             "--find-links",
-            MINIMAL_WHEELS_PATH,
+            minimal_wheels_path.as_posix(),
             "--no-build-isolation",
         ),
     )
@@ -1792,6 +1793,41 @@ def test_forwarded_args(PyPIRepository, runner):
     runner.invoke(cli, [*cli_args, "--pip-args", " ".join(pip_args)])
     args, kwargs = PyPIRepository.call_args
     assert set(pip_args).issubset(set(args[0]))
+
+
+@pytest.mark.parametrize(
+    "pip_args",
+    (
+        pytest.param(
+            ("--use-pep517", "--global-option=build_ext"),
+            id="use-pep517 and global-option",
+        ),
+        pytest.param(
+            ("--no-use-pep517", "--build-option=build_ext"),
+            id="no-use-pep517 and build-option",
+        ),
+    ),
+)
+@mock.patch("piptools.scripts.compile.PyPIRepository")
+def test_forwarded_args_filter_deprecated(PyPIRepository, runner, pip_args):
+    """
+    Test the cli args (``--pip-args 'arg...'``) are filtered out if pip no longer supports them.
+    """
+    pathlib.Path("requirements.in").write_text("", encoding="utf-8")
+
+    cli_args = ("--no-annotate", "--generate-hashes")
+    runner.invoke(cli, [*cli_args, "--pip-args", shlex.join(pip_args)])
+    pip_option_keys = {pip_arg.split("=")[0] for pip_arg in pip_args}
+
+    (first_posarg, *_tail_args), _kwargs = PyPIRepository.call_args
+
+    pip_current_version = get_pip_version_for_python_executable(sys.executable)
+    pip_breaking_version = Version("25.3")
+
+    if pip_current_version >= pip_breaking_version:  # pragma: >=3.9 cover
+        assert set(first_posarg) ^ pip_option_keys
+    else:
+        assert set(first_posarg) & pip_option_keys
 
 
 @pytest.mark.parametrize(
@@ -3430,7 +3466,12 @@ def test_pass_pip_cache_to_pip_args(tmpdir, runner, current_resolver):
 
 
 @backtracking_resolver_only
-def test_compile_recursive_extras_static(runner, tmp_path, current_resolver):
+def test_compile_recursive_extras_static(
+    runner,
+    tmp_path,
+    minimal_wheels_path,
+    current_resolver,
+):
     (tmp_path / "pyproject.toml").write_text(
         dedent(
             """
@@ -3454,7 +3495,7 @@ def test_compile_recursive_extras_static(runner, tmp_path, current_resolver):
             "--extra",
             "dev",
             "--find-links",
-            os.fspath(MINIMAL_WHEELS_PATH),
+            minimal_wheels_path.as_posix(),
             os.fspath(tmp_path / "pyproject.toml"),
             "--output-file",
             "-",
@@ -3474,7 +3515,9 @@ small-fake-b==0.3
 
 
 @backtracking_resolver_only
-def test_compile_recursive_extras_build_targets(runner, tmp_path, current_resolver):
+def test_compile_recursive_extras_build_targets(
+    runner, tmp_path, minimal_wheels_path, current_resolver
+):
     (tmp_path / "pyproject.toml").write_text(
         dedent(
             """
@@ -3500,7 +3543,7 @@ def test_compile_recursive_extras_build_targets(runner, tmp_path, current_resolv
             "--build-deps-for",
             "wheel",
             "--find-links",
-            os.fspath(MINIMAL_WHEELS_PATH),
+            minimal_wheels_path.as_posix(),
             os.fspath(tmp_path / "pyproject.toml"),
             "--output-file",
             "-",
@@ -3526,6 +3569,7 @@ small-fake-b==0.3
 def test_compile_build_targets_setuptools_no_wheel_dep(
     runner,
     tmp_path,
+    minimal_wheels_path,
     current_resolver,
 ):
     """Check that user requests apply to build dependencies.
@@ -3566,7 +3610,7 @@ def test_compile_build_targets_setuptools_no_wheel_dep(
             "--build-deps-for",
             "wheel",
             "--find-links",
-            os.fspath(MINIMAL_WHEELS_PATH),
+            minimal_wheels_path.as_posix(),
             os.fspath(tmp_path / "pyproject.toml"),
             "--constraint",
             os.fspath(tmp_path / "constraints.txt"),
