@@ -1813,8 +1813,7 @@ def test_forwarded_args_filter_deprecated(PyPIRepository, runner, pip_args):
     """
     Test the cli args (``--pip-args 'arg...'``) are filtered out if pip no longer supports them.
     """
-    with pathlib.Path("requirements.in").open("w"):
-        pass
+    pathlib.Path("requirements.in").write_text("", encoding="utf-8")
 
     cli_args = ("--no-annotate", "--generate-hashes")
     runner.invoke(cli, [*cli_args, "--pip-args", shlex.join(pip_args)])
@@ -3468,7 +3467,10 @@ def test_pass_pip_cache_to_pip_args(tmpdir, runner, current_resolver):
 
 @backtracking_resolver_only
 def test_compile_recursive_extras_static(
-    runner, tmp_path, minimal_wheels_path, current_resolver
+    runner,
+    tmp_path,
+    minimal_wheels_path,
+    current_resolver,
 ):
     (tmp_path / "pyproject.toml").write_text(
         dedent(
