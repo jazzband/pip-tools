@@ -26,6 +26,7 @@ from ..utils import (
     get_sys_path_for_python_executable,
 )
 from . import options
+from ._deprecations import filter_deprecated_pip_args
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 
@@ -141,6 +142,8 @@ def cli(
         cert=cert,
         client_cert=client_cert,
     ) + shlex.split(pip_args_str or "")
+    install_flags = filter_deprecated_pip_args(install_flags)
+
     sys.exit(
         sync.sync(
             to_install,

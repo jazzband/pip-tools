@@ -5,6 +5,7 @@ import hashlib
 import os
 import pathlib
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -1792,6 +1793,42 @@ def test_forwarded_args(PyPIRepository, runner):
     runner.invoke(cli, [*cli_args, "--pip-args", " ".join(pip_args)])
     args, kwargs = PyPIRepository.call_args
     assert set(pip_args).issubset(set(args[0]))
+
+
+@pytest.mark.parametrize(
+    "pip_args",
+    (
+        pytest.param(
+            ("--use-pep517", "--global-option=build_ext"),
+            id="use-pep517 and global-option",
+        ),
+        pytest.param(
+            ("--no-use-pep517", "--build-option=build_ext"),
+            id="no-use-pep517 and build-option",
+        ),
+    ),
+)
+@mock.patch("piptools.scripts.compile.PyPIRepository")
+def test_forwarded_args_filter_deprecated(PyPIRepository, runner, pip_args):
+    """
+    Test the cli args (``--pip-args 'arg...'``) are filtered out if pip no longer supports them.
+    """
+    with pathlib.Path("requirements.in").open("w"):
+        pass
+
+    cli_args = ("--no-annotate", "--generate-hashes")
+    runner.invoke(cli, [*cli_args, "--pip-args", shlex.join(pip_args)])
+    pip_option_keys = {pip_arg.split("=")[0] for pip_arg in pip_args}
+
+    (first_posarg, *_tail_args), _kwargs = PyPIRepository.call_args
+
+    pip_current_version = get_pip_version_for_python_executable(sys.executable)
+    pip_breaking_version = Version("25.3")
+
+    if pip_current_version >= pip_breaking_version:  # pragma: >=3.9 cover
+        assert set(first_posarg) ^ pip_option_keys
+    else:
+        assert set(first_posarg) & pip_option_keys
 
 
 @pytest.mark.parametrize(
