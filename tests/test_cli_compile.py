@@ -165,7 +165,7 @@ def test_command_line_overrides_pip_conf(pip_with_index_conf, runner):
     ),
 )
 def test_command_line_setuptools_read(
-    runner, make_package, install_requires, expected_output
+    runner, make_package, minimal_wheels_path, install_requires, expected_output
 ):
     package_dir = make_package(
         name="fake-setuptools-a",
@@ -177,7 +177,7 @@ def test_command_line_setuptools_read(
         (
             str(package_dir / "setup.py"),
             "--find-links",
-            MINIMAL_WHEELS_PATH,
+            minimal_wheels_path.as_posix(),
             "--no-build-isolation",
         ),
     )
@@ -3430,7 +3430,9 @@ def test_pass_pip_cache_to_pip_args(tmpdir, runner, current_resolver):
 
 
 @backtracking_resolver_only
-def test_compile_recursive_extras_static(runner, tmp_path, current_resolver):
+def test_compile_recursive_extras_static(
+    runner, tmp_path, minimal_wheels_path, current_resolver
+):
     (tmp_path / "pyproject.toml").write_text(
         dedent(
             """
@@ -3454,7 +3456,7 @@ def test_compile_recursive_extras_static(runner, tmp_path, current_resolver):
             "--extra",
             "dev",
             "--find-links",
-            os.fspath(MINIMAL_WHEELS_PATH),
+            minimal_wheels_path.as_posix(),
             os.fspath(tmp_path / "pyproject.toml"),
             "--output-file",
             "-",
@@ -3474,7 +3476,9 @@ small-fake-b==0.3
 
 
 @backtracking_resolver_only
-def test_compile_recursive_extras_build_targets(runner, tmp_path, current_resolver):
+def test_compile_recursive_extras_build_targets(
+    runner, tmp_path, minimal_wheels_path, current_resolver
+):
     (tmp_path / "pyproject.toml").write_text(
         dedent(
             """
@@ -3500,7 +3504,7 @@ def test_compile_recursive_extras_build_targets(runner, tmp_path, current_resolv
             "--build-deps-for",
             "wheel",
             "--find-links",
-            os.fspath(MINIMAL_WHEELS_PATH),
+            minimal_wheels_path.as_posix(),
             os.fspath(tmp_path / "pyproject.toml"),
             "--output-file",
             "-",
@@ -3526,6 +3530,7 @@ small-fake-b==0.3
 def test_compile_build_targets_setuptools_no_wheel_dep(
     runner,
     tmp_path,
+    minimal_wheels_path,
     current_resolver,
 ):
     """Check that user requests apply to build dependencies.
@@ -3566,7 +3571,7 @@ def test_compile_build_targets_setuptools_no_wheel_dep(
             "--build-deps-for",
             "wheel",
             "--find-links",
-            os.fspath(MINIMAL_WHEELS_PATH),
+            minimal_wheels_path.as_posix(),
             os.fspath(tmp_path / "pyproject.toml"),
             "--constraint",
             os.fspath(tmp_path / "constraints.txt"),

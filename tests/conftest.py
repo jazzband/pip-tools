@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import platform
+import shutil
 import subprocess
 import sys
 from contextlib import contextmanager
@@ -266,26 +267,26 @@ def make_pip_conf(tmpdir, monkeypatch):
 
 
 @pytest.fixture
-def pip_conf(make_pip_conf):
+def pip_conf(make_pip_conf, minimal_wheels_path):
     return make_pip_conf(
         dedent(
             f"""\
             [global]
             no-index = true
-            find-links = {MINIMAL_WHEELS_PATH}
+            find-links = {minimal_wheels_path.as_posix()}
             """
         )
     )
 
 
 @pytest.fixture
-def pip_with_index_conf(make_pip_conf):
+def pip_with_index_conf(make_pip_conf, minimal_wheels_path):
     return make_pip_conf(
         dedent(
             f"""\
             [global]
             index-url = http://example.com
-            find-links = {MINIMAL_WHEELS_PATH}
+            find-links = {minimal_wheels_path.as_posix()}
             """
         )
     )
@@ -524,3 +525,32 @@ def make_config_file(tmpdir_cwd):
         return cast(Path, config_file.relative_to(tmpdir_cwd))
 
     return _maker
+
+
+@pytest.fixture(scope="session")
+def setuptools_wheel_path(tmp_path_factory):
+    """
+    Ensure setuptools is downloaded and return the path to the download directory.
+    """
+    tmp_wheels_path = tmp_path_factory.mktemp("tmp_wheels")
+    subprocess.check_call(
+        [
+            sys.executable,
+            "-Im",
+            "pip",
+            "download",
+            f"--dest={tmp_wheels_path.as_posix()}",
+            "--no-deps",
+            "setuptools",
+        ],
+    )
+    return tmp_wheels_path
+
+
+@pytest.fixture(scope="session")
+def minimal_wheels_path(setuptools_wheel_path):
+    """
+    Ensure minimal wheels and setuptools are downloaded and return the path.
+    """
+    shutil.copytree(MINIMAL_WHEELS_PATH, setuptools_wheel_path, dirs_exist_ok=True)
+    return setuptools_wheel_path
