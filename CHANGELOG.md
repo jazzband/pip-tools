@@ -1,5 +1,82 @@
 <!-- towncrier release notes start -->
 
+## v7.5.2
+
+*2025-11-11*
+
+### Bug fixes
+
+- Fixed `pip-compile` to handle relative path includes which are not subpaths of
+  the current working directory -- by {user}`sirosen`.
+
+  *PRs and issues:* {issue}`2231`, {issue}`2260`
+
+- Using `--upgrade-package` and dynamically building project metadata no
+  longer causes an {exc}`AttributeError` when pip encounters an error during the
+  build -- by {user}`Epic_Wink` and {user}`tusharsadhwani`.
+
+  *PRs and issues:* {issue}`2258`
+
+### Features
+
+- Test and declare Python 3.13 support -- by {user}`jayaddison` (for OpenCulinary).
+
+  *PRs and issues:* {issue}`2251`
+
+- pip-tools is now compatible with pip 25.3 -- by {user}`shifqu`.
+
+  *PRs and issues:* {issue}`2252`, {issue}`2253`
+
+### Packaging updates and notes for downstreams
+
+- `pip-tools` now supports installation from git archives by providing
+  `setuptools-scm` with `.git_archival.txt` data.
+
+  *PRs and issues:* {issue}`2225`
+
+### Contributor-facing changes
+
+- The [change log entry bot] has been explicitly configured to stop requiring
+  news fragments in pull requests having the [`bot:chronographer:skip` label] set
+  -- by {user}`sirosen` and {user}`webknjaz`.
+
+  It was also set up to reference our change log authoring document from the
+  GitHub Checks pages. And the reported check name is now set to `Change log entry`.
+
+  [change log entry bot]: https://github.com/sanitizers/chronographer-github-app
+  [`bot:chronographer:skip` label]: https://github.com/jazzband/pip-tools/labels/bot:chronographer:skip
+
+  *PRs and issues:* {issue}`2201`
+
+- The CI is now set up to invoke failed tests again with
+  maximum level of detail -- by {user}`webknjaz`.
+
+  The change is aimed at helping troubleshoot failures
+  that might be difficult to reproduce locally.
+
+  *PRs and issues:* {issue}`2254`
+
+- The integration with Codecov has been updated to ensure that reports
+  are uploaded to the service even on failures -- by {user}`webknjaz`.
+
+  GitHub Actions is now configured to also send an explicit notification
+  to Codecov about the completion of previously initiated uploads.
+
+  Additionally, the configuration file is now {file}`.codecov.yml`.
+
+  *PRs and issues:* {issue}`2265`
+
+- The linting suite now runs [`actionlint`] -- by {user}`webknjaz`.
+
+  This tool checks typical problems with GitHub Actions workflow
+  definitions and has a registry of widely-used GitHub Action
+  arguments that it validates.
+
+  [`actionlint`]: https://rhysd.github.io/actionlint/
+
+  *PRs and issues:* {issue}`2266`
+
+
 ## v7.5.1
 
 *2025-09-26*
