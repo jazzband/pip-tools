@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import itertools
+import json
 import os
+import platform
 import shlex
 import shutil
 import sys
 from pathlib import Path
+from subprocess import run  # nosec
 from typing import cast
 
 import click
@@ -13,6 +16,7 @@ from pip._internal.commands import create_command
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.metadata import get_environment
+from pip._vendor.packaging.markers import Environment
 
 from .. import sync
 from .._compat import Distribution, parse_requirements
@@ -101,6 +105,9 @@ def cli(
 
     if python_executable:
         _validate_python_executable(python_executable)
+        environment = _get_environment(python_executable)
+    else:
+        environment = {}
 
     install_command = cast(InstallCommand, create_command("install"))
     options, _ = install_command.parse_args([])
@@ -114,7 +121,9 @@ def cli(
     )
 
     try:
-        merged_requirements = sync.merge(requirements, ignore_conflicts=force)
+        merged_requirements = sync.merge(
+            requirements, ignore_conflicts=force, environment=environment
+        )
     except PipToolsError as e:
         log.error(str(e))
         sys.exit(2)
@@ -129,7 +138,9 @@ def cli(
         local_only=python_executable is None,
         paths=paths,
     )
-    to_install, to_uninstall = sync.diff(merged_requirements, installed_dists)
+    to_install, to_uninstall = sync.diff(
+        merged_requirements, installed_dists, environment
+    )
 
     install_flags = _compose_install_flags(
         finder,
@@ -178,6 +189,40 @@ def _validate_python_executable(python_executable: str) -> None:
             msg.format(python_executable, pip_version, required_pip_specification)
         )
         sys.exit(2)
+
+
+def _get_environment(python_executable: str) -> Environment:
+    """
+    Return the marker variables of an environment.
+    """
+    # On all platforms, ``json.loads`` supports only UTF-8, UTF-16, and UTF-32.
+    # Prior to PEP 686, a Python subprocess's ``sys.stdout`` will not always
+    # default to using one of these, so we must set it.
+    if platform.system() != "Windows":
+        # Set it to UTF-8. (This is mostly unnecessary as on most Unix systems
+        # Python will already default to this; see
+        # https://peps.python.org/pep-0686/#backward-compatibility.)
+        subprocess_PYTHONIOENCODING = "utf8"
+    else:
+        # Set it to UTF-16 because:
+        #
+        # * On Windows, in this situation (i.e. when stdout is a pipe)
+        #   ``sys.stdout``'s encoding will default to CP-1252, which is not
+        #   supported by ``json.loads``.
+        # * ``pip`` emits mangled output with UTF-8 on Windows; see
+        #   https://github.com/Textualize/rich/issues/2882.
+        subprocess_PYTHONIOENCODING = "utf16"
+
+    return Environment(
+        **json.loads(
+            run(  # nosec
+                [python_executable, "-m", "pip", "inspect"],
+                env={**os.environ, "PYTHONIOENCODING": subprocess_PYTHONIOENCODING},
+                check=True,
+                capture_output=True,
+            ).stdout
+        )["environment"]
+    )
 
 
 def _compose_install_flags(
