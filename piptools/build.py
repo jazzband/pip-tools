@@ -4,11 +4,10 @@ import collections
 import contextlib
 import os
 import pathlib
-import sys
 import tempfile
 from dataclasses import dataclass
 from importlib import metadata as importlib_metadata
-from typing import Any, Iterator, Protocol, TypeVar, overload
+from typing import Iterator
 
 import build
 import build.env
@@ -18,28 +17,10 @@ from pip._internal.req.constructors import parse_req_from_line
 from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.requirements import Requirement
 
+from ._compat import PackageMetadata, tomllib
 from .utils import copy_install_requirement, install_req_from_line
 
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    import tomli as tomllib
-
 PYPROJECT_TOML = "pyproject.toml"
-
-_T = TypeVar("_T")
-
-
-if sys.version_info >= (3, 10):
-    from importlib.metadata import PackageMetadata
-else:
-
-    class PackageMetadata(Protocol):
-        @overload
-        def get_all(self, name: str, failobj: None = None) -> list[Any] | None: ...
-
-        @overload
-        def get_all(self, name: str, failobj: _T) -> list[Any] | _T: ...
 
 
 @dataclass
