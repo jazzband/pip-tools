@@ -53,6 +53,7 @@ jobs:
   test:
     name: ${{ matrix.os }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
     runs-on: ${{ matrix.os }}-latest
+    timeout-minutes: 9
     strategy:
       fail-fast: false
       matrix:
@@ -183,6 +184,7 @@ jobs:
   pypy:
     name: ${{ matrix.os }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
     runs-on: ${{ matrix.os }}-latest
+    timeout-minutes: 9
     strategy:
       fail-fast: false
       matrix:
@@ -286,6 +288,8 @@ jobs:
       - test
 
     runs-on: ubuntu-latest
+
+    timeout-minutes: 1
 
     steps:
       - name: Decide whether the needed jobs succeeded or failed
