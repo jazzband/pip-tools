@@ -107,4 +107,9 @@ repos:
     hooks:
       - id: actionlint
 
+  - repo: https://github.com/jackdewinter/pymarkdown.git
+    rev: v0.9.33
+    hooks:
+      - id: pymarkdown
+
 ...
