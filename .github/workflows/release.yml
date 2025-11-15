@@ -2,10 +2,6 @@
 name: 📦 Packaging
 
 on:
-  pull_request:
-  push:
-    branches:
-      - main
   release:
     types:
       - published
@@ -17,7 +13,6 @@ env:
   PIP_NO_PYTHON_VERSION_WARNING: 1 # Hide "this Python is deprecated" message
   PIP_NO_WARN_SCRIPT_LOCATION: 1 # Hide "script dir is not in $PATH" message
   PRE_COMMIT_COLOR: always
-  PROJECT_NAME: pip-tools
   PY_COLORS: 1 # Recognized by the `py` package, dependency of `pytest`
   PYTHONIOENCODING: utf-8
   PYTHONUTF8: 1
@@ -36,13 +31,11 @@ env:
     PYTHONIOENCODING
     PYTHONLEGACYWINDOWSSTDIO
     PYTHONUTF8
-  UPSTREAM_REPOSITORY_ID: >-
-    5746963
 
 run-name: >-
   ${{
     github.event.action == 'published'
-    && format('📦 Releasing v{0}...', github.ref_name)
+    && format('📦 Releasing {0}...', github.ref_name)
     || format('🌱 Smoke-testing packaging for commit {0}', github.sha)
   }}
   triggered by: ${{ github.event_name }} of ${{
@@ -59,68 +52,29 @@ run-name: >-
   }})
 
 jobs:
-  build:
+  build-and-test:
     name: >-
       📦 ${{ github.ref_name }}
       [mode: ${{
         github.event.action == 'published'
         && 'release' || 'nightly'
       }}]
-
-    runs-on: ubuntu-latest
-
-    timeout-minutes: 2
-
-    outputs:
-      # NOTE: These aren't env vars because the `${{ env }}` context is
-      # NOTE: inaccessible when passing inputs to reusable workflows.
-      upstream-repository-id: ${{ env.UPSTREAM_REPOSITORY_ID }}
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.12
-
-      - name: Install dependencies
-        run: |
-          python -Im pip install -U twine build
-
-      - name: Build package
-        run: |
-          python -Im build
-          twine check --strict dist/*
-
-      - name: Store the distribution packages
-        uses: actions/upload-artifact@v4
-        with:
-          name: python-package-distributions
-          # NOTE: Exact expected file names are specified here
-          # NOTE: as a safety measure — if anything weird ends
-          # NOTE: up being in this dir or not all dists will be
-          # NOTE: produced, this will fail the workflow.
-          path: |
-            dist/*.tar.gz
-            dist/*.whl
-          retention-days: >-
-            ${{
-                github.event.action == 'published'
-                && 90 || 30
-            }}
+    uses: ./.github/workflows/ci.yml
+    with:
+      release-version: ${{ github.ref_name }}
+      release-committish: ''
 
   publish-pypi:
     name: >-
       📦
-      Publish ${{ github.ref_name }} to PyPI
+      Publish v${{
+        needs.build-and-test.outputs.project-version
+      }} to PyPI
     needs:
-      - build
+      - build-and-test
     if: >-
       github.event.action == 'published'
-      && needs.build.outputs.upstream-repository-id == github.repository_id
+      && fromJSON(needs.build-and-test.outputs.is-upstream-repository)
 
     runs-on: ubuntu-latest
 
@@ -129,7 +83,11 @@ jobs:
     environment:
       name: pypi
       url: >-
-        https://pypi.org/project/${{ env.PROJECT_NAME }}/${{ github.ref_name }}
+        https://pypi.org/project/${{
+          needs.build-and-test.outputs.project-name
+        }}/${{
+          needs.build-and-test.outputs.project-version
+        }}
 
     permissions:
       id-token: write # PyPI Trusted Publishing (OIDC)
@@ -138,11 +96,14 @@ jobs:
       - name: Download all the dists
         uses: actions/download-artifact@v4
         with:
-          name: python-package-distributions
+          name: >-
+            ${{ needs.build-and-test.outputs.dists-artifact-name }}
           path: dist/
       - name: >-
           📦
-          Publish ${{ github.ref_name }} to PyPI
+          Publish v${{
+            needs.build-and-test.outputs.project-version
+          }} to PyPI
           🔏
         uses: pypa/gh-action-pypi-publish@release/v1
       - name: Clean up the publish attestation leftovers
@@ -152,4 +113,7 @@ jobs:
         with:
           user: jazzband
           password: ${{ secrets.JAZZBAND_RELEASE_KEY }}
-          repository-url: https://jazzband.co/projects/${{ env.PROJECT_NAME }}/upload
+          repository-url: >-
+            https://jazzband.co/projects/${{
+              needs.build-and-test.outputs.project-name
+            }}/upload

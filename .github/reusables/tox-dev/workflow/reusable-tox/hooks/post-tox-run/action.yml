@@ -1,0 +1,82 @@
+---
+
+inputs:
+  calling-job-context:
+    description: A JSON with the calling job inputs
+    type: string
+  current-job-steps:
+    description: >-
+      The `$ {{ steps }}` context passed from the reusable workflow's
+      tox job encoded as a JSON string. The caller passes it this input
+      as follows:
+      `current-job-steps: $ {{ toJSON(steps) }}`.
+    type: string
+  job-dependencies-context:
+    default: >-
+      {}
+    description: >-
+      The `$ {{ needs }}` context passed from the calling workflow
+      encoded as a JSON string. The caller is expected to form this
+      input as follows:
+      `job-dependencies-context: $ {{ toJSON(needs) }}`.
+    required: false
+    type: string
+
+runs:
+  using: composite
+  steps:
+  - name: Verify that the artifacts with expected names got created
+    if: fromJSON(inputs.calling-job-context).toxenv == 'build-dists'
+    run: >
+      # Verify that the artifacts with expected names got created
+
+
+      ls -1
+      'dist/${{
+        fromJSON(
+          inputs.job-dependencies-context
+        ).pre-setup.outputs.sdist-artifact-name
+      }}'
+      'dist/${{
+        fromJSON(
+          inputs.job-dependencies-context
+        ).pre-setup.outputs.wheel-artifact-name
+      }}'
+    shell: bash
+  - name: Store the distribution packages
+    if: fromJSON(inputs.calling-job-context).toxenv == 'build-dists'
+    uses: actions/upload-artifact@v4
+    with:
+      name: >-
+        ${{
+          fromJSON(
+            inputs.job-dependencies-context
+          ).pre-setup.outputs.dists-artifact-name
+        }}
+      # NOTE: Exact expected file names are specified here
+      # NOTE: as a safety measure — if anything weird ends
+      # NOTE: up being in this dir or not all dists will be
+      # NOTE: produced, this will fail the workflow.
+      path: |
+        dist/${{
+          fromJSON(
+            inputs.job-dependencies-context
+          ).pre-setup.outputs.sdist-artifact-name
+        }}
+        dist/${{
+          fromJSON(
+            inputs.job-dependencies-context
+          ).pre-setup.outputs.wheel-artifact-name
+        }}
+      retention-days: >-
+        ${{
+            fromJSON(
+              fromJSON(
+                inputs.job-dependencies-context
+              ).pre-setup.outputs.release-requested
+            )
+            && 90
+            || 30
+        }}
+
+...
