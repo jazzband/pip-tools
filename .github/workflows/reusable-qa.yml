@@ -7,6 +7,7 @@ jobs:
   qa:
     name: ${{ matrix.toxenv }}
     runs-on: ubuntu-latest
+    timeout-minutes: 2  # network is slow sometimes
     strategy:
       fail-fast: false
       matrix:

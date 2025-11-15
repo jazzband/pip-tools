@@ -13,6 +13,23 @@ repos:
     hooks:
       - id: pyupgrade
         args: [--py38-plus]
+
+  - repo: https://github.com/python-jsonschema/check-jsonschema.git
+    rev: 0.31.1
+    hooks:
+      - id: check-github-actions
+      - id: check-github-workflows
+      - id: check-jsonschema
+        alias: enforce-gha-timeouts
+        name: Check GitHub Workflows set timeout-minutes
+        args:
+          - --builtin-schema
+          - github-workflows-require-timeout
+        files: ^\.github/workflows/[^/]+$
+        types:
+          - yaml
+      # - id: check-readthedocs  # FIXME: demands non-empty `build.tools`
+
   - repo: https://github.com/PyCQA/flake8
     rev: 7.3.0
     hooks:
