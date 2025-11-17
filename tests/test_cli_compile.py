@@ -1710,6 +1710,55 @@ def test_unsafe_package_option(pip_conf, monkeypatch, runner, unsafe_package, ex
 
 
 @pytest.mark.parametrize(
+    "unsafe_package",
+    (
+        pytest.param("small-fake-with-deps", id="kebab-case"),
+        pytest.param("small_fake_with_deps", id="snake_case"),
+        pytest.param("Small_Fake_With_Deps", id="mixed-case"),
+    ),
+)
+def test_unsafe_package_option_normalizes(pip_conf, runner, unsafe_package):
+    """
+    The --unsafe-package option should normalize package names.
+    """
+    pathlib.Path("requirements.in").write_text(
+        dedent(
+            """\
+        small_fake_b
+        small-fake-with-deps
+        """
+        ),
+        encoding="utf-8",
+    )
+
+    out = runner.invoke(
+        cli,
+        [
+            "--output-file",
+            "-",
+            "--quiet",
+            "--no-header",
+            "--no-emit-options",
+            "--no-annotate",
+            "--no-allow-unsafe",
+            "--unsafe-package",
+            unsafe_package,
+        ],
+    )
+
+    assert out.exit_code == 0, out
+    assert out.stdout == dedent(
+        """\
+            small-fake-a==0.1
+            small-fake-b==0.3
+
+            # The following packages are considered to be unsafe in a requirements file:
+            # small-fake-with-deps
+            """
+    )
+
+
+@pytest.mark.parametrize(
     ("option", "attr", "expected"),
     (("--cert", "cert", "foo.crt"), ("--client-cert", "client_cert", "bar.pem")),
 )
