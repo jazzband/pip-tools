@@ -21,25 +21,21 @@ Contributions following these guidelines are always welcomed, encouraged and app
 
 ## Project Release Process
 
-Jazzband aims to give full access to all members, including performing releases, as described in the
-[Jazzband Releases documentation](https://jazzband.co/about/releases).
+Releases require approval by a member of the `pip-tools-leads` team.
 
-To help keeping track of the releases and their changes, here's the current release process:
+This is the current release process:
 
-- Check to see if any recently merged PRs are missing from the milestone of the version about to be released.
-- Create a branch for the release. _Ex: release-3.4.0_.
-- Update the [CHANGELOG] with the version, date and add the text from [drafter release](https://github.com/jazzband/pip-tools/releases).
+- Create a branch for the release. _e.g., `release-3.4.0`_.
+- Use `towncrier` to update the [CHANGELOG], _e.g., `towncrier build --version v3.4.0`_.
 - Push the branch to your fork and create a pull request.
-- Merge the pull request after the changes being approved.
+- Merge the pull request after the changes are approved.
 - Make sure that the tests/CI still pass.
-- Once ready, go to [releases](https://github.com/jazzband/pip-tools/releases) page and publish the latest draft release. This will push a tag on the HEAD of the main branch, trigger the CI pipeline and
-  deploy a pip-tools release in the **Jazzband private package index** upon success.
-- The pip-tools "lead" project members will receive an email notification to review the release and
-  deploy it to the public PyPI if all is correct.
-- Once the release to the public PyPI is confirmed, close the milestone.
-
-Please be mindful of other before and when performing a release, and use this access responsibly.
-
-Do not hesitate to ask questions if you have any before performing a release.
+- Pull the latest changes to `main` locally.
+- Create an unsigned tag with the release version number prefixed with a `v`, _e.g., `git tag v3.4.0`_, and push.
+- Create a GitHub Release, populated with a copy of the changelog. Some of the markdown will need to be reformatted into GFM.
+  The release title and tag should be the newly created tag.
+- A GitHub Workflow will trigger off of the release to publish to PyPI. A member of `pip-tools-leads` must approve the publication step.
+- Once the release to PyPI is confirmed, close the milestone.
+- Publish any release notifications, _e.g., discuss.python.org, social media, pypa Discord_.
 
 [changelog]: https://github.com/jazzband/pip-tools/blob/main/CHANGELOG.md
