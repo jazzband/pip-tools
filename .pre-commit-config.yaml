@@ -15,7 +15,7 @@ repos:
         args: [--py38-plus]
 
   - repo: https://github.com/python-jsonschema/check-jsonschema.git
-    rev: 0.31.1
+    rev: 0.35.0
     hooks:
       - id: check-github-actions
       - id: check-github-workflows
@@ -53,7 +53,7 @@ repos:
           - pyproject_hooks==1.0.0
           - pytest==7.4.2
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.8.6
+    rev: 1.9.0
     hooks:
       - id: bandit
         args: [--ini, .bandit]
