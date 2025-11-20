@@ -17,12 +17,14 @@ from pip._internal.utils.misc import redact_auth_from_url
 from .._compat import parse_requirements
 from ..build import ProjectMetadata, build_project_metadata
 from ..cache import DependencyCache
+from ..dependency_groups import parse_dependency_groups
 from ..exceptions import NoCandidateFound, PipToolsError
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..repositories.base import BaseRepository
 from ..resolver import BacktrackingResolver, LegacyResolver
 from ..utils import (
+    ParsedDependencyGroupParam,
     dedup,
     drop_extras,
     install_req_from_line,
@@ -110,6 +112,7 @@ def _determine_linesep(
 @options.reuse_hashes
 @options.max_rounds
 @options.src_files
+@options.group
 @options.build_isolation
 @options.emit_find_links
 @options.cache_dir
@@ -154,6 +157,7 @@ def cli(
     generate_hashes: bool,
     reuse_hashes: bool,
     src_files: tuple[str, ...],
+    groups: tuple[ParsedDependencyGroupParam, ...],
     max_rounds: int,
     build_isolation: bool,
     emit_find_links: bool,
@@ -202,7 +206,7 @@ def cli(
             "--only-build-deps cannot be used with any of --extra, --all-extras"
         )
 
-    if len(src_files) == 0:
+    if len(src_files) == 0 and len(groups) == 0:
         for file_path in DEFAULT_REQUIREMENTS_FILES:
             if os.path.exists(file_path):
                 src_files = (file_path,)
@@ -228,7 +232,7 @@ def cli(
                 os.path.dirname(src_files[0]), DEFAULT_REQUIREMENTS_OUTPUT_FILE
             )
         # An output file must be provided if there are multiple source files
-        elif len(src_files) > 1:
+        elif len(src_files) + len(groups) > 1:
             raise click.BadParameter(
                 "--output-file is required if two or more input files are given."
             )
@@ -399,6 +403,9 @@ def cli(
                     options=repository.options,
                 )
             )
+
+    # Parse `--group` dependency-groups and add them to constraints
+    constraints.extend(parse_dependency_groups(groups))
 
     # Parse all constraints from `--constraint` files
     for filename in constraint:
