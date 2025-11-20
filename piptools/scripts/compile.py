@@ -13,6 +13,7 @@ from build import BuildBackendException
 from click.utils import LazyFile, safecall
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.misc import redact_auth_from_url
+from pip._vendor.packaging.utils import canonicalize_name
 
 from .._compat import parse_requirements
 from ..build import ProjectMetadata, build_project_metadata
@@ -465,6 +466,8 @@ def cli(
         with log.indentation():
             for find_link in dedup(repository.finder.find_links):
                 log.debug(redact_auth_from_url(find_link))
+
+    unsafe_package = tuple(canonicalize_name(pkg_name) for pkg_name in unsafe_package)
 
     resolver_cls = LegacyResolver if resolver_name == "legacy" else BacktrackingResolver
     try:
