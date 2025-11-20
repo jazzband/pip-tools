@@ -467,9 +467,7 @@ def cli(
             for find_link in dedup(repository.finder.find_links):
                 log.debug(redact_auth_from_url(find_link))
 
-    unsafe_package = tuple(
-        str(canonicalize_name(pkg_name)) for pkg_name in unsafe_package
-    )
+    unsafe_package = tuple(canonicalize_name(pkg_name) for pkg_name in unsafe_package)
 
     resolver_cls = LegacyResolver if resolver_name == "legacy" else BacktrackingResolver
     try:
