@@ -9,6 +9,7 @@ import os
 import re
 import shlex
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any, Callable, Iterable, Iterator, TypeVar, cast
 
@@ -58,6 +59,7 @@ COMPILE_EXCLUDE_OPTIONS = {
     "--cache-dir",
     "--no-reuse-hashes",
     "--no-config",
+    "--json",
 }
 
 # Set of option that are only negative, i.e. --no-<option>
@@ -351,7 +353,7 @@ def get_compile_command(click_ctx: click.Context) -> str:
         - removing values that are already default
         - sorting the arguments
         - removing one-off arguments like '--upgrade'
-        - removing arguments that don't change build behaviour like '--verbose'
+        - removing arguments that don't change build behaviour like '--verbose' or '--json'
     """
     from piptools.scripts.compile import cli
 
@@ -775,3 +777,18 @@ def is_path_relative_to(path1: Path, path2: Path) -> bool:
     except ValueError:
         return False
     return True
+
+
+def render_requirements_json_txt(filename: str) -> str:
+    """Render a given ``requirements.json`` file to a temporary
+    ``requirements.txt`` file and return its name.
+    """
+    with open(filename, encoding="utf-8") as f:
+        reqs = json.load(f)
+    tmpfile = tempfile.NamedTemporaryFile(mode="w+t", encoding="utf-8", delete=False)
+    for req in reqs:
+        tmpfile.write(req["line"])
+        tmpfile.write("\n")
+    tmpfile.flush()
+
+    return tmpfile.name

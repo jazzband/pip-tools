@@ -29,6 +29,7 @@ from ..utils import (
     install_req_from_line,
     is_pinned_requirement,
     key_from_ireq,
+    render_requirements_json_txt,
 )
 from ..writer import OutputWriter
 from . import options
@@ -43,6 +44,7 @@ DEFAULT_REQUIREMENTS_FILES = (
 )
 DEFAULT_REQUIREMENTS_FILE = "requirements.in"
 DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
+DEFAULT_REQUIREMENTS_OUTPUT_FILE_JSON = "requirements.json"
 METADATA_FILENAMES = frozenset({"setup.py", "setup.cfg", "pyproject.toml"})
 
 
@@ -85,6 +87,7 @@ def _determine_linesep(
 @options.color
 @options.verbose
 @options.quiet
+@options.json
 @options.dry_run
 @options.pre
 @options.rebuild
@@ -130,6 +133,7 @@ def cli(
     color: bool | None,
     verbose: int,
     quiet: int,
+    json: bool,
     dry_run: bool,
     pre: bool,
     rebuild: bool,
@@ -223,10 +227,16 @@ def cli(
         # An output file must be provided for stdin
         if src_files == ("-",):
             raise click.BadParameter("--output-file is required if input is from stdin")
-        # Use default requirements output file if there is a setup.py the source file
+        # Use default requirements output file if the source file is a recognized
+        # packaging metadata file
         elif os.path.basename(src_files[0]) in METADATA_FILENAMES:
             file_name = os.path.join(
-                os.path.dirname(src_files[0]), DEFAULT_REQUIREMENTS_OUTPUT_FILE
+                os.path.dirname(src_files[0]),
+                (
+                    DEFAULT_REQUIREMENTS_OUTPUT_FILE_JSON
+                    if json
+                    else DEFAULT_REQUIREMENTS_OUTPUT_FILE
+                ),
             )
         # An output file must be provided if there are multiple source files
         elif len(src_files) > 1:
@@ -317,11 +327,16 @@ def cli(
                 "as any existing content is truncated."
             )
 
+        if json:
+            # Render contents of JSON output file to a temporary requirements
+            # file in text format in order to make it readable by ``pip``
+            tmpfile_name = render_requirements_json_txt(output_file.name)
+
         # Use a temporary repository to ensure outdated(removed) options from
         # existing requirements.txt wouldn't get into the current repository.
         tmp_repository = PyPIRepository(pip_args, cache_dir=cache_dir)
         ireqs = parse_requirements(
-            output_file.name,
+            tmpfile_name if json else output_file.name,
             finder=tmp_repository.finder,
             session=tmp_repository.session,
             options=tmp_repository.options,
@@ -520,6 +535,7 @@ def cli(
         cast(BinaryIO, output_file),
         click_ctx=ctx,
         dry_run=dry_run,
+        json_output=json,
         emit_header=header,
         emit_index_url=emit_index_url,
         emit_trusted_host=emit_trusted_host,

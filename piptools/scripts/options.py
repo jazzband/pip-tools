@@ -52,6 +52,10 @@ quiet = click.option(
     help="Give less output",
 )
 
+json = click.option(
+    "-j", "--json", is_flag=True, default=False, help="Emit JSON output"
+)
+
 dry_run = click.option(
     "-n",
     "--dry-run",
