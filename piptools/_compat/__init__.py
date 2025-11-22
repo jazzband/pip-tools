@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from .importlib_metadata import PackageMetadata
 from .pip_compat import (
     Distribution,
     create_wheel_cache,
@@ -12,4 +13,5 @@ __all__ = [
     "parse_requirements",
     "create_wheel_cache",
     "get_dev_pkgs",
+    "PackageMetadata",
 ]
