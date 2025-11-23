@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import optparse
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
-from typing import Iterator, Mapping, cast
+from typing import cast
 
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder

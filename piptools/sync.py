@@ -4,8 +4,8 @@ import collections
 import os
 import sys
 import tempfile
+from collections.abc import Iterable, Mapping, ValuesView
 from subprocess import run  # nosec
-from typing import Iterable, Mapping, ValuesView
 
 import click
 from pip._internal.models.direct_url import ArchiveInfo

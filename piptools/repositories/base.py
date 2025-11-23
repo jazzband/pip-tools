@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import optparse
 from abc import ABCMeta, abstractmethod
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Iterator
 
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder

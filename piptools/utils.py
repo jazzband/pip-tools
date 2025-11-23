@@ -9,8 +9,9 @@ import os
 import re
 import shlex
 import sys
+from collections.abc import Iterable, Iterator
 from pathlib import Path
-from typing import Any, Callable, Iterable, Iterator, TypeVar, cast
+from typing import Any, Callable, TypeVar, cast
 
 from click.core import ParameterSource
 
@@ -669,7 +670,7 @@ def select_config_file(src_files: tuple[str, ...]) -> Path | None:
 
     return (
         config_file_path.relative_to(working_directory)
-        if is_path_relative_to(config_file_path, working_directory)
+        if config_file_path.is_relative_to(working_directory)
         else config_file_path
     )
 
@@ -705,8 +706,7 @@ def parse_config_file(
     piptools_config: dict[str, Any] = config.get("tool", {}).get("pip-tools", {})
 
     assert click_context.command.name is not None
-    # TODO: Replace with `str.removeprefix()` once dropped 3.8
-    config_section_name = click_context.command.name[len("pip-") :]
+    config_section_name = click_context.command.name.removeprefix("pip-")
 
     piptools_config.update(piptools_config.pop(config_section_name, {}))
     piptools_config.pop("compile", {})
@@ -764,14 +764,3 @@ def _normalize_config_key(key: str) -> str:
 def _convert_to_long_option(key: str) -> str:
     """Transform given ``some-key`` into ``--some-key``."""
     return "--" + key.lstrip("-").replace("_", "-").lower()
-
-
-def is_path_relative_to(path1: Path, path2: Path) -> bool:
-    """Return True if ``path1`` is relative to ``path2``."""
-    # TODO: remove this function in favor of Path.is_relative_to()
-    #       when we drop support for Python 3.8
-    try:
-        path1.relative_to(path2)
-    except ValueError:
-        return False
-    return True

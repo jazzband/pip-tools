@@ -5,9 +5,10 @@ import hashlib
 import itertools
 import optparse
 import os
+from collections.abc import Iterator
 from contextlib import contextmanager
 from shutil import rmtree
-from typing import Any, BinaryIO, ContextManager, Iterator, NamedTuple
+from typing import Any, BinaryIO, ContextManager, NamedTuple
 
 from click import progressbar
 from pip._internal.cache import WheelCache

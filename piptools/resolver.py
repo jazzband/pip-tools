@@ -3,9 +3,10 @@ from __future__ import annotations
 import collections
 import copy
 from abc import ABCMeta, abstractmethod
+from collections.abc import Container, Iterable, Iterator
 from functools import partial
 from itertools import chain, count, groupby
-from typing import Any, Container, Iterable, Iterator
+from typing import Any
 
 import click
 from pip._internal.exceptions import DistributionNotFound

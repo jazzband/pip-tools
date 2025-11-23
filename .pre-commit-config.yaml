@@ -12,7 +12,7 @@ repos:
     rev: v3.21.2
     hooks:
       - id: pyupgrade
-        args: [--py38-plus]
+        args: [--py39-plus]
 
   - repo: https://github.com/python-jsonschema/check-jsonschema.git
     rev: 0.35.0
