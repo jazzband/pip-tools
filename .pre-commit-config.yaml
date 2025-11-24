@@ -28,7 +28,7 @@ repos:
         files: ^\.github/workflows/[^/]+$
         types:
           - yaml
-      # - id: check-readthedocs  # FIXME: demands non-empty `build.tools`
+      - id: check-readthedocs
 
   - repo: https://github.com/PyCQA/flake8
     rev: 7.3.0
