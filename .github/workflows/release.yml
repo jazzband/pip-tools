@@ -152,4 +152,4 @@ jobs:
         with:
           user: jazzband
           password: ${{ secrets.JAZZBAND_RELEASE_KEY }}
-          repository_url: https://jazzband.co/projects/${{ env.PROJECT_NAME }}/upload
+          repository-url: https://jazzband.co/projects/${{ env.PROJECT_NAME }}/upload
