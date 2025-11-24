@@ -31,7 +31,7 @@ jobs:
       - name: Get pip cache dir
         id: pip-cache
         run: |
-          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+          echo "dir=$(pip cache dir)" >> "${GITHUB_OUTPUT}"
       - name: Pip cache
         uses: actions/cache@v4
         with:
@@ -45,7 +45,7 @@ jobs:
             ${{ runner.os }}-
       - name: Prepare cache key
         id: cache-key
-        run: echo "sha-256=$(python -VV | sha256sum | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+        run: echo "sha-256=$(python -VV | sha256sum | cut -d' ' -f1)" >> "${GITHUB_OUTPUT}"
       - uses: actions/cache@v4
         with:
           path: ~/.cache/pre-commit

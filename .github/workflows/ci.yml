@@ -103,7 +103,7 @@ jobs:
         id: pip-cache
         shell: bash
         run: |
-          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+          echo "dir=$(pip cache dir)" >> "${GITHUB_OUTPUT}"
       - name: Pip cache
         uses: actions/cache@v4
         with:
@@ -129,7 +129,7 @@ jobs:
         if: matrix.python-version == '3.8'
         shell: bash
         run: |
-          echo "PYTEST_ADDOPTS=--cov-fail-under=98" >> $GITHUB_ENV
+          echo "PYTEST_ADDOPTS=--cov-fail-under=98" >> "${GITHUB_ENV}"
       - name: Test pip ${{ matrix.pip-version }}
         # NOTE: `--parallel-live` is a workaround for the regression in
         # NOTE: the upstream tox project that made the
@@ -208,7 +208,7 @@ jobs:
         id: pip-cache
         shell: bash
         run: |
-          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+          echo "dir=$(pip cache dir)" >> "${GITHUB_OUTPUT}"
       - name: Pip cache
         uses: actions/cache@v4
         with:
