@@ -4,7 +4,6 @@ version: 2
 
 build:
   os: ubuntu-24.04
-  tools: {}
 
   # in order to have RTD use our tox configuration for the build, we take full
   # control over 'build.commands'
