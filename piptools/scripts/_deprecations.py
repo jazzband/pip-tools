@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from .._pip_api import PIP_VERSION
 from ..logging import log
-from ..utils import PIP_VERSION
 
 
 def filter_deprecated_pip_args(args: list[str]) -> list[str]:

@@ -21,12 +21,10 @@ from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.urls import path_to_url
 from pip._vendor.packaging.version import Version
 
+from piptools._pip_api import get_pip_version_for_python_executable
 from piptools.build import ProjectMetadata
 from piptools.scripts.compile import cli
-from piptools.utils import (
-    COMPILE_EXCLUDE_OPTIONS,
-    get_pip_version_for_python_executable,
-)
+from piptools.utils import COMPILE_EXCLUDE_OPTIONS
 
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
 

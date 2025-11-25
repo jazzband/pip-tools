@@ -27,10 +27,10 @@ from piptools.cache import DependencyCache
 from piptools.repositories.base import BaseRepository
 
 from ._compat import canonicalize_name, create_wheel_cache
+from ._pip_api import PIP_VERSION
 from .exceptions import PipToolsError
 from .logging import log
 from .utils import (
-    PIP_VERSION,
     UNSAFE_PACKAGES,
     as_tuple,
     copy_install_requirement,
