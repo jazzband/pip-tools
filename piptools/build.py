@@ -19,7 +19,7 @@ from pip._internal.req.constructors import parse_req_from_line
 from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.requirements import Requirement
 
-from .utils import copy_install_requirement, install_req_from_line
+from ._pip_api import copy_install_requirement, create_install_requirement_from_line
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -350,4 +350,4 @@ def _prepare_build_requirements(
 
     for req, comes_from_sources in result.items():
         for comes_from in comes_from_sources:
-            yield install_req_from_line(req, comes_from=comes_from)
+            yield create_install_requirement_from_line(req, comes_from=comes_from)

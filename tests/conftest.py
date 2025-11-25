@@ -31,7 +31,7 @@ from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Requirement
 
 from piptools._compat import Distribution
-from piptools._pip_api import PIP_VERSION
+from piptools._pip_api import PIP_VERSION, create_install_requirement
 from piptools.cache import DependencyCache
 from piptools.exceptions import NoCandidateFound
 from piptools.locations import DEFAULT_CONFIG_FILE_NAMES
@@ -43,7 +43,6 @@ from piptools.utils import (
     as_tuple,
     is_url_requirement,
     key_from_ireq,
-    make_install_requirement,
 )
 
 from .constants import MINIMAL_WHEELS_PATH, TEST_DATA_PATH
@@ -90,7 +89,7 @@ class FakeRepository(BaseRepository):
             ]
             raise NoCandidateFound(ireq, tried_versions, ["https://fake.url.foo"])
         best_version = max(versions, key=Version)
-        return make_install_requirement(key_from_ireq(ireq), best_version, ireq)
+        return create_install_requirement(key_from_ireq(ireq), best_version, ireq)
 
     def get_dependencies(self, ireq):
         if ireq.editable or is_url_requirement(ireq):

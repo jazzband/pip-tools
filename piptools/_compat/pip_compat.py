@@ -36,8 +36,7 @@ if _t.TYPE_CHECKING:
 else:
     from pip._vendor.packaging.utils import canonicalize_name  # noqa: F401
 
-from .._pip_api import PIP_VERSION
-from ..utils import copy_install_requirement
+from .._pip_api import PIP_VERSION, copy_install_requirement
 
 
 @dataclass(frozen=True)
