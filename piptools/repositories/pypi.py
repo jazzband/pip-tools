@@ -32,6 +32,7 @@ from pip._vendor.packaging.version import _BaseVersion
 from pip._vendor.requests import RequestException, Session
 
 from .._compat import create_wheel_cache
+from .._pip_api import create_install_requirement
 from ..exceptions import NoCandidateFound
 from ..logging import log
 from ..utils import (
@@ -39,7 +40,6 @@ from ..utils import (
     is_pinned_requirement,
     is_url_requirement,
     lookup_table,
-    make_install_requirement,
 )
 from .base import BaseRepository
 
@@ -156,7 +156,7 @@ class PyPIRepository(BaseRepository):
         best_candidate = best_candidate_result.best_candidate
 
         # Turn the candidate into a pinned InstallRequirement
-        return make_install_requirement(
+        return create_install_requirement(
             best_candidate.name,
             best_candidate.version,
             ireq,

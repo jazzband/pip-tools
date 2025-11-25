@@ -28,16 +28,18 @@ from piptools.cache import DependencyCache
 from piptools.repositories.base import BaseRepository
 
 from ._compat import create_wheel_cache
-from ._pip_api import PIP_VERSION
+from ._pip_api import (
+    PIP_VERSION,
+    copy_install_requirement,
+    create_install_requirement_from_line,
+)
 from .exceptions import PipToolsError
 from .logging import log
 from .utils import (
     UNSAFE_PACKAGES,
     as_tuple,
-    copy_install_requirement,
     format_requirement,
     format_specifier,
-    install_req_from_line,
     is_pinned_requirement,
     is_url_requirement,
     key_from_ireq,
@@ -503,7 +505,7 @@ class LegacyResolver(BaseResolver):
         # produced the dependency_strings, but they lack `markers` on their
         # underlying Requirements:
         for dependency_string in dependency_strings:
-            yield install_req_from_line(
+            yield create_install_requirement_from_line(
                 dependency_string, constraint=ireq.constraint, comes_from=ireq
             )
 

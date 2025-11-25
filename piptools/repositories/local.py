@@ -12,7 +12,8 @@ from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.hashes import FAVORITE_HASH
 
-from piptools.utils import as_tuple, key_from_ireq, make_install_requirement
+from piptools._pip_api import create_install_requirement
+from piptools.utils import as_tuple, key_from_ireq
 
 from .base import BaseRepository
 from .pypi import PyPIRepository
@@ -80,7 +81,7 @@ class LocalRequirementsRepository(BaseRepository):
         existing_pin = self.existing_pins.get(key)
         if existing_pin and ireq_satisfied_by_existing_pin(ireq, existing_pin):
             project, version, _ = as_tuple(existing_pin)
-            return make_install_requirement(project, version, ireq)
+            return create_install_requirement(project, version, ireq)
         else:
             return self.repository.find_best_match(ireq, prereleases)
 
