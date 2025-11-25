@@ -21,7 +21,6 @@ else:
     import tomli as tomllib
 
 import click
-import pip
 from click.utils import LazyFile
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import (
@@ -35,9 +34,9 @@ from pip._vendor.packaging.requirements import Requirement
 from pip._vendor.packaging.specifiers import SpecifierSet
 from pip._vendor.packaging.utils import canonicalize_name
 from pip._vendor.packaging.version import Version
-from pip._vendor.packaging.version import parse as parse_version
 from pip._vendor.pkg_resources import get_distribution
 
+from piptools._pip_api import PIP_VERSION
 from piptools.locations import DEFAULT_CONFIG_FILE_NAMES
 from piptools.subprocess_utils import run_python_snippet
 
@@ -45,8 +44,6 @@ _KT = _t.TypeVar("_KT")
 _VT = _t.TypeVar("_VT")
 _T = _t.TypeVar("_T")
 _S = _t.TypeVar("_S")
-
-PIP_VERSION = tuple(map(int, parse_version(pip.__version__).base_version.split(".")))
 
 UNSAFE_PACKAGES = {"setuptools", "distribute", "pip"}
 COMPILE_EXCLUDE_OPTIONS = {
@@ -454,14 +451,6 @@ def get_required_pip_specification() -> SpecifierSet:
         requirement is not None
     ), "'pip' is expected to be in the list of pip-tools requirements"
     return requirement.specifier
-
-
-def get_pip_version_for_python_executable(python_executable: str) -> Version:
-    """Return pip version for the given python executable."""
-    str_version = run_python_snippet(
-        python_executable, "import pip;print(pip.__version__)"
-    )
-    return Version(str_version)
 
 
 def get_sys_path_for_python_executable(python_executable: str) -> list[str]:

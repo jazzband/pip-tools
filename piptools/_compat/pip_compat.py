@@ -28,7 +28,8 @@ from .path_compat import relative_to_walk_up
 if _t.TYPE_CHECKING:
     from pip._internal.metadata.importlib import Distribution as _ImportLibDist
 
-from ..utils import PIP_VERSION, copy_install_requirement
+from .._pip_api import PIP_VERSION
+from ..utils import copy_install_requirement
 
 
 @dataclass(frozen=True)

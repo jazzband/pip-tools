@@ -9,12 +9,10 @@ import typing as _t
 from pathlib import Path
 from textwrap import dedent
 
-import pip
 import pytest
 from click import BadOptionUsage, Context, FileError
 from pip._internal.req import InstallRequirement
 from pip._internal.resolution.resolvelib.requirements import SpecifierRequirement
-from pip._vendor.packaging.version import Version
 
 from piptools.scripts.compile import cli as compile_cli
 from piptools.utils import (
@@ -27,7 +25,6 @@ from piptools.utils import (
     get_cli_options,
     get_compile_command,
     get_hashes_from_ireq,
-    get_pip_version_for_python_executable,
     get_sys_path_for_python_executable,
     is_pinned_requirement,
     is_url_requirement,
@@ -638,11 +635,6 @@ def test_drop_extras(from_line, given, expected):
         assert ireq.markers is None
     else:
         assert str(ireq.markers).replace("'", '"') == expected.replace("'", '"')
-
-
-def test_get_pip_version_for_python_executable():
-    result = get_pip_version_for_python_executable(sys.executable)
-    assert Version(pip.__version__) == result
 
 
 def test_get_sys_path_for_python_executable():

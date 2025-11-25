@@ -16,12 +16,12 @@ from pip._internal.metadata import get_environment
 
 from .. import sync
 from .._compat import Distribution, parse_requirements
+from .._pip_api import get_pip_version_for_python_executable
 from ..exceptions import PipToolsError
 from ..logging import log
 from ..repositories import PyPIRepository
 from ..utils import (
     flat_map,
-    get_pip_version_for_python_executable,
     get_required_pip_specification,
     get_sys_path_for_python_executable,
 )
