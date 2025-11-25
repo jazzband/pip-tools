@@ -106,9 +106,10 @@ def test_open_local_or_remote_file__directory(tmpdir):
     link = Link(path_to_url(tmpdir.strpath))
     session = Session()
 
-    with pytest.raises(
-        ValueError, match="Cannot open directory for read"
-    ), open_local_or_remote_file(link, session):
+    with (
+        pytest.raises(ValueError, match="Cannot open directory for read"),
+        open_local_or_remote_file(link, session),
+    ):
         pass  # pragma: no cover
 
 

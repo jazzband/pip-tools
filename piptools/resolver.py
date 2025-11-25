@@ -559,9 +559,12 @@ class BacktrackingResolver(BaseResolver):
 
         :returns: A set of pinned ``InstallRequirement``\ s.
         """
-        with update_env_context_manager(
-            PIP_EXISTS_ACTION="i"
-        ), get_build_tracker() as build_tracker, global_tempdir_manager(), indent_log():
+        with (
+            update_env_context_manager(PIP_EXISTS_ACTION="i"),
+            get_build_tracker() as build_tracker,
+            global_tempdir_manager(),
+            indent_log(),
+        ):
             # Mark direct/primary/user_supplied packages
             for ireq in self.constraints:
                 if ireq.constraint:
