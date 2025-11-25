@@ -6,9 +6,10 @@ import os
 import pathlib
 import sys
 import tempfile
+from collections.abc import Iterator
 from dataclasses import dataclass
 from importlib import metadata as importlib_metadata
-from typing import Any, Iterator, Protocol, TypeVar, overload
+from typing import Any, Protocol, TypeVar, overload
 
 import build
 import build.env

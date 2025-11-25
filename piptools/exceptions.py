@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import operator
-from typing import Iterable
+from collections.abc import Iterable
 
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.models.candidate import InstallationCandidate

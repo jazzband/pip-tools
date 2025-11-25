@@ -3,9 +3,10 @@ from __future__ import annotations
 import collections
 import copy
 from abc import ABCMeta, abstractmethod
+from collections.abc import Container, Iterable, Iterator
 from functools import partial
 from itertools import chain, count, groupby
-from typing import Any, Container, Iterable, Iterator
+from typing import Any
 
 import click
 from pip._internal.exceptions import DistributionNotFound
@@ -558,9 +559,12 @@ class BacktrackingResolver(BaseResolver):
 
         :returns: A set of pinned ``InstallRequirement``\ s.
         """
-        with update_env_context_manager(
-            PIP_EXISTS_ACTION="i"
-        ), get_build_tracker() as build_tracker, global_tempdir_manager(), indent_log():
+        with (
+            update_env_context_manager(PIP_EXISTS_ACTION="i"),
+            get_build_tracker() as build_tracker,
+            global_tempdir_manager(),
+            indent_log(),
+        ):
             # Mark direct/primary/user_supplied packages
             for ireq in self.constraints:
                 if ireq.constraint:

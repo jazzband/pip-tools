@@ -3,7 +3,7 @@ repos:
     rev: 25.11.0
     hooks:
       - id: black
-        args: [--target-version=py38]
+        args: [--target-version=py39]
   - repo: https://github.com/PyCQA/isort
     rev: 7.0.0
     hooks:
@@ -12,7 +12,7 @@ repos:
     rev: v3.21.2
     hooks:
       - id: pyupgrade
-        args: [--py38-plus]
+        args: [--py39-plus]
 
   - repo: https://github.com/python-jsonschema/check-jsonschema.git
     rev: 0.35.0

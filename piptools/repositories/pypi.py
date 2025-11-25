@@ -5,9 +5,10 @@ import hashlib
 import itertools
 import optparse
 import os
+from collections.abc import Iterator
 from contextlib import contextmanager
 from shutil import rmtree
-from typing import Any, BinaryIO, ContextManager, Iterator, NamedTuple
+from typing import Any, BinaryIO, ContextManager, NamedTuple
 
 from click import progressbar
 from pip._internal.cache import WheelCache
@@ -167,9 +168,11 @@ class PyPIRepository(BaseRepository):
         ireq: InstallRequirement,
         wheel_cache: WheelCache,
     ) -> set[InstallationCandidate]:
-        with get_build_tracker() as build_tracker, TempDirectory(
-            kind="resolver"
-        ) as temp_dir, indent_log():
+        with (
+            get_build_tracker() as build_tracker,
+            TempDirectory(kind="resolver") as temp_dir,
+            indent_log(),
+        ):
             preparer_kwargs = {
                 "temp_build_dir": temp_dir,
                 "options": self.options,
