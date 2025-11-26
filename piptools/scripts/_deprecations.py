@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .._pip_api import PIP_VERSION
+from .._internal import _pip_api
 from ..logging import log
 
 
@@ -17,7 +17,7 @@ def filter_deprecated_pip_args(args: list[str]) -> list[str]:
     - ``--global-option``
     - ``--build-option``
     """
-    if PIP_VERSION < (25, 3):  # pragma: <3.9 cover
+    if _pip_api.PIP_VERSION_MAJOR_MINOR < (25, 3):  # pragma: <3.9 cover
         return args
 
     deprecation_mapping = {
