@@ -28,7 +28,7 @@ from .path_compat import relative_to_walk_up
 if _t.TYPE_CHECKING:
     from pip._internal.metadata.importlib import Distribution as _ImportLibDist
 
-from .._pip_api import PIP_VERSION, copy_install_requirement
+from .._internal import _pip_api
 
 
 @dataclass(frozen=True)
@@ -115,7 +115,7 @@ def parse_requirements(
             file_link = FileLink(install_req.link.url)
             file_link._url = parsed_req.requirement
             install_req.link = file_link
-        install_req = copy_install_requirement(install_req)
+        install_req = _pip_api.copy_install_requirement(install_req)
 
         install_req.comes_from = rewrite_comes_from(install_req.comes_from)
 
@@ -199,13 +199,13 @@ def _is_remote_pip_uri(value: str) -> bool:
 
 def create_wheel_cache(cache_dir: str, format_control: str | None = None) -> WheelCache:
     kwargs: dict[str, str | None] = {"cache_dir": cache_dir}
-    if PIP_VERSION[:2] <= (23, 0):
+    if _pip_api.PIP_VERSION_MAJOR_MINOR <= (23, 0):
         kwargs["format_control"] = format_control
     return WheelCache(**kwargs)
 
 
 def get_dev_pkgs() -> set[str]:
-    if PIP_VERSION[:2] <= (23, 1):
+    if _pip_api.PIP_VERSION_MAJOR_MINOR <= (23, 1):
         from pip._internal.commands.freeze import DEV_PKGS
 
         return _t.cast(set[str], DEV_PKGS)

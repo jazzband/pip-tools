@@ -6,7 +6,11 @@ import pip
 from pip._vendor.packaging.version import Version
 from pip._vendor.packaging.version import parse as parse_version
 
-PIP_VERSION = tuple(map(int, parse_version(pip.__version__).base_version.split(".")))
+PIP_VERSION = parse_version(pip.__version__)
+PIP_VERSION_TUPLE: tuple[int, ...] = tuple(
+    map(int, PIP_VERSION.base_version.split("."))
+)
+PIP_VERSION_MAJOR_MINOR: tuple[int, int] = PIP_VERSION_TUPLE[:2]  # type: ignore[assignment]
 
 
 def get_pip_version_for_python_executable(python_executable: str) -> Version:

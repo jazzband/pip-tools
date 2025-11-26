@@ -21,7 +21,7 @@ from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.urls import path_to_url
 from pip._vendor.packaging.version import Version
 
-from piptools._pip_api import get_pip_version_for_python_executable
+from piptools._internal import _pip_api
 from piptools.build import ProjectMetadata
 from piptools.scripts.compile import cli
 from piptools.utils import COMPILE_EXCLUDE_OPTIONS
@@ -42,15 +42,10 @@ backtracking_resolver_only = pytest.mark.parametrize(
 
 
 @pytest.fixture(scope="session")
-def installed_pip_version():
-    return get_pip_version_for_python_executable(sys.executable)
-
-
-@pytest.fixture(scope="session")
-def pip_produces_absolute_paths(installed_pip_version):
+def pip_produces_absolute_paths():
     # in pip v24.3, new normalization will occur because `comes_from` started
     # to be normalized to abspaths
-    return installed_pip_version >= Version("24.3")
+    return _pip_api.PIP_VERSION_MAJOR_MINOR >= (24, 3)
 
 
 @dataclasses.dataclass
@@ -1868,10 +1863,7 @@ def test_forwarded_args_filter_deprecated(PyPIRepository, runner, pip_args):
 
     (first_posarg, *_tail_args), _kwargs = PyPIRepository.call_args
 
-    pip_current_version = get_pip_version_for_python_executable(sys.executable)
-    pip_breaking_version = Version("25.3")
-
-    if pip_current_version >= pip_breaking_version:  # pragma: >=3.9 cover
+    if _pip_api.PIP_VERSION_MAJOR_MINOR >= (25, 3):  # pragma: >=3.9 cover
         assert set(first_posarg) ^ pip_option_keys
     else:
         assert set(first_posarg) & pip_option_keys
@@ -3503,9 +3495,7 @@ def test_pass_pip_cache_to_pip_args(tmpdir, runner, current_resolver):
     )
     assert out.exit_code == 0
     # TODO: Remove hack once testing only on v23.3+
-    pip_current_version = get_pip_version_for_python_executable(sys.executable)
-    pip_breaking_version = Version("23.3.dev0")
-    if pip_current_version >= pip_breaking_version:
+    if _pip_api.PIP_VERSION >= Version("23.3.dev0"):
         pip_http_cache_dir = "http-v2"
     else:
         pip_http_cache_dir = "http"

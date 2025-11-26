@@ -31,7 +31,7 @@ from pip._vendor.packaging.version import Version
 from pip._vendor.pkg_resources import Requirement
 
 from piptools._compat import Distribution
-from piptools._pip_api import PIP_VERSION, create_install_requirement
+from piptools._internal import _pip_api
 from piptools.cache import DependencyCache
 from piptools.exceptions import NoCandidateFound
 from piptools.locations import DEFAULT_CONFIG_FILE_NAMES
@@ -89,7 +89,9 @@ class FakeRepository(BaseRepository):
             ]
             raise NoCandidateFound(ireq, tried_versions, ["https://fake.url.foo"])
         best_version = max(versions, key=Version)
-        return create_install_requirement(key_from_ireq(ireq), best_version, ireq)
+        return _pip_api.create_install_requirement(
+            key_from_ireq(ireq), best_version, ireq
+        )
 
     def get_dependencies(self, ireq):
         if ireq.editable or is_url_requirement(ireq):
@@ -211,7 +213,7 @@ def base_resolver(depcache):
 @pytest.fixture
 def from_line():
     def _from_line(*args, **kwargs):
-        if PIP_VERSION[:2] <= (23, 0):
+        if _pip_api.PIP_VERSION_MAJOR_MINOR <= (23, 0):
             hash_options = kwargs.pop("hash_options", {})
             options = kwargs.pop("options", {})
             options["hashes"] = hash_options

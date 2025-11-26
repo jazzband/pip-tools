@@ -16,7 +16,7 @@ from pip._internal.utils.misc import redact_auth_from_url
 from pip._vendor.packaging.utils import canonicalize_name
 
 from .._compat import parse_requirements
-from .._pip_api import create_install_requirement_from_line
+from .._internal import _pip_api
 from ..build import ProjectMetadata, build_project_metadata
 from ..cache import DependencyCache
 from ..exceptions import NoCandidateFound, PipToolsError
@@ -296,7 +296,7 @@ def cli(
 
     # Parse all constraints coming from --upgrade-package/-P
     upgrade_reqs_gen = (
-        create_install_requirement_from_line(pkg) for pkg in upgrade_packages
+        _pip_api.create_install_requirement_from_line(pkg) for pkg in upgrade_packages
     )
     upgrade_install_reqs = {
         key_from_ireq(install_req): install_req for install_req in upgrade_reqs_gen

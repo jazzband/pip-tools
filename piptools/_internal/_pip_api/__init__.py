@@ -10,10 +10,17 @@ from .install_requirements import (
     create_install_requirement,
     create_install_requirement_from_line,
 )
-from .version import PIP_VERSION, get_pip_version_for_python_executable
+from .pip_version import (
+    PIP_VERSION,
+    PIP_VERSION_MAJOR_MINOR,
+    PIP_VERSION_TUPLE,
+    get_pip_version_for_python_executable,
+)
 
 __all__ = (
     "PIP_VERSION",
+    "PIP_VERSION_MAJOR_MINOR",
+    "PIP_VERSION_TUPLE",
     "get_pip_version_for_python_executable",
     "create_install_requirement",
     "create_install_requirement_from_line",

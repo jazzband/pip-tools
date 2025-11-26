@@ -8,7 +8,7 @@ from pip._internal.req.constructors import install_req_from_line
 from pip._vendor.packaging.utils import canonicalize_name
 from pip._vendor.packaging.version import Version
 
-from .version import PIP_VERSION
+from .pip_version import PIP_VERSION_MAJOR_MINOR
 
 
 def create_install_requirement(
@@ -56,18 +56,18 @@ def copy_install_requirement(
         "extras": template.extras,
         "user_supplied": template.user_supplied,
     }
-    if PIP_VERSION[:2] < (25, 3):  # pragma: <3.9 cover
+    if PIP_VERSION_MAJOR_MINOR < (25, 3):  # pragma: <3.9 cover
         # Ref: https://github.com/jazzband/pip-tools/issues/2252
         kwargs["use_pep517"] = template.use_pep517
         kwargs["global_options"] = template.global_options
     kwargs.update(extra_kwargs)
 
-    if PIP_VERSION[:2] >= (25, 3):  # pragma: >=3.9 cover
+    if PIP_VERSION_MAJOR_MINOR >= (25, 3):  # pragma: >=3.9 cover
         # Ref: https://github.com/jazzband/pip-tools/issues/2252
         kwargs.pop("use_pep517", None)
         kwargs.pop("global_options", None)
 
-    if PIP_VERSION[:2] <= (23, 0):
+    if PIP_VERSION_MAJOR_MINOR <= (23, 0):
         kwargs["install_options"] = template.install_options
 
     # Original link does not belong to install requirements constructor,

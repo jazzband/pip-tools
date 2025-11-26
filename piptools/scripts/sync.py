@@ -16,7 +16,7 @@ from pip._internal.metadata import get_environment
 
 from .. import sync
 from .._compat import Distribution, parse_requirements
-from .._pip_api import get_pip_version_for_python_executable
+from .._internal import _pip_api
 from ..exceptions import PipToolsError
 from ..logging import log
 from ..repositories import PyPIRepository
@@ -167,7 +167,7 @@ def _validate_python_executable(python_executable: str) -> None:
         sys.exit(2)
 
     # Ensure that target python executable has the right version of pip installed
-    pip_version = get_pip_version_for_python_executable(python_executable)
+    pip_version = _pip_api.get_pip_version_for_python_executable(python_executable)
     required_pip_specification = get_required_pip_specification()
     if not required_pip_specification.contains(pip_version, prereleases=True):
         msg = (

@@ -28,11 +28,7 @@ from piptools.cache import DependencyCache
 from piptools.repositories.base import BaseRepository
 
 from ._compat import create_wheel_cache
-from ._pip_api import (
-    PIP_VERSION,
-    copy_install_requirement,
-    create_install_requirement_from_line,
-)
+from ._internal import _pip_api
 from .exceptions import PipToolsError
 from .logging import log
 from .utils import (
@@ -137,7 +133,7 @@ def combine_install_requirements(
             key=lambda x: (len(str(x)), str(x)),
         )
 
-    combined_ireq = copy_install_requirement(
+    combined_ireq = _pip_api.copy_install_requirement(
         template=source_ireqs[0],
         req=req,
         comes_from=comes_from,
@@ -505,7 +501,7 @@ class LegacyResolver(BaseResolver):
         # produced the dependency_strings, but they lack `markers` on their
         # underlying Requirements:
         for dependency_string in dependency_strings:
-            yield create_install_requirement_from_line(
+            yield _pip_api.create_install_requirement_from_line(
                 dependency_string, constraint=ireq.constraint, comes_from=ireq
             )
 
@@ -613,7 +609,7 @@ class BacktrackingResolver(BaseResolver):
             preparer = self.command.make_requirement_preparer(**preparer_kwargs)
 
             extra_resolver_kwargs = {}
-            if PIP_VERSION[:2] < (25, 3):  # pragma: <3.9 cover
+            if _pip_api.PIP_VERSION_MAJOR_MINOR < (25, 3):  # pragma: <3.9 cover
                 # Ref: https://github.com/jazzband/pip-tools/issues/2252
                 extra_resolver_kwargs["use_pep517"] = self.options.use_pep517
 
@@ -797,7 +793,7 @@ class BacktrackingResolver(BaseResolver):
 
         # Prepare pinned install requirement. Copy it from candidate's install
         # requirement so that it could be mutated later.
-        pinned_ireq = copy_install_requirement(
+        pinned_ireq = _pip_api.copy_install_requirement(
             template=ireq,
             # The link this candidate "originates" from. This is different
             # from ``ireq.link`` when the link is found in the wheel cache.
