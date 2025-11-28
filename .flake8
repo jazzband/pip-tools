@@ -13,3 +13,7 @@ pytest-parametrize-values-type = tuple
 pytest-parametrize-values-row-type = tuple
 # PT023:
 pytest-mark-no-parentheses = true
+
+# flake8-typing-as-t
+# TYT02:
+typing-as-t-imported-name = _t

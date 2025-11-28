@@ -4,9 +4,9 @@ import io
 import os
 import re
 import sys
+import typing as _t
 from collections.abc import Iterable, Iterator
 from itertools import chain
-from typing import BinaryIO, cast
 
 from click import unstyle
 from click.core import Context
@@ -54,7 +54,7 @@ strip_comes_from_line_re = re.compile(r" \(line \d+\)$")
 def _comes_from_as_string(comes_from: str | InstallRequirement) -> str:
     if isinstance(comes_from, str):
         return strip_comes_from_line_re.sub("", comes_from)
-    return cast(str, canonicalize_name(key_from_ireq(comes_from)))
+    return _t.cast(str, canonicalize_name(key_from_ireq(comes_from)))
 
 
 def annotation_style_split(required_by: set[str]) -> str:
@@ -77,7 +77,7 @@ def annotation_style_line(required_by: set[str]) -> str:
 class OutputWriter:
     def __init__(
         self,
-        dst_file: BinaryIO,
+        dst_file: _t.BinaryIO,
         click_ctx: Context,
         dry_run: bool,
         emit_header: bool,

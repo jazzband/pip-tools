@@ -9,9 +9,9 @@ import os
 import re
 import shlex
 import sys
+import typing as _t
 from collections.abc import Iterable, Iterator
 from pathlib import Path
-from typing import Any, Callable, TypeVar, cast
 
 from click.core import ParameterSource
 
@@ -41,10 +41,10 @@ from pip._vendor.pkg_resources import get_distribution
 from piptools.locations import DEFAULT_CONFIG_FILE_NAMES
 from piptools.subprocess_utils import run_python_snippet
 
-_KT = TypeVar("_KT")
-_VT = TypeVar("_VT")
-_T = TypeVar("_T")
-_S = TypeVar("_S")
+_KT = _t.TypeVar("_KT")
+_VT = _t.TypeVar("_VT")
+_T = _t.TypeVar("_T")
+_S = _t.TypeVar("_S")
 
 PIP_VERSION = tuple(map(int, parse_version(pip.__version__).base_version.split(".")))
 
@@ -94,7 +94,7 @@ def comment(text: str) -> str:
     return click.style(text, fg="green")
 
 
-def install_req_from_line(*args: Any, **kwargs: Any) -> InstallRequirement:
+def install_req_from_line(*args: _t.Any, **kwargs: _t.Any) -> InstallRequirement:
     return copy_install_requirement(_install_req_from_line(*args, **kwargs))
 
 
@@ -168,11 +168,11 @@ def _build_direct_reference_best_efforts(ireq: InstallRequirement) -> str:
     """
     # If the requirement has no name then we cannot build a direct reference.
     if not ireq.name:
-        return cast(str, ireq.link.url)
+        return _t.cast(str, ireq.link.url)
 
     # Look for a relative file path, the direct reference currently does not work with it.
     if ireq.link.is_file and not ireq.link.path.startswith("/"):
-        return cast(str, ireq.link.url)
+        return _t.cast(str, ireq.link.url)
 
     # If we get here then we have a requirement that supports direct reference.
     # We need to remove the egg if it exists and keep the rest of the fragments.
@@ -250,7 +250,7 @@ def as_tuple(ireq: InstallRequirement) -> tuple[str, str, tuple[str, ...]]:
 
 
 def flat_map(
-    fn: Callable[[_T], Iterable[_S]], collection: Iterable[_T]
+    fn: _t.Callable[[_T], Iterable[_S]], collection: Iterable[_T]
 ) -> Iterator[_S]:
     """Map a function over a collection and flatten the result by one-level"""
     return itertools.chain.from_iterable(map(fn, collection))
@@ -265,7 +265,7 @@ def lookup_table_from_tuples(values: Iterable[tuple[_KT, _VT]]) -> dict[_KT, set
 
 
 def lookup_table(
-    values: Iterable[_VT], key: Callable[[_VT], _KT]
+    values: Iterable[_VT], key: _t.Callable[[_VT], _KT]
 ) -> dict[_KT, set[_VT]]:
     """Build a dict-based lookup table (index) elegantly."""
     return lookup_table_from_tuples((key(v), v) for v in values)
@@ -492,7 +492,7 @@ def strip_extras(name: str) -> str:
 
 
 def copy_install_requirement(
-    template: InstallRequirement, **extra_kwargs: Any
+    template: InstallRequirement, **extra_kwargs: _t.Any
 ) -> InstallRequirement:
     """Make a copy of a template ``InstallRequirement`` with extra kwargs."""
     # Prepare install requirement kwargs.
@@ -579,7 +579,7 @@ def override_defaults_from_config_file(
 
 def _assign_config_to_cli_context(
     click_context: click.Context,
-    cli_config_mapping: dict[str, Any],
+    cli_config_mapping: dict[str, _t.Any],
 ) -> None:
     if click_context.default_map is None:
         click_context.default_map = {}
@@ -589,7 +589,7 @@ def _assign_config_to_cli_context(
 
 def _validate_config(
     click_context: click.Context,
-    config: dict[str, Any],
+    config: dict[str, _t.Any],
 ) -> None:
     """
     Validate parsed config against click command params.
@@ -687,7 +687,7 @@ def get_cli_options(ctx: click.Context) -> dict[str, click.Parameter]:
 
 def parse_config_file(
     click_context: click.Context, config_file: Path
-) -> dict[str, Any]:
+) -> dict[str, _t.Any]:
     try:
         config = tomllib.loads(config_file.read_text(encoding="utf-8"))
     except OSError as os_err:
@@ -703,7 +703,7 @@ def parse_config_file(
 
     # In a TOML file, we expect the config to be under `[tool.pip-tools]`,
     # `[tool.pip-tools.compile]` or `[tool.pip-tools.sync]`
-    piptools_config: dict[str, Any] = config.get("tool", {}).get("pip-tools", {})
+    piptools_config: dict[str, _t.Any] = config.get("tool", {}).get("pip-tools", {})
 
     assert click_context.command.name is not None
     config_section_name = click_context.command.name.removeprefix("pip-")
@@ -721,13 +721,13 @@ def parse_config_file(
     return piptools_config
 
 
-def _normalize_keys_in_config(config: dict[str, Any]) -> dict[str, Any]:
+def _normalize_keys_in_config(config: dict[str, _t.Any]) -> dict[str, _t.Any]:
     return {_normalize_config_key(key): value for key, value in config.items()}
 
 
 def _invert_negative_bool_options_in_config(
-    ctx: click.Context, config: dict[str, Any]
-) -> dict[str, Any]:
+    ctx: click.Context, config: dict[str, _t.Any]
+) -> dict[str, _t.Any]:
     new_config = {}
     cli_opts = get_cli_options(ctx)
 

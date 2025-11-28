@@ -5,8 +5,8 @@ import os
 import shlex
 import sys
 import tempfile
+import typing as _t
 from pathlib import Path
-from typing import IO, Any, BinaryIO, cast
 
 import click
 from build import BuildBackendException
@@ -148,7 +148,7 @@ def cli(
     annotation_style: str,
     upgrade: bool,
     upgrade_packages: tuple[str, ...],
-    output_file: LazyFile | IO[Any] | None,
+    output_file: LazyFile | _t.IO[_t.Any] | None,
     newline: str,
     allow_unsafe: bool,
     strip_extras: bool | None,
@@ -242,7 +242,7 @@ def cli(
 
         # Close the file at the end of the context execution
         assert output_file is not None
-        # only LazyFile has close_intelligently, newer IO[Any] does not
+        # only LazyFile has close_intelligently, newer _t.IO[_t.Any] does not
         if isinstance(output_file, LazyFile):  # pragma: no cover
             ctx.call_on_close(safecall(output_file.close_intelligently))
 
@@ -517,7 +517,7 @@ def cli(
     ##
 
     writer = OutputWriter(
-        cast(BinaryIO, output_file),
+        _t.cast(_t.BinaryIO, output_file),
         click_ctx=ctx,
         dry_run=dry_run,
         emit_header=header,

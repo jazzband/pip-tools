@@ -3,8 +3,8 @@ from __future__ import annotations
 import contextlib
 import logging
 import sys
+import typing as _t
 from collections.abc import Iterator
-from typing import Any
 
 import click
 
@@ -21,24 +21,24 @@ class LogContext:
         self.current_indent = self._initial_indent = 0
         self._indent_width = self._initial_indent_width = indent_width
 
-    def log(self, message: str, *args: Any, **kwargs: Any) -> None:
+    def log(self, message: str, *args: _t.Any, **kwargs: _t.Any) -> None:
         kwargs.setdefault("err", True)
         prefix = " " * self.current_indent
         click.secho(prefix + message, *args, **kwargs)
 
-    def debug(self, message: str, *args: Any, **kwargs: Any) -> None:
+    def debug(self, message: str, *args: _t.Any, **kwargs: _t.Any) -> None:
         if self.verbosity >= 1:
             self.log(message, *args, **kwargs)
 
-    def info(self, message: str, *args: Any, **kwargs: Any) -> None:
+    def info(self, message: str, *args: _t.Any, **kwargs: _t.Any) -> None:
         if self.verbosity >= 0:
             self.log(message, *args, **kwargs)
 
-    def warning(self, message: str, *args: Any, **kwargs: Any) -> None:
+    def warning(self, message: str, *args: _t.Any, **kwargs: _t.Any) -> None:
         kwargs.setdefault("fg", "yellow")
         self.log(message, *args, **kwargs)
 
-    def error(self, message: str, *args: Any, **kwargs: Any) -> None:
+    def error(self, message: str, *args: _t.Any, **kwargs: _t.Any) -> None:
         kwargs.setdefault("fg", "red")
         self.log(message, *args, **kwargs)
 

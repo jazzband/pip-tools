@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import collections
 import copy
+import typing as _t
 from abc import ABCMeta, abstractmethod
 from collections.abc import Container, Iterable, Iterator
 from functools import partial
 from itertools import chain, count, groupby
-from typing import Any
 
 import click
 from pip._internal.exceptions import DistributionNotFound
@@ -518,7 +518,7 @@ class BacktrackingResolver(BaseResolver):
         repository: BaseRepository,
         allow_unsafe: bool = False,
         unsafe_packages: set[str] | None = None,
-        **kwargs: Any,
+        **kwargs: _t.Any,
     ) -> None:
         self.constraints = list(constraints)
         self.repository = repository

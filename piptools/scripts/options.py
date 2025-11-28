@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Literal
+import typing as _t
 
 import click
 from pip._internal.commands import create_command
@@ -9,7 +9,7 @@ from pip._internal.utils.misc import redact_auth_from_url
 from piptools.locations import CACHE_DIR, DEFAULT_CONFIG_FILE_NAMES
 from piptools.utils import UNSAFE_PACKAGES, override_defaults_from_config_file
 
-BuildTargetT = Literal["sdist", "wheel", "editable"]
+BuildTargetT = _t.Literal["sdist", "wheel", "editable"]
 ALL_BUILD_TARGETS: tuple[BuildTargetT, ...] = (
     "editable",
     "sdist",
@@ -17,7 +17,7 @@ ALL_BUILD_TARGETS: tuple[BuildTargetT, ...] = (
 )
 
 
-def _get_default_option(option_name: str) -> Any:
+def _get_default_option(option_name: str) -> _t.Any:
     """
     Get default value of the pip's option (including option from pip.conf)
     by a given option name.

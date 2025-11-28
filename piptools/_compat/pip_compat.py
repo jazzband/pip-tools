@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import optparse
 import pathlib
+import typing as _t
 import urllib.parse
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable, cast
 
 from pip._internal.cache import WheelCache
 from pip._internal.index.package_finder import PackageFinder
@@ -25,7 +25,7 @@ from .path_compat import relative_to_walk_up
 # importlib.metadata, so this compat layer allows for a consistent access
 # pattern. In pip 22.1, importlib.metadata became the default on Python 3.11
 # (and later), but is overridable. `select_backend` returns what's being used.
-if TYPE_CHECKING:
+if _t.TYPE_CHECKING:
     from pip._internal.metadata.importlib import Distribution as _ImportLibDist
 
 from ..utils import PIP_VERSION, copy_install_requirement
@@ -92,7 +92,7 @@ def parse_requirements(
 ) -> Iterator[InstallRequirement]:
     # the `comes_from` data will be rewritten in different ways in different conditions
     # each rewrite rule is expressible as a str->str function
-    rewrite_comes_from: Callable[[str], str]
+    rewrite_comes_from: _t.Callable[[str], str]
 
     if comes_from_stdin:
         # if data is coming from stdin, then `comes_from="-r -"`
@@ -208,8 +208,8 @@ def get_dev_pkgs() -> set[str]:
     if PIP_VERSION[:2] <= (23, 1):
         from pip._internal.commands.freeze import DEV_PKGS
 
-        return cast(set[str], DEV_PKGS)
+        return _t.cast(set[str], DEV_PKGS)
 
     from pip._internal.commands.freeze import _dev_pkgs
 
-    return cast(set[str], _dev_pkgs())
+    return _t.cast(set[str], _dev_pkgs())

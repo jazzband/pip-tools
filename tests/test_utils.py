@@ -5,9 +5,9 @@ import operator
 import os
 import shlex
 import sys
+import typing as _t
 from pathlib import Path
 from textwrap import dedent
-from typing import Callable
 
 import pip
 import pytest
@@ -299,7 +299,7 @@ def test_key_from_ireq_normalization(from_line):
     ),
 )
 def test_key_from_req_on_install_requirement(
-    from_line: Callable[[str], InstallRequirement],
+    from_line: _t.Callable[[str], InstallRequirement],
     line: str,
     expected: str,
 ) -> None:
@@ -319,7 +319,7 @@ def test_key_from_req_on_install_requirement(
     ),
 )
 def test_key_from_req_on_specifier_requirement(
-    from_line: Callable[[str], InstallRequirement],
+    from_line: _t.Callable[[str], InstallRequirement],
     line: str,
     expected: str,
 ) -> None:
