@@ -9,7 +9,7 @@ import shlex
 import shutil
 import subprocess
 import sys
-import typing
+import typing as _t
 from textwrap import dedent
 from unittest import mock
 from unittest.mock import MagicMock
@@ -68,7 +68,7 @@ class TestFilesCollection:
     # the name for the collection of files
     name: str = "<unnamed test file collection>"
     # static or computed contents
-    contents: dict[str, str | typing.Callable[[pathlib.Path], str]] = dataclasses.field(
+    contents: dict[str, str | _t.Callable[[pathlib.Path], str]] = dataclasses.field(
         default_factory=dict
     )
 

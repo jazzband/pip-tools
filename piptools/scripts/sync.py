@@ -5,8 +5,8 @@ import os
 import shlex
 import shutil
 import sys
+import typing as _t
 from pathlib import Path
-from typing import cast
 
 import click
 from pip._internal.commands import create_command
@@ -102,7 +102,7 @@ def cli(
     if python_executable:
         _validate_python_executable(python_executable)
 
-    install_command = cast(InstallCommand, create_command("install"))
+    install_command = _t.cast(InstallCommand, create_command("install"))
     options, _ = install_command.parse_args([])
     session = install_command._build_session(options)
     finder = install_command._build_package_finder(options=options, session=session)

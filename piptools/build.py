@@ -6,10 +6,10 @@ import os
 import pathlib
 import sys
 import tempfile
+import typing as _t
 from collections.abc import Iterator
 from dataclasses import dataclass
 from importlib import metadata as importlib_metadata
-from typing import Any, Protocol, TypeVar, overload
 
 import build
 import build.env
@@ -28,19 +28,19 @@ else:
 
 PYPROJECT_TOML = "pyproject.toml"
 
-_T = TypeVar("_T")
+_T = _t.TypeVar("_T")
 
 
 if sys.version_info >= (3, 10):
     from importlib.metadata import PackageMetadata
 else:
 
-    class PackageMetadata(Protocol):
-        @overload
-        def get_all(self, name: str, failobj: None = None) -> list[Any] | None: ...
+    class PackageMetadata(_t.Protocol):
+        @_t.overload
+        def get_all(self, name: str, failobj: None = None) -> list[_t.Any] | None: ...
 
-        @overload
-        def get_all(self, name: str, failobj: _T) -> list[Any] | _T: ...
+        @_t.overload
+        def get_all(self, name: str, failobj: _T) -> list[_t.Any] | _T: ...
 
 
 @dataclass

@@ -6,13 +6,13 @@ import platform
 import shutil
 import subprocess
 import sys
+import typing as _t
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from functools import partial
 from importlib.metadata import version as version_of
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, cast
 
 import pytest
 import tomli_w
@@ -505,7 +505,7 @@ def make_config_file(tmpdir_cwd):
 
     def _maker(
         pyproject_param: str,
-        new_default: Any,
+        new_default: _t.Any,
         config_file_name: str = DEFAULT_CONFIG_FILE_NAMES[0],
         section: str = "pip-tools",
         subsection: str | None = None,
@@ -522,7 +522,7 @@ def make_config_file(tmpdir_cwd):
             nested_config = {subsection: nested_config}
         config_to_dump = {"tool": {section: nested_config}}
         config_file.write_text(tomli_w.dumps(config_to_dump))
-        return cast(Path, config_file.relative_to(tmpdir_cwd))
+        return _t.cast(Path, config_file.relative_to(tmpdir_cwd))
 
     return _maker
 

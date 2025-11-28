@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import optparse
+import typing as _t
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
-from typing import cast
 
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
@@ -29,7 +29,7 @@ def ireq_satisfied_by_existing_pin(
     result = ireq.req.specifier.contains(
         version, prereleases=existing_pin.req.specifier.prereleases
     )
-    return cast(bool, result)
+    return _t.cast(bool, result)
 
 
 class LocalRequirementsRepository(BaseRepository):

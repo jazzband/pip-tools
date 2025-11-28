@@ -5,10 +5,10 @@ import hashlib
 import itertools
 import optparse
 import os
+import typing as _t
 from collections.abc import Iterator
 from contextlib import contextmanager
 from shutil import rmtree
-from typing import Any, BinaryIO, ContextManager, NamedTuple
 
 from click import progressbar
 from pip._internal.cache import WheelCache
@@ -46,8 +46,8 @@ from .base import BaseRepository
 FILE_CHUNK_SIZE = 4096
 
 
-class FileStream(NamedTuple):
-    stream: BinaryIO
+class FileStream(_t.NamedTuple):
+    stream: _t.BinaryIO
     size: float | None
 
 
@@ -248,7 +248,7 @@ class PyPIRepository(BaseRepository):
 
         return self._dependencies_cache[ireq]
 
-    def _get_project(self, ireq: InstallRequirement) -> Any:
+    def _get_project(self, ireq: InstallRequirement) -> _t.Any:
         """
         Return a dict of a project info from PyPI JSON API for a given
         InstallRequirement. Return None on HTTP/JSON error or if a package
@@ -403,7 +403,7 @@ class PyPIRepository(BaseRepository):
             chunks = iter(lambda: f.stream.read(FILE_CHUNK_SIZE), b"")
 
             # Choose a context manager depending on verbosity
-            context_manager: ContextManager[Iterator[bytes]]
+            context_manager: _t.ContextManager[Iterator[bytes]]
             if log.verbosity >= 1:
                 iter_length = int(f.size / FILE_CHUNK_SIZE) if f.size else None
                 bar_template = f"{' ' * log.current_indent}  |%(bar)s| %(info)s"
