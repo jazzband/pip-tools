@@ -49,7 +49,7 @@ def _discover_path_importables(pkg_pth: Path, pkg_name: str) -> Iterator[str]:
         if pkg_dir_path.parts[-1] == "__pycache__":
             continue
 
-        if all(Path(_).suffix != ".py" for _ in file_names):
+        if all(Path(_).suffix != ".py" for _ in file_names):  # pragma: no cover
             continue
 
         rel_pt = pkg_dir_path.relative_to(pkg_pth)
