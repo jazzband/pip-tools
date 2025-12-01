@@ -38,7 +38,7 @@ repos:
           - flake8-pytest-style == 2.2.0
           - flake8-typing-as-t == 1.1.0
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.18.2
+    rev: v1.19.0
     hooks:
       - id: mypy
         # Avoid error: Duplicate module named 'setup'
