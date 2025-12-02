@@ -3577,9 +3577,21 @@ def test_compile_recursive_extras_build_targets(
             [project.optional-dependencies]
             footest = ["small-fake-b"]
             dev = ["foo[footest]"]
+            [build-system]
+            requires = ["setuptools == 70.0.0"]
+            build-backend = "setuptools.build_meta"
             """
         )
     )
+    version_constraints = [
+        "setuptools<70.1.0",
+        "wheel<0.43",
+    ]
+    constraints_file = tmp_path / "constraints.txt"
+    constraints_file.write_text("\n".join(version_constraints))
+    env = os.environ.copy()  # Copy entire env to avoid Windows compatibility issues
+    # Work around https://github.com/jazzband/pip-tools/pull/1681/files#r1667748889
+    env["PIP_CONSTRAINT"] = str(constraints_file)
     out = runner.invoke(
         cli,
         [
@@ -3597,6 +3609,7 @@ def test_compile_recursive_extras_build_targets(
             "--output-file",
             "-",
         ],
+        env=env,
     )
     expected = rf"""foo[footest] @ {tmp_path.as_uri()}
 small-fake-a==0.2
