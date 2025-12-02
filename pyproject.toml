@@ -55,6 +55,9 @@ repository = "https://github.com/jazzband/pip-tools"
 changelog = "https://github.com/jazzband/pip-tools/releases"
 
 [project.optional-dependencies]
+stable = [
+  "pip <= 25.3",
+]
 testing = [
   "pytest >= 7.2.0",
   "pytest-rerunfailures",
