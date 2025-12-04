@@ -87,7 +87,7 @@ def key_from_req(req: InstallRequirement | Requirement | PipRequirement) -> str:
     :param req: the requirement the key is computed for
     :return: the canonical name of the requirement
     """
-    return str(canonicalize_name(req.name))
+    return canonicalize_name(req.name)
 
 
 def comment(text: str) -> str:
