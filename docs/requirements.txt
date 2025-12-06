@@ -85,7 +85,6 @@ sphinx==7.2.6
     #   sphinxcontrib-htmlhelp
     #   sphinxcontrib-programoutput
     #   sphinxcontrib-qthelp
-    #   sphinxcontrib-serializinghtml
     #   sphinxcontrib-towncrier
 sphinx-basic-ng==1.0.0b2
     # via furo
@@ -113,7 +112,7 @@ towncrier==24.8.0
     # via sphinxcontrib-towncrier
 typing-extensions==4.7.1
     # via setuptools-scm
-urllib3==2.5.0
+urllib3==2.6.2
     # via requests
 wheel==0.45.1
     # via pip-tools (pyproject.toml)
