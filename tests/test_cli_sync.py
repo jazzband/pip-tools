@@ -326,7 +326,7 @@ def test_invalid_python_executable(runner, python_executable):
     assert out.stderr == message.format(python_executable)
 
 
-@mock.patch("piptools.scripts.sync.get_pip_version_for_python_executable")
+@mock.patch("piptools._internal._pip_api.get_pip_version_for_python_executable")
 def test_invalid_pip_version_in_python_executable(
     get_pip_version_for_python_executable, runner, tmp_path
 ):
