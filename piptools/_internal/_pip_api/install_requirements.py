@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import copy
-from typing import Any
+import typing as _t
 
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._vendor.packaging.utils import canonicalize_name
 from pip._vendor.packaging.version import Version
 
-from .pip_version import PIP_VERSION_MAJOR_MINOR
+from . import pip_version as _pip_version
 
 
 def create_install_requirement(
@@ -35,13 +35,13 @@ def create_install_requirement(
 
 
 def create_install_requirement_from_line(
-    *args: Any, **kwargs: Any
+    *args: _t.Any, **kwargs: _t.Any
 ) -> InstallRequirement:
     return copy_install_requirement(install_req_from_line(*args, **kwargs))
 
 
 def copy_install_requirement(
-    template: InstallRequirement, **extra_kwargs: Any
+    template: InstallRequirement, **extra_kwargs: _t.Any
 ) -> InstallRequirement:
     """Make a copy of a template ``InstallRequirement`` with extra kwargs."""
     # Prepare install requirement kwargs.
@@ -56,18 +56,18 @@ def copy_install_requirement(
         "extras": template.extras,
         "user_supplied": template.user_supplied,
     }
-    if PIP_VERSION_MAJOR_MINOR < (25, 3):  # pragma: <3.9 cover
+    if _pip_version.PIP_VERSION_MAJOR_MINOR < (25, 3):  # pragma: <3.9 cover
         # Ref: https://github.com/jazzband/pip-tools/issues/2252
         kwargs["use_pep517"] = template.use_pep517
         kwargs["global_options"] = template.global_options
     kwargs.update(extra_kwargs)
 
-    if PIP_VERSION_MAJOR_MINOR >= (25, 3):  # pragma: >=3.9 cover
+    if _pip_version.PIP_VERSION_MAJOR_MINOR >= (25, 3):  # pragma: >=3.9 cover
         # Ref: https://github.com/jazzband/pip-tools/issues/2252
         kwargs.pop("use_pep517", None)
         kwargs.pop("global_options", None)
 
-    if PIP_VERSION_MAJOR_MINOR <= (23, 0):
+    if _pip_version.PIP_VERSION_MAJOR_MINOR <= (23, 0):
         kwargs["install_options"] = template.install_options
 
     # Original link does not belong to install requirements constructor,

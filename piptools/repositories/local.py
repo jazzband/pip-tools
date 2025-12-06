@@ -12,9 +12,8 @@ from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.hashes import FAVORITE_HASH
 
-from piptools._internal import _pip_api
-from piptools.utils import as_tuple, key_from_ireq
-
+from .._internal import _pip_api
+from ..utils import as_tuple, key_from_ireq
 from .base import BaseRepository
 from .pypi import PyPIRepository
 
