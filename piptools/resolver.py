@@ -21,13 +21,12 @@ from pip._internal.resolution.resolvelib.resolver import Resolver
 from pip._internal.utils.logging import indent_log
 from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
 from pip._vendor.packaging.specifiers import SpecifierSet
-from pip._vendor.packaging.utils import canonicalize_name
 from pip._vendor.resolvelib.resolvers import ResolutionImpossible, Result
 
 from piptools.cache import DependencyCache
 from piptools.repositories.base import BaseRepository
 
-from ._compat import create_wheel_cache
+from ._compat import canonicalize_name, create_wheel_cache
 from .exceptions import PipToolsError
 from .logging import log
 from .utils import (

@@ -15,9 +15,8 @@ from pip._internal.utils.direct_url_helpers import (
     direct_url_as_pep440_direct_reference,
     direct_url_from_link,
 )
-from pip._vendor.packaging.utils import canonicalize_name
 
-from ._compat import Distribution, get_dev_pkgs
+from ._compat import Distribution, canonicalize_name, get_dev_pkgs
 from .exceptions import IncompatibleRequirements
 from .logging import log
 from .utils import (
@@ -62,7 +61,7 @@ def dependency_tree(
 
     while queue:
         v = queue.popleft()
-        key = str(canonicalize_name(v.key))
+        key = canonicalize_name(v.key)
         if key in dependencies:
             continue
 
@@ -88,7 +87,7 @@ def get_dists_to_ignore(installed: Iterable[Distribution]) -> list[str]:
     locally, click should also be installed/uninstalled depending on the given
     requirements.
     """
-    installed_keys = {str(canonicalize_name(r.key)): r for r in installed}
+    installed_keys = {canonicalize_name(r.key): r for r in installed}
     return list(
         flat_map(lambda req: dependency_tree(installed_keys, req), PACKAGES_TO_IGNORE)
     )
@@ -146,7 +145,7 @@ def diff_key_from_ireq(ireq: InstallRequirement) -> str:
 
 def diff_key_from_req(req: Distribution) -> str:
     """Get a unique key for the requirement."""
-    key = str(canonicalize_name(req.key))
+    key = canonicalize_name(req.key)
     if (
         req.direct_url
         and isinstance(req.direct_url.info, ArchiveInfo)
