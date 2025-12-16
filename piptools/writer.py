@@ -13,8 +13,8 @@ from click.core import Context
 from pip._internal.models.format_control import FormatControl
 from pip._internal.req.req_install import InstallRequirement
 from pip._vendor.packaging.markers import Marker
-from pip._vendor.packaging.utils import canonicalize_name
 
+from ._compat import canonicalize_name
 from .logging import log
 from .utils import (
     comment,

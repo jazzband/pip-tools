@@ -25,10 +25,16 @@ from .path_compat import relative_to_walk_up
 # importlib.metadata, so this compat layer allows for a consistent access
 # pattern. In pip 22.1, importlib.metadata became the default on Python 3.11
 # (and later), but is overridable. `select_backend` returns what's being used.
+# Secondly, the canonicalize_name function received typing improvements
+# in pip 21.2, since mypy runs on an older version, this compat layer ensures correct
+# typing regardless of the pip version used. NormalizedName and str are interchangeable.
 if _t.TYPE_CHECKING:
     from pip._internal.metadata.importlib import Distribution as _ImportLibDist
 
-from ..utils import PIP_VERSION, copy_install_requirement
+    def canonicalize_name(name: str) -> str: ...
+
+else:
+    from pip._vendor.packaging.utils import canonicalize_name  # noqa: F401
 
 
 @dataclass(frozen=True)
@@ -90,6 +96,8 @@ def parse_requirements(
     isolated: bool = False,
     comes_from_stdin: bool = False,
 ) -> Iterator[InstallRequirement]:
+    from ..utils import copy_install_requirement
+
     # the `comes_from` data will be rewritten in different ways in different conditions
     # each rewrite rule is expressible as a str->str function
     rewrite_comes_from: _t.Callable[[str], str]
@@ -198,6 +206,8 @@ def _is_remote_pip_uri(value: str) -> bool:
 
 
 def create_wheel_cache(cache_dir: str, format_control: str | None = None) -> WheelCache:
+    from ..utils import PIP_VERSION
+
     kwargs: dict[str, str | None] = {"cache_dir": cache_dir}
     if PIP_VERSION[:2] <= (23, 0):
         kwargs["format_control"] = format_control
@@ -205,6 +215,8 @@ def create_wheel_cache(cache_dir: str, format_control: str | None = None) -> Whe
 
 
 def get_dev_pkgs() -> set[str]:
+    from ..utils import PIP_VERSION
+
     if PIP_VERSION[:2] <= (23, 1):
         from pip._internal.commands.freeze import DEV_PKGS
 

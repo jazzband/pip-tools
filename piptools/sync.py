@@ -15,9 +15,8 @@ from pip._internal.utils.direct_url_helpers import (
     direct_url_as_pep440_direct_reference,
     direct_url_from_link,
 )
-from pip._vendor.packaging.utils import canonicalize_name
 
-from ._compat import Distribution, get_dev_pkgs
+from ._compat import Distribution, canonicalize_name, get_dev_pkgs
 from .exceptions import IncompatibleRequirements
 from .logging import log
 from .utils import (
