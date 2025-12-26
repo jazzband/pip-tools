@@ -61,7 +61,7 @@ run-name: >-
 jobs:
   build:
     name: >-
-      📦 v${{ github.ref_name }}
+      📦 ${{ github.ref_name }}
       [mode: ${{
         github.event.action == 'published'
         && 'release' || 'nightly'
