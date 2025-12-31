@@ -13,8 +13,8 @@ from click.core import Context
 from pip._internal.models.format_control import FormatControl
 from pip._internal.req.req_install import InstallRequirement
 from pip._vendor.packaging.markers import Marker
-from pip._vendor.packaging.utils import canonicalize_name
 
+from ._compat import canonicalize_name
 from .logging import log
 from .utils import (
     comment,
@@ -54,7 +54,7 @@ strip_comes_from_line_re = re.compile(r" \(line \d+\)$")
 def _comes_from_as_string(comes_from: str | InstallRequirement) -> str:
     if isinstance(comes_from, str):
         return strip_comes_from_line_re.sub("", comes_from)
-    return _t.cast(str, canonicalize_name(key_from_ireq(comes_from)))
+    return canonicalize_name(key_from_ireq(comes_from))
 
 
 def annotation_style_split(required_by: set[str]) -> str:

@@ -13,9 +13,8 @@ from build import BuildBackendException
 from click.utils import LazyFile, safecall
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.misc import redact_auth_from_url
-from pip._vendor.packaging.utils import canonicalize_name
 
-from .._compat import parse_requirements
+from .._compat import canonicalize_name, parse_requirements
 from ..build import ProjectMetadata, build_project_metadata
 from ..cache import DependencyCache
 from ..exceptions import NoCandidateFound, PipToolsError
