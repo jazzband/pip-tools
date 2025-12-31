@@ -646,29 +646,32 @@ This will be indicated in the output with one of the following suffixes:
 
 ### Shell completions
 
-`pip-tools` supports shell completions for `pip-compile` and `pip-sync` via `click`.
+`pip-tools` supports shell completions for `pip-compile` and `pip-sync`.
 
-For Bash:
+For Bash, add this to `~/.bashrc`:
 
-```console
-$ _PIP_COMPILE_COMPLETE=bash_source pip-compile > ~/.pip-tools-complete.bash
-$ _PIP_SYNC_COMPLETE=bash_source pip-sync >> ~/.pip-tools-complete.bash
-$ echo ". ~/.pip-tools-complete.bash" >> ~/.bashrc
+```bash
+eval "$(_PIP_COMPILE_COMPLETE=bash_source pip-compile)"
+eval "$(_PIP_SYNC_COMPLETE=bash_source pip-sync)"
 ```
 
-For Zsh:
+For Zsh, add this to `~/.zshrc`:
 
-```console
-$ _PIP_COMPILE_COMPLETE=zsh_source pip-compile > ~/.pip-tools-complete.zsh
-$ _PIP_SYNC_COMPLETE=zsh_source pip-sync >> ~/.pip-tools-complete.zsh
-$ echo ". ~/.pip-tools-complete.zsh" >> ~/.zshrc
+```bash
+eval "$(_PIP_COMPILE_COMPLETE=zsh_source pip-compile)"
+eval "$(_PIP_SYNC_COMPLETE=zsh_source pip-sync)"
 ```
 
-For Fish:
+For Fish, add this to `~/.config/fish/completions/pip-compile.fish`:
 
-```console
-$ _PIP_COMPILE_COMPLETE=fish_source pip-compile > ~/.config/fish/completions/pip-compile.fish
-$ _PIP_SYNC_COMPLETE=fish_source pip-sync > ~/.config/fish/completions/pip-sync.fish
+```fish
+_PIP_COMPILE_COMPLETE=fish_source pip-compile | source
+```
+
+And this to `~/.config/fish/completions/pip-sync.fish`:
+
+```fish
+_PIP_SYNC_COMPLETE=fish_source pip-sync | source
 ```
 
 ### Deprecations
