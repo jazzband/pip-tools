@@ -61,7 +61,7 @@ run-name: >-
 jobs:
   build:
     name: >-
-      📦 v${{ github.ref_name }}
+      📦 ${{ github.ref_name }}
       [mode: ${{
         github.event.action == 'published'
         && 'release' || 'nightly'
@@ -115,7 +115,7 @@ jobs:
   publish-pypi:
     name: >-
       📦
-      Publish v${{ github.ref_name }} to PyPI
+      Publish ${{ github.ref_name }} to PyPI
     needs:
       - build
     if: >-
@@ -142,7 +142,7 @@ jobs:
           path: dist/
       - name: >-
           📦
-          Publish v${{ github.ref_name }} to PyPI
+          Publish ${{ github.ref_name }} to PyPI
           🔏
         uses: pypa/gh-action-pypi-publish@release/v1
       - name: Clean up the publish attestation leftovers
