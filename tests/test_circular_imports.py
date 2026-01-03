@@ -24,7 +24,7 @@ from types import ModuleType
 import pytest
 
 import piptools
-from piptools.utils import PIP_VERSION
+from piptools._internal import _pip_api
 
 
 def _find_all_importables(pkg: ModuleType) -> list[str]:
@@ -72,11 +72,11 @@ def _allowed_deprecation_warning_filters() -> list[str]:
     # https://github.com/python/cpython/pull/138149 allows regex usage, but is not
     # yet supported on all Python versions we support
     flags: list[str] = []
-    if PIP_VERSION[:2] < (25, 3):
+    if _pip_api.PIP_VERSION_MAJOR_MINOR < (25, 3):
         flags.extend(
             ("-W", "ignore:pkg_resources is deprecated as an API.:DeprecationWarning:")
         )
-    if PIP_VERSION[:2] <= (22, 2):
+    if _pip_api.PIP_VERSION_MAJOR_MINOR <= (22, 2):
         flags.extend(
             (
                 "-W",
