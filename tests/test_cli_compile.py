@@ -3603,6 +3603,7 @@ small-fake-b==0.3
 
 
 @backtracking_resolver_only
+@pytest.mark.network
 def test_compile_build_targets_setuptools_no_wheel_dep(
     runner,
     tmp_path,
