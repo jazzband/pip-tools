@@ -32,9 +32,9 @@ from pip._vendor.packaging.specifiers import SpecifierSet
 from pip._vendor.pkg_resources import get_distribution
 
 from piptools.locations import DEFAULT_CONFIG_FILE_NAMES
-from piptools.subprocess_utils import run_python_snippet
 
 from ._compat import canonicalize_name
+from ._internal import _subprocess
 
 _KT = _t.TypeVar("_KT")
 _VT = _t.TypeVar("_VT")
@@ -426,7 +426,7 @@ def get_sys_path_for_python_executable(python_executable: str) -> list[str]:
     """
     Return sys.path list for the given python executable.
     """
-    result = run_python_snippet(
+    result = _subprocess.run_python_snippet(
         python_executable, "import sys;import json;print(json.dumps(sys.path))"
     )
 
