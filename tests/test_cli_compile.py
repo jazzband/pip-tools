@@ -4203,3 +4203,46 @@ def test_that_self_referential_pyproject_toml_extra_can_be_compiled(
         small-fake-a==0.2
             # via foo
         """)
+
+
+def test_compile_with_generate_hashes_preserves_extra_index_url(
+    pip_with_index_conf,
+    minimal_wheels_path,
+    runner,
+    tmpdir_cwd,
+):
+    """
+    Regression test for
+    https://github.com/jazzband/pip-tools/issues/2220
+
+    Using ``--generate-hashes`` triggers the codepath which clears the package finder
+    cache (``allow_all_wheels()``), and that code incorrectly cleared more information
+    than desired, removing extra index URLs in addition to cached package info.
+    """
+    reqs_in = tmpdir_cwd / "requirements.in"
+    reqs_in.write_text(dedent("""\
+            --extra-index-url http://extraindex1.com
+
+            small-fake-a
+            """))
+
+    out = runner.invoke(
+        cli,
+        ["--output-file", "-", "--no-header", "--strip-extras", "--generate-hashes"],
+    )
+
+    # the output should contain
+    # - the `--index-url` from the pip config
+    # - the `--extra-index-url` from `requirements.in`
+    # - the `--find-links` option from pip config
+    #
+    # and then package resolution information
+    assert out.stdout == dedent(f"""\
+        --index-url http://example.com
+        --extra-index-url http://extraindex1.com
+        --find-links {minimal_wheels_path.as_posix()}
+
+        small-fake-a==0.2 \\
+            --hash=sha256:33e1acdca3b9162e002cedb0e58b350d731d1ed3f53a6b22e0a628bca7c7c6ed
+            # via -r requirements.in
+        """)
