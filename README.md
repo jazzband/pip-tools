@@ -644,6 +644,36 @@ This will be indicated in the output with one of the following suffixes:
   - [Python extension for VS Code](https://marketplace.visualstudio.com/items?itemName=ms-python.python) for VS Code.
   - [pip-requirements.el](https://github.com/Wilfred/pip-requirements.el) for Emacs.
 
+### Shell completions
+
+`pip-tools` supports shell completions for `pip-compile` and `pip-sync`.
+
+For Bash, add this to `~/.bashrc`:
+
+```bash
+eval "$(_PIP_COMPILE_COMPLETE=bash_source pip-compile)"
+eval "$(_PIP_SYNC_COMPLETE=bash_source pip-sync)"
+```
+
+For Zsh, add this to `~/.zshrc`:
+
+```bash
+eval "$(_PIP_COMPILE_COMPLETE=zsh_source pip-compile)"
+eval "$(_PIP_SYNC_COMPLETE=zsh_source pip-sync)"
+```
+
+For Fish, add this to `~/.config/fish/completions/pip-compile.fish`:
+
+```fish
+_PIP_COMPILE_COMPLETE=fish_source pip-compile | source
+```
+
+And this to `~/.config/fish/completions/pip-sync.fish`:
+
+```fish
+_PIP_SYNC_COMPLETE=fish_source pip-sync | source
+```
+
 ### Deprecations
 
 This section lists `pip-tools` features that are currently deprecated.
