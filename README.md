@@ -226,6 +226,21 @@ packages whilst constraining requests to the latest version less than 3.0:
 $ pip-compile --upgrade --upgrade-package 'requests<3.0'
 ```
 
+### Understanding output file behavior
+
+When you run `pip-compile`, it reads any existing output file (e.g.,
+`requirements.txt`) and uses the versions specified there as constraints.
+This ensures that the output is stable -- `pip-compile` will prefer to use existing pinned versions.
+
+When upgrading packages or adding new packages to the input,
+it is possible for the existing pins to conflict with new packages. In such cases,
+`pip-compile` will update the pins and emit a warning
+(e.g., `Discarding foo=1.2.3 to proceed`).
+
+In order to resolve dependencies afresh, `pip-compile` provides the following options:
+- `--upgrade` / `-U` flag to upgrade all packages
+- `--upgrade-package <package>`/`-P <package>` to upgrade specific packages
+
 ### Using hashes
 
 If you would like to use _Hash-Checking Mode_ available in `pip` since
