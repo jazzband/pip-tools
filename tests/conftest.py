@@ -269,28 +269,20 @@ def make_pip_conf(tmpdir, monkeypatch):
 
 @pytest.fixture
 def pip_conf(make_pip_conf, minimal_wheels_path):
-    return make_pip_conf(
-        dedent(
-            f"""\
+    return make_pip_conf(dedent(f"""\
             [global]
             no-index = true
             find-links = {minimal_wheels_path.as_posix()}
-            """
-        )
-    )
+            """))
 
 
 @pytest.fixture
 def pip_with_index_conf(make_pip_conf, minimal_wheels_path):
-    return make_pip_conf(
-        dedent(
-            f"""\
+    return make_pip_conf(dedent(f"""\
             [global]
             index-url = http://example.com
             find-links = {minimal_wheels_path.as_posix()}
-            """
-        )
-    )
+            """))
 
 
 @pytest.fixture(scope="session")
@@ -320,9 +312,7 @@ def make_package(tmp_path_factory):
         package_dir.mkdir(parents=True)
 
         with (package_dir / "setup.py").open("w") as fp:
-            fp.write(
-                dedent(
-                    f"""\
+            fp.write(dedent(f"""\
                     from setuptools import setup
                     setup(
                         name={name!r},
@@ -334,9 +324,7 @@ def make_package(tmp_path_factory):
                         extras_require={extras_require},
                         py_modules=[{name!r}],
                     )
-                    """
-                )
-            )
+                    """))
 
         # Create a README to avoid setuptools warnings.
         (package_dir / "README").touch()
@@ -346,14 +334,10 @@ def make_package(tmp_path_factory):
 
         if build_system_requires:
             with (package_dir / "pyproject.toml").open("w") as fp:
-                fp.write(
-                    dedent(
-                        f"""\
+                fp.write(dedent(f"""\
                         [build-system]
                         requires = {json.dumps(build_system_requires)}
-                        """
-                    )
-                )
+                        """))
 
         return package_dir
 

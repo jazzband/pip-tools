@@ -791,14 +791,10 @@ def test_select_config_file_prefers_pip_tools_toml_over_pyproject_toml(tmpdir_cw
     pip_tools_file.touch()
 
     pyproject_file = Path("pyproject.toml")
-    pyproject_file.write_text(
-        dedent(
-            """\
+    pyproject_file.write_text(dedent("""\
             [build-system]
             requires = ["setuptools>=63", "setuptools_scm[toml]>=7"]
             build-backend = "setuptools.build_meta"
-            """
-        )
-    )
+            """))
 
     assert select_config_file(()) == pip_tools_file

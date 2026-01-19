@@ -83,14 +83,12 @@ def test_build_project_metadata_upgrading_raises_error(tmp_path):
     """Test build_project_metadata doesn't swallow error."""
     src_file = tmp_path / "pyproject.toml"
     src_file.write_text(
-        textwrap.dedent(
-            """
+        textwrap.dedent("""
             [project]
             # missing name
             version = "0.1"
             dependencies=["test_dep"]
-            """
-        ),
+            """),
     )
     with pytest.raises(
         BuildBackendException,
@@ -138,18 +136,14 @@ def test_static_parse_of_self_referential_extra(
     monkeypatch.chdir(tmp_path)
 
     src_file = tmp_path / "pyproject.toml"
-    src_file.write_text(
-        textwrap.dedent(
-            """
+    src_file.write_text(textwrap.dedent("""
             [project]
             name = "foo"
             version = "0.1.0"
             [project.optional-dependencies]
             ext1 = ["bar"]
             ext2 = ["foo[ext1]"]
-            """
-        )
-    )
+            """))
 
     if input_path_is_absolute:
         parse_path = src_file
@@ -219,24 +213,16 @@ def test_build_metadata_from_dynamic_dependencies(tmp_path):
     pyproject_file = tmp_path / "pyproject.toml"
     setuppy_file = tmp_path / "setup.py"
 
-    pyproject_file.write_text(
-        textwrap.dedent(
-            """
+    pyproject_file.write_text(textwrap.dedent("""
             [project]
             name = "foo"
             version = "0.1.0"
             dynamic = ["dependencies"]
-            """
-        )
-    )
-    setuppy_file.write_text(
-        textwrap.dedent(
-            """\
+            """))
+    setuppy_file.write_text(textwrap.dedent("""\
             from setuptools import setup
             setup(install_requires=["bar > 2"])
-            """
-        )
-    )
+            """))
 
     metadata = build_project_metadata(
         pyproject_file, (), attempt_static_parse=True, isolated=True, quiet=False

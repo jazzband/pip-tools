@@ -207,14 +207,10 @@ def test_command_line_setuptools_output_file(runner, options, expected_output_fi
     """
 
     with open("setup.py", "w") as package:
-        package.write(
-            dedent(
-                """\
+        package.write(dedent("""\
                 from setuptools import setup
                 setup(install_requires=[])
-                """
-            )
-        )
+                """))
 
     out = runner.invoke(cli, ["--no-build-isolation"] + options)
     assert out.exit_code == 0
@@ -229,14 +225,10 @@ def test_command_line_setuptools_nested_output_file(tmpdir, runner):
     proj_dir = tmpdir.mkdir("proj")
 
     with open(str(proj_dir / "setup.py"), "w") as package:
-        package.write(
-            dedent(
-                """\
+        package.write(dedent("""\
                 from setuptools import setup
                 setup(install_requires=[])
-                """
-            )
-        )
+                """))
 
     out = runner.invoke(cli, [str(proj_dir / "setup.py"), "--no-build-isolation"])
     assert out.exit_code == 0
@@ -247,14 +239,10 @@ def test_command_line_setuptools_nested_output_file(tmpdir, runner):
 def test_setuptools_preserves_environment_markers(
     runner, make_package, make_wheel, make_pip_conf, tmpdir
 ):
-    make_pip_conf(
-        dedent(
-            """\
+    make_pip_conf(dedent("""\
             [global]
             disable-pip-version-check = True
-            """
-        )
-    )
+            """))
 
     dists_dir = tmpdir / "dists"
 
@@ -1062,15 +1050,10 @@ def test_upgrade_package_with_extra(runner, make_package, make_sdist, tmpdir):
     )
 
     assert out.exit_code == 0, out
-    assert (
-        dedent(
-            """\
+    assert dedent("""\
             test-package-1[more]==0.1
             test-package-2==0.1
-            """
-        )
-        == out.stdout
-    )
+            """) == out.stdout
 
 
 def test_quiet_option(pip_conf, runner):
@@ -1166,14 +1149,12 @@ def test_generate_hashes_with_annotations(runner):
             "--generate-hashes",
         ],
     )
-    assert out.stdout == dedent(
-        """\
+    assert out.stdout == dedent("""\
         six==1.15.0 \\
             --hash=sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259 \\
             --hash=sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced
             # via -r requirements.in
-        """
-    )
+        """)
 
 
 @pytest.mark.network
@@ -1270,14 +1251,10 @@ def test_preserve_newline_from_input(runner, linesep, must_exclude):
 
 def test_generate_hashes_with_split_style_annotations(pip_conf, runner, tmpdir_cwd):
     reqs_in = tmpdir_cwd / "requirements.in"
-    reqs_in.write_text(
-        dedent(
-            """\
+    reqs_in.write_text(dedent("""\
             small_fake_with_deps
             small-fake-a
-            """
-        )
-    )
+            """))
 
     out = runner.invoke(
         cli,
@@ -1293,8 +1270,7 @@ def test_generate_hashes_with_split_style_annotations(pip_conf, runner, tmpdir_c
         ],
     )
 
-    assert out.stdout == dedent(
-        """\
+    assert out.stdout == dedent("""\
         small-fake-a==0.1 \\
             --hash=sha256:5e6071ee6e4c59e0d0408d366fe9b66781d2cf01be9a6e19a2433bb3c5336330
             # via
@@ -1303,20 +1279,15 @@ def test_generate_hashes_with_split_style_annotations(pip_conf, runner, tmpdir_c
         small-fake-with-deps==0.1 \\
             --hash=sha256:71403033c0545516cc5066c9196d9490affae65a865af3198438be6923e4762e
             # via -r requirements.in
-        """
-    )
+        """)
 
 
 def test_generate_hashes_with_line_style_annotations(pip_conf, runner, tmpdir_cwd):
     reqs_in = tmpdir_cwd / "requirements.in"
-    reqs_in.write_text(
-        dedent(
-            """\
+    reqs_in.write_text(dedent("""\
             small_fake_with_deps
             small-fake-a
-            """
-        )
-    )
+            """))
 
     out = runner.invoke(
         cli,
@@ -1332,16 +1303,14 @@ def test_generate_hashes_with_line_style_annotations(pip_conf, runner, tmpdir_cw
         ],
     )
 
-    assert out.stdout == dedent(
-        """\
+    assert out.stdout == dedent("""\
         small-fake-a==0.1 \\
             --hash=sha256:5e6071ee6e4c59e0d0408d366fe9b66781d2cf01be9a6e19a2433bb3c5336330
             # via -r requirements.in, small-fake-with-deps
         small-fake-with-deps==0.1 \\
             --hash=sha256:71403033c0545516cc5066c9196d9490affae65a865af3198438be6923e4762e
             # via -r requirements.in
-        """
-    )
+        """)
 
 
 @pytest.mark.network
@@ -1391,14 +1360,12 @@ def test_generate_hashes_with_mixed_sources(
             dummy_six_wheel_digest,
         )
     )
-    expected_output = dedent(
-        f"""\
+    expected_output = dedent(f"""\
         six==1.16.0 \\
             --hash=sha256:{expected_digests[0]} \\
             --hash=sha256:{expected_digests[1]} \\
             --hash=sha256:{expected_digests[2]}
-        """
-    )
+        """)
     assert out.stdout == expected_output
 
 
@@ -1463,14 +1430,10 @@ def test_default_index_url(make_pip_conf, url, expected_url):
     """
     Test help's output with default index URL.
     """
-    make_pip_conf(
-        dedent(
-            f"""\
+    make_pip_conf(dedent(f"""\
             [global]
             index-url = {url}
-            """
-        )
-    )
+            """))
 
     result = subprocess.run(
         [sys.executable, "-m", "piptools", "compile", "--help"],
@@ -1501,12 +1464,10 @@ def test_stdin(pip_conf, runner):
         input="small-fake-a==0.1",
     )
 
-    assert out.stdout == dedent(
-        """\
+    assert out.stdout == dedent("""\
         small-fake-a==0.1
             # via -r -
-        """
-    )
+        """)
 
 
 def test_multiple_input_files_without_output_file(runner):
@@ -1584,41 +1545,35 @@ def test_annotate_option(pip_conf, runner, options, expected):
     (
         pytest.param(
             "--allow-unsafe",
-            dedent(
-                """\
+            dedent("""\
                 small-fake-a==0.1
                 small-fake-b==0.3
 
                 # The following packages are considered to be unsafe in a requirements file:
                 small-fake-with-deps==0.1
-                """
-            ),
+                """),
             id="allow all packages",
         ),
         pytest.param(
             "--no-allow-unsafe",
-            dedent(
-                """\
+            dedent("""\
                 small-fake-a==0.1
                 small-fake-b==0.3
 
                 # The following packages are considered to be unsafe in a requirements file:
                 # small-fake-with-deps
-                """
-            ),
+                """),
             id="comment out small-fake-with-deps and its dependencies",
         ),
         pytest.param(
             None,
-            dedent(
-                """\
+            dedent("""\
                 small-fake-a==0.1
                 small-fake-b==0.3
 
                 # The following packages are considered to be unsafe in a requirements file:
                 # small-fake-with-deps
-                """
-            ),
+                """),
             id="allow unsafe is default option",
         ),
     ),
@@ -1654,27 +1609,23 @@ def test_allow_unsafe_option(pip_conf, monkeypatch, runner, option, expected):
     (
         (
             "small-fake-with-deps",
-            dedent(
-                """\
+            dedent("""\
                 small-fake-a==0.1
                 small-fake-b==0.3
 
                 # The following packages are considered to be unsafe in a requirements file:
                 # small-fake-with-deps
-                """
-            ),
+                """),
         ),
         (
             "small-fake-a",
-            dedent(
-                """\
+            dedent("""\
                 small-fake-b==0.3
                 small-fake-with-deps==0.1
 
                 # The following packages are considered to be unsafe in a requirements file:
                 # small-fake-a
-                """
-            ),
+                """),
         ),
     ),
 )
@@ -1715,12 +1666,10 @@ def test_unsafe_package_option_normalizes(pip_conf, runner, unsafe_package):
     The --unsafe-package option should normalize package names.
     """
     pathlib.Path("requirements.in").write_text(
-        dedent(
-            """\
+        dedent("""\
         small_fake_b
         small-fake-with-deps
-        """
-        ),
+        """),
         encoding="utf-8",
     )
 
@@ -1740,15 +1689,13 @@ def test_unsafe_package_option_normalizes(pip_conf, runner, unsafe_package):
     )
 
     assert out.exit_code == 0, out
-    assert out.stdout == dedent(
-        """\
+    assert out.stdout == dedent("""\
             small-fake-a==0.1
             small-fake-b==0.3
 
             # The following packages are considered to be unsafe in a requirements file:
             # small-fake-with-deps
-            """
-    )
+            """)
 
 
 @pytest.mark.parametrize(
@@ -1806,14 +1753,10 @@ def test_build_project_metadata_isolation_option(
     """
 
     with open("setup.py", "w") as package:
-        package.write(
-            dedent(
-                """\
+        package.write(dedent("""\
                 from setuptools import setup
                 setup(install_requires=[])
-                """
-            )
-        )
+                """))
 
     runner.invoke(cli, [option])
 
@@ -2007,14 +1950,12 @@ def test_upgrade_package_doesnt_remove_annotation(pip_conf, runner):
 
     runner.invoke(cli, ["-P", "small-fake-a", "--no-emit-options", "--no-header"])
     with open("requirements.txt") as req_txt:
-        assert req_txt.read() == dedent(
-            """\
+        assert req_txt.read() == dedent("""\
             small-fake-a==0.1
                 # via small-fake-with-deps
             small-fake-with-deps==0.1
                 # via -r requirements.in
-            """
-        )
+            """)
 
 
 @pytest.mark.parametrize(("num_inputs"), (2, 3, 10))
@@ -2488,9 +2429,7 @@ def test_combine_different_extras_of_the_same_package(
         ],
     )
     assert out.exit_code == 0
-    assert (
-        dedent(
-            """\
+    assert dedent("""\
         fake-colorful==0.3
             # via fake-ray
         fake-ray[default,tune]==0.1
@@ -2501,10 +2440,7 @@ def test_combine_different_extras_of_the_same_package(
             # via fake-ray
         fake-tune-sklearn==0.7
             # via -r requirements.in
-        """
-        )
-        == out.stdout
-    )
+        """) == out.stdout
 
 
 def test_canonicalize_extras(pip_conf, runner, tmp_path, make_package, make_wheel):
@@ -2774,12 +2710,10 @@ def test_error_in_pyproject_toml(
     Test that an error in pyproject.toml is reported.
     """
     fname = "pyproject.toml"
-    invalid_content = dedent(
-        """\
+    invalid_content = dedent("""\
         [project]
         invalid = "metadata"
-        """
-    )
+        """)
     meta_path = make_module(fname=fname, content=invalid_content)
 
     options = []
@@ -2880,16 +2814,11 @@ def test_all_extras(fake_dists, runner, make_module, fname, content):
         ],
     )
     assert out.exit_code == 0, out
-    assert (
-        dedent(
-            """\
+    assert dedent("""\
             small-fake-a==0.1
             small-fake-b==0.2
             small-fake-c==0.3
-            """
-        )
-        == out.stdout
-    )
+            """) == out.stdout
 
 
 # This should not depend on the metadata format so testing all cases is wasteful
@@ -2986,8 +2915,7 @@ def test_all_extras_and_all_build_deps(
     # This means that if our build dependencies are not available as wheels then we will not get
     # reproducible results.
     assert "fake_transient_build_dep" not in out.stdout
-    assert out.stdout == dedent(
-        """\
+    assert out.stdout == dedent("""\
         fake-direct-extra-runtime-dep==0.2
             # via small-fake-with-build-deps (setup.py)
         fake-direct-runtime-dep==0.1
@@ -3015,8 +2943,7 @@ def test_all_extras_and_all_build_deps(
         # The following packages are considered to be unsafe in a requirements file:
         setuptools==68.1.2
             # via small-fake-with-build-deps (pyproject.toml::build-system.requires)
-        """
-    )
+        """)
 
 
 @backtracking_resolver_only
@@ -3393,16 +3320,14 @@ def test_preserve_via_requirements_constrained_dependencies_when_run_twice(
     with open("requirements.txt") as req_txt:
         second_output = req_txt.read()
 
-    expected_output = dedent(
-        """\
+    expected_output = dedent("""\
         small-fake-a==0.1
             # via
             #   -c constraints.txt
             #   small-fake-with-deps
         small-fake-with-deps==0.1
             # via -r requirements.in
-        """
-    )
+        """)
     assert first_output == expected_output
     assert second_output == expected_output
 
@@ -3509,9 +3434,7 @@ def test_compile_recursive_extras_static(
     minimal_wheels_path,
     current_resolver,
 ):
-    (tmp_path / "pyproject.toml").write_text(
-        dedent(
-            """
+    (tmp_path / "pyproject.toml").write_text(dedent("""
             [project]
             name = "foo"
             version = "0.0.1"
@@ -3519,9 +3442,7 @@ def test_compile_recursive_extras_static(
             [project.optional-dependencies]
             footest = ["small-fake-b"]
             dev = ["foo[footest]"]
-            """
-        )
-    )
+            """))
     out = runner.invoke(
         cli,
         [
@@ -3555,9 +3476,7 @@ small-fake-b==0.3
 def test_compile_recursive_extras_build_targets(
     runner, tmp_path, minimal_wheels_path, current_resolver
 ):
-    (tmp_path / "pyproject.toml").write_text(
-        dedent(
-            """
+    (tmp_path / "pyproject.toml").write_text(dedent("""
             [project]
             name = "foo"
             version = "0.0.1"
@@ -3565,9 +3484,7 @@ def test_compile_recursive_extras_build_targets(
             [project.optional-dependencies]
             footest = ["small-fake-b"]
             dev = ["foo[footest]"]
-            """
-        )
-    )
+            """))
     out = runner.invoke(
         cli,
         [
@@ -3625,16 +3542,12 @@ def test_compile_build_targets_setuptools_no_wheel_dep(
     This is a regression test for
     https://github.com/jazzband/pip-tools/pull/1681#issuecomment-2212541289.
     """
-    (tmp_path / "pyproject.toml").write_text(
-        dedent(
-            """
+    (tmp_path / "pyproject.toml").write_text(dedent("""
             [project]
             name = "foo"
             version = "0.0.1"
             dependencies = ["small-fake-a"]
-            """
-        )
-    )
+            """))
     (tmp_path / "constraints.txt").write_text("wheel<0.43")
     out = runner.invoke(
         cli,
@@ -3764,14 +3677,12 @@ def test_constraint_option(pip_conf, runner, tmpdir_cwd, make_config_file, optio
     )
 
     assert out.exit_code == 0
-    assert out.stdout == dedent(
-        """\
+    assert out.stdout == dedent("""\
         small-fake-a==0.1
             # via
             #   -c constraints.txt
             #   -r requirements.in
-        """
-    )
+        """)
 
 
 def test_allow_in_config_pip_sync_option(pip_conf, runner, tmp_path, make_config_file):
@@ -3926,19 +3837,14 @@ def test_origin_of_extra_requirement_not_written_to_annotations(
     )
 
     assert out.exit_code == 0, out
-    assert (
-        dedent(
-            f"""\
+    assert dedent(f"""\
         package-with-extras[extra1,extra2]==0.1
             # via -r {req_in.as_posix()}
         small-fake-a==0.1
             # via package-with-extras
         small-fake-b==0.1
             # via package-with-extras
-        """
-        )
-        == out.stdout
-    )
+        """) == out.stdout
 
 
 def test_tool_specific_config_option(pip_conf, runner, tmp_path, make_config_file):
@@ -4042,12 +3948,10 @@ def test_second_order_requirements_path_handling(
         )
 
     assert out.exit_code == 0
-    assert out.stdout == dedent(
-        f"""\
+    assert out.stdout == dedent(f"""\
         small-fake-a==0.2
             # via -r {output_path}
-        """
-    )
+        """)
 
 
 @pytest.mark.parametrize(
@@ -4123,12 +4027,10 @@ def test_second_order_requirements_relative_path_in_separate_dir(
         )
 
     assert out.exit_code == 0
-    assert out.stdout == dedent(
-        f"""\
+    assert out.stdout == dedent(f"""\
         small-fake-a==0.2
             # via -r {output_path}
-        """
-    )
+        """)
 
 
 def test_second_order_requirements_can_be_in_parent_of_cwd(
@@ -4167,12 +4069,10 @@ def test_second_order_requirements_can_be_in_parent_of_cwd(
         )
 
     assert out.exit_code == 0
-    assert out.stdout == dedent(
-        """\
+    assert out.stdout == dedent("""\
         small-fake-a==0.2
             # via -r ../requirements2.in
-        """
-    )
+        """)
 
 
 @pytest.mark.parametrize(
@@ -4196,12 +4096,10 @@ def test_url_constraints_are_not_treated_as_file_paths(
     constraints_url = "https://example.com/files/common_constraints.txt"
 
     reqs_in = tmp_path / "requirements.in"
-    reqs_in.write_text(
-        f"""
+    reqs_in.write_text(f"""
         small-fake-a
         -c {constraints_url}
-        """
-    )
+        """)
 
     input_dir_path = tmp_path if input_path_absolute else pathlib.Path(".")
     input_path = (input_dir_path / "requirements.in").as_posix()
@@ -4241,14 +4139,12 @@ def test_url_constraints_are_not_treated_as_file_paths(
     mock_get.assert_called_once_with(constraints_url)
 
     assert out.exit_code == 0
-    assert out.stdout == dedent(
-        f"""\
+    assert out.stdout == dedent(f"""\
         small-fake-a==0.2
             # via
             #   -c {constraints_url}
             #   -r {input_path}
-        """
-    )
+        """)
 
 
 @pytest.mark.parametrize(
@@ -4267,18 +4163,14 @@ def test_that_self_referential_pyproject_toml_extra_can_be_compiled(
     https://github.com/jazzband/pip-tools/issues/2215
     """
     src_file = tmp_path / "pyproject.toml"
-    src_file.write_text(
-        dedent(
-            """
+    src_file.write_text(dedent("""
             [project]
             name = "foo"
             version = "0.1.0"
             [project.optional-dependencies]
             ext1 = ["small-fake-a"]
             ext2 = ["foo[ext1]"]
-            """
-        )
-    )
+            """))
 
     if pyproject_path_is_absolute:
         input_path = src_file.as_posix()
@@ -4305,11 +4197,9 @@ def test_that_self_referential_pyproject_toml_extra_can_be_compiled(
         )
 
     assert out.exit_code == 0
-    assert out.stdout == dedent(
-        f"""\
+    assert out.stdout == dedent(f"""\
         foo[ext1] @ {src_file.parent.absolute().as_uri()}
             # via foo ({input_path})
         small-fake-a==0.2
             # via foo
-        """
-    )
+        """)
