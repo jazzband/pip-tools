@@ -17,7 +17,6 @@ from pip._internal.utils.misc import redact_auth_from_url
 from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.requirements import Requirement
 from pip._vendor.packaging.specifiers import SpecifierSet
-
 from pip._vendor.packaging.utils import canonicalize_name
 
 
