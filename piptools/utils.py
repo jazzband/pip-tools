@@ -441,7 +441,6 @@ def omit_list_value(lst: list[_T], value: _T) -> list[_T]:
     return [item for item in lst if item != value]
 
 
-
 def is_regular_file(path: str) -> bool:
     """
     Check if the given path is a regular file (not stdin, FIFO, socket, etc.).

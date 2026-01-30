@@ -835,8 +835,7 @@ def test_is_regular_file_with_directory(tmpdir_cwd):
 
 
 @pytest.mark.skipif(
-    sys.platform == "win32",
-    reason="Named pipes (FIFOs) are Unix-specific"
+    sys.platform == "win32", reason="Named pipes (FIFOs) are Unix-specific"
 )
 def test_is_regular_file_with_fifo(tmpdir_cwd):
     """Test is_regular_file returns False for named pipes (FIFOs)."""

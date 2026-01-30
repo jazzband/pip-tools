@@ -4206,13 +4206,12 @@ def test_that_self_referential_pyproject_toml_extra_can_be_compiled(
 
 
 @pytest.mark.skipif(
-    sys.platform == "win32",
-    reason="Named pipes (FIFOs) are Unix-specific"
+    sys.platform == "win32", reason="Named pipes (FIFOs) are Unix-specific"
 )
 def test_determine_linesep_skips_fifo(tmpdir_cwd):
     """
     Test that _determine_linesep doesn't block on named pipes (FIFOs).
-    
+
     Regression test for https://github.com/jazzband/pip-tools/issues/2232
     """
     import os
@@ -4231,8 +4230,7 @@ def test_determine_linesep_skips_fifo(tmpdir_cwd):
         # _determine_linesep should skip the FIFO and use the regular file
         # If it tries to read the FIFO, it will block indefinitely
         result = _determine_linesep(
-            strategy="preserve",
-            filenames=(str(fifo_path), str(regular_file))
+            strategy="preserve", filenames=(str(fifo_path), str(regular_file))
         )
         assert result == "\r\n"  # Should detect CRLF from regular file
     finally:
