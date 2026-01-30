@@ -96,6 +96,36 @@ def is_url_requirement(ireq: InstallRequirement) -> bool:
     return bool(ireq.original_link)
 
 
+def is_self_referencing_requirement(
+    ireq: InstallRequirement, source_project_names: set[str]
+) -> bool:
+    """
+    Return :py:data:`True` if the requirement references the source project itself.
+
+    This occurs when a project has recursive extra dependencies that reference itself,
+    e.g., ``dev = ["package[test,tools]"]`` in pyproject.toml. Such self-references
+    should not be included in the compiled output file.
+
+    :param ireq: The install requirement to check.
+    :param source_project_names: Set of canonicalized names of source projects.
+    :return: True if this is a self-referencing requirement.
+    """
+    if not source_project_names:
+        return False
+
+    # Check if the requirement name matches a source project
+    req_key = key_from_ireq(ireq)
+    if req_key not in source_project_names:
+        return False
+
+    # Only filter out if it's a local file reference
+    # (not a pinned version from PyPI)
+    if ireq.link and ireq.link.is_file:
+        return True
+
+    return False
+
+
 def format_requirement(
     ireq: InstallRequirement,
     marker: Marker | None = None,
@@ -436,9 +466,54 @@ def get_sys_path_for_python_executable(python_executable: str) -> list[str]:
     return [os.path.abspath(path) for path in paths]
 
 
+def get_environment_for_python_executable(
+    python_executable: str,
+) -> dict[str, str]:
+    """
+    Return the PEP 508 environment markers dict for the given python executable.
+
+    This is used to correctly evaluate environment markers when targeting a
+    different Python environment than the one running pip-tools.
+    """
+    code = (
+        "from pip._vendor.packaging.markers import default_environment;"
+        "import json;"
+        "print(json.dumps(default_environment()))"
+    )
+    result = _subprocess.run_python_snippet(python_executable, code)
+    env = json.loads(result)
+    assert isinstance(env, dict)
+    return env
+
+
 def omit_list_value(lst: list[_T], value: _T) -> list[_T]:
     """Produce a new list with a given value skipped."""
     return [item for item in lst if item != value]
+
+
+def is_readable_regular_file(path: str) -> bool:
+    """
+    Check if the given path is a readable regular file.
+
+    Returns False for:
+    - stdin ('-')
+    - Non-existent paths
+    - Named pipes (FIFOs)
+    - Directories
+    - Sockets and other special files
+
+    This is useful for skipping files that should not be read synchronously,
+    such as named pipes which would block waiting for a writer.
+    """
+    if path == "-":
+        return False
+    try:
+        from pathlib import Path
+
+        p = Path(path)
+        return p.is_file()  # is_file() returns False for FIFOs, sockets, etc.
+    except (OSError, ValueError):
+        return False
 
 
 _strip_extras_re = re.compile(r"\[.+?\]")
@@ -490,6 +565,29 @@ def _assign_config_to_cli_context(
         click_context.default_map = {}
 
     click_context.default_map.update(cli_config_mapping)
+
+
+def get_src_files_from_config(
+    ctx: click.Context, src_files: tuple[str, ...]
+) -> tuple[str, ...]:
+    """
+    Get src_files from click context's config if not provided as argument.
+
+    Since ``src_files`` is a click argument (not an option), it's not automatically
+    populated from the config's default_map. This function handles that case by
+    checking the default_map for ``src_files`` when the argument is empty.
+
+    :param ctx: Click context containing the default_map from config.
+    :param src_files: The src_files tuple from the CLI argument.
+    :returns: The src_files from argument if provided, else from config if available,
+              else the original empty tuple.
+    """
+    if not src_files and ctx.default_map and "src_files" in ctx.default_map:
+        config_src_files = ctx.default_map["src_files"]
+        # Config can specify src_files as a list or tuple
+        if isinstance(config_src_files, (list, tuple)):
+            return tuple(config_src_files)
+    return src_files
 
 
 def _validate_config(

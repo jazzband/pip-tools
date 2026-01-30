@@ -47,6 +47,7 @@ else:
 class StaticProjectMetadata:
     extras: tuple[str, ...]
     requirements: tuple[InstallRequirement, ...]
+    source_project_name: str | None = None
 
 
 @dataclass
@@ -54,6 +55,7 @@ class ProjectMetadata:
     extras: tuple[str, ...]
     requirements: tuple[InstallRequirement, ...]
     build_requirements: tuple[InstallRequirement, ...]
+    source_project_name: str | None = None
 
 
 def maybe_statically_parse_project_metadata(
@@ -115,6 +117,7 @@ def maybe_statically_parse_project_metadata(
     return StaticProjectMetadata(
         extras=tuple(extras),
         requirements=tuple(install_requirements),
+        source_project_name=package_name,
     )
 
 
@@ -186,6 +189,7 @@ def build_project_metadata(
             extras=extras,
             requirements=requirements,
             build_requirements=build_requirements,
+            source_project_name=_get_name(metadata),
         )
 
 

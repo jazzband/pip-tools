@@ -4159,8 +4159,13 @@ def test_that_self_referential_pyproject_toml_extra_can_be_compiled(
     Test that a :file:`pyproject.toml` source file can use self-referential extras
     which point back to the original package name.
 
+    Self-referential extras (e.g., ``ext2 = ["foo[ext1]"]``) are resolved but
+    the self-reference should be filtered out from the output file since it
+    would create non-portable file:// URLs.
+
     This is a regression test for:
     https://github.com/jazzband/pip-tools/issues/2215
+    https://github.com/jazzband/pip-tools/issues/2110
     """
     src_file = tmp_path / "pyproject.toml"
     src_file.write_text(dedent("""
@@ -4197,9 +4202,9 @@ def test_that_self_referential_pyproject_toml_extra_can_be_compiled(
         )
 
     assert out.exit_code == 0
-    assert out.stdout == dedent(f"""\
-        foo[ext1] @ {src_file.parent.absolute().as_uri()}
-            # via foo ({input_path})
+    # Self-referential extras should be filtered out from the output
+    # (See https://github.com/jazzband/pip-tools/issues/2110)
+    assert out.stdout == dedent("""\
         small-fake-a==0.2
             # via foo
         """)

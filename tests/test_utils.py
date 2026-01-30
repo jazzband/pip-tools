@@ -27,6 +27,7 @@ from piptools.utils import (
     get_hashes_from_ireq,
     get_sys_path_for_python_executable,
     is_pinned_requirement,
+    is_self_referencing_requirement,
     is_url_requirement,
     key_from_ireq,
     key_from_req,
@@ -353,6 +354,34 @@ def test_is_url_requirement_filename(caplog, from_line, line):
     assert is_url_requirement(ireq) is True
 
 
+def test_is_self_referencing_requirement_local_file(from_line, tmp_path):
+    """Test that local file references to source projects are detected."""
+    # Create a local file reference that matches a source project
+    ireq = from_line(f"mypackage @ file://{tmp_path}")
+    source_project_names = {"mypackage"}
+    assert is_self_referencing_requirement(ireq, source_project_names) is True
+
+
+def test_is_self_referencing_requirement_different_name(from_line, tmp_path):
+    """Test that local file references to different packages are not filtered."""
+    ireq = from_line(f"otherpackage @ file://{tmp_path}")
+    source_project_names = {"mypackage"}
+    assert is_self_referencing_requirement(ireq, source_project_names) is False
+
+
+def test_is_self_referencing_requirement_pypi_package(from_line):
+    """Test that PyPI packages with same name are not filtered."""
+    ireq = from_line("mypackage==1.0.0")
+    source_project_names = {"mypackage"}
+    assert is_self_referencing_requirement(ireq, source_project_names) is False
+
+
+def test_is_self_referencing_requirement_empty_source_projects(from_line, tmp_path):
+    """Test that nothing is filtered when source_project_names is empty."""
+    ireq = from_line(f"mypackage @ file://{tmp_path}")
+    assert is_self_referencing_requirement(ireq, set()) is False
+
+
 @pytest.mark.parametrize(
     ("cli_args", "expected_command"),
     (
@@ -643,6 +672,51 @@ def test_get_sys_path_for_python_executable():
     # not testing for equality, because pytest adds extra paths into current sys.path
     for path in result:
         assert path in sys.path
+
+
+def test_get_src_files_from_config_with_empty_args():
+    """
+    Test that get_src_files_from_config returns config value when args are empty.
+    """
+    from unittest import mock
+
+    from piptools.utils import get_src_files_from_config
+
+    ctx = mock.MagicMock()
+    ctx.default_map = {"src_files": ["requirements_lock.txt"]}
+
+    result = get_src_files_from_config(ctx, ())
+    assert result == ("requirements_lock.txt",)
+
+
+def test_get_src_files_from_config_with_args_provided():
+    """
+    Test that get_src_files_from_config returns args when provided.
+    """
+    from unittest import mock
+
+    from piptools.utils import get_src_files_from_config
+
+    ctx = mock.MagicMock()
+    ctx.default_map = {"src_files": ["requirements_lock.txt"]}
+
+    result = get_src_files_from_config(ctx, ("requirements.txt",))
+    assert result == ("requirements.txt",)  # Args take precedence
+
+
+def test_get_src_files_from_config_with_no_config():
+    """
+    Test that get_src_files_from_config returns empty tuple when no config.
+    """
+    from unittest import mock
+
+    from piptools.utils import get_src_files_from_config
+
+    ctx = mock.MagicMock()
+    ctx.default_map = None
+
+    result = get_src_files_from_config(ctx, ())
+    assert result == ()
 
 
 @pytest.mark.parametrize(

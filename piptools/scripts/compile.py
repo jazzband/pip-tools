@@ -26,7 +26,9 @@ from ..resolver import BacktrackingResolver, LegacyResolver
 from ..utils import (
     dedup,
     drop_extras,
+    get_src_files_from_config,
     is_pinned_requirement,
+    is_self_referencing_requirement,
     key_from_ireq,
 )
 from ..writer import OutputWriter
@@ -180,11 +182,10 @@ def cli(
         ctx.color = color
     log.verbosity = verbose - quiet
 
-    # If ``src-files` was not provided as an input, but rather as config,
-    # it will be part of the click context ``ctx``.
-    # However, if ``src_files`` is specified, then we want to use that.
-    if not src_files and ctx.default_map and "src_files" in ctx.default_map:
-        src_files = ctx.default_map["src_files"]
+    # If ``src_files`` was not provided as an input, check config.
+    # Since src_files is a click argument (not option), it's not automatically
+    # populated from the default_map, so we handle it explicitly.
+    src_files = get_src_files_from_config(ctx, src_files)
 
     if all_build_deps and build_deps_targets:
         raise click.BadParameter(
@@ -342,6 +343,7 @@ def cli(
 
     constraints: list[InstallRequirement] = []
     setup_file_found = False
+    source_project_names: set[str] = set()
     for src_file in src_files:
         is_setup_file = os.path.basename(src_file) in METADATA_FILENAMES
         if not is_setup_file and build_deps_targets:
@@ -384,6 +386,12 @@ def cli(
                 log.error(str(e))
                 log.error(f"Failed to parse {os.path.abspath(src_file)}")
                 sys.exit(2)
+
+            # Track source project name to filter out self-references later
+            if metadata.source_project_name:
+                source_project_names.add(
+                    canonicalize_name(metadata.source_project_name)
+                )
 
             if not only_build_deps:
                 constraints.extend(metadata.requirements)
@@ -538,8 +546,16 @@ def cli(
         emit_find_links=emit_find_links,
         emit_options=emit_options,
     )
+    # Filter out self-referencing requirements (e.g., recursive extras)
+    # See https://github.com/jazzband/pip-tools/issues/2110
+    filtered_results = {
+        ireq
+        for ireq in results
+        if not is_self_referencing_requirement(ireq, source_project_names)
+    }
+
     writer.write(
-        results=results,
+        results=filtered_results,
         unsafe_packages=resolver.unsafe_packages,
         unsafe_requirements=resolver.unsafe_constraints,
         markers={
