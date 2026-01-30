@@ -26,6 +26,7 @@ from ..resolver import BacktrackingResolver, LegacyResolver
 from ..utils import (
     dedup,
     drop_extras,
+    get_src_files_from_config,
     is_pinned_requirement,
     key_from_ireq,
 )
@@ -180,11 +181,10 @@ def cli(
         ctx.color = color
     log.verbosity = verbose - quiet
 
-    # If ``src-files` was not provided as an input, but rather as config,
-    # it will be part of the click context ``ctx``.
-    # However, if ``src_files`` is specified, then we want to use that.
-    if not src_files and ctx.default_map and "src_files" in ctx.default_map:
-        src_files = ctx.default_map["src_files"]
+    # If ``src_files`` was not provided as an input, check config.
+    # Since src_files is a click argument (not option), it's not automatically
+    # populated from the default_map, so we handle it explicitly.
+    src_files = get_src_files_from_config(ctx, src_files)
 
     if all_build_deps and build_deps_targets:
         raise click.BadParameter(

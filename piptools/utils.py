@@ -492,6 +492,29 @@ def _assign_config_to_cli_context(
     click_context.default_map.update(cli_config_mapping)
 
 
+def get_src_files_from_config(
+    ctx: click.Context, src_files: tuple[str, ...]
+) -> tuple[str, ...]:
+    """
+    Get src_files from click context's config if not provided as argument.
+
+    Since ``src_files`` is a click argument (not an option), it's not automatically
+    populated from the config's default_map. This function handles that case by
+    checking the default_map for ``src_files`` when the argument is empty.
+
+    :param ctx: Click context containing the default_map from config.
+    :param src_files: The src_files tuple from the CLI argument.
+    :returns: The src_files from argument if provided, else from config if available,
+              else the original empty tuple.
+    """
+    if not src_files and ctx.default_map and "src_files" in ctx.default_map:
+        config_src_files = ctx.default_map["src_files"]
+        # Config can specify src_files as a list or tuple
+        if isinstance(config_src_files, (list, tuple)):
+            return tuple(config_src_files)
+    return src_files
+
+
 def _validate_config(
     click_context: click.Context,
     config: dict[str, _t.Any],

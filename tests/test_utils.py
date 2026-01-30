@@ -645,6 +645,51 @@ def test_get_sys_path_for_python_executable():
         assert path in sys.path
 
 
+def test_get_src_files_from_config_with_empty_args():
+    """
+    Test that get_src_files_from_config returns config value when args are empty.
+    """
+    from unittest import mock
+
+    from piptools.utils import get_src_files_from_config
+
+    ctx = mock.MagicMock()
+    ctx.default_map = {"src_files": ["requirements_lock.txt"]}
+
+    result = get_src_files_from_config(ctx, ())
+    assert result == ("requirements_lock.txt",)
+
+
+def test_get_src_files_from_config_with_args_provided():
+    """
+    Test that get_src_files_from_config returns args when provided.
+    """
+    from unittest import mock
+
+    from piptools.utils import get_src_files_from_config
+
+    ctx = mock.MagicMock()
+    ctx.default_map = {"src_files": ["requirements_lock.txt"]}
+
+    result = get_src_files_from_config(ctx, ("requirements.txt",))
+    assert result == ("requirements.txt",)  # Args take precedence
+
+
+def test_get_src_files_from_config_with_no_config():
+    """
+    Test that get_src_files_from_config returns empty tuple when no config.
+    """
+    from unittest import mock
+
+    from piptools.utils import get_src_files_from_config
+
+    ctx = mock.MagicMock()
+    ctx.default_map = None
+
+    result = get_src_files_from_config(ctx, ())
+    assert result == ()
+
+
 @pytest.mark.parametrize(
     ("pyproject_param", "new_default"),
     (

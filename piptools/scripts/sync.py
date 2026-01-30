@@ -23,6 +23,7 @@ from ..repositories import PyPIRepository
 from ..utils import (
     flat_map,
     get_required_pip_specification,
+    get_src_files_from_config,
     get_sys_path_for_python_executable,
 )
 from . import options
@@ -53,7 +54,9 @@ DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 @options.pip_args
 @options.config
 @options.no_config
+@click.pass_context
 def cli(
+    ctx: click.Context,
     ask: bool,
     dry_run: bool,
     force: bool,
@@ -75,6 +78,11 @@ def cli(
 ) -> None:
     """Synchronize virtual environment with requirements.txt."""
     log.verbosity = verbose - quiet
+
+    # If ``src_files`` was not provided as an input, check config.
+    # Since src_files is a click argument (not option), it's not automatically
+    # populated from the default_map, so we handle it explicitly.
+    src_files = get_src_files_from_config(ctx, src_files)
 
     if not src_files:
         if os.path.exists(DEFAULT_REQUIREMENTS_FILE):

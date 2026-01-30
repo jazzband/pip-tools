@@ -467,3 +467,56 @@ def test_tool_specific_config_option(run, runner, make_config_file):
 
     assert out.exit_code == 1
     assert "Would install:" in out.stdout
+
+
+@mock.patch("piptools.sync.run")
+def test_src_files_from_config(run, runner, make_config_file, tmpdir_cwd):
+    """
+    Test that src_files can be specified in config file for pip-sync.
+    Regression test for https://github.com/jazzband/pip-tools/issues/2187
+    """
+    # Create a custom requirements file (not the default requirements.txt)
+    custom_requirements_file = "requirements_lock.txt"
+    with open(custom_requirements_file, "w") as reqs:
+        reqs.write("six==1.10.0")
+
+    # Create config specifying the custom src_files
+    config_file = make_config_file(
+        "src-files", [custom_requirements_file], subsection="sync"
+    )
+
+    # Run pip-sync without specifying src_files on command line
+    # It should read from config
+    out = runner.invoke(cli, ["--dry-run", "--config", config_file.as_posix()])
+
+    assert out.exit_code == 1, out.stderr
+    assert "Would install:" in out.stdout
+    assert "six" in out.stdout
+
+
+@mock.patch("piptools.sync.run")
+def test_src_files_cli_overrides_config(run, runner, make_config_file, tmpdir_cwd):
+    """
+    Test that src_files from CLI argument overrides config file.
+    """
+    # Create two requirements files
+    with open("requirements_config.txt", "w") as reqs:
+        reqs.write("six==1.10.0")
+    with open("requirements_cli.txt", "w") as reqs:
+        reqs.write("click==8.0.0")
+
+    # Create config specifying one file
+    config_file = make_config_file(
+        "src-files", ["requirements_config.txt"], subsection="sync"
+    )
+
+    # Run pip-sync with different file on command line - should use CLI arg
+    out = runner.invoke(
+        cli, ["--dry-run", "--config", config_file.as_posix(), "requirements_cli.txt"]
+    )
+
+    assert out.exit_code == 1, out.stderr
+    assert "Would install:" in out.stdout
+    assert "click" in out.stdout
+    # six should NOT be in output since we used CLI file
+    assert "six" not in out.stdout
