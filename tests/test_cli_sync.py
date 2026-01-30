@@ -483,10 +483,10 @@ def test_sync_uses_compile_output_file_from_config(run, runner, tmpdir_cwd):
 
     # Create config with pip-compile output_file
     config_file = tmpdir_cwd / "pyproject.toml"
-    config_file.write_text(dedent(f'''\
+    config_file.write_text(dedent(f"""\
         [tool.pip-tools.compile]
         output-file = "{custom_output_file}"
-    '''))
+    """))
 
     # Run pip-sync without specifying src_files
     # It should read from pip-compile's output_file
@@ -509,10 +509,10 @@ def test_sync_uses_compile_output_file_from_general_config(run, runner, tmpdir_c
 
     # Create config with output_file in general section
     config_file = tmpdir_cwd / "pyproject.toml"
-    config_file.write_text(dedent(f'''\
+    config_file.write_text(dedent(f"""\
         [tool.pip-tools]
         output-file = "{custom_output_file}"
-    '''))
+    """))
 
     # Run pip-sync without specifying src_files
     out = runner.invoke(cli, ["--dry-run"])
@@ -535,10 +535,10 @@ def test_sync_explicit_src_files_overrides_config(run, runner, tmpdir_cwd):
 
     # Create config pointing to one file
     config_file = tmpdir_cwd / "pyproject.toml"
-    config_file.write_text(dedent('''\
+    config_file.write_text(dedent("""\
         [tool.pip-tools.compile]
         output-file = "requirements-config.txt"
-    '''))
+    """))
 
     # Run pip-sync with explicit file - should use CLI arg
     out = runner.invoke(cli, ["--dry-run", "requirements-cli.txt"])

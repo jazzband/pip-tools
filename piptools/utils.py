@@ -590,7 +590,6 @@ def get_cli_options(ctx: click.Context) -> dict[str, click.Parameter]:
     return cli_opts
 
 
-
 def get_compile_output_file_from_config(config_file: Path | None) -> str | None:
     """
     Get pip-compile's output_file setting from config, if available.
@@ -619,7 +618,9 @@ def get_compile_output_file_from_config(config_file: Path | None) -> str | None:
     output_file = compile_config.get("output-file") or compile_config.get("output_file")
     if output_file is None:
         # Fall back to general pip-tools config
-        output_file = piptools_config.get("output-file") or piptools_config.get("output_file")
+        output_file = piptools_config.get("output-file") or piptools_config.get(
+            "output_file"
+        )
 
     return output_file
 

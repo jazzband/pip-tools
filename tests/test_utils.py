@@ -805,10 +805,10 @@ def test_get_compile_output_file_from_config_compile_section(tmpdir_cwd):
     from piptools.utils import get_compile_output_file_from_config
 
     config_file = Path("pyproject.toml")
-    config_file.write_text(dedent('''\
+    config_file.write_text(dedent("""\
         [tool.pip-tools.compile]
         output-file = "requirements-lock.txt"
-    '''))
+    """))
 
     result = get_compile_output_file_from_config(config_file)
     assert result == "requirements-lock.txt"
@@ -819,10 +819,10 @@ def test_get_compile_output_file_from_config_general_section(tmpdir_cwd):
     from piptools.utils import get_compile_output_file_from_config
 
     config_file = Path("pyproject.toml")
-    config_file.write_text(dedent('''\
+    config_file.write_text(dedent("""\
         [tool.pip-tools]
         output-file = "general-requirements.txt"
-    '''))
+    """))
 
     result = get_compile_output_file_from_config(config_file)
     assert result == "general-requirements.txt"
@@ -833,13 +833,13 @@ def test_get_compile_output_file_from_config_compile_overrides_general(tmpdir_cw
     from piptools.utils import get_compile_output_file_from_config
 
     config_file = Path("pyproject.toml")
-    config_file.write_text(dedent('''\
+    config_file.write_text(dedent("""\
         [tool.pip-tools]
         output-file = "general-requirements.txt"
         
         [tool.pip-tools.compile]
         output-file = "compile-requirements.txt"
-    '''))
+    """))
 
     result = get_compile_output_file_from_config(config_file)
     assert result == "compile-requirements.txt"
@@ -858,10 +858,10 @@ def test_get_compile_output_file_from_config_no_output_file(tmpdir_cwd):
     from piptools.utils import get_compile_output_file_from_config
 
     config_file = Path("pyproject.toml")
-    config_file.write_text(dedent('''\
+    config_file.write_text(dedent("""\
         [tool.pip-tools]
         dry-run = true
-    '''))
+    """))
 
     result = get_compile_output_file_from_config(config_file)
     assert result is None

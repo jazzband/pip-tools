@@ -93,8 +93,10 @@ def cli(
                 compile_output = get_compile_output_file_from_config(discovered_config)
                 if compile_output and os.path.exists(compile_output):
                     src_files = (compile_output,)
-                    log.debug(f"Using pip-compile output_file from discovered config: {compile_output}")
-            
+                    log.debug(
+                        f"Using pip-compile output_file from discovered config: {compile_output}"
+                    )
+
             if not src_files:
                 msg = "No requirement files given and no {} found in the current directory"
                 log.error(msg.format(DEFAULT_REQUIREMENTS_FILE))
