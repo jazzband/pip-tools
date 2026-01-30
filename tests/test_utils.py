@@ -24,6 +24,7 @@ from piptools.utils import (
     format_specifier,
     get_cli_options,
     get_compile_command,
+    get_environment_for_python_executable,
     get_hashes_from_ireq,
     get_sys_path_for_python_executable,
     is_pinned_requirement,
@@ -643,6 +644,35 @@ def test_get_sys_path_for_python_executable():
     # not testing for equality, because pytest adds extra paths into current sys.path
     for path in result:
         assert path in sys.path
+
+
+def test_get_environment_for_python_executable():
+    """
+    Test that get_environment_for_python_executable returns a valid PEP 508 environment.
+    """
+    from pip._vendor.packaging.markers import default_environment
+
+    result = get_environment_for_python_executable(sys.executable)
+
+    # Should return a dictionary with standard PEP 508 keys
+    expected_keys = {
+        "implementation_name",
+        "implementation_version",
+        "os_name",
+        "platform_machine",
+        "platform_release",
+        "platform_system",
+        "platform_version",
+        "python_full_version",
+        "python_version",
+        "sys_platform",
+    }
+    assert expected_keys.issubset(result.keys())
+
+    # Values should match the current environment
+    current_env = default_environment()
+    for key in expected_keys:
+        assert result[key] == current_env[key]
 
 
 @pytest.mark.parametrize(

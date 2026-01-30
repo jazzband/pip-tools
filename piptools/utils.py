@@ -436,6 +436,26 @@ def get_sys_path_for_python_executable(python_executable: str) -> list[str]:
     return [os.path.abspath(path) for path in paths]
 
 
+def get_environment_for_python_executable(
+    python_executable: str,
+) -> dict[str, str]:
+    """
+    Return the PEP 508 environment markers dict for the given python executable.
+
+    This is used to correctly evaluate environment markers when targeting a
+    different Python environment than the one running pip-tools.
+    """
+    code = (
+        "from pip._vendor.packaging.markers import default_environment;"
+        "import json;"
+        "print(json.dumps(default_environment()))"
+    )
+    result = _subprocess.run_python_snippet(python_executable, code)
+    env = json.loads(result)
+    assert isinstance(env, dict)
+    return env
+
+
 def omit_list_value(lst: list[_T], value: _T) -> list[_T]:
     """Produce a new list with a given value skipped."""
     return [item for item in lst if item != value]

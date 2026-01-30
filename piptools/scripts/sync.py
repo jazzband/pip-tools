@@ -22,6 +22,7 @@ from ..logging import log
 from ..repositories import PyPIRepository
 from ..utils import (
     flat_map,
+    get_environment_for_python_executable,
     get_required_pip_specification,
     get_sys_path_for_python_executable,
 )
@@ -113,8 +114,19 @@ def cli(
         lambda src: parse_requirements(src, finder=finder, session=session), src_files
     )
 
+    # Get the target environment for evaluating markers.
+    # If python_executable is specified, use its environment instead of the
+    # current environment. This fixes marker evaluation for cross-Python sync.
+    target_environment = (
+        None
+        if python_executable is None
+        else get_environment_for_python_executable(python_executable)
+    )
+
     try:
-        merged_requirements = sync.merge(requirements, ignore_conflicts=force)
+        merged_requirements = sync.merge(
+            requirements, ignore_conflicts=force, environment=target_environment
+        )
     except PipToolsError as e:
         log.error(str(e))
         sys.exit(2)
@@ -129,7 +141,9 @@ def cli(
         local_only=python_executable is None,
         paths=paths,
     )
-    to_install, to_uninstall = sync.diff(merged_requirements, installed_dists)
+    to_install, to_uninstall = sync.diff(
+        merged_requirements, installed_dists, environment=target_environment
+    )
 
     install_flags = _compose_install_flags(
         finder,

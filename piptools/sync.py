@@ -93,8 +93,29 @@ def get_dists_to_ignore(installed: Iterable[Distribution]) -> list[str]:
     )
 
 
+def _match_markers(
+    ireq: InstallRequirement,
+    environment: dict[str, str] | None = None,
+) -> bool:
+    """
+    Evaluate environment markers for an InstallRequirement.
+
+    If environment is provided, use it for marker evaluation instead of
+    the default environment. This allows evaluating markers for a target
+    Python environment different from the one running pip-tools.
+    """
+    if ireq.markers is None:
+        return True
+    if environment is None:
+        return ireq.match_markers()
+    # Provide an extra to safely evaluate the markers without matching any extra
+    return ireq.markers.evaluate({**environment, "extra": ""})
+
+
 def merge(
-    requirements: Iterable[InstallRequirement], ignore_conflicts: bool
+    requirements: Iterable[InstallRequirement],
+    ignore_conflicts: bool,
+    environment: dict[str, str] | None = None,
 ) -> ValuesView[InstallRequirement]:
     by_key: dict[str, InstallRequirement] = {}
 
@@ -102,7 +123,7 @@ def merge(
         # Limitation: URL requirements are merged by precise string match, so
         # "file:///example.zip#egg=example", "file:///example.zip", and
         # "example==1.0" will not merge with each other
-        if ireq.match_markers():
+        if _match_markers(ireq, environment):
             key = key_from_ireq(ireq)
 
             if not ignore_conflicts:
@@ -159,11 +180,16 @@ def diff_key_from_req(req: Distribution) -> str:
 def diff(
     compiled_requirements: Iterable[InstallRequirement],
     installed_dists: Iterable[Distribution],
+    environment: dict[str, str] | None = None,
 ) -> tuple[set[InstallRequirement], set[str]]:
     """Calculate which packages should be installed or uninstalled.
 
     Compared are the compiled requirements and a list of currently
     installed modules.
+
+    If environment is provided, it will be used for evaluating environment
+    markers instead of the default environment. This allows targeting a
+    different Python environment than the one running pip-tools.
     """
     requirements_lut = {diff_key_from_ireq(r): r for r in compiled_requirements}
 
@@ -174,13 +200,15 @@ def diff(
     pkgs_to_ignore = get_dists_to_ignore(installed_dists)
     for dist in installed_dists:
         key = diff_key_from_req(dist)
-        if key not in requirements_lut or not requirements_lut[key].match_markers():
+        if key not in requirements_lut or not _match_markers(
+            requirements_lut[key], environment
+        ):
             to_uninstall.add(key)
         elif requirements_lut[key].specifier.contains(dist.version):
             satisfied.add(key)
 
     for key, requirement in requirements_lut.items():
-        if key not in satisfied and requirement.match_markers():
+        if key not in satisfied and _match_markers(requirement, environment):
             to_install.add(requirement)
 
     # Make sure to not uninstall any packages that should be ignored

@@ -536,3 +536,66 @@ def test_sync_uninstall_pip_command(run):
         [sys.executable, "-m", "pip", "uninstall", "-y", *sorted(to_uninstall)],
         check=True,
     )
+
+
+def test_merge_with_custom_environment(from_line):
+    """
+    Test that merge() correctly evaluates markers with a custom environment.
+    Regression test for https://github.com/jazzband/pip-tools/issues/2115
+    """
+    # This requirement has a marker that should match Python 3.11 but not 3.12
+    reqs = [from_line("typing-extensions==4.12.2 ; python_version < '3.12'")]
+
+    # With Python 3.11 environment, should be included
+    env_311 = {"python_version": "3.11", "python_full_version": "3.11.9"}
+    merged = list(merge(reqs, ignore_conflicts=False, environment=env_311))
+    assert len(merged) == 1
+    assert str(merged[0].req) == "typing-extensions==4.12.2"
+
+    # With Python 3.12 environment, should be excluded
+    env_312 = {"python_version": "3.12", "python_full_version": "3.12.4"}
+    merged = list(merge(reqs, ignore_conflicts=False, environment=env_312))
+    assert len(merged) == 0
+
+
+def test_diff_with_custom_environment(fake_dist, from_line):
+    """
+    Test that diff() correctly evaluates markers with a custom environment.
+    Regression test for https://github.com/jazzband/pip-tools/issues/2115
+    """
+    installed = []
+    reqs = [from_line("typing-extensions==4.12.2 ; python_version < '3.12'")]
+
+    # With Python 3.11 environment, package should be installed
+    env_311 = {"python_version": "3.11", "python_full_version": "3.11.9"}
+    to_install, to_uninstall = diff(reqs, installed, environment=env_311)
+    assert {str(x.req) for x in to_install} == {"typing-extensions==4.12.2"}
+    assert to_uninstall == set()
+
+    # With Python 3.12 environment, package should NOT be installed
+    env_312 = {"python_version": "3.12", "python_full_version": "3.12.4"}
+    to_install, to_uninstall = diff(reqs, installed, environment=env_312)
+    assert to_install == set()
+    assert to_uninstall == set()
+
+
+def test_diff_uninstall_with_custom_environment(fake_dist, from_line):
+    """
+    Test that diff() correctly uninstalls packages not matching target environment markers.
+    Regression test for https://github.com/jazzband/pip-tools/issues/2115
+    """
+    # Package is installed in target environment
+    installed = [fake_dist("typing-extensions==4.12.2")]
+    reqs = [from_line("typing-extensions==4.12.2 ; python_version < '3.12'")]
+
+    # With Python 3.11 environment, package should be kept (marker matches)
+    env_311 = {"python_version": "3.11", "python_full_version": "3.11.9"}
+    to_install, to_uninstall = diff(reqs, installed, environment=env_311)
+    assert to_install == set()
+    assert to_uninstall == set()
+
+    # With Python 3.12 environment, package should be uninstalled (marker doesn't match)
+    env_312 = {"python_version": "3.12", "python_full_version": "3.12.4"}
+    to_install, to_uninstall = diff(reqs, installed, environment=env_312)
+    assert to_install == set()
+    assert to_uninstall == {"typing-extensions"}
