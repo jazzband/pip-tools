@@ -467,3 +467,82 @@ def test_tool_specific_config_option(run, runner, make_config_file):
 
     assert out.exit_code == 1
     assert "Would install:" in out.stdout
+
+
+@mock.patch("piptools.sync.run")
+def test_sync_uses_compile_output_file_from_config(run, runner, tmpdir_cwd):
+    """
+    Test that pip-sync uses pip-compile's output_file as default input.
+
+    Regression test for https://github.com/jazzband/pip-tools/issues/2093
+    """
+    # Create a custom requirements file (not the default requirements.txt)
+    custom_output_file = "requirements-lock.txt"
+    with open(custom_output_file, "w") as reqs:
+        reqs.write("six==1.10.0")
+
+    # Create config with pip-compile output_file
+    config_file = tmpdir_cwd / "pyproject.toml"
+    config_file.write_text(dedent(f'''\
+        [tool.pip-tools.compile]
+        output-file = "{custom_output_file}"
+    '''))
+
+    # Run pip-sync without specifying src_files
+    # It should read from pip-compile's output_file
+    out = runner.invoke(cli, ["--dry-run"])
+
+    assert out.exit_code == 1, out.stderr
+    assert "Would install:" in out.stdout
+    assert "six" in out.stdout
+
+
+@mock.patch("piptools.sync.run")
+def test_sync_uses_compile_output_file_from_general_config(run, runner, tmpdir_cwd):
+    """
+    Test that pip-sync uses output_file from general pip-tools config.
+    """
+    # Create a custom requirements file
+    custom_output_file = "requirements-lock.txt"
+    with open(custom_output_file, "w") as reqs:
+        reqs.write("click==8.0.0")
+
+    # Create config with output_file in general section
+    config_file = tmpdir_cwd / "pyproject.toml"
+    config_file.write_text(dedent(f'''\
+        [tool.pip-tools]
+        output-file = "{custom_output_file}"
+    '''))
+
+    # Run pip-sync without specifying src_files
+    out = runner.invoke(cli, ["--dry-run"])
+
+    assert out.exit_code == 1, out.stderr
+    assert "Would install:" in out.stdout
+    assert "click" in out.stdout
+
+
+@mock.patch("piptools.sync.run")
+def test_sync_explicit_src_files_overrides_config(run, runner, tmpdir_cwd):
+    """
+    Test that explicit src_files argument overrides config.
+    """
+    # Create two requirements files
+    with open("requirements-config.txt", "w") as reqs:
+        reqs.write("six==1.10.0")
+    with open("requirements-cli.txt", "w") as reqs:
+        reqs.write("click==8.0.0")
+
+    # Create config pointing to one file
+    config_file = tmpdir_cwd / "pyproject.toml"
+    config_file.write_text(dedent('''\
+        [tool.pip-tools.compile]
+        output-file = "requirements-config.txt"
+    '''))
+
+    # Run pip-sync with explicit file - should use CLI arg
+    out = runner.invoke(cli, ["--dry-run", "requirements-cli.txt"])
+
+    assert out.exit_code == 1, out.stderr
+    assert "click" in out.stdout
+    assert "six" not in out.stdout

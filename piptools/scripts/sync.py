@@ -22,8 +22,10 @@ from ..logging import log
 from ..repositories import PyPIRepository
 from ..utils import (
     flat_map,
+    get_compile_output_file_from_config,
     get_required_pip_specification,
     get_sys_path_for_python_executable,
+    select_config_file,
 )
 from . import options
 from ._deprecations import filter_deprecated_pip_args
@@ -77,12 +79,26 @@ def cli(
     log.verbosity = verbose - quiet
 
     if not src_files:
-        if os.path.exists(DEFAULT_REQUIREMENTS_FILE):
+        # Try to use pip-compile's output_file from config as the default input
+        compile_output = get_compile_output_file_from_config(config)
+        if compile_output and os.path.exists(compile_output):
+            src_files = (compile_output,)
+            log.debug(f"Using pip-compile output_file from config: {compile_output}")
+        elif os.path.exists(DEFAULT_REQUIREMENTS_FILE):
             src_files = (DEFAULT_REQUIREMENTS_FILE,)
         else:
-            msg = "No requirement files given and no {} found in the current directory"
-            log.error(msg.format(DEFAULT_REQUIREMENTS_FILE))
-            sys.exit(2)
+            # If config was discovered automatically, check for compile output_file there too
+            if config is None:
+                discovered_config = select_config_file(())
+                compile_output = get_compile_output_file_from_config(discovered_config)
+                if compile_output and os.path.exists(compile_output):
+                    src_files = (compile_output,)
+                    log.debug(f"Using pip-compile output_file from discovered config: {compile_output}")
+            
+            if not src_files:
+                msg = "No requirement files given and no {} found in the current directory"
+                log.error(msg.format(DEFAULT_REQUIREMENTS_FILE))
+                sys.exit(2)
 
     if any(src_file.endswith(".in") for src_file in src_files):
         msg = (

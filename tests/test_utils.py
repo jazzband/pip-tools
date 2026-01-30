@@ -798,3 +798,70 @@ def test_select_config_file_prefers_pip_tools_toml_over_pyproject_toml(tmpdir_cw
             """))
 
     assert select_config_file(()) == pip_tools_file
+
+
+def test_get_compile_output_file_from_config_compile_section(tmpdir_cwd):
+    """Test getting output_file from [tool.pip-tools.compile] section."""
+    from piptools.utils import get_compile_output_file_from_config
+
+    config_file = Path("pyproject.toml")
+    config_file.write_text(dedent('''\
+        [tool.pip-tools.compile]
+        output-file = "requirements-lock.txt"
+    '''))
+
+    result = get_compile_output_file_from_config(config_file)
+    assert result == "requirements-lock.txt"
+
+
+def test_get_compile_output_file_from_config_general_section(tmpdir_cwd):
+    """Test getting output_file from [tool.pip-tools] section."""
+    from piptools.utils import get_compile_output_file_from_config
+
+    config_file = Path("pyproject.toml")
+    config_file.write_text(dedent('''\
+        [tool.pip-tools]
+        output-file = "general-requirements.txt"
+    '''))
+
+    result = get_compile_output_file_from_config(config_file)
+    assert result == "general-requirements.txt"
+
+
+def test_get_compile_output_file_from_config_compile_overrides_general(tmpdir_cwd):
+    """Test that [tool.pip-tools.compile] takes precedence over general."""
+    from piptools.utils import get_compile_output_file_from_config
+
+    config_file = Path("pyproject.toml")
+    config_file.write_text(dedent('''\
+        [tool.pip-tools]
+        output-file = "general-requirements.txt"
+        
+        [tool.pip-tools.compile]
+        output-file = "compile-requirements.txt"
+    '''))
+
+    result = get_compile_output_file_from_config(config_file)
+    assert result == "compile-requirements.txt"
+
+
+def test_get_compile_output_file_from_config_none_config():
+    """Test that None is returned when config_file is None."""
+    from piptools.utils import get_compile_output_file_from_config
+
+    result = get_compile_output_file_from_config(None)
+    assert result is None
+
+
+def test_get_compile_output_file_from_config_no_output_file(tmpdir_cwd):
+    """Test that None is returned when output_file is not set."""
+    from piptools.utils import get_compile_output_file_from_config
+
+    config_file = Path("pyproject.toml")
+    config_file.write_text(dedent('''\
+        [tool.pip-tools]
+        dry-run = true
+    '''))
+
+    result = get_compile_output_file_from_config(config_file)
+    assert result is None

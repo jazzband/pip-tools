@@ -590,6 +590,40 @@ def get_cli_options(ctx: click.Context) -> dict[str, click.Parameter]:
     return cli_opts
 
 
+
+def get_compile_output_file_from_config(config_file: Path | None) -> str | None:
+    """
+    Get pip-compile's output_file setting from config, if available.
+
+    This is used by pip-sync to determine the default input file when not
+    specified by the user. If pip-compile was configured to output to a
+    specific file, pip-sync should use that file as its input.
+
+    :param config_file: Path to the config file to read.
+    :returns: The output_file value if found, else None.
+    """
+    if config_file is None:
+        return None
+
+    try:
+        config = tomllib.loads(config_file.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+    piptools_config = config.get("tool", {}).get("pip-tools", {})
+
+    # Check both [tool.pip-tools] and [tool.pip-tools.compile] sections
+    compile_config = piptools_config.get("compile", {})
+
+    # Compile-specific output_file takes precedence
+    output_file = compile_config.get("output-file") or compile_config.get("output_file")
+    if output_file is None:
+        # Fall back to general pip-tools config
+        output_file = piptools_config.get("output-file") or piptools_config.get("output_file")
+
+    return output_file
+
+
 def parse_config_file(
     click_context: click.Context, config_file: Path
 ) -> dict[str, _t.Any]:
