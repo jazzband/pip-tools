@@ -798,3 +798,56 @@ def test_select_config_file_prefers_pip_tools_toml_over_pyproject_toml(tmpdir_cw
             """))
 
     assert select_config_file(()) == pip_tools_file
+
+
+def test_is_regular_file_with_regular_file(tmpdir_cwd):
+    """Test is_regular_file returns True for regular files."""
+    from piptools.utils import is_regular_file
+
+    test_file = Path("test_file.txt")
+    test_file.write_text("test content")
+
+    assert is_regular_file(str(test_file)) is True
+
+
+def test_is_regular_file_with_stdin():
+    """Test is_regular_file returns False for stdin ('-')."""
+    from piptools.utils import is_regular_file
+
+    assert is_regular_file("-") is False
+
+
+def test_is_regular_file_with_nonexistent():
+    """Test is_regular_file returns False for non-existent paths."""
+    from piptools.utils import is_regular_file
+
+    assert is_regular_file("/nonexistent/path/file.txt") is False
+
+
+def test_is_regular_file_with_directory(tmpdir_cwd):
+    """Test is_regular_file returns False for directories."""
+    from piptools.utils import is_regular_file
+
+    test_dir = Path("test_directory")
+    test_dir.mkdir()
+
+    assert is_regular_file(str(test_dir)) is False
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Named pipes (FIFOs) are Unix-specific"
+)
+def test_is_regular_file_with_fifo(tmpdir_cwd):
+    """Test is_regular_file returns False for named pipes (FIFOs)."""
+    import os
+
+    from piptools.utils import is_regular_file
+
+    fifo_path = Path("test_fifo")
+    os.mkfifo(str(fifo_path))
+
+    try:
+        assert is_regular_file(str(fifo_path)) is False
+    finally:
+        fifo_path.unlink()

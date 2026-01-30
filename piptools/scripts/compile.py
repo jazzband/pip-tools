@@ -27,6 +27,7 @@ from ..utils import (
     dedup,
     drop_extras,
     is_pinned_requirement,
+    is_regular_file,
     key_from_ireq,
 )
 from ..writer import OutputWriter
@@ -53,9 +54,15 @@ def _determine_linesep(
 
     Valid strategies: "LF", "CRLF", "native", "preserve"
     When preserving, files are checked in order for existing newlines.
+    Skips stdin ('-') and non-regular files (e.g., named pipes/FIFOs) to avoid
+    blocking on files that require a writer.
     """
     if strategy == "preserve":
         for fname in filenames:
+            # Skip stdin and non-regular files (FIFOs, sockets, etc.)
+            # to avoid blocking on files that require a writer
+            if not is_regular_file(fname):
+                continue
             try:
                 with open(fname, "rb") as existing_file:
                     existing_text = existing_file.read()

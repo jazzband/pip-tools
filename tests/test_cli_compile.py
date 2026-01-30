@@ -4203,3 +4203,46 @@ def test_that_self_referential_pyproject_toml_extra_can_be_compiled(
         small-fake-a==0.2
             # via foo
         """)
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Named pipes (FIFOs) are Unix-specific"
+)
+def test_determine_linesep_skips_fifo(tmpdir_cwd):
+    """
+    Test that _determine_linesep doesn't block on named pipes (FIFOs).
+    
+    Regression test for https://github.com/jazzband/pip-tools/issues/2232
+    """
+    import os
+
+    from piptools.scripts.compile import _determine_linesep
+
+    # Create a regular file with known line endings
+    regular_file = Path("regular.txt")
+    regular_file.write_bytes(b"test\r\ncontent")  # CRLF
+
+    # Create a FIFO (named pipe)
+    fifo_path = Path("test_fifo")
+    os.mkfifo(str(fifo_path))
+
+    try:
+        # _determine_linesep should skip the FIFO and use the regular file
+        # If it tries to read the FIFO, it will block indefinitely
+        result = _determine_linesep(
+            strategy="preserve",
+            filenames=(str(fifo_path), str(regular_file))
+        )
+        assert result == "\r\n"  # Should detect CRLF from regular file
+    finally:
+        fifo_path.unlink()
+
+
+def test_determine_linesep_skips_stdin():
+    """Test that _determine_linesep skips stdin ('-')."""
+    from piptools.scripts.compile import _determine_linesep
+
+    # stdin marker should be skipped, falling back to default
+    result = _determine_linesep(strategy="preserve", filenames=("-",))
+    assert result == "\n"  # Default when no files can be read

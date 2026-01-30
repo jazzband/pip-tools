@@ -441,6 +441,31 @@ def omit_list_value(lst: list[_T], value: _T) -> list[_T]:
     return [item for item in lst if item != value]
 
 
+
+def is_regular_file(path: str) -> bool:
+    """
+    Check if the given path is a regular file (not stdin, FIFO, socket, etc.).
+
+    Returns False for:
+    - stdin ('-')
+    - Non-existent paths
+    - Named pipes (FIFOs)
+    - Directories
+    - Sockets and other special files
+
+    This is useful for skipping files that should not be read synchronously,
+    such as named pipes which would block waiting for a writer.
+    """
+    if path == "-":
+        return False
+    try:
+        from pathlib import Path
+
+        return Path(path).is_file()  # is_file() returns False for FIFOs, etc.
+    except (OSError, ValueError):
+        return False
+
+
 _strip_extras_re = re.compile(r"\[.+?\]")
 
 
