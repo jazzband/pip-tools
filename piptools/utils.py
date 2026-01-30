@@ -34,7 +34,19 @@ from pip._vendor.pkg_resources import get_distribution
 from piptools.locations import DEFAULT_CONFIG_FILE_NAMES
 
 from ._compat import canonicalize_name
-from ._internal import _subprocess
+from ._internal import _pip_api, _subprocess
+
+# Re-export from _pip_api for backward compatibility
+# These functions are now defined in piptools._internal._pip_api.requirement_utils
+from ._internal._pip_api import (
+    format_requirement,
+    format_specifier,
+    is_pinned_requirement,
+    is_url_requirement,
+    key_from_ireq,
+    key_from_req,
+    strip_extras,
+)
 
 _KT = _t.TypeVar("_KT")
 _VT = _t.TypeVar("_VT")
@@ -58,147 +70,38 @@ COMPILE_EXCLUDE_OPTIONS = {
 ONLY_NEGATIVE_OPTIONS = {"--no-index"}
 
 
-def key_from_ireq(ireq: InstallRequirement) -> str:
-    """Get a standardized key for an InstallRequirement."""
-    if ireq.req is None and ireq.link is not None:
-        return str(ireq.link)
-    else:
-        return key_from_req(ireq.req)
-
-
-def key_from_req(req: InstallRequirement | Requirement | PipRequirement) -> str:
-    """
-    Get an all-lowercase version of the requirement's name.
-
-    **Note:** If the argument is an instance of
-    ``pip._internal.resolution.resolvelib.base.Requirement`` (like
-    ``pip._internal.resolution.resolvelib.requirements.SpecifierRequirement``),
-    then the name might include an extras specification.
-    Apply :py:func:`strip_extras` to the result of this function if you need
-    the package name only.
-
-    :param req: the requirement the key is computed for
-    :return: the canonical name of the requirement
-    """
-    return canonicalize_name(req.name)
-
-
 def comment(text: str) -> str:
     return click.style(text, fg="green")
 
 
-def is_url_requirement(ireq: InstallRequirement) -> bool:
+def is_self_referencing_requirement(
+    ireq: InstallRequirement, source_project_names: set[str]
+) -> bool:
     """
-    Return :py:data:`True` if requirement was specified as a path or URL.
+    Return :py:data:`True` if the requirement references the source project itself.
 
-    ``ireq.original_link`` will have been set by ``InstallRequirement.__init__``
+    This occurs when a project has recursive extra dependencies that reference itself,
+    e.g., ``dev = ["package[test,tools]"]`` in pyproject.toml. Such self-references
+    should not be included in the compiled output file.
+
+    :param ireq: The install requirement to check.
+    :param source_project_names: Set of canonicalized names of source projects.
+    :return: True if this is a self-referencing requirement.
     """
-    return bool(ireq.original_link)
-
-
-def format_requirement(
-    ireq: InstallRequirement,
-    marker: Marker | None = None,
-    hashes: set[str] | None = None,
-) -> str:
-    """
-    Generic formatter for pretty printing InstallRequirements to the terminal
-    in a less verbose way than using its ``__str__`` method.
-    """
-    if ireq.editable:
-        line = f"-e {ireq.link.url}"
-    elif is_url_requirement(ireq):
-        line = _build_direct_reference_best_efforts(ireq)
-    else:
-        # Canonicalize the requirement name
-        # https://packaging.pypa.io/en/latest/utils.html#packaging.utils.canonicalize_name
-        req = copy.copy(ireq.req)
-        req.name = canonicalize_name(req.name)
-        line = str(req)
-
-    if marker:
-        line = f"{line} ; {marker}"
-
-    if hashes:
-        for hash_ in sorted(hashes):
-            line += f" \\\n    --hash={hash_}"
-
-    return line
-
-
-def _build_direct_reference_best_efforts(ireq: InstallRequirement) -> str:
-    """
-    Return a string of a direct reference URI, whenever possible.
-
-    See https://www.python.org/dev/peps/pep-0508/
-    """
-    # If the requirement has no name then we cannot build a direct reference.
-    if not ireq.name:
-        return _t.cast(str, ireq.link.url)
-
-    # Look for a relative file path, the direct reference currently does not work with it.
-    if ireq.link.is_file and not ireq.link.path.startswith("/"):
-        return _t.cast(str, ireq.link.url)
-
-    # If we get here then we have a requirement that supports direct reference.
-    # We need to remove the egg if it exists and keep the rest of the fragments.
-    lowered_ireq_name = canonicalize_name(ireq.name)
-    extras = f"[{','.join(sorted(ireq.extras))}]" if ireq.extras else ""
-    direct_reference = f"{lowered_ireq_name}{extras} @ {ireq.link.url_without_fragment}"
-    fragments = []
-
-    # Check if there is any fragment to add to the URI.
-    if ireq.link.subdirectory_fragment:
-        fragments.append(f"subdirectory={ireq.link.subdirectory_fragment}")
-
-    if ireq.link.has_hash:
-        fragments.append(f"{ireq.link.hash_name}={ireq.link.hash}")
-
-    # Then add the fragments into the URI, if any.
-    if fragments:
-        direct_reference += f"#{'&'.join(fragments)}"
-
-    return direct_reference
-
-
-def format_specifier(ireq: InstallRequirement) -> str:
-    """
-    Generic formatter for pretty printing the specifier part of
-    InstallRequirements to the terminal.
-    """
-    # TODO: Ideally, this is carried over to the pip library itself
-    specs = ireq.specifier if ireq.req is not None else SpecifierSet()
-    # FIXME: remove ignore type marker once the following issue get fixed
-    #        https://github.com/python/mypy/issues/9656
-    specs = sorted(specs, key=lambda x: x.version)
-    return ",".join(str(s) for s in specs) or "<any>"
-
-
-def is_pinned_requirement(ireq: InstallRequirement) -> bool:
-    """
-    Return whether an InstallRequirement is a "pinned" requirement.
-
-    An InstallRequirement is considered pinned if:
-
-    - Is not editable
-    - It has exactly one specifier
-    - That specifier is "=="
-    - The version does not contain a wildcard
-
-    Examples:
-        django==1.8   # pinned
-        django>1.8    # NOT pinned
-        django~=1.8   # NOT pinned
-        django==1.*   # NOT pinned
-    """
-    if ireq.editable:
+    if not source_project_names:
         return False
 
-    if ireq.req is None or len(ireq.specifier) != 1:
+    # Check if the requirement name matches a source project
+    req_key = key_from_ireq(ireq)
+    if req_key not in source_project_names:
         return False
 
-    spec = next(iter(ireq.specifier))
-    return spec.operator in {"==", "==="} and not spec.version.endswith(".*")
+    # Only filter out if it's a local file reference
+    # (not a pinned version from PyPI)
+    if ireq.link and ireq.link.is_file:
+        return True
+
+    return False
 
 
 def as_tuple(ireq: InstallRequirement) -> tuple[str, str, tuple[str, ...]]:
@@ -436,17 +339,54 @@ def get_sys_path_for_python_executable(python_executable: str) -> list[str]:
     return [os.path.abspath(path) for path in paths]
 
 
+def get_environment_for_python_executable(
+    python_executable: str,
+) -> dict[str, str]:
+    """
+    Return the PEP 508 environment markers dict for the given python executable.
+
+    This is used to correctly evaluate environment markers when targeting a
+    different Python environment than the one running pip-tools.
+    """
+    code = (
+        "from pip._vendor.packaging.markers import default_environment;"
+        "import json;"
+        "print(json.dumps(default_environment()))"
+    )
+    result = _subprocess.run_python_snippet(python_executable, code)
+    env = json.loads(result)
+    assert isinstance(env, dict)
+    return env
+
+
 def omit_list_value(lst: list[_T], value: _T) -> list[_T]:
     """Produce a new list with a given value skipped."""
     return [item for item in lst if item != value]
 
 
-_strip_extras_re = re.compile(r"\[.+?\]")
+def is_readable_regular_file(path: str) -> bool:
+    """
+    Check if the given path is a readable regular file.
 
+    Returns False for:
+    - stdin ('-')
+    - Non-existent paths
+    - Named pipes (FIFOs)
+    - Directories
+    - Sockets and other special files
 
-def strip_extras(name: str) -> str:
-    """Strip extras from package name, e.g. pytest[testing] -> pytest."""
-    return re.sub(_strip_extras_re, "", name)
+    This is useful for skipping files that should not be read synchronously,
+    such as named pipes which would block waiting for a writer.
+    """
+    if path == "-":
+        return False
+    try:
+        from pathlib import Path
+
+        p = Path(path)
+        return p.is_file()  # is_file() returns False for FIFOs, sockets, etc.
+    except (OSError, ValueError):
+        return False
 
 
 def override_defaults_from_config_file(
@@ -490,6 +430,29 @@ def _assign_config_to_cli_context(
         click_context.default_map = {}
 
     click_context.default_map.update(cli_config_mapping)
+
+
+def get_src_files_from_config(
+    ctx: click.Context, src_files: tuple[str, ...]
+) -> tuple[str, ...]:
+    """
+    Get src_files from click context's config if not provided as argument.
+
+    Since ``src_files`` is a click argument (not an option), it's not automatically
+    populated from the config's default_map. This function handles that case by
+    checking the default_map for ``src_files`` when the argument is empty.
+
+    :param ctx: Click context containing the default_map from config.
+    :param src_files: The src_files tuple from the CLI argument.
+    :returns: The src_files from argument if provided, else from config if available,
+              else the original empty tuple.
+    """
+    if not src_files and ctx.default_map and "src_files" in ctx.default_map:
+        config_src_files = ctx.default_map["src_files"]
+        # Config can specify src_files as a list or tuple
+        if isinstance(config_src_files, (list, tuple)):
+            return tuple(config_src_files)
+    return src_files
 
 
 def _validate_config(
