@@ -15,7 +15,7 @@ repos:
         args: [--py39-plus]
 
   - repo: https://github.com/python-jsonschema/check-jsonschema.git
-    rev: 0.36.0
+    rev: 0.36.1
     hooks:
       - id: check-github-actions
       - id: check-github-workflows
