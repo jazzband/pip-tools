@@ -34,6 +34,25 @@ appreciated.
 
 [tox devenv]: <https://tox.wiki/en/latest/reference/cli.html#tox-devenv-(d)>
 
+### LLM Generated Contributions
+
+Although contributors are free to use whatever tools they like, `pip-tools` has a policy regarding LLM contributions to protect our maintainers as well as our contributors.
+
+1. **Disclosure**: contributors should indicate when they have use an LLM to generate a part of their work.
+   You may also be able to help maintainers understand what they are looking at by sharing how you used a tool, e.g. what prompts you used.
+
+2. **Ownership**: it is the contributor's responsibility to understand submitted code and ensure, to the best of their ability, that it meets project standards.
+   In particular, contributors need to be prepared to discuss their changes during review.
+
+Overall, our position is that an LLM may do the _typing_ for you but it should not do the _thinking_.
+
+:::{caution}
+In extreme cases, slop PRs may be closed as spam.
+:::
+
+_The [rationale and discussion](https://github.com/jazzband/pip-tools/discussions/2278) behind this policy is open and public. Feel free to raise new issues or make suggestions there._
+
+
 ## Project Release Process
 
 Releases require approval by a member of the [`pip-tools-leads` team].
