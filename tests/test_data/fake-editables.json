@@ -1,4 +1,4 @@
 {
   "git+git://example.org/django.git#egg=django": [],
-  "git+https://github.com/celery/billiard#egg=billiard==3.5.9999": []
+  "git+https://github.com/celery/billiard#egg=billiard": []
 }

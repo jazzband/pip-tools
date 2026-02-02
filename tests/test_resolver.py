@@ -173,14 +173,14 @@ from piptools.resolver import RequirementSummary, combine_install_requirements
             # See: GH-851
             (
                 [
-                    "git+https://github.com/celery/billiard#egg=billiard==3.5.9999",
+                    "git+https://github.com/celery/billiard#egg=billiard",
                     "celery==4.0.2",
                 ],
                 [
                     "amqp==2.1.4 (from kombu==4.0.2->celery==4.0.2)",
                     "kombu==4.0.2 (from celery==4.0.2)",
-                    "billiard<3.6.0,==3.5.9999,>=3.5.0.2 from "
-                    "git+https://github.com/celery/billiard#egg=billiard==3.5.9999",
+                    "billiard<3.6.0,>=3.5.0.2 from "
+                    "git+https://github.com/celery/billiard#egg=billiard",
                     "vine==1.1.3 (from amqp==2.1.4->kombu==4.0.2->celery==4.0.2)",
                     "celery==4.0.2",
                     "pytz==2016.4 (from celery==4.0.2)",
