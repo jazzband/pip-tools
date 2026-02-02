@@ -116,6 +116,20 @@ class PyPIRepository(BaseRepository):
     def finder(self) -> PackageFinder:
         return self._finder
 
+    def _clear_finder_cache(self) -> None:
+        """Clear the cache of installation candidates."""
+        # `finder.find_all_candidates` is an lru_cache wrapped method on older `pip`
+        # versions, which can be cleared with `cache_clear()`
+        # but on newer versions, it's a simple method, and the underlying cache is a
+        # dict on the instance
+        # the same holds for `finder.find_best_candidate`
+        if _pip_api.PIP_VERSION_MAJOR_MINOR >= (25, 1):
+            self.finder._all_candidates.clear()
+            self.finder._best_candidates.clear()
+        else:
+            self.finder.find_all_candidates.cache_clear()
+            self.finder.find_best_candidate.cache_clear()
+
     @property
     def command(self) -> InstallCommand:
         """Return an install command instance."""
@@ -450,13 +464,10 @@ class PyPIRepository(BaseRepository):
         Wheel.support_index_min = _wheel_support_index_min
         self._available_candidates_cache = {}
 
-        # Finder internally caches results, and there is no public method to
-        # clear the cache, so we re-create the object here. If we don't clear
-        # this cache then it can contain results from an earlier call when
-        # allow_all_wheels wasn't active. See GH-1532
-        self._finder = self.command._build_package_finder(
-            options=self.options, session=self.session
-        )
+        # Finder internally caches results. If we don't clear this cache then it can
+        # contain results from an earlier call when allow_all_wheels wasn't active.
+        # See GH-1532
+        self._clear_finder_cache()
 
         try:
             yield
