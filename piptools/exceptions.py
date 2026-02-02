@@ -8,6 +8,8 @@ from pip._internal.models.candidate import InstallationCandidate
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.misc import redact_auth_from_url
 
+from ._internal import _pip_api
+
 
 class PipToolsError(Exception):
     pass
@@ -43,7 +45,7 @@ class NoCandidateFound(PipToolsError):
             lines.append(f"Tried: {', '.join(versions)}")
 
         if pre_versions:
-            if self.finder.allow_all_prereleases:
+            if _pip_api.finder_allows_prereleases_of_req(self.finder, self.ireq):
                 line = "Tried"
             else:
                 line = "Skipped"

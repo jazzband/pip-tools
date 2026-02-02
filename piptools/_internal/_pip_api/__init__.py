@@ -10,6 +10,10 @@ from .install_requirements import (
     create_install_requirement,
     create_install_requirement_from_line,
 )
+from .package_finder import (
+    finder_allows_all_prereleases,
+    finder_allows_prereleases_of_req,
+)
 from .pip_version import (
     PIP_VERSION,
     PIP_VERSION_MAJOR_MINOR,
@@ -25,4 +29,6 @@ __all__ = (
     "create_install_requirement",
     "create_install_requirement_from_line",
     "copy_install_requirement",
+    "finder_allows_all_prereleases",
+    "finder_allows_prereleases_of_req",
 )
