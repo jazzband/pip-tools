@@ -14,14 +14,43 @@ on:
         description: >-
           A JSON string with pip versions
           to test against under CPython.
-        required: true
+        required: false
         type: string
       cpython-versions:
         description: >-
           A JSON string with CPython versions
           to test against.
-        required: true
+        required: false
         type: string
+      release-version:
+        description: >-
+          Target PEP440-compliant version to release.
+          Please, don't prepend `v`.
+        required: false
+        type: string
+      release-committish:
+        default: ''
+        description: >-
+          The commit to be released to PyPI and tagged
+          in Git as `release-version`. Normally, you
+          should keep this empty.
+        type: string
+
+    outputs:
+      dists-artifact-name:
+        description: Workflow artifact name containing dists.
+        value: ${{ jobs.pre-setup.outputs.dists-artifact-name }}
+      is-upstream-repository:
+        description: >-
+          A flag representing whether the workflow runs in the upstream
+          repository or a fork.
+        value: ${{ jobs.pre-setup.outputs.is-upstream-repository }}
+      project-name:
+        description: PyPI project name.
+        value: ${{ jobs.pre-setup.outputs.project-name }}
+      project-version:
+        description: PyPI project version string.
+        value: ${{ jobs.pre-setup.outputs.dist-version }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -44,8 +73,221 @@ env:
     PYTEST_THEME
     PYTEST_THEME_MODE
     PRE_COMMIT_COLOR
+  UPSTREAM_REPOSITORY_ID: >-
+    5746963
 
 jobs:
+  pre-setup:
+    name: ⚙️ Pre-set global build settings
+
+    runs-on: ubuntu-latest
+
+    timeout-minutes: 2  # network is slow sometimes when fetching from Git
+
+    defaults:
+      run:
+        shell: python
+
+    outputs:
+      # NOTE: These aren't env vars because the `${{ env }}` context is
+      # NOTE: inaccessible when passing inputs to reusable workflows.
+      dists-artifact-name: python-package-distributions
+      dist-version: >-
+        ${{
+            steps.request-check.outputs.release-requested == 'true'
+            && inputs.release-version
+            || steps.scm-version.outputs.dist-version
+        }}
+      project-name: ${{ steps.metadata.outputs.project-name }}
+      release-requested: >-
+        ${{
+            steps.request-check.outputs.release-requested || false
+        }}
+      cache-key-for-dep-files: >-
+        ${{ steps.calc-cache-key-files.outputs.cache-key-for-dep-files }}
+      sdist-artifact-name: ${{ steps.artifact-name.outputs.sdist }}
+      wheel-artifact-name: ${{ steps.artifact-name.outputs.wheel }}
+      is-upstream-repository: >-
+        ${{ toJSON(env.UPSTREAM_REPOSITORY_ID == github.repository_id) }}
+
+    steps:
+    - name: Switch to using Python 3.14 by default
+      uses: actions/setup-python@v6
+      with:
+        python-version: 3.14
+    - name: >-
+        Mark the build as untagged '${{
+            github.event.repository.default_branch
+        }}' branch build
+      id: untagged-check
+      if: >-
+        github.event_name == 'push' &&
+        github.ref_type == 'branch' &&
+        github.ref_name == github.event.repository.default_branch
+      run: |
+        from os import environ
+        from pathlib import Path
+
+        FILE_APPEND_MODE = 'a'
+
+        with Path(environ['GITHUB_OUTPUT']).open(
+                mode=FILE_APPEND_MODE,
+        ) as outputs_file:
+            print('is-untagged-devel=true', file=outputs_file)
+    - name: Mark the build as "release request"
+      id: request-check
+      if: inputs.release-version != ''
+      run: |
+        from os import environ
+        from pathlib import Path
+
+        FILE_APPEND_MODE = 'a'
+
+        with Path(environ['GITHUB_OUTPUT']).open(
+                mode=FILE_APPEND_MODE,
+        ) as outputs_file:
+            print('release-requested=true', file=outputs_file)
+    - name: Check out src from Git
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: >-
+          ${{
+            steps.request-check.outputs.release-requested == 'true'
+            && 1 || 0
+          }}
+        ref: ${{ inputs.release-committish }}
+    - name: Scan static PEP 621 core packaging metadata
+      id: metadata
+      run: |
+        from os import environ
+        from pathlib import Path
+        from tomllib import loads as parse_toml_from_string
+
+        FILE_APPEND_MODE = 'a'
+
+        pyproject_toml_txt = Path('pyproject.toml').read_text()
+        metadata = parse_toml_from_string(pyproject_toml_txt)['project']
+        project_name = metadata["name"]
+
+        with Path(environ['GITHUB_OUTPUT']).open(
+                mode=FILE_APPEND_MODE,
+        ) as outputs_file:
+            print(f'project-name={project_name}', file=outputs_file)
+    - name: >-
+        Calculate dependency files' combined hash value
+        for use in the cache key
+      if: >-
+        steps.request-check.outputs.release-requested != 'true'
+      id: calc-cache-key-files
+      uses: ./.github/actions/cache-keys
+    - name: Set up pip cache
+      if: >-
+        steps.request-check.outputs.release-requested != 'true'
+      uses: re-actors/cache-python-deps@release/v1
+      with:
+        cache-key-for-dependency-files: >-
+          ${{ steps.calc-cache-key-files.outputs.cache-key-for-dep-files }}
+    - name: Drop Git tags from HEAD for non-release requests
+      if: >-
+        steps.request-check.outputs.release-requested != 'true'
+      run: >-
+        git tag --points-at HEAD
+        |
+        xargs git tag --delete
+      shell: bash -eEuxo pipefail {0}
+    - name: Set up versioning prerequisites
+      if: >-
+        steps.request-check.outputs.release-requested != 'true'
+      run: >-
+        python -m
+        pip install
+        --user
+        setuptools-scm
+      shell: bash -eEuxo pipefail {0}
+    - name: Set the current dist version from Git
+      if: steps.request-check.outputs.release-requested != 'true'
+      id: scm-version
+      run: |
+        from os import environ
+        from pathlib import Path
+
+        import setuptools_scm
+
+        FILE_APPEND_MODE = 'a'
+
+        ver = setuptools_scm.get_version(local_scheme='dirty-tag')
+        with Path(environ['GITHUB_OUTPUT']).open(
+                mode=FILE_APPEND_MODE,
+        ) as outputs_file:
+            print(f'dist-version={ver}', file=outputs_file)
+            print(
+                f'dist-version-for-filenames={ver.replace("+", "-")}',
+                file=outputs_file,
+            )
+    - name: Set the expected dist artifact names
+      id: artifact-name
+      env:
+        PROJECT_NAME: ${{ steps.metadata.outputs.project-name }}
+      run: |
+        from os import environ
+        from pathlib import Path
+
+        FILE_APPEND_MODE = 'a'
+
+        whl_file_prj_base_name = environ['PROJECT_NAME'].replace('-', '_')
+        sdist_file_prj_base_name = (
+            whl_file_prj_base_name.
+            replace('.', '_').
+            lower()
+        )
+
+        with Path(environ['GITHUB_OUTPUT']).open(
+                mode=FILE_APPEND_MODE,
+        ) as outputs_file:
+            print(
+                f"sdist={sdist_file_prj_base_name !s}-${{
+                    steps.request-check.outputs.release-requested == 'true'
+                    && inputs.release-version
+                    || steps.scm-version.outputs.dist-version
+                }}.tar.gz",
+                file=outputs_file,
+            )
+            print(
+                f"wheel={whl_file_prj_base_name !s}-${{
+                    steps.request-check.outputs.release-requested == 'true'
+                    && inputs.release-version
+                    || steps.scm-version.outputs.dist-version
+                }}-py3-none-any.whl",
+                file=outputs_file,
+            )
+
+  build:
+    name: >-
+      📦 Build dists
+    needs:
+    - pre-setup  # transitive, for accessing settings
+
+    uses: tox-dev/workflow/.github/workflows/reusable-tox.yml@617ca35caa695c572377861016677905e58a328c  # yamllint disable-line rule:line-length
+    with:
+      cache-key-for-dependency-files: >-
+        ${{ needs.pre-setup.outputs.cache-key-for-dep-files }}
+      check-name: Build dists under 🐍3.12
+      checkout-src-git-committish: >-
+        ${{ inputs.release-committish }}
+      checkout-src-git-fetch-depth: >-
+        ${{
+          fromJSON(needs.pre-setup.outputs.release-requested)
+          && 1
+          || 0
+        }}
+      job-dependencies-context: >-  # context for hooks
+        ${{ toJSON(needs) }}
+      python-version: 3.12
+      runner-vm-os: ubuntu-latest
+      timeout-minutes: 2
+      toxenv: build-dists
+      xfail: false
+
   linters:
     name: Linters
     uses: ./.github/workflows/reusable-qa.yml
