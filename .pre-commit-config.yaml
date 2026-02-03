@@ -113,4 +113,69 @@ repos:
           # The integration only works if shellcheck is installed.
           - "github.com/wasilibs/go-shellcheck/cmd/shellcheck@v0.11.1"
 
+  - repo: https://github.com/jackdewinter/pymarkdown.git
+    rev: v0.9.33
+    hooks:
+    - id: pymarkdown
+      alias: md-changelog
+      name: PyMarkdown (published change log)
+      args:
+      # NOTE: `no-emphasis-as-heading` trips on dates under version
+      # NOTE: titles. Wrapping the dates with `<time>`, OTOH, causes
+      # NOTE: `no-inline-html`. `no-duplicate-heading` is caused by
+      # NOTE: having the same change log categories under multiple
+      # NOTE: versions. Finally, `blanks-around-headings` and
+      # NOTE: `no-multiple-blanks` are caused by our towncrier template
+      # NOTE: injecting an additional visual separator line at the end
+      # NOTE: of each release — this behavior is desired.
+      - --disable-rules=blanks-around-headings,no-duplicate-heading,no-emphasis-as-heading,no-multiple-blanks
+      - scan
+      files: ^CHANGELOG\.md$
+    - id: pymarkdown
+      alias: md-changelog-fragments
+      name: PyMarkdown (change log fragments)
+      args:
+      # NOTE: Towncrier-processed change log fragments must not have
+      # NOTE: headings but `first-line-heading` demands the opposite.
+      - --disable-rules=first-line-heading
+      - scan
+      files: ^changelog\.d/(.*\..*|\.draft_changelog_partial)\.md$
+    - id: pymarkdown
+      alias: md-issue-pr-templates
+      name: PyMarkdown (issue and pull request templates)
+      args:
+      # NOTE: GitHub issue templates are YAML document sequences. The
+      # NOTE: first document is YAML and the second is markdown.
+      # NOTE: The beginning cannot adhere to the `first-line-heading`
+      # NOTE: requirement. The PR templates are pure Markdown but the
+      # NOTE: structure does not need a global heading since this role
+      # NOTE: is fulfilled by the PR title field.
+      - --disable-rules=first-line-heading
+      - scan
+      files: ^\.github/(ISSUE_TEMPLATE/[^/]*|PULL_REQUEST_TEMPLATE)\.md$
+    - id: pymarkdown
+      alias: md-generic
+      name: PyMarkdown (remaining)
+      exclude: >-
+        (?x)
+        ^
+          (
+            \.github/(ISSUE_TEMPLATE/[^/]*|PULL_REQUEST_TEMPLATE)\.md
+            |changelog\.d/(
+              \.draft_changelog_partial\.md
+              |(\d+|[0-9a-f]{8}|[0-9a-f]{7}|[0-9a-f]{40}|\+[^.]+)\.(
+                bugfix
+                |feature
+                |deprecation
+                |breaking
+                |doc
+                |packaging
+                |contrib
+                |misc
+              )(\.\d+)?(\.md)?
+            )
+            |CHANGELOG\.md
+          )
+        $
+
 ...

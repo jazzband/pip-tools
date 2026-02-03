@@ -1,3 +1,5 @@
+# Change log
+
 <!-- towncrier release notes start -->
 
 ## v7.5.2
@@ -98,8 +100,9 @@
 
   *PRs and issues:* {issue}`2223`
 
-- Fixed an incompatibility with ``click >= 8.3`` which made ``pip-compile`` display incorrect
-  options in the compile command in output headers -- by {user}`sirosen`.
+- Fixed an incompatibility with ``click >= 8.3`` which made ``pip-compile``
+  display incorrect options in the compile command in output headers
+  -- by {user}`sirosen`.
 
   *PRs and issues:* {issue}`2235`
 
@@ -111,7 +114,8 @@
 
 ### Improved documentation
 
-- ReadTheDocs builds for `pip-tools` no longer include htmlzip and pdf outputs -- by {user}`sirosen`.
+- ReadTheDocs builds for `pip-tools` no longer include htmlzip and pdf outputs
+  -- by {user}`sirosen`.
 
   *PRs and issues:* {issue}`2218`
 
@@ -121,7 +125,9 @@
 
   *PRs and issues:* {issue}`2214`
 
-- The changelog documentation for contributors now provides hyperlinks to the source of each example change note -- by {user}`jayaddison` (for OpenCulinary).
+- The changelog documentation for contributors now provides hyperlinks to the
+  source of each example change note -- by {user}`jayaddison`
+  (for OpenCulinary).
 
   *PRs and issues:* {issue}`2217`
 
@@ -233,7 +239,6 @@
 
   *PRs and issues:* {issue}`2202`
 
-
 ## v7.4.1
 
 *05 Mar 2024*
@@ -264,8 +269,8 @@
   -- by {user}`csalerno-asml`.
 - Fix ignorance of inverted CLI options in config for `pip-sync` ({pr}`1989`)
   -- by {user}`chrysle`.
-- Filter out origin ireqs for extra requirements before writing output annotations ({pr}`2011`)
-  -- by {user}`chrysle`.
+- Filter out origin ireqs for extra requirements before writing output
+  annotations ({pr}`2011`) -- by {user}`chrysle`.
 - Make BacktrackingResolver ignore extras when dropping existing constraints ({pr}`1984`)
   -- by {user}`chludwig-haufe`.
 - Display `pyproject.toml`'s metatada parsing errors in verbose mode ({pr}`1979`)
@@ -367,8 +372,8 @@
 
 - Support config defaults using `.pip-tools.toml` or `pyproject.toml` ({pr}`1863`)
   -- by {user}`j00bar`.
-- Log a warning if the user specifies `-P` and the output file is present but empty ({pr}`1822`)
-  -- by {user}`davidmreed`.
+- Log a warning if the user specifies `-P` and the output file is present but
+  empty ({pr}`1822`) -- by {user}`davidmreed`.
 - Improve warning for `pip-compile` if no `--allow-unsafe` was passed ({pr}`1867`)
   -- by {user}`chrysle`.
 
@@ -391,8 +396,8 @@
   -- by {user}`atugushev`.
 - Add support for `pip==23.1` where refactored requirement options ({pr}`1832`)
   -- by {user}`atugushev`.
-- Add support for `pip==23.1` where deprecated `--install-option` has been removed ({pr}`1828`)
-  -- by {user}`atugushev`.
+- Add support for `pip==23.1` where deprecated `--install-option` has been
+  removed ({pr}`1828`) -- by {user}`atugushev`.
 
 ### Bug Fixes
 
@@ -448,8 +453,8 @@
 
 ### Bug Fixes
 
-- Treat `--upgrade-packages` PKGSPECs as constraints (not just minimums), consistently ({pr}`1578`)
-  -- by {user}`AndydeCleyre`.
+- Treat `--upgrade-packages` PKGSPECs as constraints (not just minimums),
+  consistently ({pr}`1578`) -- by {user}`AndydeCleyre`.
 - Filter out the user provided unsafe packages ({pr}`1766`)
   -- by {user}`q0w`.
 - Adopt PEP-621 for packaging ({pr}`1763`)
@@ -719,11 +724,11 @@
 
 ### Features
 
-- Add support for `pyproject.toml` or `setup.cfg` as input dependency file (PEP-517) for
-  `pip-compile` ({pr}`1356`)
+- Add support for `pyproject.toml` or `setup.cfg` as input dependency file
+  {pep}`517` for `pip-compile` ({pr}`1356`)
   -- by {user}`orsinium`.
-- Add `pip-compile --extra` option to specify `extras_require` dependencies ({pr}`1363`)
-  -- by {user}`orsinium`.
+- Add `pip-compile --extra` option to specify `extras_require` dependencies
+  ({pr}`1363`) -- by {user}`orsinium`.
 
 ### Bug Fixes
 
@@ -850,9 +855,8 @@
   -- by {user}`atugushev`.
 - `pip-sync` now exists with code `1` on `--dry-run` ({pr}`1172`)
   -- by {user}`francisbrito`.
-- `pip-compile` now doesn't resolve constraints from `-c constraints.txt`that are not
-  (yet) requirements ({pr}`1175`)
-  -- by {user}`clslgrnc`.
+- `pip-compile` now doesn't resolve constraints from `-c constraints.txt`that
+  are not (yet) requirements ({pr}`1175`) -- by {user}`clslgrnc`.
 - Add `--reuse-hashes/--no-reuse-hashes` options to `pip-compile` ({pr}`1177`)
   -- by {user}`graingert`.
 
@@ -947,9 +951,8 @@
   -- by {user}`AndydeCleyre`.
 - Add `pre-commit` hook for `pip-compile` ({pr}`976`)
   -- by {user}`atugushev`.
-- `pip-compile` and `pip-sync` now pass anything provided to the new `--pip-args` option
-  on to `pip` ({pr}`1080`)
-  -- by {user}`AndydeCleyre`.
+- `pip-compile` and `pip-sync` now pass anything provided to the new
+  `--pip-args` option on to `pip` ({pr}`1080`) -- by {user}`AndydeCleyre`.
 - `pip-compile` output headers are now more accurate when `--` is used to escape
   filenames ({pr}`1080`)
   -- by {user}`AndydeCleyre`.
@@ -993,15 +996,14 @@
 
 ### Features
 
-- Primary requirements and VCS dependencies are now get annotated with any source `.in`
-  files and reverse dependencies ({pr}`1058`)
+- Primary requirements and VCS dependencies are now get annotated with any
+  source `.in` files and reverse dependencies ({pr}`1058`)
   -- by {user}`AndydeCleyre`.
 
 ### Bug Fixes
 
-- Always use normalized path for cache directory as it is required in newer versions of
-  `pip` ({pr}`1062`)
-  -- by {user}`kammala`.
+- Always use normalized path for cache directory as it is required in newer
+  versions of `pip` ({pr}`1062`) -- by {user}`kammala`.
 
 ### Improved Documentation
 
@@ -1014,15 +1016,15 @@
 
 ### Bug Fixes
 
-- Fix a bug where `pip-compile` would keep outdated options from `requirements.txt` ({pr}`1029`)
-  -- by {user}`atugushev`.
+- Fix a bug where `pip-compile` would keep outdated options from
+  `requirements.txt` ({pr}`1029`) -- by {user}`atugushev`.
 - Fix the `No handlers could be found for logger "pip.*"` error by configuring the
   builtin logging module ({pr}`1035`)
   -- by {user}`vphilippon`.
-- Fix a bug where dependencies of relevant constraints may be missing from output file ({pr}`1037`)
-  -- by {user}`jeevb`.
-- Upgrade the minimal version of `click` from `6.0` to `7.0` version in `setup.py` ({pr}`1039`)
-  -- by {user}`hramezani`.
+- Fix a bug where dependencies of relevant constraints may be missing from
+  output file ({pr}`1037`) -- by {user}`jeevb`.
+- Upgrade the minimal version of `click` from `6.0` to `7.0` version in
+  `setup.py` ({pr}`1039`) -- by {user}`hramezani`.
 - Ensure that depcache considers the python implementation such that (for example)
   `cpython3.6` does not poison the results of `pypy3.6` ({pr}`1050`)
   -- by {user}`asottile`.
@@ -1032,7 +1034,8 @@
 - Make the `README` more imperative about installing into a project's virtual
   environment to avoid confusion ({pr}`1023`)
   -- by {user}`tekumara`.
-- Add a note to the `README` about how to install requirements on different stages to
+- Add a note to the `README` about how to install requirements on different
+  stages to
   [Workflow for layered requirements](https://pip-tools.rtfd.io/en/latest/#workflow-for-layered-requirements)
   section ({pr}`1044`)
   -- by {user}`hramezani`.
@@ -1173,8 +1176,8 @@
 
 - Fix `--generate-hashes` with bare VCS URLs ({pr}`812`)
   -- by {user}`jcushman`.
-- Fix issues with `UnicodeError` when installing `pip-tools` from source in some systems ({pr}`816`)
-  -- by {user}`AbdealiJK`.
+- Fix issues with `UnicodeError` when installing `pip-tools` from source in
+  some systems ({pr}`816`) -- by {user}`AbdealiJK`.
 - Respect `--pre` option in the input file ({pr}`822`)
   -- by {user}`atugushev`.
 - Option `--upgrade-package` now works even if the output file does not exist ({pr}`831`)
@@ -1235,10 +1238,10 @@
 
 ### Bug Fixes
 
-- Fix the output file for `pip-compile` with an explicit `setup.py` as source file ({pr}`731`)
-  -- by {user}`atugushev`.
-- Fix order issue with generated lock file when `hashes` and `markers` are used together ({pr}`763`)
-  -- by {user}`milind-shakya-sp`.
+- Fix the output file for `pip-compile` with an explicit `setup.py` as source
+  file ({pr}`731`) -- by {user}`atugushev`.
+- Fix order issue with generated lock file when `hashes` and `markers` are
+  used together ({pr}`763`) -- by {user}`milind-shakya-sp`.
 
 ## v3.4.0
 
@@ -1284,8 +1287,8 @@
 
 - Added support of `pip` 19.0 ({pr}`715`)
   -- by {user}`atugushev`.
-- Add `--allow-unsafe` to update instructions in the generated `requirements.txt` ({pr}`708`)
-  -- by {user}`richafrank`.
+- Add `--allow-unsafe` to update instructions in the generated
+  `requirements.txt` ({pr}`708`) -- by {user}`richafrank`.
 
 ### Bug Fixes
 
@@ -1317,8 +1320,8 @@
 
 ### Major Changes
 
-- Update `pip-tools` for native `pip` 8, 9, 10 and 18 compatibility, un-vendoring `pip`
-  to use the user-installed `pip` ({pr}`657` and {pr}`672`)
+- Update `pip-tools` for native `pip` 8, 9, 10 and 18 compatibility,
+  un-vendoring `pip` to use the user-installed `pip` ({pr}`657` and {pr}`672`)
   -- by {user}`techalchemy`, {user}`suutari`, {user}`tysonclugg` and.
   {user}`vphilippon`
 
@@ -1356,11 +1359,11 @@
 
 ### Features
 
-- Improved the speed of `pip-compile --generate-hashes` by caching the hashes from an
-  existing output file ({pr}`641`)
+- Improved the speed of `pip-compile --generate-hashes` by caching the hashes
+  from an existing output file ({pr}`641`)
   -- by {user}`justicz`.
-- Added a `pip-sync --user` option to restrict attention to user-local directory ({pr}`642`)
-  -- by {user}`jbergknoff-10e`.
+- Added a `pip-sync --user` option to restrict attention to user-local
+  directory ({pr}`642`) -- by {user}`jbergknoff-10e`.
 - Removed the hard dependency on setuptools ({pr}`645`)
   -- by {user}`vphilippon`.
 
@@ -1377,12 +1380,12 @@
 
 ### Features
 
-- Allow editable packages in requirements.in with `pip-compile --generate-hashes` ({pr}`524`)
-  -- by {user}`jdufresne`.
+- Allow editable packages in requirements.in with
+  `pip-compile --generate-hashes` ({pr}`524`) -- by {user}`jdufresne`.
 - Allow for CA bundles with `pip-compile --cert` ({pr}`612`)
   -- by {user}`khwilson`.
-- Improved `pip-compile` duration with large locally available editable requirement by
-  skipping a copy to the cache ({pr}`583`)
+- Improved `pip-compile` duration with large locally available editable
+  requirement by skipping a copy to the cache ({pr}`583`)
   -- by {user}`costypetrisor`.
 - Slightly improved the `NoCandidateFound` error message on potential causes ({pr}`614`)
   -- by {user}`vphilippon`.
@@ -1397,8 +1400,8 @@
 
 ### Bug Fixes
 
-- Fixed bug causing dependencies from invalid wheels for the current platform to be
-  included ({pr}`571`).
+- Fixed bug causing dependencies from invalid wheels for the current platform
+  to be included ({pr}`571`).
 - `pip-sync` will respect environment markers in the `requirements.txt` ({pr}`600`)
   -- by {user}`hazmat345`.
 - Converted the ReadMe to have a nice description rendering on PyPI
@@ -1411,7 +1414,8 @@
 ### Bug Fixes
 
 - Fixed bug breaking `pip-sync` on Python 3, raising
-  `TypeError: '<' not supported between instances of 'InstallRequirement' and 'InstallRequirement'` ({pr}`570`).
+  `TypeError: '<' not supported between instances of 'InstallRequirement' and
+  'InstallRequirement'` ({pr}`570`).
 
 ## v1.10.0
 
@@ -1426,15 +1430,15 @@
 
 ### Bug Fixes
 
-- Fixed bug where unsafe packages would get pinned in generated requirements files when
-  `--allow-unsafe` was not set ({pr}`517`)
+- Fixed bug where unsafe packages would get pinned in generated requirements
+  files when `--allow-unsafe` was not set ({pr}`517`)
   -- by {user}`dschaller`.
 - Fixed bug where editable PyPI dependencies would have a `download_dir` and be exposed
   to `git-checkout-index`, (thus losing their VCS directory) and
   `python setup.py egg_info` fails ({pr}`385`) and {pr}`538`)
   -- by {user}`blueyed` and {user}`dfee`.
-- Fixed bug where some primary dependencies were annotated with "via" info comments ({pr}`542`)
-  -- by {user}`quantus`.
+- Fixed bug where some primary dependencies were annotated with "via" info
+  comments ({pr}`542`) -- by {user}`quantus`.
 - Fixed bug where pkg-resources would be removed by `pip-sync` in Ubuntu ({pr}`555`)
   -- by {user}`cemsbr`.
 - Fixed bug where the resolver would sometime not stabilize on requirements specifying
@@ -1455,8 +1459,8 @@
 - Added ability to read requirements from `setup.py` instead of just `requirements.in`
   ({pr}`418`)
   -- by {user}`tysonclugg` and {user}`majuscule`.
-- Added a `--max-rounds` argument to the `pip-compile` command to allow for solving large
-  requirement sets ({pr}`472`)
+- Added a `--max-rounds` argument to the `pip-compile` command to allow for
+  solving large requirement sets ({pr}`472`)
   -- by {user}`derek-miller`.
 - Exclude unsafe packages' dependencies when `--allow-unsafe` is not in use ({pr}`441`)
   -- by {user}`jdufresne`.
@@ -1471,19 +1475,20 @@
 
 ### Bug Fixes
 
-- Fixed the `--upgrade-package` option to respect the given package list to update ({pr}`491`).
-- Fixed the default output file name when the source file has no extension ({pr}`488`)
-  -- by {user}`vphilippon`.
+- Fixed the `--upgrade-package` option to respect the given package list to
+  update ({pr}`491`).
+- Fixed the default output file name when the source file has no extension
+  ({pr}`488`) -- by {user}`vphilippon`.
 - Fixed crash on editable requirements introduced in 1.8.2.
-- Fixed duplicated `--trusted-host`, `--extra-index-url` and `--index-url` in the generated
-  requirements.
+- Fixed duplicated `--trusted-host`, `--extra-index-url` and `--index-url` in
+  the generated requirements.
 
 ## v1.8.2
 
 *28 Mar 2017*
 
-- Regression fix: editable reqs were losing their dependencies after first round ({pr}`476`)
-  -- by {user}`mattlong`.
+- Regression fix: editable reqs were losing their dependencies after first
+  round ({pr}`476`) -- by {user}`mattlong`.
 - Remove duplicate index urls in generated `requirements.txt` ({pr}`468`)
   -- by {user}`majuscule`.
 
@@ -1507,9 +1512,10 @@
   To upgrade a _specific_ package to the latest or a specific version use
   `--upgrade-package <pkg>`. To upgrade all packages, you can still use
   `pip-compile --upgrade`. ({pr}`409`)
-- Adds support for pinning dependencies even further by including the hashes found on
-  PyPI at compilation time, which will be re-checked when dependencies are installed at
-  installation time. This adds protection against packages that are tampered with. ({pr}`383`)
+- Adds support for pinning dependencies even further by including the hashes
+  found on PyPI at compilation time, which will be re-checked when dependencies
+  are installed at installation time. This adds protection against packages
+  that are tampered with. ({pr}`383`)
 - Improve support for extras, like `hypothesis[django]`
 - Drop support for `pip < 8`
 
@@ -1572,11 +1578,11 @@
 
 ### Major Changes
 
-- `pip-compile` will by default try to fulfill package specs by looking at a previously
-  compiled output file first, before checking PyPI. This means `pip-compile` will only
-  update the `requirements.txt` when it absolutely has to. To get the old behaviour
-  (picking the latest version of all packages from PyPI), use the new `--upgrade`
-  option.
+- `pip-compile` will by default try to fulfill package specs by looking at a
+  previously compiled output file first, before checking PyPI. This means
+  `pip-compile` will only update the `requirements.txt` when it absolutely has
+  to. To get the old behaviour (picking the latest version of all packages from
+  PyPI), use the new `--upgrade` option.
 
 ### Minor Changes
 
@@ -1596,9 +1602,9 @@
 
 *20 Jan 2016*
 
-- Add `--no-index` flag to `pip-compile` to avoid emitting `--index-url` into the output
-  (useful if you have configured a different index in your global `~/.pip/pip.conf`, for
-  example)
+- Add `--no-index` flag to `pip-compile` to avoid emitting `--index-url` into
+  the output (useful if you have configured a different index in your global
+  `~/.pip/pip.conf`, for example)
 - Fix: ignore stdlib backport packages, like `argparse`, when listing which packages
   will be installed/uninstalled ({issue}`286`)
 - Fix `pip-sync` failed uninstalling packages when using `--find-links` ({issue}`298`)
@@ -1647,7 +1653,8 @@
 
 - Support multiple requirement files to `pip-compile`
 - Support requirements from stdin for `pip-compile`
-- Support `--output-file` option on `pip-compile`, to redirect output to a file (or stdout)
+- Support `--output-file` option on `pip-compile`, to redirect output to a file
+  (or stdout)
 
 ## v1.2.0
 

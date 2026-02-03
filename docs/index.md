@@ -1,3 +1,4 @@
+<!-- pyml disable-next-line no-trailing-punctuation -->
 # Welcome to pip-tools' documentation!
 
 ```{include} ../README.md
