@@ -1832,7 +1832,9 @@ def test_pre_option(pip_conf, runner, cli_option, infile_option, expected_packag
             req_in.write("--pre\n")
         req_in.write("small-fake-a\n")
 
-    out = runner.invoke(cli, ["--no-annotate", "-n"] + (["-p"] if cli_option else []))
+    out = runner.invoke(
+        cli, ["--no-annotate", "-n"] + (["--pre"] if cli_option else [])
+    )
 
     assert out.exit_code == 0, out.stderr
     assert expected_package in out.stderr.splitlines(), out.stderr

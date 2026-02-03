@@ -68,6 +68,8 @@ class PyPIRepository(BaseRepository):
         self._command: InstallCommand = create_command("install")
 
         options, _ = self.command.parse_args(pip_args)
+        _pip_api.postprocess_cli_options(options)
+
         if options.cache_dir:
             options.cache_dir = normalize_path(options.cache_dir)
         options.require_hashes = False
