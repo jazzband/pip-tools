@@ -4,29 +4,31 @@
 #
 #    pip-compile --allow-unsafe --output-file=docs/requirements.txt --strip-extras ./pyproject.toml docs/requirements.in
 #
-alabaster==0.7.13
-    # via sphinx
-babel==2.12.1
-    # via sphinx
-beautifulsoup4==4.12.2
+accessible-pygments==0.0.5
     # via furo
-build==1.3.0
+alabaster==1.0.0
+    # via sphinx
+babel==2.18.0
+    # via sphinx
+beautifulsoup4==4.14.3
+    # via furo
+build==1.4.0
     # via pip-tools (pyproject.toml)
-certifi==2024.7.4
+certifi==2026.1.4
     # via requests
-charset-normalizer==3.2.0
+charset-normalizer==3.4.4
     # via requests
-click==8.2.1
+click==8.3.1
     # via
     #   pip-tools (pyproject.toml)
     #   towncrier
-docutils==0.20.1
+docutils==0.22.4
     # via
     #   myst-parser
     #   sphinx
-furo==2023.8.17
+furo==2025.12.19
     # via -r docs/requirements.in
-idna==3.7
+idna==3.11
     # via requests
 imagesize==1.4.1
     # via sphinx
@@ -35,44 +37,48 @@ jinja2==3.1.6
     #   myst-parser
     #   sphinx
     #   towncrier
-markdown-it-py==3.0.0
+markdown-it-py==4.0.0
     # via
     #   mdit-py-plugins
     #   myst-parser
-markupsafe==2.1.3
+markupsafe==3.0.3
     # via jinja2
-mdit-py-plugins==0.4.0
+mdit-py-plugins==0.5.0
     # via myst-parser
 mdurl==0.1.2
     # via markdown-it-py
-myst-parser==2.0.0
+myst-parser==5.0.0
     # via -r docs/requirements.in
-packaging==23.1
+packaging==26.0
     # via
     #   build
     #   setuptools-scm
     #   sphinx
-pbr==6.0.0
+    #   wheel
+pbr==7.0.3
     # via sphinxcontrib-apidoc
-pygments==2.16.1
+pygments==2.19.2
     # via
+    #   accessible-pygments
     #   furo
     #   sphinx
 pyproject-hooks==1.2.0
     # via
     #   build
     #   pip-tools (pyproject.toml)
-pyyaml==6.0.1
+pyyaml==6.0.3
     # via myst-parser
-requests==2.32.4
+requests==2.32.5
     # via sphinx
-setuptools-scm==7.1.0
+roman-numerals==4.1.0
+    # via sphinx
+setuptools-scm==9.2.2
     # via -r docs/requirements.in
-snowballstemmer==2.2.0
+snowballstemmer==3.0.1
     # via sphinx
-soupsieve==2.4.1
+soupsieve==2.8.3
     # via beautifulsoup4
-sphinx==7.2.6
+sphinx==9.1.0
     # via
     #   -r docs/requirements.in
     #   furo
@@ -80,47 +86,44 @@ sphinx==7.2.6
     #   sphinx-basic-ng
     #   sphinx-issues
     #   sphinxcontrib-apidoc
-    #   sphinxcontrib-applehelp
-    #   sphinxcontrib-devhelp
-    #   sphinxcontrib-htmlhelp
     #   sphinxcontrib-programoutput
-    #   sphinxcontrib-qthelp
     #   sphinxcontrib-towncrier
 sphinx-basic-ng==1.0.0b2
     # via furo
 sphinx-issues==5.0.1
     # via -r docs/requirements.in
-sphinxcontrib-apidoc==0.5.0
+sphinxcontrib-apidoc==0.6.0
     # via -r docs/requirements.in
-sphinxcontrib-applehelp==1.0.7
+sphinxcontrib-applehelp==2.0.0
     # via sphinx
-sphinxcontrib-devhelp==1.0.5
+sphinxcontrib-devhelp==2.0.0
     # via sphinx
-sphinxcontrib-htmlhelp==2.0.4
+sphinxcontrib-htmlhelp==2.1.0
     # via sphinx
 sphinxcontrib-jsmath==1.0.1
     # via sphinx
-sphinxcontrib-programoutput==0.17
+sphinxcontrib-programoutput==0.18
     # via -r docs/requirements.in
-sphinxcontrib-qthelp==1.0.6
+sphinxcontrib-qthelp==2.0.0
     # via sphinx
-sphinxcontrib-serializinghtml==1.1.10
+sphinxcontrib-serializinghtml==2.0.0
     # via sphinx
 sphinxcontrib-towncrier==0.5.0a0
     # via -r docs/requirements.in
-towncrier==24.8.0
+towncrier==25.8.0
     # via sphinxcontrib-towncrier
-typing-extensions==4.7.1
-    # via setuptools-scm
+typing-extensions==4.15.0
+    # via beautifulsoup4
 urllib3==2.6.3
     # via requests
-wheel==0.45.1
+wheel==0.46.3
     # via pip-tools (pyproject.toml)
 
 # The following packages are considered to be unsafe in a requirements file:
-pip==25.1
+pip==26.0
     # via pip-tools (pyproject.toml)
-setuptools==78.1.1
+setuptools==80.10.2
     # via
+    #   pbr
     #   pip-tools (pyproject.toml)
     #   setuptools-scm
