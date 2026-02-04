@@ -16,6 +16,12 @@
   # Fully redeclare towncrier types to control names and set 'showcontent'
 
   [[tool.towncrier.type]]
+    # A prelude to the release notes.
+    directory = "highlights"
+    name = "Foreword"
+    showcontent = true
+
+  [[tool.towncrier.type]]
     # Improper/undesired behavior that got corrected.
     directory = "bugfix"
     name = "Bug fixes"
@@ -64,4 +70,10 @@
     # Changes that are hard to assign to any of the above categories.
     directory = "misc"
     name = "Miscellaneous internal changes"
+    showcontent = true
+
+  [[tool.towncrier.type]]
+    # A concluding paragraph after the release notes.
+    directory = "afterword"
+    name = "Afterword"
     showcontent = true

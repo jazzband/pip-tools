@@ -3,6 +3,9 @@
 !.towncrier_template.md.jinja
 !.draft_changelog_partial.md
 !README.md
+!*.afterword
+!*.afterword.md
+!*.afterword.*.md
 !*.bugfix
 !*.bugfix.md
 !*.bugfix.*.md
@@ -21,6 +24,9 @@
 !*.feature
 !*.feature.md
 !*.feature.*.md
+!*.highlights
+!*.highlights.md
+!*.highlights.*.md
 !*.misc
 !*.misc.md
 !*.misc.*.md

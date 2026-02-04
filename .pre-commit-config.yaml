@@ -68,7 +68,8 @@ repos:
       entry: >-
         Changelog files must be named
         ####.(
-        bugfix
+        highlights
+        | bugfix
         | feature
         | deprecation
         | breaking
@@ -76,6 +77,7 @@ repos:
         | packaging
         | contrib
         | misc
+        | afterword
         )(.#)?(.md)?
       exclude: >-
         (?x)
@@ -86,7 +88,8 @@ repos:
             |\.draft_changelog_partial\.md
             |README\.md
             |(\d+|[0-9a-f]{8}|[0-9a-f]{7}|[0-9a-f]{40}|\+[^.]+)\.(
-              bugfix
+              highlights
+              |bugfix
               |feature
               |deprecation
               |breaking
@@ -94,6 +97,7 @@ repos:
               |packaging
               |contrib
               |misc
+              |afterword
             )(\.\d+)?(\.md)?
           )
         $
@@ -164,7 +168,8 @@ repos:
             |changelog\.d/(
               \.draft_changelog_partial\.md
               |(\d+|[0-9a-f]{8}|[0-9a-f]{7}|[0-9a-f]{40}|\+[^.]+)\.(
-                bugfix
+                highlights
+                |bugfix
                 |feature
                 |deprecation
                 |breaking
@@ -172,6 +177,7 @@ repos:
                 |packaging
                 |contrib
                 |misc
+                |afterword
               )(\.\d+)?(\.md)?
             )
             |CHANGELOG\.md
