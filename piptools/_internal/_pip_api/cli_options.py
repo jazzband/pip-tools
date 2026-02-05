@@ -1,3 +1,7 @@
+"""
+Tools for parsing pip CLI options.
+"""
+
 from __future__ import annotations
 
 import optparse
