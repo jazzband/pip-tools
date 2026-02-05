@@ -2336,8 +2336,8 @@ def test_local_duplicate_subdependency_combined(runner, make_package):
     with open("requirements.in", "w") as req_in:
         req_in.writelines(
             [
-                f"file://{package_a}#egg=project-a\n",
-                f"file://{package_b}#egg=project-b",
+                f"{path_to_url(str(package_a))}#egg=project-a\n",
+                f"{path_to_url(str(package_b))}#egg=project-b",
             ]
         )
 
