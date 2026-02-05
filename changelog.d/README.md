@@ -23,7 +23,9 @@ simple rules!
   - The number is the PR number or issue number which your PR addresses.
 
   - The category is `bugfix`, `feature`, `deprecation`, `breaking`, `doc`,
-    `packaging`, `contrib`, or `misc`.
+    `packaging`, `contrib`, or `misc`. The maintainers may use special
+    categories `highlights` and `afterword`, but regular contributors
+    don't generally need to.
 
   - For example, if your PR fixes bug #404, the change notes should be named
     `changelog.d/404.bugfix.md`.
@@ -64,6 +66,24 @@ The categories for change notes are defined as follows.
   environment).
 
 - `misc`: Changes that don't fit any of the other categories.
+
+- `highlights`: A prelude to the release notes. Normally filled out by
+  the maintainers with important announcements concerning a `pip-tools`
+  release. It is rendered before the normal change log categories.
+
+  ```{important}
+  The file name must not reference a number but be orphan, starting
+  with a `+`.
+  ```
+
+- `afterword`: A concluding paragraph after the release notes. May be
+  filled out by the maintainers if they want to include additional
+  free-form notes. It is rendered after the normal change log categories.
+
+  ```{important}
+  The file name must not reference a number but be orphan, starting
+  with a `+`.
+  ```
 
 Sometimes it's not clear which category to use for a change.
 Do your best and a maintainer can discuss this with you during review.

@@ -125,6 +125,10 @@ apidoc_separate_modules = True
 apidoc_toc_file = None
 
 
+# -- myst_parser options --------------------------------------------------
+myst_enable_extensions: set[str] = set()
+
+
 # -- Sphinx extension-API `setup()` hook
 
 
