@@ -105,8 +105,8 @@ def test_merge(from_line):
 
 def test_merge_urls(from_line):
     requirements = [
-        from_line("file:///example.zip#egg=example==1.0"),
-        from_line("example==1.0"),
+        from_line("file:///example.zip#egg=example"),
+        from_line("example"),
         from_line("file:///unrelated.zip"),
     ]
 

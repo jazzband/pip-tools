@@ -41,6 +41,12 @@ backtracking_resolver_only = pytest.mark.parametrize(
 )
 
 
+skip_if_pip_does_not_support_editables_in_constraints = pytest.mark.skipif(
+    _pip_api.PIP_VERSION_MAJOR_MINOR >= (26, 0),
+    reason="pip v26.0 and later does not support editables in constraints files",
+)
+
+
 @pytest.fixture(scope="session")
 def pip_produces_absolute_paths():
     # in pip v24.3, new normalization will occur because `comes_from` started
@@ -536,6 +542,7 @@ def test_editable_package_without_non_editable_duplicate(pip_conf, runner):
 
 
 @legacy_resolver_only
+@skip_if_pip_does_not_support_editables_in_constraints
 def test_editable_package_constraint_without_non_editable_duplicate(pip_conf, runner):
     """
     piptools keeps editable constraint,
@@ -561,6 +568,7 @@ def test_editable_package_constraint_without_non_editable_duplicate(pip_conf, ru
 
 
 @legacy_resolver_only
+@skip_if_pip_does_not_support_editables_in_constraints
 @pytest.mark.parametrize("req_editable", ((True,), (False,)))
 def test_editable_package_in_constraints(pip_conf, runner, req_editable):
     """
@@ -1832,7 +1840,9 @@ def test_pre_option(pip_conf, runner, cli_option, infile_option, expected_packag
             req_in.write("--pre\n")
         req_in.write("small-fake-a\n")
 
-    out = runner.invoke(cli, ["--no-annotate", "-n"] + (["-p"] if cli_option else []))
+    out = runner.invoke(
+        cli, ["--no-annotate", "-n"] + (["--pre"] if cli_option else [])
+    )
 
     assert out.exit_code == 0, out.stderr
     assert expected_package in out.stderr.splitlines(), out.stderr

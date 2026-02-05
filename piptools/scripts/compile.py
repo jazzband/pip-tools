@@ -476,7 +476,9 @@ def cli(
             constraints=constraints,
             existing_constraints=existing_pins,
             repository=repository,
-            prereleases=repository.finder.allow_all_prereleases or pre,
+            prereleases=(
+                pre or _pip_api.finder_allows_all_prereleases(repository.finder)
+            ),
             cache=DependencyCache(cache_dir),
             clear_caches=rebuild,
             allow_unsafe=allow_unsafe,
