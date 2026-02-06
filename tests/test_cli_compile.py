@@ -9,6 +9,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
 import typing as _t
 from textwrap import dedent
 from unittest import mock
@@ -1472,6 +1473,53 @@ def test_stdin(pip_conf, runner):
         input="small-fake-a==0.1",
     )
 
+    assert out.stdout == dedent("""\
+        small-fake-a==0.1
+            # via -r -
+        """)
+
+
+def test_tmpfile_for_stdin_is_cleaned_up(pip_conf, runner):
+    """
+    Test that when compiling requirements from stdin, a tempfile gets written with
+    those requirements and cleaned up.
+    """
+    tmpfile_name = None
+
+    # save the real constructor so that it can be used while `mock.patch()` is
+    # active -- also, it's a function, not a class, so we can't inherit from it
+    real_constructor = tempfile.NamedTemporaryFile
+
+    # a "spy" which can be mocked into place for `NamedTemporaryFile` to
+    # replace the implementation with one which has side-effects and makes test
+    # assertions
+    #
+    # this spy ensures that the file is deleted on exit
+    # it also sets a nonlocal to indicate that it was initialized at all
+    class NamedTempfileSpy:
+        def __init__(self, *args, **kwargs):
+            self._tmpfile = real_constructor(*args, **kwargs)
+
+        def __enter__(self):
+            ret = self._tmpfile.__enter__()
+            nonlocal tmpfile_name
+            tmpfile_name = self._tmpfile.name
+            return ret
+
+        def __exit__(self, *args, **kwargs):
+            assert os.path.exists(self._tmpfile.name)
+            ret = self._tmpfile.__exit__(*args, **kwargs)
+            assert not os.path.exists(self._tmpfile.name)
+            return ret
+
+    with mock.patch("tempfile.NamedTemporaryFile", NamedTempfileSpy):
+        out = runner.invoke(
+            cli,
+            ["-", "--output-file", "-", "--quiet", "--no-emit-options", "--no-header"],
+            input="small-fake-a==0.1",
+        )
+
+    assert tmpfile_name is not None  # ensure the spy was used
     assert out.stdout == dedent("""\
         small-fake-a==0.1
             # via -r -

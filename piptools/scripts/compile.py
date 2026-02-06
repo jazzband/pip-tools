@@ -354,20 +354,19 @@ def cli(
         if src_file == "-":
             # pip requires filenames and not files. Since we want to support
             # piping from stdin, we need to briefly save the input from stdin
-            # to a temporary file and have pip read that.  also used for
-            # reading requirements from install_requires in setup.py.
-            tmpfile = tempfile.NamedTemporaryFile(mode="wt", delete=False)
-            tmpfile.write(sys.stdin.read())
-            tmpfile.flush()
-            reqs = list(
-                parse_requirements(
-                    tmpfile.name,
-                    finder=repository.finder,
-                    session=repository.session,
-                    options=repository.options,
-                    comes_from_stdin=True,
+            # to a temporary file and have pip read that.
+            with tempfile.NamedTemporaryFile(mode="wt") as tmpfile:
+                tmpfile.write(sys.stdin.read())
+                tmpfile.flush()
+                reqs = list(
+                    parse_requirements(
+                        tmpfile.name,
+                        finder=repository.finder,
+                        session=repository.session,
+                        options=repository.options,
+                        comes_from_stdin=True,
+                    )
                 )
-            )
             constraints.extend(reqs)
         elif is_setup_file:
             setup_file_found = True
@@ -415,10 +414,9 @@ def cli(
         )
 
     if upgrade_packages:
-        constraints_file = tempfile.NamedTemporaryFile(mode="wt", delete=False)
-        constraints_file.write("\n".join(upgrade_packages))
-        constraints_file.flush()
-        try:
+        with tempfile.NamedTemporaryFile(mode="wt") as constraints_file:
+            constraints_file.write("\n".join(upgrade_packages))
+            constraints_file.flush()
             reqs = list(
                 parse_requirements(
                     constraints_file.name,
@@ -428,11 +426,8 @@ def cli(
                     constraint=True,
                 )
             )
-        finally:
-            constraints_file.close()
-            os.unlink(constraints_file.name)
-        for req in reqs:
-            req.comes_from = None
+            for req in reqs:
+                req.comes_from = None
         constraints.extend(reqs)
 
     extras = tuple(itertools.chain.from_iterable(ex.split(",") for ex in extras))
