@@ -21,6 +21,7 @@ from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.urls import path_to_url
 from pip._vendor.packaging.version import Version
 
+from piptools._compat import tempfile_compat
 from piptools._internal import _pip_api
 from piptools.build import ProjectMetadata
 from piptools.scripts.compile import cli
@@ -1472,6 +1473,54 @@ def test_stdin(pip_conf, runner):
         input="small-fake-a==0.1",
     )
 
+    assert out.stdout == dedent("""\
+        small-fake-a==0.1
+            # via -r -
+        """)
+
+
+def test_tmpfile_for_stdin_is_cleaned_up(pip_conf, runner):
+    """
+    Test that when compiling requirements from stdin, a tempfile gets written with
+    those requirements and cleaned up.
+    """
+    tmpfile_name = None
+
+    # save the real constructor so that it can be used while `mock.patch()` is
+    # active
+    real_constructor = tempfile_compat.named_temp_file
+
+    # a "spy" which can be mocked into place for `named_temp_file` to
+    # replace the implementation with one which has side-effects and makes test
+    # assertions
+    #
+    # this spy ensures that the file is deleted on exit
+    class NamedTempfileSpy:
+        def __init__(self, *args, **kwargs):
+            self._ctx_manager = real_constructor(*args, **kwargs)
+
+        def __enter__(self):
+            ret = self._ctx_manager.__enter__()
+            nonlocal tmpfile_name
+            tmpfile_name = ret.name
+            return ret
+
+        def __exit__(self, *args, **kwargs):
+            assert os.path.exists(tmpfile_name)
+            ret = self._ctx_manager.__exit__(*args, **kwargs)
+            assert not os.path.exists(tmpfile_name)
+            return ret
+
+    with mock.patch(
+        "piptools._compat.tempfile_compat.named_temp_file", NamedTempfileSpy
+    ):
+        out = runner.invoke(
+            cli,
+            ["-", "--output-file", "-", "--quiet", "--no-emit-options", "--no-header"],
+            input="small-fake-a==0.1",
+        )
+
+    assert tmpfile_name is not None  # ensure the spy was used
     assert out.stdout == dedent("""\
         small-fake-a==0.1
             # via -r -
