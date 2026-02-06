@@ -4,7 +4,6 @@ import itertools
 import os
 import shlex
 import sys
-import tempfile
 import typing as _t
 from pathlib import Path
 
@@ -14,7 +13,7 @@ from click.utils import LazyFile, safecall
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.misc import redact_auth_from_url
 
-from .._compat import canonicalize_name, parse_requirements
+from .._compat import canonicalize_name, parse_requirements, tempfile_compat
 from .._internal import _pip_api
 from ..build import ProjectMetadata, build_project_metadata
 from ..cache import DependencyCache
@@ -355,7 +354,7 @@ def cli(
             # pip requires filenames and not files. Since we want to support
             # piping from stdin, we need to briefly save the input from stdin
             # to a temporary file and have pip read that.
-            with tempfile.NamedTemporaryFile(mode="wt") as tmpfile:
+            with tempfile_compat.named_temp_file() as tmpfile:
                 tmpfile.write(sys.stdin.read())
                 tmpfile.flush()
                 reqs = list(
@@ -414,7 +413,7 @@ def cli(
         )
 
     if upgrade_packages:
-        with tempfile.NamedTemporaryFile(mode="wt") as constraints_file:
+        with tempfile_compat.named_temp_file() as constraints_file:
             constraints_file.write("\n".join(upgrade_packages))
             constraints_file.flush()
             reqs = list(

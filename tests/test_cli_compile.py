@@ -9,7 +9,6 @@ import shlex
 import shutil
 import subprocess
 import sys
-import tempfile
 import typing as _t
 from textwrap import dedent
 from unittest import mock
@@ -22,6 +21,7 @@ from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.urls import path_to_url
 from pip._vendor.packaging.version import Version
 
+from piptools._compat import tempfile_compat
 from piptools._internal import _pip_api
 from piptools.build import ProjectMetadata
 from piptools.scripts.compile import cli
@@ -1487,32 +1487,33 @@ def test_tmpfile_for_stdin_is_cleaned_up(pip_conf, runner):
     tmpfile_name = None
 
     # save the real constructor so that it can be used while `mock.patch()` is
-    # active -- also, it's a function, not a class, so we can't inherit from it
-    real_constructor = tempfile.NamedTemporaryFile
+    # active
+    real_constructor = tempfile_compat.named_temp_file
 
-    # a "spy" which can be mocked into place for `NamedTemporaryFile` to
+    # a "spy" which can be mocked into place for `named_temp_file` to
     # replace the implementation with one which has side-effects and makes test
     # assertions
     #
     # this spy ensures that the file is deleted on exit
-    # it also sets a nonlocal to indicate that it was initialized at all
     class NamedTempfileSpy:
         def __init__(self, *args, **kwargs):
-            self._tmpfile = real_constructor(*args, **kwargs)
+            self._ctx_manager = real_constructor(*args, **kwargs)
 
         def __enter__(self):
-            ret = self._tmpfile.__enter__()
+            ret = self._ctx_manager.__enter__()
             nonlocal tmpfile_name
-            tmpfile_name = self._tmpfile.name
+            tmpfile_name = ret.name
             return ret
 
         def __exit__(self, *args, **kwargs):
-            assert os.path.exists(self._tmpfile.name)
-            ret = self._tmpfile.__exit__(*args, **kwargs)
-            assert not os.path.exists(self._tmpfile.name)
+            assert os.path.exists(tmpfile_name)
+            ret = self._ctx_manager.__exit__(*args, **kwargs)
+            assert not os.path.exists(tmpfile_name)
             return ret
 
-    with mock.patch("tempfile.NamedTemporaryFile", NamedTempfileSpy):
+    with mock.patch(
+        "piptools._compat.tempfile_compat.named_temp_file", NamedTempfileSpy
+    ):
         out = runner.invoke(
             cli,
             ["-", "--output-file", "-", "--quiet", "--no-emit-options", "--no-header"],
