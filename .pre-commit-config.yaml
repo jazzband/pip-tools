@@ -118,7 +118,7 @@ repos:
           - "github.com/wasilibs/go-shellcheck/cmd/shellcheck@v0.11.1"
 
   - repo: https://github.com/jackdewinter/pymarkdown.git
-    rev: v0.9.33
+    rev: v0.9.35
     hooks:
     - id: pymarkdown
       alias: md-changelog
