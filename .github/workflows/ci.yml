@@ -25,7 +25,7 @@ on:
       release-version:
         description: >-
           Target PEP440-compliant version to release.
-          Please, don't prepend `v`.
+          Any leading `v` will be stripped off.
         required: false
         type: string
       release-committish:
@@ -93,11 +93,7 @@ jobs:
       # NOTE: inaccessible when passing inputs to reusable workflows.
       dists-artifact-name: python-package-distributions
       dist-version: >-
-        ${{
-            steps.request-check.outputs.release-requested == 'true'
-            && inputs.release-version
-            || steps.scm-version.outputs.dist-version
-        }}
+        ${{ steps.normalize-dist-version.outputs.dist-version }}
       project-name: ${{ steps.metadata.outputs.project-name }}
       release-requested: >-
         ${{
@@ -224,6 +220,27 @@ jobs:
                 f'dist-version-for-filenames={ver.replace("+", "-")}',
                 file=outputs_file,
             )
+    - name: Normalize dist version
+      id: normalize-dist-version
+      run: |
+        from os import environ
+        from pathlib import Path
+
+        FILE_APPEND_MODE = 'a'
+
+        dist_version = "${{
+            steps.request-check.outputs.release-requested == 'true'
+            && inputs.release-version
+            || steps.scm-version.outputs.dist-version
+        }}".lstrip("v")
+
+        with Path(environ['GITHUB_OUTPUT']).open(
+                mode=FILE_APPEND_MODE,
+        ) as outputs_file:
+            print(
+                f"dist-version={dist_version}",
+                file=outputs_file,
+            )
     - name: Set the expected dist artifact names
       id: artifact-name
       env:
@@ -240,24 +257,17 @@ jobs:
             replace('.', '_').
             lower()
         )
+        dist_version = "${{ steps.normalize-dist-version.outputs.dist-version }}"
 
         with Path(environ['GITHUB_OUTPUT']).open(
                 mode=FILE_APPEND_MODE,
         ) as outputs_file:
             print(
-                f"sdist={sdist_file_prj_base_name !s}-${{
-                    steps.request-check.outputs.release-requested == 'true'
-                    && inputs.release-version
-                    || steps.scm-version.outputs.dist-version
-                }}.tar.gz",
+                f"sdist={sdist_file_prj_base_name !s}-{dist_version}.tar.gz",
                 file=outputs_file,
             )
             print(
-                f"wheel={whl_file_prj_base_name !s}-${{
-                    steps.request-check.outputs.release-requested == 'true'
-                    && inputs.release-version
-                    || steps.scm-version.outputs.dist-version
-                }}-py3-none-any.whl",
+                f"wheel={whl_file_prj_base_name !s}-{dist_version}-py3-none-any.whl",
                 file=outputs_file,
             )
 
