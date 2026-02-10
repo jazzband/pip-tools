@@ -5,15 +5,17 @@ and python versions.
 
 from __future__ import annotations
 
+import collections.abc as _c
 import contextlib
 import os
 import tempfile
 import typing as _t
-from collections.abc import Iterator
+
+__all__ = ("named_temp_file",)
 
 
 @contextlib.contextmanager
-def named_temp_file(mode: str = "wt") -> Iterator[_t.IO[str]]:
+def named_temp_file(mode: str = "wt") -> _c.Iterator[_t.IO[str]]:
     """
     A safe wrapper over NamedTemporaryFile for usage on Windows as well as
     POSIX systems.
@@ -23,6 +25,8 @@ def named_temp_file(mode: str = "wt") -> Iterator[_t.IO[str]]:
     behavior.
     """
     temp_file = tempfile.NamedTemporaryFile(mode=mode, delete=False)
-    yield temp_file
-    temp_file.close()
-    os.unlink(temp_file.name)
+    try:
+        yield temp_file
+    finally:
+        temp_file.close()
+        os.unlink(temp_file.name)
