@@ -4338,9 +4338,7 @@ def test_determine_linesep_skips_fifo(tmp_path):
 
     # If the FIFO were opened, this call would hang forever.
     # The fix makes it skip FIFOs and return the default "\n".
-    result = _determine_linesep(
-        strategy="preserve", filenames=(str(fifo),)
-    )
+    result = _determine_linesep(strategy="preserve", filenames=(str(fifo),))
     assert result == "\n"
 
 
