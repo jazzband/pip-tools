@@ -2,6 +2,122 @@
 
 <!-- towncrier release notes start -->
 
+## v7.5.3
+
+*2026-02-09*
+
+### Bug fixes
+
+- The option `--unsafe-package` is now normalized -- by {user}`shifqu`.
+
+  *PRs and issues:* {issue}`2150`
+
+- Fixed a bug in which `pip-compile` lost any index URL options when
+  looking up hashes -- by {user}`sirosen`.
+
+  This caused errors when a package was only available from an extra
+  index, and caused `pip-compile` to incorrectly drop index URL options
+  from output, even when they were present in the input requirements.
+
+  *PRs and issues:* {issue}`2220`, {issue}`2294`, {issue}`2305`
+
+- Fixed removal of temporary files used when reading requirements from stdin
+  -- by {user}`sirosen`.
+
+### Features
+
+- `pip-tools` is now tested against Python 3.14 and 3.14t in CI, and
+  marks them as supported in the core packaging metadata
+  -- by {user}`webknjaz`.
+
+  *PRs and issues:* {issue}`2255`
+
+- pip-tools is now compatible with pip 26.0 -- by {user}`sirosen`.
+
+  *PRs and issues:* {issue}`2319`, {issue}`2320`
+
+### Removals and backward incompatible breaking changes
+
+- Removed support for Python 3.8 -- by {user}`sirosen`.
+
+### Improved documentation
+
+- The change log management infra now allows the maintainers to add notes
+  before and after the regular categories -- by {user}`webknjaz`.
+
+  *PRs and issues:* {issue}`2287`, {issue}`2322`
+
+- Added documentation clarifying that `pip-compile` reads the existing
+  output file as a constraint source, and how to use `--upgrade` to
+  refresh dependencies -- by {user}`maliktafheem`.
+
+  *PRs and issues:* {issue}`2307`
+
+### Packaging updates and notes for downstreams
+
+- `pip-tools` is now tested against Python 3.14 and 3.14t in CI, and
+  marks them as supported in the core packaging metadata
+  -- by {user}`webknjaz`.
+
+  *PRs and issues:* {issue}`2255`
+
+### Contributor-facing changes
+
+- Consistency of the Markdown files is now being enforced by linting
+  with {pypi}`pymarkdownlnt` -- by {user}`webknjaz`.
+
+  *PRs and issues:* {issue}`2256`
+
+- The linting is now set up to perform structured GitHub Actions
+  workflows and actions checks against json schemas
+  -- by {user}`webknjaz`.
+
+  *PRs and issues:* {issue}`2273`
+
+- The CI/CD is now set up so that the distribution build job
+  is a part of the test pipeline. That pipeline is included in
+  the release workflow which sources the artifact in produces.
+  The tests must now pass for the release to be published to PyPI.
+
+  -- by {user}`webknjaz`
+
+  *PRs and issues:* {issue}`2274`
+
+- Fix `actionlint` hook usage to always include `shellcheck` integration -- by {user}`sirosen`.
+
+  *PRs and issues:* {issue}`2281`
+
+- Utilities for interacting with `pip` have started to move into the
+  :py:mod:`piptools._internal._pip_api` subpackage -- by {user}`sirosen`.
+
+  *PRs and issues:* {issue}`2285`
+
+- The change log management infra now allows the maintainers to add notes
+  before and after the regular categories -- by {user}`webknjaz`.
+
+  *PRs and issues:* {issue}`2287`, {issue}`2322`
+
+- The linting is now set up to demand that {py:mod}`typing` is always
+  imported as a module under the name of `_t` -- by {user}`webknjaz`.
+
+  This is enforced by {user}`sirosen`'s {pypi}`flake8-typing-as-t`
+  plugin for {pypi}`flake8`.
+
+  *PRs and issues:* {issue}`2289`
+
+- The {file}`tox.ini` and {file}`.github/` parts of the repository now
+  have project leads assigned as GitHub code owners -- by {user}`webknjaz`.
+
+  *PRs and issues:* {issue}`2291`
+
+- Remove a redundant 'v' prefix from the CI release workflow job name -- by {user}`anandvenugopal-tech`.
+
+  *PRs and issues:* {issue}`2300`
+
+- The `check-jsonschema` ReadTheDocs hook has been enabled, and
+  the config has been tweaked to pass -- by {user}`sirosen`.
+
+
 ## v7.5.2
 
 *2025-11-11*
