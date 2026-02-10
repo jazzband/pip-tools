@@ -4305,3 +4305,76 @@ def test_compile_with_generate_hashes_preserves_extra_index_url(
             --hash=sha256:33e1acdca3b9162e002cedb0e58b350d731d1ed3f53a6b22e0a628bca7c7c6ed
             # via -r requirements.in
         """)
+
+
+@pytest.mark.parametrize(
+    "filenames, expected",
+    (
+        pytest.param(("-",), "\n", id="stdin-placeholder"),
+        pytest.param(("nonexistent.txt",), "\n", id="nonexistent-file"),
+        pytest.param((), "\n", id="no-filenames"),
+    ),
+)
+def test_determine_linesep_skips_non_regular_files(tmp_path, filenames, expected):
+    """
+    _determine_linesep should skip stdin placeholders ('-') and
+    non-existent files, falling back to the default LF.
+    """
+    from piptools.scripts.compile import _determine_linesep
+
+    result = _determine_linesep(strategy="preserve", filenames=filenames)
+    assert result == expected
+
+
+def test_determine_linesep_skips_fifo(tmp_path):
+    """
+    _determine_linesep should skip named pipes (FIFOs) to avoid
+    blocking indefinitely.  Regression test for GH-2232.
+    """
+    from piptools.scripts.compile import _determine_linesep
+
+    fifo = tmp_path / "named_pipe"
+    os.mkfifo(fifo)
+
+    # If the FIFO were opened, this call would hang forever.
+    # The fix makes it skip FIFOs and return the default "\n".
+    result = _determine_linesep(
+        strategy="preserve", filenames=(str(fifo),)
+    )
+    assert result == "\n"
+
+
+def test_determine_linesep_reads_regular_file(tmp_path):
+    """
+    _determine_linesep should still read regular files correctly
+    to detect their line separator.
+    """
+    from piptools.scripts.compile import _determine_linesep
+
+    crlf_file = tmp_path / "crlf.txt"
+    crlf_file.write_bytes(b"hello\r\nworld\r\n")
+
+    result = _determine_linesep(strategy="preserve", filenames=(str(crlf_file),))
+    assert result == "\r\n"
+
+    lf_file = tmp_path / "lf.txt"
+    lf_file.write_bytes(b"hello\nworld\n")
+
+    result = _determine_linesep(strategy="preserve", filenames=(str(lf_file),))
+    assert result == "\n"
+
+
+def test_determine_linesep_skips_dash_even_with_file_named_dash(tmp_path, monkeypatch):
+    """
+    A file literally named '-' should not be read; '-' always means stdin.
+    """
+    from piptools.scripts.compile import _determine_linesep
+
+    monkeypatch.chdir(tmp_path)
+    dash_file = tmp_path / "-"
+    dash_file.write_bytes(b"hello\r\nworld\r\n")
+
+    # Even though a file named "-" exists with CRLF content,
+    # _determine_linesep should skip it (treating "-" as stdin).
+    result = _determine_linesep(strategy="preserve", filenames=("-",))
+    assert result == "\n"
