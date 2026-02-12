@@ -527,6 +527,14 @@ jobs:
           fail_ci_if_error: true
           run_command: send-notifications
 
+  zizmor:
+    name: 🌈 zizmor
+    permissions:
+      security-events: write
+
+    # yamllint disable-line rule:line-length
+    uses: zizmorcore/workflow/.github/workflows/reusable-zizmor.yml@1e20adb0862e932363a4d85d68c92e5cc6fcb5d4
+
   check: # This job does nothing and is only used for the branch protection
     if: always()
 
@@ -534,6 +542,7 @@ jobs:
       - linters
       - pypy
       - test
+      - zizmor
 
     runs-on: ubuntu-latest
 
