@@ -3532,10 +3532,21 @@ small-fake-b==0.3
 
 
 @backtracking_resolver_only
+@pytest.mark.parametrize(
+    "setuptools_version",
+    (
+        "82.0.0",  # latest as of 2026-02-11
+        "75.3.0",  # latest as of 2025-01-01
+    ),
+)
 def test_compile_recursive_extras_build_targets(
-    runner, tmp_path, minimal_wheels_path, current_resolver
+    runner,
+    tmp_path,
+    minimal_wheels_path,
+    current_resolver,
+    setuptools_version,
 ):
-    (tmp_path / "pyproject.toml").write_text(dedent("""
+    (tmp_path / "pyproject.toml").write_text(dedent(f"""
             [project]
             name = "foo"
             version = "0.0.1"
@@ -3543,7 +3554,11 @@ def test_compile_recursive_extras_build_targets(
             [project.optional-dependencies]
             footest = ["small-fake-b"]
             dev = ["foo[footest]"]
+            [build-system]
+            requires = ["setuptools == {setuptools_version}"]
+            build-backend = "setuptools.build_meta"
             """))
+
     out = runner.invoke(
         cli,
         [
@@ -3555,6 +3570,7 @@ def test_compile_recursive_extras_build_targets(
             "dev",
             "--build-deps-for",
             "wheel",
+            "--allow-unsafe",
             "--find-links",
             minimal_wheels_path.as_posix(),
             os.fspath(tmp_path / "pyproject.toml"),
@@ -3567,7 +3583,7 @@ small-fake-a==0.2
 small-fake-b==0.3
 
 # The following packages are considered to be unsafe in a requirements file:
-# setuptools
+setuptools=={setuptools_version}
 """
     try:
         assert out.exit_code == 0
