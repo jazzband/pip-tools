@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import contextlib
 import io
 import os
 import re
 import sys
+import types
 import typing as _t
 from collections.abc import Iterable, Iterator
 from itertools import chain
@@ -268,27 +270,17 @@ class OutputWriter:
         markers: dict[str, Marker],
         hashes: dict[InstallRequirement, set[str]] | None,
     ) -> None:
+        attached_writer: contextlib.AbstractContextManager[_LineWriter]
         if not self.dry_run:
-            dst_file = io.TextIOWrapper(
-                self.dst_file,
-                encoding="utf8",
-                newline=self.linesep,
-                line_buffering=True,
-            )
-        try:
+            attached_writer = _FileLineWriter(self.dst_file, self.linesep)
+        else:
+            attached_writer = contextlib.nullcontext(_dry_run_line_writer)
+
+        with attached_writer as line_writer:
             for line in self._iter_lines(
                 results, unsafe_requirements, unsafe_packages, markers, hashes
             ):
-                if self.dry_run:
-                    # Bypass the log level to always print this during a dry run
-                    log.log(line)
-                else:
-                    log.info(line)
-                    dst_file.write(unstyle(line))
-                    dst_file.write("\n")
-        finally:
-            if not self.dry_run:
-                dst_file.detach()
+                line_writer(line)
 
     def _format_requirement(
         self,
@@ -339,3 +331,37 @@ class OutputWriter:
             line = "\n".join(ln.rstrip() for ln in lines)
 
         return line
+
+
+class _LineWriter(_t.Protocol):
+    def __call__(self, line: str) -> None: ...
+
+
+def _dry_run_line_writer(line: str) -> None:
+    log.log(line)
+
+
+class _FileLineWriter:
+    def __init__(self, dst_file: _t.BinaryIO, linesep: str) -> None:
+        self.dst_file = io.TextIOWrapper(
+            dst_file,
+            encoding="utf8",
+            newline=linesep,
+            line_buffering=True,
+        )
+
+    def __call__(self, line: str) -> None:
+        log.info(line)
+        self.dst_file.write(unstyle(line))
+        self.dst_file.write("\n")
+
+    def __enter__(self) -> _LineWriter:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: types.TracebackType | None,
+    ) -> None:
+        self.dst_file.detach()
