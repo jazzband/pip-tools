@@ -94,6 +94,28 @@ class TestFilesCollection:
         )
 
 
+@dataclasses.dataclass
+class PackageVersionParam:
+    """
+    An object for writing ergonomic test parameters.
+
+    This describes a published package with a version.
+    """
+
+    # package name
+    name: str
+    # (unparsed) version string
+    version: str
+    # a description of this version (for use in ids)
+    description: str
+
+    def __str__(self) -> str:
+        return f"{self.name}-{self.version}-{self.description}"
+
+    def as_req(self) -> str:
+        return f"{self.name}=={self.version}"
+
+
 @pytest.fixture(
     autouse=True,
     params=[
@@ -3533,20 +3555,24 @@ small-fake-b==0.3
 
 @backtracking_resolver_only
 @pytest.mark.parametrize(
-    "setuptools_version",
+    "setuptools_version_info",
     (
-        "82.0.0",  # latest as of 2026-02-11
-        "75.3.0",  # latest as of 2025-01-01
+        PackageVersionParam("setuptools", "82.0.0", "published-2026-02-08"),
+        PackageVersionParam("setuptools", "75.3.0", "published-2024-10-29"),
     ),
+    ids=str,
 )
 def test_compile_recursive_extras_build_targets(
     runner,
     tmp_path,
     minimal_wheels_path,
     current_resolver,
-    setuptools_version,
+    setuptools_version_info,
 ):
     (tmp_path / "pyproject.toml").write_text(dedent(f"""
+            [build-system]
+            requires = ["{setuptools_version_info.as_req()}"]
+            build-backend = "setuptools.build_meta"
             [project]
             name = "foo"
             version = "0.0.1"
@@ -3554,9 +3580,6 @@ def test_compile_recursive_extras_build_targets(
             [project.optional-dependencies]
             footest = ["small-fake-b"]
             dev = ["foo[footest]"]
-            [build-system]
-            requires = ["setuptools == {setuptools_version}"]
-            build-backend = "setuptools.build_meta"
             """))
 
     out = runner.invoke(
@@ -3583,7 +3606,7 @@ small-fake-a==0.2
 small-fake-b==0.3
 
 # The following packages are considered to be unsafe in a requirements file:
-setuptools=={setuptools_version}
+{setuptools_version_info.as_req()}
 """
     try:
         assert out.exit_code == 0
