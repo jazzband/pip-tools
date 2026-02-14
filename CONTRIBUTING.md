@@ -36,13 +36,20 @@ appreciated.
 
 ### LLM Generated Contributions
 
-Although contributors are free to use whatever tools they like, `pip-tools` has a policy regarding LLM contributions to protect our maintainers as well as our contributors.
+Contributors are free to use whatever tools they like, but we have some additional
+guidance for LLM-assisted contributions.
 
-1. **Disclosure**: contributors should indicate when they have use an LLM to generate a part of their work.
-   You may also be able to help maintainers understand what they are looking at by sharing how you used a tool, e.g. what prompts you used.
+First, you must disclose when you are using an LLM to do a significant part of the work.
+You may be able to help maintainers understand what they are looking at by sharing how you used a tool, e.g., what prompts you used.
 
-2. **Ownership**: it is the contributor's responsibility to understand submitted code and ensure, to the best of their ability, that it meets project standards.
-   In particular, contributors need to be prepared to discuss their changes during review.
+Remember that you, not the LLM, are responsible for your contributions.
+Be ready to discuss the changes during review.
+Do your best to follow the conventions and standards of the project.
+Make sure your code really works.
+Be thoughtful about testing and documentation.
+
+The `pip-tools` maintainers can also use LLMs to generate PRs if they so wish.
+So consider what you are giving to the project _beyond_ prompting an LLM to solve an issue.
 
 Overall, our position is that an LLM may do the _typing_ for you but it should not do the _thinking_.
 
@@ -50,8 +57,15 @@ Overall, our position is that an LLM may do the _typing_ for you but it should n
 In extreme cases, slop PRs may be closed as spam.
 :::
 
-_The [rationale and discussion](https://github.com/jazzband/pip-tools/discussions/2278) behind this policy is open and public. Feel free to raise new issues or make suggestions there._
+_The [rationale and discussion][LLM Policy Discussion] behind this policy is open and public. Feel free to raise new issues or make suggestions there._
 
+### The `good first issue` label
+
+The [`good first issue` label] is used to designate items which are being left for new contributors.
+They're a great way to get onboarded into the project and learn.
+
+These issues should not be handled using LLMs.
+Doing so undermines the purpose of these issues.
 
 ## Project Release Process
 
@@ -90,3 +104,7 @@ This is the current release process:
 https://github.com/jazzband/pip-tools/actions/workflows/release.yml
 [`pip-tools-leads` team]:
 https://github.com/orgs/jazzband/teams/pip-tools-leads
+[LLM Policy Discussion]:
+https://github.com/jazzband/pip-tools/discussions/2278
+[`good first issue` label]:
+https://github.com/jazzband/pip-tools/issues?q=state%3Aopen%20label%3A%22good%20first%20issue%22
