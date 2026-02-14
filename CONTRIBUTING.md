@@ -36,11 +36,13 @@ appreciated.
 
 ### LLM Generated Contributions
 
-Contributors are free to use whatever tools they like, but we have some additional
-guidance for LLM-assisted contributions.
+Contributors are free to use whatever tools they like, but we have some
+additional guidance for LLM-assisted contributions.
 
-First, you must disclose when you are using an LLM to do a significant part of the work.
-You may be able to help maintainers understand what they are looking at by sharing how you used a tool, e.g., what prompts you used.
+First, you must disclose when you are using an LLM to do a significant part of
+the work.
+You may be able to help maintainers understand what they are looking at by
+sharing how you used a tool, e.g., what prompts you used.
 
 Remember that you, not the LLM, are responsible for your contributions.
 Be ready to discuss the changes during review.
@@ -49,19 +51,23 @@ Make sure your code really works.
 Be thoughtful about testing and documentation.
 
 The `pip-tools` maintainers can also use LLMs to generate PRs if they so wish.
-So consider what you are giving to the project _beyond_ prompting an LLM to solve an issue.
+So consider what you are giving to the project _beyond_ prompting an LLM to
+solve an issue.
 
-Overall, our position is that an LLM may do the _typing_ for you but it should not do the _thinking_.
+Overall, our position is that an LLM may do the _typing_ for you but it should
+not do the _thinking_.
 
 :::{caution}
 In extreme cases, slop PRs may be closed as spam.
 :::
 
-_The [rationale and discussion][LLM Policy Discussion] behind this policy is open and public. Feel free to raise new issues or make suggestions there._
+_The [rationale and discussion][LLM Policy Discussion] behind this policy is
+open and public. Feel free to raise new issues or make suggestions there._
 
 ### The `good first issue` label
 
-The [`good first issue` label] is used to designate items which are being left for new contributors.
+The [`good first issue` label] is used to designate items which are being left
+for new contributors.
 They're a great way to get onboarded into the project and learn.
 
 These issues should not be handled using LLMs.
