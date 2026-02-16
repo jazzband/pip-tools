@@ -68,6 +68,19 @@ def test_get_file_hash_without_interfering_with_each_other(from_line, pypi_repos
     )
 
 
+def test_get_file_hash_from_link(pypi_repository):
+    assert (
+        pypi_repository._get_file_hash(
+            Link(
+                "https://example.com/simple/click/8.1.3/"
+                "click-8.1.3-py3-none-any.whl"
+                "#sha256=bb4d8133cb15a609f44e8213d9b391b0809795062913b383c62be0ee95b1db48"
+            )
+        )
+        == "sha256:bb4d8133cb15a609f44e8213d9b391b0809795062913b383c62be0ee95b1db48"
+    )
+
+
 def test_get_hashes_editable_empty_set(from_editable, pypi_repository):
     ireq = from_editable("git+https://github.com/django/django.git#egg=django")
     assert pypi_repository.get_hashes(ireq) == set()
