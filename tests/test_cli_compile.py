@@ -4346,7 +4346,9 @@ def test_compile_with_generate_hashes_preserves_extra_index_url(
         """)
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="named pipes not available on Windows")
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="named pipes not available on Windows"
+)
 def test_determine_linesep_skips_named_pipe(tmp_path):
     """Regression test for #2232: _determine_linesep should not block on named pipes."""
     fifo = tmp_path / "test.fifo"
