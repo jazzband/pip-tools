@@ -24,7 +24,7 @@ from pip._vendor.packaging.version import Version
 from piptools._compat import tempfile_compat
 from piptools._internal import _pip_api
 from piptools.build import ProjectMetadata
-from piptools.scripts.compile import cli
+from piptools.scripts.compile import _determine_linesep, cli
 from piptools.utils import COMPILE_EXCLUDE_OPTIONS
 
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
@@ -4344,3 +4344,19 @@ def test_compile_with_generate_hashes_preserves_extra_index_url(
             --hash=sha256:33e1acdca3b9162e002cedb0e58b350d731d1ed3f53a6b22e0a628bca7c7c6ed
             # via -r requirements.in
         """)
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="named pipes not available on Windows")
+def test_determine_linesep_skips_named_pipe(tmp_path):
+    """Regression test for #2232: _determine_linesep should not block on named pipes."""
+    fifo = tmp_path / "test.fifo"
+    os.mkfifo(fifo)
+    # Should return default "\n" without blocking on the pipe
+    result = _determine_linesep(strategy="preserve", filenames=(str(fifo),))
+    assert result == "\n"
+
+
+def test_determine_linesep_skips_stdin_dash():
+    """Regression test for #2232: _determine_linesep should skip '-' (stdin)."""
+    result = _determine_linesep(strategy="preserve", filenames=("-",))
+    assert result == "\n"

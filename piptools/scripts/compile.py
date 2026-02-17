@@ -55,6 +55,10 @@ def _determine_linesep(
     """
     if strategy == "preserve":
         for fname in filenames:
+            # Skip stdin and non-regular files (e.g. named pipes) to avoid
+            # blocking on a second read (see #2232)
+            if fname == "-" or not Path(fname).is_file():
+                continue
             try:
                 with open(fname, "rb") as existing_file:
                     existing_text = existing_file.read()
