@@ -32,7 +32,7 @@ documentation corrections or contributions that do not change pip-tools itself.
 Contributions following these guidelines are always welcomed, encouraged and
 appreciated.
 
-[tox devenv]: <https://tox.wiki/en/latest/cli_interface.html#tox-devenv-(d)>
+[tox devenv]: <https://tox.wiki/en/latest/reference/cli.html#tox-devenv-(d)>
 
 ## Project Release Process
 
