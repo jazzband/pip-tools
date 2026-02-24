@@ -148,7 +148,8 @@ def test_default_pip_conf_read(pip_with_index_conf, runner):
 
     # check that we have our index-url as specified in pip.conf
     assert "Using indexes:\n  http://example.com" in out.stderr
-    assert "--index-url http://example.com" in out.stderr
+    with open("requirements.txt") as req_txt:
+        assert "--index-url http://example.com" in req_txt.read()
 
 
 def test_command_line_overrides_pip_conf(pip_with_index_conf, runner):
@@ -364,11 +365,11 @@ def test_extra_index_option(pip_with_index_conf, runner):
         "  http://extraindex1.com\n"
         "  http://extraindex2.com" in out.stderr
     )
-    assert (
-        "--index-url http://example.com\n"
-        "--extra-index-url http://extraindex1.com\n"
-        "--extra-index-url http://extraindex2.com" in out.stderr
-    )
+    with open("requirements.txt") as req_txt:
+        content = req_txt.read()
+        assert "--index-url http://example.com" in content
+        assert "--extra-index-url http://extraindex1.com" in content
+        assert "--extra-index-url http://extraindex2.com" in content
 
 
 def test_extra_index_envvar(monkeypatch, runner):
@@ -386,11 +387,11 @@ def test_extra_index_envvar(monkeypatch, runner):
         "  http://extraindex1.com\n"
         "  http://extraindex2.com" in out.stderr
     )
-    assert (
-        "--index-url http://example.com\n"
-        "--extra-index-url http://extraindex1.com\n"
-        "--extra-index-url http://extraindex2.com" in out.stderr
-    )
+    with open("requirements.txt") as req_txt:
+        content = req_txt.read()
+        assert "--index-url http://example.com" in content
+        assert "--extra-index-url http://extraindex1.com" in content
+        assert "--extra-index-url http://extraindex2.com" in content
 
 
 @pytest.mark.parametrize("option", ("--extra-index-url", "--find-links"))
@@ -423,7 +424,11 @@ def test_trusted_host_option(pip_conf, runner):
     out = runner.invoke(
         cli, ["-v", "--trusted-host", "example.com", "--trusted-host", "example2.com"]
     )
-    assert "--trusted-host example.com\n--trusted-host example2.com\n" in out.stderr
+    assert out.exit_code == 0
+    with open("requirements.txt") as req_txt:
+        content = req_txt.read()
+        assert "--trusted-host example.com" in content
+        assert "--trusted-host example2.com" in content
 
 
 def test_trusted_host_envvar(monkeypatch, pip_conf, runner):
@@ -431,7 +436,11 @@ def test_trusted_host_envvar(monkeypatch, pip_conf, runner):
         pass
     monkeypatch.setenv("PIP_TRUSTED_HOST", "example.com example2.com")
     out = runner.invoke(cli, ["-v"])
-    assert "--trusted-host example.com\n--trusted-host example2.com\n" in out.stderr
+    assert out.exit_code == 0
+    with open("requirements.txt") as req_txt:
+        content = req_txt.read()
+        assert "--trusted-host example.com" in content
+        assert "--trusted-host example2.com" in content
 
 
 @pytest.mark.parametrize(
@@ -877,8 +886,9 @@ def test_input_file_without_extension(pip_conf, runner):
     out = runner.invoke(cli, ["requirements"])
 
     assert out.exit_code == 0
-    assert "small-fake-a==0.1" in out.stderr
     assert os.path.exists("requirements.txt")
+    with open("requirements.txt") as f:
+        assert "small-fake-a==0.1" in f.read()
 
 
 def test_ignore_incompatible_existing_pins(pip_conf, runner):
@@ -907,8 +917,10 @@ def test_upgrade_packages_option(pip_conf, runner):
     out = runner.invoke(cli, ["--no-annotate", "-P", "small-fake-b"])
 
     assert out.exit_code == 0
-    assert "small-fake-a==0.1" in out.stderr.splitlines()
-    assert "small-fake-b==0.3" in out.stderr.splitlines()
+    with open("requirements.txt") as f:
+        content = f.read()
+    assert "small-fake-a==0.1" in content.splitlines()
+    assert "small-fake-b==0.3" in content.splitlines()
 
 
 def test_upgrade_packages_option_irrelevant(pip_conf, runner):
@@ -923,8 +935,10 @@ def test_upgrade_packages_option_irrelevant(pip_conf, runner):
     out = runner.invoke(cli, ["--no-annotate", "--upgrade-package", "small-fake-b"])
 
     assert out.exit_code == 0
-    assert "small-fake-a==0.1" in out.stderr.splitlines()
-    assert "small-fake-b==0.3" not in out.stderr.splitlines()
+    with open("requirements.txt") as f:
+        content = f.read()
+    assert "small-fake-a==0.1" in content.splitlines()
+    assert "small-fake-b==0.3" not in content.splitlines()
 
 
 def test_upgrade_packages_option_no_existing_file(pip_conf, runner):
@@ -938,8 +952,10 @@ def test_upgrade_packages_option_no_existing_file(pip_conf, runner):
     out = runner.invoke(cli, ["--no-annotate", "-P", "small-fake-b"])
 
     assert out.exit_code == 0
-    assert "small-fake-a==0.2" in out.stderr.splitlines()
-    assert "small-fake-b==0.3" in out.stderr.splitlines()
+    with open("requirements.txt") as f:
+        content = f.read()
+    assert "small-fake-a==0.2" in content.splitlines()
+    assert "small-fake-b==0.3" in content.splitlines()
     assert (
         "WARNING: the output file requirements.txt exists but is empty"
         not in out.stderr
@@ -959,7 +975,9 @@ def test_upgrade_packages_empty_target_file_warning(pip_conf, runner):
     out = runner.invoke(cli, ["--no-annotate", "-P", "small-fake-a"])
 
     assert out.exit_code == 0
-    assert "small-fake-a==0.2" in out.stderr.splitlines()
+    with open("requirements.txt") as f:
+        content = f.read()
+    assert "small-fake-a==0.2" in content.splitlines()
     assert "WARNING: the output file requirements.txt exists but is empty" in out.stderr
 
 
@@ -984,9 +1002,10 @@ def test_upgrade_packages_version_option(
     out = runner.invoke(cli, ["--no-annotate", "--upgrade-package", upgraded_package])
 
     assert out.exit_code == 0
-    stderr_lines = out.stderr.splitlines()
-    assert "small-fake-a==0.1" in stderr_lines
-    assert upgraded_package in stderr_lines
+    with open("requirements.txt") as f:
+        content_lines = f.read().splitlines()
+    assert "small-fake-a==0.1" in content_lines
+    assert upgraded_package in content_lines
 
 
 def test_upgrade_packages_version_option_no_existing_file(pip_conf, runner):
@@ -999,8 +1018,10 @@ def test_upgrade_packages_version_option_no_existing_file(pip_conf, runner):
     out = runner.invoke(cli, ["-P", "small-fake-b==0.2"])
 
     assert out.exit_code == 0
-    assert "small-fake-a==0.2" in out.stderr
-    assert "small-fake-b==0.2" in out.stderr
+    with open("requirements.txt") as f:
+        content = f.read()
+    assert "small-fake-a==0.2" in content
+    assert "small-fake-b==0.2" in content
 
 
 @pytest.mark.parametrize(
@@ -1023,8 +1044,10 @@ def test_upgrade_packages_version_option_and_upgrade(pip_conf, runner, reqs_in):
     out = runner.invoke(cli, ["--upgrade", "-P", "small-fake-b==0.1"])
 
     assert out.exit_code == 0
-    assert "small-fake-a==0.2" in out.stderr
-    assert "small-fake-b==0.1" in out.stderr
+    with open("requirements.txt") as f:
+        content = f.read()
+    assert "small-fake-a==0.2" in content
+    assert "small-fake-b==0.1" in content
 
 
 def test_upgrade_packages_version_option_and_upgrade_no_existing_file(pip_conf, runner):
@@ -1038,8 +1061,10 @@ def test_upgrade_packages_version_option_and_upgrade_no_existing_file(pip_conf, 
     out = runner.invoke(cli, ["--upgrade", "-P", "small-fake-b==0.1"])
 
     assert out.exit_code == 0
-    assert "small-fake-a==0.2" in out.stderr
-    assert "small-fake-b==0.1" in out.stderr
+    with open("requirements.txt") as f:
+        content = f.read()
+    assert "small-fake-a==0.2" in content
+    assert "small-fake-b==0.1" in content
 
 
 def test_upgrade_package_with_extra(runner, make_package, make_sdist, tmpdir):
@@ -1132,7 +1157,8 @@ def test_generate_hashes_with_editable(pip_conf, runner):
         "3fe296c0107b16ed452062f7f994a5672e3b3f\n"
     ).format(small_fake_package_url)
     assert out.exit_code == 0
-    assert expected in out.stderr
+    with open("requirements.txt") as f:
+        assert expected in f.read()
 
 
 @pytest.mark.network
@@ -1163,6 +1189,51 @@ def test_generate_hashes_verbose(pip_conf, runner):
     out = runner.invoke(cli, ["--generate-hashes", "-v"])
     expected_verbose_text = "Generating hashes:\n  small-fake-a\n"
     assert expected_verbose_text in out.stderr
+
+
+def test_verbose_output_file_no_result_on_stderr(pip_conf, runner):
+    """
+    When using --verbose with an output file, the compiled result should
+    not be echoed to stderr — only progress/logging should appear there.
+
+    See https://github.com/jazzband/pip-tools/issues/1987
+    """
+    with open("requirements.in", "w") as fp:
+        fp.write("small-fake-a==0.1")
+
+    out = runner.invoke(cli, ["-v", "--no-header"])
+
+    assert out.exit_code == 0
+    # Verbose progress should still be on stderr
+    assert "ROUND 1" in out.stderr
+    # The compiled result lines (bare package pins) should NOT be
+    # echoed to stderr as standalone output lines.  The package name
+    # may still appear inside verbose resolver messages, so we check
+    # that the result is not present as a standalone line in stderr.
+    stderr_lines = out.stderr.splitlines()
+    assert "small-fake-a==0.1" not in stderr_lines
+    # But it should be in the output file
+    with open("requirements.txt") as req_txt:
+        assert "small-fake-a==0.1" in req_txt.read()
+
+
+def test_no_verbose_output_file_result_on_stderr(pip_conf, runner):
+    """
+    Without --verbose (or -vv), the compiled result should NOT be echoed
+    to stderr — it should only be written to the output file.
+    """
+    with open("requirements.in", "w") as fp:
+        fp.write("small-fake-a==0.1")
+
+    out = runner.invoke(cli, ["--no-header"])
+
+    assert out.exit_code == 0
+    # Without -vv, result is NOT echoed to stderr
+    stderr_lines = out.stderr.splitlines()
+    assert "small-fake-a==0.1" not in stderr_lines
+    # But it should be in the output file
+    with open("requirements.txt") as req_txt:
+        assert "small-fake-a==0.1" in req_txt.read()
 
 
 @pytest.mark.network
@@ -2243,7 +2314,8 @@ def test_sub_dependencies_with_constraints(pip_conf, runner):
 
     assert out.exit_code == 0
 
-    req_out_lines = set(out.stderr.splitlines())
+    with open("requirements.txt") as f:
+        req_out_lines = set(f.read().splitlines())
     assert {
         "small-fake-a==0.1",
         "small-fake-b==0.2",
@@ -2262,7 +2334,8 @@ def test_preserve_compiled_prerelease_version(pip_conf, runner):
     out = runner.invoke(cli, ["--no-annotate", "--no-header"])
 
     assert out.exit_code == 0, out
-    assert "small-fake-a==0.3b1" in out.stderr.splitlines()
+    with open("requirements.txt") as f:
+        assert "small-fake-a==0.3b1" in f.read().splitlines()
 
 
 @backtracking_resolver_only
@@ -2319,8 +2392,10 @@ def test_prefer_binary_dist(
     )
 
     assert out.exit_code == 0, out
-    assert "first-package==1.0" in out.stderr.splitlines(), out.stderr
-    assert "second-package==1.0" in out.stderr.splitlines(), out.stderr
+    with open("requirements.txt") as f:
+        content_lines = f.read().splitlines()
+    assert "first-package==1.0" in content_lines, out.stderr
+    assert "second-package==1.0" in content_lines, out.stderr
 
 
 @pytest.mark.parametrize("prefer_binary", (True, False))
@@ -2355,7 +2430,8 @@ def test_prefer_binary_dist_even_there_is_source_dists(
     )
 
     assert out.exit_code == 0, out
-    assert "test-package==2.0" in out.stderr.splitlines(), out.stderr
+    with open("requirements.txt") as f:
+        assert "test-package==2.0" in f.read().splitlines(), out.stderr
 
 
 @pytest.mark.parametrize("output_content", ("test-package-1==0.1", ""))
@@ -2389,8 +2465,10 @@ def test_duplicate_reqs_combined(
     out = runner.invoke(cli, ["--find-links", str(dists_dir)])
 
     assert out.exit_code == 0, out
-    assert str(test_package_2) in out.stderr
-    assert "test-package-1==0.1" in out.stderr
+    with open("requirements.txt") as f:
+        content = f.read()
+    assert str(test_package_2) in content
+    assert "test-package-1==0.1" in content
 
 
 def test_local_duplicate_subdependency_combined(runner, make_package):
@@ -2634,8 +2712,10 @@ def test_triple_equal_pinned_dependency_is_used(
     out = runner.invoke(cli, ["--find-links", str(dists_dir)])
 
     assert out.exit_code == 0, out
+    with open("requirements.txt") as f:
+        content = f.read()
     for line in out_expected_content:
-        assert line in out.stderr
+        assert line in content
 
 
 METADATA_TEST_CASES = (
@@ -3181,8 +3261,10 @@ def test_cli_compile_strip_extras(runner, make_package, make_sdist, tmpdir):
     out = runner.invoke(cli, ["--strip-extras", "--find-links", str(dists_dir)])
 
     assert out.exit_code == 0, out
-    assert "test-package-2==0.1" in out.stderr
-    assert "[more]" not in out.stderr
+    with open("requirements.txt") as f:
+        content = f.read()
+    assert "test-package-2==0.1" in content
+    assert "[more]" not in content
 
 
 def test_cli_compile_all_extras_with_multiple_packages(
@@ -3214,9 +3296,11 @@ def test_cli_compile_all_extras_with_multiple_packages(
     )
 
     assert out.exit_code == 0, out
-    assert "--all-extras" in out.stderr
-    assert f"test_package_1{os.path.sep}0.1{os.path.sep}setup.py" in out.stderr
-    assert f"test_package_2{os.path.sep}0.1{os.path.sep}setup.py" in out.stderr
+    with open("requirements.txt") as f:
+        content = f.read()
+    assert "--all-extras" in content
+    assert f"test_package_1{os.path.sep}0.1{os.path.sep}setup.py" in content
+    assert f"test_package_2{os.path.sep}0.1{os.path.sep}setup.py" in content
 
 
 @pytest.mark.parametrize(
@@ -3811,8 +3895,10 @@ def test_use_src_files_from_config_if_option_is_not_specified_from_cli(
     out = runner.invoke(cli, ["--config", config_file.as_posix()])
 
     assert out.exit_code == 0, out
-    assert "small-fake-b" in out.stderr
-    assert "small-fake-a" not in out.stderr
+    output_file = foo_in.with_suffix(".txt")
+    content = output_file.read_text(encoding="utf-8")
+    assert "small-fake-b" in content
+    assert "small-fake-a" not in content
 
 
 def test_use_src_files_from_cli_if_option_is_specified_in_both_config_and_cli(
@@ -3829,8 +3915,10 @@ def test_use_src_files_from_cli_if_option_is_specified_in_both_config_and_cli(
     out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
 
     assert out.exit_code == 0, out
-    assert "small-fake-a" in out.stderr
-    assert "small-fake-b" not in out.stderr
+    output_file = req_in.with_suffix(".txt")
+    content = output_file.read_text(encoding="utf-8")
+    assert "small-fake-a" in content
+    assert "small-fake-b" not in content
 
 
 def test_cli_boolean_flag_config_option_has_valid_context(
