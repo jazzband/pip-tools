@@ -283,7 +283,8 @@ class OutputWriter:
                     # Bypass the log level to always print this during a dry run
                     log.log(line)
                 else:
-                    log.info(line)
+                    if log.verbosity >= 2:
+                        log.log(line)
                     dst_file.write(unstyle(line))
                     dst_file.write("\n")
         finally:
