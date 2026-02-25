@@ -18,6 +18,29 @@ your builds are predictable and deterministic.)
 
 [![pip-tools overview for phase II][pip-tools-overview]][pip-tools-overview]
 
+## Table of Contents
+
+- [Installation](#installation)
+- [Example usage for `pip-compile`](#example-usage-for-pip-compile)
+  - [Requirements from `pyproject.toml`](#requirements-from-pyprojecttoml)
+  - [Requirements from `setup.py` and `setup.cfg`](#requirements-from-setuppy-and-setupcfg)
+  - [Requirements from `requirements.in`](#requirements-from-requirementsin)
+  - [Updating requirements](#updating-requirements)
+  - [Understanding output file behavior](#understanding-output-file-behavior)
+  - [Using hashes](#using-hashes)
+  - [Output File](#output-file)
+  - [Forwarding options to `pip`](#forwarding-options-to-pip)
+  - [Configuration](#configuration)
+  - [Workflow for layered requirements](#workflow-for-layered-requirements)
+  - [Version control integration](#version-control-integration)
+  - [Example usage for `pip-sync`](#example-usage-for-pip-sync)
+  - [Should I commit `requirements.in` and `requirements.txt` to source control?](#should-i-commit-requirementsin-and-requirementstxt-to-source-control)
+  - [Cross-environment usage of `requirements.in`/`requirements.txt` and `pip-compile`](#cross-environment-usage-of-requirementsinrequirementstxt-and-pip-compile)
+  - [Maximizing reproducibility](#maximizing-reproducibility)
+  - [Other useful tools](#other-useful-tools)
+  - [Deprecations](#deprecations)
+  - [A Note on Resolvers](#a-note-on-resolvers)
+
 ## Installation
 
 Similar to `pip`, `pip-tools` must be installed in each of your project's
