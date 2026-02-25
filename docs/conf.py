@@ -44,7 +44,7 @@ extensions = [
     # Stdlib extensions:
     "sphinx.ext.intersphinx",
     # Third-party extensions:
-    # "click_extra.sphinx",  # provides GitHub-flavored admonition syntax
+    "click_extra.sphinx",  # provides GitHub-flavored admonition syntax
     "myst_parser",
     "sphinxcontrib.apidoc",
     "sphinxcontrib.programoutput",
