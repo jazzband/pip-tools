@@ -28,7 +28,7 @@ click==8.3.1
     #   cloup
     #   pip-tools (pyproject.toml)
     #   towncrier
-click-extra==7.5.0
+click-extra==7.5.3
     # via -r docs/requirements.in
 cloup==3.0.8
     # via click-extra
