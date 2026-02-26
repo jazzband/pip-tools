@@ -56,7 +56,7 @@ def pip_produces_absolute_paths():
 
 
 @dataclasses.dataclass
-class TestFilesCollection:
+class FileCollectionParam:
     """
     A small data-builder for setting up files in a tmp dir.
 
@@ -3988,14 +3988,14 @@ def test_stdout_should_not_be_read_when_stdin_is_not_a_plain_file(
 @pytest.mark.parametrize(
     "test_files_collection",
     (
-        TestFilesCollection(
+        FileCollectionParam(
             "relative_include",
             {
                 "requirements2.in": "small-fake-a\n",
                 "requirements.in": "-r requirements2.in\n",
             },
         ),
-        TestFilesCollection(
+        FileCollectionParam(
             "absolute_include",
             {
                 "requirements2.in": "small-fake-a\n",
@@ -4055,21 +4055,21 @@ def test_second_order_requirements_path_handling(
 @pytest.mark.parametrize(
     "test_files_collection",
     (
-        TestFilesCollection(
+        FileCollectionParam(
             "parent_dir",
             {
                 "requirements2.in": "small-fake-a\n",
                 "subdir/requirements.in": "-r ../requirements2.in\n",
             },
         ),
-        TestFilesCollection(
+        FileCollectionParam(
             "subdir",
             {
                 "requirements.in": "-r ./subdir/requirements2.in",
                 "subdir/requirements2.in": "small-fake-a\n",
             },
         ),
-        TestFilesCollection(
+        FileCollectionParam(
             "sibling_dir",
             {
                 "subdir1/requirements.in": "-r ../subdir2/requirements2.in",
@@ -4142,7 +4142,7 @@ def test_second_order_requirements_can_be_in_parent_of_cwd(
     Test handling of ``-r`` includes when the included requirements file is in the
     parent of the current working directory.
     """
-    test_files_collection = TestFilesCollection(
+    test_files_collection = FileCollectionParam(
         contents={
             "subdir1/requirements.in": "-r ../requirements2.in\n",
             "requirements2.in": "small-fake-a\n",
