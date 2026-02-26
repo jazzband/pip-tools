@@ -27,6 +27,12 @@ from .utils import (
     strip_extras,
 )
 
+if sys.version_info >= (3, 11):
+    from typing import Self as _t_Self
+else:
+    from typing_extensions import Self as _t_Self
+
+
 MESSAGE_UNHASHED_PACKAGE = comment(
     "# WARNING: pip install will require the following package to be hashed."
     "\n# Consider using a hashable URL like "
@@ -276,11 +282,11 @@ class OutputWriter:
         else:
             attached_writer = contextlib.nullcontext(_dry_run_line_writer)
 
-        with attached_writer as line_writer:
+        with attached_writer as write_line:
             for line in self._iter_lines(
                 results, unsafe_requirements, unsafe_packages, markers, hashes
             ):
-                line_writer(line)
+                write_line(line)
 
     def _format_requirement(
         self,
@@ -355,7 +361,7 @@ class _FileLineWriter:
         self.dst_file.write(unstyle(line))
         self.dst_file.write("\n")
 
-    def __enter__(self) -> _LineWriter:
+    def __enter__(self) -> _t_Self:
         return self
 
     def __exit__(
