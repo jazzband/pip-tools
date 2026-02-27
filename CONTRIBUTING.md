@@ -44,9 +44,8 @@ do not use LLMs to speak for you, except for translation or grammar edits.
 This includes the creation of changelogs and PR descriptions.
 Human-to-human communication is foundational to open source communities.
 
-:::{caution}
-In extreme cases, low quality PRs may be closed as spam.
-:::
+> [!CAUTION]
+> In extreme cases, low quality PRs may be closed as spam.
 
 #### Responsibility
 
