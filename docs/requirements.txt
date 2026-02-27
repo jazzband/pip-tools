@@ -12,6 +12,10 @@ babel==2.18.0
     # via sphinx
 beautifulsoup4==4.14.3
     # via furo
+boltons==25.0.0
+    # via click-extra
+bracex==2.6
+    # via wcmatch
 build==1.4.0
     # via pip-tools (pyproject.toml)
 certifi==2026.1.4
@@ -20,12 +24,25 @@ charset-normalizer==3.4.4
     # via requests
 click==8.3.1
     # via
+    #   click-extra
+    #   cloup
     #   pip-tools (pyproject.toml)
     #   towncrier
+click-extra==7.5.3
+    # via -r docs/requirements.in
+cloup==3.0.8
+    # via click-extra
+deepmerge==2.0
+    # via click-extra
+distro==1.9.0
+    # via extra-platforms
 docutils==0.22.4
     # via
+    #   click-extra
     #   myst-parser
     #   sphinx
+extra-platforms==8.0.0
+    # via click-extra
 furo==2025.12.19
     # via -r docs/requirements.in
 idna==3.11
@@ -60,8 +77,12 @@ pbr==7.0.3
 pygments==2.19.2
     # via
     #   accessible-pygments
+    #   click-extra
     #   furo
+    #   pygments-ansi-color
     #   sphinx
+pygments-ansi-color==0.3.0
+    # via click-extra
 pyproject-hooks==1.2.0
     # via
     #   build
@@ -69,7 +90,9 @@ pyproject-hooks==1.2.0
 pyyaml==6.0.3
     # via myst-parser
 requests==2.32.5
-    # via sphinx
+    # via
+    #   click-extra
+    #   sphinx
 roman-numerals==4.1.0
     # via sphinx
 setuptools-scm==9.2.2
@@ -81,6 +104,7 @@ soupsieve==2.8.3
 sphinx==9.1.0
     # via
     #   -r docs/requirements.in
+    #   click-extra
     #   furo
     #   myst-parser
     #   sphinx-basic-ng
@@ -110,12 +134,18 @@ sphinxcontrib-serializinghtml==2.0.0
     # via sphinx
 sphinxcontrib-towncrier==0.5.0a0
     # via -r docs/requirements.in
+tabulate==0.9.0
+    # via click-extra
 towncrier==25.8.0
     # via sphinxcontrib-towncrier
 typing-extensions==4.15.0
     # via beautifulsoup4
 urllib3==2.6.3
     # via requests
+wcmatch==10.1
+    # via click-extra
+wcwidth==0.5.3
+    # via tabulate
 wheel==0.46.3
     # via pip-tools (pyproject.toml)
 

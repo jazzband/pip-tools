@@ -1,3 +1,4 @@
+click-extra [sphinx]  # GitHub-flavored admonitions: https://github.com/executablebooks/MyST-Parser/issues/845#issuecomment-3580549737
 furo
 myst-parser
 setuptools-scm

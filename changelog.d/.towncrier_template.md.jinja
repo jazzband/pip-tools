@@ -16,15 +16,15 @@
 {% if sections[section] %}
 {% for category, val in definitions.items() if category in sections[section] -%}
 {%- if category in special_category_admonitions -%}
-``````````{{ '{admonition}' }} {{ definitions[category]['name'] }}
-:class: {{ special_category_admonitions[category] }}
-
+:::{{- ['{', '}'] | join(special_category_admonitions[category] | lower) -}}
+{{- '\n\n' -}}
 {% for text, change_note_refs in sections[section][category].items() %}
-{{ text }}
+  {{ text }}
 {% endfor %}
-``````````
-
 {{- '\n' -}}
+:::
+
+{{- '\n\n' -}}
 
 {%- else -%}
 

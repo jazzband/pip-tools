@@ -44,6 +44,7 @@ extensions = [
     # Stdlib extensions:
     "sphinx.ext.intersphinx",
     # Third-party extensions:
+    "click_extra.sphinx",  # provides GitHub-flavored admonition syntax
     "myst_parser",
     "sphinxcontrib.apidoc",
     "sphinxcontrib.programoutput",
@@ -126,7 +127,9 @@ apidoc_toc_file = None
 
 
 # -- myst_parser options --------------------------------------------------
-myst_enable_extensions: set[str] = set()
+myst_enable_extensions = {
+    "colon_fence",
+}
 
 
 # -- Sphinx extension-API `setup()` hook
