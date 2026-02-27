@@ -39,30 +39,36 @@ appreciated.
 Contributors are free to use whatever tools they like, but we have some
 additional guidance for LLM-assisted contributions.
 
-First, you must disclose when you are using an LLM to do a significant part of
-the work.
-You may be able to help maintainers understand what they are looking at by
-sharing how you used a tool, e.g., what prompts you used.
+When interacting in pip-tools spaces (issues, pull requests, matrix, discord, etc.),
+do not use LLMs to speak for you, except for translation or grammar edits.
+This includes the creation of changelogs and PR descriptions.
+Human-to-human communication is foundational to open source communities.
+
+:::{caution}
+In extreme cases, low quality PRs may be closed as spam.
+:::
+
+#### Responsibility
 
 Remember that you, not the LLM, are responsible for your contributions.
-Be ready to discuss the changes during review.
+Be ready to discuss your changes.
+Do not submit code you have not reviewed.
+
 Do your best to follow the conventions and standards of the project.
 Make sure your code really works.
 Be thoughtful about testing and documentation.
 
-The `pip-tools` maintainers can also use LLMs to generate PRs if they so wish.
-So consider what you are giving to the project _beyond_ prompting an LLM to
-solve an issue.
+Try to make your code brief, and recognize when less is more.
 
-Overall, our position is that an LLM may do the _typing_ for you but it should
-not do the _thinking_.
+#### Autonomous Code Submissions
 
-:::{caution}
-In extreme cases, slop PRs may be closed as spam.
-:::
+The use of agents which write code and submit pull requests without human review
+is not permitted.
 
-_The [rationale and discussion][LLM Policy Discussion] behind this policy is
-open and public. Feel free to raise new issues or make suggestions there._
+#### Pull Request Templates
+
+Please do not replace the pull request template, which is part of the
+maintainers' process.
 
 ### The `good first issue` label
 
@@ -113,4 +119,4 @@ https://github.com/orgs/jazzband/teams/pip-tools-leads
 [LLM Policy Discussion]:
 https://github.com/jazzband/pip-tools/discussions/2278
 [`good first issue` label]:
-https://github.com/jazzband/pip-tools/issues?q=state%3Aopen%20label%3A%22good%20first%20issue%22
+https://github.com/jazzband/pip-tools/labels/good%20first%20issue%22
