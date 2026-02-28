@@ -34,6 +34,51 @@ appreciated.
 
 [tox devenv]: <https://tox.wiki/en/latest/reference/cli.html#tox-devenv-(d)>
 
+### LLM Generated Contributions
+
+Contributors are free to use whatever tools they like, but we have some
+additional guidance for LLM-assisted contributions.
+
+When interacting in pip-tools spaces (issues, pull requests, matrix, discord, etc.),
+do not use LLMs to speak for you, except for translation or grammar edits.
+This includes the creation of changelogs and PR descriptions.
+Human-to-human communication is foundational to open source communities.
+
+> [!CAUTION]
+> In extreme cases, low quality PRs may be closed as spam.
+
+#### Responsibility
+
+Remember that you, not the LLM, are responsible for your contributions.
+Be ready to discuss your changes.
+Do not submit code you have not reviewed.
+
+Do your best to follow the conventions and standards of the project.
+Make sure your code really works.
+Be thoughtful about testing and documentation.
+
+Try to make your code brief, and recognize when less is more.
+
+#### Autonomous Code Submissions
+
+The use of agents which write code and submit pull requests without human review
+is not permitted.
+
+#### Pull Request Templates
+
+Please do not replace the pull request template, which is part of the
+maintainers' process.
+
+### The `good first issue` label
+
+The [`good first issue` label] is used to designate items which are being left
+for new contributors.
+They're a great way to get onboarded into the project and learn.
+
+Having an LLM resolve one of these issues does not help anyone learn.
+Therefore, please be considerate of those who may benefit from these
+opportunities, and refrain from asking an LLM to produce a complete solution.
+
 ## Project Release Process
 
 Releases require approval by a member of the [`pip-tools-leads` team].
@@ -71,3 +116,7 @@ This is the current release process:
 https://github.com/jazzband/pip-tools/actions/workflows/release.yml
 [`pip-tools-leads` team]:
 https://github.com/orgs/jazzband/teams/pip-tools-leads
+[LLM Policy Discussion]:
+https://github.com/jazzband/pip-tools/discussions/2278
+[`good first issue` label]:
+https://github.com/jazzband/pip-tools/labels/good%20first%20issue%22
