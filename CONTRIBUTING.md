@@ -75,8 +75,9 @@ The [`good first issue` label] is used to designate items which are being left
 for new contributors.
 They're a great way to get onboarded into the project and learn.
 
-These issues should not be handled using LLMs.
-Doing so undermines the purpose of these issues.
+Having an LLM resolve one of these issues does not help anyone learn.
+Therefore, please be considerate of those who may benefit from these
+opportunities, and refrain from asking an LLM to produce a complete solution.
 
 ## Project Release Process
 
