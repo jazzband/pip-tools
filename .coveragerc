@@ -1,5 +1,7 @@
 [run]
-plugins = covdefaults
+plugins =
+    covdefaults
+    piptools_coverage
 omit =
     piptools/_compat/*
 
