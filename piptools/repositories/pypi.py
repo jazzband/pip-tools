@@ -125,10 +125,10 @@ class PyPIRepository(BaseRepository):
         # but on newer versions, it's a simple method, and the underlying cache is a
         # dict on the instance
         # the same holds for `finder.find_best_candidate`
-        if _pip_api.PIP_VERSION_MAJOR_MINOR >= (25, 1):
+        if _pip_api.PIP_VERSION_MAJOR_MINOR >= (25, 1):  # pragma: pip<25.1 no cover
             self.finder._all_candidates.clear()
             self.finder._best_candidates.clear()
-        else:
+        else:  # pragma: pip>=25.1 no cover
             self.finder.find_all_candidates.cache_clear()
             self.finder.find_best_candidate.cache_clear()
 

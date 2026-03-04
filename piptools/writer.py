@@ -27,9 +27,9 @@ from .utils import (
     strip_extras,
 )
 
-if sys.version_info >= (3, 11):
+if sys.version_info >= (3, 11):  # pragma: <3.11 no cover
     from typing import Self as _t_Self
-else:
+else:  # pragma: >=3.11 no cover
     from typing_extensions import Self as _t_Self
 
 
