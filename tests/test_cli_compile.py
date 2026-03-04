@@ -1885,9 +1885,9 @@ def test_forwarded_args_filter_deprecated(PyPIRepository, runner, pip_args):
 
     (first_posarg, *_tail_args), _kwargs = PyPIRepository.call_args
 
-    if _pip_api.PIP_VERSION_MAJOR_MINOR >= (25, 3):  # pragma: >=3.9 cover
+    if _pip_api.PIP_VERSION_MAJOR_MINOR >= (25, 3):  # pragma: pip<25.3 no cover
         assert set(first_posarg) ^ pip_option_keys
-    else:
+    else:  # pragma: pip>=25.3 no cover
         assert set(first_posarg) & pip_option_keys
 
 
@@ -3501,9 +3501,9 @@ def test_pass_pip_cache_to_pip_args(tmpdir, runner, current_resolver):
     )
     assert out.exit_code == 0
     # TODO: Remove hack once testing only on v23.3+
-    if _pip_api.PIP_VERSION >= Version("23.3.dev0"):  # pragma: >=3.12 cover
+    if _pip_api.PIP_VERSION >= Version("23.3.dev0"):  # pragma: pip<23.3 no cover
         pip_http_cache_dir = "http-v2"
-    else:  # pragma: <3.12 cover
+    else:  # pragma: pip>=23.3 no cover
         pip_http_cache_dir = "http"
     assert os.listdir(os.path.join(str(cache_dir), pip_http_cache_dir))
 

@@ -17,7 +17,7 @@ def filter_deprecated_pip_args(args: list[str]) -> list[str]:
     - ``--global-option``
     - ``--build-option``
     """
-    if _pip_api.PIP_VERSION_MAJOR_MINOR < (25, 3):  # pragma: <3.9 cover
+    if _pip_api.PIP_VERSION_MAJOR_MINOR < (25, 3):  # pragma: pip>=25.3 no cover
         return args
 
     deprecation_mapping = {

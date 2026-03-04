@@ -608,7 +608,7 @@ class BacktrackingResolver(BaseResolver):
             preparer = self.command.make_requirement_preparer(**preparer_kwargs)
 
             extra_resolver_kwargs = {}
-            if _pip_api.PIP_VERSION_MAJOR_MINOR < (25, 3):  # pragma: <3.9 cover
+            if _pip_api.PIP_VERSION_MAJOR_MINOR < (25, 3):  # pragma: pip>=25.3 no cover
                 # Ref: https://github.com/jazzband/pip-tools/issues/2252
                 extra_resolver_kwargs["use_pep517"] = self.options.use_pep517
 

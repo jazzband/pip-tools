@@ -213,7 +213,7 @@ def base_resolver(depcache):
 @pytest.fixture
 def from_line():
     def _from_line(*args, **kwargs):
-        if _pip_api.PIP_VERSION_MAJOR_MINOR <= (23, 0):  # pragma: <3.12 cover
+        if _pip_api.PIP_VERSION_MAJOR_MINOR <= (23, 0):  # pragma: pip>23.0 no cover
             hash_options = kwargs.pop("hash_options", {})
             options = kwargs.pop("options", {})
             options["hashes"] = hash_options
