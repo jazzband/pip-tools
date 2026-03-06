@@ -315,7 +315,9 @@ jobs:
           - name: Windows
             runs_on: windows-latest
           - name: macOS
-            runs_on: macos-latest
+            runs_on: macos-26
+          - name: "macOS (Intel)"
+            runs_on: macos-26-intel
         python-version: >-
           ${{
             fromJSON(
@@ -443,7 +445,9 @@ jobs:
           - name: Ubuntu
             runs_on: ubuntu-latest
           - name: MacOS
-            runs_on: macos-latest
+            runs_on: macos-26
+          - name: "MacOS (Intel)"
+            runs_on: macos-26-intel
           - name: Windows
             runs_on: windows-latest
         python-version:
