@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime
-import functools
 import operator
 import pathlib
 import sys
@@ -33,16 +32,21 @@ COMPARATORS: list[tuple[str, _t.Callable[[tuple[int, int], tuple[int, int]], boo
 
 
 # pip uses 2-digit calver, so the current year is the latest possibly supported version
-def _get_max_pip_major_version() -> int:
+def get_max_pip_major_version() -> int:
     return datetime.date.today().year - 2000
 
 
-def _get_min_supported_pip_major_version() -> int:
+def read_project_pyproject_toml() -> dict[str, _t.Any]:
     # the path to pyproject.toml is taken always from the CWD
     # since tests should always run under tox, this is always expected to be the repo root
     pyproject_path = pathlib.Path.cwd() / "pyproject.toml"
     with pyproject_path.open("rb") as pyproject_file:
         pyproject_toml = tomllib.load(pyproject_file)
+    return pyproject_toml
+
+
+def get_min_supported_pip_major_version() -> int:
+    pyproject_toml = read_project_pyproject_toml()
     parsed_dependencies = [
         Requirement(d) for d in pyproject_toml["project"]["dependencies"]
     ]
@@ -76,17 +80,16 @@ def _get_min_supported_pip_major_version() -> int:
     return version.major
 
 
-def _list_supported_pip_versions() -> list[tuple[int, int]]:
+def list_supported_pip_versions() -> list[tuple[int, int]]:
     return [
         (major, minor)
         for major in range(
-            _get_min_supported_pip_major_version(), _get_max_pip_major_version() + 1
+            get_min_supported_pip_major_version(), get_max_pip_major_version() + 1
         )
         for minor in (0, 1, 2, 3)
     ]
 
 
-@functools.cache
 def get_pip_major_minor() -> tuple[int, int]:
     import pip
     from pip._vendor.packaging.version import parse as parse_version
@@ -97,14 +100,14 @@ def get_pip_major_minor() -> tuple[int, int]:
     return int(major_str), int(minor_str)
 
 
-def _compute_pip_version_exclude_pragmas() -> list[str]:
+def compute_pip_version_exclude_pragmas() -> list[str]:
     current_major, current_minor = get_pip_major_minor()
 
     result: list[str] = [
         rf"# pragma: pip=={current_major}.{current_minor} no cover\b",
     ]
 
-    for major, minor in _list_supported_pip_versions():
+    for major, minor in list_supported_pip_versions():
         for opname, opfunc in COMPARATORS:
             if opfunc((current_major, current_minor), (major, minor)):
                 result.append(rf"# pragma: pip{opname}{major}.{minor} no cover\b")
@@ -117,7 +120,7 @@ def _compute_pip_version_exclude_pragmas() -> list[str]:
 class PipVersionPragmas(CoveragePlugin):  # type: ignore[misc]
     def configure(self, config: CoverageConfig) -> None:
         exclude = set(config.get_option("report:exclude_lines"))
-        exclude.update(_compute_pip_version_exclude_pragmas())
+        exclude.update(compute_pip_version_exclude_pragmas())
         config.set_option("report:exclude_lines", sorted(exclude))
 
 
