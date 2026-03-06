@@ -8,19 +8,12 @@ import json
 import os
 import re
 import shlex
-import sys
 import typing as _t
 from collections.abc import Iterable, Iterator
 from pathlib import Path
 
-from click.core import ParameterSource
-
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    import tomli as tomllib
-
 import click
+from click.core import ParameterSource
 from click.utils import LazyFile
 from pip._internal.req import InstallRequirement
 from pip._internal.resolution.resolvelib.base import Requirement as PipRequirement
@@ -33,7 +26,7 @@ from pip._vendor.pkg_resources import get_distribution
 
 from piptools.locations import DEFAULT_CONFIG_FILE_NAMES
 
-from ._compat import canonicalize_name
+from ._compat import canonicalize_name, tomllib_compat
 from ._internal import _subprocess
 
 _KT = _t.TypeVar("_KT")
@@ -594,7 +587,7 @@ def parse_config_file(
     click_context: click.Context, config_file: Path
 ) -> dict[str, _t.Any]:
     try:
-        config = tomllib.loads(config_file.read_text(encoding="utf-8"))
+        config = tomllib_compat.loads(config_file.read_text(encoding="utf-8"))
     except OSError as os_err:
         raise click.FileError(
             filename=str(config_file),
