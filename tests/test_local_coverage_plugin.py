@@ -11,10 +11,14 @@ from __future__ import annotations
 import datetime
 from unittest import mock
 
-import piptools_coverage
 import pytest
 
 from piptools._internal import _pip_api
+
+piptools_coverage = pytest.importorskip(
+    "piptools_coverage",
+    reason="piptools_coverage requires coverage and must be importable to be tested",
+)
 
 
 def test_plugin_major_minor_lookup_agrees_with_internal_api():
