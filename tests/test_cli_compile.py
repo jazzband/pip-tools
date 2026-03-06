@@ -566,7 +566,9 @@ def test_editable_package_without_non_editable_duplicate(pip_conf, runner):
 
 @legacy_resolver_only
 @skip_if_pip_does_not_support_editables_in_constraints
-def test_editable_package_constraint_without_non_editable_duplicate(pip_conf, runner):
+def test_editable_package_constraint_without_non_editable_duplicate(
+    pip_conf, runner
+):  # pragma: pip>=26.0 no cover
     """
     piptools keeps editable constraint,
     without also adding a duplicate "non-editable" requirement variation
@@ -593,7 +595,9 @@ def test_editable_package_constraint_without_non_editable_duplicate(pip_conf, ru
 @legacy_resolver_only
 @skip_if_pip_does_not_support_editables_in_constraints
 @pytest.mark.parametrize("req_editable", ((True,), (False,)))
-def test_editable_package_in_constraints(pip_conf, runner, req_editable):
+def test_editable_package_in_constraints(
+    pip_conf, runner, req_editable
+):  # pragma: pip>=26.0 no cover
     """
     piptools can compile an editable that appears in both primary requirements
     and constraints
@@ -4101,14 +4105,14 @@ def test_second_order_requirements_relative_path_in_separate_dir(
     output_path = test_files_collection.get_path_to("requirements2.in")
 
     # for older pip versions, recompute the output path to be relative to the input path
-    if not pip_produces_absolute_paths:  # pragma: pip>=24.3 cover
+    if not pip_produces_absolute_paths:  # pragma: pip<24.3 cover
         # traverse upwards to the root tmp dir, and append the output path to that
         # similar to pathlib.Path.relative_to(..., walk_up=True)
         relative_segments = len(pathlib.Path(input_path).parents) - 1
         output_path = (
             pathlib.Path(input_path).parent / ("../" * relative_segments) / output_path
         ).as_posix()
-    else:  # pragma: pip>=24.3 no cover
+    else:  # pragma: pip<24.3 no cover
         pass
 
     with monkeypatch.context() as revertable_ctx:
