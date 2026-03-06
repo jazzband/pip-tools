@@ -104,6 +104,7 @@ disallow_untyped_defs = false
 disallow_incomplete_defs = false
 
 [tool.pytest.ini_options]
+pythonpath = "tests/_plugins/_coverage"
 addopts = [
   # `pytest-xdist`:
   "--numprocesses=auto",
@@ -115,7 +116,7 @@ addopts = [
   # Show 20 slowest invocations:
   "--durations=20",
 ]
-norecursedirs = ".* build dist venv test_data piptools/_compat/*"
+norecursedirs = ".* build dist venv test_data piptools/_compat/* tests/_plugins"
 testpaths = "tests piptools"
 filterwarnings = ["always"]
 markers = ["network: mark tests that require internet access"]
