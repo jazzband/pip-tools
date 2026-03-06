@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import datetime
 import functools
+import operator
 import typing as _t
 
 from coverage import CoveragePlugin
@@ -16,6 +17,14 @@ _PRAGMA_SUPPORTED_PIP_VERSIONS: list[tuple[int, int]] = [
     (major, minor)
     for major in range(22, CURRENT_YEAR_EPOCH + 1)
     for minor in (0, 1, 2, 3)
+]
+
+COMPARATORS: list[tuple[str, _t.Callable[[tuple[int, int], tuple[int, int]], bool]]] = [
+    ("<", operator.lt),
+    ("<=", operator.le),
+    (">", operator.gt),
+    (">=", operator.ge),
+    ("==", operator.eq),
 ]
 
 
@@ -38,27 +47,11 @@ def _compute_pip_version_exclude_pragmas() -> list[str]:
     ]
 
     for major, minor in _PRAGMA_SUPPORTED_PIP_VERSIONS:
-        if (current_major, current_minor) == (major, minor):
-            result.extend(
-                [
-                    rf"# pragma: pip>={major}.{minor} no cover\b",
-                    rf"# pragma: pip<={major}.{minor} no cover\b",
-                ]
-            )
-        elif (current_major, current_minor) > (major, minor):
-            result.extend(
-                [
-                    rf"# pragma: pip>{major}.{minor} no cover\b",
-                    rf"# pragma: pip>={major}.{minor} no cover\b",
-                ]
-            )
-        elif (current_major, current_minor) < (major, minor):
-            result.extend(
-                [
-                    rf"# pragma: pip<{major}.{minor} no cover\b",
-                    rf"# pragma: pip<={major}.{minor} no cover\b",
-                ]
-            )
+        for opname, opfunc in COMPARATORS:
+            if opfunc((current_major, current_minor), (major, minor)):
+                result.append(rf"# pragma: pip{opname}{major}.{minor} no cover\b")
+            else:
+                result.append(rf"# pragma: pip{opname}{major}.{minor} cover\b")
 
     return result
 

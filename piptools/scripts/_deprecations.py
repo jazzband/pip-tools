@@ -17,9 +17,16 @@ def filter_deprecated_pip_args(args: list[str]) -> list[str]:
     - ``--global-option``
     - ``--build-option``
     """
-    if _pip_api.PIP_VERSION_MAJOR_MINOR < (25, 3):  # pragma: pip>=25.3 no cover
-        return args
+    if _pip_api.PIP_VERSION_MAJOR_MINOR >= (25, 3):  # pragma: pip>=25.3 cover
+        args = _filter_args_deprecated_in_pip_25_3(args)
+    else:  # pragma: pip>=25.3 no cover
+        pass
+    return args
 
+
+def _filter_args_deprecated_in_pip_25_3(
+    args: list[str],
+) -> list[str]:  # pragma: pip>=25.3 cover
     deprecation_mapping = {
         "--use-pep517": "Pip always uses PEP 517 for building projects now.",
         "--no-use-pep517": "Pip always uses PEP 517 for building projects now.",
