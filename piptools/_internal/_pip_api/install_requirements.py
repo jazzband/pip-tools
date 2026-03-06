@@ -56,19 +56,25 @@ def copy_install_requirement(
         "extras": template.extras,
         "user_supplied": template.user_supplied,
     }
-    if _pip_version.PIP_VERSION_MAJOR_MINOR < (25, 3):  # pragma: pip>=25.3 no cover
+    if _pip_version.PIP_VERSION_MAJOR_MINOR < (25, 3):  # pragma: pip<25.3 cover
         # Ref: https://github.com/jazzband/pip-tools/issues/2252
         kwargs["use_pep517"] = template.use_pep517
         kwargs["global_options"] = template.global_options
+    else:  # pragma: pip<25.3 no cover
+        pass
     kwargs.update(extra_kwargs)
 
-    if _pip_version.PIP_VERSION_MAJOR_MINOR >= (25, 3):  # pragma: pip<25.3 no cover
+    if _pip_version.PIP_VERSION_MAJOR_MINOR >= (25, 3):  # pragma: pip>=25.3 cover
         # Ref: https://github.com/jazzband/pip-tools/issues/2252
         kwargs.pop("use_pep517", None)
         kwargs.pop("global_options", None)
+    else:  # pragma: pip>=25.3 no cover
+        pass
 
-    if _pip_version.PIP_VERSION_MAJOR_MINOR <= (23, 0):  # pragma: pip>23.0 no cover
+    if _pip_version.PIP_VERSION_MAJOR_MINOR <= (23, 0):  # pragma: pip<=23.0 cover
         kwargs["install_options"] = template.install_options
+    else:  # pragma: pip<=23.0 no cover
+        pass
 
     # Original link does not belong to install requirements constructor,
     # pop it now to update later.
