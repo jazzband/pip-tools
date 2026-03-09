@@ -26,7 +26,7 @@ from pip._vendor.pkg_resources import get_distribution
 
 from piptools.locations import DEFAULT_CONFIG_FILE_NAMES
 
-from ._compat import canonicalize_name, tomllib_compat
+from ._compat import _tomllib_compat, canonicalize_name
 from ._internal import _subprocess
 
 _KT = _t.TypeVar("_KT")
@@ -587,7 +587,7 @@ def parse_config_file(
     click_context: click.Context, config_file: Path
 ) -> dict[str, _t.Any]:
     try:
-        config = tomllib_compat.loads(config_file.read_text(encoding="utf-8"))
+        config = _tomllib_compat.loads(config_file.read_text(encoding="utf-8"))
     except OSError as os_err:
         raise click.FileError(
             filename=str(config_file),

@@ -19,7 +19,7 @@ from pip._internal.req.constructors import parse_req_from_line
 from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.requirements import Requirement
 
-from ._compat import tomllib_compat
+from ._compat import _tomllib_compat
 from ._internal import _pip_api
 
 PYPROJECT_TOML = "pyproject.toml"
@@ -66,8 +66,8 @@ def maybe_statically_parse_project_metadata(
 
     try:
         with open(src_file, "rb") as f:
-            pyproject_contents = tomllib_compat.load(f)
-    except tomllib_compat.TOMLDecodeError:
+            pyproject_contents = _tomllib_compat.load(f)
+    except _tomllib_compat.TOMLDecodeError:
         return None
 
     # Not valid PEP 621 metadata
