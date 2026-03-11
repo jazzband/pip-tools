@@ -74,9 +74,43 @@ def _determine_linesep(
     }[strategy]
 
 
+COMPILE_EPILOG = """
+Examples:
+
+    pip-compile
+
+Compile requirements.in to requirements.txt.
+
+    pip-compile pyproject.toml
+
+Compile from pyproject.toml.
+
+    pip-compile --upgrade
+
+Upgrade all packages to their latest versions.
+
+    pip-compile -P django -P requests
+
+Upgrade specific packages.
+
+    pip-compile -o dev.txt requirements-dev.in
+
+Output to a different file.
+
+    pip-compile --generate-hashes
+
+Include package hashes for extra security.
+
+    pip-compile --extra dev pyproject.toml
+
+Compile with optional extras.
+"""
+
+
 @click.command(
     name="pip-compile",
     context_settings={"help_option_names": options.help_option_names},
+    epilog=COMPILE_EPILOG,
 )
 @click.pass_context
 @options.version
