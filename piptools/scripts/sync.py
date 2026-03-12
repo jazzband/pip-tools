@@ -30,32 +30,20 @@ from ._deprecations import filter_deprecated_pip_args
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 
-SYNC_EPILOG = """
+SYNC_EPILOG = """\b
 Examples:
-
-    pip-sync
-
-Synchronize the current environment with requirements.txt.
-
-    pip-sync requirements-dev.txt
-
-Synchronize with a different requirements file.
-
-    pip-sync requirements.txt dev.txt
-
-Synchronize with multiple requirements files.
-
-    pip-sync --dry-run
-
-Preview what would be installed or uninstalled.
-
-    pip-sync --ask
-
-Ask for confirmation before making changes.
-
-    pip-sync --python-executable /path/to/python
-
-Use a specific Python interpreter.
+\b
+    Synchronize environment with requirements.txt:
+    $ pip-sync
+\b
+    Synchronize with multiple requirements files:
+    $ pip-sync requirements.txt dev.txt
+\b
+    Preview what would be installed or uninstalled:
+    $ pip-sync --dry-run
+\b
+    Ask for confirmation before making changes:
+    $ pip-sync --ask
 """
 
 
