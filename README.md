@@ -18,6 +18,10 @@ your builds are predictable and deterministic.)
 
 [![pip-tools overview for phase II][pip-tools-overview]][pip-tools-overview]
 
+```{contents}
+:depth: 2
+```
+
 ## Installation
 
 Similar to `pip`, `pip-tools` must be installed in each of your project's
