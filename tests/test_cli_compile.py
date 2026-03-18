@@ -310,6 +310,40 @@ def test_no_index_option(runner, tmp_path):
     assert "Ignoring indexes." in out.stderr
 
 
+def test_verbose_with_output_file_does_not_emit_resolved_requirements_to_stderr(
+    runner, make_package, make_wheel, tmpdir
+):
+    dists_dir = tmpdir / "dists"
+    output_file = tmpdir / "requirements.txt"
+
+    foo_dir = make_package(name="foo", version="1.0")
+    make_wheel(foo_dir, dists_dir)
+
+    bar_dir = make_package(
+        name="bar", version="2.0", install_requires=['foo ; python_version >= "1"']
+    )
+    out = runner.invoke(
+        cli,
+        [
+            str(bar_dir / "setup.py"),
+            "--verbose",
+            "--output-file",
+            str(output_file),
+            "--no-header",
+            "--no-annotate",
+            "--no-emit-find-links",
+            "--no-build-isolation",
+            "--find-links",
+            str(dists_dir),
+        ],
+    )
+
+    assert out.exit_code == 0, out.stderr
+    assert output_file.read_text("utf-8") == 'foo==1.0 ; python_version >= "1"\n'
+    assert 'foo==1.0 ; python_version >= "1"' not in out.stderr
+    assert "Using links:" in out.stderr
+
+
 def test_find_links_option(runner):
     with open("requirements.in", "w") as req_in:
         req_in.write("-f ./libs3")

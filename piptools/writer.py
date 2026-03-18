@@ -357,7 +357,6 @@ class _FileLineWriter:
         )
 
     def __call__(self, line: str) -> None:
-        log.info(line)
         self.dst_file.write(unstyle(line))
         self.dst_file.write("\n")
 
