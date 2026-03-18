@@ -428,6 +428,15 @@ jobs:
             VM-${{ matrix.os }},
             Py-${{ steps.python-install.outputs.python-version }},
             Pip-${{ matrix.pip-version }}
+      - name: Upload coverage to Qlty
+        if: >-
+          !cancelled()
+          && !inputs.cpython-pip-version
+        uses: qltysh/qlty-action/coverage@v2
+        with:
+          token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
+          files: ./coverage.xml
+          incomplete: true
 
   pypy:
     name: ${{ matrix.os }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
@@ -526,6 +535,13 @@ jobs:
         with:
           fail_ci_if_error: true
           run_command: send-notifications
+      - name: Notify Qlty that all coverage reports have been uploaded
+        if: >-
+          !cancelled()
+        uses: qltysh/qlty-action/coverage@v2
+        with:
+          token: ${{ secrets.QLTY_COVERAGE_TOKEN }}
+          command: complete
 
   zizmor:
     name: 🌈 zizmor
