@@ -48,6 +48,18 @@ skip_if_pip_does_not_support_editables_in_constraints = pytest.mark.skipif(
 )
 
 
+def read_requirements_txt_lines(path: str = "requirements.txt") -> list[str]:
+    return pathlib.Path(path).read_text().splitlines()
+
+
+def read_pinned_requirement_lines(path: str = "requirements.txt") -> list[str]:
+    return [
+        line
+        for line in read_requirements_txt_lines(path)
+        if line and not line.lstrip().startswith(("#", "--"))
+    ]
+
+
 @pytest.fixture(scope="session")
 def pip_produces_absolute_paths():
     # in pip v24.3, new normalization will occur because `comes_from` started
@@ -911,7 +923,7 @@ def test_input_file_without_extension(pip_conf, runner):
     out = runner.invoke(cli, ["requirements"])
 
     assert out.exit_code == 0
-    assert "small-fake-a==0.1" in out.stderr
+    assert read_pinned_requirement_lines() == ["small-fake-a==0.1"]
     assert os.path.exists("requirements.txt")
 
 
@@ -941,8 +953,7 @@ def test_upgrade_packages_option(pip_conf, runner):
     out = runner.invoke(cli, ["--no-annotate", "-P", "small-fake-b"])
 
     assert out.exit_code == 0
-    assert "small-fake-a==0.1" in out.stderr.splitlines()
-    assert "small-fake-b==0.3" in out.stderr.splitlines()
+    assert read_pinned_requirement_lines() == ["small-fake-a==0.1", "small-fake-b==0.3"]
 
 
 def test_upgrade_packages_option_irrelevant(pip_conf, runner):
@@ -957,8 +968,7 @@ def test_upgrade_packages_option_irrelevant(pip_conf, runner):
     out = runner.invoke(cli, ["--no-annotate", "--upgrade-package", "small-fake-b"])
 
     assert out.exit_code == 0
-    assert "small-fake-a==0.1" in out.stderr.splitlines()
-    assert "small-fake-b==0.3" not in out.stderr.splitlines()
+    assert read_pinned_requirement_lines() == ["small-fake-a==0.1"]
 
 
 def test_upgrade_packages_option_no_existing_file(pip_conf, runner):
@@ -972,8 +982,7 @@ def test_upgrade_packages_option_no_existing_file(pip_conf, runner):
     out = runner.invoke(cli, ["--no-annotate", "-P", "small-fake-b"])
 
     assert out.exit_code == 0
-    assert "small-fake-a==0.2" in out.stderr.splitlines()
-    assert "small-fake-b==0.3" in out.stderr.splitlines()
+    assert read_pinned_requirement_lines() == ["small-fake-a==0.2", "small-fake-b==0.3"]
     assert (
         "WARNING: the output file requirements.txt exists but is empty"
         not in out.stderr
@@ -993,7 +1002,7 @@ def test_upgrade_packages_empty_target_file_warning(pip_conf, runner):
     out = runner.invoke(cli, ["--no-annotate", "-P", "small-fake-a"])
 
     assert out.exit_code == 0
-    assert "small-fake-a==0.2" in out.stderr.splitlines()
+    assert read_pinned_requirement_lines() == ["small-fake-a==0.2"]
     assert "WARNING: the output file requirements.txt exists but is empty" in out.stderr
 
 
@@ -1018,9 +1027,7 @@ def test_upgrade_packages_version_option(
     out = runner.invoke(cli, ["--no-annotate", "--upgrade-package", upgraded_package])
 
     assert out.exit_code == 0
-    stderr_lines = out.stderr.splitlines()
-    assert "small-fake-a==0.1" in stderr_lines
-    assert upgraded_package in stderr_lines
+    assert read_pinned_requirement_lines() == ["small-fake-a==0.1", upgraded_package]
 
 
 def test_upgrade_packages_version_option_no_existing_file(pip_conf, runner):
@@ -1033,8 +1040,7 @@ def test_upgrade_packages_version_option_no_existing_file(pip_conf, runner):
     out = runner.invoke(cli, ["-P", "small-fake-b==0.2"])
 
     assert out.exit_code == 0
-    assert "small-fake-a==0.2" in out.stderr
-    assert "small-fake-b==0.2" in out.stderr
+    assert read_pinned_requirement_lines() == ["small-fake-a==0.2", "small-fake-b==0.2"]
 
 
 @pytest.mark.parametrize(
@@ -1057,8 +1063,9 @@ def test_upgrade_packages_version_option_and_upgrade(pip_conf, runner, reqs_in):
     out = runner.invoke(cli, ["--upgrade", "-P", "small-fake-b==0.1"])
 
     assert out.exit_code == 0
-    assert "small-fake-a==0.2" in out.stderr
-    assert "small-fake-b==0.1" in out.stderr
+    requirement_lines = read_pinned_requirement_lines()
+    assert "small-fake-a==0.2" in requirement_lines
+    assert "small-fake-b==0.1" in requirement_lines
 
 
 def test_upgrade_packages_version_option_and_upgrade_no_existing_file(pip_conf, runner):
@@ -1072,8 +1079,7 @@ def test_upgrade_packages_version_option_and_upgrade_no_existing_file(pip_conf, 
     out = runner.invoke(cli, ["--upgrade", "-P", "small-fake-b==0.1"])
 
     assert out.exit_code == 0
-    assert "small-fake-a==0.2" in out.stderr
-    assert "small-fake-b==0.1" in out.stderr
+    assert read_pinned_requirement_lines() == ["small-fake-a==0.2", "small-fake-b==0.1"]
 
 
 def test_upgrade_package_with_extra(runner, make_package, make_sdist, tmpdir):
@@ -1166,7 +1172,7 @@ def test_generate_hashes_with_editable(pip_conf, runner):
         "3fe296c0107b16ed452062f7f994a5672e3b3f\n"
     ).format(small_fake_package_url)
     assert out.exit_code == 0
-    assert expected in out.stderr
+    assert expected in pathlib.Path("requirements.txt").read_text()
 
 
 @pytest.mark.network
@@ -1184,7 +1190,7 @@ def test_generate_hashes_with_url(runner):
         "0171be6fa70d01d0bef9eeda356b8549715e7\n"
     )
     assert out.exit_code == 0
-    assert expected in out.stderr
+    assert expected in pathlib.Path("requirements.txt").read_text()
 
 
 def test_generate_hashes_verbose(pip_conf, runner):
@@ -2277,7 +2283,7 @@ def test_sub_dependencies_with_constraints(pip_conf, runner):
 
     assert out.exit_code == 0
 
-    req_out_lines = set(out.stderr.splitlines())
+    req_out_lines = set(read_pinned_requirement_lines())
     assert {
         "small-fake-a==0.1",
         "small-fake-b==0.2",
@@ -2296,7 +2302,7 @@ def test_preserve_compiled_prerelease_version(pip_conf, runner):
     out = runner.invoke(cli, ["--no-annotate", "--no-header"])
 
     assert out.exit_code == 0, out
-    assert "small-fake-a==0.3b1" in out.stderr.splitlines()
+    assert read_pinned_requirement_lines() == ["small-fake-a==0.3b1"]
 
 
 @backtracking_resolver_only
@@ -2310,8 +2316,9 @@ def test_ignore_compiled_unavailable_version(pip_conf, runner, current_resolver)
     out = runner.invoke(cli, ["--no-annotate", "--no-header"])
 
     assert out.exit_code == 0, out
-    assert "small-fake-a==" in out.stderr
-    assert "small-fake-a==9999" not in out.stderr.splitlines()
+    requirement_lines = read_pinned_requirement_lines()
+    assert any(line.startswith("small-fake-a==") for line in requirement_lines)
+    assert "small-fake-a==9999" not in requirement_lines
 
     assert (
         "Discarding small-fake-a==9999 "
@@ -2353,8 +2360,10 @@ def test_prefer_binary_dist(
     )
 
     assert out.exit_code == 0, out
-    assert "first-package==1.0" in out.stderr.splitlines(), out.stderr
-    assert "second-package==1.0" in out.stderr.splitlines(), out.stderr
+    assert read_pinned_requirement_lines() == [
+        "first-package==1.0",
+        "second-package==1.0",
+    ]
 
 
 @pytest.mark.parametrize("prefer_binary", (True, False))
@@ -2389,7 +2398,7 @@ def test_prefer_binary_dist_even_there_is_source_dists(
     )
 
     assert out.exit_code == 0, out
-    assert "test-package==2.0" in out.stderr.splitlines(), out.stderr
+    assert read_pinned_requirement_lines() == ["test-package==2.0"]
 
 
 @pytest.mark.parametrize("output_content", ("test-package-1==0.1", ""))
@@ -2423,8 +2432,9 @@ def test_duplicate_reqs_combined(
     out = runner.invoke(cli, ["--find-links", str(dists_dir)])
 
     assert out.exit_code == 0, out
-    assert str(test_package_2) in out.stderr
-    assert "test-package-1==0.1" in out.stderr
+    requirements_text = pathlib.Path("requirements.txt").read_text()
+    assert str(test_package_2) in requirements_text
+    assert "test-package-1==0.1" in read_pinned_requirement_lines()
 
 
 def test_local_duplicate_subdependency_combined(runner, make_package):
@@ -2668,8 +2678,9 @@ def test_triple_equal_pinned_dependency_is_used(
     out = runner.invoke(cli, ["--find-links", str(dists_dir)])
 
     assert out.exit_code == 0, out
+    requirement_lines = read_pinned_requirement_lines()
     for line in out_expected_content:
-        assert line in out.stderr
+        assert line in requirement_lines
 
 
 METADATA_TEST_CASES = (
@@ -3215,8 +3226,9 @@ def test_cli_compile_strip_extras(runner, make_package, make_sdist, tmpdir):
     out = runner.invoke(cli, ["--strip-extras", "--find-links", str(dists_dir)])
 
     assert out.exit_code == 0, out
-    assert "test-package-2==0.1" in out.stderr
-    assert "[more]" not in out.stderr
+    requirements_text = pathlib.Path("requirements.txt").read_text()
+    assert "test-package-2==0.1" in requirements_text
+    assert "[more]" not in requirements_text
 
 
 def test_cli_compile_all_extras_with_multiple_packages(
@@ -3845,8 +3857,9 @@ def test_use_src_files_from_config_if_option_is_not_specified_from_cli(
     out = runner.invoke(cli, ["--config", config_file.as_posix()])
 
     assert out.exit_code == 0, out
-    assert "small-fake-b" in out.stderr
-    assert "small-fake-a" not in out.stderr
+    requirement_lines = read_pinned_requirement_lines(tmp_path / "foo.txt")
+    assert "small-fake-b==0.1" in requirement_lines
+    assert "small-fake-a==0.1" not in requirement_lines
 
 
 def test_use_src_files_from_cli_if_option_is_specified_in_both_config_and_cli(
@@ -3863,8 +3876,9 @@ def test_use_src_files_from_cli_if_option_is_specified_in_both_config_and_cli(
     out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
 
     assert out.exit_code == 0, out
-    assert "small-fake-a" in out.stderr
-    assert "small-fake-b" not in out.stderr
+    requirement_lines = read_pinned_requirement_lines()
+    assert "small-fake-a==0.1" in requirement_lines
+    assert "small-fake-b==0.1" not in requirement_lines
 
 
 def test_cli_boolean_flag_config_option_has_valid_context(

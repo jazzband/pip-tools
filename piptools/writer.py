@@ -357,7 +357,10 @@ class _FileLineWriter:
         )
 
     def __call__(self, line: str) -> None:
-        self.dst_file.write(unstyle(line))
+        unstyled_line = unstyle(line)
+        if unstyled_line == "" or unstyled_line.startswith(("#", "--")):
+            log.info(unstyled_line)
+        self.dst_file.write(unstyled_line)
         self.dst_file.write("\n")
 
     def __enter__(self) -> _t_Self:
