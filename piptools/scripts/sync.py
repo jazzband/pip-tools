@@ -30,10 +30,25 @@ from ._deprecations import filter_deprecated_pip_args
 
 DEFAULT_REQUIREMENTS_FILE = "requirements.txt"
 
+SYNC_EPILOG = """\b
+Examples:
+\b
+    Synchronize environment with requirements.txt:
+    $ pip-sync
+\b
+    Synchronize with multiple requirements files:
+    $ pip-sync requirements.txt dev.txt
+\b
+    Preview what would be installed or uninstalled:
+    $ pip-sync --dry-run
+\b
+    Ask for confirmation before making changes:
+    $ pip-sync --ask
+"""
 
-@click.command(
-    name="pip-sync", context_settings={"help_option_names": options.help_option_names}
-)
+
+@click.command(name="pip-sync")
+@options.help_option(epilog=SYNC_EPILOG)
 @options.version
 @options.ask
 @options.dry_run

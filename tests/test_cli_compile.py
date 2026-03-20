@@ -527,6 +527,27 @@ def test_run_as_module_compile():
     assert b"Compile requirements.txt from source files" in result.stdout
 
 
+def test_compile_help_opt_supports_short_and_long_flag(runner):
+    shortflag_result = runner.invoke(cli, ["-h"])
+    longflag_result = runner.invoke(cli, ["--help"])
+    assert shortflag_result.exit_code == 0
+    assert longflag_result.exit_code == 0
+
+    assert shortflag_result.stdout.startswith("Usage:")
+    assert longflag_result.stdout.startswith("Usage:")
+    assert shortflag_result.stdout == longflag_result.stdout
+
+
+def test_compile_help_opt_shows_examples_section(runner):
+    result = runner.invoke(cli, ["-h"])
+    assert result.exit_code == 0
+    assert result.stdout.startswith("Usage:")
+
+    # not only should there be an `Examples` section in the output, but it should have
+    # no preceding whitespace where it is shown
+    assert "\nExamples:\n" in result.stdout
+
+
 def test_editable_package(pip_conf, runner):
     """piptools can compile an editable"""
     fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")

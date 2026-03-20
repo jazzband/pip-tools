@@ -33,6 +33,27 @@ def test_run_as_module_sync():
     assert b"Synchronize virtual environment with" in result.stdout
 
 
+def test_sync_help_opt_supports_short_and_long_flag(runner):
+    shortflag_result = runner.invoke(cli, ["-h"])
+    longflag_result = runner.invoke(cli, ["--help"])
+    assert shortflag_result.exit_code == 0
+    assert longflag_result.exit_code == 0
+
+    assert shortflag_result.stdout.startswith("Usage:")
+    assert longflag_result.stdout.startswith("Usage:")
+    assert shortflag_result.stdout == longflag_result.stdout
+
+
+def test_sync_help_opt_shows_examples_section(runner):
+    result = runner.invoke(cli, ["-h"])
+    assert result.exit_code == 0
+    assert result.stdout.startswith("Usage:")
+
+    # not only should there be an `Examples` section in the output, but it should have
+    # no preceding whitespace where it is shown
+    assert "\nExamples:\n" in result.stdout
+
+
 @mock.patch("piptools.sync.run")
 def test_quiet_option(run, runner):
     """sync command can be run with `--quiet` or `-q` flag."""

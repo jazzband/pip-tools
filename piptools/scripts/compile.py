@@ -74,11 +74,29 @@ def _determine_linesep(
     }[strategy]
 
 
-@click.command(
-    name="pip-compile",
-    context_settings={"help_option_names": options.help_option_names},
-)
+COMPILE_EPILOG = """\b
+Examples:
+\b
+    Compile requirements.in to requirements.txt:
+    $ pip-compile
+\b
+    Upgrade all packages to their latest versions:
+    $ pip-compile --upgrade
+\b
+    Upgrade specific packages:
+    $ pip-compile -P django -P requests
+\b
+    Include package hashes for extra security:
+    $ pip-compile --generate-hashes
+\b
+    Compile with optional extras:
+    $ pip-compile --extra dev pyproject.toml
+"""
+
+
+@click.command(name="pip-compile")
 @click.pass_context
+@options.help_option(epilog=COMPILE_EPILOG)
 @options.version
 @options.color
 @options.verbose
