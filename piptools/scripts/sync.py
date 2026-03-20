@@ -47,11 +47,8 @@ Examples:
 """
 
 
-@click.command(
-    name="pip-sync",
-    context_settings={"help_option_names": options.help_option_names},
-    epilog=SYNC_EPILOG,
-)
+@click.command(name="pip-sync")
+@options.help_option(epilog=SYNC_EPILOG)
 @options.version
 @options.ask
 @options.dry_run

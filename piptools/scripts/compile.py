@@ -94,12 +94,9 @@ Examples:
 """
 
 
-@click.command(
-    name="pip-compile",
-    context_settings={"help_option_names": options.help_option_names},
-    epilog=COMPILE_EPILOG,
-)
+@click.command(name="pip-compile")
 @click.pass_context
+@options.help_option(epilog=COMPILE_EPILOG)
 @options.version
 @options.color
 @options.verbose

@@ -9,12 +9,42 @@ from pip._internal.utils.misc import redact_auth_from_url
 from piptools.locations import CACHE_DIR, DEFAULT_CONFIG_FILE_NAMES
 from piptools.utils import UNSAFE_PACKAGES, override_defaults_from_config_file
 
+_FC = _t.TypeVar("_FC", bound="_t.Callable[..., _t.Any] | click.Command")
+
 BuildTargetT = _t.Literal["sdist", "wheel", "editable"]
 ALL_BUILD_TARGETS: tuple[BuildTargetT, ...] = (
     "editable",
     "sdist",
     "wheel",
 )
+
+
+def help_option(*, epilog: str | None = None) -> _t.Callable[[_FC], _FC]:
+    """A variant of the built-in click ``--help`` option, customized for pip-tools.
+
+    Unlike ``click.help_option``, this decorator accepts its own ``epilog`` text which
+    is printed *without indentation* after help text.
+    """
+
+    def show_help(ctx: click.Context, param: click.Parameter, value: bool) -> None:
+        """Callback that print the help page on ``<stdout>`` and exits."""
+        if value and not ctx.resilient_parsing:
+            click.echo(ctx.get_help(), color=ctx.color)
+            if epilog is not None:
+                formatter = ctx.make_formatter()
+                formatter.write_text(epilog)
+                click.echo("\n" + formatter.getvalue().rstrip("\n"), color=ctx.color)
+            ctx.exit()
+
+    return click.option(  # type: ignore[return-value]
+        "-h",
+        "--help",
+        help="Show this message and exit.",
+        callback=show_help,
+        is_eager=True,
+        expose_value=False,
+        is_flag=True,
+    )
 
 
 def _get_default_option(option_name: str) -> _t.Any:
@@ -26,8 +56,6 @@ def _get_default_option(option_name: str) -> _t.Any:
     default_values = install_command.parser.get_default_values()
     return getattr(default_values, option_name)
 
-
-help_option_names = ("-h", "--help")
 
 # The options used by pip-compile and pip-sync are presented in no specific order.
 
