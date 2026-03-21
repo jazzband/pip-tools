@@ -14,17 +14,15 @@ from pip._internal.req import InstallRequirement
 from pip._internal.utils.misc import redact_auth_from_url
 
 from .._compat import canonicalize_name, parse_requirements, tempfile_compat
-from .._internal import _pip_api
+from .._internal import _cli, _dependency_groups, _pip_api
 from ..build import ProjectMetadata, build_project_metadata
 from ..cache import DependencyCache
-from ..dependency_groups import parse_dependency_groups
 from ..exceptions import NoCandidateFound, PipToolsError
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..repositories.base import BaseRepository
 from ..resolver import BacktrackingResolver, LegacyResolver
 from ..utils import (
-    ParsedDependencyGroupParam,
     dedup,
     drop_extras,
     is_pinned_requirement,
@@ -174,7 +172,7 @@ def cli(
     generate_hashes: bool,
     reuse_hashes: bool,
     src_files: tuple[str, ...],
-    groups: tuple[ParsedDependencyGroupParam, ...],
+    groups: tuple[_cli.ParsedDependencyGroupParam, ...],
     max_rounds: int,
     build_isolation: bool,
     emit_find_links: bool,
@@ -423,7 +421,7 @@ def cli(
             )
 
     # Parse `--group` dependency-groups and add them to constraints
-    constraints.extend(parse_dependency_groups(groups))
+    constraints.extend(_dependency_groups.parse_dependency_groups(groups))
 
     # Parse all constraints from `--constraint` files
     for filename in constraint:

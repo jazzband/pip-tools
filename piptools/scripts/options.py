@@ -7,11 +7,9 @@ from pip._internal.commands import create_command
 from pip._internal.utils.misc import redact_auth_from_url
 
 from piptools.locations import CACHE_DIR, DEFAULT_CONFIG_FILE_NAMES
-from piptools.utils import (
-    UNSAFE_PACKAGES,
-    DependencyGroupParamType,
-    override_defaults_from_config_file,
-)
+from piptools.utils import UNSAFE_PACKAGES, override_defaults_from_config_file
+
+from .._internal import _cli
 
 _FC = _t.TypeVar("_FC", bound="_t.Callable[..., _t.Any] | click.Command")
 
@@ -283,7 +281,7 @@ src_files = click.argument(
 group = click.option(
     "--group",
     "groups",
-    type=DependencyGroupParamType(),
+    type=_cli.DependencyGroupParamType(),
     multiple=True,
     help=(
         'Specify a named dependency-group from a "pyproject.toml" file. '

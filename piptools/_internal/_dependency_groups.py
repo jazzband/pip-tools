@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import sys
-from typing import Any, Iterable
+import typing as _t
+from collections.abc import Iterable
 
 import click
 from dependency_groups import DependencyGroupResolver
 from pip._internal.req import InstallRequirement
 from pip._vendor.packaging.requirements import Requirement
 
-from .utils import ParsedDependencyGroupParam
+from . import _cli
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -17,7 +18,7 @@ else:
 
 
 def parse_dependency_groups(
-    params: tuple[ParsedDependencyGroupParam, ...],
+    params: tuple[_cli.ParsedDependencyGroupParam, ...],
 ) -> list[InstallRequirement]:
     resolvers = _build_resolvers(param.path for param in params)
     reqs: list[InstallRequirement] = []
@@ -39,7 +40,7 @@ def parse_dependency_groups(
     return reqs
 
 
-def _build_resolvers(paths: Iterable[str]) -> dict[str, Any]:
+def _build_resolvers(paths: Iterable[str]) -> dict[str, _t.Any]:
     resolvers = {}
     for path in paths:
         if path in resolvers:
@@ -62,7 +63,7 @@ def _build_resolvers(paths: Iterable[str]) -> dict[str, Any]:
     return resolvers
 
 
-def _load_pyproject(path: str) -> dict[str, Any]:
+def _load_pyproject(path: str) -> dict[str, _t.Any]:
     try:
         with open(path, "rb") as fp:
             return tomllib.load(fp)
