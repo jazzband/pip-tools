@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import sys
 import typing as _t
 from collections.abc import Iterable
 
@@ -9,12 +8,8 @@ from dependency_groups import DependencyGroupResolver
 from pip._internal.req import InstallRequirement
 from pip._vendor.packaging.requirements import Requirement
 
+from .._compat import _tomllib_compat
 from . import _cli
-
-if sys.version_info >= (3, 11):
-    import tomllib
-else:
-    import tomli as tomllib
 
 
 def parse_dependency_groups(
@@ -66,10 +61,10 @@ def _build_resolvers(paths: Iterable[str]) -> dict[str, _t.Any]:
 def _load_pyproject(path: str) -> dict[str, _t.Any]:
     try:
         with open(path, "rb") as fp:
-            return tomllib.load(fp)
+            return _tomllib_compat.load(fp)
     except FileNotFoundError:
         raise click.UsageError(f"{path} not found. Cannot resolve '--group' option.")
-    except tomllib.TOMLDecodeError as e:
+    except _tomllib_compat.TOMLDecodeError as e:
         raise click.UsageError(f"Error parsing {path}: {e}") from e
     except OSError as e:
         raise click.UsageError(f"Error reading {path}: {e}") from e
