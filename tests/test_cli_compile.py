@@ -1570,27 +1570,20 @@ def test_tmpfile_for_stdin_is_cleaned_up(pip_conf, runner):
         """)
 
 
-@pytest.mark.parametrize(
-    "groupspec",
-    ("mygroup", "pyproject.toml:mygroup", "pyproject.toml::mygroup"),
-)
+@pytest.mark.parametrize("groupspec", ("mygroup", "pyproject.toml:mygroup"))
 def test_dependency_group_resolution(pip_conf, runner, tmpdir_cwd, groupspec):
     """
     Test compile requirements from pyproject.toml [dependency-groups].
     """
     pyproj = tmpdir_cwd / "pyproject.toml"
-    pyproj.write_text(
-        dedent(
-            """\
+    pyproj.write_text(dedent("""\
             [project]
             name = "foo"
             version = "1.0"
 
             [dependency-groups]
             mygroup = ["small-fake-a==0.1"]
-            """
-        )
-    )
+            """))
 
     out = runner.invoke(
         cli,
@@ -1606,12 +1599,10 @@ def test_dependency_group_resolution(pip_conf, runner, tmpdir_cwd, groupspec):
     )
     assert out.exit_code == 0, out.stderr
 
-    assert out.stdout == dedent(
-        f"""\
+    assert out.stdout == dedent(f"""\
         small-fake-a==0.1
             # via --group '{groupspec}'
-        """
-    )
+        """)
 
 
 @pytest.mark.parametrize(

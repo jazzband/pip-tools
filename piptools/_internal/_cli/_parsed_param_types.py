@@ -14,14 +14,10 @@ class ParsedDependencyGroupParam:
 
     ``:`` cannot appear in dependency group names, so this is a safe and simple parse.
 
-    If the path portion ends in ":", then the ":" is removed, effectively resulting in
-    a split on "::" when that is used.
-
     The following conversions are expected::
 
         'foo' -> ('pyproject.toml', 'foo')
         'foo/pyproject.toml:bar' -> ('foo/pyproject.toml', 'bar')
-        'foo/pyproject.toml::bar' -> ('foo/pyproject.toml', 'bar')
     """
 
     def __init__(self, value: str) -> None:
@@ -31,9 +27,6 @@ class ParsedDependencyGroupParam:
         if not sep:
             path = "pyproject.toml"
         else:
-            # strip a rightmost ":" if one was present
-            if path.endswith(":"):
-                path = path[:-1]
             # check for 'pyproject.toml' filenames using pathlib
             if pathlib.PurePath(path).name != "pyproject.toml":
                 msg = "group paths use 'pyproject.toml' filenames"
