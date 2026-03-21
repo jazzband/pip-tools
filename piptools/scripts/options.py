@@ -9,6 +9,8 @@ from pip._internal.utils.misc import redact_auth_from_url
 from piptools.locations import CACHE_DIR, DEFAULT_CONFIG_FILE_NAMES
 from piptools.utils import UNSAFE_PACKAGES, override_defaults_from_config_file
 
+from .._internal import _cli
+
 _FC = _t.TypeVar("_FC", bound="_t.Callable[..., _t.Any] | click.Command")
 
 BuildTargetT = _t.Literal["sdist", "wheel", "editable"]
@@ -274,6 +276,18 @@ src_files = click.argument(
     "src_files",
     nargs=-1,
     type=click.Path(exists=True, allow_dash=True),
+)
+
+group = click.option(
+    "--group",
+    "groups",
+    type=_cli.DependencyGroupParamType(),
+    multiple=True,
+    help=(
+        'Specify a named dependency-group from a "pyproject.toml" file. '
+        'If a path is given, the name of the file must be "pyproject.toml". '
+        'Defaults to using "pyproject.toml" in the current directory.'
+    ),
 )
 
 build_isolation = click.option(

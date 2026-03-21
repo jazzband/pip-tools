@@ -14,7 +14,7 @@ from pip._internal.req import InstallRequirement
 from pip._internal.utils.misc import redact_auth_from_url
 
 from .._compat import canonicalize_name, parse_requirements, tempfile_compat
-from .._internal import _pip_api
+from .._internal import _cli, _dependency_groups, _pip_api
 from ..build import ProjectMetadata, build_project_metadata
 from ..cache import DependencyCache
 from ..exceptions import NoCandidateFound, PipToolsError
@@ -127,6 +127,7 @@ Examples:
 @options.reuse_hashes
 @options.max_rounds
 @options.src_files
+@options.group
 @options.build_isolation
 @options.emit_find_links
 @options.cache_dir
@@ -171,6 +172,7 @@ def cli(
     generate_hashes: bool,
     reuse_hashes: bool,
     src_files: tuple[str, ...],
+    groups: tuple[_cli.ParsedDependencyGroupParam, ...],
     max_rounds: int,
     build_isolation: bool,
     emit_find_links: bool,
@@ -219,7 +221,7 @@ def cli(
             "--only-build-deps cannot be used with any of --extra, --all-extras"
         )
 
-    if len(src_files) == 0:
+    if len(src_files) == 0 and len(groups) == 0:
         for file_path in DEFAULT_REQUIREMENTS_FILES:
             if os.path.exists(file_path):
                 src_files = (file_path,)
@@ -245,7 +247,7 @@ def cli(
                 os.path.dirname(src_files[0]), DEFAULT_REQUIREMENTS_OUTPUT_FILE
             )
         # An output file must be provided if there are multiple source files
-        elif len(src_files) > 1:
+        elif len(src_files) + len(groups) > 1:
             raise click.BadParameter(
                 "--output-file is required if two or more input files are given."
             )
@@ -417,6 +419,9 @@ def cli(
                     options=repository.options,
                 )
             )
+
+    # Parse `--group` dependency-groups and add them to constraints
+    constraints.extend(_dependency_groups.parse_dependency_groups(groups))
 
     # Parse all constraints from `--constraint` files
     for filename in constraint:
