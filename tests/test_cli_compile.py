@@ -1689,6 +1689,97 @@ def test_dependency_group_resolution_fails_due_to_bad_data(
     assert expect_error in out.stderr
 
 
+def test_dependency_group_option_rejects_bad_filename(pip_conf, runner):
+    out = runner.invoke(
+        cli,
+        [
+            "--group",
+            "my_file.toml:foo",
+            "--output-file",
+            "-",
+            "--quiet",
+            "--no-emit-options",
+            "--no-header",
+        ],
+    )
+    assert out.exit_code == 2
+    assert "group paths use 'pyproject.toml' filenames" in out.stderr
+
+
+def test_dependency_group_option_exits_on_os_error(pip_conf, runner, tmpdir_cwd):
+    # IsADirectoryError is an OSError, so can be used to trip generic OSError handling
+    pyproject_dir = tmpdir_cwd / "pyproject.toml"
+    pyproject_dir.mkdir()
+
+    out = runner.invoke(
+        cli,
+        [
+            "--group",
+            "pyproject.toml:foo",
+            "--output-file",
+            "-",
+            "--quiet",
+            "--no-emit-options",
+            "--no-header",
+        ],
+    )
+    assert out.exit_code == 2
+    assert "Error reading pyproject.toml" in out.stderr
+
+
+def test_dependency_group_resolution_with_multiple_files(pip_conf, runner, tmpdir_cwd):
+    """
+    Compiling requirements from multiple pyproject.toml [dependency-groups] tables
+    can be done in a single resolution.
+    """
+    for dirname in ("dir1", "dir2", "dir3"):
+        subdir = tmpdir_cwd / dirname
+        subdir.mkdir(parents=True)
+        pyproj = subdir / "pyproject.toml"
+        pyproj.write_text(dedent(f"""\
+            [project]
+            name = "foo-{dirname}"
+            version = "1.0"
+
+            [dependency-groups]
+            mygroup = ["small-fake-a==0.1"]
+            """))
+
+    group_args = [
+        "--group",
+        "dir1/pyproject.toml:mygroup",
+        "--group",
+        "dir2/pyproject.toml:mygroup",
+        "--group",
+        "dir3/pyproject.toml:mygroup",
+        # repeats are also allowed
+        "--group",
+        "dir1/pyproject.toml:mygroup",
+    ]
+
+    out = runner.invoke(
+        cli,
+        [
+            *group_args,
+            "--output-file",
+            "-",
+            "--quiet",
+            "--no-emit-options",
+            "--no-header",
+        ],
+    )
+    assert out.exit_code == 0, out.stderr
+
+    # everything resolves to a single value, but the "via" sources are multiple
+    assert out.stdout == dedent("""\
+        small-fake-a==0.1
+            # via
+            #   --group 'dir1/pyproject.toml:mygroup'
+            #   --group 'dir2/pyproject.toml:mygroup'
+            #   --group 'dir3/pyproject.toml:mygroup'
+        """)
+
+
 def test_multiple_input_files_without_output_file(runner):
     """
     The --output-file option is required for multiple requirement input files.
