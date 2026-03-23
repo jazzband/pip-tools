@@ -303,21 +303,17 @@ jobs:
     uses: ./.github/workflows/reusable-qa.yml
 
   test:
-    name: ${{ matrix.os.name }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
-    runs-on: ${{ matrix.os.runs_on }}
+    name: ${{ matrix.runner-vm }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
+    runs-on: ${{ matrix.runner-vm }}
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - name: Ubuntu
-            runs_on: ubuntu-latest
-          - name: Windows
-            runs_on: windows-latest
-          - name: macOS
-            runs_on: macos-26
-          - name: "macOS (Intel)"
-            runs_on: macos-26-intel
+        runner-vm:
+          - ubuntu-latest
+          - windows-latest
+          - macos-26
+          - macos-26-intel
         python-version: >-
           ${{
             fromJSON(
@@ -425,31 +421,27 @@ jobs:
           flags: >-
             CI-GHA,
             OS-${{ runner.os }},
-            VM-${{ matrix.os.name }},
+            VM-${{ matrix.runner-vm }},
             Py-${{ steps.python-install.outputs.python-version }},
             Pip-${{ matrix.pip-version }}
           name: >-
             OS-${{ runner.os }},
-            VM-${{ matrix.os.name }},
+            VM-${{ matrix.runner-vm }},
             Py-${{ steps.python-install.outputs.python-version }},
             Pip-${{ matrix.pip-version }}
 
   pypy:
-    name: ${{ matrix.os.name }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
-    runs-on: ${{ matrix.os.runs_on }}
+    name: ${{ matrix.runner-vm }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
+    runs-on: ${{ matrix.runner-vm }}
     timeout-minutes: 9
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - name: Ubuntu
-            runs_on: ubuntu-latest
-          - name: MacOS
-            runs_on: macos-26
-          - name: "MacOS (Intel)"
-            runs_on: macos-26-intel
-          - name: Windows
-            runs_on: windows-latest
+        runner-vm:
+          - ubuntu-latest
+          - macos-26
+          - macos-26-intel
+          - windows-latest
         python-version:
           - pypy-3.10
         pip-version:

@@ -116,6 +116,11 @@ repos:
           # and checks these with shellcheck.
           # The integration only works if shellcheck is installed.
           - "github.com/wasilibs/go-shellcheck/cmd/shellcheck@v0.11.1"
+        args:
+          # NOTE: actionlint does not recognize this label, even though it is valid
+          # NOTE: potentially revise in the future
+          - '-ignore'
+          - 'label "macos-26-intel" is unknown'
 
   - repo: https://github.com/jackdewinter/pymarkdown.git
     rev: v0.9.36
