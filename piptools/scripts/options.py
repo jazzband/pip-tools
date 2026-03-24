@@ -274,6 +274,7 @@ src_files = click.argument(
     "src_files",
     nargs=-1,
     type=click.Path(exists=True, allow_dash=True),
+    is_eager=True,
 )
 
 build_isolation = click.option(
