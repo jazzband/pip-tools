@@ -1866,6 +1866,40 @@ def test_build_project_metadata_isolation_option(
 
 
 @mock.patch("piptools.scripts.compile.PyPIRepository")
+def test_uploaded_prior_to_option(PyPIRepository, runner):
+    """
+    The --uploaded-prior-to option must be passed to PyPIRepository when pip >= 26.0.
+    """
+    with open("requirements.in", "w"):
+        pass
+
+    with (
+        mock.patch.object(_pip_api, "PIP_VERSION_MAJOR_MINOR", (26, 0)),
+        mock.patch.object(_pip_api, "PIP_VERSION", Version("26.0")),
+    ):
+        runner.invoke(cli, ["--uploaded-prior-to", "2025-01-01T00:00:00Z"])
+
+    args, kwargs = PyPIRepository.call_args
+    assert "--uploaded-prior-to" in args[0]
+    assert "2025-01-01T00:00:00Z" in args[0]
+
+
+@mock.patch("piptools.scripts.compile.PyPIRepository")
+def test_uploaded_prior_to_requires_pip_26(PyPIRepository, runner):
+    """
+    The --uploaded-prior-to option must raise an error when pip < 26.0.
+    """
+    with open("requirements.in", "w"):
+        pass
+
+    with mock.patch.object(_pip_api, "PIP_VERSION_MAJOR_MINOR", (25, 3)):
+        result = runner.invoke(cli, ["--uploaded-prior-to", "2025-01-01T00:00:00Z"])
+
+    assert result.exit_code != 0
+    assert "requires pip >= 26.0" in result.stderr
+
+
+@mock.patch("piptools.scripts.compile.PyPIRepository")
 def test_forwarded_args(PyPIRepository, runner):
     """
     Test the forwarded cli args (--pip-args 'arg...') are passed to the pip command.
