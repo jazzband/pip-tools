@@ -162,6 +162,16 @@ trusted_host = click.option(
     ),
 )
 
+uploaded_prior_to = click.option(
+    "--uploaded-prior-to",
+    default=None,
+    help=(
+        "Only consider package versions uploaded prior to the given date/time. "
+        "Accepts ISO 8601 strings (e.g., '2023-01-01T00:00:00Z'). "
+        "Requires pip >= 26.0."
+    ),
+)
+
 header = click.option(
     "--header/--no-header",
     is_flag=True,

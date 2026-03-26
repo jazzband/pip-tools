@@ -113,6 +113,7 @@ Examples:
 @options.cert
 @options.client_cert
 @options.trusted_host
+@options.uploaded_prior_to
 @options.header
 @options.emit_trusted_host
 @options.annotate
@@ -158,6 +159,7 @@ def cli(
     cert: str | None,
     client_cert: str | None,
     trusted_host: tuple[str, ...],
+    uploaded_prior_to: str | None,
     header: bool,
     emit_trusted_host: bool,
     annotate: bool,
@@ -298,6 +300,13 @@ def cli(
         pip_args.extend(["--pre"])
     for host in trusted_host:
         pip_args.extend(["--trusted-host", host])
+    if uploaded_prior_to:
+        if _pip_api.PIP_VERSION_MAJOR_MINOR < (26, 0):
+            raise click.BadParameter(
+                f"--uploaded-prior-to requires pip >= 26.0, but you have pip {_pip_api.PIP_VERSION}",
+                param_hint="--uploaded-prior-to",
+            )
+        pip_args.extend(["--uploaded-prior-to", uploaded_prior_to])
     if not build_isolation:
         pip_args.append("--no-build-isolation")
     if resolver_name == "legacy":
