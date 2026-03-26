@@ -89,7 +89,7 @@ pyproject-hooks==1.2.0
     #   pip-tools (pyproject.toml)
 pyyaml==6.0.3
     # via myst-parser
-requests==2.32.5
+requests==2.33.0
     # via
     #   click-extra
     #   sphinx
