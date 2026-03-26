@@ -16,8 +16,6 @@ boltons==25.0.0
     # via click-extra
 bracex==2.6
     # via wcmatch
-build==1.4.0
-    # via pip-tools (pyproject.toml)
 certifi==2026.1.4
     # via requests
 charset-normalizer==3.4.4
@@ -26,10 +24,9 @@ click==8.3.1
     # via
     #   click-extra
     #   cloup
-    #   pip-tools (pyproject.toml)
     #   towncrier
 click-extra==7.5.3
-    # via -r docs/requirements.in
+    # via -r requirements.in
 cloup==3.0.8
     # via click-extra
 deepmerge==2.0
@@ -44,7 +41,7 @@ docutils==0.22.4
 extra-platforms==8.0.0
     # via click-extra
 furo==2025.12.19
-    # via -r docs/requirements.in
+    # via -r requirements.in
 idna==3.11
     # via requests
 imagesize==1.4.1
@@ -65,13 +62,11 @@ mdit-py-plugins==0.5.0
 mdurl==0.1.2
     # via markdown-it-py
 myst-parser==5.0.0
-    # via -r docs/requirements.in
+    # via -r requirements.in
 packaging==26.0
     # via
-    #   build
     #   setuptools-scm
     #   sphinx
-    #   wheel
 pbr==7.0.3
     # via sphinxcontrib-apidoc
 pygments==2.19.2
@@ -83,27 +78,23 @@ pygments==2.19.2
     #   sphinx
 pygments-ansi-color==0.3.0
     # via click-extra
-pyproject-hooks==1.2.0
-    # via
-    #   build
-    #   pip-tools (pyproject.toml)
 pyyaml==6.0.3
     # via myst-parser
-requests==2.32.5
+requests==2.33.0
     # via
     #   click-extra
     #   sphinx
 roman-numerals==4.1.0
     # via sphinx
 setuptools-scm==9.2.2
-    # via -r docs/requirements.in
+    # via -r requirements.in
 snowballstemmer==3.0.1
     # via sphinx
 soupsieve==2.8.3
     # via beautifulsoup4
 sphinx==9.1.0
     # via
-    #   -r docs/requirements.in
+    #   -r requirements.in
     #   click-extra
     #   furo
     #   myst-parser
@@ -115,9 +106,9 @@ sphinx==9.1.0
 sphinx-basic-ng==1.0.0b2
     # via furo
 sphinx-issues==5.0.1
-    # via -r docs/requirements.in
+    # via -r requirements.in
 sphinxcontrib-apidoc==0.6.0
-    # via -r docs/requirements.in
+    # via -r requirements.in
 sphinxcontrib-applehelp==2.0.0
     # via sphinx
 sphinxcontrib-devhelp==2.0.0
@@ -127,13 +118,13 @@ sphinxcontrib-htmlhelp==2.1.0
 sphinxcontrib-jsmath==1.0.1
     # via sphinx
 sphinxcontrib-programoutput==0.18
-    # via -r docs/requirements.in
+    # via -r requirements.in
 sphinxcontrib-qthelp==2.0.0
     # via sphinx
 sphinxcontrib-serializinghtml==2.0.0
     # via sphinx
 sphinxcontrib-towncrier==0.5.0a0
-    # via -r docs/requirements.in
+    # via -r requirements.in
 tabulate==0.9.0
     # via click-extra
 towncrier==25.8.0
@@ -146,14 +137,9 @@ wcmatch==10.1
     # via click-extra
 wcwidth==0.5.3
     # via tabulate
-wheel==0.46.3
-    # via pip-tools (pyproject.toml)
 
 # The following packages are considered to be unsafe in a requirements file:
-pip==26.0
-    # via pip-tools (pyproject.toml)
 setuptools==80.10.2
     # via
     #   pbr
-    #   pip-tools (pyproject.toml)
     #   setuptools-scm
