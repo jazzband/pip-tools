@@ -303,7 +303,8 @@ def cli(
     if uploaded_prior_to:
         if _pip_api.PIP_VERSION_MAJOR_MINOR < (26, 0):
             raise click.BadParameter(
-                f"--uploaded-prior-to requires pip >= 26.0, but you have pip {_pip_api.PIP_VERSION}",
+                "--uploaded-prior-to requires pip >= 26.0, "
+                f"but you have pip {_pip_api.PIP_VERSION}",
                 param_hint="--uploaded-prior-to",
             )
         pip_args.extend(["--uploaded-prior-to", uploaded_prior_to])
