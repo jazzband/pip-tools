@@ -1873,9 +1873,10 @@ def test_uploaded_prior_to_option(PyPIRepository, runner):
     with open("requirements.in", "w"):
         pass
 
-    with mock.patch.object(
-        _pip_api, "PIP_VERSION_MAJOR_MINOR", (26, 0)
-    ), mock.patch.object(_pip_api, "PIP_VERSION", Version("26.0")):
+    with (
+        mock.patch.object(_pip_api, "PIP_VERSION_MAJOR_MINOR", (26, 0)),
+        mock.patch.object(_pip_api, "PIP_VERSION", Version("26.0")),
+    ):
         runner.invoke(cli, ["--uploaded-prior-to", "2025-01-01T00:00:00Z"])
 
     args, kwargs = PyPIRepository.call_args
