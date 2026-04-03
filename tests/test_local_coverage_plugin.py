@@ -133,3 +133,52 @@ def test_computed_pragmas_state_no_cover_below_previous_major_version():
     assert nocover_eq_pragma not in computed_pragmas
     assert cover_le_pragma in computed_pragmas
     assert nocover_le_pragma not in computed_pragmas
+
+
+def test_init_registers_plugin_object_as_configurer():
+    # this test basically just runs `coverage_init` without trying to verify
+    # that our usage of `coverage` APIs is correct -- we make sure that the
+    # code can run without error, but not much else
+    mock_registry = mock.Mock()
+    piptools_coverage.coverage_init(mock_registry, {})
+
+    mock_registry.add_configurer.assert_called_once()
+    call_args = mock_registry.add_configurer.call_args[0]
+    assert len(call_args) == 1
+    plugin = call_args[0]
+    assert isinstance(plugin, piptools_coverage.PipVersionPragmas)
+
+
+@pytest.mark.parametrize("prior_exclude_lines", ([], ["NotImplementedError"]))
+def test_plugin_configure_expands_excludes_with_pragmas(prior_exclude_lines):
+    def mock_get_option(optname):
+        if optname == "report:exclude_lines":
+            return prior_exclude_lines
+        pytest.fail(
+            f"get_option on mock config called with unexpected option name: {optname}"
+        )
+
+    mock_config = mock.Mock()
+    mock_config.get_option = mock_get_option
+
+    plugin = piptools_coverage.PipVersionPragmas()
+    plugin.configure(mock_config)
+
+    mock_config.set_option.assert_called_once()
+    call_args = mock_config.set_option.call_args[0]
+    assert len(call_args) == 2
+    optname, excludes = call_args
+    assert optname == "report:exclude_lines"
+    # no prior excludes were lost
+    assert set(excludes) >= set(prior_exclude_lines)
+
+    # check that the current version
+    # goes into excludes under '==', '>=', or '<=' and not under `>` and `<`
+    # this minimally verifies that "it worked"
+    current = ".".join(str(x) for x in _pip_api.PIP_VERSION_MAJOR_MINOR)
+    assert rf"# pragma: pip=={current} no cover\b" in excludes
+    assert rf"# pragma: pip>={current} no cover\b" in excludes
+    assert rf"# pragma: pip<={current} no cover\b" in excludes
+
+    assert rf"# pragma: pip>{current} no cover\b" not in excludes
+    assert rf"# pragma: pip<{current} no cover\b" not in excludes
