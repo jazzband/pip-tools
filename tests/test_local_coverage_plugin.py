@@ -130,3 +130,91 @@ def test_computed_pragmas_state_no_cover_below_previous_major_version():
     assert nocover_eq_pragma not in computed_pragmas
     assert cover_le_pragma in computed_pragmas
     assert nocover_le_pragma not in computed_pragmas
+
+
+def test_init_registers_plugin_object_as_configurer():
+    # this test basically just runs `coverage_init` without trying to verify
+    # that our usage of `coverage` APIs is correct -- we make sure that the
+    # code can run without error, but not much else
+    mock_registry = mock.Mock()
+    piptools_coverage.coverage_init(mock_registry, {})
+
+    mock_registry.add_configurer.assert_called_once()
+    call_args = mock_registry.add_configurer.call_args[0]
+    assert len(call_args) == 1
+    plugin = call_args[0]
+    assert isinstance(plugin, piptools_coverage.PipVersionPragmas)
+
+
+@pytest.mark.parametrize("prior_exclude_lines", ([], ["NotImplementedError"]))
+def test_plugin_configure_expands_excludes_with_pragmas(prior_exclude_lines):
+    def mock_get_option(optname):
+        if optname == "report:exclude_lines":
+            return prior_exclude_lines
+        elif optname == "report:partial_branches":
+            return []
+        pytest.fail(
+            f"get_option on mock config called with unexpected option name: {optname}"
+        )
+
+    mock_config = mock.Mock()
+    mock_config.get_option = mock_get_option
+
+    plugin = piptools_coverage.PipVersionPragmas()
+    plugin.configure(mock_config)
+
+    mock_config.set_option.assert_any_call("report:exclude_lines", mock.ANY)
+    set_exclude_lines_calls = [
+        c
+        for c in mock_config.set_option.call_args_list
+        if c.args and c.args[0] == "report:exclude_lines"
+    ]
+    assert len(set_exclude_lines_calls) == 1
+    call_args = set_exclude_lines_calls[0].args
+    assert len(call_args) == 2, call_args
+    _optname, excludes = call_args
+    # no prior excludes were lost
+    assert set(excludes) >= set(prior_exclude_lines)
+
+    # check that the current version
+    # goes into excludes under '==', '>=', or '<=' and not under `>` and `<`
+    # this minimally verifies that "it worked"
+    current = ".".join(str(x) for x in _pip_api.PIP_VERSION_MAJOR_MINOR)
+    assert rf"# pragma: pip=={current} no cover\b" in excludes
+    assert rf"# pragma: pip>={current} no cover\b" in excludes
+    assert rf"# pragma: pip<={current} no cover\b" in excludes
+
+    assert rf"# pragma: pip>{current} no cover\b" not in excludes
+    assert rf"# pragma: pip<{current} no cover\b" not in excludes
+
+
+def test_plugin_configure_sets_partial_branches_even_if_no_value():
+    def mock_get_option(optname):
+        if optname == "report:exclude_lines":
+            return []
+        # when partial_branches is retrieved, return None
+        # the plugin must convert this value to an empty list to function correctly
+        elif optname == "report:partial_branches":
+            return None
+        pytest.fail(
+            f"get_option on mock config called with unexpected option name: {optname}"
+        )
+
+    mock_config = mock.Mock()
+    mock_config.get_option = mock_get_option
+
+    plugin = piptools_coverage.PipVersionPragmas()
+    plugin.configure(mock_config)
+
+    mock_config.set_option.assert_any_call("report:partial_branches", mock.ANY)
+    set_partial_branches_calls = [
+        c
+        for c in mock_config.set_option.call_args_list
+        if c.args and c.args[0] == "report:partial_branches"
+    ]
+    assert len(set_partial_branches_calls) == 1
+    call_args = set_partial_branches_calls[0].args
+    assert len(call_args) == 2, call_args
+    _optname, branch_patterns = call_args
+    # the static pragma is present
+    assert piptools_coverage.ANY_PIP_VERSION_PRAGMA in branch_patterns
