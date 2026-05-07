@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 455" font-family="'Inter','Helvetica Neue',Arial,sans-serif">
+  <!-- ============================================================ -->
+  <!-- Document / Sheet (transparent fill)                          -->
+  <!-- ============================================================ -->
+  <g transform="translate(40 10)">
+    <!-- Outer paper shape with folded top-right corner -->
+    <path d="
+        M 16 0
+        L 280 0
+        L 320 40
+        L 320 354
+        Q 320 370 304 370
+        L 16 370
+        Q 0 370 0 354
+        L 0 16
+        Q 0 0 16 0 Z"
+      fill="none" stroke="#1072F2" stroke-width="7" stroke-linejoin="round"/>
+
+    <!-- Folded corner detail line -->
+    <path d="M 280 0 L 280 32 Q 280 40 288 40 L 320 40"
+      fill="none" stroke="#1072F2" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/>
+
+    <!-- ====== Row 1 ====== -->
+    <g transform="translate(25 42) scale(1.2)">
+      <path d="M 26 0 L 52 13 L 26 26 L 0 13 Z" fill="#7BB3F9"/>
+      <path d="M 0 13 L 26 26 L 26 56 L 0 43 Z" fill="#1072F2"/>
+      <path d="M 52 13 L 26 26 L 26 56 L 52 43 Z" fill="#FFC200"/>
+      <path d="M 0 13 L 26 0 L 52 13 L 52 43 L 26 56 L 0 43 Z M 26 26 L 26 56 M 0 13 L 26 26 L 52 13"
+        fill="none" stroke="#03459C" stroke-width="2" stroke-linejoin="round"/>
+    </g>
+    <text x="118" y="86" font-size="29" font-weight="700" fill="#1072F2"
+          font-family="'JetBrains Mono','Fira Code',Consolas,monospace">== 1.2.3</text>
+    <g transform="translate(290 76)">
+      <circle cx="0" cy="0" r="20" fill="#FFC200"/>
+      <path d="M -9 0 L -2 6 L 9 -5" fill="none" stroke="#ffffff"
+            stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <!-- ====== Row 2 ====== -->
+    <g transform="translate(25 151) scale(1.2)">
+      <path d="M 26 0 L 52 13 L 26 26 L 0 13 Z" fill="#7BB3F9"/>
+      <path d="M 0 13 L 26 26 L 26 56 L 0 43 Z" fill="#1072F2"/>
+      <path d="M 52 13 L 26 26 L 26 56 L 52 43 Z" fill="#FFC200"/>
+      <path d="M 0 13 L 26 0 L 52 13 L 52 43 L 26 56 L 0 43 Z M 26 26 L 26 56 M 0 13 L 26 26 L 52 13"
+        fill="none" stroke="#03459C" stroke-width="2" stroke-linejoin="round"/>
+    </g>
+    <text x="118" y="195" font-size="29" font-weight="700" fill="#1072F2"
+          font-family="'JetBrains Mono','Fira Code',Consolas,monospace">== 2.4.0</text>
+    <g transform="translate(290 185)">
+      <circle cx="0" cy="0" r="20" fill="#FFC200"/>
+      <path d="M -9 0 L -2 6 L 9 -5" fill="none" stroke="#ffffff"
+            stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+
+    <!-- ====== Row 3 ====== -->
+    <g transform="translate(25 260) scale(1.2)">
+      <path d="M 26 0 L 52 13 L 26 26 L 0 13 Z" fill="#7BB3F9"/>
+      <path d="M 0 13 L 26 26 L 26 56 L 0 43 Z" fill="#1072F2"/>
+      <path d="M 52 13 L 26 26 L 26 56 L 52 43 Z" fill="#FFC200"/>
+      <path d="M 0 13 L 26 0 L 52 13 L 52 43 L 26 56 L 0 43 Z M 26 26 L 26 56 M 0 13 L 26 26 L 52 13"
+        fill="none" stroke="#03459C" stroke-width="2" stroke-linejoin="round"/>
+    </g>
+    <text x="118" y="304" font-size="29" font-weight="700" fill="#1072F2"
+          font-family="'JetBrains Mono','Fira Code',Consolas,monospace">== 3.5.1</text>
+    <g transform="translate(290 294)">
+      <circle cx="0" cy="0" r="20" fill="#FFC200"/>
+      <path d="M -9 0 L -2 6 L 9 -5" fill="none" stroke="#ffffff"
+            stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </g>
+
+  <!-- pip-tools wordmark (~10px below the document) -->
+  <text x="200" y="432" text-anchor="middle" font-size="58" font-weight="800" letter-spacing="-1.5">
+    <tspan fill="#1072F2">pip-</tspan><tspan fill="#FFC200">tools</tspan>
+  </text>
+</svg>

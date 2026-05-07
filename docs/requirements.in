@@ -1,9 +1,12 @@
 click-extra [sphinx]  # GitHub-flavored admonitions: https://github.com/executablebooks/MyST-Parser/issues/845#issuecomment-3580549737
 furo
-myst-parser
+myst-parser [linkify]
 setuptools-scm
 sphinx
-sphinxcontrib-apidoc
-sphinxcontrib-programoutput
-sphinxcontrib-towncrier
+sphinx-click
+sphinx-copybutton
+sphinx-inline-tabs
 sphinx-issues
+sphinxcontrib-apidoc
+sphinxcontrib-mermaid
+sphinxcontrib-towncrier
