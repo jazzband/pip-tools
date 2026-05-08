@@ -9,7 +9,6 @@ from pathlib import Path
 
 from sphinx.application import Sphinx
 from sphinx.util import logging
-from sphinx.util.console import bold
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +31,8 @@ release = get_version(project)
 # The short X.Y version
 version = ".".join(release.split(".")[:3])
 
-logger.info(bold("%s version: %s"), project, version)
-logger.info(bold("%s release: %s"), project, release)
+logger.info("%s version: %s", project, version)
+logger.info("%s release: %s", project, release)
 
 # -- General configuration ---------------------------------------------------
 
@@ -66,6 +65,11 @@ html_title = f"<nobr>{project}</nobr> documentation v{release}"
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
+    "packaging": ("https://packaging.pypa.io/en/stable", None),
+    "pip": ("https://pip.pypa.io/en/stable", None),
+    "click": ("https://click.palletsprojects.com/en/stable", None),
+    "build": ("https://build.pypa.io/en/stable", None),
+    "importlib_metadata": ("https://importlib-metadata.readthedocs.io/en/latest", None),
 }
 
 issues_github_path = "jazzband/pip-tools"
