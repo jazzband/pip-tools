@@ -2,14 +2,12 @@ from __future__ import annotations
 
 import itertools
 import os
-import shlex
 import sys
 import typing as _t
 from pathlib import Path
 
 import click
 from build import BuildBackendException
-from click.utils import LazyFile, safecall
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.misc import redact_auth_from_url
 
@@ -29,19 +27,7 @@ from ..utils import (
     key_from_ireq,
 )
 from ..writer import OutputWriter
-from . import options
-from ._deprecations import filter_deprecated_pip_args
-from .options import BuildTargetT
-
-DEFAULT_REQUIREMENTS_FILES = (
-    "requirements.in",
-    "setup.py",
-    "pyproject.toml",
-    "setup.cfg",
-)
-DEFAULT_REQUIREMENTS_FILE = "requirements.in"
-DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
-METADATA_FILENAMES = frozenset({"setup.py", "setup.cfg", "pyproject.toml"})
+from . import _compile_parser
 
 
 def _determine_linesep(
@@ -74,205 +60,19 @@ def _determine_linesep(
     }[strategy]
 
 
-COMPILE_EPILOG = """\b
-Examples:
-\b
-    Compile requirements.in to requirements.txt:
-    $ pip-compile
-\b
-    Upgrade all packages to their latest versions:
-    $ pip-compile --upgrade
-\b
-    Upgrade specific packages:
-    $ pip-compile -P django -P requests
-\b
-    Include package hashes for extra security:
-    $ pip-compile --generate-hashes
-\b
-    Compile with optional extras:
-    $ pip-compile --extra dev pyproject.toml
-"""
-
-
 @click.command(name="pip-compile")
-@click.pass_context
-@options.help_option(epilog=COMPILE_EPILOG)
-@options.version
-@options.color
-@options.verbose
-@options.quiet
-@options.dry_run
-@options.pre
-@options.rebuild
-@options.extra
-@options.all_extras
-@options.find_links
-@options.index_url
-@options.no_index
-@options.extra_index_url
-@options.cert
-@options.client_cert
-@options.trusted_host
-@options.uploaded_prior_to
-@options.header
-@options.emit_trusted_host
-@options.annotate
-@options.annotation_style
-@options.upgrade
-@options.upgrade_package
-@options.output_file
-@options.newline
-@options.allow_unsafe
-@options.strip_extras
-@options.generate_hashes
-@options.reuse_hashes
-@options.max_rounds
-@options.src_files
-@options.build_isolation
-@options.emit_find_links
-@options.cache_dir
-@options.pip_args
-@options.resolver
-@options.emit_index_url
-@options.emit_options
-@options.unsafe_package
-@options.config
-@options.no_config
-@options.constraint
-@options.build_deps_for
-@options.all_build_deps
-@options.only_build_deps
-def cli(
-    ctx: click.Context,
-    color: bool | None,
-    verbose: int,
-    quiet: int,
-    dry_run: bool,
-    pre: bool,
-    rebuild: bool,
-    extras: tuple[str, ...],
-    all_extras: bool,
-    find_links: tuple[str, ...],
-    index_url: str,
-    no_index: bool,
-    extra_index_url: tuple[str, ...],
-    cert: str | None,
-    client_cert: str | None,
-    trusted_host: tuple[str, ...],
-    uploaded_prior_to: str | None,
-    header: bool,
-    emit_trusted_host: bool,
-    annotate: bool,
-    annotation_style: str,
-    upgrade: bool,
-    upgrade_packages: tuple[str, ...],
-    output_file: LazyFile | _t.IO[_t.Any] | None,
-    newline: str,
-    allow_unsafe: bool,
-    strip_extras: bool | None,
-    generate_hashes: bool,
-    reuse_hashes: bool,
-    src_files: tuple[str, ...],
-    max_rounds: int,
-    build_isolation: bool,
-    emit_find_links: bool,
-    cache_dir: str,
-    pip_args_str: str | None,
-    resolver_name: str,
-    emit_index_url: bool,
-    emit_options: bool,
-    unsafe_package: tuple[str, ...],
-    config: Path | None,
-    no_config: bool,
-    constraint: tuple[str, ...],
-    build_deps_targets: tuple[BuildTargetT, ...],
-    all_build_deps: bool,
-    only_build_deps: bool,
-) -> None:
+@_compile_parser.parse_pip_compile_args
+def cli(args: _compile_parser.CompileArgs, ctx: click.Context) -> None:
     """
     Compile requirements.txt from source files.
 
     Valid sources are requirements.in, pyproject.toml, setup.cfg,
     or setup.py specs.
     """
-    if color is not None:
-        ctx.color = color
-    log.verbosity = verbose - quiet
+    if args.config:
+        log.debug(f"Using pip-tools configuration defaults found in '{args.config!s}'.")
 
-    # If ``src-files` was not provided as an input, but rather as config,
-    # it will be part of the click context ``ctx``.
-    # However, if ``src_files`` is specified, then we want to use that.
-    if not src_files and ctx.default_map and "src_files" in ctx.default_map:
-        src_files = ctx.default_map["src_files"]
-
-    if all_build_deps and build_deps_targets:
-        raise click.BadParameter(
-            "--build-deps-for has no effect when used with --all-build-deps"
-        )
-    elif all_build_deps:
-        build_deps_targets = options.ALL_BUILD_TARGETS
-
-    if only_build_deps and not build_deps_targets:
-        raise click.BadParameter(
-            "--only-build-deps requires either --build-deps-for or --all-build-deps"
-        )
-    if only_build_deps and (extras or all_extras):
-        raise click.BadParameter(
-            "--only-build-deps cannot be used with any of --extra, --all-extras"
-        )
-
-    if len(src_files) == 0:
-        for file_path in DEFAULT_REQUIREMENTS_FILES:
-            if os.path.exists(file_path):
-                src_files = (file_path,)
-                break
-        else:
-            raise click.BadParameter(
-                (
-                    "If you do not specify an input file, the default is one of: {}"
-                ).format(", ".join(DEFAULT_REQUIREMENTS_FILES))
-            )
-
-    if all_extras and extras:
-        msg = "--extra has no effect when used with --all-extras"
-        raise click.BadParameter(msg)
-
-    if not output_file:
-        # An output file must be provided for stdin
-        if src_files == ("-",):
-            raise click.BadParameter("--output-file is required if input is from stdin")
-        # Use default requirements output file if there is a setup.py the source file
-        elif os.path.basename(src_files[0]) in METADATA_FILENAMES:
-            file_name = os.path.join(
-                os.path.dirname(src_files[0]), DEFAULT_REQUIREMENTS_OUTPUT_FILE
-            )
-        # An output file must be provided if there are multiple source files
-        elif len(src_files) > 1:
-            raise click.BadParameter(
-                "--output-file is required if two or more input files are given."
-            )
-        # Otherwise derive the output file from the source file
-        else:
-            base_name = src_files[0].rsplit(".", 1)[0]
-            file_name = base_name + ".txt"
-
-        output_file = click.open_file(file_name, "w+b", atomic=True, lazy=True)
-
-        # Close the file at the end of the context execution
-        assert output_file is not None
-        # only LazyFile has close_intelligently, newer _t.IO[_t.Any] does not
-        if isinstance(output_file, LazyFile):  # pragma: no cover
-            ctx.call_on_close(safecall(output_file.close_intelligently))
-
-    if output_file.name != "-" and output_file.name in src_files:
-        raise click.BadArgumentUsage(
-            f"input and output filenames must not be matched: {output_file.name}"
-        )
-
-    if config:
-        log.debug(f"Using pip-tools configuration defaults found in '{config !s}'.")
-
-    if resolver_name == "legacy":
+    if args.pip_args.resolver_name == "legacy":
         log.warning(
             "WARNING: the legacy dependency resolver is deprecated and will be removed"
             " in future versions of pip-tools."
@@ -282,47 +82,15 @@ def cli(
     # Setup
     ###
 
-    right_args = shlex.split(pip_args_str or "")
-    pip_args = []
-    for link in find_links:
-        pip_args.extend(["-f", link])
-    if index_url:
-        pip_args.extend(["-i", index_url])
-    if no_index:
-        pip_args.extend(["--no-index"])
-    for extra_index in extra_index_url:
-        pip_args.extend(["--extra-index-url", extra_index])
-    if cert:
-        pip_args.extend(["--cert", cert])
-    if client_cert:
-        pip_args.extend(["--client-cert", client_cert])
-    if pre:
-        pip_args.extend(["--pre"])
-    for host in trusted_host:
-        pip_args.extend(["--trusted-host", host])
-    if uploaded_prior_to:
-        if _pip_api.PIP_VERSION_MAJOR_MINOR < (26, 0):
-            raise click.BadParameter(
-                "--uploaded-prior-to requires pip >= 26.0, "
-                f"but you have pip {_pip_api.PIP_VERSION}",
-                param_hint="--uploaded-prior-to",
-            )
-        pip_args.extend(["--uploaded-prior-to", uploaded_prior_to])
-    if not build_isolation:
-        pip_args.append("--no-build-isolation")
-    if resolver_name == "legacy":
-        pip_args.extend(["--use-deprecated", "legacy-resolver"])
-    if resolver_name == "backtracking" and cache_dir:
-        pip_args.extend(["--cache-dir", cache_dir])
-    pip_args.extend(right_args)
-    pip_args = filter_deprecated_pip_args(pip_args)
-
     repository: BaseRepository
-    repository = PyPIRepository(pip_args, cache_dir=cache_dir)
+    repository = PyPIRepository(
+        list(args.pip_arg_tuple), cache_dir=args.pip_args.cache_dir
+    )
 
     # Parse all constraints coming from --upgrade-package/-P
     upgrade_reqs_gen = (
-        _pip_api.create_install_requirement_from_line(pkg) for pkg in upgrade_packages
+        _pip_api.create_install_requirement_from_line(pkg)
+        for pkg in args.upgrade_packages
     )
     upgrade_install_reqs = {
         key_from_ireq(install_req): install_req for install_req in upgrade_reqs_gen
@@ -333,12 +101,12 @@ def cli(
 
     # Proxy with a LocalRequirementsRepository if --upgrade is not specified
     # (= default invocation)
-    output_file_exists = os.path.exists(output_file.name)
-    if not upgrade and output_file_exists:
-        output_file_is_empty = os.path.getsize(output_file.name) == 0
+    output_file_exists = os.path.exists(args.output_file.name)
+    if not args.upgrade and output_file_exists:
+        output_file_is_empty = os.path.getsize(args.output_file.name) == 0
         if upgrade_install_reqs and output_file_is_empty:
             log.warning(
-                f"WARNING: the output file {output_file.name} exists but is empty. "
+                f"WARNING: the output file {args.output_file.name} exists but is empty. "
                 "Pip-tools cannot upgrade only specific packages (using -P/--upgrade-package) "
                 "without an existing pin file to provide constraints. "
                 "This often occurs if you redirect standard output to your output file, "
@@ -347,9 +115,11 @@ def cli(
 
         # Use a temporary repository to ensure outdated(removed) options from
         # existing requirements.txt wouldn't get into the current repository.
-        tmp_repository = PyPIRepository(pip_args, cache_dir=cache_dir)
+        tmp_repository = PyPIRepository(
+            list(args.pip_arg_tuple), cache_dir=args.pip_args.cache_dir
+        )
         ireqs = parse_requirements(
-            output_file.name,
+            args.output_file.name,
             finder=tmp_repository.finder,
             session=tmp_repository.session,
             options=tmp_repository.options,
@@ -360,7 +130,7 @@ def cli(
             if key not in upgrade_install_reqs:
                 existing_pins[key] = ireq
         repository = LocalRequirementsRepository(
-            existing_pins, repository, reuse_hashes=reuse_hashes
+            existing_pins, repository, reuse_hashes=args.reuse_hashes
         )
 
     ###
@@ -369,15 +139,7 @@ def cli(
 
     constraints: list[InstallRequirement] = []
     setup_file_found = False
-    for src_file in src_files:
-        is_setup_file = os.path.basename(src_file) in METADATA_FILENAMES
-        if not is_setup_file and build_deps_targets:
-            msg = (
-                "--build-deps-for and --all-build-deps can be used only with the "
-                "setup.py, setup.cfg and pyproject.toml specs."
-            )
-            raise click.BadParameter(msg)
-
+    for src_file in args.src_files:
         if src_file == "-":
             # pip requires filenames and not files. Since we want to support
             # piping from stdin, we need to briefly save the input from stdin
@@ -395,15 +157,15 @@ def cli(
                     )
                 )
             constraints.extend(reqs)
-        elif is_setup_file:
+        elif src_file in args.setup_src_files:
             setup_file_found = True
             try:
                 metadata = build_project_metadata(
                     src_file=Path(src_file),
-                    build_targets=build_deps_targets,
-                    upgrade_packages=upgrade_packages,
-                    attempt_static_parse=not bool(build_deps_targets),
-                    isolated=build_isolation,
+                    build_targets=args.build_deps_targets,
+                    upgrade_packages=args.upgrade_packages,
+                    attempt_static_parse=not bool(args.build_deps_targets),
+                    isolated=args.pip_args.build_isolation,
                     quiet=log.verbosity <= 0,
                 )
             except BuildBackendException as e:
@@ -411,11 +173,11 @@ def cli(
                 log.error(f"Failed to parse {os.path.abspath(src_file)}")
                 sys.exit(2)
 
-            if not only_build_deps:
+            if not args.only_build_deps:
                 constraints.extend(metadata.requirements)
-                if all_extras:
-                    extras += metadata.extras
-            if build_deps_targets:
+                if args.all_extras:
+                    args.extras += metadata.extras
+            if args.build_deps_targets:
                 assert isinstance(metadata, ProjectMetadata)
                 constraints.extend(metadata.build_requirements)
         else:
@@ -429,7 +191,7 @@ def cli(
             )
 
     # Parse all constraints from `--constraint` files
-    for filename in constraint:
+    for filename in args.constraint:
         constraints.extend(
             parse_requirements(
                 filename,
@@ -440,9 +202,9 @@ def cli(
             )
         )
 
-    if upgrade_packages:
+    if args.upgrade_packages:
         with tempfile_compat.named_temp_file() as constraints_file:
-            constraints_file.write("\n".join(upgrade_packages))
+            constraints_file.write("\n".join(args.upgrade_packages))
             constraints_file.flush()
             reqs = list(
                 parse_requirements(
@@ -457,7 +219,7 @@ def cli(
                 req.comes_from = None
         constraints.extend(reqs)
 
-    extras = tuple(itertools.chain.from_iterable(ex.split(",") for ex in extras))
+    extras = tuple(itertools.chain.from_iterable(ex.split(",") for ex in args.extras))
 
     if extras and not setup_file_found:
         msg = "--extra has effect only with setup.py and PEP-517 input formats"
@@ -490,24 +252,31 @@ def cli(
             for find_link in dedup(repository.finder.find_links):
                 log.debug(redact_auth_from_url(find_link))
 
-    unsafe_package = tuple(canonicalize_name(pkg_name) for pkg_name in unsafe_package)
+    unsafe_package = tuple(
+        canonicalize_name(pkg_name) for pkg_name in args.unsafe_package
+    )
 
-    resolver_cls = LegacyResolver if resolver_name == "legacy" else BacktrackingResolver
+    resolver_cls = (
+        LegacyResolver
+        if args.pip_args.resolver_name == "legacy"
+        else BacktrackingResolver
+    )
     try:
         resolver = resolver_cls(
             constraints=constraints,
             existing_constraints=existing_pins,
             repository=repository,
             prereleases=(
-                pre or _pip_api.finder_allows_all_prereleases(repository.finder)
+                args.pip_args.pre
+                or _pip_api.finder_allows_all_prereleases(repository.finder)
             ),
-            cache=DependencyCache(cache_dir),
-            clear_caches=rebuild,
-            allow_unsafe=allow_unsafe,
+            cache=DependencyCache(args.pip_args.cache_dir),
+            clear_caches=args.rebuild,
+            allow_unsafe=args.allow_unsafe,
             unsafe_packages=set(unsafe_package),
         )
-        results = resolver.resolve(max_rounds=max_rounds)
-        hashes = resolver.resolve_hashes(results) if generate_hashes else None
+        results = resolver.resolve(max_rounds=args.max_rounds)
+        hashes = resolver.resolve_hashes(results) if args.generate_hashes else None
     except NoCandidateFound as e:
         if resolver_cls == LegacyResolver:  # pragma: no branch
             log.error(
@@ -525,11 +294,11 @@ def cli(
     log.debug("")
 
     linesep = _determine_linesep(
-        strategy=newline, filenames=(output_file.name, *src_files)
+        strategy=args.newline, filenames=(args.output_file.name, *args.src_files)
     )
 
-    if strip_extras is None:
-        strip_extras = False
+    if args.strip_extras is None:
+        args.strip_extras = False
         log.warning(
             "WARNING: --strip-extras is becoming the default "
             "in version 8.0.0. To silence this warning, "
@@ -542,25 +311,25 @@ def cli(
     ##
 
     writer = OutputWriter(
-        _t.cast(_t.BinaryIO, output_file),
+        _t.cast(_t.BinaryIO, args.output_file),
         click_ctx=ctx,
-        dry_run=dry_run,
-        emit_header=header,
-        emit_index_url=emit_index_url,
-        emit_trusted_host=emit_trusted_host,
-        annotate=annotate,
-        annotation_style=annotation_style,
-        strip_extras=strip_extras,
-        generate_hashes=generate_hashes,
+        dry_run=args.dry_run,
+        emit_header=args.header,
+        emit_index_url=args.emit_index_url,
+        emit_trusted_host=args.emit_trusted_host,
+        annotate=args.annotate,
+        annotation_style=args.annotation_style,
+        strip_extras=args.strip_extras,
+        generate_hashes=args.generate_hashes,
         default_index_url=repository.DEFAULT_INDEX_URL,
         index_urls=repository.finder.index_urls,
         trusted_hosts=repository.finder.trusted_hosts,
         format_control=repository.finder.format_control,
         linesep=linesep,
-        allow_unsafe=allow_unsafe,
+        allow_unsafe=args.allow_unsafe,
         find_links=repository.finder.find_links,
-        emit_find_links=emit_find_links,
-        emit_options=emit_options,
+        emit_find_links=args.emit_find_links,
+        emit_options=args.emit_options,
     )
     writer.write(
         results=results,
@@ -572,5 +341,5 @@ def cli(
         hashes=hashes,
     )
 
-    if dry_run:
+    if args.dry_run:
         log.info("Dry-run, so nothing updated.")
