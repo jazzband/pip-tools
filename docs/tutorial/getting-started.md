@@ -17,24 +17,9 @@ mkdir myapp && cd myapp
 
 ## The loop you will learn
 
-```{mermaid}
-flowchart LR
-    A[Edit requirements.in] --> B[pip-compile]
-    B --> C[requirements.txt]
-    C --> D[pip-sync]
-    D --> E[venv ready]
-    E -.->|need a new package| A
-
-    style A fill:#2563eb,stroke:#1d4ed8,color:#fff
-    style B fill:#6366f1,stroke:#4f46e5,color:#fff
-    style C fill:#16a34a,stroke:#15803d,color:#fff
-    style D fill:#6366f1,stroke:#4f46e5,color:#fff
-    style E fill:#16a34a,stroke:#15803d,color:#fff
-```
-
 You write top-level dependencies in `requirements.in`. `pip-compile` resolves them and writes
-`requirements.txt`. `pip-sync` makes the venv match. To add a new package, edit `requirements.in` and run
-the loop again.
+`requirements.txt`. `pip-sync` makes the venv match. To add a new package, edit `requirements.in` and
+run `pip-compile` again.
 
 ## Step 1: declare your dependencies
 
