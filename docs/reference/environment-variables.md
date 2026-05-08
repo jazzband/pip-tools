@@ -55,14 +55,6 @@ variables propagate. The most relevant ones:
 
 The full list of `PIP_*` variables lives in [`pip`'s documentation](https://pip.pypa.io/en/stable/topics/configuration/#environment-variables).
 
-## Variables you might wish existed
-
-- There is no `PIP_TOOLS_CONFIG` to set the configuration file. Use `--config <path>` per invocation.
-- There is no `PIP_TOOLS_OUTPUT_FILE`. Use `--output-file` per invocation, or set `output-file` in
-  `[tool.pip-tools.compile]`.
-- There is no environment variable to disable the legacy-resolver deprecation warning. The fix is to
-  stop using the legacy resolver.
-
 ```{seealso}
 - {doc}`config-file` for the file-based equivalent of these variables.
 - {doc}`/explanation/caching` for what `PIP_TOOLS_CACHE_DIR` controls.
