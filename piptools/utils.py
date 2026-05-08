@@ -394,11 +394,41 @@ def get_compile_command(click_ctx: click.Context) -> str:
                     # shlex.quote() would produce functional but noisily quoted results,
                     # e.g. --pip-args='--cache-dir='"'"'/tmp/with spaces'"'"''
                     # Instead, we try to get more legible quoting via repr:
-                    left_args.append(f"{option_long_name}={repr(val)}")
+                    left_args.append(
+                        f"{option_long_name}={repr(_redact_pip_args_str(val))}"
+                    )
                 else:
                     left_args.append(f"{option_long_name}={shlex.quote(str(val))}")
 
     return " ".join(["pip-compile", *sorted(left_args), *sorted(right_args)])
+
+
+_REDACTED_PIP_PATH_OPTIONS = frozenset(
+    {"--cert", "--client-cert", "--proxy", "--config-settings", "-C"}
+)
+_CONTROL_CHARS = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
+
+
+def _redact_pip_args_str(value: str) -> str:
+    cleaned: list[str] = []
+    skip_next: str | None = None
+    for token in shlex.split(value):
+        if skip_next is not None:
+            if skip_next in {"--config-settings", "-C"} and "=" in token:
+                cleaned.append(f"{token.partition('=')[0]}=<REDACTED>")
+            else:
+                cleaned.append("<REDACTED>")
+            skip_next = None
+            continue
+        if token in _REDACTED_PIP_PATH_OPTIONS:
+            cleaned.append(token)
+            skip_next = token
+            continue
+        if "://" in token:
+            cleaned.append(redact_auth_from_url(token))
+            continue
+        cleaned.append(token)
+    return " ".join(_CONTROL_CHARS.sub("�", token) for token in cleaned)
 
 
 def get_required_pip_specification() -> SpecifierSet:

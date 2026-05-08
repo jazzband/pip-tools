@@ -426,6 +426,41 @@ def test_is_url_requirement_filename(caplog, from_line, line):
             "pip-compile --find-links='https://username:****@example.com/'",
             id="redact password in link",
         ),
+        pytest.param(
+            ["--pip-args", "--cert /etc/ssl/private.pem"],
+            "pip-compile --pip-args='--cert <REDACTED>'",
+            id="redact pip-args cert path",
+        ),
+        pytest.param(
+            ["--pip-args", "--client-cert /home/me/.pki/client.pem"],
+            "pip-compile --pip-args='--client-cert <REDACTED>'",
+            id="redact pip-args client-cert path",
+        ),
+        pytest.param(
+            ["--pip-args", "--proxy http://user:pw@proxy.local:8080"],
+            "pip-compile --pip-args='--proxy <REDACTED>'",
+            id="redact pip-args proxy",
+        ),
+        pytest.param(
+            ["--pip-args", "--config-settings auth=hunter2"],
+            "pip-compile --pip-args='--config-settings auth=<REDACTED>'",
+            id="redact pip-args config-settings value",
+        ),
+        pytest.param(
+            ["--pip-args", "-C auth=hunter2"],
+            "pip-compile --pip-args='-C auth=<REDACTED>'",
+            id="redact pip-args short config-settings value",
+        ),
+        pytest.param(
+            ["--pip-args", "--config-settings standalone"],
+            "pip-compile --pip-args='--config-settings <REDACTED>'",
+            id="redact pip-args config-settings without equals",
+        ),
+        pytest.param(
+            ["--pip-args", "--extra-index-url https://user:pw@host/simple"],
+            "pip-compile --pip-args='--extra-index-url https://user:****@host/simple'",
+            id="redact pip-args embedded url",
+        ),
     ),
 )
 def test_get_compile_command(tmpdir_cwd, cli_args, expected_command):
