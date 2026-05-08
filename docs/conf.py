@@ -49,15 +49,10 @@ source_suffix = {
 }
 
 html_theme = "furo"
-html_title = f"v{release}"
+html_title = f"<nobr>{project}</nobr> documentation v{release}"
 html_last_updated_fmt = datetime.now(tz=timezone.utc).isoformat()
 html_static_path = ["_static"]
 html_css_files = ["custom.css"]
-html_favicon = "_static/pip-tools.svg"
-html_logo = "_static/pip-tools.svg"
-html_theme_options = {
-    "sidebar_hide_name": False,
-}
 html_show_sourcelink = False
 
 autoclass_content = "both"
