@@ -106,14 +106,17 @@ extra = click.option(
     "--extra",
     "extras",
     multiple=True,
-    help="Name of an extras_require group to install; may be used more than once",
+    help=(
+        "Name of an extras_require group to install; may be used more than "
+        "once. Pass ``--all-extras`` to include every declared extra."
+    ),
 )
 
 all_extras = click.option(
     "--all-extras",
     is_flag=True,
     default=False,
-    help="Install all extras_require groups",
+    help="Install all extras_require groups (see also: ``--extra`` for one at a time)",
 )
 
 find_links = click.option(
@@ -214,7 +217,11 @@ upgrade_package = click.option(
     "upgrade_packages",
     nargs=1,
     multiple=True,
-    help="Specify a particular package to upgrade; may be used more than once",
+    help=(
+        "Re-resolve the named package against the index, ignoring any pin "
+        "from the existing requirements file. May be used more than once. "
+        "Other packages keep their seeded pins."
+    ),
 )
 
 output_file = click.option(
@@ -291,9 +298,12 @@ build_isolation = click.option(
     is_flag=True,
     default=True,
     help=(
-        "Enable isolation when building a modern source distribution. "
-        "Build dependencies specified by PEP 518 must be already installed "
-        "if build isolation is disabled."
+        "Enable isolation when building a modern source distribution. With "
+        "``--no-build-isolation`` you must pre-install every PEP 518 build "
+        "dependency (``setuptools``, ``wheel``, ``hatchling``, etc.) into "
+        "the active environment; missing build deps surface as "
+        "import errors during the backend invocation, far from the "
+        "underlying cause."
     ),
 )
 
