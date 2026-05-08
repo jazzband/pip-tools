@@ -229,7 +229,26 @@ def from_editable():
 
 
 @pytest.fixture
-def runner():
+def runner(
+    monkeypatch: pytest.MonkeyPatch,
+    minimal_wheels_path: Path,
+) -> _t.Generator[CliRunner, None, None]:
+    # ``minimal_wheels_path`` is a session-scoped fixture that runs
+    # ``pip download setuptools`` via a subprocess on first use. That
+    # subprocess inherits the active environment; if it lazy-inits
+    # while this fixture's ``monkeypatch.delenv`` is in effect, pip
+    # sees no index URL and the download fails. Declaring it as a
+    # dependency forces the session fixture to initialise before the
+    # ``delenv`` below ever fires.
+    del minimal_wheels_path
+    # Pip honours ``PIP_INDEX_URL`` and friends from the contributor's shell;
+    # corporate Artifactory mirrors leak through and break tests that assert
+    # exact pip argument lists. Drop the variables for the duration of the
+    # CLI invocation. ``PIP_CONFIG_FILE`` is intentionally left alone because
+    # the cross-platform ``os.devnull`` device file (``/dev/null`` vs ``nul``)
+    # exposed pip path-resolution flakes on Windows in lowest-pip CI.
+    for env_var in ("PIP_INDEX_URL", "PIP_EXTRA_INDEX_URL", "PIP_TRUSTED_HOST"):
+        monkeypatch.delenv(env_var, raising=False)
     if Version(version_of("click")) < Version("8.2"):
         cli_runner = CliRunner(mix_stderr=False)
     else:
