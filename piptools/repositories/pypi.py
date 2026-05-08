@@ -104,7 +104,20 @@ class PyPIRepository(BaseRepository):
         )
 
     def clear_caches(self) -> None:
-        rmtree(self._download_dir, ignore_errors=True)
+        # Atomic rename + opportunistic rmtree narrows one specific race:
+        # two ``pip-compile --rebuild`` runs on the same ``cache_dir`` no
+        # longer leave the second resolver staring at a tree the first
+        # started removing. It does not serialise concurrent ``--rebuild``
+        # runs as a whole; full concurrent-rebuild safety needs locking
+        # around the resolve, which is out of scope here.
+        if not os.path.exists(self._download_dir):
+            return
+        stale = f"{self._download_dir}.stale-{os.getpid()}"
+        try:
+            os.replace(self._download_dir, stale)
+        except OSError:
+            return
+        rmtree(stale, ignore_errors=True)
 
     @property
     def options(self) -> optparse.Values:
