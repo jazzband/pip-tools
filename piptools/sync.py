@@ -8,7 +8,7 @@ from collections.abc import Iterable, Mapping, ValuesView
 from subprocess import run  # nosec
 
 import click
-from pip._internal.models.direct_url import ArchiveInfo
+from pip._internal.models.direct_url import ArchiveInfo, DirectUrl
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.compat import stdlib_pkgs
 from pip._internal.utils.direct_url_helpers import (
@@ -146,14 +146,19 @@ def diff_key_from_ireq(ireq: InstallRequirement) -> str:
 def diff_key_from_req(req: Distribution) -> str:
     """Get a unique key for the requirement."""
     key = canonicalize_name(req.key)
-    if (
-        req.direct_url
-        and isinstance(req.direct_url.info, ArchiveInfo)
-        and req.direct_url.info.hash
-    ):
+    if req.direct_url and _direct_url_has_archive_hash(req.direct_url):
         key = direct_url_as_pep440_direct_reference(req.direct_url, key)
     # TODO: Also support VCS and editable installs.
     return key
+
+
+def _direct_url_has_archive_hash(direct_url: DirectUrl) -> bool:
+    info = getattr(direct_url, "archive_info", None) or getattr(
+        direct_url, "info", None
+    )
+    if not isinstance(info, ArchiveInfo):
+        return False
+    return bool(getattr(info, "hashes", None) or getattr(info, "hash", None))
 
 
 def diff(
