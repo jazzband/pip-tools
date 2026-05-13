@@ -496,6 +496,7 @@ def _validate_config(
     :raises click.BadOptionUsage: if config contains invalid values.
     """
     from piptools.scripts.compile import cli as compile_cli
+    from piptools.scripts.lock import cli as lock_cli
     from piptools.scripts.sync import cli as sync_cli
 
     compile_cli_params = {
@@ -506,7 +507,21 @@ def _validate_config(
         param.name: param for param in sync_cli.params if param.name is not None
     }
 
-    all_keys = set(compile_cli_params) | set(sync_cli_params)
+    lock_cli_params = {
+        param.name: param for param in lock_cli.params if param.name is not None
+    }
+
+    # ``[tool.pip-tools].conflicts`` is a pip-lock-only key declared as a TOML
+    # table rather than a CLI flag; the validator must recognize it as a known
+    # config key even though no click param backs it.
+    pip_lock_only_keys = {"conflicts"}
+
+    all_keys = (
+        set(compile_cli_params)
+        | set(sync_cli_params)
+        | set(lock_cli_params)
+        | pip_lock_only_keys
+    )
 
     for key, value in config.items():
         # Validate unknown keys in both compile and sync
@@ -519,10 +534,10 @@ def _validate_config(
                 ctx=click_context,
             )
 
-        # Get all params associated with this key in both compile and sync
+        # Get all params associated with this key in compile, sync, and lock
         associated_params = (
             cli_params[key]
-            for cli_params in (compile_cli_params, sync_cli_params)
+            for cli_params in (compile_cli_params, sync_cli_params, lock_cli_params)
             if key in cli_params
         )
 

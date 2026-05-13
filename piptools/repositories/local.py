@@ -5,6 +5,7 @@ import typing as _t
 from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 
+from packaging.pylock import PackageSdist, PackageWheel
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.models.candidate import InstallationCandidate
@@ -15,7 +16,6 @@ from pip._internal.utils.hashes import FAVORITE_HASH
 from .._internal import _pip_api
 from ..utils import as_tuple, key_from_ireq
 from .base import BaseRepository
-from .pypi import PyPIRepository
 
 
 def ireq_satisfied_by_existing_pin(
@@ -46,7 +46,7 @@ class LocalRequirementsRepository(BaseRepository):
     def __init__(
         self,
         existing_pins: Mapping[str, InstallationCandidate],
-        proxied_repository: PyPIRepository,
+        proxied_repository: BaseRepository,
         reuse_hashes: bool = True,
     ):
         self._reuse_hashes = reuse_hashes
@@ -99,6 +99,14 @@ class LocalRequirementsRepository(BaseRepository):
                     ":".join([FAVORITE_HASH, hexdigest]) for hexdigest in hexdigests
                 }
         return self.repository.get_hashes(ireq)
+
+    def get_distribution_files(
+        self, ireq: InstallRequirement
+    ) -> list[PackageWheel | PackageSdist]:
+        return self.repository.get_distribution_files(ireq)
+
+    def get_requires_python(self, ireq: InstallRequirement) -> str | None:
+        return self.repository.get_requires_python(ireq)
 
     @contextmanager
     def allow_all_wheels(self) -> Iterator[None]:

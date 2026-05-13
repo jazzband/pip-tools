@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import pathlib
 import shutil
 import textwrap
@@ -10,6 +11,7 @@ from build import BuildBackendException
 from piptools.build import (
     ProjectMetadata,
     StaticProjectMetadata,
+    _env_var,
     build_project_metadata,
     maybe_statically_parse_project_metadata,
 )
@@ -206,6 +208,18 @@ dynamic = ["optional-dependencies"]
     src_file = tmp_path / "setup.py"
     src_file.write_text("print('hello')")
     assert maybe_statically_parse_project_metadata(src_file) is None
+
+
+def test_env_var_restores_existing_value(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Lines 207-208: _env_var restores the original value when the var was already set."""
+    env_var_name = "_PIP_TOOLS_TEST_ENV_VAR"
+    original_value = "original"
+    monkeypatch.setenv(env_var_name, original_value)
+
+    with _env_var(env_var_name, "temporary"):
+        assert os.environ[env_var_name] == "temporary"
+
+    assert os.environ[env_var_name] == original_value
 
 
 @pytest.mark.network

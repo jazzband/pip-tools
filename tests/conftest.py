@@ -22,6 +22,7 @@ from pip._internal.index.package_finder import PackageFinder
 from pip._internal.models.candidate import InstallationCandidate
 from pip._internal.models.link import Link
 from pip._internal.network.session import PipSession
+from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import (
     install_req_from_editable,
     install_req_from_line,
@@ -72,6 +73,24 @@ class FakeRepository(BaseRepository):
             "test:123",
             "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
         }
+
+    def get_distribution_files(self, ireq):
+        from packaging.pylock import PackageSdist
+
+        if ireq.link:
+            return []
+        name, version, _ = as_tuple(ireq)
+        return [
+            PackageSdist(
+                url=f"https://fake.url.foo/{name}-{version}.tar.gz",
+                name=f"{name}-{version}.tar.gz",
+                hashes={"sha256": "0" * 64},
+                size=1000,
+            ),
+        ]
+
+    def get_requires_python(self, ireq):
+        return None
 
     def find_best_match(self, ireq, prereleases=False):
         if ireq.editable:
@@ -130,7 +149,9 @@ class FakeRepository(BaseRepository):
         """Not used"""
 
 
-def pytest_collection_modifyitems(config, items):
+def pytest_collection_modifyitems(
+    config: pytest.Config, items: list[pytest.Item]
+) -> None:
     for item in items:
         # Mark network tests as flaky
         if item.get_closest_marker("network") and looks_like_ci():
@@ -210,17 +231,46 @@ def base_resolver(depcache):
     return partial(LegacyResolver, cache=depcache, existing_constraints={})
 
 
+def _install_req_from_line_compat(
+    name: str,
+    comes_from: str | InstallRequirement | None = None,
+    *,
+    isolated: bool = False,
+    hash_options: dict[str, list[str]] | None = None,
+    constraint: bool = False,
+    line_source: str | None = None,
+    user_supplied: bool = False,
+    config_settings: dict[str, str | list[str]] | None = None,
+) -> InstallRequirement:
+    # pip 23.1 folded hash_options into options; rewrite to match the legacy
+    # call shape on older pip without losing the typed call signature here.
+    if _pip_api.PIP_VERSION_MAJOR_MINOR <= (23, 0):
+        legacy = _t.cast("_t.Callable[..., InstallRequirement]", install_req_from_line)
+        return legacy(
+            name,
+            comes_from=comes_from,
+            isolated=isolated,
+            options={"hashes": hash_options or {}},
+            constraint=constraint,
+            line_source=line_source,
+            user_supplied=user_supplied,
+            config_settings=config_settings,
+        )
+    return install_req_from_line(
+        name,
+        comes_from=comes_from,
+        isolated=isolated,
+        hash_options=hash_options,
+        constraint=constraint,
+        line_source=line_source,
+        user_supplied=user_supplied,
+        config_settings=config_settings,
+    )
+
+
 @pytest.fixture
 def from_line():
-    def _from_line(*args, **kwargs):
-        if _pip_api.PIP_VERSION_MAJOR_MINOR <= (23, 0):
-            hash_options = kwargs.pop("hash_options", {})
-            options = kwargs.pop("options", {})
-            options["hashes"] = hash_options
-            kwargs["options"] = options
-        return install_req_from_line(*args, **kwargs)
-
-    return _from_line
+    return _install_req_from_line_compat
 
 
 @pytest.fixture
@@ -228,12 +278,26 @@ def from_editable():
     return install_req_from_editable
 
 
-@pytest.fixture
-def runner():
+def _make_cli_runner() -> CliRunner:
+    # click 8.2 dropped mix_stderr
     if Version(version_of("click")) < Version("8.2"):
-        cli_runner = CliRunner(mix_stderr=False)
-    else:
-        cli_runner = CliRunner()
+        return CliRunner(mix_stderr=False)
+    return CliRunner()
+
+
+@pytest.fixture
+def runner(monkeypatch: pytest.MonkeyPatch) -> _t.Generator[CliRunner, None, None]:
+    # Neutralize pip environment variables that inject host-specific index
+    # URLs (e.g. corporate Artifactory mirrors) so that tests checking
+    # exact pip argument lists get predictable output.
+    # PIP_CONFIG_FILE is only reset to /dev/null when pip_conf has not
+    # already set it; this prevents runner from overriding the controlled
+    # pip config that pip_conf installs for tests that need real packages.
+    for env_var in ("PIP_INDEX_URL", "PIP_EXTRA_INDEX_URL", "PIP_TRUSTED_HOST"):
+        monkeypatch.delenv(env_var, raising=False)
+    if not os.environ.get("PIP_CONFIG_FILE"):
+        monkeypatch.setenv("PIP_CONFIG_FILE", os.devnull)
+    cli_runner = _make_cli_runner()
     with cli_runner.isolated_filesystem():
         yield cli_runner
 
@@ -256,6 +320,10 @@ def make_pip_conf(tmpdir, monkeypatch):
             f.write(content)
 
         monkeypatch.setenv("PIP_CONFIG_FILE", path)
+        # PIP_INDEX_URL and PIP_EXTRA_INDEX_URL env vars take precedence
+        # over config-file settings; clear them so the config file wins.
+        for env_var in ("PIP_INDEX_URL", "PIP_EXTRA_INDEX_URL"):
+            monkeypatch.delenv(env_var, raising=False)
 
         created_paths.append(path)
         return path

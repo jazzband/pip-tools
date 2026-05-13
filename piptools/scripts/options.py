@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import re
 import typing as _t
 
 import click
@@ -7,7 +9,38 @@ from pip._internal.commands import create_command
 from pip._internal.utils.misc import redact_auth_from_url
 
 from piptools.locations import CACHE_DIR, DEFAULT_CONFIG_FILE_NAMES
+from piptools.pylock.tool_block import TOOL_FIELDS as _TOOL_FIELDS
 from piptools.utils import UNSAFE_PACKAGES, override_defaults_from_config_file
+
+_PYTHON_VERSION_RE = re.compile(
+    r"""
+    ^ (?P<major> \d+ )                # major version
+    \. (?P<minor> \d+ )               # minor version
+    (?: \. (?P<patch> \d+ ) )?        # optional patch version
+    $
+    """,
+    re.VERBOSE,
+)
+
+
+def _validate_python_versions(
+    ctx: click.Context, param: click.Parameter, value: tuple[str, ...]
+) -> tuple[str, ...]:
+    for version in value:
+        # ``current`` is a valid shorthand expanded by ``resolve_targets``
+        # to the host's ``MAJOR.MINOR``, mirroring ``--platform current``.
+        # Saves the user from looking up their interpreter version.
+        if version == "current":
+            continue
+        if not _PYTHON_VERSION_RE.fullmatch(version):
+            raise click.BadParameter(
+                f"{value!r}: --python-version expects MAJOR.MINOR or "
+                f"MAJOR.MINOR.PATCH (e.g. 3.12 or 3.12.5) or 'current'",
+                ctx=ctx,
+                param=param,
+            )
+    return value
+
 
 _FC = _t.TypeVar("_FC", bound="_t.Callable[..., _t.Any] | click.Command")
 
@@ -219,8 +252,33 @@ upgrade_package = click.option(
     multiple=True,
     help=(
         "Re-resolve the named package against the index, ignoring any pin "
-        "from the existing requirements file. May be used more than once. "
-        "Other packages keep their seeded pins."
+        "from the existing requirements file or lockfile. May be used more "
+        "than once. Other packages keep their seeded pins."
+    ),
+)
+
+upgrade_lock = click.option(
+    "-U",
+    "--upgrade/--no-upgrade",
+    "upgrade_lock",
+    is_flag=True,
+    default=False,
+    help=(
+        "Re-resolve every package, ignoring pins from any existing "
+        "``pylock.toml``. Without this flag the existing lock seeds "
+        "constraints so unrelated packages don't churn; pass "
+        "``--upgrade-package <name>`` to upgrade just one."
+    ),
+)
+
+check = click.option(
+    "--check",
+    is_flag=True,
+    default=False,
+    help=(
+        "Re-resolve in memory and exit non-zero if the result differs from "
+        "the existing ``pylock.toml``. Use in CI to detect lockfile drift "
+        "without writing the file. Mirrors ``uv lock --check``."
     ),
 )
 
@@ -286,6 +344,34 @@ max_rounds = click.option(
     default=10,
     help="Maximum number of rounds before resolving the requirements aborts.",
 )
+
+
+def _parse_jobs(ctx: click.Context, param: click.Parameter, value: str) -> int:
+    """Parse the ``--jobs`` argument: integer >= 1, or ``auto`` for cpu_count."""
+    if value == "auto":
+        return os.cpu_count() or 1
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        raise click.BadParameter(f"expected an integer or 'auto', got {value!r}")
+    if parsed < 1:
+        raise click.BadParameter("must be at least 1")
+    return parsed
+
+
+jobs = click.option(
+    "--jobs",
+    "-j",
+    default="auto",
+    callback=_parse_jobs,
+    help=(
+        "Number of resolution cohorts to lock in parallel. Pass an integer "
+        "or 'auto' (the count of available CPUs, the default). Workers are "
+        "processes; the value is capped at the number of cohorts, and the "
+        "dispatch runs in-process when the cap is 1 (no worker fork)."
+    ),
+)
+
 
 src_files = click.argument(
     "src_files",
@@ -442,4 +528,144 @@ only_build_deps = click.option(
     is_flag=True,
     default=False,
     help="Extract a package only if it is a build dependency.",
+)
+
+group = click.option(
+    "--group",
+    "groups",
+    multiple=True,
+    help=(
+        "Name of a dependency group to include; may be used more than once. "
+        "Pass ``--all-groups`` to include every declared group."
+    ),
+)
+
+all_groups = click.option(
+    "--all-groups",
+    is_flag=True,
+    default=False,
+    help=(
+        "Include all dependency groups defined in pyproject.toml "
+        "(cf. ``--group`` for one at a time)"
+    ),
+)
+
+
+def _platform_choices() -> tuple[str, ...]:
+    # Sourced from `PLATFORM_ENVIRONMENTS` so the click choice and the
+    # env lookup table never drift apart. ``current`` is the host's
+    # auto-detected preset, which spares the user from spelling out
+    # ``linux-x86_64`` etc. for one-off "lock for what I'm on now" runs.
+    from piptools.pylock.platforms import PLATFORM_ENVIRONMENTS
+
+    return ("current", *sorted(PLATFORM_ENVIRONMENTS))
+
+
+def _validate_platform(
+    ctx: click.Context, param: click.Parameter, value: tuple[str, ...]
+) -> tuple[str, ...]:
+    """Accept the built-in choices, ``current``, or any ``<os>-<arch>`` shape.
+
+    Restricting strictly to ``PLATFORM_ENVIRONMENTS`` means users on FreeBSD,
+    OpenBSD, AIX, Solaris, and similar can't lock with ``--no-universal``;
+    relaxing to ``<os>-<arch>`` lets them name the target while a sibling
+    helper in ``platforms.py`` deduces best-effort markers.
+    """
+    from piptools.pylock.platforms import PLATFORM_ENVIRONMENTS
+
+    valid = {"current", *PLATFORM_ENVIRONMENTS}
+    canonical: list[str] = []
+    for raw in value:
+        # Canonicalise to lowercase before matching: ``LINUX-X86_64``
+        # and ``linux-x86_64`` would otherwise both pass (the first via
+        # the ``<os>-<arch>`` fallback as a synthesised platform, the
+        # second through the built-in preset) and the lockfile would
+        # carry both near-duplicates.
+        normalised = raw.lower()
+        if normalised in valid:
+            canonical.append(normalised)
+            continue
+        os_name, sep, arch = normalised.partition("-")
+        if not sep or not os_name or not arch:
+            raise click.BadParameter(
+                f"unknown platform {raw!r}; expected one of "
+                f"{sorted(PLATFORM_ENVIRONMENTS)} or an ``<os>-<arch>`` "
+                f"string (e.g. ``freebsd-amd64``). Both halves must be "
+                f"non-empty so the synthesised marker has a real "
+                f"``platform_machine`` value.",
+                param_hint="--platform",
+            )
+        canonical.append(normalised)
+    return tuple(canonical)
+
+
+platform = click.option(
+    "--platform",
+    "platforms",
+    multiple=True,
+    callback=_validate_platform,
+    help=(
+        "Target platform for cross-platform resolution; may be used more "
+        "than once. Pass 'current' to target the host's auto-detected "
+        "preset, or any ``<os>-<arch>`` string to lock for a platform "
+        "outside the built-in presets (best-effort markers). Pass "
+        "``--no-universal`` to skip cross-platform resolution entirely."
+    ),
+)
+
+python_version = click.option(
+    "--python-version",
+    "python_versions",
+    multiple=True,
+    callback=_validate_python_versions,
+    help="Target Python version (e.g., 3.12 or 3.12.5); may be used more than once.",
+)
+
+implementation = click.option(
+    "--implementation",
+    "implementations",
+    multiple=True,
+    default=("cpython",),
+    show_default=True,
+    help=(
+        "Target Python implementation (e.g., cpython, pypy, graalpy); may be "
+        "used more than once. Defaults to ``cpython``."
+    ),
+)
+
+no_universal = click.option(
+    "--no-universal",
+    is_flag=True,
+    default=False,
+    help=(
+        "Resolve for current platform only instead of cross-platform. "
+        "Use ``--platform`` to pick specific targets."
+    ),
+)
+
+no_metadata = click.option(
+    "--no-metadata/--metadata",
+    "--no-tool-block/--tool-block",
+    "no_metadata",
+    is_flag=True,
+    default=False,
+    help=(
+        "Suppress the entire [tool.pip-tools] metadata block. The "
+        "--no-tool-block alias is the clearer name (this affects only the "
+        "tool-private block, not PEP 751 packages metadata). May be combined "
+        "with --skip-metadata-field; suppressing the whole block wins."
+    ),
+)
+
+skip_metadata_fields = click.option(
+    "--skip-metadata-field",
+    "skip_metadata_fields",
+    multiple=True,
+    type=click.Choice(tuple(sorted(_TOOL_FIELDS)), case_sensitive=True),
+    help=(
+        "Omit a field from the [tool.pip-tools] metadata block; may be used "
+        "more than once. Omitting all fields suppresses the block entirely. "
+        "Useful for reproducible lock files where volatile values would cause "
+        "spurious diffs."
+    ),
 )

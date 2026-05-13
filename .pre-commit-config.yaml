@@ -53,6 +53,8 @@ repos:
           - build==1.0.0
           - pyproject_hooks==1.0.0
           - pytest==7.4.2
+          - sphinx>=9
+          - types-docutils
   - repo: https://github.com/PyCQA/bandit
     rev: 1.9.4
     hooks:

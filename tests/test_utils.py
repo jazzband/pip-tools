@@ -16,6 +16,7 @@ from pip._internal.resolution.resolvelib.requirements import SpecifierRequiremen
 
 from piptools.scripts.compile import cli as compile_cli
 from piptools.utils import (
+    _assign_config_to_cli_context,
     as_tuple,
     dedup,
     drop_extras,
@@ -798,3 +799,15 @@ def test_select_config_file_prefers_pip_tools_toml_over_pyproject_toml(tmpdir_cw
             """))
 
     assert select_config_file(()) == pip_tools_file
+
+
+def test_assign_config_to_cli_context_when_default_map_already_set(
+    make_config_file,
+) -> None:
+    """An existing ``default_map`` keeps its keys; the config merges on top."""
+
+    ctx = Context(compile_cli)
+    ctx.default_map = {"existing_key": "existing_value"}
+    _assign_config_to_cli_context(ctx, {"new_key": "new_value"})
+    assert ctx.default_map["existing_key"] == "existing_value"
+    assert ctx.default_map["new_key"] == "new_value"

@@ -16,6 +16,10 @@ import build.env
 import pyproject_hooks
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import parse_req_from_line
+
+# `Requirement` and `Marker` are passed straight into pip's `InstallRequirement`,
+# which `isinstance`-checks against its vendored copies; mixing top-level types
+# would trip pip's constructor assertion.
 from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.requirements import Requirement
 
@@ -27,11 +31,11 @@ PYPROJECT_TOML = "pyproject.toml"
 _T = _t.TypeVar("_T")
 
 
-if sys.version_info >= (3, 10):
+if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
     from importlib.metadata import PackageMetadata
-else:
+else:  # pragma: <3.10 cover
 
-    class PackageMetadata(_t.Protocol):
+    class PackageMetadata(_t.Protocol):  # pragma: <3.10 cover
         @_t.overload
         def get_all(self, name: str, failobj: None = None) -> list[_t.Any] | None: ...
 
@@ -43,6 +47,7 @@ else:
 class StaticProjectMetadata:
     extras: tuple[str, ...]
     requirements: tuple[InstallRequirement, ...]
+    requires_python: str | None = None
 
 
 @dataclass
@@ -50,6 +55,7 @@ class ProjectMetadata:
     extras: tuple[str, ...]
     requirements: tuple[InstallRequirement, ...]
     build_requirements: tuple[InstallRequirement, ...]
+    requires_python: str | None = None
 
 
 def maybe_statically_parse_project_metadata(
@@ -111,6 +117,15 @@ def maybe_statically_parse_project_metadata(
     return StaticProjectMetadata(
         extras=tuple(extras),
         requirements=tuple(install_requirements),
+        # ``[project].requires-python`` is the same source ``build_project_metadata``
+        # would surface via the wheel's ``Requires-Python`` header for non-static
+        # projects; expose it here too so the lockfile sees the bound regardless
+        # of which path produced the metadata.
+        requires_python=(
+            str(project_table["requires-python"])
+            if project_table.get("requires-python")
+            else None
+        ),
     )
 
 
@@ -182,6 +197,11 @@ def build_project_metadata(
             extras=extras,
             requirements=requirements,
             build_requirements=build_requirements,
+            # PEP 517 backends populate ``Requires-Python`` in the wheel
+            # metadata whether the project sources it from ``[project]``,
+            # ``setup.cfg``, or a dynamic backend hook. Reading it here
+            # keeps the lock-time bound backend-agnostic.
+            requires_python=metadata.get("Requires-Python"),
         )
 
 

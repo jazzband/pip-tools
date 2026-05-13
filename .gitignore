@@ -31,3 +31,8 @@ coverage.xml
 requirements.in
 requirements.txt
 .eggs/
+
+pylock.toml
+.pylock*.toml.lock
+
+docs/_build

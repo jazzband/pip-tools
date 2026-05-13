@@ -12,19 +12,31 @@ This module is based on an idea that pytest uses for self-testing:
 
 from __future__ import annotations
 
+import optparse
 import os
 import pkgutil
 import subprocess
 import sys
+import typing as _t
 from collections.abc import Iterator
 from itertools import chain
 from pathlib import Path
 from types import ModuleType
 
 import pytest
+from pytest_mock import MockerFixture
 
 import piptools
 from piptools._internal import _pip_api
+from piptools._internal._pip_api import (
+    cli_options,
+    install_requirements,
+    package_finder,
+    pip_version,
+)
+
+if _t.TYPE_CHECKING:
+    from unittest.mock import MagicMock
 
 
 def _find_all_importables(pkg: ModuleType) -> list[str]:
@@ -72,18 +84,19 @@ def _allowed_deprecation_warning_filters() -> list[str]:
     # https://github.com/python/cpython/pull/138149 allows regex usage, but is not
     # yet supported on all Python versions we support
     flags: list[str] = []
+    # pkg_resources.declare_namespace() is deprecated; this is triggered
+    # by sphinxcontrib packages that may be installed in the dev environment.
+    # The warning originates from pip's vendored copy of pkg_resources.
+    flags.extend(("-W", "ignore::DeprecationWarning:pip._vendor.pkg_resources"))
     if _pip_api.PIP_VERSION_MAJOR_MINOR < (25, 3):
         flags.extend(
             ("-W", "ignore:pkg_resources is deprecated as an API.:DeprecationWarning:")
         )
-    if _pip_api.PIP_VERSION_MAJOR_MINOR <= (22, 2):
+    if _pip_api.PIP_VERSION_MAJOR_MINOR <= (22, 3):
         flags.extend(
             (
                 "-W",
-                (
-                    "ignore:path is deprecated. Use files() instead."
-                    ":DeprecationWarning:"
-                ),
+                ("ignore:path is deprecated. Use files() instead.:DeprecationWarning:"),
                 "-W",
                 (
                     "ignore:Creating a LegacyVersion has been deprecated "
@@ -108,3 +121,89 @@ def test_no_warnings(import_path: str) -> None:
     command = (sys.executable, *flags, "-c", import_statement)
 
     subprocess.check_call(command)
+
+
+@pytest.mark.parametrize(
+    ("func_name", "expected"),
+    (
+        pytest.param("finder_allows_prereleases_of_req", True, id="per-req"),
+        pytest.param("finder_allows_all_prereleases", True, id="all"),
+    ),
+)
+def test_finder_prerelease_functions_old_pip(
+    monkeypatch: pytest.MonkeyPatch,
+    mocker: MockerFixture,
+    func_name: str,
+    expected: bool,
+) -> None:
+    monkeypatch.setattr(pip_version, "PIP_VERSION_MAJOR_MINOR", (25, 0))
+    finder: MagicMock = mocker.MagicMock()
+    finder.allow_all_prereleases = expected
+    func = getattr(package_finder, func_name)
+    result = (
+        func(finder, mocker.MagicMock())
+        if func_name == "finder_allows_prereleases_of_req"
+        else func(finder)
+    )
+    assert result is expected
+
+
+def test_copy_install_requirement_old_pip_includes_install_options(
+    monkeypatch: pytest.MonkeyPatch, mocker: MockerFixture
+) -> None:
+    # pip <= 23.0 passes ``install_options`` to the constructor; modern pip
+    # rejects the kwarg, so without monkeypatching the version *and* the
+    # constructor the call raises before we can verify the branch fired.
+    # Capture the kwargs by stubbing ``InstallRequirement`` and assert the
+    # version-conditional kwarg actually lands in them.
+    monkeypatch.setattr(pip_version, "PIP_VERSION_MAJOR_MINOR", (23, 0))
+    template = mocker.MagicMock()
+    template.install_options = ["--prefix=/usr/local"]
+    template.use_pep517 = False
+    template.global_options = []
+    template.original_link = None
+    fake_ireq = mocker.patch.object(
+        install_requirements, "InstallRequirement", autospec=False
+    )
+    install_requirements.copy_install_requirement(template)
+    kwargs = fake_ireq.call_args.kwargs
+    assert kwargs["install_options"] == ["--prefix=/usr/local"]
+    assert kwargs["use_pep517"] is False
+    assert kwargs["global_options"] == []
+
+
+def test_postprocess_cli_options_old_pip_skips_release_control_check(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(pip_version, "PIP_VERSION_MAJOR_MINOR", (25, 0))
+    cli_options.postprocess_cli_options(optparse.Values())
+
+
+@pytest.mark.parametrize(
+    ("pip_version_tuple", "expected_filter_substring"),
+    (
+        pytest.param(
+            (25, 0),
+            "pkg_resources is deprecated as an API.",
+            id="pip<25.3-adds-pkg-resources-filter",
+        ),
+        pytest.param(
+            (22, 3),
+            "path is deprecated.",
+            id="pip<=22.3-adds-importlib-path-filter",
+        ),
+    ),
+)
+def test_allowed_deprecation_warning_filters_old_pip_branches(
+    monkeypatch: pytest.MonkeyPatch,
+    pip_version_tuple: tuple[int, int],
+    expected_filter_substring: str,
+) -> None:
+    # Two version-conditional branches inside ``_allowed_deprecation_warning_filters``
+    # only fire on pip releases older than the supported minimum on modern dev
+    # machines. Force the version to exercise each branch so coverage covers the
+    # warning-filter additions instead of treating them as dead.
+    monkeypatch.setattr(pip_version, "PIP_VERSION_MAJOR_MINOR", pip_version_tuple)
+    monkeypatch.setattr(_pip_api, "PIP_VERSION_MAJOR_MINOR", pip_version_tuple)
+    flags = _allowed_deprecation_warning_filters()
+    assert any(expected_filter_substring in flag for flag in flags)

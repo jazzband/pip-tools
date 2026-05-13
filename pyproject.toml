@@ -40,9 +40,24 @@ dependencies = [
   # direct dependencies
   "build >= 1.0.0",
   "click >= 8",
-  "pip >= 22.2",
+  # ``packaging.pylock`` (PEP 751 model + writer + validator) lives in
+  # packaging 26.0+, and ``packaging.dependency_groups`` (PEP 735 resolver
+  # used by ``--group`` / ``--all-groups``) was added in 26.1; pip 26.2's
+  # vendored copy is already 26.2 so the wheels/sdist installer path is
+  # available wherever pip-lock ships.
+  # Upper bound caps to the next major: pip-tools reaches into a few
+  # private surfaces (``Marker._markers``, ``packaging._parser``) that
+  # ``packaging.markers._evaluate_markers`` provides. A new major could
+  # rearrange those without notice; bump on each packaging major after
+  # confirming the smoke check in ``_platform_blind`` still passes.
+  "packaging >= 26.1, < 27",
+  "pip >= 22.3",
   "pyproject_hooks",
-  "tomli; python_version < '3.11'",
+  "tomli >= 2.0; python_version < '3.11'",
+  # tomli-w 1.2.0 round-trips ``decimal.Decimal`` so a future ``[packages.size]``
+  # or attestation field that uses ``Decimal`` doesn't silently normalise to
+  # ``float`` on the writer side; older releases can't preserve the type.
+  "tomli-w >= 1.2.0",
   # indirect dependencies
   "setuptools", # typically needed when pip-tools invokes setup.py
   "wheel", # pip plugin needed by pip-tools
@@ -61,7 +76,6 @@ testing = [
   "pytest-mock >= 3.15.1",
   "pytest-rerunfailures",
   "pytest-xdist",
-  "tomli-w",
   # build deps for tests
   "flit_core >=2,<4",
   "poetry_core>=1.0.0",
@@ -70,6 +84,7 @@ coverage = ["covdefaults", "pytest-cov"]
 
 [project.scripts]
 pip-compile = "piptools.scripts.compile:cli"
+pip-lock = "piptools.scripts.lock:cli"
 pip-sync = "piptools.scripts.sync:cli"
 
 [tool.isort]

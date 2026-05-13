@@ -429,6 +429,35 @@ jobs:
             VM-${{ matrix.runner-vm }},
             Py-${{ steps.python-install.outputs.python-version }},
             Pip-${{ matrix.pip-version }}
+      - name: Rename coverage data file
+        # ``actions/download-artifact@v4`` with ``merge-multiple: true`` would
+        # overwrite the bare ``.coverage`` from every matrix slot at the
+        # combine step, leaving the combine job a single file (which
+        # ``coverage combine`` reports as "No data to combine"). Rename to a
+        # unique suffix per slot so the merged directory carries one file
+        # per slot and the combiner sees them all.
+        if: >-
+          !cancelled()
+          && !inputs.cpython-pip-version
+          && runner.os == 'Linux'
+        env:
+          RUNNER_VM: ${{ matrix.runner-vm }}
+          PY_VERSION: ${{ matrix.python-version }}
+          PIP_VERSION: ${{ matrix.pip-version }}
+        run: mv .coverage ".coverage.${RUNNER_VM}-${PY_VERSION}-${PIP_VERSION}"
+        shell: bash
+      - name: Upload coverage data
+        if: >-
+          !cancelled()
+          && !inputs.cpython-pip-version
+          && runner.os == 'Linux'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          include-hidden-files: true
+          name: >-
+            coverage-data-${{ matrix.runner-vm }}-${{ matrix.python-version }}-${{ matrix.pip-version }}
+          path: .coverage.*
+          retention-days: 3
 
   pypy:
     name: ${{ matrix.runner-vm }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
@@ -512,18 +541,53 @@ jobs:
           && exit 1
         shell: bash
 
-  coverage-summary:
-    name: Coverage processing
+  coverage-combine:
+    name: 📊 Combine coverage
     if: >-
       !cancelled()
     runs-on: ubuntu-24.04
-    timeout-minutes: 1
+    timeout-minutes: 5
     needs:
+      - pre-setup
       - test
     steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          # The combine job only reads the workspace; without this, ``actions/checkout``
+          # stashes a credential in ``.git/config`` that subsequent steps could leak
+          # into uploaded artifacts.
+          persist-credentials: false
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        with:
+          python-version: "3.14"
+      - run: python -m pip install tox
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
+        with:
+          pattern: coverage-data-*
+          merge-multiple: true
+      - run: tox -e coverage-combine
+      # Surface the combined coverage report on the workflow run summary so
+      # PR reviewers can see line coverage at a glance without downloading
+      # the html artifact. ``coverage report --format=markdown`` is what the
+      # combine env emits; capture it again here and route to the summary.
+      - name: Publish coverage to step summary
+        if: >-
+          !cancelled()
+        run: |
+          {
+            echo "## Coverage report"
+            echo ""
+            .tox/coverage-combine/bin/python -m coverage report --format=markdown
+          } >> "$GITHUB_STEP_SUMMARY"
+        shell: bash
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        with:
+          name: html-coverage-report
+          path: htmlcov
       - name: Notify Codecov that all coverage reports have been uploaded
         if: >-
           !cancelled()
+          && fromJSON(needs.pre-setup.outputs.is-upstream-repository)
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2  # v6.0.0
         with:
           fail_ci_if_error: true
@@ -545,6 +609,7 @@ jobs:
       - pypy
       - test
       - zizmor
+      - coverage-combine
 
     runs-on: ubuntu-24.04
 
@@ -554,4 +619,5 @@ jobs:
       - name: Decide whether the needed jobs succeeded or failed
         uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe  # v1.2.2
         with:
+          allowed-skips: coverage-combine
           jobs: ${{ toJSON(needs) }}

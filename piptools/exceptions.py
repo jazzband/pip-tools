@@ -15,6 +15,10 @@ class PipToolsError(Exception):
     pass
 
 
+class MarkerDisjointnessError(PipToolsError):
+    """Same-name pylock entries can both match a single install."""
+
+
 class NoCandidateFound(PipToolsError):
     def __init__(
         self,

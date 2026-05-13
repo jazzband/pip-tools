@@ -6,3 +6,8 @@ omit =
 [report]
 include = piptools/*, tests/*
 fail_under = 99
+exclude_also =
+    # The covdefaults regex matches `if (t|te|typ|typi|typin|typing)\.TYPE_CHECKING:`
+    # but we use `_t` (PEP 8 module-private alias) for `typing`, which falls outside
+    # that pattern. Whitelist it so our static type-only imports stay excluded.
+    ^\s*if _t\.TYPE_CHECKING:

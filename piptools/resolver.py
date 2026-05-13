@@ -20,6 +20,10 @@ from pip._internal.resolution.resolvelib.candidates import ExtrasCandidate
 from pip._internal.resolution.resolvelib.resolver import Resolver
 from pip._internal.utils.logging import indent_log
 from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
+
+# `pinned_ireq.req.specifier` is consumed by pip's resolver, which compares it
+# against vendored `Version` objects produced by `InstallationCandidate.version`;
+# a top-level `SpecifierSet` here would mix incompatible types at filter time.
 from pip._vendor.packaging.specifiers import SpecifierSet
 from pip._vendor.resolvelib.resolvers import ResolutionImpossible, Result
 
@@ -648,6 +652,7 @@ class BacktrackingResolver(BaseResolver):
 
         resolver_result = resolver._result
         assert isinstance(resolver_result, Result)
+        self._resolver_result = resolver_result
 
         # Prepare set of install requirements from resolver result.
         result_ireqs = self._get_install_requirements(resolver_result=resolver_result)

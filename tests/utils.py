@@ -6,5 +6,5 @@ import os
 CI_VARIABLES = {"CI", "GITHUB_ACTIONS"}
 
 
-def looks_like_ci():
+def looks_like_ci() -> bool:
     return bool(set(os.environ.keys()) & CI_VARIABLES)

@@ -6,5 +6,6 @@ This page provides a reference for the `pip-tools` command-line interface (CLI):
 :maxdepth: 1
 
 pip-compile
+pip-lock
 pip-sync
 ```

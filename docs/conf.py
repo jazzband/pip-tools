@@ -7,7 +7,13 @@ import os
 from importlib.metadata import version as get_version
 from pathlib import Path
 
+from docutils.nodes import Element, reference
+from sphinx.addnodes import pending_xref
 from sphinx.application import Sphinx
+from sphinx.builders import Builder
+from sphinx.domains.python import PythonDomain
+from sphinx.environment import BuildEnvironment
+from sphinx.ext.autodoc import Options
 from sphinx.util import logging
 
 logger = logging.getLogger(__name__)
@@ -94,17 +100,46 @@ linkcheck_ignore = [
     r"^https://github\.com/sponsors/",
 ]
 
-nitpick_ignore_regex = [
-    ("py:class", "pip.*"),
-    ("py:class", "pathlib.*"),
-    ("py:class", "click.*"),
-    ("py:class", "build.*"),
-    ("py:class", "optparse.*"),
+# Bare references in autodoc-rendered annotations (e.g., ``def f(x: Marker)``)
+# carry no module prefix, so intersphinx cannot resolve them against the
+# dotted upstream targets. Remap each one through a ``PythonDomain.resolve_xref``
+# override (see ``setup`` below) so the rendered docs link to the upstream
+# documentation instead of dropping the cross-ref.
+_XREF_REMAP: dict[str, str] = {
+    "Marker": "packaging.markers.Marker",
+    "UndefinedComparison": "packaging.markers.UndefinedComparison",
+    "UndefinedEnvironmentName": "packaging.markers.UndefinedEnvironmentName",
+    "NormalizedName": "packaging.utils.NormalizedName",
+    "InvalidName": "packaging.utils.InvalidName",
+    "datetime": "datetime.datetime",
+    "BadParameter": "click.BadParameter",
+}
+
+nitpick_ignore_regex: list[tuple[str, str]] = [
+    # pip's intersphinx inventory only publishes the public API surface;
+    # private internals (``pip._internal.*``, ``pip._vendor.*``) appear
+    # in inherited pip-wrapper docstrings with no public doc target to
+    # resolve against, so aliasing is impossible.
+    ("py:class", r"pip\._internal\..*"),
+    ("py:class", r"pip\._vendor\..*"),
+    # ``importlib.metadata._meta.PackageMetadata`` is a private protocol;
+    # importlib_metadata's intersphinx covers the public re-export but
+    # not the underscored alias the inherited docstring uses.
+    ("py:class", r"importlib\.metadata\._meta\..*"),
+    # ``_ImportLibDist`` is a piptools-internal protocol shim with no
+    # separate doc target.
     ("py:class", "_ImportLibDist"),
-    ("py:class", "PackageMetadata"),
-    ("py:class", "importlib.*"),
-    ("py:class", "IndexContent"),
-    ("py:exc", "click.*"),
+    # Recursive ``_t.TypeAlias`` strings cannot be resolved as classes.
+    ("py:class", "_ToolValue"),
+    ("py:class", "PerVariantMap"),
+    ("py:class", "ForwardDeps"),
+    # TypeVars render as class references with no resolvable target.
+    ("py:class", r"piptools\.[\w.]+\._[A-Z]+"),
+    # ``click.utils.LazyFile`` is a click utility that the upstream docs
+    # do not expose in their intersphinx inventory, so the remap has no
+    # target and the bare reference cannot resolve.
+    ("py:class", r"click\.utils\..*"),
+    ("py:class", "LazyFile"),
 ]
 
 suppress_warnings = [
@@ -139,6 +174,45 @@ myst_enable_extensions = {
 # -- Sphinx extension-API `setup()` hook
 
 
+def _skip_hyphenated_members(
+    app: Sphinx,
+    what: str,
+    name: str,
+    obj: object,
+    skip: bool,
+    options: Options,
+) -> bool | None:
+    # TypedDicts in piptools.pylock use hyphenated keys (e.g. "lock-version") that
+    # match PEP 751 TOML field names but are not valid Python identifiers. Autodoc
+    # cannot generate attribute signatures for them, so skip them. ``obj`` stays
+    # typed as ``object`` because Sphinx's callback receives the actual member
+    # being documented (which is genuinely arbitrary) and we only inspect ``name``.
+    # Blast radius is structurally bounded: Python's lexer rejects ``-`` in
+    # identifiers, so no real attribute, function, or method can have a name
+    # this matches — only TypedDict string keys do.
+    return True if "-" in name else None
+
+
+class _RemappingPythonDomain(PythonDomain):
+    """Resolve bare cross-refs through ``_XREF_REMAP`` before falling back to the default."""
+
+    def resolve_xref(  # noqa: PLR0913
+        self,
+        env: BuildEnvironment,
+        fromdocname: str,
+        builder: Builder,
+        type: str,  # noqa: A002
+        target: str,
+        node: pending_xref,
+        contnode: Element,
+    ) -> reference | None:
+        if (remapped := _XREF_REMAP.get(target)) is not None:
+            target = node["reftarget"] = remapped
+        return super().resolve_xref(
+            env, fromdocname, builder, type, target, node, contnode
+        )
+
+
 def setup(app: Sphinx) -> dict[str, bool | str]:
     """Register project-local Sphinx extension-API customizations.
 
@@ -147,6 +221,9 @@ def setup(app: Sphinx) -> dict[str, bool | str]:
     """
     if IS_RELEASE_ON_RTD:
         app.tags.add("is_release")
+
+    app.connect("autodoc-skip-member", _skip_hyphenated_members)
+    app.add_domain(_RemappingPythonDomain, override=True)
 
     return {
         "parallel_read_safe": True,

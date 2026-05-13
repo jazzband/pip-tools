@@ -9,8 +9,10 @@ import typing as _t
 from collections.abc import Iterator
 from contextlib import contextmanager
 from shutil import rmtree
+from urllib.parse import urlsplit
 
 from click import progressbar
+from packaging.pylock import PackageSdist, PackageWheel
 from pip._internal.cache import WheelCache
 from pip._internal.commands import create_command
 from pip._internal.commands.install import InstallCommand
@@ -24,23 +26,30 @@ from pip._internal.operations.build.build_tracker import get_build_tracker
 from pip._internal.req import InstallRequirement, RequirementSet
 from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.logging import indent_log, setup_logging
-from pip._internal.utils.misc import normalize_path
+from pip._internal.utils.misc import normalize_path, redact_auth_from_url
 from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
 from pip._internal.utils.urls import path_to_url, url_to_path
+
+# `candidate_version` returns whatever pip stores on `InstallationCandidate.version`,
+# which is the vendored type; staying vendored here keeps `lookup_table` keys
+# identity-comparable with `ireq.specifier.filter()` outputs (also vendored).
+from pip._vendor.packaging.specifiers import InvalidSpecifier, SpecifierSet
 from pip._vendor.packaging.tags import Tag
 from pip._vendor.packaging.version import _BaseVersion
 from pip._vendor.requests import RequestException, Session
 
 from .._compat import create_wheel_cache
 from .._internal import _pip_api
-from ..exceptions import NoCandidateFound
+from ..exceptions import NoCandidateFound, PipToolsError
 from ..logging import log
+from ..pylock._hashes import PREFERRED_HASH_ALGORITHMS
 from ..utils import (
     as_tuple,
     is_pinned_requirement,
     is_url_requirement,
     lookup_table,
 )
+from . import _hash_cache
 from .base import BaseRepository
 
 FILE_CHUNK_SIZE = 4096
@@ -104,7 +113,20 @@ class PyPIRepository(BaseRepository):
         )
 
     def clear_caches(self) -> None:
-        rmtree(self._download_dir, ignore_errors=True)
+        # Two pip-lock processes against the same ``cache_dir`` would
+        # otherwise have one rmtree wipe the other's in-flight downloads,
+        # producing a partial lock with mixed bytes. Rename the directory to
+        # a unique temp name first (atomic on POSIX/NTFS) so a concurrent
+        # lookup either still sees the old dir or sees ``no dir`` cleanly,
+        # never a half-deleted tree. The temp is then rmtree'd opportunistically.
+        if not os.path.exists(self._download_dir):
+            return
+        stale = f"{self._download_dir}.stale-{os.getpid()}"
+        try:
+            os.replace(self._download_dir, stale)
+        except OSError:
+            return
+        rmtree(stale, ignore_errors=True)
 
     @property
     def options(self) -> optparse.Values:
@@ -120,17 +142,17 @@ class PyPIRepository(BaseRepository):
 
     def _clear_finder_cache(self) -> None:
         """Clear the cache of installation candidates."""
-        # `finder.find_all_candidates` is an lru_cache wrapped method on older `pip`
-        # versions, which can be cleared with `cache_clear()`
-        # but on newer versions, it's a simple method, and the underlying cache is a
-        # dict on the instance
-        # the same holds for `finder.find_best_candidate`
+        # Pip 25.1 swapped lru_cache decoration for instance-level dicts; touch
+        # whichever surface this version exposes.
         if _pip_api.PIP_VERSION_MAJOR_MINOR >= (25, 1):
             self.finder._all_candidates.clear()
             self.finder._best_candidates.clear()
         else:
             self.finder.find_all_candidates.cache_clear()
             self.finder.find_best_candidate.cache_clear()
+        # Our own per-name cache shadows the finder's; without dropping it here
+        # a previous env's filtered candidate list would survive into the next.
+        self._available_candidates_cache.clear()
 
     @property
     def command(self) -> InstallCommand:
@@ -395,6 +417,152 @@ class PyPIRepository(BaseRepository):
 
         return hashes
 
+    def get_requires_python(self, ireq: InstallRequirement) -> str | None:
+        if getattr(ireq, "original_link", None) is not None:
+            return None
+        if not is_pinned_requirement(ireq):
+            return None
+        project = self._get_project(ireq)
+        if project is None:
+            return None
+        _, version, _ = as_tuple(ireq)
+        # Files in a release can disagree on `requires-python`; intersect so the
+        # lockfile honours the strictest bound rather than the API's listing order.
+        seen: set[str] = set()
+        combined = SpecifierSet()
+        for file_ in project.get("releases", {}).get(version, []):
+            if not (raw := file_.get("requires_python")):
+                continue
+            if raw in seen:
+                continue
+            seen.add(raw)
+            try:
+                combined &= SpecifierSet(str(raw))
+            except InvalidSpecifier:
+                continue
+        return str(combined) if seen else None
+
+    def get_distribution_files(
+        self, ireq: InstallRequirement
+    ) -> list[PackageWheel | PackageSdist]:
+        if getattr(ireq, "original_link", None) is not None:
+            return []
+
+        if not is_pinned_requirement(ireq):
+            raise TypeError(f"Expected pinned requirement, got {ireq}")
+
+        project = self._get_project(ireq)
+        if project is None:
+            return self._get_distribution_files_from_candidates(ireq)
+
+        _, version, _ = as_tuple(ireq)
+
+        try:
+            release_files = project["releases"][version]
+        except KeyError:
+            return self._get_distribution_files_from_candidates(ireq)
+
+        result: list[PackageWheel | PackageSdist] = []
+        for file_ in release_files:
+            packagetype = file_["packagetype"]
+            if packagetype not in self.HASHABLE_PACKAGE_TYPES:
+                continue
+            try:
+                digests = file_["digests"]
+            except KeyError:
+                continue
+            # PEP 751 wants "at least one secure algorithm". md5/sha1
+            # satisfy ``hashlib.algorithms_guaranteed`` but not the
+            # spec's intent. The allowlist filters the JSON API's digests
+            # to algorithms strong enough to anchor the lockfile.
+            hashes = {
+                algo: digest
+                for algo, digest in digests.items()
+                if digest and algo in PREFERRED_HASH_ALGORITHMS
+            }
+            json_size = file_.get("size")
+            if not hashes:
+                # Private indexes / mirrors may not expose a strong digest;
+                # stream the file and hash it ourselves rather than emit a
+                # weak-only ``hashes`` table (which the spec forbids). The
+                # streamed byte count subs in for ``size`` when the JSON
+                # response also omits it, so the lockfile carries a
+                # consistent shape across mirrors.
+                hash_str, streamed_size = self._get_file_hash_and_size(
+                    Link(file_["url"])
+                )
+                algo, _, value = hash_str.partition(":")
+                hashes = {algo: value}
+                if json_size is None:
+                    json_size = streamed_size
+            upload_time = None
+            if raw_ts := file_.get("upload_time_iso_8601"):
+                from datetime import datetime
+
+                upload_time = datetime.fromisoformat(raw_ts.replace("Z", "+00:00"))
+            cls = PackageWheel if packagetype == "bdist_wheel" else PackageSdist
+            result.append(
+                cls(
+                    name=file_["filename"],
+                    # PyPI's JSON URL never carries userinfo, but a proxied
+                    # mirror's might; redact at the source so the lockfile is
+                    # safe to commit regardless of the index in use.
+                    url=redact_auth_from_url(file_["url"]),
+                    hashes=hashes,
+                    size=json_size,
+                    upload_time=upload_time,
+                )
+            )
+        return result
+
+    def _get_distribution_files_from_candidates(
+        self, ireq: InstallRequirement
+    ) -> list[PackageWheel | PackageSdist]:
+        result: list[PackageWheel | PackageSdist] = []
+        for candidate in self._get_matching_candidates(ireq):
+            link = candidate.link
+            url = link.url_without_fragment
+            # PEP 751's threat model assumes hashes are computed from
+            # *authentic* content. Hashing what we streamed only gives
+            # integrity-vs-future-fetch, not provenance: a man-in-the-middle
+            # on plaintext HTTP would let us record an attacker's hash as
+            # authoritative. Refuse insecure URLs so the streaming-hash
+            # fallback inherits pip's TLS trust model (file:// is safe; it's
+            # a local-disk path the user already controls).
+            scheme = urlsplit(url).scheme
+            if scheme not in {"https", "file"}:
+                raise PipToolsError(
+                    f"Refusing to record a streamed hash for {url!r}: PEP "
+                    f"751 hashes are authoritative and ``{scheme}://`` "
+                    f"transport offers no integrity guarantee. Use HTTPS or "
+                    f"configure the index to expose ``digests`` in its "
+                    f"JSON response."
+                )
+            cached = _hash_cache.load(self._options.cache_dir, url)
+            cached_size: int | None = None
+            if cached is not None:
+                digest, cached_size = cached
+                algo = "sha256"
+                size: int | None = cached_size
+            else:
+                hash_str, streamed_size = self._get_file_hash_and_size(link)
+                algo, digest = hash_str.split(":", 1)
+                if algo == "sha256":
+                    _hash_cache.store(
+                        self._options.cache_dir, url, digest, streamed_size
+                    )
+                size = streamed_size
+            cls = PackageWheel if link.filename.endswith(".whl") else PackageSdist
+            result.append(
+                cls(
+                    name=link.filename,
+                    url=redact_auth_from_url(url),
+                    hashes={algo: digest},
+                    size=size,
+                )
+            )
+        return result
+
     def _get_matching_candidates(
         self, ireq: InstallRequirement
     ) -> set[InstallationCandidate]:
@@ -412,9 +580,19 @@ class PyPIRepository(BaseRepository):
         return candidates_by_version[matching_versions[0]]
 
     def _get_file_hash(self, link: Link) -> str:
+        digest, _size = self._get_file_hash_and_size(link)
+        return digest
+
+    def _get_file_hash_and_size(self, link: Link) -> tuple[str, int]:
         log.debug(f"Hashing {link.show_url}")
+        # ``FAVORITE_HASH`` is sha256, which is in
+        # ``pylock._hashes.PREFERRED_HASH_ALGORITHMS``; the index path and the
+        # archive path therefore agree on what counts as "secure" per PEP 751.
         h = hashlib.new(FAVORITE_HASH)
+        total = 0
+        advertised_size: float | None = None
         with open_local_or_remote_file(link, self.session) as f:
+            advertised_size = f.size
             # Chunks to iterate
             chunks = iter(lambda: f.stream.read(FILE_CHUNK_SIZE), b"")
 
@@ -439,7 +617,19 @@ class PyPIRepository(BaseRepository):
             with context_manager as bar:
                 for chunk in bar:
                     h.update(chunk)
-        return ":".join([FAVORITE_HASH, h.hexdigest()])
+                    total += len(chunk)
+        if advertised_size is not None and advertised_size != total:
+            # A truncating proxy / interrupted connection / mis-served range
+            # would still produce a syntactically valid sha256 over the
+            # bytes pip-tools actually saw. Recording that hash as
+            # authoritative would lock a corrupt artifact. Refuse the
+            # streamed result when the advertised length disagrees.
+            raise PipToolsError(
+                f"Streamed {total} bytes from {link.url_without_fragment!r} "
+                f"but the server advertised Content-Length={advertised_size}; "
+                f"refusing to record a hash for a possibly-truncated artifact."
+            )
+        return f"{FAVORITE_HASH}:{h.hexdigest()}", total
 
     @contextmanager
     def allow_all_wheels(self) -> Iterator[None]:

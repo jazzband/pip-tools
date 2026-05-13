@@ -9,12 +9,17 @@
 [![Matrix Space Badge]][Matrix Space]
 [![discord-chat-image]][discord-chat]
 
-# pip-tools = pip-compile + pip-sync
+# pip-tools = pip-compile + pip-sync + pip-lock
 
 A set of command line tools to help you keep your `pip`-based packages fresh,
 even when you've pinned them. You do pin them, right? (In building your Python
 application and its dependencies for production, you want to make sure that
 your builds are predictable and deterministic.)
+
+> **New:** [`pip-lock`](#example-usage-for-pip-lock) generates
+> [PEP 751](https://peps.python.org/pep-0751/) `pylock.toml` files —
+> cross-platform lockfiles installable with `pip 26.1+` or `uv` — from your
+> `pyproject.toml`, `requirements.in`, or `setup.py`.
 
 [![pip-tools overview for phase II][pip-tools-overview]][pip-tools-overview]
 
@@ -521,6 +526,478 @@ repos:
         name: pip-compile requirements.in
         args: [requirements.in]
         files: ^requirements\.(in|txt)$
+```
+
+## Example usage for `pip-lock`
+
+> [!WARNING]
+> `pip-lock` is experimental. The CLI surface and the
+> `[tool.pip-tools]` lockfile block may change between releases without
+> a deprecation cycle while the command settles. Pin the pip-tools
+> version in CI, and expect the option list documented below to evolve
+> based on user feedback. Set
+> `PIP_TOOLS_HIDE_EXPERIMENTAL_WARNING=1` to silence the runtime banner
+> once a project has acknowledged the contract.
+
+`pip-lock` generates a [PEP 751](https://peps.python.org/pep-0751/)
+`pylock.toml` lock file. The format is a cross-platform standard
+installable by `pip 26.1+` and `uv`. A single `pylock.toml` covers every
+combination of platform and Python version a project targets, so one file
+serves CI, deployment, and local installs without per-environment
+regeneration.
+
+### Quick start
+
+`pip-lock` discovers its input automatically. Running it from a project
+root with no arguments reads `pyproject.toml` (PEP 621 dependencies plus
+PEP 735 dependency groups), resolves for every supported platform preset
+and Python version the project advertises, and writes `pylock.toml`
+alongside.
+
+<!-- pyml disable-num-lines 6 commands-show-output -->
+
+```console
+$ pip-lock                          # discover pyproject.toml, write pylock.toml
+$ pip-lock requirements.in          # lock from a requirements file
+$ pip-lock pyproject.toml           # name the source explicitly
+$ pip-lock requirements.in -o pylock.toml
+```
+
+When more than one input file is passed, `--output-file` is required so
+the destination is unambiguous.
+
+### Cross-platform locking
+
+The default mode is universal: `pip-lock` resolves for every preset in
+its built-in matrix (Linux on x86_64, aarch64, i686, armv7l, ppc64le,
+s390x; Windows on AMD64, ARM64, x86; macOS on x86_64 and arm64) and for
+every Python version the project supports. Environments whose dependency
+graphs cannot diverge collapse into a single resolution pass. Packages
+needed only on some platforms get the appropriate marker
+(`marker = "sys_platform == 'win32'"`, etc.) so the same lockfile
+installs correctly on each target.
+
+Cross-platform mode is the right default for libraries, public
+applications, and any project whose CI matrix differs from the developer
+laptop. It costs more cold-start time than locking for one platform but
+produces a lockfile that survives moving between environments.
+
+<!-- pyml disable-num-lines 6 commands-show-output -->
+
+```console
+$ pip-lock                                       # every preset (default)
+$ pip-lock --platform linux-x86_64 \
+           --platform windows-amd64              # restrict to a subset
+$ pip-lock --platform current                    # resolve for the host's preset
+$ pip-lock --no-universal                        # current host only, fastest
+```
+
+`--no-universal` requires the host's `(sys_platform, platform_machine)`
+to match a built-in preset. On FreeBSD, musl-libc systems, or any other
+target outside the matrix, pass `--platform <os>-<arch>` explicitly. The
+markers emitted for non-preset platforms are best-effort.
+
+### Targeting Python versions
+
+By default, the Python versions come from `requires-python` in
+`pyproject.toml`. `--python-version` overrides that for the lock without
+touching the project metadata. `current` expands to the host's
+`MAJOR.MINOR`.
+
+<!-- pyml disable-num-lines 6 commands-show-output -->
+
+```console
+$ pip-lock --python-version 3.12
+$ pip-lock --python-version 3.12 --python-version 3.13
+$ pip-lock --python-version 3.12.5               # MAJOR.MINOR.PATCH supported
+$ pip-lock --python-version current              # whatever host runs pip-lock
+```
+
+### Targeting Python implementations
+
+`--implementation` picks the Python implementation(s) the lock targets;
+defaults to `cpython`. Pass it more than once to produce a lock that
+covers several implementations in one file: the top-level
+`environments` entries gain an `implementation_name == '...'` clause so
+a PyPy installer cannot match the CPython entry's marker and vice
+versa, and per-package markers like
+`implementation_name == 'pypy'` get evaluated against the correct
+target env (they were silently dropped before this flag existed).
+
+<!-- pyml disable-num-lines 5 commands-show-output -->
+
+```console
+$ pip-lock --implementation cpython              # default
+$ pip-lock --implementation pypy
+$ pip-lock --implementation cpython --implementation pypy
+$ pip-lock --implementation graalpy
+```
+
+### Extras and dependency groups
+
+Extras (PEP 631 / `[project.optional-dependencies]`) and dependency groups
+(PEP 735 / `[dependency-groups]`) both feed the resolver. The
+`--all-extras --all-groups` combination is the broadest lock and the one
+the test, CI, and dev scenarios usually need.
+
+<!-- pyml disable-num-lines 9 commands-show-output -->
+
+```console
+$ pip-lock --extra dev                           # one extra
+$ pip-lock --extra dev --extra docs              # several
+$ pip-lock --all-extras                          # every declared extra
+$ pip-lock --group test                          # one PEP 735 group
+$ pip-lock --group test --group ci               # several
+$ pip-lock --all-groups                          # every declared group
+$ pip-lock --all-extras --all-groups             # the maximal lock
+```
+
+A `default-groups` entry under `[dependency-groups]` in `pyproject.toml`
+flows through to the lockfile's PEP 751 `default-groups` field. An
+installer reading the lockfile activates those groups automatically
+when no `--group` is passed, so a CI job that ships
+`[dependency-groups].default-groups = ["test"]` keeps the test group
+installed without rewriting the install command.
+
+### Conflicting extras
+
+Projects that ship mutually exclusive extras (a CPU vs. GPU build of a
+machine-learning library, alternative TLS backends, optional native vs.
+pure-Python implementations) declare those conflicts in `pyproject.toml`.
+The resolver runs each conflicting extra in isolation so the lockfile
+contains both variants without their markers ever firing together.
+
+```toml
+[tool.pip-tools]
+conflicts = [
+    [{extra = "gpu"}, {extra = "cpu"}],
+    [{extra = "tls-rustls"}, {extra = "tls-openssl"}],
+]
+```
+
+The lockfile records each conflicting variant as a separate
+`[[packages]]` entry with the appropriate `'gpu' in extras` or
+`'cpu' in extras` marker. An installer requesting `--extra gpu` resolves
+to the GPU variant; `--extra cpu` resolves to the CPU one.
+
+### Constraints
+
+`--constraint` (alias `-c`) feeds an existing constraints file into the
+resolver. Constraints pin transitive resolution without forcing a
+package to be installed if nothing depends on it. Multiple
+`--constraint` flags compose.
+
+<!-- pyml disable-num-lines 4 commands-show-output -->
+
+```console
+$ pip-lock -c constraints.txt
+$ pip-lock -c base.txt -c overrides.txt requirements.in
+```
+
+### Build-time dependencies
+
+PEP 517 / 518 build backends and their static `build-system.requires`
+form a separate dependency graph from the project's runtime
+requirements. `pip-lock` exposes both as first-class lock targets:
+
+<!-- pyml disable-num-lines 6 commands-show-output -->
+
+```console
+$ pip-lock --build-deps-for sdist                # static + sdist build deps
+$ pip-lock --build-deps-for wheel                # static + wheel build deps
+$ pip-lock --build-deps-for editable             # static + editable build deps
+$ pip-lock --all-build-deps                      # every build-target's deps
+$ pip-lock --only-build-deps --all-build-deps    # build deps without runtime
+```
+
+`--only-build-deps` is the right shape for a lockfile that drives the
+build environment of a downstream consumer (CI image, build container)
+without dragging in the project's runtime graph.
+
+### Output file naming
+
+PEP 751 mandates one of `pylock.toml` or `pylock.<name>.toml` (lowercase,
+dot-separator). Hyphenated names like `pylock-dev.toml` are rejected so
+installers can recognize the file by its name without consulting the
+source.
+
+<!-- pyml disable-num-lines 5 commands-show-output -->
+
+```console
+$ pip-lock                                       # writes pylock.toml
+$ pip-lock -o pylock.dev.toml                    # named lock for dev
+$ pip-lock -o pylock.ci.toml                     # named lock for CI
+$ pip-lock -o -                                  # write to stdout
+```
+
+### VCS sources
+
+A VCS dependency must be pinned to a commit-immutable identifier so
+`packages.vcs.commit-id` is stable. The accepted shapes per backend:
+
+- **git** / **hg**: 40-character lowercase SHA. Branch names, tags, and
+  short SHAs are rejected so the lock cannot shift under a force-push.
+- **svn**: numeric revision (`@12345`). `HEAD`, `BASE`, `PREV`, dated
+  references, and branch names are rejected.
+- **bzr**: revision-id of the form `YYYYMMDDHHMMSS-<hash>`. `revno:N`,
+  `tag:v1.0`, `last:1`, `branch:url`, and `before:revid` are rejected.
+
+<!-- pyml disable-num-lines 4 commands-show-output -->
+
+```console
+$ pip-lock requirements.in
+# requirements.in must contain
+#   pkg @ git+https://example.com/repo@<full-sha>
+```
+
+### Dry run and CI drift detection
+
+`--dry-run` prints the resolved lockfile to stdout without touching disk.
+`--check` re-resolves in memory and exits non-zero if the result differs
+from the existing `pylock.toml`. `--check` is the canonical CI mode:
+fail the build if a developer changed `pyproject.toml` without
+regenerating the lock.
+
+<!-- pyml disable-num-lines 5 commands-show-output -->
+
+```console
+$ pip-lock --dry-run                             # preview
+$ pip-lock --dry-run > pylock.preview.toml       # capture without writing
+$ pip-lock --check                               # CI: drift = exit 1
+$ pip-lock --check && echo "lock is up to date"
+```
+
+### Upgrading
+
+The default behavior is conservative: an existing `pylock.toml` seeds
+the next resolution as constraints, so unrelated packages keep their
+pins and diffs stay minimal. `--upgrade-package` (alias `-P`) lifts the
+pin for one package; `--upgrade` (alias `-U`) re-resolves everything.
+
+<!-- pyml disable-num-lines 5 commands-show-output -->
+
+```console
+$ pip-lock --upgrade                             # re-resolve every package
+$ pip-lock -P requests                           # upgrade just requests
+$ pip-lock -P requests -P urllib3                # upgrade a few packages
+$ pip-lock --rebuild                             # also drop the on-disk caches
+```
+
+`--rebuild` clears the wheel and metadata caches before resolving. Use
+it after switching pip versions, after a corrupted cache, or when
+debugging unexplained pin drift.
+
+### Pinning to a date
+
+`--uploaded-prior-to` excludes any release uploaded after the given
+ISO-8601 timestamp. The resulting lock describes "the project as it
+would have resolved at that moment", reproducible regardless of what
+PyPI publishes later. Requires `pip >= 26.0`.
+
+<!-- pyml disable-num-lines 3 commands-show-output -->
+
+```console
+$ pip-lock --uploaded-prior-to 2024-01-01T00:00:00Z
+```
+
+### Reproducible lockfiles
+
+The `[tool.pip-tools]` block records the lock's provenance: the
+pip-tools version, the pip version used, the command line, the
+generated-at timestamp, and the resolved target environments. Every
+field aids debugging but the timestamp and pip version drift across
+machines, producing noisy diffs in CI-locked workflows. The cleanest
+reproducible setup suppresses the volatile fields:
+
+<!-- pyml disable-num-lines 5 commands-show-output -->
+
+```console
+$ pip-lock --skip-metadata-field generated-at \
+           --skip-metadata-field pip-version
+$ pip-lock --no-tool-block                       # drop the whole block
+$ pip-lock --skip-metadata-field all             # alias for --no-tool-block
+```
+
+`--no-tool-block` and `--no-metadata` are aliases. The PEP 751 packages
+metadata (`[[packages]]`, hashes, sizes, dependencies, markers) stays
+intact; only the optional pip-tools provenance block is suppressed.
+
+### Performance
+
+Resolution fans out across cohorts of target environments. `--jobs`
+controls worker process parallelism. The default `auto` matches the
+host CPU count, capped at the number of cohorts. Pass an integer to
+limit it; pass `1` to disable workers entirely (in-process dispatch,
+useful when debugging).
+
+<!-- pyml disable-num-lines 4 commands-show-output -->
+
+```console
+$ pip-lock                                       # auto (default)
+$ pip-lock --jobs 4                              # cap at four workers
+$ pip-lock --jobs 1                              # in-process, no fork
+```
+
+A monorepo with 17 platforms × 5 Python versions × `--all-extras
+--all-groups` typically partitions to 6-8 cohorts. The cohort count
+times worker CPU is the upper bound on parallel resolutions.
+
+The fallback budget for the marker-disjointness check is
+`100,000` iterations of the extras × groups × envs powerset. Projects
+with extreme combinations can lift this with the
+`PIP_TOOLS_POWERSET_FALLBACK_LIMIT` environment variable; the validator
+raises with that variable named when the budget is exceeded.
+
+### Passing through pip flags
+
+`--pip-args` forwards a string of flags to the underlying pip resolver
+unchanged. Use it for options pip-lock does not surface natively
+(`--pre-binary`, custom resolver flags, etc.). On Windows the string
+is tokenized with backslashes preserved.
+
+<!-- pyml disable-num-lines 4 commands-show-output -->
+
+```console
+$ pip-lock --pip-args "--pre-binary :all:"
+$ pip-lock --pip-args "--cert /path/to/ca.pem"   # equivalent to --cert
+```
+
+### Common errors and how to read them
+
+**`Cannot lock 'foo': versions … both match environment …`**
+
+Two `[[packages]]` entries for `foo` would both resolve on the same
+install. The error names the witness environment plus the extras and
+groups that trigger the collision. Two fixes: pin `foo` to a single
+version (a constraints file is the usual lever), or, if the collision
+sits across extras the project considers mutually exclusive, declare
+them in `[tool.pip-tools].conflicts` so each extra resolves in isolation.
+
+**`requires-python … but cohort partition retained target env …`**
+
+The cohort partitioner kept a Python version that the resolved release
+of a package excludes via its `Requires-Python`. Fixes: narrow
+`--python-version` so the lock only targets interpreters the package
+admits; pass `--no-universal` to lock for the current host only; or
+constrain the package to a release whose `Requires-Python` covers
+every target.
+
+**`Index returned a malformed wheel filename …`**
+
+A package server (mirror or direct) served a wheel whose filename
+parses to a different name or version than the resolver picked. The
+lock rejects rather than emit a mis-labelled artifact reference.
+Verify the index, or pass `--rebuild` to drop the wheel cache.
+
+**`--uploaded-prior-to requires pip >= 26.0`**
+
+The flag depends on a feature pip 26 added; either upgrade pip or drop
+the flag.
+
+**`--no-universal cannot be combined with --platform`**
+
+`--no-universal` is the "host only" mode; `--platform` selects targets.
+The two are mutually exclusive at the CLI surface.
+
+### Optional PEP 751 fields not yet emitted
+
+`pip-lock` does not currently emit `[[packages.attestation-identities]]`,
+the per-package `[packages.tool]` table, or the top-level
+`default-groups`. All three are optional in PEP 751 and lack a clear
+upstream source today: PyPI's JSON API does not surface attestation
+identities, the per-package tool block needs a project-side schema, and
+`default-groups` is a policy decision pip-lock does not assume. The
+spec accepts lockfiles without them; future releases will add each as
+its source becomes available.
+
+### Reading `[[packages.dependencies]]`
+
+Each direct dependency is identified by the minimum information needed
+to pick a unique target: `name` alone when the target is unique,
+`version` added when several entries share the name, `marker` added
+when versions also coincide. PEP 751's `packages.dependencies`
+contract is "the minimum information that uniquely identifies another
+`[[packages]]` entry"; the marker-disjointness check on emit
+guarantees that minimum is sufficient.
+
+### Installing a `pylock.toml`
+
+`pip-sync` does not consume `pylock.toml`. Use a PEP 751-aware
+installer:
+
+<!-- pyml disable-num-lines 3 commands-show-output -->
+
+```console
+$ pip install --lockfile pylock.toml .           # pip 26.1+
+$ uv pip install --lockfile pylock.toml .        # uv
+```
+
+### Example output
+
+Excerpted from a real `pip-lock` run on a `requirements.in` containing
+`requests`. URLs and hashes are abbreviated for legibility but the structure
+is what `pylock.toml` actually carries — `marker`, `requires-python`,
+`dependencies`, the `sdist` table, and a `wheels` array per package.
+
+```toml
+lock-version = "1.0"
+created-by = "pip-tools"
+requires-python = ">=3.9"
+environments = [
+    "(sys_platform == 'darwin' or sys_platform == 'linux'"
+    " or sys_platform == 'win32') and python_version == '3.12'",
+]
+
+[[packages]]
+name = "requests"
+version = "2.31.0"
+requires-python = ">=3.7"
+index = "https://pypi.org/simple"
+dependencies = [
+    {name = "certifi"},
+    {name = "charset-normalizer"},
+    {name = "idna"},
+    {name = "urllib3"},
+]
+
+[packages.sdist]
+name = "requests-2.31.0.tar.gz"
+url = "https://files.pythonhosted.org/.../requests-2.31.0.tar.gz"
+size = 110794
+upload-time = 2023-05-22T14:12:39.158238Z
+hashes = {sha256 = "942c5a758f98d790eaed1a29cb6eefc7ffb0d1cf7af05c3d2791656dbd6ad1e1"}
+
+[[packages.wheels]]
+name = "requests-2.31.0-py3-none-any.whl"
+url = "https://files.pythonhosted.org/.../requests-2.31.0-py3-none-any.whl"
+size = 62574
+hashes = {sha256 = "58cd2187c01e70e6e26505bca751777aa9f2ee0b7f4300988b709f44e013003f"}
+
+[[packages]]
+name = "colorama"
+version = "0.4.6"
+marker = "sys_platform == 'win32'"
+requires-python = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*"
+index = "https://pypi.org/simple"
+
+[packages.sdist]
+name = "colorama-0.4.6.tar.gz"
+url = "https://files.pythonhosted.org/.../colorama-0.4.6.tar.gz"
+size = 27697
+hashes = {sha256 = "08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44"}
+
+[[packages.wheels]]
+name = "colorama-0.4.6-py2.py3-none-any.whl"
+url = "https://files.pythonhosted.org/.../colorama-0.4.6-py2.py3-none-any.whl"
+size = 25335
+hashes = {sha256 = "4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57759c2e7c5"}
+
+[tool.pip-tools]
+version = "8.0.0"
+pip-version = "26.1"
+command = ["pip-lock"]
+generated-at = 2026-05-06T12:00:00Z
+no-universal = false
 ```
 
 ### Example usage for `pip-sync`

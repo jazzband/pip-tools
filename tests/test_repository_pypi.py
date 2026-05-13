@@ -8,6 +8,7 @@ from pip._internal.models.candidate import InstallationCandidate
 from pip._internal.models.link import Link
 from pip._internal.utils.urls import path_to_url
 from pip._vendor.requests import HTTPError, Session
+from pytest_mock import MockerFixture
 
 from piptools.repositories import PyPIRepository
 from piptools.repositories.pypi import open_local_or_remote_file
@@ -469,3 +470,51 @@ def test_name_collision(from_line, pypi_repository, make_package, make_sdist, tm
     deps = pypi_repository.get_dependencies(ireq)
     assert len(deps) == 1
     assert deps.pop().name == "test-package-1"
+
+
+def test_find_best_match_url_requirement_returns_itself(from_line, pypi_repository):
+    """Direct-URL requirements bypass index resolution and return themselves."""
+    ireq = from_line("https://example.com/pkg-1.0.tar.gz")
+    result = pypi_repository.find_best_match(ireq)
+    assert result is ireq
+
+
+def test_get_dependencies_unpinned_raises_type_error(from_line, pypi_repository):
+    """``get_dependencies`` rejects unpinned requirements at the boundary."""
+    ireq = from_line("django")
+    with pytest.raises(TypeError, match="Expected url, pinned or editable"):
+        pypi_repository.get_dependencies(ireq)
+
+
+def test_get_hashes_cached_url_requirement(
+    from_line, pypi_repository, tmp_path, mocker: MockerFixture
+) -> None:
+    """A previously-downloaded URL pin is hashed from the cached file, not refetched."""
+    fake_content = b"fake package content"
+    cached_filename = "pkg-1.0.tar.gz"
+    cached_file = tmp_path / cached_filename
+
+    ireq = from_line(f"https://example.com/{cached_filename}")
+    download_path = pypi_repository._get_download_path(ireq)
+    os.makedirs(download_path, exist_ok=True)
+    cached_path = os.path.join(download_path, cached_filename)
+    with open(cached_path, "wb") as fh:
+        fh.write(fake_content)
+
+    cached_file.write_bytes(fake_content)
+    result = pypi_repository.get_hashes(ireq)
+    assert len(result) == 1
+    assert next(iter(result)).startswith("sha256:")
+
+
+@pytest.mark.usefixtures("pip_conf")
+def test_allow_all_wheels_wheel_support_index_min(
+    from_line, pypi_repository: PyPIRepository
+) -> None:
+    """``allow_all_wheels`` patches ``Wheel.support_index_min`` to return 0."""
+    from pip._internal.models.wheel import Wheel
+
+    with pypi_repository.allow_all_wheels():
+        wheel = Wheel("small_fake_a-0.1-py3-none-any.whl")
+        # support_index_min is monkey-patched to always return 0
+        assert wheel.support_index_min([]) == 0

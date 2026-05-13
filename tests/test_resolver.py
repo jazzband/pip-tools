@@ -5,7 +5,12 @@ from pip._internal.exceptions import DistributionNotFound
 from pip._internal.utils.urls import path_to_url
 
 from piptools.exceptions import NoCandidateFound
-from piptools.resolver import RequirementSummary, combine_install_requirements
+from piptools.pylock._merge import _version_sort_key
+from piptools.resolver import (
+    BacktrackingResolver,
+    RequirementSummary,
+    combine_install_requirements,
+)
 
 
 @pytest.mark.parametrize(
@@ -575,3 +580,31 @@ def test_catch_distribution_not_found_error(backtracking_resolver, exception, ca
             resolver=FakePipResolver(),
             compatible_existing_constraints={},
         )
+
+
+def test_version_sort_key_falls_back_for_invalid_versions():
+    # `merge_resolutions` sorts package variants by version. PEP 440 covers
+    # nearly everything on PyPI, but VCS pins like `git+...@main` produce
+    # arbitrary version strings that `Version()` rejects; those need to
+    # land at the end of the sort instead of crashing the lock.
+    pep440 = _version_sort_key(("1.2.3", []))
+    vcs = _version_sort_key(("not-a-version", []))
+    assert pep440 < vcs
+    assert vcs == (1, "not-a-version")
+
+
+@pytest.mark.network
+@pytest.mark.usefixtures("pip_conf")
+def test_backtracking_resolver_exposes_result(from_line, pypi_repository):
+    # `pylock._merge.get_forward_dependencies` reads the resolvelib `Result`
+    # off `BacktrackingResolver._resolver_result`; pin the capture so the
+    # pylock pipeline keeps working when callers add fields to the resolver.
+    constraints = [from_line("small-fake-a==0.1")]
+    resolver = BacktrackingResolver(
+        constraints=constraints,
+        existing_constraints={},
+        repository=pypi_repository,
+    )
+    resolver.resolve(max_rounds=10)
+    assert hasattr(resolver, "_resolver_result")
+    assert resolver._resolver_result is not None
