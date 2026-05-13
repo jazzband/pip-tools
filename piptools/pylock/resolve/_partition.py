@@ -26,13 +26,12 @@ from ...exceptions import PipToolsError
 from ...logging import log
 from ...repositories import PyPIRepository
 from ...resolver import BacktrackingResolver
-from ...utils import drop_extras
 from .._inputs import ResolverOptions
 from .._marker_eval import mock_marker_environment, platform_blind_marker_eval
 from ..platforms import TargetEnvironment, to_marker_env
 from ._introspect import extract_dep_markers
 from ._resolver_factory import make_resolver
-from ._state import ResolverInputs
+from ._state import ResolverInputs, prepared_constraints
 
 
 def partition_envs_by_marker_equivalence(
@@ -177,9 +176,7 @@ def _scan_constraints(inputs: ResolverInputs) -> list[InstallRequirement]:
     families, ``non_conflicting + (label,)`` for each label) so the scan
     sees the groups every per-cohort resolution will see.
     """
-    constraints = [deepcopy(req) for req in inputs.raw_constraints]
-    for req in constraints:
-        drop_extras(req)
+    constraints = prepared_constraints(inputs.raw_constraints, extras=None)
     non_base_configs = [
         frozenset(groups) for label, groups in inputs.group_configs if label is not None
     ]

@@ -10,9 +10,10 @@ the resulting structures into the lock file.
 from __future__ import annotations
 
 import typing as _t
+from collections.abc import Iterable
 from dataclasses import dataclass
 from functools import lru_cache
-from os.path import abspath, basename
+from os.path import basename
 
 from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from packaging.version import Version
@@ -28,6 +29,37 @@ class ConflictItem:
 
     kind: str
     name: str
+
+
+def intersect_specifiers(
+    raws: Iterable[str | None],
+    into: SpecifierSet | None = None,
+) -> tuple[SpecifierSet, bool]:
+    """Fold ``raws`` into a ``SpecifierSet``; skip empty and ``InvalidSpecifier``.
+
+    The boolean tells "nobody declared a bound" apart from "every input
+    parsed as the vacuous-true set".
+
+    :param raws: Source strings.
+    :param into: Existing intersection to keep folding into.
+    :returns: ``(combined, contributed)``.
+    """
+    combined = SpecifierSet() if into is None else into
+    contributed = False
+    for raw in raws:
+        if not raw:
+            continue
+        try:
+            combined &= SpecifierSet(str(raw))
+        except InvalidSpecifier:
+            continue
+        contributed = True
+    return combined, contributed
+
+
+def _conflict_members(conflicts: list[list[ConflictItem]], kind: str) -> set[str]:
+    """Return the set of conflict-item names of ``kind`` across every group."""
+    return {item.name for group in conflicts for item in group if item.kind == kind}
 
 
 def extract_requires_python(
@@ -52,33 +84,13 @@ def extract_requires_python(
     :raises PipToolsError: When the intersection is empty (no Python release
         satisfies every clause).
     """
-    combined = SpecifierSet()
-    found = False
-    static_seen: set[str] = set()
-    for src_file in src_files:
-        if (data := _load_pyproject_or_skip(src_file)) is None:
-            continue
-        raw = data.get("project", {}).get("requires-python")
-        if not raw:
-            continue
-        try:
-            combined &= SpecifierSet(str(raw))
-        except InvalidSpecifier:
-            continue
-        found = True
-        static_seen.add(abspath(src_file))
-    for raw in metadata_specifiers:
-        # Backend-supplied ``Requires-Python`` covers ``setup.cfg``, dynamic
-        # pyproject metadata, and every other source the static parse missed;
-        # skipping projects captured by the static read keeps the
-        # intersection idempotent.
-        if not raw:
-            continue
-        try:
-            combined &= SpecifierSet(str(raw))
-        except InvalidSpecifier:
-            continue
-        found = True
+    combined, found_static = intersect_specifiers(
+        _pyproject_requires_python_strings(src_files)
+    )
+    # Backend-supplied ``Requires-Python`` covers ``setup.cfg``, dynamic
+    # pyproject metadata, and every other source the static parse missed.
+    combined, found_meta = intersect_specifiers(metadata_specifiers, into=combined)
+    found = found_static or found_meta
     if (cli_floor := _python_versions_floor(python_versions)) is not None:
         combined &= cli_floor
         found = True
@@ -98,27 +110,36 @@ def extract_requires_python(
             for minor in range(0, 100)
             for patch in (0, 1, 5, 9, 99)
         )
+        # SpecifierSet's ``__str__`` joins in insertion order, and ``&=`` does
+        # not dedupe identical specifiers (pyproject + metadata both carry
+        # the same bound for the common case). Dedupe on the string form
+        # and sort so the lockfile diff is stable across runs and across
+        # callers that supply the same bound twice.
+        clauses = sorted({str(s) for s in combined})
         if not any(combined.contains(v, prereleases=True) for v in candidates):
             # ``combined`` absorbs every contributor (pyproject,
             # metadata-specifiers, cli-floor). Naming sources from one
             # branch would hide the half of the contradiction coming
             # from the other side; walk the SpecifierSet itself so
             # the diagnostic cites every clause.
-            constituents = sorted({str(s) for s in combined})
             raise PipToolsError(
                 f"Intersected requires-python {str(combined)!r} is empty: no "
                 f"Python release satisfies all of "
-                f"{', '.join(constituents)!r}. Reconcile the project "
+                f"{', '.join(clauses)!r}. Reconcile the project "
                 f"metadata's ``requires-python`` with the "
                 f"``--python-version`` flag(s) before locking."
             )
-        # SpecifierSet's ``__str__`` joins in insertion order, and ``&=`` does
-        # not dedupe identical specifiers (pyproject + metadata both carry
-        # the same bound for the common case). Dedupe on the string form
-        # and sort so the lockfile diff is stable across runs and across
-        # callers that supply the same bound twice.
-        return ",".join(sorted({str(s) for s in combined}))
+        return ",".join(clauses)
     return None
+
+
+def _pyproject_requires_python_strings(src_files: tuple[str, ...]) -> Iterable[str]:
+    """Yield each pyproject's ``[project].requires-python`` value as a string."""
+    for src_file in src_files:
+        if (data := _load_pyproject_or_skip(src_file)) is None:
+            continue
+        if raw := data.get("project", {}).get("requires-python"):
+            yield str(raw)
 
 
 def _python_versions_floor(python_versions: tuple[str, ...]) -> SpecifierSet | None:
@@ -233,22 +254,12 @@ def build_group_configs(
     :returns: Ordered list of ``(label, group tuple)`` pairs the resolver
         iterates over. ``label`` is ``None`` for the base pass.
     """
-    conflicting_groups: set[str] = {
-        item.name
-        for conflict_group in conflicts
-        for item in conflict_group
-        if item.kind == "group"
-    }
-
+    conflicting = _conflict_members(conflicts, "group")
+    non_conflicting = tuple(g for g in groups if g not in conflicting)
     configs: list[tuple[str | None, tuple[str, ...]]] = [(None, ())]
-
     for group in groups:
-        if group in conflicting_groups:
-            non_conflicting = tuple(g for g in groups if g not in conflicting_groups)
-            configs.append((group, non_conflicting + (group,)))
-        else:
-            configs.append((group, (group,)))
-
+        members = non_conflicting + (group,) if group in conflicting else (group,)
+        configs.append((group, members))
     return configs
 
 
@@ -268,14 +279,11 @@ def build_extras_configs(
     :returns: Ordered list of ``(label, extras tuple)`` pairs the resolver
         iterates over. ``label`` is ``None`` for the combined base pass.
     """
-    conflicting_extras: set[str] = {
-        item.name for group in conflicts for item in group if item.kind == "extra"
-    }
-
-    non_conflicting = tuple(e for e in extras if e not in conflicting_extras)
+    conflicting = _conflict_members(conflicts, "extra")
+    non_conflicting = tuple(e for e in extras if e not in conflicting)
     configs: list[tuple[str | None, tuple[str, ...]]] = [(None, non_conflicting)]
     for extra in extras:
-        if extra in conflicting_extras:
+        if extra in conflicting:
             configs.append((extra, non_conflicting + (extra,)))
     return configs
 

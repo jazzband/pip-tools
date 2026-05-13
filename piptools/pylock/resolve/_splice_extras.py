@@ -19,6 +19,7 @@ from ...logging import log
 from .._marker_ast import collect_extras
 from .._merge import VariantKey
 from .._urls import normalize_for_compare
+from ..sources._detection import effective_link
 
 
 def splice_combined_extras(
@@ -102,7 +103,7 @@ def splice_combined_extras(
             # would land here with a different URL (or ``None``) and change
             # which artifact a no-extras install pulls without notice.
             if (base_link := base_links.get(name)) is not None:
-                resolved_link = ireq.original_link or ireq.link
+                resolved_link = effective_link(ireq)
                 resolved_url = (
                     resolved_link.url_without_fragment
                     if resolved_link is not None

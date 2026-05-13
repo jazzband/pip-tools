@@ -14,6 +14,7 @@ from pip._internal.vcs.git import looks_like_hash as _looks_like_hash
 
 from ...exceptions import PipToolsError
 from .._urls import split_revision
+from ._detection import effective_link
 
 
 def build_vcs_source(requirement: InstallRequirement) -> PackageVcs:
@@ -26,7 +27,8 @@ def build_vcs_source(requirement: InstallRequirement) -> PackageVcs:
     :returns: The populated VCS entry with an immutable commit identifier.
     :raises PipToolsError: When the requirement does not pin to an immutable revision.
     """
-    link = requirement.original_link or requirement.link
+    link = effective_link(requirement)
+    assert link is not None
     url = link.url_without_fragment
 
     # PEP 751 requires the registered VCS name (``git`` / ``hg`` / ...); pip stores it

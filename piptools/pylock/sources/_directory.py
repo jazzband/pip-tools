@@ -8,7 +8,7 @@ from packaging.pylock import PackageDirectory
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.urls import url_to_path
 
-from ._detection import relativize_path
+from ._detection import effective_link, relativize_path
 
 
 def build_directory_source(
@@ -23,7 +23,8 @@ def build_directory_source(
     :returns: A populated ``PackageDirectory`` carrying the editable flag and
         the ``#subdirectory=`` fragment.
     """
-    link = requirement.original_link or requirement.link
+    link = effective_link(requirement)
+    assert link is not None
     raw = link.url_without_fragment
     path = url_to_path(raw) if raw.startswith("file:") else raw
     return PackageDirectory(

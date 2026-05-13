@@ -10,7 +10,7 @@ from urllib.parse import urlsplit
 from packaging.markers import Marker
 from packaging.pylock import Package, PackageSdist, PackageWheel, Pylock
 from packaging.specifiers import SpecifierSet
-from packaging.utils import canonicalize_name
+from packaging.utils import NormalizedName, canonicalize_name
 from packaging.version import Version
 from pip._internal.utils.misc import redact_auth_from_url
 
@@ -34,6 +34,7 @@ from .markers import compute_platform_marker
 from .platforms import PLATFORM_ENVIRONMENTS, TargetEnvironment, parse_env_key
 from .resolve import resolve
 from .sources import build_pylock_package, detect_source_type
+from .sources._detection import effective_link
 from .tool_block import build as _build_tool_metadata
 from .tool_block import to_dict as _tool_metadata_to_dict
 from .validate import ensure_marker_disjointness, ensure_requires_python_consistency
@@ -163,29 +164,22 @@ def build_pylock_document(
             ),
             packages=packages,
             environments=([Marker(e) for e in environments] if environments else None),
-            extras=(
-                # PEP 503 normalisation collapses ``Foo-bar`` and
-                # ``foo_bar`` to the same key; dedup *after* canonicalising
-                # so the lockfile never carries duplicate entries that name
-                # the same opt-in.
-                sorted({canonicalize_name(e) for e in selection.extras})
-                if selection.extras
-                else None
-            ),
-            dependency_groups=(
-                # PEP 735 §"Dependency Group Names" mandates the same PEP 503
-                # normalisation for groups; PEP 751 inherits that.
-                sorted({canonicalize_name(g) for g in selection.groups})
-                if selection.groups
-                else None
-            ),
-            default_groups=(
-                sorted({canonicalize_name(g) for g in selection.default_groups})
-                if selection.default_groups
-                else None
-            ),
+            # PEP 503 normalisation collapses ``Foo-bar`` and ``foo_bar`` to
+            # one key; dedup after canonicalising so the lockfile never lists
+            # duplicate entries naming the same opt-in. PEP 735 inherits the
+            # same rule for dependency groups.
+            extras=_canonicalised_sorted_or_none(selection.extras),
+            dependency_groups=_canonicalised_sorted_or_none(selection.groups),
+            default_groups=_canonicalised_sorted_or_none(selection.default_groups),
             tool={"pip-tools": _tool_metadata_to_dict(tool)} if tool else None,
         )
+
+
+def _canonicalised_sorted_or_none(
+    items: tuple[str, ...],
+) -> list[NormalizedName] | None:
+    """Return PEP 503 names sorted unique, or ``None`` when ``items`` is empty."""
+    return sorted({canonicalize_name(x) for x in items}) if items else None
 
 
 def _build_top_level_environments(
@@ -266,9 +260,7 @@ def _build_package_dependencies(
             # list that identifies zero specific candidate; raise so the
             # user collapses the inputs rather than shipping an unusable
             # lockfile.
-            sources = ", ".join(
-                str(c.requirement.original_link or c.requirement.link) for c in matching
-            )
+            sources = ", ".join(str(effective_link(c.requirement)) for c in matching)
             raise PipToolsError(
                 f"Cannot uniquely identify {dep_name!r} as a dependency of "
                 f"{parent.requirement.name!r}: multiple vcs/directory variants "

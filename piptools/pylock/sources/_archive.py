@@ -11,7 +11,7 @@ from pip._internal.utils.urls import url_to_path
 
 from ...exceptions import PipToolsError
 from .._hashes import PREFERRED_HASH_ALGORITHMS, is_secure_hash_name
-from ._detection import relativize_path
+from ._detection import effective_link, relativize_path
 
 
 def build_archive_source(
@@ -26,7 +26,8 @@ def build_archive_source(
     :raises PipToolsError: When the archive does not exist, has no hash, or
         carries only an algorithm PEP 751 considers insecure.
     """
-    link = requirement.original_link or requirement.link
+    link = effective_link(requirement)
+    assert link is not None
     raw = link.url_without_fragment
     if raw.startswith("file:") and not Path(url_to_path(raw)).exists():
         # ``detect_source_type`` routes any non-directory ``file://`` link

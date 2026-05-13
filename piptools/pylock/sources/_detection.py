@@ -5,7 +5,13 @@ from __future__ import annotations
 from os.path import relpath
 from pathlib import Path
 
+from pip._internal.models.link import Link
 from pip._internal.req import InstallRequirement
+
+
+def effective_link(requirement: InstallRequirement) -> Link | None:
+    """Return the user-supplied link, pip's resolved link, or ``None``."""
+    return requirement.original_link or requirement.link
 
 
 def detect_source_type(requirement: InstallRequirement) -> str:
@@ -62,5 +68,6 @@ def relativize_path(path: str, lock_dir: Path | None) -> str:
 
 __all__ = [
     "detect_source_type",
+    "effective_link",
     "relativize_path",
 ]

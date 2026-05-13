@@ -33,7 +33,6 @@ from pip._internal.utils.urls import path_to_url, url_to_path
 # `candidate_version` returns whatever pip stores on `InstallationCandidate.version`,
 # which is the vendored type. Staying vendored here keeps `lookup_table` keys
 # identity-comparable with `ireq.specifier.filter()` outputs (also vendored).
-from pip._vendor.packaging.specifiers import InvalidSpecifier, SpecifierSet
 from pip._vendor.packaging.tags import Tag
 from pip._vendor.packaging.version import _BaseVersion
 from pip._vendor.requests import RequestException, Session
@@ -43,6 +42,7 @@ from .._internal import _pip_api
 from ..exceptions import NoCandidateFound, PipToolsError
 from ..logging import log
 from ..pylock._hashes import PREFERRED_HASH_ALGORITHMS
+from ..pylock.config import intersect_specifiers
 from ..utils import (
     as_tuple,
     is_pinned_requirement,
@@ -428,19 +428,13 @@ class PyPIRepository(BaseRepository):
         _, version, _ = as_tuple(ireq)
         # Files in a release can disagree on `requires-python`. Intersect so the
         # lockfile honours the strictest bound rather than the API's listing order.
-        seen: set[str] = set()
-        combined = SpecifierSet()
-        for file_ in project.get("releases", {}).get(version, []):
-            if not (raw := file_.get("requires_python")):
-                continue
-            if raw in seen:
-                continue
-            seen.add(raw)
-            try:
-                combined &= SpecifierSet(str(raw))
-            except InvalidSpecifier:
-                continue
-        return str(combined) if seen else None
+        raws = [
+            file_["requires_python"]
+            for file_ in project.get("releases", {}).get(version, [])
+            if file_.get("requires_python")
+        ]
+        combined, contributed = intersect_specifiers(raws)
+        return str(combined) if contributed else None
 
     def get_distribution_files(
         self, ireq: InstallRequirement

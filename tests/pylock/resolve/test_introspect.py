@@ -37,7 +37,7 @@ class FakeResult:
 
 
 @pytest.fixture(name="fake_result")
-def _fake_result() -> FakeResult:
+def fake_result_fixture() -> FakeResult:
     real_names = ("flask", "click", "jinja2", "werkzeug", "colorama", "markupsafe")
     mapping: dict[str, FakeCandidate] = {
         name: FakeCandidate(name=name) for name in real_names

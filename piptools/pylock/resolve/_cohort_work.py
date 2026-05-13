@@ -15,7 +15,7 @@ from pip._internal.req import InstallRequirement
 from ...exceptions import NoCandidateFound, PipToolsError
 from ...logging import log
 from ...repositories import PyPIRepository
-from ...utils import drop_extras, key_from_ireq
+from ...utils import key_from_ireq
 from .._inputs import ResolverOptions
 from .._marker_eval import mock_marker_environment
 from .._merge import ForwardDeps, PerVariantMap, VariantKey
@@ -24,7 +24,7 @@ from ..sources import requirement_version
 from ._introspect import get_forward_dependencies
 from ._resolver_factory import make_resolver
 from ._splice_extras import splice_combined_extras
-from ._state import ResolutionState, ResolverInputs, VariantSlice
+from ._state import ResolutionState, ResolverInputs, VariantSlice, prepared_constraints
 
 
 def resolve_cohort_work(
@@ -54,13 +54,7 @@ def resolve_cohort_work(
 
     for extra_label, extra_set in inputs.extras_configs:
         with mock_marker_environment(to_marker_env(rep_dict)):
-            constraints = [
-                deepcopy(req)
-                for req in inputs.raw_constraints
-                if req.match_markers(extra_set)
-            ]
-            for req in constraints:
-                drop_extras(req)
+            constraints = prepared_constraints(inputs.raw_constraints, extras=extra_set)
 
             _run_resolution_replicated(
                 slice=VariantSlice(env_keys=cohort_envs, extra=extra_label, group=None),
@@ -85,11 +79,7 @@ def resolve_cohort_work(
         if group_label is None:
             continue
         with mock_marker_environment(to_marker_env(rep_dict)):
-            constraints = [
-                deepcopy(req) for req in inputs.raw_constraints if req.match_markers(())
-            ]
-            for req in constraints:
-                drop_extras(req)
+            constraints = prepared_constraints(inputs.raw_constraints, extras=())
             constraints.extend(
                 deepcopy(r)
                 for group_name in groups_set

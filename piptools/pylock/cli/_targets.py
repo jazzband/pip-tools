@@ -14,13 +14,12 @@ from click import BadParameter
 from packaging.dependency_groups import DependencyGroupResolver
 from packaging.errors import ExceptionGroup
 from packaging.markers import default_environment
-from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from pip._internal.req import InstallRequirement
 
 from ..._internal import _pip_api
 from ...logging import log
 from .._inputs import LockTargets
-from ..config import load_dependency_groups_table
+from ..config import intersect_specifiers, load_dependency_groups_table
 from ..platforms import PLATFORM_ENVIRONMENTS, build_target_environments
 
 
@@ -195,15 +194,10 @@ def _expand_requires_python(specifiers: tuple[str, ...]) -> tuple[str, ...]:
         must cover. Empty when no specifier parses or when the intersection
         excludes every supported release.
     """
-    intersected = SpecifierSet()
-    for raw in specifiers:
-        try:
-            intersected &= SpecifierSet(raw)
-        except InvalidSpecifier:
-            # Malformed specifiers should not abort the lock; pip's metadata
-            # path tolerates plenty of invalid forms in the wild. Skip the bad
-            # entry and let the remaining specifiers narrow the range.
-            continue
+    # Malformed specifiers should not abort the lock; pip's metadata path
+    # tolerates plenty of invalid forms in the wild. Skip the bad entry and
+    # let the remaining specifiers narrow the range.
+    intersected, _ = intersect_specifiers(specifiers)
     if not str(intersected):
         return ()
     # CPython has stayed on the 3.x line for over a decade; the floor and

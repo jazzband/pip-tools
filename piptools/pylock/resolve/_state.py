@@ -14,16 +14,44 @@ entry in ``_orchestrate`` decomposes the user-facing dataclasses
 from __future__ import annotations
 
 import typing as _t
+from copy import deepcopy
 from dataclasses import dataclass, field
 from sys import version_info
 
 from pip._internal.req import InstallRequirement
 
+from ...utils import drop_extras
 from .._merge import ForwardDeps, PerVariantMap
 
 _KW_ONLY: _t.Final[dict[str, bool]] = (
     {"kw_only": True} if version_info >= (3, 10) else {}
 )
+
+
+def prepared_constraints(
+    raw_constraints: list[InstallRequirement],
+    *,
+    extras: tuple[str, ...] | None,
+) -> list[InstallRequirement]:
+    """Deep-copy ``raw_constraints`` and strip extras for one resolver pass.
+
+    Deep-copy keeps resolver mutations from bleeding across passes;
+    ``drop_extras`` runs because the resolver re-attaches extras per opt-in
+    set. ``extras=None`` skips marker filtering so the partition scan keeps
+    every constraint a mocked target env would otherwise see (a host
+    evaluated filter would corrupt the scan).
+
+    :param raw_constraints: Source list cloned into the result.
+    :param extras: Extras tuple to evaluate markers against, or ``None`` to skip.
+    :returns: A new list ready for the resolver to consume.
+    """
+    if extras is None:
+        copies = [deepcopy(req) for req in raw_constraints]
+    else:
+        copies = [deepcopy(req) for req in raw_constraints if req.match_markers(extras)]
+    for req in copies:
+        drop_extras(req)
+    return copies
 
 
 @dataclass(frozen=True, **_KW_ONLY)
@@ -75,4 +103,5 @@ __all__ = [
     "ResolutionState",
     "ResolverInputs",
     "VariantSlice",
+    "prepared_constraints",
 ]
