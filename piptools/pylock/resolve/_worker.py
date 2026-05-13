@@ -140,17 +140,13 @@ def _lite_requirement(
     # ``name@url`` shape. The marker feeds per-extra attribution in
     # ``splice_combined_extras``; without it ``--jobs > 1`` would collapse
     # extras-only deps into base. Re-attach the original marker.
-    original_markers = getattr(requirement, "markers", None)
-    if original_markers is not None:
+    if (original_markers := getattr(requirement, "markers", None)) is not None:
         fresh.markers = original_markers
-    # ``--hash=sha256:...`` in a requirements file lands in ``hash_options``,
-    # which the line round-trip discards. PEP 751's threat model treats
-    # user-supplied hashes as authoritative; without re-attaching them the
-    # writer would fall back to the index's digest under ``--jobs > 1``
-    # and the lockfile's hash source-of-truth would shift away from the
-    # user's authoritative pin.
-    original_hash_options = getattr(requirement, "hash_options", None)
-    if original_hash_options:
+    # ``--hash=sha256:...`` in a requirements file lands in ``hash_options``, which the line
+    # round-trip discards. PEP 751's threat model treats user-supplied hashes as authoritative;
+    # without re-attaching them the writer falls back to the index's digest under ``--jobs > 1``
+    # and the lockfile's hash source-of-truth shifts away from the user's authoritative pin.
+    if original_hash_options := getattr(requirement, "hash_options", None):
         fresh.hash_options = original_hash_options
     return fresh
 

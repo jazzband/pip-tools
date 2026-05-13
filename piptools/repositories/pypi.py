@@ -30,9 +30,9 @@ from pip._internal.utils.misc import normalize_path, redact_auth_from_url
 from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
 from pip._internal.utils.urls import path_to_url, url_to_path
 
-# `candidate_version` returns whatever pip stores on `InstallationCandidate.version`,
-# which is the vendored type. Staying vendored here keeps `lookup_table` keys
-# identity-comparable with `ireq.specifier.filter()` outputs (also vendored).
+# `candidate_version` returns whatever pip stores on `InstallationCandidate.version`, which is
+# the vendored type. Staying vendored here keeps `lookup_table` keys identity-comparable with
+# `ireq.specifier.filter()` outputs (also vendored).
 from pip._vendor.packaging.tags import Tag
 from pip._vendor.packaging.version import _BaseVersion
 from pip._vendor.requests import RequestException, Session
@@ -113,12 +113,11 @@ class PyPIRepository(BaseRepository):
         )
 
     def clear_caches(self) -> None:
-        # Two pip-lock processes against the same ``cache_dir`` would
-        # otherwise have one rmtree wipe the other's in-flight downloads,
-        # producing a partial lock with mixed bytes. Rename the directory
-        # to a unique temp name first (atomic on POSIX/NTFS) so a
-        # concurrent lookup sees the old dir or sees ``no dir``, never a
-        # half-deleted tree. The temp then rmtree's on a best-effort basis.
+        # Two pip-lock processes against the same ``cache_dir`` would otherwise have one rmtree
+        # wipe the other's in-flight downloads, producing a partial lock with mixed bytes. Rename
+        # the directory to a unique temp name first (atomic on POSIX/NTFS) so a concurrent lookup
+        # sees the old dir or sees ``no dir``, never a half-deleted tree. The temp then rmtree's
+        # on a best-effort basis.
         if not os.path.exists(self._download_dir):
             return
         stale = f"{self._download_dir}.stale-{os.getpid()}"
@@ -422,12 +421,11 @@ class PyPIRepository(BaseRepository):
             return None
         if not is_pinned_requirement(ireq):
             return None
-        project = self._get_project(ireq)
-        if project is None:
+        if (project := self._get_project(ireq)) is None:
             return None
         _, version, _ = as_tuple(ireq)
-        # Files in a release can disagree on `requires-python`. Intersect so the
-        # lockfile honours the strictest bound rather than the API's listing order.
+        # Files in a release can disagree on `requires-python`. Intersect so the lockfile honours
+        # the strictest bound rather than the API's listing order.
         raws = [
             file_["requires_python"]
             for file_ in project.get("releases", {}).get(version, [])
@@ -465,10 +463,9 @@ class PyPIRepository(BaseRepository):
                 digests = file_["digests"]
             except KeyError:
                 continue
-            # PEP 751 wants "at least one secure algorithm". md5/sha1
-            # satisfy ``hashlib.algorithms_guaranteed`` but miss the
-            # spec's intent. The allowlist filters the JSON API's digests
-            # to algorithms strong enough to anchor the lockfile.
+            # PEP 751 wants "at least one secure algorithm". md5/sha1 satisfy
+            # ``hashlib.algorithms_guaranteed`` but miss the spec's intent. The allowlist filters
+            # the JSON API's digests to algorithms strong enough to anchor the lockfile.
             hashes = {
                 algo: digest
                 for algo, digest in digests.items()
@@ -476,12 +473,10 @@ class PyPIRepository(BaseRepository):
             }
             json_size = file_.get("size")
             if not hashes:
-                # Private indexes and mirrors may not expose a strong
-                # digest; stream the file and hash it ourselves rather
-                # than emit a weak-only ``hashes`` table (which the spec
-                # forbids). The streamed byte count subs in for ``size``
-                # when the JSON response also omits it, so the lockfile
-                # carries the same shape across mirrors.
+                # Private indexes and mirrors may not expose a strong digest; stream the file
+                # and hash it ourselves rather than emit a weak-only ``hashes`` table (which the
+                # spec forbids). The streamed byte count subs in for ``size`` when the JSON
+                # response also omits it, so the lockfile carries the same shape across mirrors.
                 hash_str, streamed_size = self._get_file_hash_and_size(
                     Link(file_["url"])
                 )
@@ -498,9 +493,9 @@ class PyPIRepository(BaseRepository):
             result.append(
                 cls(
                     name=file_["filename"],
-                    # PyPI's JSON URL never carries userinfo, but a proxied
-                    # mirror's might. Redact at the source so the lockfile is
-                    # safe to commit regardless of the index in use.
+                    # PyPI's JSON URL never carries userinfo, but a proxied mirror's might.
+                    # Redact at the source so the lockfile is safe to commit regardless of the
+                    # index in use.
                     url=redact_auth_from_url(file_["url"]),
                     hashes=hashes,
                     size=json_size,
@@ -516,15 +511,12 @@ class PyPIRepository(BaseRepository):
         for candidate in self._get_matching_candidates(ireq):
             link = candidate.link
             url = link.url_without_fragment
-            # PEP 751's threat model assumes hashes come from *authentic*
-            # content. Hashing what we streamed gives integrity against a
-            # later fetch, not provenance: a man-in-the-middle on
-            # plaintext HTTP would let us record an attacker's hash as
-            # authoritative. Refuse insecure URLs so the streaming-hash
-            # fallback inherits pip's TLS trust model (file:// is safe; it's
-            # a local-disk path the user already controls).
-            scheme = urlsplit(url).scheme
-            if scheme not in {"https", "file"}:
+            # PEP 751's threat model assumes hashes come from *authentic* content. Hashing what
+            # we streamed gives integrity against a later fetch, not provenance: a man-in-the-
+            # middle on plaintext HTTP would let us record an attacker's hash as authoritative.
+            # Refuse insecure URLs so the streaming-hash fallback inherits pip's TLS trust model
+            # (file:// is safe; it's a local-disk path the user already controls).
+            if (scheme := urlsplit(url).scheme) not in {"https", "file"}:
                 raise PipToolsError(
                     f"Refusing to record a streamed hash for {url!r}: PEP "
                     f"751 hashes are authoritative and ``{scheme}://`` "
@@ -532,20 +524,14 @@ class PyPIRepository(BaseRepository):
                     f"configure the index to expose ``digests`` in its "
                     f"JSON response."
                 )
-            cached = _hash_cache.load(self._options.cache_dir, url)
-            cached_size: int | None = None
-            if cached is not None:
-                digest, cached_size = cached
+            if (cached := _hash_cache.load(self._options.cache_dir, url)) is not None:
+                digest, size = cached
                 algo = "sha256"
-                size: int | None = cached_size
             else:
-                hash_str, streamed_size = self._get_file_hash_and_size(link)
+                hash_str, size = self._get_file_hash_and_size(link)
                 algo, digest = hash_str.split(":", 1)
                 if algo == "sha256":
-                    _hash_cache.store(
-                        self._options.cache_dir, url, digest, streamed_size
-                    )
-                size = streamed_size
+                    _hash_cache.store(self._options.cache_dir, url, digest, size)
             cls = PackageWheel if link.filename.endswith(".whl") else PackageSdist
             result.append(
                 cls(
@@ -579,14 +565,12 @@ class PyPIRepository(BaseRepository):
 
     def _get_file_hash_and_size(self, link: Link) -> tuple[str, int]:
         log.debug(f"Hashing {link.show_url}")
-        # ``FAVORITE_HASH`` is sha256, which is in
-        # ``pylock._hashes.PREFERRED_HASH_ALGORITHMS``, so the index path and the
-        # archive path agree on what counts as "secure" per PEP 751.
+        # ``FAVORITE_HASH`` is sha256, which is in ``pylock._hashes.PREFERRED_HASH_ALGORITHMS``,
+        # so the index path and the archive path agree on what counts as "secure" per PEP 751.
         h = hashlib.new(FAVORITE_HASH)
         total = 0
-        advertised_size: float | None = None
         with open_local_or_remote_file(link, self.session) as f:
-            advertised_size = f.size
+            advertised_size: float | None = f.size
             # Chunks to iterate
             chunks = iter(lambda: f.stream.read(FILE_CHUNK_SIZE), b"")
 
@@ -613,11 +597,10 @@ class PyPIRepository(BaseRepository):
                     h.update(chunk)
                     total += len(chunk)
         if advertised_size is not None and advertised_size != total:
-            # A truncating proxy, interrupted connection, or mis-served
-            # range produces a syntactically valid sha256 over the bytes
-            # pip-tools saw. Recording that hash as authoritative would
-            # lock a corrupt artifact. Refuse the streamed result when
-            # the advertised length disagrees.
+            # A truncating proxy, interrupted connection, or mis-served range produces a
+            # syntactically valid sha256 over the bytes pip-tools saw. Recording that hash as
+            # authoritative would lock a corrupt artifact. Refuse the streamed result when the
+            # advertised length disagrees.
             raise PipToolsError(
                 f"Streamed {total} bytes from {link.url_without_fragment!r} "
                 f"but the server advertised Content-Length={advertised_size}; "

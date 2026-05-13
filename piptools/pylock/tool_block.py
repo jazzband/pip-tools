@@ -1,10 +1,9 @@
 """``[tool.pip-tools]`` block: the schema pip-tools owns.
 
-PEP 751's ``[[packages]]`` and top-level fields live in
-``packaging.pylock`` (``Pylock``, ``Package``, ``PackageWheel``, ...);
-PEP 751 keeps the ``tool.pip-tools`` block opaque by design. The typed
-container plus the (de)serialization helpers live together so a future
-schema change touches one file.
+PEP 751's ``[[packages]]`` and top-level fields live in ``packaging.pylock`` (``Pylock``,
+``Package``, ``PackageWheel``, ...); PEP 751 keeps the ``tool.pip-tools`` block opaque by design.
+The typed container plus the (de)serialization helpers live together so a future schema change
+touches one file.
 """
 
 from __future__ import annotations
@@ -20,8 +19,8 @@ from .._internal import _pip_api
 from ._inputs import LockSelection, LockTargets, ResolverOptions, ToolMetadataOptions
 from .redact import redact_command
 
-# Source of truth for ``[tool.pip-tools]`` field names. Stays in sync with
-# ``PylockToolOptions``; drift lands unrecognised keys in the lockfile.
+# Source of truth for ``[tool.pip-tools]`` field names. Stays in sync with ``PylockToolOptions``;
+# drift lands unrecognised keys in the lockfile.
 TOOL_FIELDS: _t.Final[frozenset[str]] = frozenset(
     {
         "version",
@@ -61,10 +60,9 @@ class PylockToolOptions:
 
 
 def _default_generated_at() -> datetime:
-    # Reproducible builds set ``SOURCE_DATE_EPOCH`` to a Unix timestamp;
-    # honour it so two consecutive lock runs against identical inputs
-    # produce byte-identical lockfiles. Without the env var, fall back to
-    # the wall clock.
+    # Reproducible builds set ``SOURCE_DATE_EPOCH`` to a Unix timestamp; honour it so two
+    # consecutive lock runs against identical inputs produce byte-identical lockfiles. Without
+    # the env var, fall back to the wall clock.
     if (epoch := os.environ.get("SOURCE_DATE_EPOCH")) is not None:
         try:
             return datetime.fromtimestamp(int(epoch), tz=timezone.utc)

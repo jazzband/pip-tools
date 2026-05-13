@@ -20,19 +20,19 @@ def build_archive_source(
     """Build the PEP 751 archive source for a requirement pinned to a file or URL.
 
     :param requirement: The requirement whose link points at an archive.
-    :param lock_dir: Directory the lockfile is being written to, for path
-        relativisation. ``None`` keeps absolute paths.
+    :param lock_dir: Directory the lockfile is being written to, for path relativisation. ``None``
+        keeps absolute paths.
     :returns: The populated archive entry.
-    :raises PipToolsError: When the archive does not exist, has no hash, or
-        carries only an algorithm PEP 751 considers insecure.
+    :raises PipToolsError: When the archive does not exist, has no hash, or carries only an
+        algorithm PEP 751 considers insecure.
     """
     link = effective_link(requirement)
     assert link is not None
     raw = link.url_without_fragment
     if raw.startswith("file:") and not Path(url_to_path(raw)).exists():
-        # ``detect_source_type`` routes any non-directory ``file://`` link
-        # to the archive branch; without this guard a typo'd path falls
-        # through to the missing-hash error with no signal about the cause.
+        # ``detect_source_type`` routes any non-directory ``file://`` link to the archive branch;
+        # without this guard a typo'd path falls through to the missing-hash error with no signal
+        # about the cause.
         raise PipToolsError(
             f"Local archive for {requirement.name!r} does not exist: "
             f"{url_to_path(raw)!r}. Check the path in the requirement spec."
@@ -45,9 +45,9 @@ def build_archive_source(
             f"`pkg @ https://.../foo.tar.gz#sha256=<digest>`)."
         )
     if not is_secure_hash_name(link.hash_name):
-        # PEP 751 demands at least one secure algorithm in ``hashes``; md5/sha1
-        # satisfy pip's checks but not the spec's intent. Surface an error
-        # rather than emit a weak-only entry the spec forbids.
+        # PEP 751 demands at least one secure algorithm in ``hashes``; md5/sha1 satisfy pip's checks
+        # but not the spec's intent. Surface an error rather than emit a weak-only entry the spec
+        # forbids.
         raise PipToolsError(
             f"Archive hash for {requirement.name!r} uses {link.hash_name!r}, which "
             f"PEP 751 does not consider secure. Pin the requirement with one of "

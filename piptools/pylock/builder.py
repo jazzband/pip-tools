@@ -72,16 +72,15 @@ def build_pylock_document(
     :returns: A populated lock document ready for serialisation.
     :raises PipToolsError: When marker disjointness fails or input contracts are violated.
     """
-    # The marker AST walker and extras collector reach into
-    # ``Marker._markers``; a ``packaging`` release that rearranges that AST
-    # produces wrong output without warning. The platform-blind rewriter
-    # has its own deferred verify (skipped under ``--no-universal``), so
-    # guard the always-run path here.
+    # The marker AST walker and extras collector reach into ``Marker._markers``; a ``packaging``
+    # release that rearranges that AST produces wrong output without warning. The platform-blind
+    # rewriter has its own deferred verify (skipped under ``--no-universal``), so guard the
+    # always-run path here.
     verify_packaging_marker_shape()
-    # Scope pip-helper caches to one lock command so successive in-process
-    # invocations don't inherit each other's parsed-link state. Nested
-    # ``scope()`` entries are no-ops, so a programmatic caller that already
-    # opened a scope before invoking us doesn't double-revert on exit.
+    # Scope pip-helper caches to one lock command so successive in-process invocations don't
+    # inherit each other's parsed-link state. Nested ``scope()`` entries are no-ops, so a
+    # programmatic caller that already opened a scope before invoking us doesn't double-revert on
+    # exit.
     with _pip_caches.scope():
         merged, forward_deps = resolve(
             repository=repository,
@@ -98,10 +97,9 @@ def build_pylock_document(
 
         log.debug("")
         log.debug("Collecting distribution files:")
-        # Multi-version entries (the case the cohort/partition machinery
-        # supports) need per-release dist files and ``requires-python``.
-        # Keying by name alone collapses every release onto whichever
-        # variant lands at ``entries[0]``.
+        # Multi-version entries (the case the cohort/partition machinery supports) need
+        # per-release dist files and ``requires-python``. Keying by name alone collapses every
+        # release onto whichever variant lands at ``entries[0]``.
         with repository.allow_all_wheels(), log.indentation():
             dist_files_map: _DistFilesByPin = {}
             pkg_requires_python: dict[tuple[str, str], str | None] = {}
@@ -164,10 +162,9 @@ def build_pylock_document(
             ),
             packages=packages,
             environments=([Marker(e) for e in environments] if environments else None),
-            # PEP 503 normalisation collapses ``Foo-bar`` and ``foo_bar`` to
-            # one key; dedup after canonicalising so the lockfile never lists
-            # duplicate entries naming the same opt-in. PEP 735 inherits the
-            # same rule for dependency groups.
+            # PEP 503 normalisation collapses ``Foo-bar`` and ``foo_bar`` to one key; dedup after
+            # canonicalising so the lockfile never lists duplicate entries naming the same opt-in.
+            # PEP 735 inherits the same rule for dependency groups.
             extras=_canonicalised_sorted_or_none(selection.extras),
             dependency_groups=_canonicalised_sorted_or_none(selection.groups),
             default_groups=_canonicalised_sorted_or_none(selection.default_groups),
@@ -235,10 +232,10 @@ def _build_package_dependencies(
 ) -> list[dict[str, str]]:
     """Return dependency references that uniquely identify each ``[[packages]]`` entry.
 
-    PEP 751 §packages.dependencies demands "the minimum information that
-    uniquely identifies another [[packages]] entry"; a bare ``{name = "X"}``
-    becomes ambiguous as soon as the lockfile carries more than one ``X``
-    entry, so installers cannot pick a candidate deterministically.
+    PEP 751 §packages.dependencies demands "the minimum information that uniquely identifies
+    another [[packages]] entry"; a bare ``{name = "X"}`` becomes ambiguous as soon as the
+    lockfile carries more than one ``X`` entry, so installers cannot pick a candidate
+    deterministically.
     """
     deps: list[dict[str, str]] = []
     for dep_name in sorted(dep_names):
@@ -257,12 +254,10 @@ def _build_package_dependencies(
         if len(matching) > 1 and all(
             detect_source_type(c.requirement) in ("vcs", "directory") for c in matching
         ):
-            # PEP 751 lets vcs/directory entries omit ``version`` and
-            # pip-tools has nothing minimal-and-stable to disambiguate
-            # them with. A bare ``{name = "X"}`` for each produces a dep
-            # list that identifies zero specific candidate; raise so the
-            # user collapses the inputs rather than shipping an unusable
-            # lockfile.
+            # PEP 751 lets vcs/directory entries omit ``version`` and pip-tools has nothing
+            # minimal-and-stable to disambiguate them with. A bare ``{name = "X"}`` for each
+            # produces a dep list that identifies zero specific candidate; raise so the user
+            # collapses the inputs rather than shipping an unusable lockfile.
             sources = ", ".join(str(effective_link(c.requirement)) for c in matching)
             raise PipToolsError(
                 f"Cannot uniquely identify {dep_name!r} as a dependency of "
@@ -271,28 +266,26 @@ def _build_package_dependencies(
                 f"dependency references carry no information that distinguishes "
                 f"them. Pin the requirement to a single source."
             )
-        # PEP 751 requires the *minimum* information that uniquely
-        # identifies the target. ``(name, version)`` covers it when each
-        # matching candidate has a distinct version; when two share a
-        # version but disagree on marker (e.g. one wheel for
-        # ``python_version == '3.12'``, another for ``'3.13'``), the tied
-        # candidates need the ``marker`` field. Adding it to siblings
-        # whose version is unique emits non-minimal refs.
+        # PEP 751 requires the *minimum* information that uniquely identifies the target.
+        # ``(name, version)`` covers it when each matching candidate has a distinct version; when
+        # two share a version but disagree on marker (e.g. one wheel for
+        # ``python_version == '3.12'``, another for ``'3.13'``), the tied candidates need the
+        # ``marker`` field. Adding it to siblings whose version is unique emits non-minimal refs.
         version_groups: defaultdict[str, list[ResolvedEntry]] = defaultdict(list)
         for candidate in matching:
             version_groups[candidate.version].append(candidate)
         for candidate in matching:
             entry: dict[str, str] = {"name": dep_name}
-            # PEP 751 lets ``directory``/``vcs`` entries omit ``version``,
-            # so version is the wrong disambiguator there; the parent's
-            # marker selects the right variant in those cases.
+            # PEP 751 lets ``directory``/``vcs`` entries omit ``version``, so version is the
+            # wrong disambiguator there; the parent's marker selects the right variant in those
+            # cases.
             if detect_source_type(candidate.requirement) not in ("vcs", "directory"):
                 if disambig := candidate.version or None:
                     entry["version"] = disambig
             tied = len(version_groups[candidate.version]) > 1
             if tied and candidate.marker is not None:
-                # round-trip so pass-through markers match Marker's canonical
-                # form (single space around ==, double quotes, paren cleanup)
+                # round-trip so pass-through markers match Marker's canonical form (single space
+                # around ==, double quotes, paren cleanup)
                 entry["marker"] = str(Marker(candidate.marker))
             deps.append(entry)
     return deps
@@ -301,39 +294,30 @@ def _build_package_dependencies(
 def _index_for_entry(entry: ResolvedEntry, index_urls: tuple[str, ...]) -> str | None:
     """Return the configured index that served this candidate, or ``None``.
 
-    Defaulting every entry to ``finder.index_urls[0]`` leaks
-    ``--extra-index-url`` packages back to public PyPI as the installer's
-    fallback URL, which PEP 751's ``index`` semantics class as a security
-    issue. Match by ``Link.comes_from`` first (the index page pip
-    recorded), then host-and-port equality on the candidate URL; omit the
-    field when neither proves which index served the candidate.
+    Defaulting every entry to ``finder.index_urls[0]`` leaks ``--extra-index-url`` packages back
+    to public PyPI as the installer's fallback URL, which PEP 751's ``index`` semantics class as
+    a security issue. Match by ``Link.comes_from`` first (the index page pip recorded), then
+    host-and-port equality on the candidate URL; omit the field when neither proves which index
+    served the candidate.
     """
     if not index_urls:
         return None
-    link = entry.requirement.link
-    if link is None:
+    if (link := entry.requirement.link) is None:
         return None
     # Sort prefixes longest-first so a more-specific index (e.g.
-    # ``https://a.com/simple/extras/``) wins over its parent
-    # (``https://a.com/simple/``). Compare parsed (scheme, netloc, path)
-    # rather than raw ``startswith``: ``simple`` byte-prefixes
-    # ``simple-mirror`` but at the path-segment level the two are
-    # disjoint, so byte comparison attributes one index's packages to its
-    # similarly-named neighbour.
+    # ``https://a.com/simple/extras/``) wins over its parent (``https://a.com/simple/``). Compare
+    # parsed (scheme, netloc, path) rather than raw ``startswith``: ``simple`` byte-prefixes
+    # ``simple-mirror`` but at the path-segment level the two are disjoint, so byte comparison
+    # attributes one index's packages to its similarly-named neighbour.
     sorted_indexes = sorted(index_urls, key=len, reverse=True)
-    comes_from = link.comes_from
-    if isinstance(comes_from, str):
+    if isinstance(comes_from := link.comes_from, str):
         cf_parts = urlsplit(comes_from)
         for index_url in sorted_indexes:
             iu_parts = urlsplit(index_url)
-            if (cf_parts.scheme, cf_parts.netloc) != (
-                iu_parts.scheme,
-                iu_parts.netloc,
-            ):
+            if (cf_parts.scheme, cf_parts.netloc) != (iu_parts.scheme, iu_parts.netloc):
                 continue
             iu_path = iu_parts.path.rstrip("/")
-            cf_path = cf_parts.path
-            if cf_path == iu_path or cf_path.startswith(iu_path + "/"):
+            if cf_parts.path == iu_path or cf_parts.path.startswith(iu_path + "/"):
                 return _t.cast("str", redact_auth_from_url(index_url))
     candidate_id = index_match_key(link.url)
     for index_url in sorted_indexes:

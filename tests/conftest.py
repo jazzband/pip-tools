@@ -287,17 +287,15 @@ def _make_cli_runner() -> CliRunner:
 
 @pytest.fixture
 def runner(monkeypatch: pytest.MonkeyPatch) -> _t.Generator[CliRunner, None, None]:
-    # Clear pip environment variables that inject host-specific index URLs
-    # (e.g. corporate Artifactory mirrors) so tests asserting on pip argument
-    # lists get predictable output. Reset PIP_CONFIG_FILE to /dev/null when
-    # pip_conf has not set it, so runner does not override the pip config
-    # that pip_conf installs for tests needing real packages.
+    # Clear pip environment variables that inject host-specific index URLs (e.g. corporate
+    # Artifactory mirrors) so tests asserting on pip argument lists get predictable output.
+    # Reset PIP_CONFIG_FILE to /dev/null when pip_conf has not set it, so runner does not
+    # override the pip config that pip_conf installs for tests needing real packages.
     for env_var in ("PIP_INDEX_URL", "PIP_EXTRA_INDEX_URL", "PIP_TRUSTED_HOST"):
         monkeypatch.delenv(env_var, raising=False)
     if not os.environ.get("PIP_CONFIG_FILE"):
         monkeypatch.setenv("PIP_CONFIG_FILE", os.devnull)
-    cli_runner = _make_cli_runner()
-    with cli_runner.isolated_filesystem():
+    with (cli_runner := _make_cli_runner()).isolated_filesystem():
         yield cli_runner
 
 
@@ -319,8 +317,8 @@ def make_pip_conf(tmpdir, monkeypatch):
             f.write(content)
 
         monkeypatch.setenv("PIP_CONFIG_FILE", path)
-        # PIP_INDEX_URL and PIP_EXTRA_INDEX_URL env vars take precedence
-        # over config-file settings; clear them so the config file wins.
+        # PIP_INDEX_URL and PIP_EXTRA_INDEX_URL env vars take precedence over config-file
+        # settings; clear them so the config file wins.
         for env_var in ("PIP_INDEX_URL", "PIP_EXTRA_INDEX_URL"):
             monkeypatch.delenv(env_var, raising=False)
 

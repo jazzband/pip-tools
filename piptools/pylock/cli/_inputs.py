@@ -1,8 +1,7 @@
 """Collect resolver inputs from CLI-supplied source files and constraints.
 
-Walks ``src_files``, expands setup-style metadata via the build backend,
-threads constraint files in, and bolts ``--upgrade-package`` overrides
-on top before the resolver consumes the union.
+Walks ``src_files``, expands setup-style metadata via the build backend, threads constraint files
+in, and bolts ``--upgrade-package`` overrides on top before the resolver consumes the union.
 """
 
 from __future__ import annotations

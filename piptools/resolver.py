@@ -21,9 +21,9 @@ from pip._internal.resolution.resolvelib.resolver import Resolver
 from pip._internal.utils.logging import indent_log
 from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
 
-# Pip's resolver consumes `pinned_ireq.req.specifier` and compares it against
-# vendored `Version` objects produced by `InstallationCandidate.version`. A
-# top-level `SpecifierSet` here would mix incompatible types at filter time.
+# Pip's resolver consumes `pinned_ireq.req.specifier` and compares it against vendored `Version`
+# objects produced by `InstallationCandidate.version`. A top-level `SpecifierSet` here would mix
+# incompatible types at filter time.
 from pip._vendor.packaging.specifiers import SpecifierSet
 from pip._vendor.resolvelib.resolvers import ResolutionImpossible, Result
 

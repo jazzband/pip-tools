@@ -511,9 +511,9 @@ def _validate_config(
         param.name: param for param in lock_cli.params if param.name is not None
     }
 
-    # ``[tool.pip-tools].conflicts`` is a pip-lock-only key declared as a TOML
-    # table rather than a CLI flag. The validator must recognize it as a
-    # known config key even though no click param backs it.
+    # ``[tool.pip-tools].conflicts`` is a pip-lock-only key declared as a TOML table rather than
+    # a CLI flag. The validator must recognize it as a known config key even though no click
+    # param backs it.
     pip_lock_only_keys = {"conflicts"}
 
     all_keys = (

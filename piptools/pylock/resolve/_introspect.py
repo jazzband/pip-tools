@@ -51,21 +51,21 @@ def extract_dep_markers(scan_resolver: BacktrackingResolver) -> set[str]:
     :returns: The set of marker strings referencing env-axis variables that
         the scan observed.
     """
+    if (result := getattr(scan_resolver, "_resolver_result", None)) is None:
+        return set()
     found: set[str] = set()
-    result = getattr(scan_resolver, "_resolver_result", None)
-    if result is None:
-        return found
     saw_criterion_with_markers = False
     for criterion in result.criteria.values():
         for info in criterion.information:
-            requirement = getattr(info.requirement, "_ireq", None)
-            req = getattr(requirement, "req", None) if requirement is not None else None
-            marker = getattr(req, "marker", None)
-            if marker is None:
+            ireq = getattr(info.requirement, "_ireq", None)
+            if ireq is None or ireq.req is None:
+                continue
+            if (marker := ireq.req.marker) is None:
                 continue
             saw_criterion_with_markers = True
-            marker_str = str(marker)
-            if any(key in marker_str for key in _PARTITION_MARKER_KEYS):
+            if any(
+                key in (marker_str := str(marker)) for key in _PARTITION_MARKER_KEYS
+            ):
                 found.add(marker_str)
     if result.criteria and not saw_criterion_with_markers:
         log.info(

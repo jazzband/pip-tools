@@ -45,10 +45,9 @@ def _opt_in_node(name: str) -> tuple[Value, Op, Variable]:
 def test_decomposer_refuses_malformed_ast(
     ast_nodes: list[tuple[Value, Op, Variable] | str | int],
 ) -> None:
-    # The disjointness shortcut walks an AST shape produced by
-    # ``Marker(...)``; a hand-crafted or future-extended shape can carry
-    # nodes outside the parser's vocabulary. ``decompose`` returns
-    # ``None`` for those so callers fall back to the safer powerset path.
+    # The disjointness shortcut walks an AST shape produced by ``Marker(...)``; a
+    # hand-crafted or future-extended shape can carry nodes outside the parser's vocabulary.
+    # ``decompose`` returns ``None`` for those so callers fall back to the safer powerset path.
     fake_marker = Marker.__new__(Marker)
     object.__setattr__(fake_marker, "_markers", ast_nodes)
     assert decompose(fake_marker) is None

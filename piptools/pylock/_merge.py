@@ -32,10 +32,9 @@ class VariantKey:
         return self.env
 
 
-# Aliases for the nested generics that thread through the resolve pipeline.
-# They keep signatures readable and let Sphinx autodoc render a single name
-# rather than chasing every component of a nested
-# ``dict[..., dict[..., tuple[...]]]`` as a cross-reference target.
+# Aliases for the nested generics that thread through the resolve pipeline. They keep signatures
+# readable and let Sphinx autodoc render a single name rather than chasing every component of a
+# nested ``dict[..., dict[..., tuple[...]]]`` as a cross-reference target.
 PerVariantMap: _t.TypeAlias = (
     "dict[VariantKey, dict[str, tuple[str, InstallRequirement]]]"
 )
@@ -62,18 +61,17 @@ def merge_resolutions(
 ) -> dict[str, list[ResolvedEntry]]:
     """Collapse per-variant resolutions into one entry list per package name.
 
-    Each resulting entry covers one ``(name, version)`` and records the
-    environments, extras, and groups whose resolution selected that pin.
-    Picks the requirement whose metadata carries user-supplied URL or VCS
-    information when several variants resolved to the same pin.
+    Each resulting entry covers one ``(name, version)`` and records the environments, extras, and
+    groups whose resolution selected that pin. Picks the requirement whose metadata carries
+    user-supplied URL or VCS information when several variants resolved to the same pin.
 
     :param per_variant: Per-variant package map the resolver produces.
     :param all_env_keys: Universe of environment keys the marker emitter uses.
     :param all_extras: User-requested extras across the whole lock run.
     :param all_groups: User-requested dependency groups across the whole lock run.
     :returns: Mapping from package name to its ordered list of resolved entries.
-    :raises PipToolsError: When two variants pin the same name and version to
-        non-equivalent direct-URL sources.
+    :raises PipToolsError: When two variants pin the same name and version to non-equivalent
+        direct-URL sources.
     """
     by_name: defaultdict[str, defaultdict[str, list[VariantKey]]] = defaultdict(
         lambda: defaultdict(list)
@@ -84,10 +82,9 @@ def merge_resolutions(
     for variant, packages in per_variant.items():
         for name, (version, requirement) in packages.items():
             by_name[name][version].append(variant)
-            # Prefer the variant whose requirement carries ``original_link``:
-            # that field holds user-supplied URL/VCS metadata, and a coin-flip
-            # last-write-wins drops it whenever a sibling variant resolves the
-            # same ``(name, version)`` through the index instead.
+            # Prefer the variant whose requirement carries ``original_link``: that field holds
+            # user-supplied URL/VCS metadata, and a coin-flip last-write-wins drops it whenever a
+            # sibling variant resolves the same ``(name, version)`` through the index instead.
             existing = requirements_by_pin.get((name, version))
             existing_link = existing.original_link if existing is not None else None
             new_link = requirement.original_link
@@ -100,23 +97,19 @@ def merge_resolutions(
                 variant_by_pin[(name, version)] = variant
                 continue
             if existing_link is None and new_link is None:
-                # Both sides came from the index (no user-supplied URL);
-                # prefer the non-constraint requirement so the kept ireq
-                # carries the full user-intent metadata (extras, markers)
-                # rather than the bare ``-c`` reference, which has no
-                # extras or hash info.
+                # Both sides came from the index (no user-supplied URL); prefer the non-constraint
+                # requirement so the kept ireq carries the full user-intent metadata (extras,
+                # markers) rather than the bare ``-c`` reference, which has no extras or hash info.
                 if existing.constraint and not requirement.constraint:
                     requirements_by_pin[(name, version)] = requirement
                     variant_by_pin[(name, version)] = variant
                 continue
             if existing_link is not None and new_link is not None:
-                # Two distinct user-supplied direct-URL pins for the same
-                # pin lose one to last-write-wins; surface the collision so
-                # the user can collapse the inputs. Compare normalized URLs
-                # so equivalent shapes (trailing slash, userinfo, scheme
-                # casing) do not false-fire; show the original spellings in
-                # the error and name both variants so the user can find the
-                # offending input set.
+                # Two distinct user-supplied direct-URL pins for the same pin lose one to
+                # last-write-wins; surface the collision so the user can collapse the inputs.
+                # Compare normalized URLs so equivalent shapes (trailing slash, userinfo, scheme
+                # casing) do not false-fire; show the original spellings in the error and name
+                # both variants so the user can find the offending input set.
                 if normalize_for_compare(existing_link.url) != normalize_for_compare(
                     new_link.url
                 ):
@@ -167,18 +160,16 @@ def merge_resolutions(
 def _widen_base_marker_against_overrides(entries: list[ResolvedEntry]) -> None:
     """Negate override extras/groups in the base entry's marker.
 
-    When base resolves ``black==26.3.1`` and the conflict group ``black24``
-    resolves ``black==24.1.0``, both entries land in ``entries`` with
-    markers ``None`` and ``'black24' in dependency_groups``. Both fire
-    under ``--group black24`` so ``ensure_marker_disjointness`` flags a
-    collision. The user's intent under ``--group black24`` is the
-    conflict-group version, so widen the base entry's marker with
-    ``'black24' not in dependency_groups`` and the two entries become
-    disjoint.
+    When base resolves ``black==26.3.1`` and the conflict group ``black24`` resolves
+    ``black==24.1.0``, both entries land in ``entries`` with markers ``None`` and
+    ``'black24' in dependency_groups``. Both fire under ``--group black24`` so
+    ``ensure_marker_disjointness`` flags a collision. The user's intent under ``--group black24``
+    is the conflict-group version, so widen the base entry's marker with
+    ``'black24' not in dependency_groups`` and the two entries become disjoint.
 
-    Mutates ``entries`` in place: this function replaces the base entry
-    with a new ``ResolvedEntry`` whose marker carries the negation. The
-    caller owns ``entries``; the function name records the rewrite.
+    Mutates ``entries`` in place: this function replaces the base entry with a new
+    ``ResolvedEntry`` whose marker carries the negation. The caller owns ``entries``; the
+    function name records the rewrite.
     """
     base_idx = next(
         (
@@ -209,12 +200,10 @@ def _widen_base_marker_against_overrides(entries: list[ResolvedEntry]) -> None:
     negations.extend(f"'{g}' not in dependency_groups" for g in sorted(excluded_groups))
     parts: list[str] = []
     if base.marker:
-        # Without the wrap, a trailing ``and X`` appended to a top-level
-        # ``or`` marker binds to the rightmost disjunct under PEP 508
-        # precedence and narrows the truth set; ``has_top_level_or`` reads
-        # the parsed AST so the decision survives whitespace variations
-        # and does not over-wrap when the ``or`` already lives inside
-        # parens.
+        # Without the wrap, a trailing ``and X`` appended to a top-level ``or`` marker binds to
+        # the rightmost disjunct under PEP 508 precedence and narrows the truth set;
+        # ``has_top_level_or`` reads the parsed AST so the decision survives whitespace
+        # variations and does not over-wrap when the ``or`` already lives inside parens.
         wrap = has_top_level_or(Marker(base.marker))
         parts.append(f"({base.marker})" if wrap else base.marker)
     parts.extend(negations)
@@ -233,9 +222,9 @@ def _version_sort_key(
 ) -> tuple[int, Version | str]:
     """Sort ``(version, variants)`` pairs by PEP 440 ordering, not lexically.
 
-    String sort puts ``"1.10.0"`` before ``"1.2.0"``; honor PEP 440 instead and fall
-    back to literal-string ordering for requirements whose pin is not a spec-compliant
-    version (e.g. arbitrary VCS labels).
+    String sort puts ``"1.10.0"`` before ``"1.2.0"``; honor PEP 440 instead and fall back to
+    literal-string ordering for requirements whose pin is not a spec-compliant version (e.g.
+    arbitrary VCS labels).
     """
     version_str = item[0]
     try:

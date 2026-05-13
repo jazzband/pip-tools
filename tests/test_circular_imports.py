@@ -84,9 +84,9 @@ def _allowed_deprecation_warning_filters() -> list[str]:
     # https://github.com/python/cpython/pull/138149 allows regex usage, but is not
     # yet supported on all Python versions we support
     flags: list[str] = []
-    # pkg_resources.declare_namespace() is deprecated. sphinxcontrib
-    # packages that can land in the dev environment trigger it, and the
-    # warning originates from pip's vendored copy of pkg_resources.
+    # pkg_resources.declare_namespace() is deprecated. sphinxcontrib packages that can land
+    # in the dev environment trigger it, and the warning originates from pip's vendored copy
+    # of pkg_resources.
     flags.extend(("-W", "ignore::DeprecationWarning:pip._vendor.pkg_resources"))
     if _pip_api.PIP_VERSION_MAJOR_MINOR < (25, 3):
         flags.extend(
@@ -151,10 +151,9 @@ def test_finder_prerelease_functions_old_pip(
 def test_copy_install_requirement_old_pip_includes_install_options(
     monkeypatch: pytest.MonkeyPatch, mocker: MockerFixture
 ) -> None:
-    # pip <= 23.0 passes ``install_options`` to the constructor; modern
-    # pip rejects the kwarg, so without monkeypatching the version *and*
-    # the constructor, the call raises before the test can verify the
-    # branch fired. Capture the kwargs by stubbing ``InstallRequirement``
+    # pip <= 23.0 passes ``install_options`` to the constructor; modern pip rejects the kwarg,
+    # so without monkeypatching the version *and* the constructor, the call raises before the
+    # test can verify the branch fired. Capture the kwargs by stubbing ``InstallRequirement``
     # and assert the version-conditional kwarg lands in them.
     monkeypatch.setattr(pip_version, "PIP_VERSION_MAJOR_MINOR", (23, 0))
     template = mocker.MagicMock()
@@ -199,11 +198,10 @@ def test_allowed_deprecation_warning_filters_old_pip_branches(
     pip_version_tuple: tuple[int, int],
     expected_filter_substring: str,
 ) -> None:
-    # Two version-conditional branches inside
-    # ``_allowed_deprecation_warning_filters`` fire on pip releases
-    # older than the supported minimum on modern dev machines. Force
-    # the version to exercise each branch so coverage covers the
-    # warning-filter additions instead of treating them as dead.
+    # Two version-conditional branches inside ``_allowed_deprecation_warning_filters`` fire
+    # on pip releases older than the supported minimum on modern dev machines. Force the
+    # version to exercise each branch so coverage covers the warning-filter additions
+    # instead of treating them as dead.
     monkeypatch.setattr(pip_version, "PIP_VERSION_MAJOR_MINOR", pip_version_tuple)
     monkeypatch.setattr(_pip_api, "PIP_VERSION_MAJOR_MINOR", pip_version_tuple)
     flags = _allowed_deprecation_warning_filters()

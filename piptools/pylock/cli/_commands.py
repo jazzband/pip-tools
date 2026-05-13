@@ -1,9 +1,8 @@
 """CLI entry point for ``pip-lock``: produces a PEP 751 ``pylock.toml``.
 
-Owns the user-facing interface (argument parsing, input validation,
-configuration discovery) and delegates the lock pipeline to the
-pylock package. Keep business logic out so the CLI surface stays
-inspectable as a flat option list.
+Owns the user-facing interface (argument parsing, input validation, configuration discovery) and
+delegates the lock pipeline to the pylock package. Keep business logic out so the CLI surface
+stays inspectable as a flat option list.
 """
 
 from __future__ import annotations
@@ -70,10 +69,9 @@ Examples:
 
 @command(
     name="pip-lock",
-    # Click's default formatter caps width at ``min(terminal, 80)``, which
-    # wraps multi-clause flag descriptions into noisy 4-line paragraphs on
-    # wide terminals. 120 keeps help scannable; users on narrow terminals
-    # can resize.
+    # Click's default formatter caps width at ``min(terminal, 80)``, which wraps multi-clause flag
+    # descriptions into noisy 4-line paragraphs on wide terminals. 120 keeps help scannable; users
+    # on narrow terminals can resize.
     context_settings={"terminal_width": 120, "max_content_width": 120},
 )
 @pass_context
@@ -169,18 +167,17 @@ def cli(
     """Lock dependencies into a PEP 751 pylock.toml file.
 
     \b
-    EXPERIMENTAL. The CLI surface and the [tool.pip-tools] block may change
-    between releases without a deprecation cycle while this command settles.
-    Set PIP_TOOLS_HIDE_EXPERIMENTAL_WARNING=1 to silence the runtime banner.
+    EXPERIMENTAL. The CLI surface and the [tool.pip-tools] block may change between releases
+    without a deprecation cycle while this command settles. Set PIP_TOOLS_HIDE_EXPERIMENTAL_WARNING
+    =1 to silence the runtime banner.
     """
     if color is not None:
         click_context.color = color
     log.verbosity = verbose - quiet
     if not environ.get("PIP_TOOLS_HIDE_EXPERIMENTAL_WARNING"):
-        # Marking pip-lock as experimental gives the CLI room to evolve while
-        # users start trying it; mirror what pip 26.1 does for ``pip lock``.
-        # The env-var escape lets CI suppress the noise once the team
-        # acknowledges the contract is fluid.
+        # Marking pip-lock as experimental gives the CLI room to evolve while users start trying
+        # it; mirror what pip 26.1 does for ``pip lock``. The env-var escape lets CI suppress the
+        # noise once the team acknowledges the contract is fluid.
         log.warning(
             "pip-lock is experimental: the CLI and the [tool.pip-tools] block "
             "may change between releases. "
@@ -223,21 +220,18 @@ def cli(
         if hasattr(output_file, "name")
         else None
     )
-    # Hold the advisory lock for seed-resolve-write so two concurrent
-    # pip-lock processes against the same output can't both seed from the
-    # pre-write file and race on the atomic rename. ``_advisory_lock``
-    # raises ``PipToolsError`` when the output's parent directory is missing;
-    # catch here so the user sees exit-2 instead of a click-internal
-    # traceback.
+    # Hold the advisory lock for seed-resolve-write so two concurrent pip-lock processes against
+    # the same output can't both seed from the pre-write file and race on the atomic rename.
+    # ``_advisory_lock`` raises ``PipToolsError`` when the output's parent directory is missing;
+    # catch here so the user sees exit-2 instead of a click-internal traceback.
     try:
         click_context.with_resource(_advisory_lock(output_file))
     except PipToolsError as e:
         log.error(str(e))
         raise SystemExit(2) from e
-    # Reuse pins from any existing pylock so unrelated packages don't churn
-    # on a re-lock (the pip-compile ``-P pkg`` workflow); ``--upgrade``
-    # bypasses, ``--upgrade-package`` exempts the named packages from
-    # seeding so they re-resolve.
+    # Reuse pins from any existing pylock so unrelated packages don't churn on a re-lock (the
+    # pip-compile ``-P pkg`` workflow); ``--upgrade`` bypasses, ``--upgrade-package`` exempts the
+    # named packages from seeding so they re-resolve.
     seeded_pins: tuple[str, ...] = ()
     if not upgrade_lock and output_file is not None and hasattr(output_file, "name"):
         seeded_pins = seed_pins_from_existing_lock(
@@ -313,8 +307,8 @@ def cli(
             lock_dir=lock_dir,
             project_requires_python=project_requires_python,
         )
-    # ``packaging.pylock.Pylock.__init__`` validates at construction; surface
-    # its validation message as exit-2 alongside every other lock-time error.
+    # ``packaging.pylock.Pylock.__init__`` validates at construction; surface its validation
+    # message as exit-2 alongside every other lock-time error.
     except (NoCandidateFound, PipToolsError, PylockValidationError) as e:
         log.error(str(e))
         raise SystemExit(2) from e

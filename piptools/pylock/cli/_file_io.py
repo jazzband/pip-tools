@@ -1,7 +1,7 @@
 """Output-side helpers for ``pip-lock``: locking, writing, ``--check``.
 
-Keeps file I/O (advisory flock, atomic-rename plumbing, bytes renderer,
-``--check`` drift detector) out of the resolver-facing modules.
+Keeps file I/O (advisory flock, atomic-rename plumbing, bytes renderer, ``--check`` drift
+detector) out of the resolver-facing modules.
 """
 
 from __future__ import annotations
@@ -27,11 +27,10 @@ from ..._compat import _tomllib_compat
 from ...exceptions import PipToolsError
 from ...logging import log
 
-# ``fcntl`` is POSIX-only. ``msvcrt.locking`` byte-range semantics on Windows
-# differ enough that pip-tools degrades to "no advisory lock, warn the user"
-# rather than maintain two backends. The ``importlib`` indirection keeps
-# isort/black from reordering it back above the other imports and tripping
-# ``E402``.
+# ``fcntl`` is POSIX-only. ``msvcrt.locking`` byte-range semantics on Windows differ enough that
+# pip-tools degrades to "no advisory lock, warn the user" rather than maintain two backends. The
+# ``importlib`` indirection keeps isort/black from reordering it back above the other imports and
+# tripping ``E402``.
 _fcntl = import_module("fcntl") if sys_platform != "win32" else None
 
 
@@ -41,12 +40,11 @@ def _advisory_lock(
 ) -> _t.Iterator[None]:
     """Serialize concurrent ``pip-lock`` invocations against the same output.
 
-    Two parallel locks read the same seed, resolve in parallel, then race on
-    the atomic-rename write, leaving a non-deterministic surviving file. A
-    sibling ``.<name>.lock`` file held under ``fcntl.LOCK_EX`` for the
-    seed-to-write window collapses the race to "second invocation waits for
-    the first." Windows lacks ``fcntl``; degrade to a warning so the user
-    sees that concurrent runs against the same artifact dir are unsafe.
+    Two parallel locks read the same seed, resolve in parallel, then race on the atomic-rename
+    write, leaving a non-deterministic surviving file. A sibling ``.<name>.lock`` file held under
+    ``fcntl.LOCK_EX`` for the seed-to-write window collapses the race to "second invocation waits
+    for the first." Windows lacks ``fcntl``; degrade to a warning so the user sees that concurrent
+    runs against the same artifact dir are unsafe.
     """
     if (
         output_file is None
@@ -55,13 +53,12 @@ def _advisory_lock(
     ):
         yield
         return
+    output_path = Path(output_file.name)
+    lock_path = output_path.parent / f".{output_path.name}.lock"
     if _fcntl is None:  # pragma: win32 cover
-        # Windows fallback: best-effort ``O_CREAT|O_EXCL`` exclusive-create on
-        # a sibling ``.lock`` file. A successful create means no concurrent
-        # ``pip-lock`` holds the output; ``FileExistsError`` means one does.
-        # Warn on contention so quiet runs stay quiet.
-        output_path = Path(output_file.name)
-        lock_path = output_path.parent / f".{output_path.name}.lock"
+        # Windows fallback: best-effort ``O_CREAT|O_EXCL`` exclusive-create on a sibling ``.lock``
+        # file. A successful create means no concurrent ``pip-lock`` holds the output;
+        # ``FileExistsError`` means one does. Warn on contention so quiet runs stay quiet.
         try:
             fd = os_open(lock_path, O_RDWR | O_CREAT | O_EXCL, 0o600)
         except FileExistsError:
@@ -87,15 +84,12 @@ def _advisory_lock(
             except OSError:
                 pass
         return
-    # Local rebind narrows the type for mypy; the ``_fcntl is None`` guard
-    # above keeps this branch off win32.
+    # Local rebind narrows the type for mypy; the ``_fcntl is None`` guard above keeps this branch
+    # off win32.
     fcntl_mod: ModuleType = _fcntl  # pragma: win32 no cover
-    output_path = Path(output_file.name)
-    lock_path = output_path.parent / f".{output_path.name}.lock"
-    # Don't ``mkdir`` the parent: a typo'd ``-o /typo/dir/pylock.toml``
-    # would materialise a brand-new directory and land the lock there.
-    # ``os.open`` raising ``FileNotFoundError`` becomes a ``PipToolsError``
-    # so the CLI exits 2 with one line instead of a Python traceback.
+    # Don't ``mkdir`` the parent: a typo'd ``-o /typo/dir/pylock.toml`` would materialise a
+    # brand-new directory and land the lock there. ``os.open`` raising ``FileNotFoundError``
+    # becomes a ``PipToolsError`` so the CLI exits 2 with one line instead of a Python traceback.
     try:  # pragma: win32 no cover
         fd = os_open(lock_path, O_RDWR | O_CREAT, 0o600)
     except FileNotFoundError as exc:  # pragma: win32 no cover
@@ -107,10 +101,9 @@ def _advisory_lock(
         fcntl_mod.flock(fd, fcntl_mod.LOCK_EX)
         yield
     finally:  # pragma: win32 no cover
-        # Don't ``os.unlink(lock_path)`` here. ``flock`` is on the inode,
-        # not the path; unlinking while a blocked second acquirer still
-        # holds an open fd lets a third process create a *new* inode at the
-        # same path and grab a separate ``flock`` on that, breaking mutual
+        # Don't ``os.unlink(lock_path)`` here. ``flock`` is on the inode, not the path; unlinking
+        # while a blocked second acquirer still holds an open fd lets a third process create a
+        # *new* inode at the same path and grab a separate ``flock`` on that, breaking mutual
         # exclusion. The 0-byte sibling lock file on disk is the cost.
         try:
             fcntl_mod.flock(fd, fcntl_mod.LOCK_UN)
@@ -122,9 +115,9 @@ def _advisory_lock(
 def emit_check(doc: Pylock, output_file: LazyFile | _t.IO[_t.Any]) -> None:
     """Verify the on-disk lockfile matches ``doc`` and exit non-zero on drift.
 
-    Compares parsed TOML rather than raw bytes so reformatter changes do not
-    flag every lockfile out of date. Writes the proposed bytes to a sibling
-    ``.new`` file when drift is detected so the user can diff the two.
+    Compares parsed TOML rather than raw bytes so reformatter changes do not flag every lockfile
+    out of date. Writes the proposed bytes to a sibling ``.new`` file when drift is detected so the
+    user can diff the two.
 
     :param doc: Lockfile produced by the resolver this run.
     :param output_file: File handle pointing at the lockfile path on disk.
@@ -164,10 +157,9 @@ def emit_dry_run(doc: Pylock) -> None:
     :param doc: Lockfile to render.
     """
     rendered = _render(doc)
-    # ``click.echo`` writes to stdout (not the log's stderr), so
-    # ``pip-lock --dry-run | tee pylock.toml`` produces a clean TOML
-    # stream without log banners. ``errors="replace"`` defends against a
-    # future writer change that emits non-UTF-8 bytes; tomli_w is UTF-8.
+    # ``click.echo`` writes to stdout (not the log's stderr), so ``pip-lock --dry-run | tee
+    # pylock.toml`` produces a clean TOML stream without log banners. ``errors="replace"`` defends
+    # against a future writer change that emits non-UTF-8 bytes; tomli_w is UTF-8.
     echo(rendered.decode("utf-8", errors="replace"), nl=False)
     log.info("Dry-run, so nothing updated.")
 
@@ -176,21 +168,19 @@ def emit_write(doc: Pylock, output_file: LazyFile | _t.IO[_t.Any]) -> None:
     """Render ``doc`` to bytes and atomically commit them to ``output_file``.
 
     :param doc: Lockfile to render.
-    :param output_file: Destination file. When backed by an atomic writer,
-        the rename is forced inside the advisory-lock window so a blocked
-        concurrent invocation cannot read the stale lockfile as its seed.
+    :param output_file: Destination file. When backed by an atomic writer, the rename is forced
+        inside the advisory-lock window so a blocked concurrent invocation cannot read the stale
+        lockfile as its seed.
     :raises PipToolsError: When the underlying write fails.
     """
-    rendered = _render(doc)
     try:
-        _t.cast("_t.BinaryIO", output_file).write(rendered)
-        # Click's ``LazyFile(atomic=True)`` writes to a tempfile and renames
-        # at close. ``ctx.call_on_close`` would run that close LIFO after
-        # ``ctx.with_resource(_advisory_lock(...))`` releases the lock,
-        # opening a window for a blocked competitor to read the *old*
-        # pylock.toml as its seed before the rename lands. Closing here
-        # keeps the rename inside the locked region; click's ``safecall``
-        # makes the trailing ``call_on_close`` a no-op.
+        _t.cast("_t.BinaryIO", output_file).write(_render(doc))
+        # Click's ``LazyFile(atomic=True)`` writes to a tempfile and renames at close.
+        # ``ctx.call_on_close`` would run that close LIFO after
+        # ``ctx.with_resource(_advisory_lock(...))`` releases the lock, opening a window for a
+        # blocked competitor to read the *old* pylock.toml as its seed before the rename lands.
+        # Closing here keeps the rename inside the locked region; click's ``safecall`` makes the
+        # trailing ``call_on_close`` a no-op.
         if hasattr(output_file, "close_intelligently"):
             _t.cast("LazyFile", output_file).close_intelligently()
     except OSError as exc:
@@ -203,11 +193,9 @@ def emit_write(doc: Pylock, output_file: LazyFile | _t.IO[_t.Any]) -> None:
 def _render(doc: Pylock) -> bytes:
     """Serialize ``doc`` to bytes once for every emit path to consume."""
     data = dict(doc.to_dict())
-    # PEP 751 leaves sdist/wheels order to the writer; place wheels before
-    # the single sdist so a reader's eye lands on the installable artifact
-    # before the source fallback.
-    packages = data.get("packages")
-    if isinstance(packages, list):
+    # PEP 751 leaves sdist/wheels order to the writer; place wheels before the single sdist so a
+    # reader's eye lands on the installable artifact before the source fallback.
+    if isinstance(packages := data.get("packages"), list):
         for package in packages:
             if isinstance(package, dict) and "sdist" in package and "wheels" in package:
                 package["sdist"] = package.pop("sdist")

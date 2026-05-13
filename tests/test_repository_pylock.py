@@ -40,11 +40,10 @@ def test_fake_repository_returns_empty_for_url_requirement(
 
 
 def test_base_repository_defaults_for_pylock_methods(mocker: MockerFixture) -> None:
-    # Third-party ``BaseRepository`` subclasses written before pip-lock landed
-    # do not override the new pylock helpers; the fallbacks must keep them
-    # instantiating and surface "no dist files" / no ``Requires-Python``
-    # rather than raise. Bypass abstract instantiation by calling the
-    # unbound methods with a stand-in ``self``.
+    # Third-party ``BaseRepository`` subclasses written before pip-lock landed do not override
+    # the new pylock helpers; the fallbacks must keep them instantiating and surface "no dist
+    # files" / no ``Requires-Python`` rather than raise. Bypass abstract instantiation by
+    # calling the unbound methods with a stand-in ``self``.
     fake_self = mocker.MagicMock()
     fake_ireq = mocker.MagicMock()
     assert BaseRepository.get_distribution_files(fake_self, fake_ireq) == []
@@ -54,10 +53,9 @@ def test_base_repository_defaults_for_pylock_methods(mocker: MockerFixture) -> N
 def test_pypi_clear_caches_atomically_renames_then_removes(
     pypi_repository: PyPIRepository, tmp_path: Path
 ) -> None:
-    # Two ``pip-lock`` processes against one cache directory must not race on
-    # ``rmtree``; the rename pivots the live tree out before deletion so a
-    # concurrent reader either sees the old directory or none at all, never a
-    # half-deleted one.
+    # Two ``pip-lock`` processes against one cache directory must not race on ``rmtree``; the
+    # rename pivots the live tree out before deletion so a concurrent reader either sees the
+    # old directory or none at all, never a half-deleted one.
     download_dir = tmp_path / "downloads"
     download_dir.mkdir()
     (download_dir / "marker").write_text("data")
@@ -72,8 +70,8 @@ def test_pypi_clear_caches_atomically_renames_then_removes(
 def test_pypi_clear_caches_skips_when_rename_fails(
     pypi_repository: PyPIRepository, tmp_path: Path, mocker: MockerFixture
 ) -> None:
-    # The rename can fail on locked files (Windows) or cross-device moves;
-    # the cleanup is best-effort so the caller continues rather than crash.
+    # The rename can fail on locked files (Windows) or cross-device moves; the cleanup is
+    # best-effort so the caller continues rather than crash.
     download_dir = tmp_path / "downloads"
     download_dir.mkdir()
     pypi_repository._download_dir = str(download_dir)
@@ -208,8 +206,8 @@ def test_pypi_get_distribution_files_from_json_api(
     assert len(files) == 2
     sdist = files[0]
     assert sdist.name == "small-fake-a-0.1.tar.gz"
-    # md5 is dropped: PEP 751 wants "at least one secure algorithm" and
-    # md5 satisfies pip's checks but not the spec's intent.
+    # md5 is dropped: PEP 751 wants "at least one secure algorithm" and md5 satisfies pip's
+    # checks but not the spec's intent.
     assert sdist.hashes == {"sha256": "abc123"}
     assert sdist.size == 12345
     assert sdist.upload_time is not None
@@ -256,9 +254,9 @@ def test_pypi_get_distribution_files_json_missing_digests(
 def test_pypi_get_distribution_files_streams_sha256_when_only_weak_digests(
     pypi_repository: PyPIRepository, mocker: MockerFixture
 ) -> None:
-    # md5 satisfies pip's permissive guaranteed-algorithms check but PEP 751
-    # treats it as insecure; the fallback streams the file for a real sha256
-    # rather than emit an md5-only ``hashes`` table.
+    # md5 satisfies pip's permissive guaranteed-algorithms check but PEP 751 treats it as
+    # insecure; the fallback streams the file for a real sha256 rather than emit an md5-only
+    # ``hashes`` table.
     fake_release = {
         "releases": {
             "0.1": [
@@ -282,8 +280,8 @@ def test_pypi_get_distribution_files_streams_sha256_when_only_weak_digests(
     files = pypi_repository.get_distribution_files(requirement)
     assert len(files) == 1
     assert files[0].hashes == {"sha256": "f" * 64}
-    # JSON ``size`` was supplied (100), so the cached value beats the
-    # streamed byte count; the lockfile records the index-reported size.
+    # JSON ``size`` was supplied (100), so the cached value beats the streamed byte count;
+    # the lockfile records the index-reported size.
     assert files[0].size == 100
 
 
@@ -291,11 +289,9 @@ def test_pypi_get_distribution_files_streams_sha256_when_only_weak_digests(
 def test_pypi_get_distribution_files_uses_streamed_size_when_json_omits(
     pypi_repository: PyPIRepository, mocker: MockerFixture
 ) -> None:
-    # When JSON omits ``size`` and the streamer fills it in, the
-    # lockfile carries the count of bytes hashed; without the
-    # substitution ``packages.size`` would be absent on private mirrors
-    # that do not expose digests, producing a noisy diff between PyPI
-    # and mirror locks.
+    # When JSON omits ``size`` and the streamer fills it in, the lockfile carries the count
+    # of bytes hashed; without the substitution ``packages.size`` would be absent on private
+    # mirrors that do not expose digests, producing a noisy diff between PyPI and mirror locks.
     fake_release = {
         "releases": {
             "0.1": [
@@ -324,9 +320,8 @@ def test_pypi_get_distribution_files_uses_streamed_size_when_json_omits(
 def test_pypi_get_distribution_files_falls_back_when_filtered_digests_empty(
     pypi_repository: PyPIRepository, mocker: MockerFixture
 ) -> None:
-    # PyPI reports ``crc32`` alone, which is neither in the
-    # secure-algorithms allowlist nor a known integrity primitive; stream
-    # sha256 instead.
+    # PyPI reports ``crc32`` alone, which is neither in the secure-algorithms allowlist nor a
+    # known integrity primitive; stream sha256 instead.
     fake_release = {
         "releases": {
             "0.1": [
@@ -356,14 +351,14 @@ def test_pypi_get_distribution_files_falls_back_when_filtered_digests_empty(
 def test_pypi_candidate_path_caches_streamed_sha256(
     pypi_repository: PyPIRepository, mocker: MockerFixture, tmp_path: Path
 ) -> None:
-    # When the index doesn't expose digests, pip-tools streams each wheel
-    # through sha256 on every run. With an on-disk cache the second run reuses
-    # the digest and skips the hash loop; noticeable on 200+ package locks.
+    # When the index doesn't expose digests, pip-tools streams each wheel through sha256 on
+    # every run. With an on-disk cache the second run reuses the digest and skips the hash
+    # loop; noticeable on 200+ package locks.
     mocker.patch.object(pypi_repository, "_get_project", return_value=None)
     candidate = mocker.MagicMock()
-    # The hash cache stores ``files.pythonhosted.org`` URLs (the
-    # content-addressable host). A private-index URL would bypass the
-    # cache so this test would not observe the second-run hit.
+    # The hash cache stores ``files.pythonhosted.org`` URLs (the content-addressable host).
+    # A private-index URL would bypass the cache so this test would not observe the
+    # second-run hit.
     candidate.link.url_without_fragment = (
         "https://files.pythonhosted.org/packages/abc/pkg-1.0.tar.gz"
     )
@@ -595,9 +590,9 @@ def test_pypi_clear_finder_cache_new_pip(
     pypi_repository: PyPIRepository,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    # Pip 25.1 swapped lru_cache decoration for instance-level dicts; the
-    # else-branch above already covers `cache_clear`, this exercises the
-    # dict-clear path so both pip eras stay green.
+    # Pip 25.1 swapped lru_cache decoration for instance-level dicts; the else-branch above
+    # already covers `cache_clear`, this exercises the dict-clear path so both pip eras stay
+    # green.
     monkeypatch.setattr(_pip_api, "PIP_VERSION_MAJOR_MINOR", (26, 0))
     pypi_repository.finder._all_candidates = {"foo": ["sentinel"]}
     pypi_repository.finder._best_candidates = {"foo": ["sentinel"]}
@@ -611,13 +606,11 @@ def test_pypi_get_dependencies_calls_get_dist_for_when_not_prepared(
     pypi_repository: PyPIRepository,
     mocker: MockerFixture,
 ) -> None:
-    # Without the ``_get_dist_for(requirement)`` call, the dependencies
-    # set comes back empty whenever pip's resolver leaves
-    # ``requirement.prepared`` False after ``_resolve_one``, which the
-    # resolver does for editable installs and for a few VCS shapes. Drive
-    # a sentinel exception out of the mock so the test hits the call-site
-    # once and exits the function cleanly without depending on pip's
-    # later code paths.
+    # Without the ``_get_dist_for(requirement)`` call, the dependencies set comes back empty
+    # whenever pip's resolver leaves ``requirement.prepared`` False after ``_resolve_one``,
+    # which the resolver does for editable installs and for a few VCS shapes. Drive a sentinel
+    # exception out of the mock so the test hits the call-site once and exits the function
+    # cleanly without depending on pip's later code paths.
     requirement = _pip_api.create_install_requirement_from_line("small-fake-a==0.1")
     mock_resolver = mocker.MagicMock()
     mock_resolver._resolve_one.return_value = []
@@ -634,9 +627,9 @@ def test_pypi_get_dependencies_calls_get_dist_for_when_not_prepared(
 def test_get_file_hash_and_size_refuses_truncated_stream(
     pypi_repository: PyPIRepository, mocker: MockerFixture
 ) -> None:
-    # If a transparent proxy truncates mid-stream, the sha256 computes
-    # validly over the truncated bytes; recording it as authoritative
-    # would lock a corrupt artifact. Cross-check Content-Length and refuse.
+    # If a transparent proxy truncates mid-stream, the sha256 computes validly over the
+    # truncated bytes; recording it as authoritative would lock a corrupt artifact.
+    # Cross-check Content-Length and refuse.
     fake_stream = FileStream(stream=BytesIO(b"abc"), size=99)
 
     @contextlib.contextmanager
@@ -699,10 +692,9 @@ def test_get_distribution_files_from_candidates_refuses_insecure_scheme(
     url: str,
     filename: str,
 ) -> None:
-    # PEP 751 hashes are authoritative; recording a streamed hash from a
-    # non-TLS transport would let a man-in-the-middle's bytes become the
-    # lockfile's source of truth. The check refuses every scheme except
-    # ``https://`` and ``file://``.
+    # PEP 751 hashes are authoritative; recording a streamed hash from a non-TLS transport
+    # would let a man-in-the-middle's bytes become the lockfile's source of truth. The check
+    # refuses every scheme except ``https://`` and ``file://``.
     repository = from_candidates_repository(url, filename)
     requirement = _pip_api.create_install_requirement_from_line("pkg==1.0")
     with pytest.raises(PipToolsError, match="streamed hash"):
@@ -713,10 +705,10 @@ def test_get_distribution_files_skips_hash_cache_for_non_sha256(
     from_candidates_repository: Callable[[str, str], PyPIRepository],
     mocker: MockerFixture,
 ) -> None:
-    # ``_hash_cache.store`` is keyed on sha256 digests so a non-sha256 result
-    # from ``_get_file_hash_and_size`` (a future ``FAVORITE_HASH`` swap, or a
-    # mirror that hashed with ``sha512`` directly) bypasses the cache write
-    # without dropping the digest from the recorded lockfile entry.
+    # ``_hash_cache.store`` is keyed on sha256 digests so a non-sha256 result from
+    # ``_get_file_hash_and_size`` (a future ``FAVORITE_HASH`` swap, or a mirror that hashed
+    # with ``sha512`` directly) bypasses the cache write without dropping the digest from the
+    # recorded lockfile entry.
     repository = from_candidates_repository(
         "https://example.com/pkg-1.0.tar.gz", "pkg-1.0.tar.gz"
     )

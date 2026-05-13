@@ -25,20 +25,18 @@ from packaging.markers import Marker
 
 from ..exceptions import PipToolsError
 
-# The marker AST is a heterogeneous nested structure: a sub-marker group is a
-# list of nodes, a comparison is a 3-tuple of ``(lhs, Op, rhs)`` where each
-# side is a ``Variable`` or a ``Value``, and the boolean operators between
-# siblings are bare ``"and"`` / ``"or"`` strings. ``packaging`` does not
-# expose a public type alias for these nodes, so we name the constituent
-# types off the ``packaging._parser`` private surface (the same module
-# ``packaging.markers`` imports them from). The rewriter below needs the
-# precise shape rather than ``Any``.
+# The marker AST is a heterogeneous nested structure: a sub-marker group is a list of nodes, a
+# comparison is a 3-tuple of ``(lhs, Op, rhs)`` where each side is a ``Variable`` or a ``Value``,
+# and the boolean operators between siblings are bare ``"and"`` / ``"or"`` strings. ``packaging``
+# does not expose a public type alias for these nodes, so we name the constituent types off the
+# ``packaging._parser`` private surface (the same module ``packaging.markers`` imports them from).
+# The rewriter below needs the precise shape rather than ``Any``.
 _AstAtom: _t.TypeAlias = "Variable | Value"
 _AstComparison: _t.TypeAlias = "tuple[_AstAtom, Op, _AstAtom]"
 _AstNode: _t.TypeAlias = "_AstComparison | list[_AstNode] | str"
 
-# Variables the discovery scan folds to True so one scan covers every
-# platform; python markers stay untouched to preserve per-python differences.
+# Variables the discovery scan folds to True so one scan covers every platform; python markers
+# stay untouched to preserve per-python differences.
 PLATFORM_MARKER_KEYS: _t.Final[frozenset[str]] = frozenset(
     {
         "sys_platform",
@@ -62,24 +60,21 @@ class MarkerShape(_t.NamedTuple):
 def decompose(marker: Marker | None) -> MarkerShape | None:
     """Split a marker into its extras, groups, and env-clause axes.
 
-    The symbolic disjointness check reasons about extras, groups, and the
-    env clause as independent axes; without that decomposition the check
-    falls back to the bounded powerset on every input, defeating the
-    symbolic shortcut.
+    The symbolic disjointness check reasons about extras, groups, and the env clause as independent
+    axes; without that decomposition the check falls back to the bounded powerset on every input,
+    defeating the symbolic shortcut.
 
     :param marker: Marker to decompose. ``None`` represents an always-true marker.
-    :returns: The decomposed shape, or ``None`` when the marker mixes axes in
-        a shape the walker refuses to flatten so the caller falls back to the
-        powerset enumeration.
+    :returns: The decomposed shape, or ``None`` when the marker mixes axes in a shape the walker
+        refuses to flatten so the caller falls back to the powerset enumeration.
     """
     if marker is None:
         return MarkerShape(frozenset(), frozenset(), None)
-    # Without this, a packaging release that moves the AST shape degrades
-    # decompose to ``None`` and pushes every marker into the powerset path;
-    # the verifier surfaces the regression as an explicit failure.
+    # Without this, a packaging release that moves the AST shape degrades decompose to ``None``
+    # and pushes every marker into the powerset path; the verifier surfaces the regression as an
+    # explicit failure.
     verify_packaging_marker_shape()
-    decomposed = _decompose_axes(marker._markers)
-    if decomposed is None:
+    if (decomposed := _decompose_axes(marker._markers)) is None:
         return None
     extras, groups, env_nodes = decomposed
     if not env_nodes:
@@ -94,24 +89,23 @@ def _decompose_axes(
 ) -> tuple[set[str], set[str], list[_t.Any]] | None:
     """Decompose one AST level into extras, groups, and env-clause buckets.
 
-    A bool plus in/out collectors would conflate "decomposed cleanly" with
-    "left in a partial state on bail-out", forcing every caller to remember
-    that the collectors hold valid data on success. Returning
-    ``Optional[tuple]`` makes the success/failure contract a property of
-    the signature so the caller cannot read half-populated mid-walk state.
+    A bool plus in/out collectors would conflate "decomposed cleanly" with "left in a partial
+    state on bail-out", forcing every caller to remember that the collectors hold valid data on
+    success. Returning ``Optional[tuple]`` makes the success/failure contract a property of the
+    signature so the caller cannot read half-populated mid-walk state.
 
-    :param nodes: One AST level of a parsed marker (the body of
-        ``Marker._markers`` or any recursive sub-list of the same shape).
-    :returns: ``(extras, groups, env_nodes)`` when the level decomposes, or
-        ``None`` when the caller should fall back to the powerset enumeration.
+    :param nodes: One AST level of a parsed marker (the body of ``Marker._markers`` or any
+        recursive sub-list of the same shape).
+    :returns: ``(extras, groups, env_nodes)`` when the level decomposes, or ``None`` when the
+        caller should fall back to the powerset enumeration.
     """
-    # Without the strip ``Marker("(extra == 'a')")`` decomposes differently
-    # from the unwrapped form even though the markers carry identical meaning.
+    # Without the strip ``Marker("(extra == 'a')")`` decomposes differently from the unwrapped
+    # form even though the markers carry identical meaning.
     while len(nodes) == 1 and isinstance(nodes[0], list):
         nodes = nodes[0]
     # An ``or`` joining an extras opt-in with an env clause cannot collapse to
-    # ``(extras_in) and (env)``: the original fires when *either* side is true,
-    # while the collapsed form needs *both*. Bail so the caller falls back.
+    # ``(extras_in) and (env)``: the original fires when *either* side is true, while the
+    # collapsed form needs *both*. Bail so the caller falls back.
     if _has_mixed_or_axes(nodes):
         return None
     extras: set[str] = set()
@@ -128,14 +122,12 @@ def _decompose_axes(
                 return None
             continue
         if isinstance(node, list):
-            sub = _decompose_axes(node)
-            if sub is None:
+            if (sub := _decompose_axes(node)) is None:
                 return None
             sub_extras, sub_groups, sub_env = sub
             if sub_env:
-                # An ``or`` group that mixes extras with env clauses is outside
-                # pip-tools' emitted shape; refuse to decompose so the caller
-                # falls back to the powerset.
+                # An ``or`` group that mixes extras with env clauses is outside pip-tools'
+                # emitted shape; refuse to decompose so the caller falls back to the powerset.
                 if op_seen == "or" and (sub_extras or sub_groups):
                     return None
                 _append_env(env_nodes, op_seen, node)
@@ -144,8 +136,7 @@ def _decompose_axes(
             continue
         if not isinstance(node, tuple) or len(node) != 3:
             return None
-        opt_in_kind = _classify_opt_in(node)
-        if opt_in_kind is None:
+        if (opt_in_kind := _classify_opt_in(node)) is None:
             _append_env(env_nodes, op_seen, node)
             continue
         bucket, value = opt_in_kind
@@ -159,9 +150,9 @@ def _decompose_axes(
 def _append_env(env_nodes: list[_t.Any], op_seen: str | None, node: _t.Any) -> None:
     """Append ``node`` to ``env_nodes`` with the most recent boolean operator.
 
-    Reaching a second operand means the loop crossed an odd-index step that
-    assigned ``op_seen``; the assertion makes that invariant load-bearing
-    rather than letting a fallback operator mask a future regression.
+    Reaching a second operand means the loop crossed an odd-index step that assigned ``op_seen``;
+    the assertion makes that invariant load-bearing rather than letting a fallback operator mask
+    a future regression.
     """
     if not env_nodes:
         env_nodes.append(node)
@@ -173,13 +164,12 @@ def _append_env(env_nodes: list[_t.Any], op_seen: str | None, node: _t.Any) -> N
 def has_top_level_or(marker: Marker) -> bool:
     """Report whether the marker's top level carries an ``or`` operator.
 
-    A trailing ``and X`` appended to a marker whose top level is ``or``
-    binds to the rightmost disjunct under PEP 508 precedence and narrows
-    the marker's truth set, so callers building composite markers by
-    string concatenation need this signal to know when wrapping in parens
-    is required. Substring-checking the rendered marker for ``" or "``
-    encodes an undocumented spacing assumption from the producer and
-    over-wraps when ``or`` lives inside a parenthesised sub-expression.
+    A trailing ``and X`` appended to a marker whose top level is ``or`` binds to the rightmost
+    disjunct under PEP 508 precedence and narrows the marker's truth set, so callers building
+    composite markers by string concatenation need this signal to know when wrapping in parens is
+    required. Substring-checking the rendered marker for ``" or "`` encodes an undocumented
+    spacing assumption from the producer and over-wraps when ``or`` lives inside a parenthesised
+    sub-expression.
 
     :param marker: Parsed marker whose AST the function inspects.
     :returns: ``True`` when at least one ``or`` operator sits at the top level.
@@ -190,14 +180,12 @@ def has_top_level_or(marker: Marker) -> bool:
 def _has_mixed_or_axes(nodes: list[_t.Any]) -> bool:
     """Report whether ``nodes`` mix opt-in and env clauses under an ``or``.
 
-    Without this guard ``_decompose_axes`` collapses an ``or`` that joins
-    extras or groups with an env clause into the narrower
-    ``extras AND env`` shape, fabricating disjointness that is not there;
-    detecting the mix here forces the powerset fallback so the symbolic
-    shortcut stays sound on inputs it cannot flatten.
+    Without this guard ``_decompose_axes`` collapses an ``or`` that joins extras or groups with an
+    env clause into the narrower ``extras AND env`` shape, fabricating disjointness that is not
+    there; detecting the mix here forces the powerset fallback so the symbolic shortcut stays
+    sound on inputs it cannot flatten.
     """
-    has_or = any(node == "or" for i, node in enumerate(nodes) if i % 2 == 1)
-    if not has_or:
+    if not any(node == "or" for i, node in enumerate(nodes) if i % 2 == 1):
         return False
     has_opt_in = False
     has_env = False
@@ -210,18 +198,17 @@ def _has_mixed_or_axes(nodes: list[_t.Any]) -> bool:
             else:
                 has_env = True
         elif isinstance(node, list):
-            # Nested groups: peek to see whether the sub-list contributes to
-            # the opt-in or env axis. A single tuple inside counts; deeper
-            # nesting falls through to the recursive walk's rejection.
+            # Nested groups: peek to see whether the sub-list contributes to the opt-in or env
+            # axis. A single tuple inside counts; deeper nesting falls through to the recursive
+            # walk's rejection.
             if len(node) == 1 and isinstance(node[0], tuple):
                 if _classify_opt_in(node[0]) is not None:
                     has_opt_in = True
                 else:
                     has_env = True
             else:
-                # Defer to recursion; if the nested list itself mixes axes
-                # under ``or`` this returns False here and the recursive call
-                # detects and rejects.
+                # Defer to recursion; if the nested list itself mixes axes under ``or`` this
+                # returns False here and the recursive call detects and rejects.
                 return False
     return has_opt_in and has_env
 
@@ -255,10 +242,9 @@ def _classify_opt_in(
 def collect_extras(nodes: list[_t.Any]) -> _t.Iterator[str]:
     """Yield extra names from ``extra == 'X'`` comparisons in either order.
 
-    PEP 508 lets the comparison go in either direction (``extra == 'X'`` or
-    ``'X' == extra``); regexing the stringified marker catches the first
-    form, so an extras-conditional dep written the other way slips into
-    the base set and loses its ``'X' in extras`` marker on the lockfile
+    PEP 508 lets the comparison go in either direction (``extra == 'X'`` or ``'X' == extra``);
+    regexing the stringified marker catches the first form, so an extras-conditional dep written
+    the other way slips into the base set and loses its ``'X' in extras`` marker on the lockfile
     entry. Walking the AST in either operand order spots both shapes.
 
     :param nodes: AST nodes drawn from a parsed marker's internal representation.
@@ -291,16 +277,14 @@ _marker_shape_verified = False
 def verify_packaging_marker_shape() -> None:
     """Probe packaging's marker AST shape before any caller relies on it.
 
-    The rewriter and the partition scan depend on packaging's marker AST
-    being a list of three-tuple comparison nodes, and on the ``[[]]``
-    empty-sub-marker idiom evaluating to ``True``. A future packaging
-    release could rearrange that without breaking the string form of the
-    marker, leaving the patch un-rewritten and producing a wrong lockfile.
-    The probe runs on first use so a stale packaging install does not
-    break ``import piptools`` outright.
+    The rewriter and the partition scan depend on packaging's marker AST being a list of
+    three-tuple comparison nodes, and on the ``[[]]`` empty-sub-marker idiom evaluating to
+    ``True``. A future packaging release could rearrange that without breaking the string form of
+    the marker, leaving the patch un-rewritten and producing a wrong lockfile. The probe runs on
+    first use so a stale packaging install does not break ``import piptools`` outright.
 
-    :raises PipToolsError: When the marker AST shape no longer matches the
-        contract pip-tools relies on.
+    :raises PipToolsError: When the marker AST shape no longer matches the contract pip-tools
+        relies on.
     """
     global _marker_shape_verified
     if _marker_shape_verified:
@@ -343,20 +327,16 @@ def make_platform_blind_evaluator(
 ) -> Callable[..., bool]:
     """Build an evaluator that folds platform comparisons to ``True``.
 
-    Without this rewriter the partition scan needs one resolution per
-    target platform to discover every platform-conditional dependency;
-    folding platform comparisons to ``True`` lets a single resolution see
-    every branch in one walk while keeping python-version comparisons
-    honoured.
+    Without this rewriter the partition scan needs one resolution per target platform to discover
+    every platform-conditional dependency; folding platform comparisons to ``True`` lets a single
+    resolution see every branch in one walk while keeping python-version comparisons honoured.
 
-    :param module: The packaging marker module whose ``Variable`` type
-        identifies AST nodes.
-    :param original: The original evaluator the patched form delegates to
-        once platform clauses have been folded.
+    :param module: The packaging marker module whose ``Variable`` type identifies AST nodes.
+    :param original: The original evaluator the patched form delegates to once platform clauses
+        have been folded.
     :returns: A drop-in replacement evaluator that ignores platform clauses.
     """
     Variable = module.Variable
-    platform_keys = PLATFORM_MARKER_KEYS
 
     def rewrite(markers: list[_AstNode]) -> list[_AstNode]:
         out: list[_AstNode] = []
@@ -372,7 +352,7 @@ def make_platform_blind_evaluator(
                     var = rhs.value
                 else:
                     var = None
-                if var in platform_keys:
+                if var in PLATFORM_MARKER_KEYS:
                     out.append([])  # always-true sub-marker
                     continue
             out.append(m)

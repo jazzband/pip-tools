@@ -17,9 +17,9 @@ import pyproject_hooks
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import parse_req_from_line
 
-# `Requirement` and `Marker` pass straight into pip's `InstallRequirement`,
-# which `isinstance`-checks against its vendored copies. Mixing top-level
-# types trips pip's constructor assertion.
+# `Requirement` and `Marker` pass straight into pip's `InstallRequirement`, which
+# `isinstance`-checks against its vendored copies. Mixing top-level types trips pip's
+# constructor assertion.
 from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.requirements import Requirement
 
@@ -117,11 +117,9 @@ def maybe_statically_parse_project_metadata(
     return StaticProjectMetadata(
         extras=tuple(extras),
         requirements=tuple(install_requirements),
-        # ``[project].requires-python`` is the same source
-        # ``build_project_metadata`` surfaces via the wheel's
-        # ``Requires-Python`` header for non-static projects. Expose it
-        # here too so the lockfile sees the bound regardless of which
-        # path produced the metadata.
+        # ``[project].requires-python`` is the same source ``build_project_metadata``
+        # surfaces via the wheel's ``Requires-Python`` header for non-static projects. Expose it
+        # here too so the lockfile sees the bound regardless of which path produced the metadata.
         requires_python=(
             str(project_table["requires-python"])
             if project_table.get("requires-python")
@@ -198,10 +196,9 @@ def build_project_metadata(
             extras=extras,
             requirements=requirements,
             build_requirements=build_requirements,
-            # PEP 517 backends populate ``Requires-Python`` in the wheel
-            # metadata whether the project sources it from ``[project]``,
-            # ``setup.cfg``, or a dynamic backend hook. Reading it here
-            # keeps the lock-time bound backend-agnostic.
+            # PEP 517 backends populate ``Requires-Python`` in the wheel metadata whether the
+            # project sources it from ``[project]``, ``setup.cfg``, or a dynamic backend hook.
+            # Reading it here keeps the lock-time bound backend-agnostic.
             requires_python=metadata.get("Requires-Python"),
         )
 

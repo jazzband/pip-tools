@@ -31,9 +31,8 @@ def build_pylock_package(
 ) -> Package:
     """Build the PEP 751 ``Package`` entry for one resolved requirement.
 
-    Picks the source field that matches the requirement (vcs, directory,
-    archive, or index) and threads through every field PEP 751 attaches to a
-    package entry.
+    Picks the source field that matches the requirement (vcs, directory, archive, or index) and
+    threads through every field PEP 751 attaches to a package entry.
 
     :param requirement: The resolved install requirement.
     :param dist_files: Distribution files (wheels and sdists) keyed for this pin.
@@ -41,17 +40,18 @@ def build_pylock_package(
     :param marker: Composed marker string for the package, or ``None``.
     :param index_url: URL of the index that served the artifact, when applicable.
     :param requires_python: ``Requires-Python`` specifier string for the package.
-    :param lock_dir: Directory the lockfile is being written to, used to
-        relativise local paths.
+    :param lock_dir: Directory the lockfile is being written to, used to relativise local paths.
     :returns: The populated package entry.
     :raises PipToolsError: When no installable source can be derived for the package.
     """
     source_type = detect_source_type(requirement)
 
     version: Version | None = None
-    if source_type not in ("directory", "vcs"):
-        if (raw := requirement_version(requirement)) is not None:
-            version = Version(raw)
+    if (
+        source_type not in ("directory", "vcs")
+        and (raw := requirement_version(requirement)) is not None
+    ):
+        version = Version(raw)
 
     vcs = directory = archive = sdist = None
     wheels: list[PackageWheel] | None = None
@@ -95,15 +95,18 @@ def build_pylock_package(
 def requirement_version(requirement: InstallRequirement) -> str | None:
     """Return the version pin on a resolved requirement, or ``None`` when absent.
 
-    The backtracking resolver pins every requirement to one specifier before
-    this is called; the ``None`` fallback protects against unpinned requirements
-    re-entering the flow so the failure surface stays a missing-version error.
+    The backtracking resolver pins every requirement to one specifier before this is called; the
+    ``None`` fallback protects against unpinned requirements re-entering the flow so the failure
+    surface stays a missing-version error.
 
     :param requirement: The requirement to inspect.
     :returns: The pinned version string, or ``None`` when no pin is present.
     """
-    spec = next(iter(requirement.specifier), None)
-    return None if spec is None else spec.version
+    return (
+        None
+        if (spec := next(iter(requirement.specifier), None)) is None
+        else spec.version
+    )
 
 
 __all__ = [

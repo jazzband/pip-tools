@@ -24,13 +24,12 @@ if _t.TYPE_CHECKING:
 
 @pytest.fixture(autouse=True)
 def _reset_cache_state(mocker: MockerFixture) -> _t.Iterator[None]:
-    # Each test starts with a clean install slate; ``uninstall`` would
-    # otherwise carry state from the previous test forward and trip the
-    # idempotency guard. ``create=True`` keeps the restoration uniform
-    # across pip versions where the underlying symbols can be absent
+    # Each test starts with a clean install slate; ``uninstall`` would otherwise carry state
+    # from the previous test forward and trip the idempotency guard. ``create=True`` keeps the
+    # restoration uniform across pip versions where the underlying symbols can be absent
     # (``parse_wheel_filename`` joined ``Wheel`` in pip 25,
-    # ``_fetch_metadata_using_link_data_attr`` joined the preparer in
-    # 23.2), so the fixture stays branch-free.
+    # ``_fetch_metadata_using_link_data_attr`` joined the preparer in 23.2), so the fixture
+    # stays branch-free.
     mocker.patch.object(_pip_caches, "_installed", False)
     mocker.patch.object(_pkgfinder, "parse_links", _pip_caches._original_parse_links)
     mocker.patch.object(
@@ -55,9 +54,9 @@ def _reset_cache_state(mocker: MockerFixture) -> _t.Iterator[None]:
     )
     _pip_caches.clear()
     yield
-    # Tests that called ``install()`` (or used ``scope()``) leave a
-    # patch on ``_installed=True``; ``mocker.patch.object`` undoes its
-    # own changes, so drop the flag here as well.
+    # Tests that called ``install()`` (or used ``scope()``) leave a patch on
+    # ``_installed=True``; ``mocker.patch.object`` undoes its own changes, so drop the flag
+    # here as well.
     _pip_caches._installed = False
 
 

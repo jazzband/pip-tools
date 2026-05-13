@@ -64,10 +64,8 @@ def _output_path_for_pip_version(
     # pre-24.3 pip emits ``comes_from`` paths relative to the input file
     if pip_produces_absolute_paths:
         return output_path
-    relative_segments = len(pathlib.Path(input_path).parents) - 1
-    return (
-        pathlib.Path(input_path).parent / ("../" * relative_segments) / output_path
-    ).as_posix()
+    parent = pathlib.Path(input_path).parent
+    return (parent / ("../" * len(parent.parents)) / output_path).as_posix()
 
 
 @pytest.mark.parametrize(
@@ -3629,8 +3627,9 @@ def test_pass_pip_cache_to_pip_args(tmpdir, runner, current_resolver, mocker):
     )
     assert out.exit_code == 0, out.stderr
     assert "--cache-dir" in captured["pip_args"]
-    idx = captured["pip_args"].index("--cache-dir")
-    assert captured["pip_args"][idx + 1] == str(cache_dir)
+    assert captured["pip_args"][captured["pip_args"].index("--cache-dir") + 1] == str(
+        cache_dir
+    )
     assert captured["cache_dir"] == str(cache_dir)
     # Stronger contract: pip received the dir, opened it, and populated
     # at least one of its known subdirectories. Asserting on file
