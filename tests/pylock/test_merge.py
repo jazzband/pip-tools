@@ -26,7 +26,12 @@ def make_ireq(
     mocker: MockerFixture,
 ) -> _t.Callable[[], InstallRequirement]:
     def _factory() -> InstallRequirement:
-        return mocker.create_autospec(InstallRequirement, instance=True)
+        return mocker.create_autospec(
+            InstallRequirement,
+            instance=True,
+            original_link=None,
+            constraint=False,
+        )
 
     return _factory
 
@@ -260,7 +265,9 @@ def test_merge_resolutions_no_negation_when_base_and_group_share_version(
     # If base and group-only variants pin the same version they collapse
     # onto one entry (variants merged); no second entry exists to collide
     # with, so the negation does not fire on a unique-version case.
-    req = mocker.create_autospec(InstallRequirement, instance=True, original_link=None)
+    req = mocker.create_autospec(
+        InstallRequirement, instance=True, original_link=None, constraint=False
+    )
     env = "linux-x86_64-3.12-cpython"
     per_variant = {
         VariantKey(env=env): {"pkg": ("1.0", req)},

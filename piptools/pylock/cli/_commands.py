@@ -220,7 +220,7 @@ def cli(
         )
     lock_dir = (
         Path(output_file.name).resolve().parent
-        if output_file is not None and hasattr(output_file, "name")
+        if hasattr(output_file, "name")
         else None
     )
     # Hold the advisory lock for seed-resolve-write so two concurrent
@@ -313,16 +313,9 @@ def cli(
             lock_dir=lock_dir,
             project_requires_python=project_requires_python,
         )
-    except NoCandidateFound as e:
-        log.error(str(e))
-        raise SystemExit(2) from e
-    except PipToolsError as e:
-        log.error(str(e))
-        raise SystemExit(2) from e
-    except PylockValidationError as e:
-        # ``packaging.pylock.Pylock.__init__`` validates at construction;
-        # surface the validation message as exit-2 instead of letting a
-        # raw traceback through.
+    # ``packaging.pylock.Pylock.__init__`` validates at construction; surface
+    # its validation message as exit-2 alongside every other lock-time error.
+    except (NoCandidateFound, PipToolsError, PylockValidationError) as e:
         log.error(str(e))
         raise SystemExit(2) from e
     if check:

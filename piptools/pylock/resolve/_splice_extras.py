@@ -148,20 +148,16 @@ def _collect_base_constraints(
         # whenever the new resolution picks a newer version, since the seeded
         # ``==`` would no longer contain it. Drop constraint-only entries here
         # so widening detection fires on user-authored pins alone.
-        if getattr(requirement, "constraint", False):
+        if requirement.constraint:
             continue
         if _extras_in_marker(requirement.markers, tuple(known)):
             # Extras-side constraint; not a base spec.
             continue
         name = canonicalize_name(requirement.req.name)
-        if (
-            link := getattr(requirement, "original_link", None)
-            or getattr(requirement, "link", None)
-        ) is not None:
-            if (url := getattr(link, "url_without_fragment", None)) is not None:
+        if (link := effective_link(requirement)) is not None:
+            if url := link.url_without_fragment:
                 base_links[name] = url
-        spec = getattr(requirement, "specifier", None)
-        if spec is not None and str(spec):
+        if str(spec := requirement.specifier):
             base_specifiers[name] = spec
     return base_specifiers, base_links
 

@@ -47,56 +47,25 @@ IMPLEMENTATION_ENVIRONMENTS: dict[str, ImplementationEnvironment] = {
 TargetEnvironment: _t.TypeAlias = Environment
 
 
-def _linux(machine: str) -> PlatformEnvironment:
+# ``os_key -> (os_name, sys_platform, platform_system)``. Used by the
+# preset table and the best-effort synthesiser; one row per OS spelling.
+_OS_PROFILE: _t.Final[dict[str, tuple[str, str, str]]] = {
+    "linux": ("posix", "linux", "Linux"),
+    "windows": ("nt", "win32", "Windows"),
+    "macos": ("posix", "darwin", "Darwin"),
+    "android": ("posix", "android", "Android"),
+    "ios": ("posix", "ios", "iOS"),
+    "pyodide": ("posix", "emscripten", "Emscripten"),
+}
+
+
+def _env_for(os_key: str, machine: str) -> PlatformEnvironment:
+    os_name, sys_platform, platform_system = _OS_PROFILE[os_key]
     return {
-        "os_name": "posix",
-        "sys_platform": "linux",
+        "os_name": os_name,
+        "sys_platform": sys_platform,
         "platform_machine": machine,
-        "platform_system": "Linux",
-        "implementation_name": "cpython",
-        "platform_python_implementation": "CPython",
-    }
-
-
-def _windows(machine: str) -> PlatformEnvironment:
-    return {
-        "os_name": "nt",
-        "sys_platform": "win32",
-        "platform_machine": machine,
-        "platform_system": "Windows",
-        "implementation_name": "cpython",
-        "platform_python_implementation": "CPython",
-    }
-
-
-def _macos(machine: str) -> PlatformEnvironment:
-    return {
-        "os_name": "posix",
-        "sys_platform": "darwin",
-        "platform_machine": machine,
-        "platform_system": "Darwin",
-        "implementation_name": "cpython",
-        "platform_python_implementation": "CPython",
-    }
-
-
-def _android(machine: str) -> PlatformEnvironment:
-    return {
-        "os_name": "posix",
-        "sys_platform": "android",
-        "platform_machine": machine,
-        "platform_system": "Android",
-        "implementation_name": "cpython",
-        "platform_python_implementation": "CPython",
-    }
-
-
-def _ios(machine: str) -> PlatformEnvironment:
-    return {
-        "os_name": "posix",
-        "sys_platform": "ios",
-        "platform_machine": machine,
-        "platform_system": "iOS",
+        "platform_system": platform_system,
         "implementation_name": "cpython",
         "platform_python_implementation": "CPython",
     }
@@ -106,30 +75,23 @@ def _ios(machine: str) -> PlatformEnvironment:
 # marker-distinct combinations live here (musl vs glibc collapse to the
 # same env).
 PLATFORM_ENVIRONMENTS: dict[str, PlatformEnvironment] = {
-    "linux-x86_64": _linux("x86_64"),
-    "linux-aarch64": _linux("aarch64"),
-    "linux-i686": _linux("i686"),
-    "linux-armv7l": _linux("armv7l"),
-    "linux-ppc64le": _linux("ppc64le"),
-    "linux-s390x": _linux("s390x"),
-    "linux-riscv64": _linux("riscv64"),
-    "windows-amd64": _windows("AMD64"),
-    "windows-arm64": _windows("ARM64"),
-    "windows-x86": _windows("x86"),
-    "macos-x86_64": _macos("x86_64"),
-    "macos-arm64": _macos("arm64"),
-    "android-aarch64": _android("aarch64"),
-    "android-x86_64": _android("x86_64"),
-    "ios-arm64": _ios("arm64"),
-    "ios-x86_64": _ios("x86_64"),
-    "pyodide-wasm32": {
-        "os_name": "posix",
-        "sys_platform": "emscripten",
-        "platform_machine": "wasm32",
-        "platform_system": "Emscripten",
-        "implementation_name": "cpython",
-        "platform_python_implementation": "CPython",
-    },
+    "linux-x86_64": _env_for("linux", "x86_64"),
+    "linux-aarch64": _env_for("linux", "aarch64"),
+    "linux-i686": _env_for("linux", "i686"),
+    "linux-armv7l": _env_for("linux", "armv7l"),
+    "linux-ppc64le": _env_for("linux", "ppc64le"),
+    "linux-s390x": _env_for("linux", "s390x"),
+    "linux-riscv64": _env_for("linux", "riscv64"),
+    "windows-amd64": _env_for("windows", "AMD64"),
+    "windows-arm64": _env_for("windows", "ARM64"),
+    "windows-x86": _env_for("windows", "x86"),
+    "macos-x86_64": _env_for("macos", "x86_64"),
+    "macos-arm64": _env_for("macos", "arm64"),
+    "android-aarch64": _env_for("android", "aarch64"),
+    "android-x86_64": _env_for("android", "x86_64"),
+    "ios-arm64": _env_for("ios", "arm64"),
+    "ios-x86_64": _env_for("ios", "x86_64"),
+    "pyodide-wasm32": _env_for("pyodide", "wasm32"),
 }
 
 

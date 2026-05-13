@@ -44,6 +44,10 @@ def make_ireq(mocker: MockerFixture) -> IreqFactory:
             instance=True,
             markers=Marker(marker) if marker else None,
             req=req_mock,
+            specifier=SpecifierSet(),
+            constraint=False,
+            original_link=None,
+            link=None,
         )
 
     return _factory
@@ -405,13 +409,13 @@ def test_collect_base_constraints_skips_nameless_requirements(
     assert base_links == {}
 
 
-def test_collect_base_constraints_skips_link_without_url_without_fragment(
+def test_collect_base_constraints_skips_link_with_empty_url_without_fragment(
     mocker: MockerFixture,
 ) -> None:
-    # A link missing ``url_without_fragment`` does not poison ``base_links``.
+    # An empty ``url_without_fragment`` does not poison ``base_links``.
     req_mock = mocker.MagicMock()
     req_mock.name = "pkg"
-    link = mocker.MagicMock(spec=[])
+    link = mocker.MagicMock(url_without_fragment="")
     requirement = mocker.create_autospec(
         InstallRequirement,
         instance=True,

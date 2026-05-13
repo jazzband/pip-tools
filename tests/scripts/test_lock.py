@@ -23,7 +23,7 @@ from piptools.pylock._inputs import LockSelection
 from piptools.pylock.builder import _build_top_level_environments
 from piptools.pylock.platforms import (
     PLATFORM_ENVIRONMENTS,
-    _linux,
+    _env_for,
     build_target_environments,
 )
 from piptools.scripts.lock import cli
@@ -119,7 +119,10 @@ def test_no_universal_raises_for_ambiguous_current_platform(
 
     mocker.patch.dict(
         PLATFORM_ENVIRONMENTS,
-        {"linux-x86_64-musl": _linux("x86_64"), "linux-x86_64-glibc": _linux("x86_64")},
+        {
+            "linux-x86_64-musl": _env_for("linux", "x86_64"),
+            "linux-x86_64-glibc": _env_for("linux", "x86_64"),
+        },
     )
     mocker.patch(
         "piptools.pylock.cli._targets.default_environment",

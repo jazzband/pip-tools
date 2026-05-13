@@ -89,8 +89,8 @@ def merge_resolutions(
             # last-write-wins drops it whenever a sibling variant resolves the
             # same ``(name, version)`` through the index instead.
             existing = requirements_by_pin.get((name, version))
-            existing_link = getattr(existing, "original_link", None)
-            new_link = getattr(requirement, "original_link", None)
+            existing_link = existing.original_link if existing is not None else None
+            new_link = requirement.original_link
             if existing is None:
                 requirements_by_pin[(name, version)] = requirement
                 variant_by_pin[(name, version)] = variant
@@ -105,9 +105,7 @@ def merge_resolutions(
                 # carries the full user-intent metadata (extras, markers)
                 # rather than the bare ``-c`` reference, which has no
                 # extras or hash info.
-                if getattr(existing, "constraint", False) and not getattr(
-                    requirement, "constraint", False
-                ):
+                if existing.constraint and not requirement.constraint:
                     requirements_by_pin[(name, version)] = requirement
                     variant_by_pin[(name, version)] = variant
                 continue
@@ -119,16 +117,14 @@ def merge_resolutions(
                 # casing) do not false-fire; show the original spellings in
                 # the error and name both variants so the user can find the
                 # offending input set.
-                existing_url = getattr(existing_link, "url", None)
-                new_url = getattr(new_link, "url", None)
-                if normalize_for_compare(existing_url) != normalize_for_compare(
-                    new_url
+                if normalize_for_compare(existing_link.url) != normalize_for_compare(
+                    new_link.url
                 ):
                     existing_variant = variant_by_pin.get((name, version))
                     raise PipToolsError(
                         f"Conflicting direct-URL pins for {name}=={version}: "
-                        f"variant {existing_variant!s} pinned {existing_url!r}, "
-                        f"variant {variant!s} pinned {new_url!r}. Pick one "
+                        f"variant {existing_variant!s} pinned {existing_link.url!r}, "
+                        f"variant {variant!s} pinned {new_link.url!r}. Pick one "
                         f"URL (or pin the package to a single specifier)."
                     )
 

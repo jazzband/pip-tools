@@ -189,20 +189,18 @@ def _build_top_level_environments(
 ) -> list[str]:
     """Compose top-level ``[[environments]]`` markers, one per (version, impl) cell."""
     envs_by_axis: defaultdict[tuple[str, str], set[str]] = defaultdict(set)
-    platform_keys_by_axis: defaultdict[tuple[str, str], set[str]] = defaultdict(set)
     for env_key in target_envs:
-        platform, version, implementation = parse_env_key(env_key)
-        axis = (version, implementation)
-        envs_by_axis[axis].add(env_key)
-        platform_keys_by_axis[axis].add(f"{platform}-{version}-{implementation}")
+        _, version, implementation = parse_env_key(env_key)
+        envs_by_axis[(version, implementation)].add(env_key)
     user_versions = set(python_versions)
-    promote_to_full = {v.rsplit(".", 1)[0] for v in user_versions if v.count(".") >= 2}
+    promote_to_full = {v.rsplit(".", 1)[0] for v in user_versions if _has_patch(v)}
     implementations_in_use = {axis[1] for axis in envs_by_axis}
+    platform_universe = set(PLATFORM_ENVIRONMENTS) | set(platforms)
     environments: list[str] = []
     for version, implementation in sorted(envs_by_axis):
         env_dict = target_envs[next(iter(envs_by_axis[(version, implementation)]))]
-        major_minor = version.rsplit(".", 1)[0] if version.count(".") >= 2 else version
-        if (version in user_versions and version.count(".") >= 2) or (
+        major_minor = version.rsplit(".", 1)[0] if _has_patch(version) else version
+        if (version in user_versions and _has_patch(version)) or (
             major_minor in promote_to_full
         ):
             clauses = [f"python_full_version == '{env_dict['python_full_version']}'"]
@@ -212,17 +210,22 @@ def _build_top_level_environments(
             clauses.append(
                 f"implementation_name == '{env_dict['implementation_name']}'"
             )
-        platform_universe = set(PLATFORM_ENVIRONMENTS) | set(platforms)
         universe_for_axis = {
             f"{p}-{version}-{implementation}" for p in platform_universe
         }
-        platform_marker = compute_platform_marker(
-            envs_by_axis[(version, implementation)], universe_for_axis
-        )
-        if platform_marker is not None:
+        if (
+            platform_marker := compute_platform_marker(
+                envs_by_axis[(version, implementation)], universe_for_axis
+            )
+        ) is not None:
             clauses.insert(0, platform_marker)
         environments.append(" and ".join(clauses))
     return environments
+
+
+def _has_patch(version: str) -> bool:
+    """Return whether ``version`` carries a ``MAJOR.MINOR.PATCH`` patch component."""
+    return version.count(".") >= 2
 
 
 def _build_package_dependencies(

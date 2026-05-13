@@ -151,26 +151,28 @@ def to_dict(meta: PylockToolMetadata) -> dict[str, _ToolValue]:
     :param meta: Metadata block to serialise.
     :returns: Dict with hyphenated TOML keys, ready for the writer.
     """
-    result: dict[str, _ToolValue] = {}
-    # ``version`` defaults to ``""`` when the user opted it out via
-    # ``--skip-metadata-field version``; writing an empty string emits
-    # an invalid metadata field rather than omitting it. Treat falsy as
-    # opt-out (``_pkg_version("pip-tools")`` is never empty in normal
-    # operation).
-    if meta.version:
-        result["version"] = meta.version
-    if meta.pip_version:
-        result["pip-version"] = meta.pip_version
-    if meta.command:
-        result["command"] = meta.command
+    # Falsy values (empty version, empty pip-version, empty command list) drop
+    # via the filter so an opted-out ``--skip-metadata-field`` field never
+    # emits an invalid TOML key. ``generated-at`` uses ``is not None`` instead
+    # of truthiness because the opt-out writes ``None`` and a valid timestamp
+    # is never falsy.
+    candidates: dict[str, _ToolValue] = {
+        "version": meta.version,
+        "pip-version": meta.pip_version,
+        "command": meta.command,
+    }
+    result: dict[str, _ToolValue] = {k: v for k, v in candidates.items() if v}
     if meta.generated_at is not None:
         result["generated-at"] = meta.generated_at
     if (opts := meta.options) is None:
         return result
-    for f in fields(opts):
-        if (value := getattr(opts, f.name)) is None:
-            continue
-        result[f.name.replace("_", "-")] = value
+    result.update(
+        {
+            f.name.replace("_", "-"): value
+            for f in fields(opts)
+            if (value := getattr(opts, f.name)) is not None
+        }
+    )
     return result
 
 
