@@ -916,6 +916,15 @@ def test_relative_file_uri_package(pip_conf, runner):
 
 
 @pytest.mark.network
+@pytest.mark.skipif(
+    sys.platform == "win32" and sys.implementation.name == "pypy",
+    reason=(
+        "Windows + PyPy hits a deterministic IncompleteRead on the v7.5.3 "
+        "tarball download (cached partial response, identical 9195/267 byte "
+        "truncation across reruns); skip rather than poison CI on a runner-"
+        "specific network corruption."
+    ),
+)
 def test_direct_reference_with_extras(runner):
     with open("requirements.in", "w") as req_in:
         req_in.write(
