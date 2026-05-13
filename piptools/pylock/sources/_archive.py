@@ -31,7 +31,7 @@ def build_archive_source(
     if raw.startswith("file:") and not Path(url_to_path(raw)).exists():
         # ``detect_source_type`` routes any non-directory ``file://`` link
         # to the archive branch; without this guard a typo'd path falls
-        # through to the missing-hash error and the user can't tell why.
+        # through to the missing-hash error with no signal about the cause.
         raise PipToolsError(
             f"Local archive for {requirement.name!r} does not exist: "
             f"{url_to_path(raw)!r}. Check the path in the requirement spec."
@@ -45,8 +45,8 @@ def build_archive_source(
         )
     if not is_secure_hash_name(link.hash_name):
         # PEP 751 demands at least one secure algorithm in ``hashes``; md5/sha1
-        # satisfy pip's checks but not the spec's intent. Surface a clear error
-        # rather than silently emit a weak-only entry the spec forbids.
+        # satisfy pip's checks but not the spec's intent. Surface an error
+        # rather than emit a weak-only entry the spec forbids.
         raise PipToolsError(
             f"Archive hash for {requirement.name!r} uses {link.hash_name!r}, which "
             f"PEP 751 does not consider secure. Pin the requirement with one of "

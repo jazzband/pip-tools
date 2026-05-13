@@ -71,9 +71,9 @@ def resolve(
         _pip_caches.clear()
 
     # Perf shortcut, not a correctness gate. Skip the partition scan when no
-    # two envs share a ``(sys_platform, python_version)`` signature; the
-    # scan independently verifies each env's dep graph, so this only sharpens
-    # the perf cut, never the grouping.
+    # two envs share a ``(sys_platform, python_version)`` signature. The scan
+    # verifies each env's dep graph on its own, so this sharpens the perf cut
+    # without changing the grouping.
     cohort_signatures: set[tuple[str, str]] = set()
     can_share_cohort = False
     for env in targets.target_envs.values():
@@ -123,12 +123,12 @@ def _dispatch_cohorts(
     """Stream cohort results, in-process or via a process pool.
 
     Cohorts share no state (``rep_env``, constraints, and resolver state
-    never cross cohort boundaries), so the parallel branch is
-    correctness-equivalent to the sequential one. Marker patching is a
-    per-worker global; each worker drains its tasks sequentially.
+    never cross cohort boundaries), so the parallel branch matches the
+    sequential one for correctness. Marker patching is a per-worker
+    global, and each worker drains its tasks in sequence.
 
-    The worker count is capped at the cohort count and short-circuits to
-    an in-process loop at 1, so ``--jobs 1`` and tiny locks never pay
+    The worker count caps at the cohort count and short-circuits to an
+    in-process loop at 1, so ``--jobs 1`` and tiny locks skip the
     fork-and-pickle overhead that would dwarf the resolver work.
     """
     worker_count = min(workers.jobs, len(env_cohorts))
@@ -145,10 +145,10 @@ def _dispatch_cohorts(
 
     # Build the PyPIRepository inside each worker rather than pickle one
     # across the IPC boundary. pip's vendored ``CacheControlAdapter``
-    # cannot round-trip pickle (its ``__setstate__`` reads
+    # fails to round-trip pickle (its ``__setstate__`` reads
     # ``_ssl_context``, which ``__getstate__`` never sets), and sharing
     # a connection pool across processes would be unsound regardless.
-    # Construction is a few hundred ms, bounded once per worker.
+    # Construction takes a few hundred ms, bounded once per worker.
     if log.verbosity >= 1:
         log.debug(
             f"Dispatching {len(env_cohorts)} cohort(s) across "
@@ -160,9 +160,9 @@ def _dispatch_cohorts(
     # including any open SSL sockets the partition scan left in pip's
     # ``requests.Session`` keep-alive pool. Forked workers race the
     # parent on those file descriptors, producing flaky network errors
-    # that no amount of retry survives. ``spawn`` re-imports per worker;
+    # that no retry survives. ``spawn`` re-imports per worker, and
     # ``init_worker_repository`` then builds one repo per worker, so the
-    # marginal cost over fork is just the import.
+    # marginal cost over fork is the import alone.
     pool = ProcessPoolExecutor(
         max_workers=worker_count,
         initializer=init_worker_repository,
@@ -182,8 +182,8 @@ def _dispatch_cohorts(
         ]
         try:
             # Drain in submission order so the merge step sees results in
-            # a deterministic sequence. The lockfile sorts everything,
-            # but stable ordering keeps logs and tests sane.
+            # a deterministic sequence. The lockfile sorts everything, and
+            # stable ordering keeps logs and tests reproducible.
             for future in futures:
                 yield future.result()
         except BaseException:

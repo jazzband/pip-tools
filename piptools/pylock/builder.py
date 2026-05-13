@@ -71,11 +71,11 @@ def build_pylock_document(
     :returns: A populated lock document ready for serialisation.
     :raises PipToolsError: When marker disjointness fails or input contracts are violated.
     """
-    # The marker AST walker and extras collector reach into ``Marker._markers``
-    # directly; if a ``packaging`` release rearranges that AST they would
-    # silently produce wrong output. The platform-blind rewriter has its
-    # own deferred verify (skipped under ``--no-universal``), so guard the
-    # always-run path here.
+    # The marker AST walker and extras collector reach into
+    # ``Marker._markers``; a ``packaging`` release that rearranges that AST
+    # produces wrong output without warning. The platform-blind rewriter
+    # has its own deferred verify (skipped under ``--no-universal``), so
+    # guard the always-run path here.
     verify_packaging_marker_shape()
     # Scope pip-helper caches to one lock command so successive in-process
     # invocations don't inherit each other's parsed-link state. Nested
@@ -98,9 +98,9 @@ def build_pylock_document(
         log.debug("")
         log.debug("Collecting distribution files:")
         # Multi-version entries (the case the cohort/partition machinery
-        # exists to support) need per-release dist files and
-        # ``requires-python``. Keying by name alone would collapse every
-        # release onto whichever variant landed at ``entries[0]``.
+        # supports) need per-release dist files and ``requires-python``.
+        # Keying by name alone collapses every release onto whichever
+        # variant lands at ``entries[0]``.
         with repository.allow_all_wheels(), log.indentation():
             dist_files_map: _DistFilesByPin = {}
             pkg_requires_python: dict[tuple[str, str], str | None] = {}
@@ -164,9 +164,10 @@ def build_pylock_document(
             packages=packages,
             environments=([Marker(e) for e in environments] if environments else None),
             extras=(
-                # PEP 503 normalisation collapses ``Foo-bar`` and ``foo_bar`` to
-                # the same key; dedup *after* canonicalising so the lockfile
-                # never carries duplicate entries that name the same opt-in.
+                # PEP 503 normalisation collapses ``Foo-bar`` and
+                # ``foo_bar`` to the same key; dedup *after* canonicalising
+                # so the lockfile never carries duplicate entries that name
+                # the same opt-in.
                 sorted({canonicalize_name(e) for e in selection.extras})
                 if selection.extras
                 else None
@@ -261,10 +262,10 @@ def _build_package_dependencies(
         ):
             # PEP 751 lets vcs/directory entries omit ``version`` and
             # pip-tools has nothing minimal-and-stable to disambiguate
-            # them with. Emitting bare ``{name = "X"}`` for each would
-            # produce a dep list that identifies zero specific candidate;
-            # fail loudly so the user collapses the inputs themselves
-            # rather than shipping an unusable lockfile.
+            # them with. A bare ``{name = "X"}`` for each produces a dep
+            # list that identifies zero specific candidate; raise so the
+            # user collapses the inputs rather than shipping an unusable
+            # lockfile.
             sources = ", ".join(
                 str(c.requirement.original_link or c.requirement.link) for c in matching
             )
@@ -276,20 +277,20 @@ def _build_package_dependencies(
                 f"them. Pin the requirement to a single source."
             )
         # PEP 751 requires the *minimum* information that uniquely
-        # identifies the target. ``(name, version)`` is enough when each
+        # identifies the target. ``(name, version)`` covers it when each
         # matching candidate has a distinct version; when two share a
         # version but disagree on marker (e.g. one wheel for
-        # ``python_version == '3.12'``, another for ``'3.13'``), only the
-        # tied candidates need the ``marker`` field. Adding it to siblings
-        # whose version is already unique would emit non-minimal refs.
+        # ``python_version == '3.12'``, another for ``'3.13'``), the tied
+        # candidates need the ``marker`` field. Adding it to siblings
+        # whose version is unique emits non-minimal refs.
         version_groups: defaultdict[str, list[ResolvedEntry]] = defaultdict(list)
         for candidate in matching:
             version_groups[candidate.version].append(candidate)
         for candidate in matching:
             entry: dict[str, str] = {"name": dep_name}
-            # PEP 751 lets ``directory``/``vcs`` entries omit ``version``, so
-            # version is the wrong disambiguator there; the parent's marker
-            # already selects the right variant in those cases.
+            # PEP 751 lets ``directory``/``vcs`` entries omit ``version``,
+            # so version is the wrong disambiguator there; the parent's
+            # marker selects the right variant in those cases.
             if detect_source_type(candidate.requirement) not in ("vcs", "directory"):
                 if disambig := candidate.version or None:
                     entry["version"] = disambig
@@ -305,7 +306,7 @@ def _build_package_dependencies(
 def _index_for_entry(entry: ResolvedEntry, index_urls: tuple[str, ...]) -> str | None:
     """Return the configured index that served this candidate, or ``None``.
 
-    Defaulting every entry to ``finder.index_urls[0]`` would leak
+    Defaulting every entry to ``finder.index_urls[0]`` leaks
     ``--extra-index-url`` packages back to public PyPI as the installer's
     fallback URL, which PEP 751's ``index`` semantics class as a security
     issue. Match by ``Link.comes_from`` first (the index page pip
@@ -322,8 +323,8 @@ def _index_for_entry(entry: ResolvedEntry, index_urls: tuple[str, ...]) -> str |
     # (``https://a.com/simple/``). Compare parsed (scheme, netloc, path)
     # rather than raw ``startswith``: ``simple`` byte-prefixes
     # ``simple-mirror`` but at the path-segment level the two are
-    # disjoint, so byte comparison would attribute one index's packages
-    # to its similarly-named neighbour.
+    # disjoint, so byte comparison attributes one index's packages to its
+    # similarly-named neighbour.
     sorted_indexes = sorted(index_urls, key=len, reverse=True)
     comes_from = link.comes_from
     if isinstance(comes_from, str):

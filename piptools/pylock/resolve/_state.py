@@ -1,13 +1,13 @@
 """Internal dataclasses passed through the resolve pipeline.
 
 The per-cohort loop and the marker-discovery scan share the same inputs
-and per-call mutable state. Bundling them into dataclasses keeps call
-sites inside the resolve package from drowning in 12-parameter
-signatures and keeps the function bodies as the focus of every diff.
+and per-call mutable state. Bundling them into dataclasses spares call
+sites inside the resolve package from 12-parameter signatures and keeps
+function bodies as the focus of every diff.
 
 These types are private to the resolve package; the public ``resolve``
 entry in ``_orchestrate`` decomposes the user-facing dataclasses
-(``LockInputs`` / ``LockSelection`` / ``LockTargets`` /
+(``LockInputs``, ``LockSelection``, ``LockTargets``,
 ``ResolverOptions``) into them.
 """
 
@@ -30,9 +30,9 @@ _KW_ONLY: _t.Final[dict[str, bool]] = (
 class ResolverInputs:
     """Constraints the per-cohort loop and partition scan share.
 
-    ``extras_configs`` and ``group_configs`` are the result of expanding the user's
-    extras/groups against the conflict matrix; both sub-pipelines need that expansion
-    to know which extras/groups to bundle into a single resolution and which to keep
+    ``extras_configs`` and ``group_configs`` expand the user's extras and groups
+    against the conflict matrix. Both sub-pipelines need that expansion to know
+    which extras and groups to bundle into a single resolution and which to keep
     separate.
     """
 
@@ -46,10 +46,10 @@ class ResolverInputs:
 class ResolutionState:
     """Mutable per-call accumulator threaded through nested resolution helpers.
 
-    The orchestrator builds one of these and the per-cohort workers append to it;
-    keeping the state in a single object avoids the "pass two long-lived dicts as
-    out-parameters everywhere" pattern that nested resolver helpers would otherwise
-    fall into.
+    The orchestrator builds one of these and the per-cohort workers append to it.
+    Keeping the state in a single object avoids the "pass two long-lived dicts as
+    out-parameters everywhere" pattern that nested resolver helpers would
+    otherwise fall into.
     """
 
     per_variant: PerVariantMap = field(default_factory=dict)
@@ -60,10 +60,10 @@ class ResolutionState:
 class VariantSlice:
     """One ``(extras x groups)`` cell evaluated against a list of envs.
 
-    The same resolver result is replicated to every env in ``env_keys``
-    because by construction they belong to the same cohort; running the
-    resolver once per env would duplicate work the partition scan exists
-    to avoid.
+    Every env in ``env_keys`` belongs to the same cohort by construction,
+    so the resolver runs once and the result replicates to every env.
+    Running the resolver once per env would duplicate work the partition
+    scan exists to avoid.
     """
 
     env_keys: list[str]

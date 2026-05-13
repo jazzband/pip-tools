@@ -17,9 +17,9 @@ import pyproject_hooks
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import parse_req_from_line
 
-# `Requirement` and `Marker` are passed straight into pip's `InstallRequirement`,
-# which `isinstance`-checks against its vendored copies; mixing top-level types
-# would trip pip's constructor assertion.
+# `Requirement` and `Marker` pass straight into pip's `InstallRequirement`,
+# which `isinstance`-checks against its vendored copies. Mixing top-level
+# types trips pip's constructor assertion.
 from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.requirements import Requirement
 
@@ -117,10 +117,11 @@ def maybe_statically_parse_project_metadata(
     return StaticProjectMetadata(
         extras=tuple(extras),
         requirements=tuple(install_requirements),
-        # ``[project].requires-python`` is the same source ``build_project_metadata``
-        # would surface via the wheel's ``Requires-Python`` header for non-static
-        # projects; expose it here too so the lockfile sees the bound regardless
-        # of which path produced the metadata.
+        # ``[project].requires-python`` is the same source
+        # ``build_project_metadata`` surfaces via the wheel's
+        # ``Requires-Python`` header for non-static projects. Expose it
+        # here too so the lockfile sees the bound regardless of which
+        # path produced the metadata.
         requires_python=(
             str(project_table["requires-python"])
             if project_table.get("requires-python")

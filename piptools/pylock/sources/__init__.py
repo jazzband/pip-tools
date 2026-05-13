@@ -6,16 +6,16 @@ import typing as _t
 from pathlib import Path
 
 from packaging.markers import Marker
-from packaging.pylock import Package, PackageDirectory, PackageSdist, PackageWheel
+from packaging.pylock import Package, PackageSdist, PackageWheel
 from packaging.specifiers import SpecifierSet
 from packaging.utils import canonicalize_name
 from packaging.version import Version
 from pip._internal.req import InstallRequirement
-from pip._internal.utils.urls import url_to_path
 
 from ...exceptions import PipToolsError
 from ._archive import build_archive_source
-from ._detection import detect_source_type, relativize_path
+from ._detection import detect_source_type
+from ._directory import build_directory_source
 from ._index import build_index_source
 from ._vcs import build_vcs_source
 
@@ -41,9 +41,9 @@ def build_pylock_package(
     :param marker: Composed marker string for the package, or ``None``.
     :param index_url: URL of the index that served the artifact, when applicable.
     :param requires_python: ``Requires-Python`` specifier string for the package.
-    :param lock_dir: Directory the lockfile is being written to. Used to
+    :param lock_dir: Directory the lockfile is being written to, used to
         relativise local paths.
-    :returns: The fully populated package entry.
+    :returns: The populated package entry.
     :raises PipToolsError: When no installable source can be derived for the package.
     """
     source_type = detect_source_type(requirement)
@@ -60,7 +60,7 @@ def build_pylock_package(
     if source_type == "vcs":
         vcs = build_vcs_source(requirement)
     elif source_type == "directory":
-        directory = _build_directory_source(requirement, lock_dir)
+        directory = build_directory_source(requirement, lock_dir)
     elif source_type == "archive":
         archive = build_archive_source(requirement, lock_dir)
     else:
@@ -89,21 +89,6 @@ def build_pylock_package(
         index=index,
         sdist=sdist,
         wheels=wheels,
-    )
-
-
-def _build_directory_source(
-    requirement: InstallRequirement, lock_dir: Path | None
-) -> PackageDirectory:
-    link = requirement.original_link or requirement.link
-    raw = link.url_without_fragment
-    path = url_to_path(raw) if raw.startswith("file:") else raw
-    return PackageDirectory(
-        path=relativize_path(path, lock_dir),
-        editable=requirement.editable,
-        # PEP 751 lists ``packages.directory.subdirectory`` as supported; without
-        # it ``pkg @ file:///repo#subdirectory=sub`` would build the wrong tree.
-        subdirectory=link.subdirectory_fragment,
     )
 
 

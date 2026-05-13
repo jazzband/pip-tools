@@ -17,8 +17,8 @@ application and its dependencies for production, you want to make sure that
 your builds are predictable and deterministic.)
 
 > **New:** [`pip-lock`](#example-usage-for-pip-lock) generates
-> [PEP 751](https://peps.python.org/pep-0751/) `pylock.toml` files —
-> cross-platform lockfiles installable with `pip 26.1+` or `uv` — from your
+> [PEP 751](https://peps.python.org/pep-0751/) `pylock.toml` files
+> (cross-platform lockfiles installable with `pip 26.1+` or `uv`) from your
 > `pyproject.toml`, `requirements.in`, or `setup.py`.
 
 [![pip-tools overview for phase II][pip-tools-overview]][pip-tools-overview]
@@ -532,7 +532,7 @@ repos:
 
 > [!WARNING]
 > `pip-lock` is experimental. The CLI surface and the
-> `[tool.pip-tools]` lockfile block may change between releases without
+> `[tool.pip-tools]` lockfile block can change between releases without
 > a deprecation cycle while the command settles. Pin the pip-tools
 > version in CI, and expect the option list documented below to evolve
 > based on user feedback. Set
@@ -622,7 +622,7 @@ covers several implementations in one file: the top-level
 a PyPy installer cannot match the CPython entry's marker and vice
 versa, and per-package markers like
 `implementation_name == 'pypy'` get evaluated against the correct
-target env (they were silently dropped before this flag existed).
+target env (they were dropped without warning before this flag existed).
 
 <!-- pyml disable-num-lines 5 commands-show-output -->
 
@@ -901,7 +901,7 @@ The two are mutually exclusive at the CLI surface.
 
 ### Optional PEP 751 fields not yet emitted
 
-`pip-lock` does not currently emit `[[packages.attestation-identities]]`,
+`pip-lock` does not emit `[[packages.attestation-identities]]`,
 the per-package `[packages.tool]` table, or the top-level
 `default-groups`. All three are optional in PEP 751 and lack a clear
 upstream source today: PyPI's JSON API does not surface attestation
@@ -936,7 +936,7 @@ $ uv pip install --lockfile pylock.toml .        # uv
 
 Excerpted from a real `pip-lock` run on a `requirements.in` containing
 `requests`. URLs and hashes are abbreviated for legibility but the structure
-is what `pylock.toml` actually carries — `marker`, `requires-python`,
+mirrors what `pylock.toml` carries: `marker`, `requires-python`,
 `dependencies`, the `sdist` table, and a `wheels` array per package.
 
 ```toml

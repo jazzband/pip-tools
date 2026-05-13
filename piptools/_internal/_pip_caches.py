@@ -1,20 +1,19 @@
 """Process-wide caches for pip helper functions hot during pylock.
 
 Pylock iterates the same package set across multiple resolution cohorts, but pip
-is built for long-running sessions and deliberately re-parses index responses and
-wheel filenames each time through. This module installs memoizing wrappers that
-short-circuit those repeats for the duration of a pip-tools command.
+is built for long-running sessions and re-parses index responses and wheel
+filenames each time through by design. This module installs memoizing wrappers
+that short-circuit those repeats for the duration of a pip-tools command.
 
 For ``parse_wheel_filename`` we also walk ``sys.modules`` to rebind every module
 that imported it at module load time. ``from X import Y`` binds ``Y`` as a name
-in the importer, not as a reference into ``X``, so patching only the source
-module would leave pip's ``Wheel.__init__`` still calling the unwrapped copy.
+in the importer, not as a reference into ``X``, so patching the source module
+alone would leave pip's ``Wheel.__init__`` calling the unwrapped copy.
 
 Memory profile: the URL-keyed dicts grow with the number of distinct (link,
-metadata, index-page) URLs the resolver touches and are bounded only by the
-``scope()`` lifetime. The wheel-filename cache caps at a configurable bound
-so long-lived ``--jobs auto`` workers cannot grow the working set without
-limit.
+metadata, index-page) URLs the resolver touches and are bounded by the
+``scope()`` lifetime. The wheel-filename cache caps at a configurable bound so
+long-lived ``--jobs auto`` workers cannot grow the working set without limit.
 """
 
 from __future__ import annotations
@@ -42,10 +41,10 @@ class _InMemoryImportlibDistribution(_importlib_md.Distribution):
 
     Pip's stock backend wraps a ``PathDistribution`` that re-reads
     ``METADATA`` on every property access, against a temp dir whose
-    lifetime is bounded by one resolver invocation. Caching that wrapper
-    across passes therefore raises ``FileNotFoundError`` on later reads.
-    Reading from bytes held on the instance is what lets the wrapper
-    survive across passes within a single lock command.
+    lifetime ends with one resolver invocation. Caching that wrapper
+    across passes raises ``FileNotFoundError`` on later reads. Reading
+    from bytes held on the instance lets the wrapper survive across
+    passes within a single lock command.
     """
 
     def __init__(self, metadata_bytes: bytes) -> None:
@@ -61,7 +60,7 @@ class _InMemoryImportlibDistribution(_importlib_md.Distribution):
 
     @property
     def name(self) -> str:
-        # ``Distribution.name`` is a property only since Python 3.10; on 3.9
+        # ``Distribution.name`` is a property from Python 3.10 on; on 3.9
         # pip's compat layer reaches for ``dist.name`` directly and crashes
         # without this fallback.
         return _t.cast(str, self.metadata.get("Name"))
@@ -95,20 +94,20 @@ if _t.TYPE_CHECKING:
     )
 
 
-# Cache backing stores. ``Final`` marks the *binding* immutable; the dict contents
-# are populated and cleared in-place. Caching the wrapped Distribution alongside
-# the bytes is what amortises ``email.feedparser`` across the per-cohort,
-# per-extra, and per-group resolver invocations a single ``pip-lock`` command
-# fans out — the bytes alone do not, since pip's importlib backend re-parses on
-# every property access.
+# Cache backing stores. ``Final`` marks the *binding* immutable; the dict
+# contents are populated and cleared in-place. Caching the wrapped
+# Distribution alongside the bytes amortises ``email.feedparser`` across the
+# per-cohort, per-extra, and per-group resolver invocations a single
+# ``pip-lock`` command fans out (the bytes alone do not, since pip's
+# importlib backend re-parses on every property access).
 _parsed_links_by_url: _t.Final[dict[str, list[Link]]] = {}
 _index_content_by_url: _t.Final[dict[str, IndexContent | None]] = {}
 _metadata_bytes_by_url: _t.Final[dict[str, bytes | None]] = {}
 _metadata_dist_by_url: _t.Final[dict[str, _t.Any]] = {}
-# Originals captured at import time so we can swap them in/out around an installed
-# scope. ``_fetch_metadata_using_link_data_attr`` ships in pip 22.3+ which is our
-# declared lower bound, so the method is always present and the wrapper is
-# always installable.
+# Originals captured at import time so we swap them in and out around an
+# installed scope. ``_fetch_metadata_using_link_data_attr`` ships in pip 22.3+
+# which is our declared lower bound, so the method is present and the wrapper
+# installs.
 _original_parse_links: _t.Final[_ParseLinks] = _pkgfinder.parse_links
 _original_parse_wheel_filename: _t.Final[_ParseWheelFilename] = (
     _packaging_utils.parse_wheel_filename
@@ -118,10 +117,10 @@ _original_fetch_metadata_using_link_data_attr: _t.Final[_FetchMetadata] = (
     _RequirementPreparer._fetch_metadata_using_link_data_attr
 )
 _installed = False
-# RLock so an outer scope's install/clear/uninstall is serialized with any
-# concurrent thread's view of the patches; without it two threads using
-# pip-tools as a library can race the install flag and produce one
-# half-patched, one half-cleared session.
+# RLock so an outer scope's install/clear/uninstall serializes with any
+# concurrent thread's view of the patches. Without it two threads using
+# pip-tools as a library race the install flag and produce one half-patched,
+# one half-cleared session.
 _scope_lock: _t.Final[threading.RLock] = threading.RLock()
 _scope_depth = 0
 
@@ -131,9 +130,9 @@ def scope() -> Iterator[None]:
     """Install pip helper caches for the duration of the block.
 
     Reverts and clears the caches on exit. Nested entries are idempotent:
-    only the outermost entry installs and uninstalls; inner entries are
-    no-ops. Thread-safe via an ``RLock`` and a depth counter so in-process
-    library callers can spawn parallel locks safely.
+    the outermost entry installs and uninstalls; inner entries are no-ops.
+    Thread-safe via an ``RLock`` and a depth counter so in-process library
+    callers can spawn parallel locks safely.
 
     :returns: Context manager that installs and reverts the pip helper caches.
     """
@@ -156,7 +155,7 @@ def install() -> None:
     """Patch pip's helper functions process-wide with memoising wrappers.
 
     Idempotent. Prefer the symmetric scope context for in-process callers;
-    this entry point exists for worker processes that exit on pool teardown
+    this entry point serves worker processes that exit on pool teardown
     without running cleanup.
     """
     global _installed
@@ -217,15 +216,14 @@ def _cached_parse_links(page: IndexContent) -> list[Link]:
 
 
 # Bound the wheel-filename cache so a high cardinality of distinct wheel
-# filenames cannot push the working set past a fixed ceiling; under
-# ``scope()`` the cache is dropped on exit, so the bound is what protects
-# long-lived workers in ``--jobs auto``. ``OrderedDict`` gives explicit LRU
-# semantics whose lifetime ``clear()`` controls. ``functools.lru_cache``
-# would store its data on the function object and survive module re-imports
-# in ways that are tricky to reason about under multi-process pools.
-# Override via ``PIP_TOOLS_PARSED_WHEEL_FILENAME_BOUND`` to lift the
-# ceiling when the resolver routinely sees more distinct filenames than
-# the default holds.
+# filenames cannot push the working set past a fixed ceiling. Under
+# ``scope()`` the cache drops on exit, so the bound protects long-lived
+# workers in ``--jobs auto``. ``OrderedDict`` gives LRU semantics whose
+# lifetime ``clear()`` controls. ``functools.lru_cache`` would store its
+# data on the function object and survive module re-imports in ways hard
+# to reason about under multi-process pools. Override via
+# ``PIP_TOOLS_PARSED_WHEEL_FILENAME_BOUND`` to lift the ceiling when the
+# resolver sees more distinct filenames than the default holds.
 _PARSED_WHEEL_FILENAME_BOUND = int(
     os.environ.get("PIP_TOOLS_PARSED_WHEEL_FILENAME_BOUND", "10000")
 )
@@ -234,8 +232,8 @@ _parsed_wheel_filename_cache: _t.Final[
 ] = OrderedDict()
 # When the LRU evicts more than ~1% of capacity in a single resolution pass,
 # every evicted-then-re-requested filename re-pays the parse cost. Surface a
-# one-time hint so the user can lift the bound; otherwise the only signal
-# is "this lock is unexpectedly slow" with no pointer to the knob.
+# one-time hint so the user can lift the bound; otherwise the signal is
+# "this lock is slow" with no pointer to the knob.
 _EVICTION_WARN_THRESHOLD: _t.Final = max(1, _PARSED_WHEEL_FILENAME_BOUND // 100)
 _parsed_wheel_filename_evictions = 0
 _eviction_warning_emitted = False
@@ -262,7 +260,7 @@ def _cached_parse_wheel_filename(
                 f"Parsed-wheel-filename cache evicted "
                 f"{_parsed_wheel_filename_evictions} entries (bound is "
                 f"{_PARSED_WHEEL_FILENAME_BOUND}); set "
-                f"PIP_TOOLS_PARSED_WHEEL_FILENAME_BOUND higher if locks feel "
+                f"PIP_TOOLS_PARSED_WHEEL_FILENAME_BOUND higher if locks are "
                 f"slow on this project."
             )
     return parsed
@@ -282,9 +280,9 @@ def _cached_fetch_metadata_using_link_data_attr(
 ) -> BaseDistribution | None:
     # Pip's stock backend reads ``METADATA`` off a temp dir whose lifetime
     # ends with the resolver invocation; the prior version of this wrapper
-    # cached only the byte payload because a Distribution-level cache against
-    # that backend raises ``FileNotFoundError`` on the second access.
-    # Re-routing through an in-memory reader is what amortises
+    # cached the byte payload alone because a Distribution-level cache
+    # against that backend raises ``FileNotFoundError`` on the second
+    # access. Re-routing through an in-memory reader amortises
     # ``email.feedparser`` across every pass that re-resolves the same link.
     if req.link is None or req.req is None:
         return None
@@ -297,9 +295,8 @@ def _cached_fetch_metadata_using_link_data_attr(
         return cached_dist
 
     # Defer the pip-23.2-only imports until after the early-return checks so
-    # callers on older pip (where the wrapper is never installed by pip-tools
-    # but may still be invoked directly from tests) don't trip over the
-    # missing symbols.
+    # callers on older pip (where pip-tools never installs the wrapper, but
+    # tests can call it directly) don't trip over the missing symbols.
     from packaging.utils import canonicalize_name
     from pip._internal.exceptions import MetadataInconsistent
     from pip._internal.metadata.importlib._dists import (
@@ -307,9 +304,9 @@ def _cached_fetch_metadata_using_link_data_attr(
     )
     from pip._internal.operations.prepare import get_http_url
 
-    # ``... in dict`` distinguishes "key absent" from "key present with
-    # cached ``None``" without a sentinel object; a sentinel would need
-    # ``object`` typing because the cache values are ``bytes | None``.
+    # ``... in dict`` separates "key absent" from "key present with cached
+    # ``None``" without a sentinel object; a sentinel would need ``object``
+    # typing because the cache values are ``bytes | None``.
     if metadata_link.url in _metadata_bytes_by_url:
         metadata_contents = _metadata_bytes_by_url[metadata_link.url]
     else:
@@ -342,19 +339,19 @@ def _rebind_everywhere(
     """Rebind ``attr`` on ``source_module`` and every importer of it.
 
     Many pip modules use ``from pkg import name`` at the top of the
-    file, which captures ``name`` as a local module attribute pointing
-    at the original function. Patching only the source module would
-    leave those local references untouched, so the hot call sites
-    keep hitting the unwrapped function.
+    file, which captures ``name`` as a local module attribute pointing at
+    the original function. Patching the source module alone would leave
+    those local references untouched, so the hot call sites would keep
+    hitting the unwrapped function.
 
     The blast radius is intentional but broad: every module in
     ``sys.modules`` that imported ``original`` (including third-party
     code in the same process) gets the memoized replacement. The wrapper
-    is a pure cache around the same function (correctness-safe) but
-    introduces a memoization side-effect on those consumers.
-    ``scope()``'s ``try/finally`` reverts on normal exceptions; SIGKILL
-    skips finalisation entirely (process dies), SIGTERM runs through the
-    handler and the revert fires.
+    is a pure cache around the same function (correctness-safe) but adds
+    a memoization side-effect on those consumers. ``scope()``'s
+    ``try/finally`` reverts on normal exceptions; SIGKILL skips
+    finalisation (process dies), SIGTERM runs through the handler and
+    the revert fires.
     """
     setattr(source_module, attr, replacement)
     for mod in list(sys.modules.values()):

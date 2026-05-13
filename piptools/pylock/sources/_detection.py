@@ -18,7 +18,7 @@ def detect_source_type(requirement: InstallRequirement) -> str:
         return "directory"
     # ``original_link`` is set when the user spelled out a URL/VCS/file source; pip's
     # own resolution adds a ``link`` from the index but leaves ``original_link`` None,
-    # so this is how we distinguish user-supplied sources from index downloads.
+    # which distinguishes user-supplied sources from index downloads.
     if (original := getattr(requirement, "original_link", None)) is not None:
         if original.is_vcs:
             return "vcs"
@@ -38,7 +38,7 @@ def relativize_path(path: str, lock_dir: Path | None) -> str:
     :param path: The path to relativise.
     :param lock_dir: Directory the lockfile is being written to. ``None``
         keeps the path as supplied.
-    :returns: The relative POSIX path string when relativisation is possible,
+    :returns: The relative POSIX path string when relativisation works,
         otherwise the absolute POSIX form.
     """
     candidate = Path(path)
@@ -48,9 +48,9 @@ def relativize_path(path: str, lock_dir: Path | None) -> str:
         except ValueError:
             # Sibling/parent of ``lock_dir``. ``relative_to`` raises in
             # 3.10/3.11 without ``walk_up``; ``os.path.relpath`` produces
-            # *some* relative form for siblings. On Windows it raises
-            # again when the two paths are on different drives, where a
-            # relative path is impossible to spell. Keep the absolute
+            # some relative form for siblings. On Windows it raises
+            # again when the two paths are on different drives, where no
+            # relative path can spell the difference. Keep the absolute
             # form in that case; the lockfile isn't portable across
             # machines for that input anyway.
             try:  # pragma: win32 cover

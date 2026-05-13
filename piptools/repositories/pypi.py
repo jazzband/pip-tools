@@ -31,7 +31,7 @@ from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
 from pip._internal.utils.urls import path_to_url, url_to_path
 
 # `candidate_version` returns whatever pip stores on `InstallationCandidate.version`,
-# which is the vendored type; staying vendored here keeps `lookup_table` keys
+# which is the vendored type. Staying vendored here keeps `lookup_table` keys
 # identity-comparable with `ireq.specifier.filter()` outputs (also vendored).
 from pip._vendor.packaging.specifiers import InvalidSpecifier, SpecifierSet
 from pip._vendor.packaging.tags import Tag
@@ -115,10 +115,10 @@ class PyPIRepository(BaseRepository):
     def clear_caches(self) -> None:
         # Two pip-lock processes against the same ``cache_dir`` would
         # otherwise have one rmtree wipe the other's in-flight downloads,
-        # producing a partial lock with mixed bytes. Rename the directory to
-        # a unique temp name first (atomic on POSIX/NTFS) so a concurrent
-        # lookup either still sees the old dir or sees ``no dir`` cleanly,
-        # never a half-deleted tree. The temp is then rmtree'd opportunistically.
+        # producing a partial lock with mixed bytes. Rename the directory
+        # to a unique temp name first (atomic on POSIX/NTFS) so a
+        # concurrent lookup sees the old dir or sees ``no dir``, never a
+        # half-deleted tree. The temp then rmtree's on a best-effort basis.
         if not os.path.exists(self._download_dir):
             return
         stale = f"{self._download_dir}.stale-{os.getpid()}"
@@ -151,7 +151,7 @@ class PyPIRepository(BaseRepository):
             self.finder.find_all_candidates.cache_clear()
             self.finder.find_best_candidate.cache_clear()
         # Our own per-name cache shadows the finder's; without dropping it here
-        # a previous env's filtered candidate list would survive into the next.
+        # a previous env's filtered candidate list survives into the next.
         self._available_candidates_cache.clear()
 
     @property
@@ -426,7 +426,7 @@ class PyPIRepository(BaseRepository):
         if project is None:
             return None
         _, version, _ = as_tuple(ireq)
-        # Files in a release can disagree on `requires-python`; intersect so the
+        # Files in a release can disagree on `requires-python`. Intersect so the
         # lockfile honours the strictest bound rather than the API's listing order.
         seen: set[str] = set()
         combined = SpecifierSet()
@@ -472,7 +472,7 @@ class PyPIRepository(BaseRepository):
             except KeyError:
                 continue
             # PEP 751 wants "at least one secure algorithm". md5/sha1
-            # satisfy ``hashlib.algorithms_guaranteed`` but not the
+            # satisfy ``hashlib.algorithms_guaranteed`` but miss the
             # spec's intent. The allowlist filters the JSON API's digests
             # to algorithms strong enough to anchor the lockfile.
             hashes = {
@@ -482,12 +482,12 @@ class PyPIRepository(BaseRepository):
             }
             json_size = file_.get("size")
             if not hashes:
-                # Private indexes / mirrors may not expose a strong digest;
-                # stream the file and hash it ourselves rather than emit a
-                # weak-only ``hashes`` table (which the spec forbids). The
-                # streamed byte count subs in for ``size`` when the JSON
-                # response also omits it, so the lockfile carries a
-                # consistent shape across mirrors.
+                # Private indexes and mirrors may not expose a strong
+                # digest; stream the file and hash it ourselves rather
+                # than emit a weak-only ``hashes`` table (which the spec
+                # forbids). The streamed byte count subs in for ``size``
+                # when the JSON response also omits it, so the lockfile
+                # carries the same shape across mirrors.
                 hash_str, streamed_size = self._get_file_hash_and_size(
                     Link(file_["url"])
                 )
@@ -505,7 +505,7 @@ class PyPIRepository(BaseRepository):
                 cls(
                     name=file_["filename"],
                     # PyPI's JSON URL never carries userinfo, but a proxied
-                    # mirror's might; redact at the source so the lockfile is
+                    # mirror's might. Redact at the source so the lockfile is
                     # safe to commit regardless of the index in use.
                     url=redact_auth_from_url(file_["url"]),
                     hashes=hashes,
@@ -522,10 +522,10 @@ class PyPIRepository(BaseRepository):
         for candidate in self._get_matching_candidates(ireq):
             link = candidate.link
             url = link.url_without_fragment
-            # PEP 751's threat model assumes hashes are computed from
-            # *authentic* content. Hashing what we streamed only gives
-            # integrity-vs-future-fetch, not provenance: a man-in-the-middle
-            # on plaintext HTTP would let us record an attacker's hash as
+            # PEP 751's threat model assumes hashes come from *authentic*
+            # content. Hashing what we streamed gives integrity against a
+            # later fetch, not provenance: a man-in-the-middle on
+            # plaintext HTTP would let us record an attacker's hash as
             # authoritative. Refuse insecure URLs so the streaming-hash
             # fallback inherits pip's TLS trust model (file:// is safe; it's
             # a local-disk path the user already controls).
@@ -586,8 +586,8 @@ class PyPIRepository(BaseRepository):
     def _get_file_hash_and_size(self, link: Link) -> tuple[str, int]:
         log.debug(f"Hashing {link.show_url}")
         # ``FAVORITE_HASH`` is sha256, which is in
-        # ``pylock._hashes.PREFERRED_HASH_ALGORITHMS``; the index path and the
-        # archive path therefore agree on what counts as "secure" per PEP 751.
+        # ``pylock._hashes.PREFERRED_HASH_ALGORITHMS``, so the index path and the
+        # archive path agree on what counts as "secure" per PEP 751.
         h = hashlib.new(FAVORITE_HASH)
         total = 0
         advertised_size: float | None = None
@@ -619,11 +619,11 @@ class PyPIRepository(BaseRepository):
                     h.update(chunk)
                     total += len(chunk)
         if advertised_size is not None and advertised_size != total:
-            # A truncating proxy / interrupted connection / mis-served range
-            # would still produce a syntactically valid sha256 over the
-            # bytes pip-tools actually saw. Recording that hash as
-            # authoritative would lock a corrupt artifact. Refuse the
-            # streamed result when the advertised length disagrees.
+            # A truncating proxy, interrupted connection, or mis-served
+            # range produces a syntactically valid sha256 over the bytes
+            # pip-tools saw. Recording that hash as authoritative would
+            # lock a corrupt artifact. Refuse the streamed result when
+            # the advertised length disagrees.
             raise PipToolsError(
                 f"Streamed {total} bytes from {link.url_without_fragment!r} "
                 f"but the server advertised Content-Length={advertised_size}; "

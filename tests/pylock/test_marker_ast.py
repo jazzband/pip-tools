@@ -45,10 +45,10 @@ def _opt_in_node(name: str) -> tuple[Value, Op, Variable]:
 def test_decomposer_refuses_malformed_ast(
     ast_nodes: list[tuple[Value, Op, Variable] | str | int],
 ) -> None:
-    # The disjointness shortcut walks an AST shape produced by `Marker(...)`
-    # ; but a hand-crafted or future-extended shape may include nodes outside
-    # the parser's vocabulary. Decompose must return ``None`` for these so
-    # callers fall back to the safer powerset path.
+    # The disjointness shortcut walks an AST shape produced by
+    # ``Marker(...)``; a hand-crafted or future-extended shape can carry
+    # nodes outside the parser's vocabulary. ``decompose`` returns
+    # ``None`` for those so callers fall back to the safer powerset path.
     fake_marker = Marker.__new__(Marker)
     object.__setattr__(fake_marker, "_markers", ast_nodes)
     assert decompose(fake_marker) is None
@@ -155,11 +155,12 @@ def test_decomposer_rejects_top_level_or_mixing_extras_and_env(
     linux_envs: dict[str, TargetEnvironment], make_entry: EntryFactory
 ) -> None:
     # ``'a' in extras or sys_platform == 'win32'`` cannot collapse to
-    # ``extras_in={a} AND env``: the original fires when *either* side is true,
-    # while the collapsed form needs *both*. Decomposing it that way would
-    # silently miss collisions on envs where only one side fires; refuse the
-    # decomposition so the powerset proves disjointness correctly. (The pair
-    # below *is* disjoint on linux-only target_envs, which is what we assert.)
+    # ``extras_in={a} AND env``: the original fires when *either* side is
+    # true, while the collapsed form needs *both*. Decomposing it that
+    # way would miss collisions on envs where one side fires alone;
+    # refuse the decomposition so the powerset proves disjointness. The
+    # pair below *is* disjoint on linux-only target_envs, which is what
+    # the test asserts.
     merged = {
         "pkg": [
             make_entry("1.0", marker="'a' in extras or sys_platform == 'win32'"),
@@ -241,9 +242,9 @@ def test_classify_opt_in_ignores_in_against_other_shapes(
     make_entry: EntryFactory,
     marker_text: str,
 ) -> None:
-    # ``in`` only counts as an opt-in clause when it reads ``'X' in extras``
+    # ``in`` counts as an opt-in clause when it reads ``'X' in extras``
     # or ``'X' in dependency_groups``; every other ``in`` shape (substring
-    # checks, reversed operands) has to fall through to the env-side path.
+    # checks, reversed operands) falls through to the env-side path.
     merged = {
         "pkg": [
             make_entry("1.0", marker=marker_text),
@@ -274,9 +275,9 @@ def test_collect_extras_walks_nested_lists() -> None:
 
 
 def test_collect_extras_skips_non_equality_comparisons() -> None:
-    # Only ``==`` produces an extras name; any other comparison the AST
-    # carries (``in``, ``!=``, ``<``) must be skipped so the collector
-    # doesn't pick up unrelated env clauses.
+    # ``==`` produces an extras name; any other comparison the AST
+    # carries (``in``, ``!=``, ``<``) gets skipped so the collector does
+    # not pick up unrelated env clauses.
     nodes = [(Variable("extra"), Op("!="), Value("a"))]
     assert list(collect_extras(nodes)) == []
 
@@ -297,7 +298,7 @@ def test_collect_extras_skips_non_equality_comparisons() -> None:
 def test_collect_extras_skips_equalities_unrelated_to_extras(
     nodes: list[tuple[Variable | Value, Op, Variable | Value]],
 ) -> None:
-    # Non-extras equalities must not surface as phantom extras.
+    # Non-extras equalities do not surface as phantom extras.
     assert list(collect_extras(nodes)) == []
 
 
@@ -311,7 +312,7 @@ def test_collect_extras_skips_equalities_unrelated_to_extras(
 def test_has_mixed_or_axes_skips_non_tuple_non_list_operands(
     even_index_node: object,
 ) -> None:
-    # A malformed AST must skip the operand instead of crashing.
+    # A malformed AST skips the operand instead of crashing.
     nodes = [
         even_index_node,
         "or",
@@ -321,7 +322,7 @@ def test_has_mixed_or_axes_skips_non_tuple_non_list_operands(
 
 
 def test_make_platform_blind_evaluator_handles_literal_only_comparison() -> None:
-    # A malformed marker tuple with a literal on both sides shouldn't
+    # A malformed marker tuple with a literal on both sides does not
     # crash the scan; the rewrite passes such tuples through to the
     # original evaluator unchanged.
     literal_only = (Value("x"), Op("=="), Value("y"))
@@ -337,20 +338,21 @@ def test_make_platform_blind_evaluator_handles_literal_only_comparison() -> None
 
 
 def test_verify_packaging_marker_shape_is_idempotent() -> None:
-    # The smoke check ran once at module import; calling it again post-import
-    # must keep passing on the supported packaging version, otherwise the
-    # rewriter has acquired a side-effect we did not intend.
+    # The smoke check ran once at module import; calling it again
+    # post-import keeps passing on the supported packaging version,
+    # otherwise the rewriter has acquired an unintended side-effect.
     _marker_ast.verify_packaging_marker_shape()
 
 
 def test_verify_packaging_marker_shape_raises_when_evaluator_lies(
     mocker: MockerFixture,
 ) -> None:
-    # If a future packaging release breaks the ``[[]]`` -> True invariant the
-    # rewriter relies on, the partition scan would silently leave platform
-    # comparisons un-rewritten and produce wrong cohorts. ``PipToolsError``
-    # rather than ``ImportError`` so the partition's caller can fall back to
-    # per-env resolution instead of breaking ``import piptools`` entirely.
+    # If a future packaging release breaks the ``[[]]`` -> True
+    # invariant the rewriter relies on, the partition scan would leave
+    # platform comparisons un-rewritten and produce wrong cohorts.
+    # ``PipToolsError`` (rather than ``ImportError``) lets the
+    # partition's caller fall back to per-env resolution instead of
+    # breaking ``import piptools`` entirely.
     mocker.patch.object(_marker_ast, "_marker_shape_verified", False)
     mocker.patch.object(_packaging_markers, "_evaluate_markers", return_value=False)
     with pytest.raises(PipToolsError, match="rewriter"):
@@ -360,10 +362,10 @@ def test_verify_packaging_marker_shape_raises_when_evaluator_lies(
 def test_verify_packaging_marker_shape_raises_when_empty_marker_changes(
     mocker: MockerFixture,
 ) -> None:
-    # The rewriter substitutes ``[[]]`` for platform comparisons it forces to
-    # True; an upstream packaging refactor that flipped the empty-AST identity
-    # would silently invert that semantics. Detecting it explicitly is the
-    # only way to keep the cohort scan trustworthy across packaging upgrades.
+    # The rewriter substitutes ``[[]]`` for platform comparisons it
+    # forces to True. An upstream packaging refactor that flipped the
+    # empty-AST identity would invert that semantics. Detecting it here
+    # keeps the cohort scan trustworthy across packaging upgrades.
     mocker.patch.object(_marker_ast, "_marker_shape_verified", False)
     mocker.patch.object(
         _packaging_markers,
@@ -377,10 +379,10 @@ def test_verify_packaging_marker_shape_raises_when_empty_marker_changes(
 def test_verify_packaging_marker_shape_raises_when_markers_attr_changes(
     mocker: MockerFixture,
 ) -> None:
-    # If a packaging release renames ``Marker._markers`` or returns something
-    # other than ``[(lhs, op, rhs)]``, the decomposer's tuple-shape assumptions
-    # silently break. Trip the explicit shape check so callers fall back to
-    # per-env resolution instead of silently producing wrong cohorts.
+    # If a packaging release renames ``Marker._markers`` or returns
+    # something other than ``[(lhs, op, rhs)]``, the decomposer's
+    # tuple-shape assumptions break. Trip the shape check so callers fall
+    # back to per-env resolution rather than produce wrong cohorts.
     mocker.patch.object(_marker_ast, "_marker_shape_verified", False)
     mocker.patch.object(
         _packaging_markers, "_evaluate_markers", side_effect=[True, True]

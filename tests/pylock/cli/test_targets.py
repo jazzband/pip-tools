@@ -33,11 +33,11 @@ def test_no_universal_resolves_unique_current_platform(
     expected_platform: str,
 ) -> None:
     # ``_infer_platforms`` walks ``PLATFORM_ENVIRONMENTS`` looking for one
-    # entry that matches the current ``sys_platform`` / ``platform_machine``.
-    # A future addition that introduces a duplicate match would silently flip
-    # the user-facing error path for that platform without test coverage; the
-    # parametrize asserts each non-Linux platform we ship still resolves to
-    # exactly one preset.
+    # entry that matches the current ``sys_platform`` and ``platform_machine``.
+    # A future addition that introduces a duplicate match would flip the
+    # user-facing error path for that platform without test coverage; the
+    # parametrize asserts each non-Linux platform pip-tools ships resolves
+    # to a single preset.
 
     mocker.patch("piptools.pylock.cli._targets.default_environment", return_value=env)
     assert _infer_platforms(no_universal=True) == (expected_platform,)
@@ -73,8 +73,8 @@ def test_resolve_targets_expands_current_python_version() -> None:
 
 
 def test_resolve_targets_universal_derives_python_axis_from_requires_python() -> None:
-    # Without this, the universal default would silently shrink to the host
-    # interpreter, dropping every other supported python from the lock.
+    # Without this, the universal default shrinks to the host interpreter
+    # and drops every other supported python from the lock.
     targets = resolve_targets(
         ("linux-x86_64",),
         (),
@@ -87,8 +87,9 @@ def test_resolve_targets_universal_derives_python_axis_from_requires_python() ->
 
 
 def test_resolve_targets_no_universal_keeps_host_only_python() -> None:
-    # The host-only fallback applies when the user opted out of universal mode;
-    # ``requires-python`` is irrelevant once they signaled "lock for what I run".
+    # The host-only fallback applies when the user opted out of universal
+    # mode; ``requires-python`` does not apply once the user signaled "lock
+    # for what I run".
     targets = resolve_targets(
         ("linux-x86_64",),
         (),
@@ -136,3 +137,17 @@ def test_expand_requires_python_returns_empty_when_no_input() -> None:
     # falls back to the host interpreter rather than enumerating every
     # supported release in the universal lock.
     assert _expand_requires_python(()) == ()
+
+
+def test_resolve_targets_empty_implementations_defaults_to_cpython() -> None:
+    # Passing an empty implementations tuple lets the configured default
+    # ("cpython",) take effect so the resolver never sees a zero-element
+    # implementation axis.
+    targets = resolve_targets(
+        ("linux-x86_64",),
+        ("3.12",),
+        implementations=(),
+        no_universal=True,
+    )
+    assert targets.implementations == ("cpython",)
+    assert any(env.endswith("-cpython") for env in targets.target_envs)

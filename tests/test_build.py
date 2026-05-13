@@ -211,7 +211,7 @@ dynamic = ["optional-dependencies"]
 
 
 def test_env_var_restores_existing_value(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Lines 207-208: _env_var restores the original value when the var was already set."""
+    """``_env_var`` restores the original value when the variable was set before entry."""
     env_var_name = "_PIP_TOOLS_TEST_ENV_VAR"
     original_value = "original"
     monkeypatch.setenv(env_var_name, original_value)

@@ -94,7 +94,7 @@ def _validate_dist_filenames(
     for dist in dist_files:
         # PEP 751 lets path-only entries omit ``name``; derive from the
         # path's last component so a malicious mirror serving a path-only
-        # entry can't slip through with a name=None bypass.
+        # entry can't bypass the check with a name=None.
         filename = dist.name
         if filename is None:
             path = getattr(dist, "path", None)
@@ -168,9 +168,9 @@ def _split_dist_files(
     package_name: str = "",
     version: str = "",
 ) -> tuple[PackageSdist | None, list[PackageWheel] | None]:
-    # The repository pre-filters to sdists/wheels: an explicit-suffix allowlist would
-    # silently drop ``.tar.bz2`` / ``.tar.xz``, so any ``PackageSdist`` instance is
-    # taken as sdist; only ``PackageWheel`` instances go in the wheels bucket.
+    # The repository pre-filters to sdists/wheels: a suffix allowlist would
+    # drop ``.tar.bz2`` / ``.tar.xz``, so any ``PackageSdist`` instance is
+    # taken as sdist; ``PackageWheel`` instances go in the wheels bucket.
     # Sort sdists by ``name`` and wheels by parsed tag tuple so the lockfile
     # stays byte-stable across PyPI's listing order with newer Pythons first.
     sdists = sorted(
@@ -182,12 +182,12 @@ def _split_dist_files(
         key=_wheel_sort_key,
     )
     if len(sdists) > 1:
-        # PEP 751 allows exactly one ``[packages.sdist]``; an index that
-        # serves both ``.tar.gz`` and ``.zip`` for the same release would
-        # otherwise silently drop the trailing one. Warn at top level so
-        # the user sees the drop without ``--verbose``: the discarded
-        # sdist's hash is gone from the lockfile, and a future 404 on the
-        # kept variant has no recovery hash to fall back on.
+        # PEP 751 allows one ``[packages.sdist]``; an index that serves
+        # both ``.tar.gz`` and ``.zip`` for the same release would drop
+        # the trailing one. Warn at top level so the user sees the drop
+        # without ``--verbose``: the discarded sdist's hash leaves the
+        # lockfile, and a future 404 on the kept variant has no recovery
+        # hash to fall back on.
         dropped = ", ".join(repr(s.name) for s in sdists[1:])
         log.warning(
             f"Multiple sdists for {package_name}=={version}; keeping "

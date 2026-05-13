@@ -630,10 +630,10 @@ def test_sync_uninstall_pip_command(run):
 
 
 def test_direct_url_has_archive_hash_uses_modern_archive_info(mocker):
-    # Pip 22.2's `ArchiveInfo` only has `hash` (singular), pip 26 added
-    # `hashes` (dict). Constructing the real class would diverge across
-    # the support range, so autospec the shape and assert the shim picks
-    # the modern dict over the legacy single-hash field.
+    # Pip 22.2's ``ArchiveInfo`` carries ``hash`` (singular); pip 26
+    # added ``hashes`` (dict). Constructing the real class would diverge
+    # across the support range, so autospec the shape and assert the
+    # shim picks the modern dict over the legacy single-hash field.
     info = mocker.create_autospec(ArchiveInfo, instance=True)
     info.hashes = {"sha256": "abc"}
     direct_url = mock.MagicMock()
@@ -642,10 +642,10 @@ def test_direct_url_has_archive_hash_uses_modern_archive_info(mocker):
 
 
 def test_direct_url_has_archive_hash_falls_back_to_legacy_info(mocker):
-    # Older pip releases stored the hash on `direct_url.info` (not
-    # `archive_info`) as a single `hash="sha256=abc"` string. Without
-    # the fallback, sync would consider every legacy direct_url to be
-    # missing a hash and force a needless reinstall.
+    # Older pip releases stored the hash on ``direct_url.info`` (not
+    # ``archive_info``) as a single ``hash="sha256=abc"`` string.
+    # Without the fallback, sync would consider every legacy
+    # ``direct_url`` to be missing a hash and force a needless reinstall.
     info = mocker.create_autospec(ArchiveInfo, instance=True)
     info.hashes = None
     info.hash = "sha256=abc"
@@ -656,8 +656,8 @@ def test_direct_url_has_archive_hash_falls_back_to_legacy_info(mocker):
 
 
 def test_direct_url_has_archive_hash_returns_false_when_info_is_not_archive():
-    # `direct_url.info` may be a `DirInfo` for editable installs; those
-    # have no archive hash by definition and must not satisfy the shim.
+    # ``direct_url.info`` can be a ``DirInfo`` for editable installs;
+    # those have no archive hash by definition and do not satisfy the shim.
     direct_url = mock.MagicMock()
     direct_url.archive_info = None
     direct_url.info = mock.MagicMock()

@@ -1,10 +1,11 @@
 """Recover per-extra attribution from a combined-extras pass.
 
-The orchestrator collapses every non-conflicting extra into a single resolution to
-amortize the resolver cost. ``merge_resolutions`` then derives per-extra markers from
-variant membership, so we have to put each package back into the variant whose extras
-introduced it. This module walks the resolved dep graph forward from each extra's roots
-to figure out which packages came in via that extra.
+The orchestrator collapses every non-conflicting extra into a single resolution
+to amortize the resolver cost. ``merge_resolutions`` then derives per-extra
+markers from variant membership, so we have to put each package back into the
+variant whose extras introduced it. This module walks the resolved dep graph
+forward from each extra's roots to determine which packages came in via that
+extra.
 """
 
 from __future__ import annotations
@@ -77,8 +78,8 @@ def splice_combined_extras(
         # constraint widened a base package's pin, the unified solve picks
         # the wider version and the splice keeps it in base. ``pip install
         # pylock.toml`` (no extras) then installs the upgraded version
-        # silently. Warn so the user can split the resolution if they
-        # wanted base unchanged.
+        # without notice. Warn so the user can split the resolution if
+        # they wanted base unchanged.
         for name, (version, ireq) in spliced_base.items():
             base_spec = base_specifiers.get(name)
             if (
@@ -98,8 +99,8 @@ def splice_combined_extras(
             # so the widening check above never fires on them. Compare the
             # resolved link's URL against the base requirement's link instead;
             # an extras-side requirement that demanded the registered release
-            # would land here with a different URL (or ``None``) and silently
-            # change which artifact a no-extras install pulls.
+            # would land here with a different URL (or ``None``) and change
+            # which artifact a no-extras install pulls without notice.
             if (base_link := base_links.get(name)) is not None:
                 resolved_link = ireq.original_link or ireq.link
                 resolved_url = (
@@ -129,10 +130,10 @@ def _collect_base_constraints(
     """Return ``(base_specifiers, base_links)`` for non-extras constraints.
 
     ``base_specifiers`` maps name to ``SpecifierSet`` for ``pkg<spec>``
-    pins; ``base_links`` maps name to URL for ``pkg @ url`` pins. Both
-    are used by the splice to detect when the combined-extras pass
-    replaced a base constraint with a different artifact, where installs
-    without the extra would silently pick up the swap.
+    pins; ``base_links`` maps name to URL for ``pkg @ url`` pins. The
+    splice uses both to detect when the combined-extras pass replaced a
+    base constraint with a different artifact, where installs without
+    the extra would pick up the swap without notice.
     """
     base_specifiers: dict[str, SpecifierSet] = {}
     base_links: dict[str, str] = {}
@@ -143,9 +144,9 @@ def _collect_base_constraints(
         # Seeded ``name==<old>`` pins from the previous lockfile arrive as
         # ``constraint=True`` install requirements. Treating them as base specs
         # would fire a spurious "combined-extras pass widened the pin" warning
-        # whenever the new resolution legitimately picks a newer version, since
-        # the seeded ``==`` would no longer contain it. Drop constraint-only
-        # entries here so widening detection only fires on user-authored pins.
+        # whenever the new resolution picks a newer version, since the seeded
+        # ``==`` would no longer contain it. Drop constraint-only entries here
+        # so widening detection fires on user-authored pins alone.
         if getattr(requirement, "constraint", False):
             continue
         if _extras_in_marker(requirement.markers, tuple(known)):
@@ -180,7 +181,7 @@ def _classify_extras_roots(
         # interpreter's ``python_version`` and ``sys_platform`` from
         # ``default_environment``, so a base-only requirement like
         # ``tomli; python_version < '3.11'`` would mis-classify based on which
-        # interpreter happened to run pip-lock.
+        # interpreter ran pip-lock.
         owning_extras = _extras_in_marker(requirement.markers, extras)
         if owning_extras:
             for extra in owning_extras:
@@ -196,7 +197,7 @@ def _extras_in_marker(
     if marker is None:
         return frozenset()
     # Intersect with ``known_extras`` so an unknown ``extra == 'mystery'``
-    # clause does not pull a constraint out of base; the resolver has no
+    # clause does not pull a constraint out of base. The resolver has no
     # handling for an extra it wasn't asked for.
     return frozenset(collect_extras(marker._markers)) & frozenset(known_extras)
 

@@ -4,9 +4,16 @@ from datetime import datetime, timezone
 
 import pytest
 
+from piptools.pylock._inputs import (
+    LockSelection,
+    LockTargets,
+    ResolverOptions,
+    ToolMetadataOptions,
+)
 from piptools.pylock.tool_block import (
     PylockToolMetadata,
     _default_generated_at,
+    build,
     to_dict,
 )
 
@@ -76,3 +83,59 @@ def test_default_generated_at_falls_back_when_env_value_invalid(
     result = _default_generated_at()
     after = datetime.now(tz=timezone.utc)
     assert before <= result <= after
+
+
+@pytest.fixture(name="metadata_inputs")
+def metadata_inputs_fixture() -> (
+    tuple[LockSelection, LockTargets, ResolverOptions, ToolMetadataOptions]
+):
+    return (
+        LockSelection(extras=(), all_extras=False, groups=(), all_groups=False),
+        LockTargets(
+            target_envs={}, platforms=(), python_versions=(), no_universal=False
+        ),
+        ResolverOptions(
+            prereleases=False,
+            rebuild=False,
+            allow_unsafe=False,
+            unsafe_packages=frozenset(),
+            max_rounds=10,
+            cache_dir="",
+            pre=False,
+        ),
+        ToolMetadataOptions(no_metadata=False, skip_metadata_fields=()),
+    )
+
+
+def test_build_honours_source_date_epoch(
+    monkeypatch: pytest.MonkeyPatch,
+    metadata_inputs: tuple[
+        LockSelection, LockTargets, ResolverOptions, ToolMetadataOptions
+    ],
+) -> None:
+    monkeypatch.setenv("SOURCE_DATE_EPOCH", "1700000000")
+    selection, targets, options, metadata = metadata_inputs
+    meta = build(
+        selection=selection, targets=targets, options=options, metadata=metadata
+    )
+    assert meta is not None
+    assert meta.generated_at is not None
+    assert meta.generated_at.isoformat() == "2023-11-14T22:13:20+00:00"
+
+
+def test_build_falls_back_to_wall_clock(
+    monkeypatch: pytest.MonkeyPatch,
+    metadata_inputs: tuple[
+        LockSelection, LockTargets, ResolverOptions, ToolMetadataOptions
+    ],
+) -> None:
+    monkeypatch.delenv("SOURCE_DATE_EPOCH", raising=False)
+    selection, targets, options, metadata = metadata_inputs
+    before = datetime.now(tz=timezone.utc)
+    meta = build(
+        selection=selection, targets=targets, options=options, metadata=metadata
+    )
+    after = datetime.now(tz=timezone.utc)
+    assert meta is not None
+    assert meta.generated_at is not None
+    assert before <= meta.generated_at <= after

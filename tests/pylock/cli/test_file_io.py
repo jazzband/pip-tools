@@ -21,8 +21,8 @@ from piptools.pylock.cli._file_io import (
 if _t.TYPE_CHECKING:
     from unittest.mock import MagicMock
 
-# Used by Windows-skipped advisory-lock tests; ``importlib`` keeps the
-# import out of isort's eager block so it doesn't fail at module import on win32.
+# Used by Windows-skipped advisory-lock tests. ``importlib`` keeps the import
+# out of isort's eager block so module import does not fail on win32.
 _fcntl = importlib.import_module("fcntl") if sys.platform != "win32" else None
 
 
@@ -33,8 +33,8 @@ class FakeFileFactory(_t.Protocol):
 @pytest.fixture
 def make_fake_file(mocker: MockerFixture) -> FakeFileFactory:
     # ``LazyFile.__getattr__`` proxies to a real file, so ``create_autospec``
-    # doesn't expose ``write`` or settable ``name``. Tests stub the duck shape
-    # of click's ``LazyFile`` (``name`` + ``write`` + ``close_intelligently``)
+    # does not expose ``write`` or a settable ``name``. Tests stub the duck
+    # shape of click's ``LazyFile`` (``name``, ``write``, ``close_intelligently``)
     # via plain ``MagicMock``.
     def _factory(path: str) -> MagicMock:
         fake = _t.cast("MagicMock", mocker.MagicMock())
@@ -45,10 +45,10 @@ def make_fake_file(mocker: MockerFixture) -> FakeFileFactory:
 
 
 def test_emit_write_wraps_oserror_as_pip_tools_error(mocker: MockerFixture) -> None:
-    # Disk-full / permission-denied / EBADF surfacing here as a raw
-    # ``OSError`` would give the user a Python traceback with no signal it
-    # was the lockfile write that failed. The render path runs against a
-    # ``BytesIO`` so the OSError comes from the file write itself.
+    # Disk-full, permission-denied, or EBADF surfacing as a raw ``OSError``
+    # gives the user a Python traceback with no signal that the lockfile
+    # write failed. The render path runs against a ``BytesIO`` so the
+    # ``OSError`` comes from the file write itself.
     failing_file = mocker.MagicMock()
     failing_file.write.side_effect = OSError("read-only")
     with pytest.raises(PipToolsError, match="Failed to write lockfile"):
@@ -59,7 +59,7 @@ def test_advisory_lock_no_op_when_output_is_stdout(
     make_fake_file: FakeFileFactory,
 ) -> None:
     # ``-o -`` (stdout) sets ``output_file.name`` to ``"-"``; locking a
-    # virtual file would either hang or create a stray ``.-.lock`` file.
+    # virtual file would hang or create a stray ``.-.lock`` file.
 
     fake = make_fake_file("-")
     with _advisory_lock(fake):
@@ -70,10 +70,9 @@ def test_advisory_lock_silent_when_fcntl_unavailable_and_no_contention(
     tmp_path: Path, mocker: MockerFixture, make_fake_file: FakeFileFactory
 ) -> None:
     # Windows path: ``O_CREAT|O_EXCL`` on a sibling lockfile gives best-
-    # effort mutual exclusion without ``fcntl``. A clean run (no
-    # concurrent process holding the lock) must NOT emit a warning; the
-    # warning is reserved for the contention case so quiet runs stay
-    # quiet.
+    # effort mutual exclusion without ``fcntl``. A clean run (no concurrent
+    # process holding the lock) does not emit a warning; the warning is
+    # reserved for the contention case so quiet runs stay quiet.
     mocker.patch("piptools.pylock.cli._file_io._fcntl", None)
     log_warning = mocker.patch("piptools.pylock.cli._file_io.log.warning")
     fake = make_fake_file(str(tmp_path / "pylock.toml"))
@@ -86,8 +85,8 @@ def test_advisory_lock_warns_on_windows_under_contention(
     tmp_path: Path, mocker: MockerFixture, make_fake_file: FakeFileFactory
 ) -> None:
     # When a sibling ``.lock`` already exists, ``O_CREAT|O_EXCL`` raises
-    # ``FileExistsError`` and the warning fires; telling the user a
-    # concurrent invocation may be racing them.
+    # ``FileExistsError`` and the warning fires, telling the user a
+    # concurrent invocation could be racing them.
     mocker.patch("piptools.pylock.cli._file_io._fcntl", None)
     output_path = tmp_path / "pylock.toml"
     (tmp_path / ".pylock.toml.lock").touch()
@@ -104,9 +103,9 @@ def test_advisory_lock_blocks_second_acquirer(  # pragma: win32 no cover
 ) -> None:
     # Without this assertion the contention path is untested and the lock
     # could regress to a no-op (e.g. F1's release-before-rename) and ship
-    # green. Exercise actual mutual exclusion: while one ``_advisory_lock``
-    # holds the file, a non-blocking second acquire on the same lockfile
-    # must fail with ``BlockingIOError``.
+    # green. Exercise mutual exclusion: while one ``_advisory_lock`` holds
+    # the file, a non-blocking second acquire on the same lockfile fails
+    # with ``BlockingIOError``.
     assert _fcntl is not None
     output_path = tmp_path / "pylock.toml"
     output_path.touch()
@@ -138,8 +137,8 @@ def test_advisory_lock_raises_for_missing_parent_dir(  # pragma: win32 no cover
 def test_emit_write_closes_atomic_file_inside_lock_window(
     mocker: MockerFixture,
 ) -> None:
-    # Click's atomic ``LazyFile`` renames at close. Without the explicit
-    # ``close_intelligently()`` call inside ``emit_write`` the rename
+    # Click's atomic ``LazyFile`` renames at close. Without the
+    # ``close_intelligently()`` call inside ``emit_write``, the rename
     # would happen *after* ``ctx.with_resource(_advisory_lock(...))``
     # released the lock (LIFO release on click's ``ExitStack``), leaving
     # a window for a competing pip-lock to seed from the stale file.
@@ -151,8 +150,8 @@ def test_emit_write_closes_atomic_file_inside_lock_window(
 
 
 def test_emit_write_skips_close_for_plain_binary_io(mocker: MockerFixture) -> None:
-    # ``-o -`` (stdout) and other non-lazy targets must not attempt a
-    # ``close_intelligently`` that would crash on a vanilla ``BinaryIO``.
+    # ``-o -`` (stdout) and other non-lazy targets skip
+    # ``close_intelligently``, which would crash on a vanilla ``BinaryIO``.
     mocker.patch("piptools.pylock.cli._file_io.tomli_w_dump")
     plain = mocker.MagicMock(spec=["write"])
     emit_write(mocker.MagicMock(), plain)
@@ -179,7 +178,7 @@ def test_advisory_lock_unlock_swallows_oserror(  # pragma: win32 no cover
     tmp_path: Path, mocker: MockerFixture, make_fake_file: FakeFileFactory
 ) -> None:
     # ``LOCK_UN`` failing during teardown (e.g. fd already closed by a
-    # signal handler) must not bubble out; the lock release is best-effort
+    # signal handler) does not bubble out; the lock release is best-effort
     # and the user already has a valid lockfile by this point.
     assert _fcntl is not None
     output_path = tmp_path / "pylock.toml"
@@ -216,7 +215,7 @@ def test_emit_check_passes_when_file_matches(
 def test_emit_check_exits_one_when_file_differs(
     tmp_path: Path, mocker: MockerFixture, make_fake_file: FakeFileFactory
 ) -> None:
-    # Drift: the on-disk file diverges from what the resolver just produced;
+    # Drift: the on-disk file diverges from what the resolver produced.
     # ``--check`` exits 1 so a CI step fails.
     output_path = tmp_path / "pylock.toml"
 
@@ -233,8 +232,8 @@ def test_emit_check_exits_one_when_file_differs(
 def test_emit_check_exits_one_when_file_missing(
     tmp_path: Path, mocker: MockerFixture, make_fake_file: FakeFileFactory
 ) -> None:
-    # No file = total drift; ``--check`` must exit non-zero so CI doesn't
-    # accidentally pass on the very first commit before a lockfile lands.
+    # No file = total drift. ``--check`` must exit non-zero so CI does not
+    # pass on the first commit before a lockfile lands.
     output_path = tmp_path / "pylock.toml"
 
     def fake_write(doc: object, dst: _t.BinaryIO) -> None:
@@ -288,8 +287,8 @@ def test_emit_check_writes_new_file_on_drift(
 def test_emit_check_recovers_from_corrupt_existing(
     tmp_path: Path, mocker: MockerFixture, make_fake_file: FakeFileFactory
 ) -> None:
-    # An unparseable on-disk pylock.toml shouldn't crash ``--check``; it
-    # should be treated as "drift" so the user re-runs and overwrites.
+    # An unparseable on-disk pylock.toml does not crash ``--check``; it
+    # counts as drift so the user re-runs and overwrites.
     output_path = tmp_path / "pylock.toml"
 
     def fake_write(doc: object, dst: _t.BinaryIO) -> None:

@@ -530,9 +530,10 @@ def test_realistic_complex_sub_dependencies(runner, tmp_path):
     wheels_dir = tmp_path / "wheels"
     wheels_dir.mkdir()
 
-    # make a temporary wheel of a fake package; use ``sys.executable -m pip``
-    # so the test does not depend on ``pip`` being resolvable on ``PATH`` when
-    # the test runner is invoked outside an activated virtualenv.
+    # Make a temporary wheel of a fake package. Use
+    # ``sys.executable -m pip`` so the test does not depend on ``pip``
+    # being resolvable on ``PATH`` when the runner runs outside an
+    # activated virtualenv.
     subprocess.run(
         [
             sys.executable,
@@ -3592,11 +3593,12 @@ def test_raise_error_when_input_and_output_filenames_are_matched(
 @pytest.mark.network
 @backtracking_resolver_only
 def test_pass_pip_cache_to_pip_args(tmpdir, runner, current_resolver, mocker):
-    # The contract under test is that ``--cache-dir`` reaches the pip args
-    # that pip-tools forwards to the resolver, not whether pip writes to disk
-    # ; pip's own caching policy varies by version and CI cache state, and
-    # asserting against on-disk artifacts produces a flaky network test.
-    # Spy on ``PyPIRepository.__init__`` to confirm the value flowed through.
+    # The contract under test is that ``--cache-dir`` reaches the pip
+    # args that pip-tools forwards to the resolver, not whether pip
+    # writes to disk: pip's caching policy varies by version and CI
+    # cache state, and asserting against on-disk artifacts produces a
+    # flaky network test. Spy on ``PyPIRepository.__init__`` to confirm
+    # the value flowed through.
     from piptools.repositories import PyPIRepository
 
     cache_dir = tmpdir.mkdir("cache_dir")
@@ -3621,11 +3623,12 @@ def test_pass_pip_cache_to_pip_args(tmpdir, runner, current_resolver, mocker):
     idx = captured["pip_args"].index("--cache-dir")
     assert captured["pip_args"][idx + 1] == str(cache_dir)
     assert captured["cache_dir"] == str(cache_dir)
-    # Stronger contract: pip received the dir, opened it, and populated at
-    # least one of its known subdirectories. Asserting on file *names* would
-    # be flaky (cache layout varies by pip version); asserting that pip
-    # *touched* the dir at all is what closes the "we forwarded the flag but
-    # pip ignored it" gap the bare ``--cache-dir in pip_args`` check leaves.
+    # Stronger contract: pip received the dir, opened it, and populated
+    # at least one of its known subdirectories. Asserting on file
+    # *names* would be flaky (cache layout varies by pip version);
+    # asserting that pip *touched* the dir closes the "we forwarded the
+    # flag but pip ignored it" gap the bare ``--cache-dir in pip_args``
+    # check leaves.
     assert any(pathlib.Path(str(cache_dir)).iterdir()), (
         f"pip ran with --cache-dir {cache_dir!s} but did not populate it; "
         f"check that the value is reaching pip's resolver, not just "
@@ -4494,9 +4497,9 @@ def test_src_files_loaded_from_config(pip_conf, runner, tmp_path, tmpdir_cwd) ->
 def test_src_files_empty_in_default_map_falls_back_to_validation_error() -> None:
     """An empty ``src_files`` list in the config still trips the no-input validator.
 
-    A misconfigured ``[tool.pip-tools] src_files = []`` would otherwise sail
-    past validation and silently emit an empty lockfile; the validator must
-    reject the empty set so the user sees a clear "no input file" message.
+    A misconfigured ``[tool.pip-tools] src_files = []`` would otherwise
+    sail past validation and emit an empty lockfile; the validator
+    rejects the empty set so the user sees a clear "no input file" message.
     """
     isolated_runner = CliRunner()
     with isolated_runner.isolated_filesystem():

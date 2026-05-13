@@ -65,8 +65,8 @@ def validate_options(
     if len(src_files) == 0 and not any(exists(p) for p in DEFAULT_REQUIREMENTS_FILES):
         # The caller (``cli``) substitutes the first existing default file
         # into ``src_files`` before reaching the resolver; without a default
-        # to substitute, ``collect_constraints`` would iterate an empty
-        # input set and produce a valid-looking empty lockfile.
+        # to substitute, ``collect_constraints`` iterates an empty input
+        # set and produces an empty lockfile that looks valid.
         raise BadParameter(
             "If you do not specify an input file, the default is one of: {}".format(
                 ", ".join(DEFAULT_REQUIREMENTS_FILES)
@@ -76,9 +76,9 @@ def validate_options(
         raise BadParameter("--extra has no effect when used with --all-extras")
     if output_file and hasattr(output_file, "name"):
         # ``-`` / ``<stdout>`` mean "stream the lockfile to stdout"; PEP 751's
-        # filename regex doesn't apply to those because they're not on-disk
-        # paths. Treat them as a valid output the same way ``--dry-run``
-        # does, so a user piping ``pip-lock -o - | tee pylock.toml`` works.
+        # filename regex doesn't apply because they aren't on-disk paths.
+        # Treat them as a valid output the same way ``--dry-run`` does,
+        # so a user piping ``pip-lock -o - | tee pylock.toml`` works.
         if output_file.name not in {"-", "<stdout>"}:
             path = Path(output_file.name)
             if not is_valid_pylock_path(path):

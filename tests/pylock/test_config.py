@@ -18,7 +18,7 @@ from piptools.pylock.config import (
 
 def test_build_extras_configs_no_conflicts() -> None:
     # Non-conflicting extras coexist in a single combined pass; the
-    # one-pass-per-extra cost is what this collapse exists to avoid.
+    # one-pass-per-extra cost is what this collapse avoids.
     configs = build_extras_configs(extras=("http", "graphql"), conflicts=[])
     assert configs == [(None, ("http", "graphql"))]
 
@@ -97,11 +97,12 @@ def test_extract_requires_python_intersects_multiple_pyprojects(
 def test_extract_requires_python_uses_metadata_specifiers_fallback(
     tmp_path: Path,
 ) -> None:
-    # ``setup.cfg`` carries ``python_requires`` for setuptools-style projects;
-    # the static ``pyproject.toml`` read can't see it, so the bound has to flow
-    # in via ``metadata_specifiers`` from ``build_project_metadata``. Without
-    # that backend-agnostic path the lockfile loses the lower bound for any
-    # project that hasn't migrated to ``[project]`` yet.
+    # ``setup.cfg`` carries ``python_requires`` for setuptools-style
+    # projects; the static ``pyproject.toml`` read does not see it, so
+    # the bound flows in via ``metadata_specifiers`` from
+    # ``build_project_metadata``. Without that backend-agnostic path the
+    # lockfile loses the lower bound for any project that has not
+    # migrated to ``[project]`` yet.
     setup_cfg = tmp_path / "setup.cfg"
     setup_cfg.write_text("[options]\npython_requires = >=3.10\n")
     assert (
@@ -116,9 +117,9 @@ def test_extract_requires_python_uses_metadata_specifiers_fallback(
 def test_extract_requires_python_prefers_static_pyproject_over_metadata(
     tmp_path: Path,
 ) -> None:
-    # The static read is a perf optimization; if pyproject.toml carries the
-    # bound, intersecting with the same value from metadata is idempotent and
-    # produces the same result whether the backend ran or not.
+    # The static read is a perf optimization; if pyproject.toml carries
+    # the bound, intersecting with the same value from metadata is
+    # idempotent and produces the same result whether the backend ran or not.
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text('[project]\nrequires-python = ">=3.11"\n')
     assert (
@@ -165,10 +166,10 @@ def test_extract_requires_python_intersects_with_cli_versions(
     python_versions: tuple[str, ...],
     expected_substrings: tuple[str, ...],
 ) -> None:
-    # PEP 751's top-level ``requires-python`` is the lockfile-wide floor; if
-    # ``--python-version 3.12`` constrains the lock, the floor must reflect
-    # that or a 3.10 installer passes the top-level check then fails every
-    # per-package check.
+    # PEP 751's top-level ``requires-python`` is the lockfile-wide floor.
+    # When ``--python-version 3.12`` constrains the lock, the floor
+    # reflects that, otherwise a 3.10 installer passes the top-level
+    # check then fails every per-package check.
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text(f'[project]\nrequires-python = "{pyproject_spec}"\n')
     result = extract_requires_python((str(pyproject),), python_versions)
@@ -178,8 +179,8 @@ def test_extract_requires_python_intersects_with_cli_versions(
 
 
 def test_extract_requires_python_with_cli_versions_only(tmp_path: Path) -> None:
-    # ``--python-version`` should still produce a floor when no ``pyproject``
-    # is present; otherwise the lockfile would emit no ``requires-python``,
+    # ``--python-version`` produces a floor when no ``pyproject`` is
+    # present; otherwise the lockfile would emit no ``requires-python``
     # and the spec's "lowest viable Python" guarantee would not hold.
     result = extract_requires_python((), ("3.12", "3.13"))
     assert result == ">=3.12"
@@ -223,8 +224,8 @@ def test_extract_conflicts_returns_empty(
 def test_extract_conflicts_skips_items_without_extra_or_group(
     tmp_path: Path,
 ) -> None:
-    # An empty inline table has no unknown keys to raise on, yet nothing to
-    # contribute; silently dropping it keeps user input forward-compatible.
+    # An empty inline table has no unknown keys to raise on, yet nothing
+    # to contribute; dropping it keeps user input forward-compatible.
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text(
         "[tool.pip-tools]\n"
@@ -287,6 +288,12 @@ def test_extract_conflicts_with_groups(tmp_path: Path) -> None:
             id="non-list-value-ignored",
         ),
         pytest.param("requirements.in", "", (), id="non-pyproject-file"),
+        pytest.param(
+            "pyproject.toml",
+            'dependency-groups = "not-a-table"\n',
+            (),
+            id="scalar-dependency-groups-skipped",
+        ),
     ),
 )
 def test_load_default_groups(
@@ -405,10 +412,9 @@ def test_extract_conflicts_returns_empty_for_edge_cases(
 
 
 def test_extract_conflicts_raises_on_unknown_key(tmp_path: Path) -> None:
-    # A typo'd ``extras = "..."`` (plural) needs to surface as an error
-    # rather than be silently dropped: a silent drop would leave the user
-    # to discover the issue only when the disjointness check later
-    # rejects the lock.
+    # A typo'd ``extras = "..."`` (plural) surfaces as an error rather
+    # than getting dropped; a silent drop would leave the user to
+    # discover the issue when the disjointness check rejects the lock.
 
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text(
@@ -441,14 +447,14 @@ def test_build_extras_configs_non_extra_conflict_items_ignored() -> None:
         ]
     ]
     configs = build_extras_configs(extras=("http",), conflicts=conflicts)
-    # Group-only conflicts don't make any extra "conflicting", so http
+    # Group-only conflicts do not make any extra "conflicting", so http
     # rides in the combined base pass; same shape as the no-conflicts case.
     assert configs == [(None, ("http",))]
 
 
 def test_extract_requires_python_accepts_python1(tmp_path: Path) -> None:
     # The emptiness probe must not false-positive on legacy pins like
-    # ``==1.5.0``; the grid covers Python 1-4 so any genuine release falls
+    # ``==1.5.0``. The grid covers Python 1-4 so a real release falls
     # inside it; rejecting it here would block locking a legacy codebase.
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text('[project]\nrequires-python = "==1.5.0"\nname = "x"\n')
@@ -458,7 +464,7 @@ def test_extract_requires_python_accepts_python1(tmp_path: Path) -> None:
 
 
 def test_extract_requires_python_accepts_python4(tmp_path: Path) -> None:
-    # Forward-looking ``==4.0.0`` pins must also pass the probe.
+    # Forward-looking ``==4.0.0`` pins also pass the probe.
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text('[project]\nrequires-python = "==4.0.0"\nname = "x"\n')
     result = extract_requires_python((str(pyproject),))
@@ -478,11 +484,12 @@ def test_extract_requires_python_rejects_genuinely_empty(tmp_path: Path) -> None
 def test_extract_requires_python_skips_invalid_metadata_specifier(
     tmp_path: Path,
 ) -> None:
-    # ``setup.cfg``-style projects can hand back a malformed ``Requires-Python``
-    # via ``metadata_specifiers``; the ``InvalidSpecifier`` branch must skip
-    # rather than raise so a single bad metadata read doesn't tank the lock.
-    # An empty string in the list is also legal (backend may return ``""`` for
-    # a project that declares dynamic metadata but doesn't set the field).
+    # ``setup.cfg``-style projects can hand back a malformed
+    # ``Requires-Python`` via ``metadata_specifiers``; the
+    # ``InvalidSpecifier`` branch skips rather than raise so one bad
+    # metadata read does not tank the lock. An empty string in the list
+    # is also legal (a backend can return ``""`` for a project that
+    # declares dynamic metadata without setting the field).
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text('[project]\nrequires-python = ">=3.10"\n')
     result = extract_requires_python(
@@ -496,8 +503,8 @@ def test_extract_requires_python_skips_invalid_metadata_specifier(
 def test_extract_requires_python_skips_metadata_when_pyproject_invalid(
     tmp_path: Path,
 ) -> None:
-    # Both pyproject and metadata can carry malformed specifiers; the static
-    # read's ``InvalidSpecifier`` branch must skip too.
+    # Both pyproject and metadata can carry malformed specifiers; the
+    # static read's ``InvalidSpecifier`` branch skips them too.
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text('[project]\nrequires-python = "not-a-spec"\n')
     assert extract_requires_python((str(pyproject),)) is None

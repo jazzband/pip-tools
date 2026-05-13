@@ -1,9 +1,9 @@
 """CLI entry point for ``pip-lock``: produces a PEP 751 ``pylock.toml``.
 
-Owns only the user-facing interface (argument parsing, input
-validation, configuration discovery) and delegates the lock pipeline
-to the pylock package. Keep business logic out so the CLI surface
-stays inspectable as a flat option list.
+Owns the user-facing interface (argument parsing, input validation,
+configuration discovery) and delegates the lock pipeline to the
+pylock package. Keep business logic out so the CLI surface stays
+inspectable as a flat option list.
 """
 
 from __future__ import annotations
@@ -179,8 +179,8 @@ def cli(
     if not environ.get("PIP_TOOLS_HIDE_EXPERIMENTAL_WARNING"):
         # Marking pip-lock as experimental gives the CLI room to evolve while
         # users start trying it; mirror what pip 26.1 does for ``pip lock``.
-        # The env-var escape lets CI suppress the noise once the team has
-        # acknowledged the contract is fluid.
+        # The env-var escape lets CI suppress the noise once the team
+        # acknowledges the contract is fluid.
         log.warning(
             "pip-lock is experimental: the CLI and the [tool.pip-tools] block "
             "may change between releases. "
@@ -226,7 +226,7 @@ def cli(
     # Hold the advisory lock for seed-resolve-write so two concurrent
     # pip-lock processes against the same output can't both seed from the
     # pre-write file and race on the atomic rename. ``_advisory_lock``
-    # raises ``PipToolsError`` if the output's parent directory is missing;
+    # raises ``PipToolsError`` when the output's parent directory is missing;
     # catch here so the user sees exit-2 instead of a click-internal
     # traceback.
     try:

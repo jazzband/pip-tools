@@ -59,10 +59,10 @@ def test_build_pylock_package_vcs(
         pytest.param(
             "bzr+",
             "https://example.com/r",
-            # Bazaar revision-ids natively carry ``@``, which collides with
-            # pip's ``url@rev`` split; users pin to the trailing hash form.
-            # pip-tools rejects pure-numeric revnos (mutable per-branch) but
-            # accepts anything else.
+            # Bazaar revision-ids carry ``@``, which collides with pip's
+            # ``url@rev`` split; users pin to the trailing hash form.
+            # pip-tools rejects pure-numeric revnos (mutable per-branch)
+            # and accepts anything else.
             "20100308131600-abcd1234",
             "bzr",
             "20100308131600-abcd1234",
@@ -87,9 +87,10 @@ def test_build_pylock_package_vcs_type_per_scheme(
     expected_type: str,
     expected_commit: str,
 ) -> None:
-    # PEP 751's commit-id rule MUSTs the registered VCS's hash form when one
-    # exists, but does not impose git's specific shape on backends with their
-    # own conventions; svn integers and bzr arbitrary revision IDs both belong.
+    # PEP 751's commit-id rule requires the registered VCS's hash form
+    # when one exists but does not impose git's shape on backends with
+    # their own conventions; svn integers and bzr arbitrary revision IDs
+    # both belong.
     requirement = make_requirement(
         name="lib",
         version="1.0",
@@ -109,9 +110,9 @@ def test_build_pylock_package_git_uppercase_sha_is_normalised(
     make_requirement: RequirementFactory,
     make_pkg: PylockPackageFactory,
 ) -> None:
-    # An ``ABCDEF...`` SHA is still a SHA; rejecting it because of case forced
-    # users to lowercase by hand. Accept either case and normalize to lower so
-    # the on-disk lockfile is byte-stable across input formats.
+    # An ``ABCDEF...`` SHA is a SHA; rejecting it because of case forced
+    # users to lowercase by hand. Accept either case and normalize to
+    # lower so the on-disk lockfile is byte-stable across input formats.
     requirement = make_requirement(
         name="lib",
         version="0.1.0",
@@ -161,7 +162,7 @@ def test_build_pylock_package_vcs_rejects_non_pinned_revision(
     revision: str | None,
 ) -> None:
     # Per-VCS validation refuses inputs the chosen backend cannot prove
-    # immutable; PEP 751 forbids emitting an empty ``commit-id`` so the only
+    # immutable. PEP 751 forbids emitting an empty ``commit-id``, so the
     # sound action is to raise.
     suffix = f"@{revision}" if revision is not None else ""
     requirement = make_requirement(

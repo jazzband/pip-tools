@@ -79,7 +79,7 @@ def build_pip_args(
     # ``shlex.split`` is POSIX by default, so a Windows user's
     # ``--pip-args="--cert C:\\Users\\me\\cert"`` would have its backslashes
     # mangled. ``posix=False`` keeps Windows-flavoured paths intact while
-    # still tokenizing on whitespace.
+    # tokenizing on whitespace.
     pip_args.extend(shlex_split(pip_args_str or "", posix=os_name != "nt"))
     return filter_deprecated_pip_args(pip_args)
 

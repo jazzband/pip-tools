@@ -63,8 +63,8 @@ def make_index_ireq(mocker: MockerFixture) -> _IndexIreqFactory:
             original_link=None,
             link=link,
         )
-        # ``name=`` as a constructor kwarg would set MagicMock's display name, not
-        # the attribute the code under test reads.
+        # ``name=`` as a constructor kwarg would set MagicMock's display
+        # name, not the attribute the code under test reads.
         ireq.name = name
         ireq.specifier = mocker.MagicMock(
             __iter__=lambda _self: iter([mocker.MagicMock(version=version)])
@@ -146,10 +146,10 @@ def test_top_level_environments_use_full_version_when_patch_supplied(
     make_index_ireq: _IndexIreqFactory,
     mocker: MockerFixture,
 ) -> None:
-    # When the user passes ``--python-version 3.12.5``, per-package markers
-    # already use ``python_full_version``; the top-level ``environments``
-    # clause must mirror that, otherwise a 3.12.0 installer passes the
-    # top-level check then fails every per-package check.
+    # When the user passes ``--python-version 3.12.5``, per-package
+    # markers already use ``python_full_version``; the top-level
+    # ``environments`` clause mirrors that, otherwise a 3.12.0 installer
+    # passes the top-level check then fails every per-package check.
     parent_ireq = make_index_ireq("pkg", "1.0")
     target_envs = build_target_environments(("linux-x86_64",), ("3.12.5",))
     doc = _build_document(
@@ -183,9 +183,10 @@ def test_index_field_uses_candidate_host_for_extra_index(
     make_index_ireq: _IndexIreqFactory,
     mocker: MockerFixture,
 ) -> None:
-    # Defaulting every index-source package to ``finder.index_urls[0]`` leaks
-    # internal-index resolutions back to public PyPI when the lockfile is
-    # honored later; installers may try to fetch private packages from PyPI.
+    # Defaulting every index-source package to ``finder.index_urls[0]``
+    # leaks internal-index resolutions back to public PyPI when the
+    # lockfile is honored later; installers can then try to fetch private
+    # packages from PyPI.
     public_url = "https://pypi.org/simple"
     private_url = "https://internal.example.com/simple"
     public_pkg = make_index_ireq(
@@ -233,9 +234,9 @@ def test_index_field_omitted_when_no_host_match(
     make_index_ireq: _IndexIreqFactory,
     mocker: MockerFixture,
 ) -> None:
-    # ``--find-links`` and similar configurations can serve a package from a
-    # host that no configured index covers; emitting the wrong index would
-    # mislead the installer, so omit it.
+    # ``--find-links`` and similar configurations can serve a package
+    # from a host that no configured index covers. Emitting the wrong
+    # index would mislead the installer, so omit it.
     findlinks_pkg = make_index_ireq(
         "fl-pkg",
         "1.0",
@@ -267,9 +268,10 @@ def test_multi_version_entries_get_per_release_dist_files(
     make_index_ireq: _IndexIreqFactory,
     mocker: MockerFixture,
 ) -> None:
-    # Keying dist-file lookup by name alone copied ``entries[0]``'s files onto
-    # every release of the same package; so ``2.0`` would publish ``1.0``'s
-    # wheels, exactly the case the cohort/partition machinery exists to enable.
+    # Keying dist-file lookup by name alone copied ``entries[0]``'s files
+    # onto every release of the same package, so ``2.0`` would publish
+    # ``1.0``'s wheels: the case the cohort and partition machinery
+    # exists to enable.
     ireq_v1 = make_index_ireq("pkg", "1.0")
     ireq_v2 = make_index_ireq("pkg", "2.0")
     merged = {
@@ -317,9 +319,10 @@ def test_dependency_reference_disambiguates_multi_version_target(
     make_index_ireq: _IndexIreqFactory,
     mocker: MockerFixture,
 ) -> None:
-    # A bare ``{name = "child"}`` reference is ambiguous when ``child`` has two
-    # ``[[packages]]`` entries; the spec requires the minimum disambiguating
-    # info so the installer can pick a candidate deterministically.
+    # A bare ``{name = "child"}`` reference is ambiguous when ``child``
+    # has two ``[[packages]]`` entries; the spec requires the minimum
+    # disambiguating info so the installer can pick a candidate
+    # deterministically.
     parent_ireq = make_index_ireq("parent", "1.0")
     child_v1 = make_index_ireq("child", "1.0")
     child_v2 = make_index_ireq("child", "2.0")
@@ -376,9 +379,9 @@ def test_dependency_reference_falls_back_when_no_env_overlap(
     make_index_ireq: _IndexIreqFactory,
     mocker: MockerFixture,
 ) -> None:
-    # Parent depends on ``child`` but has no overlap with any child entry's
-    # ``environments``; bail out to the name-only reference rather than emit a
-    # spec-invalid empty-version field.
+    # Parent depends on ``child`` but has no overlap with any child
+    # entry's ``environments``; bail out to the name-only reference
+    # rather than emit a spec-invalid empty-version field.
     parent_ireq = make_index_ireq("parent", "1.0")
     child_v1 = make_index_ireq("child", "1.0")
     child_v2 = make_index_ireq("child", "2.0")
@@ -425,12 +428,12 @@ def test_dependency_reference_raises_for_unidisambiguable_vcs_targets(
     make_index_ireq: _IndexIreqFactory,
     mocker: MockerFixture,
 ) -> None:
-    # PEP 751 lets ``vcs``/``directory`` entries omit ``version`` and pip-tools
-    # has no other minimal-and-stable field to disambiguate two same-name VCS
-    # variants; emitting bare ``{name = "X"}`` for each would produce a dep
-    # list that identifies zero specific candidate. Surface a clear error so
-    # the user collapses the inputs themselves rather than shipping an
-    # unusable lockfile.
+    # PEP 751 lets ``vcs`` and ``directory`` entries omit ``version``,
+    # and pip-tools has no other minimal-and-stable field to disambiguate
+    # two same-name VCS variants. Emitting bare ``{name = "X"}`` for each
+    # would produce a dep list that identifies zero specific candidate.
+    # Surface a clear error so the user collapses the inputs themselves
+    # rather than shipping an unusable lockfile.
     parent_ireq = make_index_ireq("parent", "1.0")
     sdist = _STUB_SDIST
     full_sha = "a" * 40
@@ -502,9 +505,9 @@ def test_dependency_reference_omits_version_for_single_target(
     make_index_ireq: _IndexIreqFactory,
     mocker: MockerFixture,
 ) -> None:
-    # PEP 751 calls for the *minimum* disambiguating info; when the target has
-    # one entry there is nothing to disambiguate, so adding ``version`` would be
-    # gratuitous churn against uv's output for the common case.
+    # PEP 751 calls for the *minimum* disambiguating info; when the
+    # target has a single entry there is nothing to disambiguate, so
+    # adding ``version`` would churn against uv's output for the common case.
     parent_ireq = make_index_ireq("parent", "1.0")
     child_ireq = make_index_ireq("child", "1.0")
     sdist = _STUB_SDIST
@@ -541,10 +544,10 @@ def test_index_field_strips_basic_auth_credentials(
     make_index_ireq: _IndexIreqFactory,
     mocker: MockerFixture,
 ) -> None:
-    # ``--index-url https://user:token@private/simple/`` would otherwise pin the
-    # token verbatim into ``packages[].index``. Strip userinfo so the lockfile
-    # is safe to commit while still naming the right host for an installer that
-    # resupplies the credential.
+    # ``--index-url https://user:token@private/simple/`` would otherwise
+    # pin the token verbatim into ``packages[].index``. Strip userinfo so
+    # the lockfile is safe to commit while still naming the right host
+    # for an installer that resupplies the credential.
     ireq = make_index_ireq(
         "pkg",
         "1.0",
@@ -582,10 +585,10 @@ def test_index_field_omitted_when_link_is_missing(
     make_index_ireq: _IndexIreqFactory,
     mocker: MockerFixture,
 ) -> None:
-    # When ``link`` is unset we cannot prove which index served the candidate;
-    # guessing ``index_urls[0]`` would name a public index for a private-source
-    # package (or vice versa). PEP 751 treats absent ``index`` as "don't
-    # constrain installer fallback", which is the safe behavior.
+    # When ``link`` is unset, the builder cannot prove which index served
+    # the candidate; guessing ``index_urls[0]`` would name a public index
+    # for a private-source package (or vice versa). PEP 751 treats absent
+    # ``index`` as "do not constrain installer fallback", the safe behavior.
     ireq = make_index_ireq("pkg", "1.0", link_url=None)
     sdist = PackageSdist(
         url="https://example.com/pkg.tar.gz",
@@ -615,10 +618,11 @@ def test_index_field_omitted_when_link_is_missing(
 def test_index_field_falls_back_to_netloc_match(
     make_index_ireq: _IndexIreqFactory, mocker: MockerFixture
 ) -> None:
-    # Indexes that don't surface a ``comes_from`` (e.g. devpi, simple mirrors
-    # that strip the trailing slash) still tag candidates with a ``link.url``
-    # whose host matches the configured index; netloc-equality is the last
-    # resort before giving up and emitting no ``index``.
+    # Indexes that do not surface a ``comes_from`` (e.g. devpi, simple
+    # mirrors that strip the trailing slash) still tag candidates with a
+    # ``link.url`` whose host matches the configured index. Netloc
+    # equality is the last resort before giving up and emitting no
+    # ``index``.
     ireq = make_index_ireq(
         "pkg",
         "1.0",
@@ -649,9 +653,10 @@ def test_index_field_falls_back_to_netloc_match(
 def test_tool_metadata_includes_resolver_options(
     make_index_ireq: _IndexIreqFactory, mocker: MockerFixture
 ) -> None:
-    # The ``[tool.pip-tools]`` block surfaces the resolver options the user
-    # picked so the lockfile is reproducible without inspecting the CLI;
-    # every non-default flag (pre, allow_unsafe, rebuild, all_*) must round-trip.
+    # The ``[tool.pip-tools]`` block surfaces the resolver options the
+    # user picked so the lockfile is reproducible without inspecting the
+    # CLI; every non-default flag (pre, allow_unsafe, rebuild, all_*)
+    # round-trips.
     ireq = make_index_ireq("pkg", "1.0")
     target_envs = build_target_environments(
         ("linux-x86_64", "windows-amd64"), ("3.12",)
@@ -762,7 +767,7 @@ def test_top_level_environments_include_implementation_clause_when_multiple(
     mocker: MockerFixture,
 ) -> None:
     # Multi-implementation locks need the impl clause on every top-level
-    # entry so a PyPy installer doesn't pick the CPython entry's marker.
+    # entry so a PyPy installer does not pick the CPython entry's marker.
     parent_ireq = make_index_ireq("pkg", "1.0")
     target_envs = build_target_environments(
         ("linux-x86_64",), ("3.12",), ("cpython", "pypy")
@@ -835,9 +840,10 @@ def test_top_level_environment_omits_platform_marker_when_universe_covered(
 def test_index_for_entry_returns_none_when_no_configured_index_matches(
     mocker: MockerFixture,
 ) -> None:
-    # VCS / archive / find-links artifacts whose URL host does not match any
-    # configured ``--index-url`` get no attribution; the helper relies purely
-    # on host/path matching so source type does not gate the decision.
+    # VCS, archive, and find-links artifacts whose URL host does not
+    # match any configured ``--index-url`` get no attribution; the helper
+    # relies on host and path matching so source type does not gate the
+    # decision.
     link = mocker.MagicMock(
         name="vcs_link",
         url="git+https://github.com/x/y.git@deadbeef",
@@ -862,9 +868,9 @@ def test_index_for_entry_attributes_find_links_hosted_on_index(
     mocker: MockerFixture,
 ) -> None:
     # A ``--find-links`` artifact whose URL host matches a configured
-    # ``--index-url`` is attributable; pip-tools must not gate attribution on
-    # the installer-internal source-type classification because PEP 751
-    # ``packages.index`` is purely about the URL.
+    # ``--index-url`` is attributable; pip-tools does not gate attribution
+    # on the installer-internal source-type classification because PEP
+    # 751 ``packages.index`` covers the URL alone.
     link = mocker.MagicMock(
         name="find_links_link",
         url="https://internal.corp/wheels/pkg-1.0-py3-none-any.whl",
@@ -892,8 +898,8 @@ def test_index_for_entry_returns_none_when_link_url_is_not_str(
     mocker: MockerFixture,
 ) -> None:
     # An older pip release exposed ``Link.url`` as a property that could
-    # raise; today it is always a ``str`` but the helper guards the type so
-    # a future regression cannot crash the whole lock pipeline.
+    # raise; today it is a ``str`` but the helper guards the type so a
+    # future regression cannot crash the whole lock pipeline.
     link = mocker.MagicMock(comes_from=None, url=None)
     ireq = mocker.create_autospec(
         InstallRequirement,
@@ -912,10 +918,10 @@ def test_top_level_extras_and_groups_normalize_and_dedupe(
     make_index_ireq: _IndexIreqFactory,
     mocker: MockerFixture,
 ) -> None:
-    # PEP 503 / PEP 735 require ``Foo-bar`` and ``foo_bar`` to canonicalize to
-    # the same key. Without dedup-after-canonicalise the lockfile carries
-    # duplicate ``foo-bar`` entries; without canonicalise-at-all, groups
-    # violate PEP 735.
+    # PEP 503 and PEP 735 require ``Foo-bar`` and ``foo_bar`` to
+    # canonicalize to the same key. Without dedup-after-canonicalise the
+    # lockfile carries duplicate ``foo-bar`` entries; without canonicalise
+    # at all, groups violate PEP 735.
     ireq = make_index_ireq("pkg", "1.0")
     doc = _build_document(
         mocker,
@@ -944,9 +950,10 @@ def test_top_level_extras_and_groups_normalize_and_dedupe(
 def test_tool_metadata_skip_fields_drops_each_option(
     make_index_ireq: _IndexIreqFactory, mocker: MockerFixture
 ) -> None:
-    # ``--skip-metadata-fields`` lets the user blank out individual entries;
-    # each guarded ``if opts.X is not None`` branch must skip cleanly when
-    # the field was opted out of (vs. still emitting a default value).
+    # ``--skip-metadata-fields`` lets the user blank out individual
+    # entries; each guarded ``if opts.X is not None`` branch skips
+    # cleanly when the field was opted out (vs. still emitting a default
+    # value).
     ireq = make_index_ireq("pkg", "1.0")
     target_envs = build_target_environments(
         ("linux-x86_64", "windows-amd64"), ("3.12",)
@@ -1000,9 +1007,10 @@ def test_tool_metadata_skip_fields_drops_each_option(
 def test_build_package_dependencies_emits_marker_for_tied_versions(
     mocker: MockerFixture,
 ) -> None:
-    # When two same-name dep candidates share a version (one for py3.12, one
-    # for py3.13), the disambiguator can't distinguish them on version alone
-    # ; PEP 751 demands the ``marker`` field be added to each.
+    # When two same-name dep candidates share a version (one for py3.12,
+    # one for py3.13), the disambiguator cannot distinguish them on
+    # version alone, so PEP 751 demands the ``marker`` field be added to
+    # each.
     mocker.patch("piptools.pylock.builder.detect_source_type", return_value="index")
     parent_req = mocker.create_autospec(InstallRequirement, instance=True)
     parent_req.name = "parent"
@@ -1040,8 +1048,9 @@ def test_build_package_dependencies_emits_marker_for_tied_versions(
 def test_build_package_dependencies_canonicalizes_pass_through_markers(
     mocker: MockerFixture, raw_marker: str, canonical: str
 ) -> None:
-    # Pass-through dep markers must reach the dict in the same shape Marker
-    # serialises: stable diff across regenerates regardless of input.
+    # Pass-through dep markers reach the dict in the shape ``Marker``
+    # serialises so the diff is stable across regenerates regardless of
+    # input.
     mocker.patch("piptools.pylock.builder.detect_source_type", return_value="index")
     parent_requirement = mocker.create_autospec(InstallRequirement, instance=True)
     parent_requirement.name = "parent"
@@ -1066,9 +1075,9 @@ def test_build_package_dependencies_canonicalizes_pass_through_markers(
 def test_index_for_entry_skips_index_with_mismatched_path(
     mocker: MockerFixture,
 ) -> None:
-    # Two indexes share scheme+netloc; only the one whose path actually
-    # prefixes ``comes_from`` may claim the candidate, the other has to be
-    # skipped so a same-host neighbour doesn't steal the attribution.
+    # Two indexes share scheme and netloc; the one whose path prefixes
+    # ``comes_from`` claims the candidate, the other is skipped so a
+    # same-host neighbour does not steal the attribution.
     link = mocker.MagicMock(
         url="https://pypi.org/simple/pkg-1.0.tar.gz",
         comes_from="https://pypi.org/simple/pkg/",
@@ -1098,9 +1107,10 @@ def test_index_for_entry_skips_index_with_mismatched_path(
 def test_build_package_dependencies_omits_version_for_non_vcs_without_version(
     mocker: MockerFixture,
 ) -> None:
-    # An archive/index candidate that lands here without a version (e.g.
-    # because pip surfaced an unparsed sdist) must not poison the dep ref
-    # with a ``"version": ""`` entry that PEP 751 readers would reject.
+    # An archive or index candidate that lands here without a version
+    # (e.g. because pip surfaced an unparsed sdist) does not poison the
+    # dep ref with a ``"version": ""`` entry that PEP 751 readers would
+    # reject.
     parent_req = mocker.create_autospec(InstallRequirement, instance=True)
     parent_req.name = "parent"
     archive_req = mocker.create_autospec(InstallRequirement, instance=True)
@@ -1127,10 +1137,11 @@ def test_build_package_dependencies_omits_version_for_non_vcs_without_version(
 def test_build_package_dependencies_omits_version_for_vcs_in_mixed_set(
     mocker: MockerFixture,
 ) -> None:
-    # ``vcs``/``directory`` entries have no PEP 440 version; PEP 751 lets the
-    # parent's marker disambiguate. When the matching set mixes a vcs entry
-    # with an index entry, the vcs reference must omit the ``version`` field
-    # so installers don't reject the bare-but-versioned ref.
+    # ``vcs`` and ``directory`` entries have no PEP 440 version; PEP 751
+    # lets the parent's marker disambiguate. When the matching set mixes
+    # a vcs entry with an index entry, the vcs reference omits the
+    # ``version`` field so installers do not reject the bare-but-versioned
+    # ref.
     parent_req = mocker.create_autospec(InstallRequirement, instance=True)
     parent_req.name = "parent"
     vcs_req = mocker.create_autospec(InstallRequirement, instance=True)

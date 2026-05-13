@@ -1,17 +1,17 @@
 """Refuse pylock outputs that violate PEP 751 marker disjointness.
 
 PEP 751 requires same-name ``[[packages]]`` entries to use markers no
-installer can satisfy simultaneously. A naive check would iterate
+installer can satisfy at the same time. A naive check iterates
 ``|envs| x 2^|extras| x 2^|groups|`` combinations, which hangs on real
-projects with ``--all-extras --all-groups`` long before producing a result.
+projects with ``--all-extras --all-groups`` long before producing a
+result.
 
 The fast path exploits pip-tools' emitted marker shape
 ``(opt-in disjunction) and <env clause>`` to reduce the problem to a
-linear sweep over ``target_envs``: extras and groups can never make
+linear sweep over ``target_envs``: extras and groups cannot make
 pip-tools markers disjoint on their own (the user can always request the
-union), so disjointness is determined by the env axis. The bounded
-powerset stays as a safety net for markers whose shape we can't
-recognize.
+union), so the env axis decides disjointness. The bounded powerset
+stays as a safety net for markers whose shape pip-tools cannot recognize.
 """
 
 from __future__ import annotations
@@ -32,11 +32,11 @@ if _t.TYPE_CHECKING:
     from ._merge import ResolvedEntry
 
 # Override via ``PIP_TOOLS_POWERSET_FALLBACK_LIMIT`` to tune the ceiling.
-# The default has to cover the ``--all-extras --all-groups`` working set
-# across a representative platform matrix without raising. The symbolic
-# shortcut covers pip-tools' own emitted shape, but user markers that mix
-# environment and extra clauses routinely fall through. The default sits
-# well past the realistic working set so common inputs don't trip the
+# The default has to cover the ``--all-extras --all-groups`` working
+# set across a representative platform matrix without raising. The
+# symbolic shortcut covers pip-tools' emitted shape, but user markers
+# that mix environment and extra clauses fall through. The default
+# sits past the realistic working set so common inputs do not trip the
 # bail-out.
 _POWERSET_FALLBACK_LIMIT: _t.Final[int] = int(
     environ.get("PIP_TOOLS_POWERSET_FALLBACK_LIMIT", "100000")
@@ -59,8 +59,8 @@ def ensure_marker_disjointness(
 
     :param merged: Per-name ordered list of resolved entries.
     :param target_envs: Map of env keys to their marker environments.
-    :param all_extras: Extras the lock covers; used to seed the powerset.
-    :param all_groups: Dependency groups the lock covers; used to seed the powerset.
+    :param all_extras: Extras the lock covers; seeds the powerset.
+    :param all_groups: Dependency groups the lock covers; seeds the powerset.
     :param conflicts: Conflict matrix that prunes impossible opt-in combinations.
     :raises MarkerDisjointnessError: When a pair of entries can both match
         a single install context.
@@ -118,11 +118,11 @@ def ensure_requires_python_consistency(
     pkg_requires_python: dict[tuple[str, str], str | None],
     target_envs: dict[str, TargetEnvironment],
 ) -> None:
-    """Refuse the lock when a target env cannot satisfy a package's ``Requires-Python``.
+    """Refuse the lock when a target env cannot satisfy ``Requires-Python``.
 
     Cohort partitioning collapses envs that share a dep graph into one
-    resolution, so a package whose ``Requires-Python`` rejects one python
-    version could still replicate to that env if the cohort grouped it
+    resolution, so a package whose ``Requires-Python`` rejects one
+    python version replicates to that env when the cohort groups it
     with a compatible one. Surfacing the inconsistency at lock time
     avoids a confusing post-install failure.
 
@@ -140,10 +140,10 @@ def ensure_requires_python_consistency(
             try:
                 spec = SpecifierSet(raw)
             except InvalidSpecifier:
-                # Malformed ``Requires-Python`` strings should not abort
-                # the lock; pip's own metadata path accepts plenty of
-                # invalid forms in the wild and emits the field verbatim.
-                # Skip the consistency check rather than crash here.
+                # Malformed ``Requires-Python`` strings do not abort the
+                # lock; pip's own metadata path accepts plenty of invalid
+                # forms in the wild and emits the field verbatim. Skip
+                # the consistency check rather than crash here.
                 continue
             for env_key in entry.environments:
                 env = target_envs.get(env_key)
@@ -194,8 +194,8 @@ def _first_collision_symbolic(
     groups_witness = _extras_witness(left.groups_in, right.groups_in)
     if _subset_violates_conflicts(extras_witness, groups_witness, conflicts):
         # The witness is the smallest opt-in set covering both markers.
-        # A user can never request that combination, so the markers can
-        # never both fire; the conflict declaration *is* the disjointness
+        # A user cannot request that combination, so the markers cannot
+        # both fire; the conflict declaration *is* the disjointness
         # proof.
         return None
     for env_key, env_dict in target_envs.items():
@@ -233,14 +233,15 @@ def _first_collision_powerset(
             for groups_subset in _powerset(all_groups):
                 groups_frozen = frozenset(groups_subset)
                 if _subset_violates_conflicts(extras_frozen, groups_frozen, conflicts):
-                    # The user can never request a combination that violates a
-                    # declared conflict, so a marker collision in that subspace
-                    # is unobservable; skip without spending budget on it.
+                    # The user cannot request a combination that violates
+                    # a declared conflict, so a marker collision in that
+                    # subspace stays unobservable; skip without spending
+                    # budget on it.
                     continue
                 iterations += 1
                 if iterations > _POWERSET_FALLBACK_LIMIT:
                     # PEP 751 forbids ambiguous installer matches;
-                    # bailing out silently would flip a spec-mandated
+                    # bailing out without a signal flips a spec-mandated
                     # error into an install-time bug. Raise so the user
                     # narrows the markers, reduces extras/groups, or
                     # lifts ``PIP_TOOLS_POWERSET_FALLBACK_LIMIT`` once
@@ -272,11 +273,11 @@ def _subset_violates_conflicts(
 ) -> bool:
     """Return True if an installer cannot request all of ``extras``+``groups``.
 
-    Each conflict group declares a set of extras/groups the user has marked as
-    mutually exclusive. The user requesting two or more items from the same
-    conflict group is what the declaration forbids; the resolver runs separate
-    passes for each, so the validator can skip the combination entirely
-    instead of reporting a collision the installer would never observe.
+    Each conflict group declares a set of extras/groups the user marked
+    as mutually exclusive. The declaration forbids the user requesting
+    two or more items from the same conflict group; the resolver runs
+    separate passes for each, so the validator skips the combination
+    rather than reporting a collision the installer never observes.
     """
     for group in conflicts:
         count = 0

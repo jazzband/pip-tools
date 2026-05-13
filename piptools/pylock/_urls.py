@@ -1,10 +1,10 @@
 """URL helpers shared across the pylock pipeline.
 
 Three call sites (``builder._index_for_entry``, ``sources.build_vcs_source``,
-``resolve._splice_extras``) each do their own ``urlsplit``-and-normalize pass for
-slightly different reasons. Centralizing the helpers here means the next pip
-``Link`` semantics shift lands in one file; the docstrings record what each
-helper keeps and drops so a future maintainer can pick the right one.
+``resolve._splice_extras``) each run their own ``urlsplit``-and-normalize
+pass for different reasons. Centralizing the helpers here means the next
+pip ``Link`` semantics shift lands in one file; the docstrings record what
+each helper keeps and drops so a future maintainer can pick the right one.
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ def normalize_for_compare(url: str | None) -> str | None:
 
     Lower-cases scheme and host, drops userinfo, and trims trailing slashes
     so equivalent direct-URL pins compare equal even when one side preserves
-    incidental differences pip's ``Link`` normalisation would otherwise hide.
+    incidental differences that pip's ``Link`` normalisation hides.
 
     :param url: The URL to normalise, or ``None`` to short-circuit.
     :returns: The canonical form of ``url`` or ``None`` when ``url`` is empty.
@@ -37,10 +37,10 @@ def split_revision(url: str) -> tuple[str, str | None]:
     """Separate the ``@<rev>`` suffix from a VCS URL.
 
     Splits on the path component so the ``user@host`` segment of a URL such
-    as ``ssh://git@github.com/repo.git`` is left alone. Drops any URL
-    fragment defensively so the caller does not silently lose it.
+    as ``ssh://git@github.com/repo.git`` survives untouched. Drops the URL
+    fragment so the caller does not lose it without noticing.
 
-    :param url: VCS URL possibly carrying a trailing ``@<revision>`` segment.
+    :param url: VCS URL carrying a trailing ``@<revision>`` segment.
     :returns: A pair of ``(url without revision, revision or None)``.
     """
     parsed = urlsplit(url)
@@ -55,12 +55,12 @@ def split_revision(url: str) -> tuple[str, str | None]:
 
 
 def index_match_key(url: str) -> tuple[str, str | None, int | None]:
-    """Return the ``(scheme, hostname, port)`` key used for index-URL matching.
+    """Return the ``(scheme, hostname, port)`` key for index-URL matching.
 
-    Strips userinfo so a candidate URL bearing an auth token still matches a
+    Strips userinfo so a candidate URL bearing an auth token matches a
     configured index URL that omits it.
 
-    :param url: URL whose authority portion is compared.
+    :param url: URL whose authority portion the comparison uses.
     :returns: A tuple of ``(scheme, hostname, port)`` suitable for equality.
     """
     parts = urlsplit(url)

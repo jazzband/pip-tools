@@ -12,10 +12,10 @@ from piptools.pylock.cli._seeds import seed_pins_from_existing_lock
 def test_seed_pins_strips_unsafe_packages_when_allow_unsafe_off(
     tmp_path: Path,
 ) -> None:
-    # ``--allow-unsafe`` controls whether pip / setuptools / distribute are
-    # written into the lock; when the flag is off, seeding their old pins
-    # would feed the resolver constraints it's supposed to ignore. Strip
-    # unsafe names from the seed unconditionally unless the user opts in.
+    # ``--allow-unsafe`` controls whether pip, setuptools, and distribute
+    # are written into the lock. When the flag is off, seeding their old
+    # pins would feed the resolver constraints it should ignore. Strip
+    # unsafe names from the seed unless the user opts in.
 
     pylock = tmp_path / "pylock.toml"
     pylock.write_text(
@@ -81,9 +81,9 @@ def test_seed_pins_returns_empty_for_unusable_lock(
 
 
 def test_seed_pins_skips_entries_missing_version(tmp_path: Path) -> None:
-    # VCS / directory entries omit ``version``; a name-only entry can't
-    # produce a ``name==version`` constraint, so the seed must skip it
-    # rather than emit ``name==`` (which the resolver rejects).
+    # VCS and directory entries omit ``version``; a name-only entry cannot
+    # produce a ``name==version`` constraint, so the seed skips it rather
+    # than emit ``name==`` (which the resolver rejects).
 
     pylock = tmp_path / "pylock.toml"
     pylock.write_text(
@@ -98,12 +98,12 @@ def test_seed_pins_skips_entries_missing_version(tmp_path: Path) -> None:
 def test_seed_pins_skips_malformed_upgrade_package(
     tmp_path: Path, mocker: MockerFixture
 ) -> None:
-    # ``--upgrade-package`` accepts full requirement specs (``foo[dev]==1.0``);
-    # the bare ``canonicalize_name`` would normalize the whole spec into a
-    # hyphen blob, the seed would never match, and the resolver would see
-    # both the seeded ``foo==<old>`` and the user's ``foo==<new>``. A bogus
-    # token (``not a requirement!``) should fall through with a warning,
-    # not crash the lock.
+    # ``--upgrade-package`` accepts full requirement specs
+    # (``foo[dev]==1.0``); a bare ``canonicalize_name`` would normalize
+    # the whole spec into a hyphen blob, the seed would not match, and the
+    # resolver would see both the seeded ``foo==<old>`` and the user's
+    # ``foo==<new>``. A bogus token (``not a requirement!``) falls through
+    # with a warning rather than crash the lock.
 
     output = tmp_path / "pylock.toml"
     output.write_text(dedent("""
@@ -119,9 +119,10 @@ def test_seed_pins_skips_malformed_upgrade_package(
 
 
 def test_seed_pins_extras_in_upgrade_package_dropped(tmp_path: Path) -> None:
-    # ``--upgrade-package foo[dev]==1.0`` with an existing ``foo`` pin must
-    # drop the seed (``foo`` is being upgraded); not keep it because a
-    # bare canonicalize over the whole spec yields a non-matching blob.
+    # ``--upgrade-package foo[dev]==1.0`` with an existing ``foo`` pin
+    # drops the seed (``foo`` is being upgraded). Without parsing the
+    # extras, a bare canonicalize over the whole spec yields a
+    # non-matching blob and the old pin would survive.
 
     output = tmp_path / "pylock.toml"
     output.write_text(dedent("""
@@ -135,11 +136,12 @@ def test_seed_pins_extras_in_upgrade_package_dropped(tmp_path: Path) -> None:
 
 
 def test_seed_pins_drops_duplicate_conflict_group_entries(tmp_path: Path) -> None:
-    # H_baseline_reuse_under_conflicts: a re-lock with conflict groups produces
-    # multiple same-name ``[[packages]]`` entries (one per group). Flat-seeding
-    # them would feed the partition scan ``black==22.1.0`` AND ``black==23.12.0``
-    # together; pip's resolver raises ``RequirementsConflicted`` before the
-    # per-cohort resolutions ever run.
+    # H_baseline_reuse_under_conflicts: a re-lock with conflict groups
+    # produces multiple same-name ``[[packages]]`` entries (one per
+    # group). Flat-seeding them would feed the partition scan
+    # ``black==22.1.0`` and ``black==23.12.0`` together; pip's resolver
+    # raises ``RequirementsConflicted`` before the per-cohort resolutions
+    # run.
 
     output = tmp_path / "pylock.toml"
     output.write_text(dedent("""
@@ -162,9 +164,9 @@ def test_seed_pins_drops_duplicate_conflict_group_entries(tmp_path: Path) -> Non
 
 
 def test_seed_pins_accepts_normalised_lock_version(tmp_path: Path) -> None:
-    # PEP 751 says ``lock-version`` is a string; tools may write ``1.0``,
-    # ``1.0.0``, or any other PEP 440-equivalent normal form. Seed must
-    # accept all of them so a uv-written lock round-trips through pip-tools.
+    # PEP 751 says ``lock-version`` is a string; tools can write ``1.0``,
+    # ``1.0.0``, or any other PEP 440-equivalent normal form. The seed
+    # accepts all of them so a uv-written lock round-trips through pip-tools.
     pylock = tmp_path / "pylock.toml"
     pylock.write_text(
         'lock-version = "1.0.0"\n[[packages]]\nname = "requests"\nversion = "2.31.0"\n'

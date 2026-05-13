@@ -11,6 +11,11 @@ from .platforms import (
     parse_env_key,
 )
 
+# Bucket for env keys that don't follow the ``platform-version-impl``
+# shape (bare platform names in legacy callers). Keeps the legacy
+# single-axis codepath reachable so old callers don't crash.
+_BARE_AXIS: tuple[str, str] = ("", "")
+
 
 def build_combined_marker(
     platform_envs: set[str],
@@ -54,64 +59,73 @@ def build_combined_marker(
 
 
 def compute_platform_marker(envs: set[str], all_envs: set[str]) -> str | None:
-    """Return the marker that selects exactly ``envs`` out of ``all_envs``.
+    """Return the marker that selects ``envs`` out of ``all_envs``.
 
-    Reasons about both the platform and the python-version dimensions so a
-    package pulled in only on one python version across every platform emits
-    a python-only clause rather than a platform disjunction.
+    Reasons about the (python-version, implementation) cell each env belongs
+    to and the platform within the cell so a package pulled in on one
+    python or under CPython emits the narrowest correct clause, instead of
+    over-firing on impls or pythons it never resolved against.
 
     :param envs: Environment keys the marker must include.
     :param all_envs: Universe of environment keys the marker is evaluated against.
-    :returns: The platform marker string, or ``None`` when ``envs`` already covers
+    :returns: The platform marker string, or ``None`` when ``envs`` covers
         the entire universe and no narrowing is required.
     """
     if envs == all_envs:
         return None
 
-    envs_by_python = _group_by_python(envs)
-    universe_by_python = _group_by_python(all_envs)
+    envs_by_cell = _group_by_axes(envs)
+    universe_by_cell = _group_by_axes(all_envs)
 
-    sub_markers: dict[str, str | None] = {
-        py: _platform_only_marker(plats, universe_by_python[py])
-        for py, plats in envs_by_python.items()
+    sub_markers: dict[tuple[str, str], str | None] = {
+        cell: _platform_only_marker(plats, universe_by_cell[cell])
+        for cell, plats in envs_by_cell.items()
     }
 
+    multi_py = len({cell[0] for cell in universe_by_cell}) > 1
+    multi_impl = len({cell[1] for cell in universe_by_cell}) > 1
+
     if (
-        set(envs_by_python) == set(universe_by_python)
+        set(envs_by_cell) == set(universe_by_cell)
         and len(set(sub_markers.values())) == 1
     ):
-        # Every python is partially or fully present and they all share
-        # the same platform shape; the python-version dimension carries
-        # no information and can be dropped.
+        # Every cell present and every cell shares the platform shape:
+        # python and impl carry no information.
         return next(iter(sub_markers.values()))
 
     clauses: list[str] = []
-    for py in sorted(envs_by_python):
-        sub = sub_markers[py]
-        # `python_version` is MAJOR.MINOR; only switch to `python_full_version`
-        # when the user supplied a patch component.
-        key = "python_full_version" if py.count(".") >= 2 else "python_version"
-        py_clause = f"{key} == '{py}'"
-        clauses.append(py_clause if sub is None else f"{sub} and {py_clause}")
+    for cell in sorted(envs_by_cell):
+        version, implementation = cell
+        sub = sub_markers[cell]
+        cell_clauses: list[str] = [] if sub is None else [sub]
+        if multi_py and version:
+            key = "python_full_version" if version.count(".") >= 2 else "python_version"
+            cell_clauses.append(f"{key} == '{version}'")
+        if multi_impl and implementation:
+            cell_clauses.append(f"implementation_name == '{implementation}'")
+        if cell_clauses:
+            clauses.append(" and ".join(cell_clauses))
 
+    if not clauses:
+        return None
     if len(clauses) == 1:
         return clauses[0]
     return f"({' or '.join(clauses)})"
 
 
-def _group_by_python(envs: set[str]) -> dict[str, set[str]]:
-    """Bucket ``<platform>-<version>-<impl>`` env keys by their version.
+def _group_by_axes(envs: set[str]) -> dict[tuple[str, str], set[str]]:
+    """Bucket ``<platform>-<version>-<impl>`` env keys by (version, impl).
 
-    Bare platform keys (no version suffix) bucket under the empty string
-    so the single-python codepath stays available.
+    Bare platform keys (no version/impl suffix) bucket under ``_BARE_AXIS``
+    so the legacy single-axis callers still work.
     """
-    grouped: dict[str, set[str]] = defaultdict(set)
+    grouped: dict[tuple[str, str], set[str]] = defaultdict(set)
     for env_key in envs:
-        platform, version, _ = parse_env_key(env_key)
-        if version and "." in version and platform:
-            grouped[version].add(platform)
+        platform, version, implementation = parse_env_key(env_key)
+        if version and "." in version and platform and implementation:
+            grouped[(version, implementation)].add(platform)
         else:
-            grouped[""].add(env_key)
+            grouped[_BARE_AXIS].add(env_key)
     return grouped
 
 
@@ -150,7 +164,7 @@ def _platform_env(plat: str) -> PlatformEnvironment:
     ``build_target_environments`` synthesises an env for it via
     ``_best_effort_platform_env``. This composer honors the same
     fallback so the per-package marker doesn't ``KeyError`` on inputs the
-    rest of the pipeline already accepted.
+    rest of the pipeline accepted.
     """
     if plat in PLATFORM_ENVIRONMENTS:
         return PLATFORM_ENVIRONMENTS[plat]

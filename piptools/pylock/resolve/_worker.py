@@ -1,9 +1,9 @@
 """Run a cohort resolution in a worker without breaking the IPC boundary.
 
-Resolved requirements carry pip-internal state that doesn't pickle
-cleanly across process boundaries. Isolating that fragility here lets
-the orchestrator keep treating worker results as plain Python objects,
-and confines the blast radius of any Python upgrade that changes the
+Resolved requirements carry pip-internal state that fails to pickle
+across process boundaries. Isolating that fragility here lets the
+orchestrator keep treating worker results as plain Python objects, and
+confines the blast radius of any Python upgrade that changes the
 picklability of those internals to one file.
 """
 
@@ -27,13 +27,13 @@ _WORKER_REPOSITORY: PyPIRepository | None = None
 def init_worker_repository(pip_args: list[str], cache_dir: str) -> None:
     """Install pip caches and build the per-worker repository on pool start.
 
-    Worker processes exit on pool teardown, so install-only is fine here.
+    Worker processes exit on pool teardown, so install-only suffices here.
     Storing the repository on a module-global lets every task in the worker
     reuse it without re-pickling the finder.
 
-    A future caller that reuses worker processes across multiple invocations
-    would inherit these patches between runs. Wrap the worker body in
-    ``scope()`` for symmetric cleanup, or ensure the pool is torn down
+    A future caller that reuses worker processes across multiple
+    invocations would inherit these patches between runs. Wrap the worker
+    body in ``scope()`` for symmetric cleanup, or tear down the pool
     between invocations as the current ``--jobs`` flow does.
 
     :param pip_args: Pip-style argv used to build the repository.
@@ -82,7 +82,7 @@ def _strip_per_variant_for_pickle(per_variant: PerVariantMap) -> PerVariantMap:
     ``ProcessPoolExecutor``'s worker-to-main transport pickles the result
     regardless, so each requirement is re-minted from
     ``(name, version, original_link)`` here. ``build_pylock_package``
-    only reads name, version, link, and editable flag, so the rebuild
+    reads name, version, link, and editable flag, so the rebuild
     preserves every field the lockfile writes.
     """
     return {
@@ -94,10 +94,11 @@ def _strip_per_variant_for_pickle(per_variant: PerVariantMap) -> PerVariantMap:
     }
 
 
-# Fields set by ``_lite_requirement`` and therefore the only ones downstream
+# Fields set by ``_lite_requirement`` and therefore the ones downstream
 # consumers can rely on after ``--jobs > 1`` has gone through the pickle
-# transport. Adding a new consumer that reads a different field has to update
-# this list and ``_lite_requirement`` together so the contract stays explicit.
+# transport. A new consumer that reads a different field has to update
+# this list and ``_lite_requirement`` together so the contract stays
+# visible.
 _LITE_REQUIREMENT_FIELDS: _t.Final[frozenset[str]] = frozenset(
     {
         "name",
@@ -122,8 +123,8 @@ def _lite_requirement(
         # PEP 508 direct-URL form ``name @ url`` round-trips the name;
         # the bare URL would land in ``install_req_from_line`` without a
         # name, produce ``req=None``, and surface in the writer as
-        # ``name = ""``. That's invisible under ``--jobs 1`` (no pickle
-        # path) but spec-invalid under ``--jobs > 1``.
+        # ``name = ""``. That stays hidden under ``--jobs 1`` (no pickle
+        # path) but is spec-invalid under ``--jobs > 1``.
         line = f"{name}{extras_str} @ {original_link.url}"
     elif version:
         line = f"{name}{extras_str}=={version}"
@@ -136,18 +137,18 @@ def _lite_requirement(
     fresh.editable = requirement.editable
     # Round-tripping through the line form drops ``markers`` because PEP 508
     # markers don't survive ``install_req_from_line`` round-trips of a bare
-    # ``name@url`` shape. The marker is what feeds per-extra attribution in
-    # ``splice_combined_extras``; without it ``--jobs > 1`` would silently
-    # collapse extras-only deps into base. Re-attach the original marker.
+    # ``name@url`` shape. The marker feeds per-extra attribution in
+    # ``splice_combined_extras``; without it ``--jobs > 1`` would collapse
+    # extras-only deps into base. Re-attach the original marker.
     original_markers = getattr(requirement, "markers", None)
     if original_markers is not None:
         fresh.markers = original_markers
     # ``--hash=sha256:...`` in a requirements file lands in ``hash_options``,
     # which the line round-trip discards. PEP 751's threat model treats
     # user-supplied hashes as authoritative; without re-attaching them the
-    # writer would silently fall back to the index's digest under
-    # ``--jobs > 1`` and the lockfile's hash source-of-truth would shift
-    # away from the user's authoritative pin.
+    # writer would fall back to the index's digest under ``--jobs > 1``
+    # and the lockfile's hash source-of-truth would shift away from the
+    # user's authoritative pin.
     original_hash_options = getattr(requirement, "hash_options", None)
     if original_hash_options:
         fresh.hash_options = original_hash_options

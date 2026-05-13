@@ -1,12 +1,8 @@
 from __future__ import annotations
 
 import typing as _t
-from collections.abc import Iterator
-from dataclasses import dataclass, field
 
 import pytest
-from packaging import markers as _markers_mod
-from packaging.markers import Marker
 from pip._internal.req import InstallRequirement
 from pytest_mock import MockerFixture
 
@@ -15,129 +11,14 @@ from piptools.pylock._merge import (
     ResolvedEntry,
     VariantKey,
     _widen_base_marker_against_overrides,
-    get_forward_dependencies,
     merge_resolutions,
-    mock_marker_environment,
 )
-from piptools.pylock.platforms import TargetEnvironment, build_target_environments
 
 IreqFactory = _t.Callable[[], InstallRequirement]
 PerVariantFactory = _t.Callable[
     [IreqFactory],
     "dict[VariantKey, dict[str, tuple[str, InstallRequirement]]]",
 ]
-
-
-@dataclass
-class FakeCandidate:
-    name: str
-    _is_real: bool = True
-
-    def get_install_requirement(self) -> str | None:
-        return self.name if self._is_real else None
-
-
-@dataclass
-class FakeGraph:
-    _children: dict[str | None, list[str | None]] = field(default_factory=dict)
-
-    def iter_children(self, name: str | None) -> Iterator[str | None]:
-        return iter(self._children.get(name, []))
-
-
-@dataclass
-class FakeResult:
-    mapping: dict[str, FakeCandidate] = field(default_factory=dict)
-    graph: FakeGraph = field(default_factory=FakeGraph)
-
-
-def _windows_target_env() -> TargetEnvironment:
-    return build_target_environments(("windows-amd64",), ("3.12",))[
-        "windows-amd64-3.12-cpython"
-    ]
-
-
-def _linux_target_env() -> TargetEnvironment:
-    return build_target_environments(("linux-x86_64",), ("3.12",))[
-        "linux-x86_64-3.12-cpython"
-    ]
-
-
-def test_mock_marker_environment_overrides_default() -> None:
-    original = _markers_mod.default_environment()
-    with mock_marker_environment(_windows_target_env()):
-        mocked = _markers_mod.default_environment()
-        assert mocked["sys_platform"] == "win32"
-        assert mocked["os_name"] == "nt"
-
-    restored = _markers_mod.default_environment()
-    assert restored["sys_platform"] == original["sys_platform"]
-
-
-def test_mock_marker_environment_restores_on_exception() -> None:
-    original = _markers_mod.default_environment()
-    with pytest.raises(ValueError, match="test"):
-        _raise_inside_mock(_windows_target_env())
-
-    restored = _markers_mod.default_environment()
-    assert restored["sys_platform"] == original["sys_platform"]
-
-
-def _raise_inside_mock(env: TargetEnvironment) -> None:
-    with mock_marker_environment(env):
-        raise ValueError("test")
-
-
-def test_mock_marker_environment_evaluates_markers() -> None:
-    win_marker = Marker("sys_platform == 'win32'")
-    linux_marker = Marker("sys_platform == 'linux'")
-
-    with mock_marker_environment(_windows_target_env()):
-        assert win_marker.evaluate()
-        assert not linux_marker.evaluate()
-
-    with mock_marker_environment(_linux_target_env()):
-        assert not win_marker.evaluate()
-        assert linux_marker.evaluate()
-
-
-@pytest.fixture
-def fake_result() -> FakeResult:
-    real_names = ("flask", "click", "jinja2", "werkzeug", "colorama", "markupsafe")
-    mapping: dict[str, FakeCandidate] = {
-        name: FakeCandidate(name=name) for name in real_names
-    }
-    mapping["<Python from Requires-Python>"] = FakeCandidate(
-        name="<Python from Requires-Python>", _is_real=False
-    )
-    return FakeResult(
-        mapping=mapping,
-        graph=FakeGraph(
-            _children={
-                None: ["flask", "click"],
-                "flask": [None, "click", "jinja2", "werkzeug"],
-                "click": ["colorama", "<Python from Requires-Python>"],
-                "jinja2": ["markupsafe"],
-                "werkzeug": ["markupsafe"],
-                "colorama": ["<Python from Requires-Python>"],
-                "markupsafe": [],
-                "<Python from Requires-Python>": [],
-            }
-        ),
-    )
-
-
-def test_get_forward_dependencies(fake_result: FakeResult) -> None:
-    deps = get_forward_dependencies(fake_result)
-    assert deps["flask"] == {"click", "jinja2", "werkzeug"}
-    assert deps["click"] == {"colorama"}
-    assert deps["jinja2"] == {"markupsafe"}
-    assert deps["colorama"] == set()
-
-
-def test_get_forward_dependencies_skips_root(fake_result: FakeResult) -> None:
-    deps = get_forward_dependencies(fake_result)
-    assert None not in deps
 
 
 @pytest.fixture
@@ -274,7 +155,8 @@ def test_merge_resolutions_prefers_ireq_with_original_link(
 def test_merge_resolutions_keeps_link_when_later_variant_has_no_link(
     mocker: MockerFixture,
 ) -> None:
-    # Later index-only resolution must not displace the linked ireq already kept.
+    # A later index-only resolution does not displace the linked ireq
+    # already kept.
     url_ireq = mocker.create_autospec(
         InstallRequirement,
         instance=True,
@@ -319,9 +201,9 @@ def test_merge_resolutions_raises_on_conflicting_direct_urls(
 def test_merge_resolutions_keeps_first_when_direct_urls_match(
     mocker: MockerFixture,
 ) -> None:
-    # Two variants legitimately resolving to the same direct-URL pin (the
-    # common case for ``--platform`` matrices) must merge into one entry
-    # rather than raise the conflicting-URL error reserved for divergence.
+    # Two variants resolving to the same direct-URL pin (the common case
+    # for ``--platform`` matrices) merge into one entry rather than raise
+    # the conflicting-URL error reserved for divergence.
     shared_url = "https://example.com/pkg-1.0.tar.gz"
     first = mocker.create_autospec(
         InstallRequirement,
@@ -346,10 +228,11 @@ def test_merge_resolutions_keeps_first_when_direct_urls_match(
 def test_merge_resolutions_negates_overriding_group_in_base_marker(
     mocker: MockerFixture,
 ) -> None:
-    # When a conflict-group resolution pins a different version than base, the
-    # two entries collide unless base's marker excludes that group. Without
-    # the negation, ``ensure_marker_disjointness`` (correctly) rejects the
-    # lock under ``--group black24``: both entries match.
+    # When a conflict-group resolution pins a different version than
+    # base, the two entries collide unless base's marker excludes that
+    # group. Without the negation, ``ensure_marker_disjointness``
+    # rejects the lock under ``--group black24`` because both entries
+    # match.
     base_req = mocker.create_autospec(
         InstallRequirement, instance=True, original_link=None
     )
@@ -374,9 +257,9 @@ def test_merge_resolutions_negates_overriding_group_in_base_marker(
 def test_merge_resolutions_no_negation_when_base_and_group_share_version(
     mocker: MockerFixture,
 ) -> None:
-    # If base and group-only variants pin the same version they collapse onto
-    # one entry (variants merged): no second entry exists to collide with, so
-    # the negation must not fire on a unique-version case.
+    # If base and group-only variants pin the same version they collapse
+    # onto one entry (variants merged); no second entry exists to collide
+    # with, so the negation does not fire on a unique-version case.
     req = mocker.create_autospec(InstallRequirement, instance=True, original_link=None)
     env = "linux-x86_64-3.12-cpython"
     per_variant = {
@@ -384,7 +267,7 @@ def test_merge_resolutions_no_negation_when_base_and_group_share_version(
         VariantKey(env=env, group="dev"): {"pkg": ("1.0", req)},
     }
     result = merge_resolutions(per_variant, {env})
-    # One entry, marker None: variants merged at the same pin.
+    # One entry, marker ``None``: variants merged at the same pin.
     assert len(result["pkg"]) == 1
     assert result["pkg"][0].marker is None
 
@@ -393,7 +276,7 @@ def test_merge_resolutions_negates_extras_when_base_version_differs(
     mocker: MockerFixture,
 ) -> None:
     # Same logic on the extras axis: a base+extra pass picking different
-    # versions must yield a base entry whose marker excludes that extra.
+    # versions yields a base entry whose marker excludes that extra.
     base_req = mocker.create_autospec(
         InstallRequirement, instance=True, original_link=None
     )
@@ -416,10 +299,11 @@ def test_merge_resolutions_negates_extras_when_base_version_differs(
 def test_merge_resolutions_normalises_direct_url_compare(
     mocker: MockerFixture,
 ) -> None:
-    # Two cohorts pinning the same logical URL (case/userinfo/trailing-slash
-    # differ) must merge cleanly; pip's ``Link`` normalizes the candidate
-    # URL while the user-supplied input may preserve the original spelling,
-    # and a byte-exact compare false-fired the conflicting-direct-URL error.
+    # Two cohorts pinning the same logical URL (with case, userinfo, or
+    # trailing-slash differences) merge cleanly. pip's ``Link``
+    # normalizes the candidate URL while the user-supplied input
+    # preserves the original spelling, and a byte-exact compare
+    # false-fired the conflicting-direct-URL error.
     base_url = "HTTPS://USER:tok@host.com/path/"
     norm_url = "https://host.com/path"
     left = mocker.create_autospec(
@@ -445,9 +329,10 @@ def test_merge_resolutions_normalises_direct_url_compare(
 def test_widen_base_marker_wraps_or_marker(
     mocker: MockerFixture,
 ) -> None:
-    # If the base entry already carries a marker with ``or``, the trailing
-    # ``and 'X' not in dependency_groups`` would bind to a single disjunct
-    # without the wrapping parens; silently changing the marker's truth set.
+    # If the base entry already carries a marker with ``or``, the
+    # trailing ``and 'X' not in dependency_groups`` would bind to a
+    # single disjunct without the wrapping parens, changing the marker's
+    # truth set.
     req = mocker.create_autospec(InstallRequirement, instance=True)
     base = ResolvedEntry(
         requirement=req,
@@ -472,9 +357,10 @@ def test_widen_base_marker_wraps_or_marker(
 def test_merge_resolutions_constraint_flip_keeps_non_constraint(
     mocker: MockerFixture,
 ) -> None:
-    # When two variants both pin ``(name, version)`` with no ``original_link``,
-    # the merge prefers the non-constraint requirement so the kept ireq carries
-    # extras / hash info that the bare ``-c`` reference lacks.
+    # When two variants both pin ``(name, version)`` with no
+    # ``original_link``, the merge prefers the non-constraint requirement
+    # so the kept ireq carries extras and hash info that the bare ``-c``
+    # reference lacks.
     seeded = mocker.create_autospec(
         InstallRequirement, instance=True, original_link=None, constraint=True
     )

@@ -40,9 +40,10 @@ def test_build_pylock_package_archive_redacts_credentials(
     make_requirement: RequirementFactory,
     make_pkg: PylockPackageFactory,
 ) -> None:
-    # An archive URL with embedded basic-auth credentials must be redacted
-    # before it lands in a committed lockfile; the source is still resolvable
-    # by an installer that re-supplies the credential at install time.
+    # An archive URL with embedded basic-auth credentials is redacted
+    # before it lands in a committed lockfile; the source remains
+    # resolvable by an installer that re-supplies the credential at
+    # install time.
     requirement = make_requirement(
         name="lib",
         version="1.0",
@@ -101,9 +102,9 @@ def test_build_pylock_package_archive_no_hash_raises(
 def test_build_pylock_package_archive_weak_hash_raises(
     make_requirement: RequirementFactory, make_pkg: PylockPackageFactory, weak_algo: str
 ) -> None:
-    # PEP 751 requires "at least one secure algorithm" in ``hashes``; md5 and
-    # sha1 satisfy pip's checks but not the spec's intent, so emitting a weak-
-    # only entry would silently produce a non-conforming lockfile.
+    # PEP 751 requires "at least one secure algorithm" in ``hashes``; md5
+    # and sha1 satisfy pip's checks but not the spec's intent, so emitting
+    # a weak-only entry would produce a non-conforming lockfile.
     requirement = make_requirement(
         name="pkg",
         version="1.0",
@@ -155,10 +156,11 @@ def test_build_pylock_package_local_archive_uses_path(  # pragma: win32 no cover
     link_url: str,
     mocker: MockerFixture,
 ) -> None:
-    # The collector validates that ``file://`` archive paths exist so a typo'd
-    # path raises a clear "does not exist" error rather than the misleading
-    # missing-hash one. This test is about the path-emission shape, so stub
-    # ``Path.exists`` rather than fabricate a real file under ``/home/user``.
+    # The collector validates that ``file://`` archive paths exist so a
+    # typo'd path raises a clear "does not exist" error rather than the
+    # misleading missing-hash one. This test covers the path-emission
+    # shape, so stub ``Path.exists`` rather than fabricate a real file
+    # under ``/home/user``.
     mocker.patch("piptools.pylock.sources._archive.Path.exists", return_value=True)
     requirement = make_requirement(
         name="mylib",
@@ -180,9 +182,9 @@ def test_build_pylock_package_archive_missing_file_raises(
     make_requirement: RequirementFactory,
     make_pkg: PylockPackageFactory,
 ) -> None:
-    # ``file://`` archive that doesn't resolve to a real file would otherwise
-    # fall through to the missing-hash error and the user can't tell which
-    # condition tripped them.
+    # A ``file://`` archive that does not resolve to a real file would
+    # otherwise fall through to the missing-hash error and leave the user
+    # without a signal as to which condition tripped them.
     requirement = make_requirement(
         name="pkg",
         version="1.0",

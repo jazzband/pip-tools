@@ -153,6 +153,32 @@ from piptools.pylock.markers import build_combined_marker, compute_platform_mark
             "python_full_version == '3.10.5'",
             id="patch-version-uses-python-full-version",
         ),
+        pytest.param(
+            {"linux-x86_64-3.12-cpython"},
+            {
+                "linux-x86_64-3.12-cpython",
+                "linux-x86_64-3.12-pypy",
+            },
+            "implementation_name == 'cpython'",
+            id="single-implementation-when-multi-impl-universe",
+        ),
+        pytest.param(
+            {
+                "linux-x86_64-3.12-cpython",
+                "linux-x86_64-3.13-pypy",
+            },
+            {
+                "linux-x86_64-3.12-cpython",
+                "linux-x86_64-3.13-cpython",
+                "linux-x86_64-3.12-pypy",
+                "linux-x86_64-3.13-pypy",
+            },
+            (
+                "(python_version == '3.12' and implementation_name == 'cpython'"
+                " or python_version == '3.13' and implementation_name == 'pypy')"
+            ),
+            id="multi-python-multi-impl-emits-both-clauses",
+        ),
     ),
 )
 def test_compute_platform_marker(
@@ -160,6 +186,22 @@ def test_compute_platform_marker(
 ) -> None:
     result = compute_platform_marker(envs, all_envs)
     assert result == expected
+
+
+def test_compute_platform_marker_empty_envs_returns_none() -> None:
+    # An empty selection produces no per-cell clauses; the guard at the tail
+    # of compute_platform_marker returns None instead of emitting "()".
+    assert compute_platform_marker(set(), {"linux-x86_64-3.12-cpython"}) is None
+
+
+def test_compute_platform_marker_bare_cell_alone_skips_clause() -> None:
+    # A bare-axis cell (no version, no impl) coexisting with a real cell in
+    # the universe falls through both the multi_py and multi_impl guards
+    # (version and implementation are empty for the bare bucket), so the
+    # per-cell loop appends no clause and the function returns None.
+    envs = {"legacy"}
+    all_envs = {"legacy", "linux-x86_64-3.12-cpython"}
+    assert compute_platform_marker(envs, all_envs) is None
 
 
 @pytest.mark.parametrize(

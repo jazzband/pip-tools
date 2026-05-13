@@ -208,8 +208,8 @@ def test_pypi_get_distribution_files_from_json_api(
     assert len(files) == 2
     sdist = files[0]
     assert sdist.name == "small-fake-a-0.1.tar.gz"
-    # md5 is dropped: PEP 751 wants "at least one secure algorithm" and md5
-    # only satisfies pip's checks, not the spec's intent.
+    # md5 is dropped: PEP 751 wants "at least one secure algorithm" and
+    # md5 satisfies pip's checks but not the spec's intent.
     assert sdist.hashes == {"sha256": "abc123"}
     assert sdist.size == 12345
     assert sdist.upload_time is not None
@@ -291,10 +291,11 @@ def test_pypi_get_distribution_files_streams_sha256_when_only_weak_digests(
 def test_pypi_get_distribution_files_uses_streamed_size_when_json_omits(
     pypi_repository: PyPIRepository, mocker: MockerFixture
 ) -> None:
-    # When JSON omits ``size`` and the streamer fills it in, the lockfile
-    # carries the count of bytes hashed; without the substitution
-    # ``packages.size`` would be absent only on private mirrors that don't
-    # expose digests, producing a noisy diff between PyPI and mirror locks.
+    # When JSON omits ``size`` and the streamer fills it in, the
+    # lockfile carries the count of bytes hashed; without the
+    # substitution ``packages.size`` would be absent on private mirrors
+    # that do not expose digests, producing a noisy diff between PyPI
+    # and mirror locks.
     fake_release = {
         "releases": {
             "0.1": [
@@ -323,8 +324,9 @@ def test_pypi_get_distribution_files_uses_streamed_size_when_json_omits(
 def test_pypi_get_distribution_files_falls_back_when_filtered_digests_empty(
     pypi_repository: PyPIRepository, mocker: MockerFixture
 ) -> None:
-    # PyPI reports only `crc32`, which is neither in the secure-algorithms
-    # allowlist nor a known integrity primitive; stream sha256 instead.
+    # PyPI reports ``crc32`` alone, which is neither in the
+    # secure-algorithms allowlist nor a known integrity primitive; stream
+    # sha256 instead.
     fake_release = {
         "releases": {
             "0.1": [
@@ -359,9 +361,9 @@ def test_pypi_candidate_path_caches_streamed_sha256(
     # the digest and skips the hash loop; noticeable on 200+ package locks.
     mocker.patch.object(pypi_repository, "_get_project", return_value=None)
     candidate = mocker.MagicMock()
-    # The hash cache only stores ``files.pythonhosted.org`` URLs (the only
-    # content-addressable host); a private-index URL would bypass the cache
-    # so this test would never observe the second-run hit.
+    # The hash cache stores ``files.pythonhosted.org`` URLs (the
+    # content-addressable host). A private-index URL would bypass the
+    # cache so this test would not observe the second-run hit.
     candidate.link.url_without_fragment = (
         "https://files.pythonhosted.org/packages/abc/pkg-1.0.tar.gz"
     )
@@ -609,13 +611,13 @@ def test_pypi_get_dependencies_calls_get_dist_for_when_not_prepared(
     pypi_repository: PyPIRepository,
     mocker: MockerFixture,
 ) -> None:
-    # Without the `_get_dist_for(requirement)` call the dependencies set comes
-    # back empty whenever pip's resolver leaves `requirement.prepared` False
-    # after `_resolve_one`, which the resolver does for editable installs
-    # and for a few VCS shapes. Drive a sentinel exception out of the
-    # mock so we hit the call-site exactly once and exit the function
-    # cleanly without depending on whatever pip's later code paths do
-    # with the (mocked) returned dist.
+    # Without the ``_get_dist_for(requirement)`` call, the dependencies
+    # set comes back empty whenever pip's resolver leaves
+    # ``requirement.prepared`` False after ``_resolve_one``, which the
+    # resolver does for editable installs and for a few VCS shapes. Drive
+    # a sentinel exception out of the mock so the test hits the call-site
+    # once and exits the function cleanly without depending on pip's
+    # later code paths.
     requirement = _pip_api.create_install_requirement_from_line("small-fake-a==0.1")
     mock_resolver = mocker.MagicMock()
     mock_resolver._resolve_one.return_value = []
@@ -632,9 +634,9 @@ def test_pypi_get_dependencies_calls_get_dist_for_when_not_prepared(
 def test_get_file_hash_and_size_refuses_truncated_stream(
     pypi_repository: PyPIRepository, mocker: MockerFixture
 ) -> None:
-    # If a transparent proxy truncates mid-stream, the sha256 still computes
-    # validly over the truncated bytes; recording it as authoritative would
-    # lock a corrupt artifact. Cross-check Content-Length and refuse.
+    # If a transparent proxy truncates mid-stream, the sha256 computes
+    # validly over the truncated bytes; recording it as authoritative
+    # would lock a corrupt artifact. Cross-check Content-Length and refuse.
     fake_stream = FileStream(stream=BytesIO(b"abc"), size=99)
 
     @contextlib.contextmanager

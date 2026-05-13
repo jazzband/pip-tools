@@ -243,7 +243,7 @@ def _install_req_from_line_compat(
     config_settings: dict[str, str | list[str]] | None = None,
 ) -> InstallRequirement:
     # pip 23.1 folded hash_options into options; rewrite to match the legacy
-    # call shape on older pip without losing the typed call signature here.
+    # call shape on older pip while keeping the typed signature.
     if _pip_api.PIP_VERSION_MAJOR_MINOR <= (23, 0):
         legacy = _t.cast("_t.Callable[..., InstallRequirement]", install_req_from_line)
         return legacy(
@@ -287,12 +287,11 @@ def _make_cli_runner() -> CliRunner:
 
 @pytest.fixture
 def runner(monkeypatch: pytest.MonkeyPatch) -> _t.Generator[CliRunner, None, None]:
-    # Neutralize pip environment variables that inject host-specific index
-    # URLs (e.g. corporate Artifactory mirrors) so that tests checking
-    # exact pip argument lists get predictable output.
-    # PIP_CONFIG_FILE is only reset to /dev/null when pip_conf has not
-    # already set it; this prevents runner from overriding the controlled
-    # pip config that pip_conf installs for tests that need real packages.
+    # Clear pip environment variables that inject host-specific index URLs
+    # (e.g. corporate Artifactory mirrors) so tests asserting on pip argument
+    # lists get predictable output. Reset PIP_CONFIG_FILE to /dev/null when
+    # pip_conf has not set it, so runner does not override the pip config
+    # that pip_conf installs for tests needing real packages.
     for env_var in ("PIP_INDEX_URL", "PIP_EXTRA_INDEX_URL", "PIP_TRUSTED_HOST"):
         monkeypatch.delenv(env_var, raising=False)
     if not os.environ.get("PIP_CONFIG_FILE"):

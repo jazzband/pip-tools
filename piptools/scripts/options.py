@@ -27,9 +27,9 @@ def _validate_python_versions(
     ctx: click.Context, param: click.Parameter, value: tuple[str, ...]
 ) -> tuple[str, ...]:
     for version in value:
-        # ``current`` is a valid shorthand expanded by ``resolve_targets``
-        # to the host's ``MAJOR.MINOR``, mirroring ``--platform current``.
-        # Saves the user from looking up their interpreter version.
+        # ``current`` is a shorthand expanded by ``resolve_targets`` to the
+        # host's ``MAJOR.MINOR``, mirroring ``--platform current``. Spares the
+        # user from looking up their interpreter version.
         if version == "current":
             continue
         if not _PYTHON_VERSION_RE.fullmatch(version):
@@ -267,7 +267,7 @@ upgrade_lock = click.option(
         "Re-resolve every package, ignoring pins from any existing "
         "``pylock.toml``. Without this flag the existing lock seeds "
         "constraints so unrelated packages don't churn; pass "
-        "``--upgrade-package <name>`` to upgrade just one."
+        "``--upgrade-package <name>`` to upgrade one package."
     ),
 )
 
@@ -553,7 +553,7 @@ all_groups = click.option(
 
 def _platform_choices() -> tuple[str, ...]:
     # Sourced from `PLATFORM_ENVIRONMENTS` so the click choice and the
-    # env lookup table never drift apart. ``current`` is the host's
+    # env lookup table do not drift apart. ``current`` is the host's
     # auto-detected preset, which spares the user from spelling out
     # ``linux-x86_64`` etc. for one-off "lock for what I'm on now" runs.
     from piptools.pylock.platforms import PLATFORM_ENVIRONMENTS
@@ -566,9 +566,9 @@ def _validate_platform(
 ) -> tuple[str, ...]:
     """Accept the built-in choices, ``current``, or any ``<os>-<arch>`` shape.
 
-    Restricting strictly to ``PLATFORM_ENVIRONMENTS`` means users on FreeBSD,
-    OpenBSD, AIX, Solaris, and similar can't lock with ``--no-universal``;
-    relaxing to ``<os>-<arch>`` lets them name the target while a sibling
+    Limiting to ``PLATFORM_ENVIRONMENTS`` means users on FreeBSD,
+    OpenBSD, AIX, Solaris, and similar can't lock with ``--no-universal``.
+    Relaxing to ``<os>-<arch>`` lets them name the target while a sibling
     helper in ``platforms.py`` deduces best-effort markers.
     """
     from piptools.pylock.platforms import PLATFORM_ENVIRONMENTS
@@ -580,7 +580,7 @@ def _validate_platform(
         # and ``linux-x86_64`` would otherwise both pass (the first via
         # the ``<os>-<arch>`` fallback as a synthesised platform, the
         # second through the built-in preset) and the lockfile would
-        # carry both near-duplicates.
+        # carry the near-duplicate pair.
         normalised = raw.lower()
         if normalised in valid:
             canonical.append(normalised)
@@ -638,7 +638,7 @@ no_universal = click.option(
     is_flag=True,
     default=False,
     help=(
-        "Resolve for current platform only instead of cross-platform. "
+        "Resolve for the current platform instead of cross-platform. "
         "Use ``--platform`` to pick specific targets."
     ),
 )
@@ -651,7 +651,7 @@ no_metadata = click.option(
     default=False,
     help=(
         "Suppress the entire [tool.pip-tools] metadata block. The "
-        "--no-tool-block alias is the clearer name (this affects only the "
+        "--no-tool-block alias is the clearer name (this affects the "
         "tool-private block, not PEP 751 packages metadata). May be combined "
         "with --skip-metadata-field; suppressing the whole block wins."
     ),
@@ -664,7 +664,7 @@ skip_metadata_fields = click.option(
     type=click.Choice(tuple(sorted(_TOOL_FIELDS)), case_sensitive=True),
     help=(
         "Omit a field from the [tool.pip-tools] metadata block; may be used "
-        "more than once. Omitting all fields suppresses the block entirely. "
+        "more than once. Omitting every field suppresses the block. "
         "Useful for reproducible lock files where volatile values would cause "
         "spurious diffs."
     ),

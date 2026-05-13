@@ -48,17 +48,17 @@ def resolve_src_files(
     if src_files:
         return src_files
     # Truthy check on the default-map value: a config file with
-    # ``src_files = []`` would otherwise short-circuit auto-pickup with an
-    # empty tuple, then sail past validation when a default file exists in
-    # CWD and produce a silent empty lockfile.
+    # ``src_files = []`` would short-circuit auto-pickup with an empty
+    # tuple, then sail past validation when a default file exists in
+    # CWD and produce an empty lockfile.
     if click_context.default_map and (
         configured := click_context.default_map.get("src_files")
     ):
         return tuple(configured)
     # ``--help`` advertises auto-pickup ("$ pip-lock # reads pyproject.toml");
-    # without explicitly substituting the first existing default file the
-    # resolver iterates an empty input set and emits a valid-looking but
-    # empty lockfile.
+    # without substituting the first existing default file, the resolver
+    # iterates an empty input set and emits an empty lockfile that looks
+    # valid.
     for file_path in DEFAULT_REQUIREMENTS_FILES:
         if exists(file_path):
             return (file_path,)
@@ -96,6 +96,12 @@ def build_constraints(
     :raises click.BadParameter: When extras are requested without a project metadata input.
     :raises SystemExit: When a project metadata backend fails to expand.
     """
+    # ``upgrade_packages`` runs through two passes on purpose. The first pass
+    # adds them as primary requirements so a name that the project never
+    # pinned still shows up in the lock. ``_collect_constraints`` runs the
+    # second pass and threads the same names in as ``-c``-shaped bindings so
+    # an existing pin yields to the override. A single pass would skip
+    # never-pinned upgrades or leave already-pinned ones untouched.
     upgrade_install_reqs = {
         key_from_ireq(
             ireq := _pip_api.create_install_requirement_from_line(package)
@@ -113,9 +119,9 @@ def build_constraints(
         build_isolation=build_isolation,
         upgrade_packages=upgrade_packages,
     )
-    # Canonicalise at the input boundary: ``--extra Foo --extra foo`` would
-    # otherwise survive as two distinct entries until the output layer
-    # collapses them, doubling per-extra resolutions in between.
+    # Canonicalise at the input boundary: without this, ``--extra Foo --extra foo``
+    # survives as two distinct entries until the output layer collapses them,
+    # doubling per-extra resolutions in between.
     extras = tuple(
         dedup(
             canonicalize_name(e)

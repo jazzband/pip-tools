@@ -15,9 +15,9 @@ from .conftest import PylockPackageFactory, RequirementFactory
 def test_build_pylock_package_directory_path_is_relative_posix(  # pragma: win32 no cover
     make_requirement: RequirementFactory, make_pkg: PylockPackageFactory, tmp_path: Path
 ) -> None:
-    # PEP 751: ``path`` is "relative to lock file" with POSIX separators. An
-    # absolute, native-separator path would defeat the canonical use-case of a
-    # committed pylock shared across machines.
+    # PEP 751: ``path`` is "relative to lock file" with POSIX separators.
+    # An absolute, native-separator path would defeat the canonical use
+    # case of a committed pylock shared across machines.
     repo_dir = tmp_path / "src" / "lib"
     repo_dir.mkdir(parents=True)
     requirement = make_requirement(
@@ -39,9 +39,9 @@ def test_build_pylock_package_directory_carries_subdirectory(
     make_requirement: RequirementFactory,
     make_pkg: PylockPackageFactory,
 ) -> None:
-    # PEP 751 lists ``packages.directory.subdirectory`` as supported; without
-    # threading ``link.subdirectory_fragment`` an installer would build the
-    # outer tree and miss the user-pinned subtree.
+    # PEP 751 lists ``packages.directory.subdirectory`` as supported.
+    # Without threading ``link.subdirectory_fragment`` an installer would
+    # build the outer tree and miss the user-pinned subtree.
     requirement = make_requirement(
         name="lib",
         version="1.0",

@@ -1,18 +1,19 @@
 """On-disk cache for streamed-file hashes.
 
-Pip-tools hashes wheels/sdists itself when a private index doesn't expose
-``digests`` in its JSON response. Pip's ``CacheControlAdapter`` keeps the body
-bytes between runs, so the network round-trip is usually skipped, but the SHA
-loop runs every time and scales linearly with package count. Caching the
-``url -> sha`` pair under ``cache_dir`` lets the second run skip the loop for
-URLs whose bytes can't change, turning a 200-package lock from "rehash
-everything" into "validate the index match."
+Pip-tools hashes wheels and sdists itself when a private index doesn't
+expose ``digests`` in its JSON response. Pip's ``CacheControlAdapter``
+keeps the body bytes between runs, so the network round-trip skips most
+of the time, but the SHA loop runs every time and scales linearly with
+package count. Caching the ``url -> sha`` pair under ``cache_dir`` lets
+the second run skip the loop for URLs whose bytes cannot change, turning
+a 200-package lock from "rehash everything" into "validate the index
+match."
 
-Only ``*.pythonhosted.org`` URLs are cached: PyPI/Warehouse serves
-content-addressable URLs (the digest is part of the path), so the same URL
-cannot serve different bytes across runs. Private indexes that re-publish
-the same URL with different bytes would otherwise return stale digests
-forever, so they're explicitly excluded from caching.
+Only ``*.pythonhosted.org`` URLs are cached. PyPI/Warehouse serves
+content-addressable URLs (the digest is part of the path), so the same
+URL cannot serve different bytes across runs. Private indexes that
+re-publish the same URL with different bytes would return stale digests
+forever, so they fall outside the caching set.
 """
 
 from __future__ import annotations
@@ -45,9 +46,9 @@ def load(cache_dir: str, url: str) -> tuple[str, int | None] | None:
 
     Best-effort: any I/O or JSON failure falls through to a recompute so a
     corrupt cache file never blocks a lock. Non-content-addressable hosts
-    bypass the cache entirely. ``size`` may be ``None`` for entries written
-    before the size field was tracked; bumping ``_FILENAME_VERSION`` makes
-    those records ineligible so a re-stream will populate it.
+    bypass the cache. ``size`` may be ``None`` for entries written before
+    the size field was tracked; bumping ``_FILENAME_VERSION`` makes those
+    records ineligible so a re-stream populates it.
     """
     if not _is_cacheable(url):
         return None
@@ -70,9 +71,8 @@ def store(cache_dir: str, url: str, sha256: str, size: int | None) -> None:
 
     Writes to a sibling temp file then ``os.replace`` so a concurrent
     reader never sees a half-written entry. Failures are swallowed
-    because the cache is opportunistic; a missing entry just means the
-    next run rehashes. Non-content-addressable hosts skip persistence
-    entirely.
+    because the cache is opportunistic; a missing entry means the next
+    run rehashes. Non-content-addressable hosts skip persistence.
     """
     if not _is_cacheable(url):
         return

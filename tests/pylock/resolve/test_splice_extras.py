@@ -126,9 +126,10 @@ def test_classify_extras_roots_handles_reversed_comparison(
     mocker: MockerFixture,
     make_ireq: IreqFactory,
 ) -> None:
-    # PEP 508 marker comparisons go either direction; the AST walker has to
-    # match both orderings so a constraint written ``'dev' == extra`` does not
-    # leak into base and lose its ``'dev' in extras`` marker on the lockfile.
+    # PEP 508 marker comparisons go in either direction; the AST walker
+    # matches both orderings so a constraint written ``'dev' == extra``
+    # does not leak into base and lose its ``'dev' in extras`` marker on
+    # the lockfile.
     constraints = [
         make_ireq("pytest", marker="'test' == extra"),
         make_ireq("ruff", marker="extra == 'lint' or 'dev' == extra"),
@@ -144,8 +145,8 @@ def test_classify_extras_roots_descends_into_parenthesized_marker(
     mocker: MockerFixture,
     make_ireq: IreqFactory,
 ) -> None:
-    # Parenthesised markers parse as nested AST lists; the extras walker must
-    # recurse into them, otherwise an extras-conditional dep written
+    # Parenthesised markers parse as nested AST lists; the extras walker
+    # recurses into them, otherwise an extras-conditional dep written
     # ``(extra == 'dev' or extra == 'test')`` would slip into base.
     constraints = [
         make_ireq("ruff", marker="(extra == 'dev' or extra == 'test')"),
@@ -214,7 +215,7 @@ def test_splice_combined_extras_moves_extras_only_packages(
     )
 
     test_variant = VariantKey(env=env_key, extra="test", group=None)
-    # base keeps only the packages reachable from base roots
+    # base keeps the packages reachable from base roots
     assert set(per_variant[base_variant]) == {"requests", "urllib3"}
     # extras-only packages move into the per-extra slot
     assert set(per_variant[test_variant]) == {"pytest", "pluggy"}
@@ -243,11 +244,11 @@ def test_splice_combined_extras_skips_extra_with_no_new_packages(
     mocker: MockerFixture,
     make_ireq: IreqFactory,
 ) -> None:
-    # If an extra's roots don't add any packages beyond base (e.g. the
-    # extra was empty or all its deps are already required by base), the
-    # splice must skip creating a per-extra variant; leaving the only
-    # entry in `per_variant` would lock the package as if `'X' in extras`
-    # were required.
+    # If an extra's roots add no packages beyond base (e.g. the extra
+    # was empty or all its deps are already required by base), the splice
+    # skips creating a per-extra variant. Leaving the single entry in
+    # ``per_variant`` would lock the package as if ``'X' in extras`` were
+    # required.
     base_req = make_ireq("requests")
     ext_req = make_ireq("requests", marker="extra == 'mirror'")
     env_key = "linux-x86_64-3.12-cpython"
@@ -268,8 +269,8 @@ def test_splice_combined_extras_skips_extra_with_no_new_packages(
         forward_deps={"requests": set()},
         per_variant=per_variant,
     )
-    # No per-extra variant created because `mirror`'s only root is also
-    # base; subtracting base leaves an empty set.
+    # No per-extra variant gets created because `mirror`'s single root is
+    # also in base; subtracting base leaves an empty set.
     assert VariantKey(env=env_key, extra="mirror", group=None) not in per_variant
 
 
@@ -278,10 +279,10 @@ def test_collect_base_constraints_skips_seeded_constraint_pins(
     make_ireq: IreqFactory,
     make_ireq_with_spec: IreqWithSpecFactory,
 ) -> None:
-    # ``constraint=True`` ireqs come from seeded ``name==<old>`` pins. Treating
-    # them as base specs would fire a spurious "widened" warning whenever the
-    # new resolution legitimately picks a newer version, since the seeded ``==``
-    # would no longer contain it.
+    # ``constraint=True`` ireqs come from seeded ``name==<old>`` pins.
+    # Treating them as base specs would fire a spurious "widened" warning
+    # whenever the new resolution picks a newer version, since the seeded
+    # ``==`` would no longer contain it.
     seeded = make_ireq_with_spec("requests", "==2.30.0", constraint=True)
     user = make_ireq_with_spec("click", ">=8")
     base_specs, base_links = _collect_base_constraints([seeded, user], ())
@@ -294,8 +295,8 @@ def test_collect_base_constraints_records_direct_url(
     mocker: MockerFixture,
     make_ireq_with_link: IreqWithLinkFactory,
 ) -> None:
-    # Direct-URL pins (``pkg @ https://...``) carry no SpecifierSet, but the
-    # splice still needs to detect when extras swap the URL out.
+    # Direct-URL pins (``pkg @ https://...``) carry no SpecifierSet, but
+    # the splice still detects when extras swap the URL out.
     url = "https://example.com/pkg-1.0.tar.gz"
     direct = make_ireq_with_link("pkg", url)
     base_specs, base_links = _collect_base_constraints([direct], ())
@@ -327,8 +328,8 @@ def test_splice_combined_extras_warns_on_widened_pin(
         per_variant=per_variant,
     )
     log_warning.assert_called_once()
-    # Same (name, version) firing on a second cohort env stays deduped; only
-    # one warning surfaces even when the cohort has 17 envs.
+    # The same (name, version) firing on a second cohort env stays
+    # deduped; a single warning surfaces even when the cohort has 17 envs.
 
 
 def test_splice_combined_extras_warns_on_link_swap(
@@ -365,9 +366,9 @@ def test_splice_combined_extras_no_warn_when_link_unchanged(
     make_ireq: IreqFactory,
     make_ireq_with_link: IreqWithLinkFactory,
 ) -> None:
-    # The widening / link-swap warnings should stay quiet when the resolved
-    # link matches the base spec. Covers the ``no swap detected`` branch so a
-    # future change can't silently flip the comparison logic.
+    # The widening and link-swap warnings stay quiet when the resolved
+    # link matches the base spec. Covers the ``no swap detected`` branch
+    # so a future change cannot flip the comparison logic unnoticed.
     base_url = "https://example.com/pkg-1.0.tar.gz"
     base_req = make_ireq_with_link("pkg", base_url)
     ext_req = make_ireq("side", marker="extra == 'gpu'")
@@ -397,7 +398,7 @@ def test_collect_base_constraints_skips_nameless_requirements(
 ) -> None:
     # ``InstallRequirement`` can land here with ``req=None`` (the
     # ``-e <directory>`` and ``<url>`` shapes pre-resolution); the helper
-    # must skip those rather than crash trying to read ``req.name``.
+    # skips those rather than crash trying to read ``req.name``.
     nameless = mocker.create_autospec(InstallRequirement, instance=True, req=None)
     base_specs, base_links = _collect_base_constraints([nameless], ())
     assert base_specs == {}
@@ -407,7 +408,7 @@ def test_collect_base_constraints_skips_nameless_requirements(
 def test_collect_base_constraints_skips_link_without_url_without_fragment(
     mocker: MockerFixture,
 ) -> None:
-    # A link missing ``url_without_fragment`` must not poison ``base_links``.
+    # A link missing ``url_without_fragment`` does not poison ``base_links``.
     req_mock = mocker.MagicMock()
     req_mock.name = "pkg"
     link = mocker.MagicMock(spec=[])

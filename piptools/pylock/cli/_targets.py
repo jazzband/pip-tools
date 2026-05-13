@@ -43,15 +43,15 @@ def resolve_groups(
         resolver = DependencyGroupResolver(raw_groups)
     except ExceptionGroup as eg:
         # `packaging` wraps validation errors in an ExceptionGroup so it can report
-        # several malformed entries together; the CLI surface only needs a flat
-        # message, so unwrap and concatenate the inner exceptions verbatim.
+        # several malformed entries together; the CLI surface needs a flat message,
+        # so unwrap and concatenate the inner exceptions verbatim.
         raise BadParameter(
             "; ".join(str(e) for e in eg.exceptions), param_hint="--group"
         ) from eg
     if all_groups:
         groups = tuple(raw_groups.keys())
     if unknown_groups := [g for g in groups if g not in raw_groups]:
-        # Silently dropping unknown groups masked typos; surfacing them up front
+        # Dropping unknown groups would mask typos; surfacing them up front
         # tells the user the lockfile would not include the deps they expected.
         available = ", ".join(sorted(raw_groups)) or "(none defined)"
         raise BadParameter(
@@ -102,7 +102,7 @@ def resolve_targets(
     """
     user_picked_platforms = bool(platforms)
     # ``--platform current`` is a shorthand for the host's auto-detected
-    # preset; expand here so the rest of the pipeline only sees concrete
+    # preset; expand here so the rest of the pipeline sees concrete
     # platform names.
     if "current" in platforms:
         # ``_infer_platforms`` raises ``BadParameter(..., "--no-universal")``
@@ -137,8 +137,8 @@ def resolve_targets(
     if not python_versions:
         # In universal mode, derive the python axis from the project's
         # ``requires-python`` so the lock covers every supported interpreter
-        # by default. The host-only fallback applies when the project has not
-        # declared one or when the user opted into ``--no-universal``.
+        # by default. The host-only fallback applies when the project does
+        # not declare one or when the user passes ``--no-universal``.
         if not no_universal and project_requires_python:
             python_versions = _expand_requires_python(project_requires_python)
         if not python_versions:
@@ -200,16 +200,16 @@ def _expand_requires_python(specifiers: tuple[str, ...]) -> tuple[str, ...]:
         try:
             intersected &= SpecifierSet(raw)
         except InvalidSpecifier:
-            # Malformed specifiers should not abort the lock; pip's own metadata
+            # Malformed specifiers should not abort the lock; pip's metadata
             # path tolerates plenty of invalid forms in the wild. Skip the bad
             # entry and let the remaining specifiers narrow the range.
             continue
     if not str(intersected):
         return ()
-    # CPython has stayed on the 3.x line for over a decade; the floor/ceiling
-    # both being on the same major is the only case worth materializing. A
-    # Python 4 release would force a wider candidate sweep, but that is a
-    # design discussion the universal lock should not pre-commit to.
+    # CPython has stayed on the 3.x line for over a decade; the floor and
+    # ceiling sharing one major is the case worth materializing. A Python 4
+    # release would force a wider candidate sweep, which is a design
+    # discussion the universal lock should not pre-commit to.
     floor_major, floor_minor = _PYTHON_VERSION_FLOOR
     _, ceiling_minor = _PYTHON_VERSION_CEILING
     candidates = (

@@ -1,10 +1,9 @@
 """Resolve one cohort across the user's extras and dependency groups.
 
-Both the in-process orchestrator and the parallel worker funnel into
-this single body, which keeps the sequential and parallel paths from
-drifting on the parts that matter to correctness (the resolver
-invocations, the constraint preparation, the cache-clear semantics on
-the first pass).
+The in-process orchestrator and the parallel worker both funnel into
+this body, which keeps the sequential and parallel paths from drifting
+on the parts that matter to correctness (resolver invocations,
+constraint preparation, cache-clear semantics on the first pass).
 """
 
 from __future__ import annotations
@@ -13,22 +12,17 @@ from copy import deepcopy
 
 from pip._internal.req import InstallRequirement
 
-from ...cache import DependencyCache
 from ...exceptions import NoCandidateFound, PipToolsError
 from ...logging import log
 from ...repositories import PyPIRepository
-from ...resolver import BacktrackingResolver
 from ...utils import drop_extras, key_from_ireq
 from .._inputs import ResolverOptions
-from .._merge import (
-    ForwardDeps,
-    PerVariantMap,
-    VariantKey,
-    get_forward_dependencies,
-    mock_marker_environment,
-)
+from .._marker_eval import mock_marker_environment
+from .._merge import ForwardDeps, PerVariantMap, VariantKey
 from ..platforms import TargetEnvironment, to_marker_env
 from ..sources import requirement_version
+from ._introspect import get_forward_dependencies
+from ._resolver_factory import make_resolver
 from ._splice_extras import splice_combined_extras
 from ._state import ResolutionState, ResolverInputs, VariantSlice
 
@@ -43,9 +37,9 @@ def resolve_cohort_work(
 ) -> tuple[PerVariantMap, ForwardDeps]:
     """Run a cohort's per-extra and per-group resolutions in the current process.
 
-    Pulled out of the orchestrator so the same body runs sequentially in the
-    parent process or dispatches to a worker. Cache clearing is owned by the
-    orchestrator so siblings cannot race the rmtree.
+    Lives outside the orchestrator so the same body runs in sequence in the
+    parent process or dispatches to a worker. The orchestrator owns cache
+    clearing so siblings never race the rmtree.
 
     :param cohort_envs: Environment keys this cohort covers.
     :param target_envs: Map of every env key to its marker environment.
@@ -77,7 +71,7 @@ def resolve_cohort_work(
             )
         # The combined-extras pass folds every non-conflicting extra into one
         # resolution; split its result back into per-extra variant entries so
-        # ``merge_resolutions`` can still emit per-extra markers.
+        # ``merge_resolutions`` keeps emitting per-extra markers.
         if extra_label is None and extra_set:
             splice_combined_extras(
                 cohort_envs=cohort_envs,
@@ -150,28 +144,17 @@ def _run_resolution(
     state: ResolutionState,
 ) -> None:
     try:
-        resolver = BacktrackingResolver(
-            constraints=constraints,
-            existing_constraints={},
-            repository=repository,
-            prereleases=options.prereleases,
-            cache=DependencyCache(options.cache_dir),
-            # The orchestrator clears caches once before any cohort dispatch
-            # (see ``_orchestrate.resolve``); doing it again here would race
-            # sibling workers that already opened files in ``cache_dir``.
-            clear_caches=False,
-            allow_unsafe=options.allow_unsafe,
-            unsafe_packages=set(options.unsafe_packages),
+        resolver = make_resolver(
+            constraints=constraints, repository=repository, options=options
         )
         results = resolver.resolve(max_rounds=options.max_rounds)
     except NoCandidateFound as e:
-        # ``NoCandidateFound`` carries pip-internal ``PackageFinder`` /
-        # ``InstallRequirement`` state that doesn't pickle cleanly across
+        # ``NoCandidateFound`` carries pip-internal ``PackageFinder`` and
+        # ``InstallRequirement`` state that fails to pickle across
         # ``ProcessPoolExecutor``'s IPC boundary; the parent would receive a
         # ``BrokenProcessPool`` with no ``except NoCandidateFound`` match.
         # Convert to a picklable ``PipToolsError`` carrying the formatted
-        # message so the orchestrator's handler still fires under
-        # ``--jobs > 1``.
+        # message so the orchestrator's handler fires under ``--jobs > 1``.
         log.error(f"Resolution failed for {variant}: {e}")
         raise PipToolsError(str(e)) from None
     except PipToolsError as e:

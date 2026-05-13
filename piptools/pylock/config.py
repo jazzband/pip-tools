@@ -70,7 +70,7 @@ def extract_requires_python(
     for raw in metadata_specifiers:
         # Backend-supplied ``Requires-Python`` covers ``setup.cfg``, dynamic
         # pyproject metadata, and every other source the static parse missed;
-        # skipping projects already captured by the static read keeps the
+        # skipping projects captured by the static read keeps the
         # intersection idempotent.
         if not raw:
             continue
@@ -84,9 +84,9 @@ def extract_requires_python(
         found = True
     if found:
         # An intersected ``requires-python`` that no Python release satisfies
-        # would land in the lockfile silently and surface as a confusing
+        # would land in the lockfile without warning and surface as an
         # install-time error far from the cause. Probe a coarse grid of
-        # interpreter versions; a release inside the grid will satisfy any
+        # interpreter versions; a release inside the grid satisfies any
         # non-empty SpecifierSet, so a complete miss is sufficient evidence
         # of emptiness. The grid spans Python 1 through Python 4 with patch
         # samples up to 99 so legacy ``==1.5.0`` and forward-looking
@@ -99,11 +99,11 @@ def extract_requires_python(
             for patch in (0, 1, 5, 9, 99)
         )
         if not any(combined.contains(v, prereleases=True) for v in candidates):
-            # ``combined`` already absorbs every contributor (pyproject,
+            # ``combined`` absorbs every contributor (pyproject,
             # metadata-specifiers, cli-floor). Naming sources from one
-            # branch alone would hide the half of the contradiction
-            # coming from the other side; walk the SpecifierSet itself so
-            # the diagnostic always cites every clause.
+            # branch would hide the half of the contradiction coming
+            # from the other side; walk the SpecifierSet itself so
+            # the diagnostic cites every clause.
             constituents = sorted({str(s) for s in combined})
             raise PipToolsError(
                 f"Intersected requires-python {str(combined)!r} is empty: no "
@@ -127,8 +127,8 @@ def _python_versions_floor(python_versions: tuple[str, ...]) -> SpecifierSet | N
     # ``packaging.Version`` enforces PEP 440 sort semantics and surfaces
     # malformed inputs as ``InvalidVersion`` rather than ``int("11rc1")``
     # -shaped ``ValueError`` from a hand-rolled split. The original CLI
-    # string is threaded through so the emitted floor preserves the user's
-    # exact spelling (``3.12.5`` vs ``3.12``); ``Version.__init__``
+    # string threads through so the emitted floor preserves the user's
+    # spelling (``3.12.5`` vs ``3.12``); ``Version.__init__``
     # normalizes to canonical form, which would drop the trailing ``.0``
     # on ``3.12``.
     lowest_version = sorted(python_versions, key=Version)[0]
@@ -150,10 +150,10 @@ def extract_conflicts(src_files: tuple[str, ...]) -> list[list[ConflictItem]]:
         for group in raw_conflicts:
             items: list[ConflictItem] = []
             for item in group:
-                # Surface unknown keys instead of silently dropping them: a
-                # typo'd ``extras = "..."`` (plural) would otherwise produce
-                # a no-op conflicts entry the user only notices when the
-                # disjointness check rejects the lock.
+                # Surface unknown keys instead of dropping them: a
+                # typo'd ``extras = "..."`` (plural) would produce a no-op
+                # conflicts entry the user notices when the disjointness
+                # check rejects the lock.
                 unknown = set(item) - {"extra", "group"}
                 if unknown:
                     raise PipToolsError(
@@ -285,9 +285,9 @@ def _load_pyproject_or_skip(src_file: str) -> dict[str, _t.Any] | None:
 
     Filters non-``pyproject.toml`` inputs and turns parser failures into a
     debug log + skip so a corrupt or BOM-prefixed file (or a CI permissions
-    issue) doesn't abort the lock; a silent skip would surface as a missing
-    ``requires-python`` / empty conflicts / empty groups in the lockfile
-    with no trail to follow.
+    issue) doesn't abort the lock; a skip without a log would surface as a
+    missing ``requires-python`` / empty conflicts / empty groups in the
+    lockfile with no trail to follow.
     """
     if basename(src_file) != "pyproject.toml":
         return None

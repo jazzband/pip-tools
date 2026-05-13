@@ -46,7 +46,7 @@ def _advisory_lock(
     sibling ``.<name>.lock`` file held under ``fcntl.LOCK_EX`` for the
     seed-to-write window collapses the race to "second invocation waits for
     the first." Windows lacks ``fcntl``; degrade to a warning so the user
-    knows concurrent runs against the same artifact dir are unsafe.
+    sees that concurrent runs against the same artifact dir are unsafe.
     """
     if (
         output_file is None
@@ -59,7 +59,7 @@ def _advisory_lock(
         # Windows fallback: best-effort ``O_CREAT|O_EXCL`` exclusive-create on
         # a sibling ``.lock`` file. A successful create means no concurrent
         # ``pip-lock`` holds the output; ``FileExistsError`` means one does.
-        # Warn only on contention so quiet runs stay quiet.
+        # Warn on contention so quiet runs stay quiet.
         output_path = Path(output_file.name)
         lock_path = output_path.parent / f".{output_path.name}.lock"
         try:
@@ -93,10 +93,9 @@ def _advisory_lock(
     output_path = Path(output_file.name)
     lock_path = output_path.parent / f".{output_path.name}.lock"
     # Don't ``mkdir`` the parent: a typo'd ``-o /typo/dir/pylock.toml``
-    # would otherwise silently materialise a brand-new directory and land
-    # the lock there. ``os.open`` raising ``FileNotFoundError`` becomes a
-    # ``PipToolsError`` so the CLI exits 2 with a single line instead of
-    # a Python traceback.
+    # would materialise a brand-new directory and land the lock there.
+    # ``os.open`` raising ``FileNotFoundError`` becomes a ``PipToolsError``
+    # so the CLI exits 2 with one line instead of a Python traceback.
     try:  # pragma: win32 no cover
         fd = os_open(lock_path, O_RDWR | O_CREAT, 0o600)
     except FileNotFoundError as exc:  # pragma: win32 no cover
@@ -165,7 +164,7 @@ def emit_dry_run(doc: Pylock) -> None:
     :param doc: Lockfile to render.
     """
     rendered = _render(doc)
-    # ``click.echo`` writes to stdout (not the log's stderr) so
+    # ``click.echo`` writes to stdout (not the log's stderr), so
     # ``pip-lock --dry-run | tee pylock.toml`` produces a clean TOML
     # stream without log banners. ``errors="replace"`` defends against a
     # future writer change that emits non-UTF-8 bytes; tomli_w is UTF-8.
@@ -206,7 +205,7 @@ def _render(doc: Pylock) -> bytes:
     data = dict(doc.to_dict())
     # PEP 751 leaves sdist/wheels order to the writer; place wheels before
     # the single sdist so a reader's eye lands on the installable artifact
-    # they will likely pick before the source fallback.
+    # before the source fallback.
     packages = data.get("packages")
     if isinstance(packages, list):
         for package in packages:

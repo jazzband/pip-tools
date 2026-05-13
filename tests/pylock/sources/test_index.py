@@ -72,8 +72,8 @@ def test_validate_dist_filenames_skips_unnamed_dists(
     make_pkg: PylockPackageFactory,
 ) -> None:
     # PEP 751 lets ``PackageWheel.name`` be omitted for path-only entries
-    # (e.g. archive sources). The validator has to skip those rather than
-    # crash on the missing filename.
+    # (e.g. archive sources). The validator skips those rather than crash
+    # on the missing filename.
     requirement = make_requirement(name="pkg", version="1.0")
     dist_files: list[PackageWheel | PackageSdist] = [
         PackageWheel(
@@ -96,7 +96,7 @@ def test_build_pylock_package_index_skips_filename_check_when_unpinned(
     # An unpinned index requirement (no ``==`` specifier) reaches the
     # collector when pip-tools is asked to lock something the resolver
     # could not pin to a single version. The version-consistency check
-    # is meaningless without a known pin, so it has to be skipped.
+    # is meaningless without a known pin, so the collector skips it.
     requirement = mocker.MagicMock(
         spec=InstallRequirement,
         editable=False,
@@ -336,7 +336,7 @@ def test_requirement_version_returns_none_for_empty_specifier(
 def test_validate_dist_filenames_derives_name_from_path() -> None:
     # PEP 751 lets path-only entries omit ``name``; the validator derives
     # the name from the path's last component so a malicious mirror serving
-    # a ``name=None`` entry can't slip through the consistency check.
+    # a ``name=None`` entry cannot slip through the consistency check.
     bad_dist = PackageSdist(
         name=None, path="src/wrong-1.0.tar.gz", hashes={"sha256": "x" * 64}
     )
@@ -394,6 +394,28 @@ def _wheel(name: str) -> PackageWheel:
             ["not-a-real-wheel.whl"],
             ["not-a-real-wheel.whl"],
             id="unparseable-fallback",
+        ),
+        pytest.param(
+            [
+                "pkg-1.0-cp313-cp313-manylinux_2_17_x86_64.whl",
+                "pkg-1.0-xx39-none-any.whl",
+            ],
+            [
+                "pkg-1.0-cp313-cp313-manylinux_2_17_x86_64.whl",
+                "pkg-1.0-xx39-none-any.whl",
+            ],
+            id="unknown-prefix-ranks-below-cpython",
+        ),
+        pytest.param(
+            [
+                "pkg-1.0-cp313-cp313-manylinux_2_17_x86_64.whl",
+                "pkg-1.0-cp3a-none-any.whl",
+            ],
+            [
+                "pkg-1.0-cp313-cp313-manylinux_2_17_x86_64.whl",
+                "pkg-1.0-cp3a-none-any.whl",
+            ],
+            id="known-prefix-non-digit-suffix-ranks-zero",
         ),
     ),
 )

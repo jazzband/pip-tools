@@ -14,7 +14,7 @@ def test_build_pylock_document_resolves_via_lazy_getattr() -> None:
 
 
 def test_unknown_attribute_raises_attribute_error() -> None:
-    # Without the explicit ``AttributeError`` raise, a misspelled import would
-    # silently return ``None`` from the lazy hook and fail far from the cause.
+    # Without the ``AttributeError`` raise, a misspelled import would
+    # return ``None`` from the lazy hook and fail far from the cause.
     with pytest.raises(AttributeError, match="no attribute 'nonexistent'"):
         pylock_pkg.nonexistent

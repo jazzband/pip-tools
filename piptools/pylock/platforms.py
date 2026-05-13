@@ -41,7 +41,7 @@ IMPLEMENTATION_ENVIRONMENTS: dict[str, ImplementationEnvironment] = {
 }
 
 
-# Fully-populated marker environment for one ``(platform, python)`` cell. Aliased
+# Populated marker environment for one ``(platform, python)`` cell. Aliased
 # to ``packaging.markers.Environment`` so a marker field added upstream lands here
 # without a parallel edit in pip-tools.
 TargetEnvironment: _t.TypeAlias = Environment
@@ -161,8 +161,8 @@ def build_target_environments(
     :param platforms: Platform names (built-in or freeform ``<os>-<arch>`` pairs).
     :param python_versions: Python versions in ``MAJOR.MINOR`` or ``MAJOR.MINOR.PATCH`` form.
     :param implementations: ``implementation_name`` values; defaults to ``cpython``.
-    :returns: Mapping from ``<platform>-<version>-<impl>`` keys to fully
-        populated marker environments.
+    :returns: Mapping from ``<platform>-<version>-<impl>`` keys to populated
+        marker environments.
     """
     result: dict[str, TargetEnvironment] = {}
     for platform in platforms:
@@ -202,9 +202,9 @@ def build_target_environments(
 def _best_effort_platform_env(platform: str) -> PlatformEnvironment:
     """Synthesize a marker env for an ``<os>-<arch>`` not in the built-in set.
 
-    PEP 508 markers only cover the user's target if every keyed-on field has a
-    sensible value. Unknown OSes get ``os_name=posix`` (the dominant case;
-    Windows is the only common exception and it's already in the presets) and
+    PEP 508 markers cover the user's target when every keyed-on field has
+    a sensible value. Unknown OSes get ``os_name=posix`` (the dominant case;
+    Windows is the common exception and it's already in the presets) and
     a ``sys_platform`` derived from the ``<os>`` prefix. ``platform_machine``
     is the trailing ``<arch>`` token verbatim. ``platform_system`` matches
     ``platform.system()``'s casing (``FreeBSD``, ``AIX``, ...) so markers

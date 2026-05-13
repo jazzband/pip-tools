@@ -81,11 +81,11 @@ def test_platform_current_rewrap_keeps_supported_list(
     requirements_in: Path,
     mocker: MockerFixture,
 ) -> None:
-    # The rewrap from ``--no-universal`` to ``--platform current`` must keep
+    # The rewrap from ``--no-universal`` to ``--platform current`` keeps
     # the supported-presets list and the current ``(sys_platform,
-    # platform_machine)`` context; without that the user typing
-    # ``--platform current`` on an unknown host gets a message stripped of
-    # the actionable info the underlying error built.
+    # platform_machine)`` context. Without that, a user typing
+    # ``--platform current`` on an unknown host gets a message stripped
+    # of the actionable info the underlying error built.
     mocker.patch(
         "piptools.pylock.cli._targets.default_environment",
         return_value={"sys_platform": "freebsd", "platform_machine": "amd64"},
@@ -103,8 +103,8 @@ def test_platform_current_rewrap_keeps_supported_list(
 def test_help_documents_upgrade_flags(runner: CliRunner) -> None:
     # pip-lock seeds pins from the existing ``pylock.toml`` for re-locks
     # (the pip-compile ``-P`` workflow), so ``--upgrade`` has a defined
-    # meaning: bypass the seed. Both flags must appear in ``--help`` so
-    # users discover the re-lock surface without reading source.
+    # meaning: bypass the seed. Both flags appear in ``--help`` so users
+    # discover the re-lock surface without reading source.
     result = runner.invoke(cli, ["--help"])
     assert result.exit_code == 0
     assert "--upgrade" in result.output
@@ -132,12 +132,12 @@ def test_no_universal_raises_for_ambiguous_current_platform(
 
 
 def test_custom_platform_threads_through_marker_composer() -> None:
-    # ``--platform freebsd-amd64`` is accepted at the click validator and
-    # ``build_target_environments`` synthesises an env via
-    # ``_best_effort_platform_env``; without threading the same fallback
-    # through ``_platform_only_marker`` the per-package marker composer
+    # ``--platform freebsd-amd64`` is accepted at the click validator
+    # and ``build_target_environments`` synthesises an env via
+    # ``_best_effort_platform_env``. Without threading the same fallback
+    # through ``_platform_only_marker``, the per-package marker composer
     # would ``KeyError`` on the unknown key. Compose markers directly so
-    # the assertion isn't gated on network/wheel-tag plumbing.
+    # the assertion is not gated on network or wheel-tag plumbing.
 
     target_envs = build_target_environments(
         ("freebsd-amd64", "linux-x86_64"), ("3.12",)
@@ -310,8 +310,8 @@ def test_lock_color_flag_sets_context(
     runner: CliRunner, requirements_in: Path, mocker: MockerFixture
 ) -> None:
     # End-to-end: the CLI threads ``--no-color`` through to the click
-    # context. Observe via ``resolve_src_files`` (called immediately after
-    # the inline color/log assignment) so the test sees the side effect
+    # context. Observe via ``resolve_src_files`` (called right after the
+    # inline color/log assignment) so the test sees the side effect
     # without coupling to the assignment statement itself.
     captured: dict[str, bool | None] = {}
 
@@ -344,9 +344,9 @@ def test_no_metadata_and_skip_metadata_field_compose(
     requirements_in: Path,
 ) -> None:
     # Combining ``--no-metadata`` (whole-block off) with
-    # ``--skip-metadata-field`` (per-field) is redundant rather than wrong:
-    # suppressing the block also suppresses every field. Allow the
-    # combination so users scripting both via templates don't have to branch.
+    # ``--skip-metadata-field`` (per-field) is redundant rather than
+    # wrong: suppressing the block suppresses every field. Allow the
+    # combination so users scripting both via templates do not branch.
     output = requirements_in.parent / "pylock.toml"
     result = runner.invoke(
         cli,
@@ -365,9 +365,9 @@ def test_no_metadata_and_skip_metadata_field_compose(
 
 
 def test_no_tool_block_alias_works(runner: CliRunner, requirements_in: Path) -> None:
-    # ``--no-tool-block`` is the clearer alias name (the flag affects only the
-    # tool-private block, not PEP 751 packages metadata); both spellings drive
-    # the same option.
+    # ``--no-tool-block`` is the clearer alias name; the flag affects
+    # the tool-private block, not PEP 751 packages metadata. Both
+    # spellings drive the same option.
     result = runner.invoke(
         cli,
         [str(requirements_in), "--no-tool-block", "--help"],
@@ -529,9 +529,9 @@ def test_extra_flag_with_non_setup_file_raises(
 def test_extra_flag_dedups_repeated_inputs(
     runner: CliRunner, requirements_in: Path, mocker: MockerFixture
 ) -> None:
-    # ``build_extras_configs`` schedules a per-extra resolution pass for every
-    # listed extra; without the dedup ``--extra a,b --extra a`` ran the
-    # conflicting-``a`` pass twice for no benefit.
+    # ``build_extras_configs`` schedules a per-extra resolution pass for
+    # every listed extra; without the dedup, ``--extra a,b --extra a``
+    # ran the conflicting-``a`` pass twice for no benefit.
     captured: dict[str, tuple[str, ...]] = {}
 
     def _spy(*args: object, **kwargs: object) -> object:
@@ -649,10 +649,10 @@ def test_lock_no_universal_emits_environments(
 
 def test_build_top_level_environments_qualifies_machine_for_subset() -> None:
     # When the user picks a single platform out of the built-in set
-    # (``linux-x86_64`` while ``linux-aarch64``/``armv7l``/etc. exist),
-    # the env entry has to carry ``platform_machine`` so the installer
+    # (``linux-x86_64`` while ``linux-aarch64``, ``armv7l``, etc. exist),
+    # the env entry carries ``platform_machine`` so the installer
     # rejects a mismatched host. Otherwise a lock for ``linux-x86_64``
-    # would silently install on ``linux-aarch64``.
+    # would install on ``linux-aarch64``.
 
     target_envs = build_target_environments(("linux-x86_64",), ("3.12",))
     envs = _build_top_level_environments(
@@ -665,10 +665,11 @@ def test_build_top_level_environments_qualifies_machine_for_subset() -> None:
 
 
 def test_build_top_level_environments_emits_multi_platform_disjunction() -> None:
-    # Multi-platform locks emit ``environments`` clauses that disjunct the
-    # selected platforms; the lock command's full pipeline involves
-    # network/resolver/find-links plumbing that's flaky to exercise here, so
-    # call the composer directly with synthesised target envs.
+    # Multi-platform locks emit ``environments`` clauses that disjunct
+    # the selected platforms. The lock command's full pipeline involves
+    # network, resolver, and find-links plumbing that is flaky to
+    # exercise here, so call the composer directly with synthesised
+    # target envs.
 
     target_envs = build_target_environments(
         ("linux-x86_64", "windows-amd64"), ("3.12",)
@@ -931,9 +932,9 @@ def test_lock_src_files_from_default_map_when_click_provides_empty(
     """An empty ``src_files`` from the default map flows into validation as ``[]``."""
     monkeypatch.chdir(tmp_path)  # empty dir; no default src files exist
     output = tmp_path / "pylock.toml"
-    # Click delivers ``src_files=()`` for the bare argument and the loader
-    # substitutes ``ctx.default_map["src_files"]``; with the default-map
-    # value also empty, the validator sees ``[]`` and rejects.
+    # Click delivers ``src_files=()`` for the bare argument and the
+    # loader substitutes ``ctx.default_map["src_files"]``. With the
+    # default-map value also empty, the validator sees ``[]`` and rejects.
     isolated_runner = CliRunner()
     result = isolated_runner.invoke(
         cli,
@@ -975,7 +976,7 @@ def test_lock_only_build_deps_true_skips_runtime_deps(
     with open(output, "rb") as fh:
         doc = tomllib.load(fh)
     pkg_names = {p["name"] for p in doc["packages"]}
-    # Build deps (small-fake-b) should be present; runtime (small-fake-a) should not.
+    # Build deps (small-fake-b) appear; runtime (small-fake-a) does not.
     assert "small-fake-b" in pkg_names
     assert "small-fake-a" not in pkg_names
 
@@ -1002,8 +1003,8 @@ def test_lock_build_backend_exception_exits(runner: CliRunner, tmp_path: Path) -
 def test_parse_jobs_auto_uses_cpu_count(
     mocker: MockerFixture,
 ) -> None:
-    # `--jobs auto` is the only spelling that consults the host's cpu count;
-    # pin it so the test outcome is independent of the test machine's cores.
+    # ``--jobs auto`` consults the host's cpu count; pin it so the test
+    # outcome is independent of the test machine's cores.
     mocker.patch("piptools.scripts.options.os.cpu_count", return_value=8)
     assert _parse_jobs(mocker.MagicMock(), mocker.MagicMock(), "auto") == 8
 
@@ -1011,8 +1012,8 @@ def test_parse_jobs_auto_uses_cpu_count(
 def test_parse_jobs_auto_falls_back_when_cpu_count_unknown(
     mocker: MockerFixture,
 ) -> None:
-    # `os.cpu_count()` can return None on exotic platforms; the parser must
-    # still produce a usable integer rather than propagating the None.
+    # ``os.cpu_count()`` can return ``None`` on exotic platforms; the
+    # parser produces a usable integer rather than propagate the ``None``.
     mocker.patch("piptools.scripts.options.os.cpu_count", return_value=None)
     assert _parse_jobs(mocker.MagicMock(), mocker.MagicMock(), "auto") == 1
 
@@ -1042,9 +1043,9 @@ def test_parse_jobs_rejects_zero_or_negative(mocker: MockerFixture) -> None:
 def test_no_candidate_found_exits_two(
     runner: CliRunner, requirements_in: Path, mocker: MockerFixture
 ) -> None:
-    # ``NoCandidateFound`` raised inside the resolver must surface as a
-    # clean exit-2 with the diagnostic in stderr; silently propagating the
-    # exception would print a Python traceback to the user.
+    # ``NoCandidateFound`` raised inside the resolver surfaces as a
+    # clean exit-2 with the diagnostic in stderr; propagating the
+    # exception unwrapped would print a Python traceback to the user.
 
     mocker.patch(
         "piptools.pylock.cli._commands._do_build_pylock",
@@ -1074,8 +1075,8 @@ def test_pip_tools_error_exits_two(
 
 
 def test_invalid_custom_platform_rejected_at_cli(runner: CliRunner) -> None:
-    # ``--platform freebsd-`` (empty arch half) would synthesise a marker
-    # env with ``platform_machine=""`` and silently lock against the wrong
+    # ``--platform freebsd-`` (empty arch half) would synthesise a
+    # marker env with ``platform_machine=""`` and lock against the wrong
     # target; the click validator rejects it up front.
     result = runner.invoke(cli, ["--platform", "freebsd-", "--no-universal"])
     assert result.exit_code != 0
@@ -1085,9 +1086,9 @@ def test_invalid_custom_platform_rejected_at_cli(runner: CliRunner) -> None:
 def test_resolve_src_files_ignores_empty_default_map(
     runner: CliRunner, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # A config file with ``src_files = []`` previously short-circuited the
-    # auto-pickup with an empty tuple, then sailed past validation when a
-    # default file existed in CWD and produced a silent empty lockfile.
+    # A config file with ``src_files = []`` previously short-circuited
+    # the auto-pickup with an empty tuple, then sailed past validation
+    # when a default file existed in CWD and produced an empty lockfile.
     monkeypatch.chdir(tmp_path)
     (tmp_path / "pyproject.toml").write_text(dedent("""
             [project]
@@ -1133,11 +1134,11 @@ def test_pylock_validation_error_exits_two(
 def test_advisory_lock_missing_dir_exits_two(  # pragma: win32 no cover
     runner: CliRunner, requirements_in: Path
 ) -> None:
-    # Typo'd ``-o`` paths must surface as a clean exit-2 with a missing-dir
+    # Typo'd ``-o`` paths surface as a clean exit-2 with a missing-dir
     # message; the auto-mkdir behaviour was masking the typo. Windows
-    # degrades the lock to a no-op (no ``fcntl``) so the ``os.open`` that
-    # would surface the missing dir never runs there; the resolver picks
-    # up the missing dir itself but with a different error shape.
+    # degrades the lock to a no-op (no ``fcntl``), so the ``os.open``
+    # that would surface the missing dir does not run there; the resolver
+    # picks up the missing dir itself but with a different error shape.
     output = requirements_in.parent / "missing-dir" / "pylock.toml"
     result = runner.invoke(cli, [str(requirements_in), "-o", str(output)])
     assert result.exit_code != 0
@@ -1149,9 +1150,9 @@ def test_advisory_lock_missing_dir_exits_two(  # pragma: win32 no cover
 def test_check_and_dry_run_rejected_at_cli(
     runner: CliRunner, requirements_in: Path
 ) -> None:
-    # Both flags ask for "don't write"; one verifies, the other previews.
-    # Combining them silently honoured only ``--check``; reject so the user
-    # picks the right one.
+    # Both flags ask for "do not write"; one verifies, the other
+    # previews. Combining them honoured ``--check`` alone; reject so the
+    # user picks the right one.
     result = runner.invoke(
         cli, [str(requirements_in), "--check", "--dry-run", "--no-universal"]
     )
@@ -1163,10 +1164,10 @@ def test_check_and_dry_run_rejected_at_cli(
 def test_check_and_upgrade_rejected_at_cli(
     runner: CliRunner, requirements_in: Path
 ) -> None:
-    # ``--upgrade`` re-resolves from scratch; ``--check`` expects the result
-    # to match the on-disk file. The combination only succeeds when no
+    # ``--upgrade`` re-resolves from scratch; ``--check`` expects the
+    # result to match the on-disk file. The combination succeeds when no
     # upstream package has shipped a newer version since the last lock;
-    # almost certainly not what the user intends.
+    # not what the user intends.
     result = runner.invoke(
         cli, [str(requirements_in), "--check", "--upgrade", "--no-universal"]
     )
@@ -1177,7 +1178,7 @@ def test_check_and_upgrade_rejected_at_cli(
 
 def test_validate_python_versions_accepts_current_token() -> None:
     # ``--python-version current`` is the shorthand for the host's
-    # MAJOR.MINOR; the regex validator must not reject the token.
+    # MAJOR.MINOR; the regex validator accepts the token.
     result = _validate_python_versions(
         ctx=click.Context(cli),
         param=click.Option(["--python-version"]),
@@ -1187,9 +1188,9 @@ def test_validate_python_versions_accepts_current_token() -> None:
 
 
 def test_validate_platform_canonicalises_uppercase(mocker: MockerFixture) -> None:
-    # ``LINUX-X86_64`` and ``linux-x86_64`` would otherwise both pass; once
-    # via the ``<os>-<arch>`` fallback and once via the preset; and the
-    # lockfile would carry both near-duplicates.
+    # ``LINUX-X86_64`` and ``linux-x86_64`` would otherwise both pass:
+    # once via the ``<os>-<arch>`` fallback and once via the preset, and
+    # the lockfile would carry both near-duplicates.
     result = _validate_platform(
         ctx=click.Context(cli),
         param=click.Option(["--platform"]),
@@ -1201,8 +1202,8 @@ def test_validate_platform_canonicalises_uppercase(mocker: MockerFixture) -> Non
 def test_validate_platform_accepts_synthetic_os_arch_after_canonicalisation(
     mocker: MockerFixture,
 ) -> None:
-    # ``Freebsd-AMD64`` lower-cases to ``freebsd-amd64``; not in
-    # PLATFORM_ENVIRONMENTS but the os-arch fallback accepts it.
+    # ``Freebsd-AMD64`` lower-cases to ``freebsd-amd64``: not in
+    # ``PLATFORM_ENVIRONMENTS`` but the os-arch fallback accepts it.
     result = _validate_platform(
         ctx=click.Context(cli),
         param=click.Option(["--platform"]),
@@ -1212,9 +1213,10 @@ def test_validate_platform_accepts_synthetic_os_arch_after_canonicalisation(
 
 
 def test_platform_choices_lazy_imports_and_includes_current() -> None:
-    # Without this assertion the click surface and the platform-marker lookup
-    # could silently diverge; ``current`` leads so the help text reads as a
-    # one-shorthand-then-presets list rather than alphabetical noise.
+    # Without this assertion the click surface and the platform-marker
+    # lookup could diverge unnoticed. ``current`` leads so the help text
+    # reads as a one-shorthand-then-presets list rather than alphabetical
+    # noise.
     choices = _platform_choices()
     assert choices[0] == "current"
     assert "linux-x86_64" in choices

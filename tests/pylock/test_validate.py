@@ -76,9 +76,9 @@ def test_raises_when_one_marker_is_unconditional(
 def test_collision_error_hints_at_conflicts_for_extras(
     linux_envs: dict[str, TargetEnvironment], make_entry: EntryFactory
 ) -> None:
-    # The fix for an extras-driven collision is usually to declare the extras
-    # as conflicting in pyproject, not to pin a single version; surface that
-    # specific remedy in the error message rather than only the generic one.
+    # The fix for an extras-driven collision is to declare the extras as
+    # conflicting in pyproject, not to pin a single version. Surface that
+    # remedy in the error message instead of the generic one.
     merged = {
         "urllib3": [
             make_entry("1.0", marker="'a' in extras"),
@@ -95,9 +95,9 @@ def test_collision_error_hints_at_conflicts_for_extras(
 def test_collision_error_omits_conflicts_hint_for_env_only_collision(
     make_entry: EntryFactory,
 ) -> None:
-    # When only the env axis triggers the collision the conflicts hint is the
-    # wrong remedy; emitting it would point users at a knob that cannot fix
-    # the situation.
+    # When the env axis alone triggers the collision, the conflicts hint
+    # is the wrong remedy; emitting it would point users at a knob that
+    # cannot fix the situation.
     envs = build_target_environments(("linux-x86_64",), ("3.12",))
     merged = {
         "urllib3": [
@@ -113,10 +113,10 @@ def test_collision_error_omits_conflicts_hint_for_env_only_collision(
 def test_disjointness_check_scales_with_many_extras_and_groups(
     make_entry: EntryFactory,
 ) -> None:
-    # The naive ``|envs| x 2^|extras| x 2^|groups|`` walk is unusable on real
-    # projects; 12 extras x 8 groups x dozens of envs = 53M evaluations. The
-    # symbolic shortcut for pip-tools-shaped markers needs to finish in well
-    # under a second on the same shape.
+    # The unrestricted ``|envs| x 2^|extras| x 2^|groups|`` walk is
+    # unusable on real projects: 12 extras x 8 groups x dozens of envs =
+    # 53M evaluations. The symbolic shortcut for pip-tools-shaped markers
+    # finishes in well under a second on the same shape.
     extras = tuple(f"e{i}" for i in range(12))
     groups = tuple(f"g{i}" for i in range(8))
     envs = build_target_environments(
@@ -155,9 +155,9 @@ def test_evaluate_treats_undefined_environment_as_no_match(
     mocker: MockerFixture,
 ) -> None:
     # PEP 508 markers can reference env vars the lockfile's target env
-    # never sets, in which case `Marker.evaluate` raises
-    # `UndefinedEnvironmentName`. The disjointness check has to swallow
-    # that and treat the marker as "doesn't match this env" rather than
+    # never sets, in which case ``Marker.evaluate`` raises
+    # ``UndefinedEnvironmentName``. The disjointness check swallows that
+    # and treats the marker as "does not match this env" rather than
     # crash mid-lock.
     marker = mocker.create_autospec(Marker, instance=True)
     marker.evaluate.side_effect = UndefinedEnvironmentName("platform_release")
@@ -186,10 +186,10 @@ def test_powerset_fallback_runs_when_decompose_refuses(
 def test_powerset_fallback_raises_when_limit_exceeded(
     make_entry: EntryFactory, mocker: MockerFixture
 ) -> None:
-    # The bounded powerset cannot bail silently: PEP 751 forbids ambiguous
-    # installer matches, and "treat as not provably overlapping" silently
-    # flips a spec-mandated error into an install-time bug. The user has to
-    # act (narrow markers, reduce extras/groups, or raise the bound).
+    # The bounded powerset cannot bail without a signal: PEP 751 forbids
+    # ambiguous installer matches, and "treat as not provably overlapping"
+    # flips a spec-mandated error into an install-time bug. The user has
+    # to act (narrow markers, reduce extras and groups, or raise the bound).
     mocker.patch("piptools.pylock.validate._POWERSET_FALLBACK_LIMIT", 4)
     envs = build_target_environments(("linux-x86_64",), ("3.12",))
     extras = ("a", "b", "c", "d", "e", "f", "g", "h")
@@ -213,9 +213,9 @@ def test_powerset_fallback_raises_when_limit_exceeded(
 def test_powerset_fallback_returns_disjoint_when_no_collision(
     linux_envs: dict[str, TargetEnvironment], make_entry: EntryFactory
 ) -> None:
-    # Mirror of the previous test, but with markers the powerset loop cannot
-    # satisfy together: hits the "no collision found" exit of the fallback so
-    # ``_powerset`` is fully evaluated.
+    # Mirror of the previous test, but with markers the powerset loop
+    # cannot satisfy together. Hits the "no collision found" exit of the
+    # fallback so ``_powerset`` runs to completion.
     merged = {
         "pkg": [
             make_entry(
@@ -266,8 +266,9 @@ def test_requires_python_consistency_skips_invalid_specifier(
 ) -> None:
     envs = build_target_environments(("linux-x86_64",), ("3.10",))
     entry = make_entry("1.0", environments=set(envs))
-    # Malformed Requires-Python; pip's metadata path emits plenty of these
-    # in the wild; the consistency check should fall through, not crash.
+    # Malformed Requires-Python; pip's metadata path emits plenty of
+    # these in the wild. The consistency check falls through rather than
+    # crash.
     ensure_requires_python_consistency(
         {"pkg": [entry]}, {("pkg", "1.0"): "not-a-spec"}, envs
     )
@@ -276,10 +277,10 @@ def test_requires_python_consistency_skips_invalid_specifier(
 def test_requires_python_consistency_skips_unknown_env_key(
     make_entry: EntryFactory,
 ) -> None:
-    # An entry whose ``environments`` set carries a key the partition no longer
-    # recognizes (e.g. cohort merge artifact) should be tolerated rather than
-    # raising; the check is opportunistic and only fires when both ends agree
-    # on the env identity.
+    # An entry whose ``environments`` set carries a key the partition no
+    # longer recognizes (e.g. cohort merge artifact) is tolerated rather
+    # than raising; the check is opportunistic and fires when both ends
+    # agree on the env identity.
     envs = build_target_environments(("linux-x86_64",), ("3.12",))
     entry = make_entry("1.0", environments={"phantom-env"})
     ensure_requires_python_consistency(
@@ -311,10 +312,11 @@ def test_marker_disjointness_passes_when_groups_are_conflicting(
 def test_marker_disjointness_raises_without_declared_conflicts(
     linux_envs: dict[str, TargetEnvironment], make_entry: EntryFactory
 ) -> None:
-    # Same shape as the previous test but with no conflicts declared: the user
-    # could request ``--group A --group B`` together, both entries would match,
-    # and the installer would face an ambiguous choice. The validator must
-    # raise so the user either declares the conflict or fixes their groups.
+    # Same shape as the previous test but with no conflicts declared:
+    # the user could request ``--group A --group B`` together, both
+    # entries would match, and the installer would face an ambiguous
+    # choice. The validator raises so the user declares the conflict or
+    # fixes their groups.
     merged = {
         "black": [
             make_entry("1.0", marker="'A' in dependency_groups"),

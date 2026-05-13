@@ -2,8 +2,8 @@
 
 Replicates the pip-compile ``-P package requirements.txt`` workflow: when a
 lockfile already exists, carry every pin forward except the ones the
-caller explicitly upgrades. ``--upgrade`` bypasses this entirely; this
-module is only consulted when ``upgrade_lock`` is off.
+caller upgrades. ``--upgrade`` bypasses this entirely; this module runs
+when ``upgrade_lock`` is off.
 """
 
 from __future__ import annotations
@@ -28,12 +28,12 @@ def seed_pins_from_existing_lock(
     """Return ``name==version`` pins seeded from an existing pylock.
 
     Replicates the pip-compile ``-P package requirements.txt`` workflow: when
-    the lockfile at ``output_path`` exists, every pin is carried forward
+    the lockfile at ``output_path`` exists, every pin carries forward
     except the packages named in ``upgrade_packages`` (those re-resolve).
 
     :param output_path: Path of the lockfile to seed pins from.
-    :param upgrade_packages: Packages explicitly excluded from seeding so the
-        resolver can pick a newer version.
+    :param upgrade_packages: Packages excluded from seeding so the resolver
+        can pick a newer version.
     :param unsafe_packages: User-supplied unsafe package list to strip when
         ``allow_unsafe`` is ``False``.
     :param allow_unsafe: Preserve unsafe packages in the seed when ``True``.
@@ -45,8 +45,8 @@ def seed_pins_from_existing_lock(
     # ``upgrade_packages`` carries CLI tokens like ``foo[dev]==1.0``. A bare
     # ``canonicalize_name`` would normalize the whole spec into a hyphen-
     # mangled blob (``foo-dev-1-0``) that never matches an entry's name.
-    # Parse via ``Requirement`` so the seed exclusion fires on the *package*
-    # name only; invalid tokens drop out, so a typo can't keep a seed in.
+    # Parse via ``Requirement`` so the seed exclusion fires on the package
+    # name; invalid tokens drop out, so a typo can't keep a seed in.
     upgrade_canon: set[str] = set()
     for package in upgrade_packages:
         try:
@@ -70,7 +70,7 @@ def seed_pins_from_existing_lock(
     except (OSError, ValueError) as err:
         # Warn rather than debug so a re-run against a corrupt lockfile
         # surfaces why the resolver re-resolves from scratch instead of
-        # silently churning every package.
+        # churning every package without explanation.
         log.warning(
             f"Existing {output_path.name} could not be parsed ({err}); "
             f"re-resolving from scratch."
@@ -95,7 +95,7 @@ def seed_pins_from_existing_lock(
         return ()
     # A re-lock under conflict groups produces multiple ``[[packages]]``
     # entries for the same name (one per group). Flat seeding would emit
-    # ``black==22.1.0`` *and* ``black==23.12.0`` together, then trip
+    # ``black==22.1.0`` and ``black==23.12.0`` together, then trip
     # ``RequirementsConflicted`` in the partition scan. Drop duplicated
     # names from the flat seed; the per-cohort resolutions reintroduce
     # them anyway.

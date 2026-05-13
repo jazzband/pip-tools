@@ -11,8 +11,8 @@ from piptools.pylock.cli._commands import cli
 
 def test_check_dispatch_calls_emit_check(tmp_path: Path, mocker: MockerFixture) -> None:
     # ``--check`` selects ``emit_check`` from the post-build dispatch; the
-    # dry-run / write branches must not run. End-to-end through the CLI so
-    # the click wiring + the dispatch decision are exercised together.
+    # dry-run and write branches do not run. Driving through the CLI exercises
+    # the click wiring together with the dispatch decision.
     requirements = tmp_path / "requirements.in"
     requirements.write_text("")
     mocker.patch(

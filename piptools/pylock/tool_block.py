@@ -1,10 +1,10 @@
-"""``[tool.pip-tools]`` block: the only schema pip-tools owns directly.
+"""``[tool.pip-tools]`` block: the schema pip-tools owns.
 
 PEP 751's ``[[packages]]`` and top-level fields live in
 ``packaging.pylock`` (``Pylock``, ``Package``, ``PackageWheel``, ...);
-the ``tool.pip-tools`` block is opaque to that spec by design. The
-typed container plus the (de)serialization helpers live together so a
-future schema change touches one file.
+PEP 751 keeps the ``tool.pip-tools`` block opaque by design. The typed
+container plus the (de)serialization helpers live together so a future
+schema change touches one file.
 """
 
 from __future__ import annotations
@@ -20,8 +20,8 @@ from .._internal import _pip_api
 from ._inputs import LockSelection, LockTargets, ResolverOptions, ToolMetadataOptions
 from .redact import redact_command
 
-# Source of truth for ``[tool.pip-tools]`` field names. Kept in sync with
-# ``PylockToolOptions``; drift would land unrecognised keys in the lockfile.
+# Source of truth for ``[tool.pip-tools]`` field names. Stays in sync with
+# ``PylockToolOptions``; drift lands unrecognised keys in the lockfile.
 TOOL_FIELDS: _t.Final[frozenset[str]] = frozenset(
     {
         "version",
@@ -129,12 +129,17 @@ def build(
     return PylockToolMetadata(
         version=_opt("version", _pkg_version("pip-tools")) or "",
         pip_version=_opt("pip-version", str(_pip_api.PIP_VERSION)) or "",
-        generated_at=_opt("generated-at", datetime.now(tz=timezone.utc)),
-        # ``argv[0]`` is whatever launched the process: a venv path,
-        # a ``/usr/local/bin`` link, ``python -m piptools.scripts.lock``.
-        # Two users on different machines committing the same lock would
-        # otherwise see different ``command[0]`` entries (noisy diffs).
-        # Normalise to the script name; uv does the same with ``"uv"``.
+        # _default_generated_at reads SOURCE_DATE_EPOCH. A direct
+        # datetime.now() call here bypasses the env var on every
+        # CLI-driven path and leaves reproducible-build pipelines with
+        # wall-clock drift in the lockfile.
+        generated_at=_opt("generated-at", _default_generated_at()),
+        # ``argv[0]`` is whatever launched the process: a venv path, a
+        # ``/usr/local/bin`` link, ``python -m piptools.scripts.lock``.
+        # Two users on different machines committing the same lock see
+        # different ``command[0]`` entries without normalisation (noisy
+        # diffs). Normalise to the script name; uv does the same with
+        # ``"uv"``.
         command=_opt("command", ["pip-lock", *redact_command(argv[1:])]) or [],
         options=tool_options,
     )
@@ -148,9 +153,9 @@ def to_dict(meta: PylockToolMetadata) -> dict[str, _ToolValue]:
     """
     result: dict[str, _ToolValue] = {}
     # ``version`` defaults to ``""`` when the user opted it out via
-    # ``--skip-metadata-field version``; writing an empty string would
-    # emit an invalid metadata field instead of omitting it. Treat falsy
-    # as opt-out (``_pkg_version("pip-tools")`` is never empty in normal
+    # ``--skip-metadata-field version``; writing an empty string emits
+    # an invalid metadata field rather than omitting it. Treat falsy as
+    # opt-out (``_pkg_version("pip-tools")`` is never empty in normal
     # operation).
     if meta.version:
         result["version"] = meta.version

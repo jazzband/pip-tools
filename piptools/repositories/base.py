@@ -49,22 +49,24 @@ class BaseRepository(metaclass=ABCMeta):
     ) -> list[PackageWheel | PackageSdist]:
         """Return PEP 751 dist-file metadata for the resolved pin.
 
-        Default implementation returns an empty list so existing third-party
-        ``BaseRepository`` subclasses keep instantiating without modification;
-        the ``pip-lock`` path then surfaces "no dist files" against that
-        repository, which is the right error for a subclass that doesn't
-        implement the pylock surface yet. ``PyPIRepository`` overrides this.
+        Default implementation returns an empty list so third-party
+        ``BaseRepository`` subclasses keep instantiating without
+        modification. The ``pip-lock`` path then surfaces "no dist
+        files" against that repository, the right error for a subclass
+        that has not implemented the pylock surface yet.
+        ``PyPIRepository`` overrides this.
         """
         return []
 
     def get_requires_python(self, ireq: InstallRequirement) -> str | None:
         """Return the resolved pin's ``Requires-Python`` specifier, or ``None``.
 
-        Default implementation returns ``None`` so existing third-party
-        ``BaseRepository`` subclasses keep instantiating without modification;
-        the lockfile then omits ``packages.requires-python`` for entries from
-        that repository, which is spec-valid. ``PyPIRepository`` overrides
-        this with the JSON-API or backend-metadata read.
+        Default implementation returns ``None`` so third-party
+        ``BaseRepository`` subclasses keep instantiating without
+        modification. The lockfile then omits
+        ``packages.requires-python`` for entries from that repository,
+        which is spec-valid. ``PyPIRepository`` overrides this with the
+        JSON-API or backend-metadata read.
         """
         return None
 

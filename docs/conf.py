@@ -182,14 +182,14 @@ def _skip_hyphenated_members(
     skip: bool,
     options: Options,
 ) -> bool | None:
-    # TypedDicts in piptools.pylock use hyphenated keys (e.g. "lock-version") that
-    # match PEP 751 TOML field names but are not valid Python identifiers. Autodoc
-    # cannot generate attribute signatures for them, so skip them. ``obj`` stays
-    # typed as ``object`` because Sphinx's callback receives the actual member
-    # being documented (which is genuinely arbitrary) and we only inspect ``name``.
-    # Blast radius is structurally bounded: Python's lexer rejects ``-`` in
-    # identifiers, so no real attribute, function, or method can have a name
-    # this matches — only TypedDict string keys do.
+    # TypedDicts in ``piptools.pylock`` use hyphenated keys (e.g.
+    # ``"lock-version"``) that match PEP 751 TOML field names but are
+    # not valid Python identifiers. Autodoc cannot generate attribute
+    # signatures for them, so skip them. ``obj`` stays typed as
+    # ``object`` because Sphinx's callback receives the documented
+    # member (an arbitrary object) and the check inspects ``name`` alone.
+    # Python's lexer rejects ``-`` in identifiers, so no attribute,
+    # function, or method has a name this matches; TypedDict string keys do.
     return True if "-" in name else None
 
 
