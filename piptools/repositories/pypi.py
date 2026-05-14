@@ -112,12 +112,17 @@ class PyPIRepository(BaseRepository):
         # around the resolve, which is out of scope here.
         if not os.path.exists(self._download_dir):
             return
-        stale = f"{self._download_dir}.stale-{os.getpid()}"
+        old_downloads_dir = f"{self._download_dir}.stale-{os.getpid()}"
         try:
-            os.replace(self._download_dir, stale)
-        except OSError:
+            os.replace(self._download_dir, old_downloads_dir)
+        except OSError as os_err:
+            # A racing peer renamed the tree first, or the OS refused the
+            # move (cross-device, permissions). The directory is no longer
+            # ours to clear; log at -v since the suppressed OSError is
+            # otherwise invisible and its error codes shift across platforms.
+            log.debug(f"clear_caches skipped {self._download_dir!s}: {os_err}")
             return
-        rmtree(stale, ignore_errors=True)
+        rmtree(old_downloads_dir, ignore_errors=True)
 
     @property
     def options(self) -> optparse.Values:

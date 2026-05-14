@@ -201,8 +201,9 @@ def test_clear_caches_when_download_dir_missing_is_a_no_op(
 def test_clear_caches_swallows_replace_failure(
     repo_with_cache_dir: PyPIRepository, mocker: MockerFixture
 ) -> None:
-    Path(repo_with_cache_dir._download_dir).mkdir(parents=True, exist_ok=True)
-    mocker.patch(
+    download_dir = Path(repo_with_cache_dir._download_dir)
+    download_dir.mkdir(parents=True, exist_ok=True)
+    replace = mocker.patch(
         "piptools.repositories.pypi.os.replace",
         side_effect=OSError("racing peer renamed first"),
     )
@@ -210,6 +211,9 @@ def test_clear_caches_swallows_replace_failure(
 
     repo_with_cache_dir.clear_caches()
 
+    # The rename targets the live download dir; the OSError short-circuits
+    # before the rmtree so a racing peer keeps ownership of the tree.
+    assert replace.call_args.args[0] == str(download_dir)
     rmtree.assert_not_called()
 
 
