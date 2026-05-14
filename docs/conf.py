@@ -70,6 +70,7 @@ intersphinx_mapping = {
     "click": ("https://click.palletsprojects.com/en/stable", None),
     "build": ("https://build.pypa.io/en/stable", None),
     "importlib_metadata": ("https://importlib-metadata.readthedocs.io/en/latest", None),
+    "pytest": ("https://docs.pytest.org/en/stable", None),
 }
 
 issues_github_path = "jazzband/pip-tools"

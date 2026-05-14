@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import collections.abc as _c
 import json
 import os
 import platform
@@ -228,27 +229,28 @@ def from_editable():
     return install_req_from_editable
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _isolate_pip_env() -> _c.Iterator[None]:
+    # Drop every ``PIP_*`` environment variable for the duration of the test
+    # session so contributor pip configuration (corporate Artifactory mirror,
+    # find-links, trusted hosts, and so on) cannot leak into CLI tests that
+    # assert on exact pip argument lists. Session-scoped + autouse so the
+    # cleanup fires before any other fixture; subprocesses spawned by session
+    # fixtures (the ``pip download`` in ``setuptools_wheel_path``) also run
+    # with a clean environment. Function-scoped ``monkeypatch.setenv`` in a
+    # specific test still overrides the deletion for that test, so cases like
+    # ``test_find_links_envvar`` keep working.
+    mp = pytest.MonkeyPatch()
+    for env_var in (name for name in os.environ if name.startswith("PIP_")):
+        mp.delenv(env_var)
+    try:
+        yield
+    finally:
+        mp.undo()
+
+
 @pytest.fixture
-def runner(
-    monkeypatch: pytest.MonkeyPatch,
-    minimal_wheels_path: Path,
-) -> _t.Generator[CliRunner, None, None]:
-    # ``minimal_wheels_path`` is a session-scoped fixture that runs
-    # ``pip download setuptools`` via a subprocess on first use. That
-    # subprocess inherits the active environment; if it lazy-inits
-    # while this fixture's ``monkeypatch.delenv`` is in effect, pip
-    # sees no index URL and the download fails. Declaring it as a
-    # dependency forces the session fixture to initialise before the
-    # ``delenv`` below ever fires.
-    del minimal_wheels_path
-    # Pip honours ``PIP_INDEX_URL`` and friends from the contributor's shell;
-    # corporate Artifactory mirrors leak through and break tests that assert
-    # exact pip argument lists. Drop the variables for the duration of the
-    # CLI invocation. ``PIP_CONFIG_FILE`` is intentionally left alone because
-    # the cross-platform ``os.devnull`` device file (``/dev/null`` vs ``nul``)
-    # exposed pip path-resolution flakes on Windows in lowest-pip CI.
-    for env_var in ("PIP_INDEX_URL", "PIP_EXTRA_INDEX_URL", "PIP_TRUSTED_HOST"):
-        monkeypatch.delenv(env_var, raising=False)
+def runner():
     if Version(version_of("click")) < Version("8.2"):
         cli_runner = CliRunner(mix_stderr=False)
     else:
