@@ -27,9 +27,9 @@ PYPROJECT_TOML = "pyproject.toml"
 _T = _t.TypeVar("_T")
 
 
-if sys.version_info >= (3, 10):
+if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
     from importlib.metadata import PackageMetadata
-else:
+else:  # pragma: <3.10 cover
 
     class PackageMetadata(_t.Protocol):
         @_t.overload
