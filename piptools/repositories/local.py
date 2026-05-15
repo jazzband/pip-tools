@@ -15,7 +15,6 @@ from pip._internal.utils.hashes import FAVORITE_HASH
 from .._internal import _pip_api
 from ..utils import as_tuple, key_from_ireq
 from .base import BaseRepository
-from .pypi import PyPIRepository
 
 
 def ireq_satisfied_by_existing_pin(
@@ -46,7 +45,7 @@ class LocalRequirementsRepository(BaseRepository):
     def __init__(
         self,
         existing_pins: Mapping[str, InstallationCandidate],
-        proxied_repository: PyPIRepository,
+        proxied_repository: BaseRepository,
         reuse_hashes: bool = True,
     ):
         self._reuse_hashes = reuse_hashes
