@@ -1,0 +1,33 @@
+.wy-nav-content {
+  padding: 1em;
+}
+
+.wy-table-responsive table th,
+.wy-table-responsive table td {
+  white-space: normal !important;
+  padding: 8px 6px !important;
+}
+
+.wy-table-responsive table {
+  width: 100%;
+  margin-left: 0 !important;
+}
+
+.rst-content table.docutils td ol,
+.rst-content table.docutils td ul,
+.rst-content table.docutils td p {
+  margin-bottom: 0;
+}
+
+div[class*="highlight-"] {
+  margin-bottom: 12px;
+}
+
+.rst-content code {
+  padding: 2px 3px;
+  border-radius: 3px;
+}
+
+.mermaid {
+  text-align: center;
+}
