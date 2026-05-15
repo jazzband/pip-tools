@@ -682,6 +682,47 @@ This will be indicated in the output with one of the following suffixes:
 - `(pyproject.toml::build-system.backend::sdist)`
 - `(pyproject.toml::build-system.backend::wheel)`
 
+### Shell completion
+
+`pip-compile` and `pip-sync` support shell completion via
+[Click's shell completion](https://click.palletsprojects.com/en/stable/shell-completion/).
+To enable it, you need to register the completion for your shell.
+
+#### Bash
+
+```console
+$ _PIP_COMPILE_COMPLETE=bash_source pip-compile > ~/.pip-compile-complete.bash
+$ _PIP_SYNC_COMPLETE=bash_source pip-sync > ~/.pip-sync-complete.bash
+```
+
+Then add the following to your `~/.bashrc`:
+
+```bash
+. ~/.pip-compile-complete.bash
+. ~/.pip-sync-complete.bash
+```
+
+#### Zsh
+
+```console
+$ _PIP_COMPILE_COMPLETE=zsh_source pip-compile > ~/.pip-compile-complete.zsh
+$ _PIP_SYNC_COMPLETE=zsh_source pip-sync > ~/.pip-sync-complete.zsh
+```
+
+Then add the following to your `~/.zshrc`:
+
+```zsh
+. ~/.pip-compile-complete.zsh
+. ~/.pip-sync-complete.zsh
+```
+
+#### Fish
+
+```console
+$ _PIP_COMPILE_COMPLETE=fish_source pip-compile > ~/.config/fish/completions/pip-compile.fish
+$ _PIP_SYNC_COMPLETE=fish_source pip-sync > ~/.config/fish/completions/pip-sync.fish
+```
+
 ### Other useful tools
 
 - [pip-compile-multi](https://pip-compile-multi.rtfd.io) - pip-compile command
