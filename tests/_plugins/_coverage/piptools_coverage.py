@@ -36,20 +36,18 @@ def get_max_pip_major_version() -> int:
     return datetime.date.today().year - 2000
 
 
-def read_project_pyproject_toml() -> dict[str, _t.Any]:
+def read_project_pyproject_dependencies() -> list[Requirement]:
     # the path to pyproject.toml is taken always from the CWD
     # since tests should always run under tox, this is always expected to be the repo root
     pyproject_path = pathlib.Path.cwd() / "pyproject.toml"
     with pyproject_path.open("rb") as pyproject_file:
         pyproject_toml = tomllib.load(pyproject_file)
-    return pyproject_toml
+
+    return [Requirement(d) for d in pyproject_toml["project"]["dependencies"]]
 
 
 def get_min_supported_pip_major_version() -> int:
-    pyproject_toml = read_project_pyproject_toml()
-    parsed_dependencies = [
-        Requirement(d) for d in pyproject_toml["project"]["dependencies"]
-    ]
+    parsed_dependencies = read_project_pyproject_dependencies()
     pip_requirements = [r for r in parsed_dependencies if r.name == "pip"]
 
     # we will presently assume that there's exactly one declared dependency on 'pip'
@@ -100,28 +98,30 @@ def get_pip_major_minor() -> tuple[int, int]:
     return int(major_str), int(minor_str)
 
 
-def compute_pip_version_exclude_pragmas() -> list[str]:
+def compute_pip_version_exclude_pragmas() -> set[str]:
     current_major, current_minor = get_pip_major_minor()
 
-    result: list[str] = [
+    result: set[str] = {
         rf"# pragma: pip=={current_major}.{current_minor} no cover\b",
-    ]
+    }
 
     for major, minor in list_supported_pip_versions():
         for opname, opfunc in COMPARATORS:
-            if opfunc((current_major, current_minor), (major, minor)):
-                result.append(rf"# pragma: pip{opname}{major}.{minor} no cover\b")
-            else:
-                result.append(rf"# pragma: pip{opname}{major}.{minor} cover\b")
+            comparator_applies = opfunc((current_major, current_minor), (major, minor))
+            designator = "no cover" if comparator_applies else "cover"
+            result.add(rf"# pragma: pip{opname}{major}.{minor} {designator}\b")
 
     return result
 
 
+# mypy flags CoveragePlugin as being of type Any, type ignore "subclassing Any"
 class PipVersionPragmas(CoveragePlugin):  # type: ignore[misc]
     def configure(self, config: CoverageConfig) -> None:
-        exclude = set(config.get_option("report:exclude_lines"))
-        exclude.update(compute_pip_version_exclude_pragmas())
-        config.set_option("report:exclude_lines", sorted(exclude))
+        exclude_lines = (
+            set(config.get_option("report:exclude_lines"))
+            | compute_pip_version_exclude_pragmas()
+        )
+        config.set_option("report:exclude_lines", sorted(exclude_lines))
 
 
 def coverage_init(registry: Plugins, options: dict[str, object]) -> None:

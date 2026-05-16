@@ -12,6 +12,7 @@ import datetime
 from unittest import mock
 
 import pytest
+from packaging.requirements import Requirement
 
 from piptools._internal import _pip_api
 
@@ -48,11 +49,9 @@ def test_max_pip_major_version_is_todays_year():
 )
 def test_get_min_pip_major_version_uses_pyproject_data(pip_requirement, expect_result):
     with mock.patch(
-        "piptools_coverage.read_project_pyproject_toml"
+        "piptools_coverage.read_project_pyproject_dependencies"
     ) as mock_read_pyproject:
-        mock_read_pyproject.return_value = {
-            "project": {"dependencies": [pip_requirement]}
-        }
+        mock_read_pyproject.return_value = [Requirement(pip_requirement)]
         assert piptools_coverage.get_min_supported_pip_major_version() == expect_result
 
 
@@ -66,11 +65,9 @@ def test_get_min_pip_major_version_uses_pyproject_data(pip_requirement, expect_r
 )
 def test_get_min_pip_major_version_raises_error_on_unrecognized_data(dependency_list):
     with mock.patch(
-        "piptools_coverage.read_project_pyproject_toml"
+        "piptools_coverage.read_project_pyproject_dependencies"
     ) as mock_read_pyproject:
-        mock_read_pyproject.return_value = {
-            "project": {"dependencies": dependency_list}
-        }
+        mock_read_pyproject.return_value = [Requirement(r) for r in dependency_list]
         with pytest.raises(piptools_coverage.UnrecognizedPipDependency):
             piptools_coverage.get_min_supported_pip_major_version()
 
