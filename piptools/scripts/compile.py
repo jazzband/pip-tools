@@ -45,7 +45,9 @@ METADATA_FILENAMES = frozenset({"setup.py", "setup.cfg", "pyproject.toml"})
 
 
 def _determine_linesep(
-    strategy: str = "preserve", filenames: tuple[str, ...] = ()
+    strategy: str = "preserve",
+    filenames: tuple[str, ...] = (),
+    file_contents: dict[str, str] | None = None,
 ) -> str:
     """
     Determine and return linesep string for OutputWriter to use.
@@ -55,17 +57,33 @@ def _determine_linesep(
     """
     if strategy == "preserve":
         for fname in filenames:
-            try:
-                with open(fname, "rb") as existing_file:
-                    existing_text = existing_file.read()
-            except FileNotFoundError:
-                continue
-            if b"\r\n" in existing_text:
-                strategy = "CRLF"
-                break
-            elif b"\n" in existing_text:
-                strategy = "LF"
-                break
+            existing_text: str | bytes | None = None
+            if file_contents is not None:
+                existing_text = file_contents.get(fname)
+            if existing_text is None:
+                path = Path(fname)
+                if not path.is_file():
+                    continue
+                try:
+                    with open(fname, "rb") as existing_file:
+                        existing_text = existing_file.read()
+                except FileNotFoundError:
+                    continue
+
+            if isinstance(existing_text, bytes):
+                if b"\r\n" in existing_text:
+                    strategy = "CRLF"
+                    break
+                elif b"\n" in existing_text:
+                    strategy = "LF"
+                    break
+            else:
+                if "\r\n" in existing_text:
+                    strategy = "CRLF"
+                    break
+                elif "\n" in existing_text:
+                    strategy = "LF"
+                    break
     return {
         "native": os.linesep,
         "LF": "\n",
@@ -319,6 +337,7 @@ def cli(
 
     repository: BaseRepository
     repository = PyPIRepository(pip_args, cache_dir=cache_dir)
+    parsed_file_contents: dict[str, str] = {}
 
     # Parse all constraints coming from --upgrade-package/-P
     upgrade_reqs_gen = (
@@ -353,6 +372,7 @@ def cli(
             finder=tmp_repository.finder,
             session=tmp_repository.session,
             options=tmp_repository.options,
+            file_contents=parsed_file_contents,
         )
 
         for ireq in filter(is_pinned_requirement, ireqs):
@@ -392,6 +412,7 @@ def cli(
                         session=repository.session,
                         options=repository.options,
                         comes_from_stdin=True,
+                        file_contents=parsed_file_contents,
                     )
                 )
             constraints.extend(reqs)
@@ -425,6 +446,7 @@ def cli(
                     finder=repository.finder,
                     session=repository.session,
                     options=repository.options,
+                    file_contents=parsed_file_contents,
                 )
             )
 
@@ -437,6 +459,7 @@ def cli(
                 finder=repository.finder,
                 options=repository.options,
                 session=repository.session,
+                file_contents=parsed_file_contents,
             )
         )
 
@@ -451,6 +474,7 @@ def cli(
                     session=repository.session,
                     options=repository.options,
                     constraint=True,
+                    file_contents=parsed_file_contents,
                 )
             )
             for req in reqs:
@@ -525,7 +549,9 @@ def cli(
     log.debug("")
 
     linesep = _determine_linesep(
-        strategy=newline, filenames=(output_file.name, *src_files)
+        strategy=newline,
+        filenames=(output_file.name, *src_files),
+        file_contents=parsed_file_contents,
     )
 
     if strip_extras is None:

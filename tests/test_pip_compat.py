@@ -22,3 +22,19 @@ def test_parse_requirements_preserve_editable_relative_path(tmp_path, repository
 
     assert install_requirement.link.url == test_package_path
     assert install_requirement.link.file_path == test_package_path
+
+
+def test_parse_requirements_can_cache_file_contents(tmp_path, repository):
+    requirements_in_path = str(tmp_path / "requirements.in")
+    Path(requirements_in_path).write_text("small-fake-a==0.1\r\n")
+
+    file_contents: dict[str, str] = {}
+
+    [install_requirement] = parse_requirements(
+        requirements_in_path,
+        session=repository.session,
+        file_contents=file_contents,
+    )
+
+    assert install_requirement.req.name == "small-fake-a"
+    assert file_contents[requirements_in_path] == "small-fake-a==0.1\r\n"

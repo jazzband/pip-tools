@@ -24,7 +24,7 @@ from pip._vendor.packaging.version import Version
 from piptools._compat import tempfile_compat
 from piptools._internal import _pip_api
 from piptools.build import ProjectMetadata
-from piptools.scripts.compile import cli
+from piptools.scripts.compile import _determine_linesep, cli
 from piptools.utils import COMPILE_EXCLUDE_OPTIONS
 
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
@@ -1299,6 +1299,63 @@ def test_preserve_newline_from_input(runner, linesep, must_exclude):
     if must_exclude in linesep:
         txt = txt.replace(linesep, "")
     assert must_exclude not in txt
+
+
+@pytest.mark.skipif(not hasattr(os, "mkfifo"), reason="requires os.mkfifo")
+def test_determine_linesep_uses_cached_fifo_contents(tmp_path):
+    fifo = tmp_path / "requirements.in"
+    os.mkfifo(fifo)
+
+    linesep = _determine_linesep(
+        strategy="preserve",
+        filenames=(fifo.as_posix(),),
+        file_contents={fifo.as_posix(): "small-fake-a==0.1\r\n"},
+    )
+
+    assert linesep == "\r\n"
+
+
+@pytest.mark.skipif(not hasattr(os, "mkfifo"), reason="requires os.mkfifo")
+@mock.patch("piptools.scripts.compile.parse_requirements")
+def test_named_pipe_input_preserves_newline_from_parse_cache(
+    parse_requirements,
+    pip_conf,
+    runner,
+    tmp_path,
+):
+    fifo = tmp_path / "requirements.in"
+    os.mkfifo(fifo)
+    output_file = tmp_path / "requirements.txt"
+
+    def parse_side_effect(
+        filename,
+        finder,
+        options,
+        session,
+        file_contents=None,
+        **kwargs,
+    ):
+        if filename == fifo.as_posix():
+            assert file_contents is not None
+            file_contents[filename] = "small-fake-a==0.1\r\n"
+            return [install_req_from_line("small-fake-a==0.1")]
+        return []
+
+    parse_requirements.side_effect = parse_side_effect
+
+    out = runner.invoke(
+        cli,
+        [
+            "--newline=preserve",
+            "--no-annotate",
+            "--output-file",
+            output_file.as_posix(),
+            fifo.as_posix(),
+        ],
+    )
+
+    assert out.exit_code == 0, out
+    assert b"\r\n" in output_file.read_bytes()
 
 
 def test_generate_hashes_with_split_style_annotations(pip_conf, runner, tmpdir_cwd):
