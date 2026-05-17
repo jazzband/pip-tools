@@ -16,6 +16,7 @@ from pip._internal.models.link import Link
 from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement
 from pip._internal.req import parse_requirements as _parse_requirements
+from pip._internal.req import req_file as _req_file
 from pip._internal.req.constructors import install_req_from_parsed_requirement
 from pip._vendor.pkg_resources import Requirement
 
@@ -97,6 +98,7 @@ def parse_requirements(
     constraint: bool = False,
     isolated: bool = False,
     comes_from_stdin: bool = False,
+    file_contents: dict[str, str] | None = None,
 ) -> Iterator[InstallRequirement]:
     # the `comes_from` data will be rewritten in different ways in different conditions
     # each rewrite rule is expressible as a str->str function
@@ -113,9 +115,17 @@ def parse_requirements(
         # absolute paths to be relative
         rewrite_comes_from = _relativize_comes_from_location
 
-    for parsed_req in _parse_requirements(
-        filename, session, finder=finder, options=options, constraint=constraint
-    ):
+    def parse() -> Iterator[_req_file.ParsedRequirement]:
+        yield from _parse_requirements(
+            filename, session, finder=finder, options=options, constraint=constraint
+        )
+
+    if file_contents is None:
+        parsed_reqs = parse()
+    else:
+        parsed_reqs = _cache_file_contents(parse(), file_contents)
+
+    for parsed_req in parsed_reqs:
         install_req = install_req_from_parsed_requirement(parsed_req, isolated=isolated)
         if install_req.editable and not parsed_req.requirement.startswith("file://"):
             # ``Link.url`` is what is saved to the output file
@@ -128,6 +138,27 @@ def parse_requirements(
         install_req.comes_from = rewrite_comes_from(install_req.comes_from)
 
         yield install_req
+
+
+def _cache_file_contents(
+    parsed_reqs: Iterator[_req_file.ParsedRequirement],
+    file_contents: dict[str, str],
+) -> Iterator[_req_file.ParsedRequirement]:
+    get_file_content = _req_file.get_file_content
+
+    def caching_get_file_content(
+        url: str, session: PipSession, *args: object, **kwargs: object
+    ) -> tuple[str, str]:
+        location, content = get_file_content(url, session, *args, **kwargs)
+        file_contents[url] = content
+        file_contents[location] = content
+        return location, content
+
+    _req_file.get_file_content = caching_get_file_content
+    try:
+        yield from parsed_reqs
+    finally:
+        _req_file.get_file_content = get_file_content
 
 
 def _rewrite_comes_from_to_hardcoded_stdin_value(_: str, /) -> str:
