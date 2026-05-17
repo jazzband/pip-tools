@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 from unittest import mock
 
 import pytest
@@ -9,6 +10,7 @@ from pip._internal.models.link import Link
 from pip._internal.utils.urls import path_to_url
 from pip._vendor.requests import HTTPError, Session
 
+import piptools.repositories.pypi as pypi_repository_module
 from piptools.repositories import PyPIRepository
 from piptools.repositories.pypi import open_local_or_remote_file
 
@@ -167,6 +169,51 @@ def test_pip_cache_dir_is_empty(from_line, tmpdir):
     )
 
     assert not pypi_repository.options.cache_dir
+
+
+def test_clear_caches_moves_download_dir_before_deleting(pypi_repository, monkeypatch):
+    download_dir = pypi_repository._download_dir
+    archived_file = os.path.join(download_dir, "aa", "bb", "package.whl")
+    os.makedirs(os.path.dirname(archived_file))
+    with open(archived_file, "w") as fp:
+        fp.write("cached package")
+
+    deleted_dirs = []
+
+    def fake_rmtree(path, ignore_errors=False):
+        deleted_dirs.append(path)
+        assert ignore_errors is True
+        assert path != download_dir
+        assert os.path.exists(os.path.join(path, "aa", "bb", "package.whl"))
+        assert os.path.isdir(download_dir)
+        assert not os.listdir(download_dir)
+        shutil.rmtree(path, ignore_errors=ignore_errors)
+
+    monkeypatch.setattr(pypi_repository_module, "rmtree", fake_rmtree)
+
+    pypi_repository.clear_caches()
+
+    assert len(deleted_dirs) == 1
+    assert os.path.isdir(download_dir)
+    assert not os.listdir(download_dir)
+
+
+def test_clear_caches_tolerates_concurrent_removal(pypi_repository, monkeypatch):
+    download_dir = pypi_repository._download_dir
+    os.makedirs(download_dir)
+
+    def raise_missing(src, dst):
+        os.rmdir(src)
+        raise FileNotFoundError
+
+    mocked_rmtree = mock.Mock()
+    monkeypatch.setattr(pypi_repository_module.os, "replace", raise_missing)
+    monkeypatch.setattr(pypi_repository_module, "rmtree", mocked_rmtree)
+
+    pypi_repository.clear_caches()
+
+    mocked_rmtree.assert_not_called()
+    assert not os.path.exists(download_dir)
 
 
 @pytest.mark.parametrize(

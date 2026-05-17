@@ -6,6 +6,7 @@ import itertools
 import optparse
 import os
 import typing as _t
+import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
 from shutil import rmtree
@@ -104,7 +105,17 @@ class PyPIRepository(BaseRepository):
         )
 
     def clear_caches(self) -> None:
-        rmtree(self._download_dir, ignore_errors=True)
+        delete_dir = f"{self._download_dir}.delete-{os.getpid()}-{uuid.uuid4().hex}"
+
+        try:
+            # Move the live tree aside before deleting it so parallel rebuilds
+            # never observe a half-deleted package cache.
+            os.replace(self._download_dir, delete_dir)
+        except OSError:
+            return
+
+        os.makedirs(self._download_dir, exist_ok=True)
+        rmtree(delete_dir, ignore_errors=True)
 
     @property
     def options(self) -> optparse.Values:
