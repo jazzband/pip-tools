@@ -443,7 +443,7 @@ jobs:
           - macos-26-intel
           - windows-2025
         python-version:
-          - pypy-3.10
+          - pypy-3.11
         pip-version:
           - supported
     env:
