@@ -441,11 +441,14 @@ jobs:
           - ubuntu-24.04
           - macos-26
           - macos-26-intel
-          - windows-2025
         python-version:
           - pypy-3.11
         pip-version:
           - supported
+        include:
+          - runner-vm: windows-2025
+            python-version: pypy-3.11
+            pip-version: lowest  # PR 2400: legacy depresolver fails
     env:
       TOXENV: pip${{ matrix.pip-version }}
     steps:
