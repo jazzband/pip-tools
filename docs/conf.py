@@ -95,16 +95,24 @@ linkcheck_ignore = [
 ]
 
 nitpick_ignore_regex = [
-    ("py:class", "pip.*"),
-    ("py:class", "pathlib.*"),
-    ("py:class", "click.*"),
-    ("py:class", "build.*"),
-    ("py:class", "optparse.*"),
-    ("py:class", "_ImportLibDist"),
-    ("py:class", "PackageMetadata"),
-    ("py:class", "importlib.*"),
+    # FIXME: broken refs inside of pip-tools itself
+    # internal names with leading '_', mostly type vars
+    ("py:.*", r"piptools\..*\._\w+"),
+    # BaseRepository ref is broken?
+    ("py:class", r"piptools\.repositories\.BaseRepository"),
+    # external libraries
+    ("py:.*", r"click\..*"),
+    ("py:.*", r"pip\..*"),
+    ("py:class", "NormalizedName"),
+    ("py:exc", "InvalidName"),
     ("py:class", "IndexContent"),
-    ("py:exc", "click.*"),
+    ("py:class", "PackageMetadata"),
+    ("py:class", "_ImportLibDist"),
+    ("py:class", r"build\..*"),
+    # stdlib
+    ("py:class", r"importlib\..*"),
+    ("py:class", r"optparse\..*"),
+    ("py:class", r"pathlib\..*"),
 ]
 
 suppress_warnings = [
