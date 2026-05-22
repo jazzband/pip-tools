@@ -229,24 +229,17 @@ def from_editable():
     return install_req_from_editable
 
 
+# _isolate_pip_env is important for direct runs of the testsuite when contributors have
+# pip configurations in their env (e.g., for corporate index servers)
 @pytest.fixture(scope="session", autouse=True)
 def _isolate_pip_env() -> _c.Iterator[None]:
-    # Drop every ``PIP_*`` environment variable for the duration of the test
-    # session so contributor pip configuration (corporate Artifactory mirror,
-    # find-links, trusted hosts, and so on) cannot leak into CLI tests that
-    # assert on exact pip argument lists. Session-scoped + autouse so the
-    # cleanup fires before any other fixture; subprocesses spawned by session
-    # fixtures (the ``pip download`` in ``setuptools_wheel_path``) also run
-    # with a clean environment. Function-scoped ``monkeypatch.setenv`` in a
-    # specific test still overrides the deletion for that test, so cases like
-    # ``test_find_links_envvar`` keep working.
-    mp = pytest.MonkeyPatch()
-    for env_var in (name for name in os.environ if name.startswith("PIP_")):
-        mp.delenv(env_var)
-    try:
+    """
+    Automatically drop all ``PIP_*`` environment variables during test execution.
+    """
+    with pytest.MonkeyPatch.context() as mp:
+        for env_var in (name for name in os.environ if name.startswith("PIP_")):
+            mp.delenv(env_var)
         yield
-    finally:
-        mp.undo()
 
 
 @pytest.fixture
