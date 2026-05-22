@@ -16,7 +16,7 @@ boltons==25.0.0
     # via click-extra
 bracex==2.6
     # via wcmatch
-build==1.4.0
+build==1.5.0
     # via pip-tools (pyproject.toml)
 certifi==2026.1.4
     # via requests
@@ -140,17 +140,17 @@ towncrier==25.8.0
     # via sphinxcontrib-towncrier
 typing-extensions==4.15.0
     # via beautifulsoup4
-urllib3==2.6.3
+urllib3==2.7.0
     # via requests
 wcmatch==10.1
     # via click-extra
 wcwidth==0.5.3
     # via tabulate
-wheel==0.46.3
+wheel==0.47.0
     # via pip-tools (pyproject.toml)
 
 # The following packages are considered to be unsafe in a requirements file:
-pip==26.0
+pip==26.1.1
     # via pip-tools (pyproject.toml)
 setuptools==80.10.2
     # via
