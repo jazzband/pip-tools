@@ -31,7 +31,7 @@ if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
     from importlib.metadata import PackageMetadata
 else:  # pragma: <3.10 cover
 
-    class PackageMetadata(_t.Protocol):  # pragma: <3.10 cover
+    class PackageMetadata(_t.Protocol):
         @_t.overload
         def get_all(self, name: str, failobj: None = None) -> list[_t.Any] | None: ...
 

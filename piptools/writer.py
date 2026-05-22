@@ -30,7 +30,7 @@ from .utils import (
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self as _t_Self
 else:  # pragma: <3.11 cover
-    from typing_extensions import Self as _t_Self  # pragma: <3.11 cover
+    from typing_extensions import Self as _t_Self
 
 
 MESSAGE_UNHASHED_PACKAGE = comment(
