@@ -304,6 +304,8 @@ jobs:
 
   test:
     name: ${{ matrix.runner-vm }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
+    needs:
+    - pre-setup  # transitive, for accessing settings
     runs-on: ${{ matrix.runner-vm }}
     timeout-minutes: 15
     strategy:
@@ -417,6 +419,8 @@ jobs:
           && !inputs.cpython-pip-version
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2  # v6.0.0
         with:
+          fail_ci_if_error: >-
+            ${{ fromJSON(needs.pre-setup.outputs.is-upstream-repository) }}
           files: ./coverage.xml
           flags: >-
             CI-GHA,
@@ -441,11 +445,14 @@ jobs:
           - ubuntu-24.04
           - macos-26
           - macos-26-intel
-          - windows-2025
         python-version:
-          - pypy-3.10
+          - pypy-3.11
         pip-version:
           - supported
+        include:
+          - runner-vm: windows-2025
+            python-version: pypy-3.11
+            pip-version: lowest  # PR 2400: legacy depresolver fails
     env:
       TOXENV: pip${{ matrix.pip-version }}
     steps:
@@ -519,6 +526,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 1
     needs:
+      - pre-setup  # transitive, for accessing settings
       - test
     steps:
       - name: Notify Codecov that all coverage reports have been uploaded
@@ -526,7 +534,8 @@ jobs:
           !cancelled()
         uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2  # v6.0.0
         with:
-          fail_ci_if_error: true
+          fail_ci_if_error: >-
+            ${{ fromJSON(needs.pre-setup.outputs.is-upstream-repository) }}
           run_command: send-notifications
 
   zizmor:

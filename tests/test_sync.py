@@ -8,10 +8,18 @@ from collections import Counter
 from unittest import mock
 
 import pytest
+from pip._internal.models.direct_url import ArchiveInfo, DirectUrl
 from pip._internal.utils.urls import path_to_url
+from pytest_mock import MockerFixture
 
 from piptools.exceptions import IncompatibleRequirements
-from piptools.sync import dependency_tree, diff, merge, sync
+from piptools.sync import (
+    _direct_url_has_archive_hash,
+    dependency_tree,
+    diff,
+    merge,
+    sync,
+)
 
 from .constants import PACKAGES_PATH
 
@@ -325,6 +333,89 @@ def test_diff_with_unequal_url_hash(fake_dist, from_line):
     to_install, to_uninstall = diff(reqs, installed)
     assert to_install == set(reqs)
     assert to_uninstall == {"example @ file:///example.zip#sha1=abc"}
+
+
+@pytest.fixture
+def archive_info(mocker: MockerFixture) -> ArchiveInfo:
+    info = mocker.create_autospec(ArchiveInfo, instance=True)
+    info.hashes = None
+    info.hash = None
+    return info
+
+
+@pytest.fixture
+def direct_url_new_shape(mocker: MockerFixture) -> DirectUrl:
+    return mocker.create_autospec(DirectUrl, instance=True, spec_set=False)
+
+
+@pytest.fixture
+def direct_url_old_shape(mocker: MockerFixture) -> DirectUrl:
+    return mocker.Mock(spec=["info"])
+
+
+@pytest.mark.parametrize(
+    ("hashes", "hash_", "expected"),
+    (
+        pytest.param({"sha256": "abc"}, None, True, id="hashes-present"),
+        pytest.param({}, None, False, id="hashes-empty"),
+        pytest.param(None, "sha256=abc", True, id="legacy-hash-present-on-new-shape"),
+        pytest.param(None, None, False, id="both-missing"),
+    ),
+)
+def test_direct_url_has_archive_hash_new_shape(
+    direct_url_new_shape: DirectUrl,
+    archive_info: ArchiveInfo,
+    hashes: dict[str, str] | None,
+    hash_: str | None,
+    expected: bool,
+) -> None:
+    archive_info.hashes = hashes
+    archive_info.hash = hash_
+    direct_url_new_shape.archive_info = archive_info
+    assert _direct_url_has_archive_hash(direct_url_new_shape) is expected
+
+
+@pytest.mark.parametrize(
+    ("hashes", "hash_", "expected"),
+    (
+        pytest.param(None, "sha256=abc", True, id="hash-present"),
+        pytest.param(None, None, False, id="hash-missing"),
+        pytest.param({"sha256": "abc"}, None, True, id="hashes-still-honored"),
+    ),
+)
+def test_direct_url_has_archive_hash_old_shape(
+    direct_url_old_shape: DirectUrl,
+    archive_info: ArchiveInfo,
+    hashes: dict[str, str] | None,
+    hash_: str | None,
+    expected: bool,
+) -> None:
+    archive_info.hashes = hashes
+    archive_info.hash = hash_
+    direct_url_old_shape.info = archive_info
+    assert _direct_url_has_archive_hash(direct_url_old_shape) is expected
+
+
+def test_direct_url_has_archive_hash_returns_false_when_archive_info_none(
+    direct_url_new_shape: DirectUrl,
+) -> None:
+    direct_url_new_shape.archive_info = None
+    assert _direct_url_has_archive_hash(direct_url_new_shape) is False
+
+
+def test_direct_url_has_archive_hash_returns_false_when_info_none(
+    direct_url_old_shape: DirectUrl,
+) -> None:
+    direct_url_old_shape.info = None
+    assert _direct_url_has_archive_hash(direct_url_old_shape) is False
+
+
+def test_direct_url_has_archive_hash_returns_false_for_non_archive_info(
+    mocker: MockerFixture,
+) -> None:
+    direct_url = mocker.create_autospec(DirectUrl, instance=True, spec_set=False)
+    direct_url.archive_info = mocker.Mock(spec=[])
+    assert _direct_url_has_archive_hash(direct_url) is False
 
 
 def test_sync_install_temporary_requirement_file(
