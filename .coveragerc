@@ -6,5 +6,10 @@ omit =
 [report]
 include = piptools/*, tests/*
 fail_under = 99
+
+# custom excludes extend baselines from coverage + covdefaults
+# for reference, see
+# coverage: https://coverage.readthedocs.io/en/latest/excluding.html#default-exclusions
+# covdefaults: https://github.com/asottile/covdefaults/blob/8d8712c26ad505f1269851a7c8431b8c1fedaa62/covdefaults.py#L86-L105
 exclude_also =
     ^\s*if _t\.TYPE_CHECKING:
