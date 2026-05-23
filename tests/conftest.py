@@ -229,13 +229,13 @@ def from_editable():
     return install_req_from_editable
 
 
-# _isolate_pip_env is important for direct runs of the testsuite when contributors have
-# pip configurations in their env (e.g., for corporate index servers)
 @pytest.fixture(scope="session", autouse=True)
 def _isolate_pip_env() -> _c.Iterator[None]:
     """
     Automatically drop all ``PIP_*`` environment variables during test execution.
     """
+    # this is important for direct runs of the testsuite when contributors have
+    # pip configurations in their env (e.g., for corporate index servers)
     with pytest.MonkeyPatch.context() as mp:
         for env_var in (name for name in os.environ if name.startswith("PIP_")):
             mp.delenv(env_var)
