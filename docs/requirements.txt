@@ -45,7 +45,7 @@ extra-platforms==8.0.0
     # via click-extra
 furo==2025.12.19
     # via -r docs/requirements.in
-idna==3.11
+idna==3.16
     # via requests
 imagesize==1.4.1
     # via sphinx
