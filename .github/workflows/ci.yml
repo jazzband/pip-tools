@@ -434,6 +434,92 @@ jobs:
             Py-${{ steps.python-install.outputs.python-version }},
             Pip-${{ matrix.pip-version }}
 
+  test-local-coverage-plugin:
+    name: test-coverage-plugin / ${{ matrix.runner-vm }} / ${{ matrix.python-version }}
+    runs-on: ${{ matrix.runner-vm }}
+    timeout-minutes: 9
+    strategy:
+      fail-fast: false
+      matrix:
+        runner-vm:
+          - ubuntu-24.04
+          - macos-15-intel
+          - windows-2025
+        python-version:
+          - "3.9"
+          - "3.14"
+    env:
+      TOXENV: test-coverage-plugin
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Get pip cache dir
+        id: pip-cache
+        shell: bash
+        run: |
+          echo "dir=$(pip cache dir)" >> "${GITHUB_OUTPUT}"
+      - name: Pip cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: >-
+            ${{ runner.os }}-pip-${{ hashFiles('setup.cfg') }}-${{
+            hashFiles('pyproject.toml') }}-${{ hashFiles('tox.ini') }}-${{
+            hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+            ${{ runner.os }}-
+      - name: Install tox
+        run: pip install tox
+      - name: Prepare test environment
+        run: tox --notest -p auto
+      - name: Run Tests
+        run: tox --skip-pkg-install
+      - name: Re-run the failing tests with maximum verbosity
+        if: >-
+          !cancelled()
+          && failure()
+        run: >-  # `exit 1` makes sure that the job remains red with flaky runs
+          python -Xutf8 -Im
+          tox
+          --parallel=auto
+          --parallel-live
+          --skip-missing-interpreters=false
+          --skip-pkg-install
+          -vvvvv
+          --
+          --continue-on-collection-errors
+          --full-trace
+          --last-failed
+          --numprocesses=0
+          --showlocals
+          --trace-config
+          -rA
+          -vvvvv
+          && exit 1
+        shell: bash
+      - name: Upload coverage to Codecov
+        if: >-
+          !cancelled()
+          && !inputs.cpython-pip-version
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage.xml
+          flags: >-
+            CI-GHA,
+            OS-${{ runner.os }},
+            VM-${{ matrix.runner-vm }},
+            Py-${{ matrix.python-version }},
+            LocalCoveragePlugin
+          name: >-
+            OS-${{ runner.os }},
+            VM-${{ matrix.runner-vm }},
+            Py-${{ matrix.python-version }},
+            LocalCoveragePlugin
+
   pypy:
     name: ${{ matrix.runner-vm }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
     runs-on: ${{ matrix.runner-vm }}
@@ -528,6 +614,7 @@ jobs:
     needs:
       - pre-setup  # transitive, for accessing settings
       - test
+      - test-local-coverage-plugin
     steps:
       - name: Notify Codecov that all coverage reports have been uploaded
         if: >-
