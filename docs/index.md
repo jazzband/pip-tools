@@ -11,7 +11,7 @@
 :maxdepth: 2
 :caption: Contents
 
-cli/index
+reference/index
 contributing
 changelog
 ```
