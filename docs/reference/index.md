@@ -8,4 +8,5 @@ Information about each command, configuration, environment variable, and so fort
 pip-compile
 pip-sync
 configuration
+environment-variables
 ```
