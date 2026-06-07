@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import itertools
 import os
 import shlex
@@ -10,7 +11,7 @@ from pathlib import Path
 import click
 from build import BuildBackendException
 from click.utils import LazyFile, safecall
-from pip._internal.req import InstallRequirement
+from pip._internal.req import InstallRequirement, req_file
 from pip._internal.utils.misc import redact_auth_from_url
 
 from .._compat import canonicalize_name, parse_requirements, tempfile_compat
@@ -44,8 +45,25 @@ DEFAULT_REQUIREMENTS_OUTPUT_FILE = "requirements.txt"
 METADATA_FILENAMES = frozenset({"setup.py", "setup.cfg", "pyproject.toml"})
 
 
+def _linesep_from_content(content: str | bytes) -> str | None:
+    if isinstance(content, bytes):
+        if b"\r\n" in content:
+            return "CRLF"
+        if b"\n" in content:
+            return "LF"
+        return None
+
+    if "\r\n" in content:
+        return "CRLF"
+    if "\n" in content:
+        return "LF"
+    return None
+
+
 def _determine_linesep(
-    strategy: str = "preserve", filenames: tuple[str, ...] = ()
+    strategy: str = "preserve",
+    filenames: tuple[str, ...] = (),
+    input_contents: tuple[str, ...] = (),
 ) -> str:
     """
     Determine and return linesep string for OutputWriter to use.
@@ -55,23 +73,48 @@ def _determine_linesep(
     """
     if strategy == "preserve":
         for fname in filenames:
-            try:
-                with open(fname, "rb") as existing_file:
-                    existing_text = existing_file.read()
-            except FileNotFoundError:
+            path = Path(fname)
+            if fname == "-" or not path.is_file():
                 continue
-            if b"\r\n" in existing_text:
-                strategy = "CRLF"
+            try:
+                with path.open("rb") as existing_file:
+                    existing_text = existing_file.read()
+            except OSError:
+                continue
+            linesep = _linesep_from_content(existing_text)
+            if linesep is not None:
+                strategy = linesep
                 break
-            elif b"\n" in existing_text:
-                strategy = "LF"
-                break
+        else:
+            for content in input_contents:
+                linesep = _linesep_from_content(content)
+                if linesep is not None:
+                    strategy = linesep
+                    break
     return {
         "native": os.linesep,
         "LF": "\n",
         "CRLF": "\r\n",
         "preserve": "\n",
     }[strategy]
+
+
+@contextlib.contextmanager
+def _capture_requirement_file_contents(
+    collected_contents: list[str],
+) -> _t.Iterator[None]:
+    get_file_content = req_file.get_file_content
+
+    def collecting_get_file_content(url: str, session: _t.Any) -> tuple[str, str]:
+        location, content = get_file_content(url, session)
+        collected_contents.append(content)
+        return location, content
+
+    req_file.get_file_content = collecting_get_file_content
+    try:
+        yield
+    finally:
+        req_file.get_file_content = get_file_content
 
 
 COMPILE_EPILOG = """\b
@@ -368,6 +411,7 @@ def cli(
     ###
 
     constraints: list[InstallRequirement] = []
+    requirement_file_contents: list[str] = []
     setup_file_found = False
     for src_file in src_files:
         is_setup_file = os.path.basename(src_file) in METADATA_FILENAMES
@@ -382,8 +426,10 @@ def cli(
             # pip requires filenames and not files. Since we want to support
             # piping from stdin, we need to briefly save the input from stdin
             # to a temporary file and have pip read that.
+            stdin_content = sys.stdin.read()
+            requirement_file_contents.append(stdin_content)
             with tempfile_compat.named_temp_file() as tmpfile:
-                tmpfile.write(sys.stdin.read())
+                tmpfile.write(stdin_content)
                 tmpfile.flush()
                 reqs = list(
                     parse_requirements(
@@ -419,14 +465,15 @@ def cli(
                 assert isinstance(metadata, ProjectMetadata)
                 constraints.extend(metadata.build_requirements)
         else:
-            constraints.extend(
-                parse_requirements(
-                    src_file,
-                    finder=repository.finder,
-                    session=repository.session,
-                    options=repository.options,
+            with _capture_requirement_file_contents(requirement_file_contents):
+                constraints.extend(
+                    parse_requirements(
+                        src_file,
+                        finder=repository.finder,
+                        session=repository.session,
+                        options=repository.options,
+                    )
                 )
-            )
 
     # Parse all constraints from `--constraint` files
     for filename in constraint:
@@ -525,7 +572,16 @@ def cli(
     log.debug("")
 
     linesep = _determine_linesep(
-        strategy=newline, filenames=(output_file.name, *src_files)
+        strategy=newline,
+        filenames=(
+            output_file.name,
+            *(
+                src_file
+                for src_file in src_files
+                if os.path.basename(src_file) in METADATA_FILENAMES
+            ),
+        ),
+        input_contents=tuple(requirement_file_contents),
     )
 
     if strip_extras is None:

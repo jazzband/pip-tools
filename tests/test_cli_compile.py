@@ -24,6 +24,7 @@ from pip._vendor.packaging.version import Version
 from piptools._compat import tempfile_compat
 from piptools._internal import _pip_api
 from piptools.build import ProjectMetadata
+from piptools.scripts import compile as compile_module
 from piptools.scripts.compile import cli
 from piptools.utils import COMPILE_EXCLUDE_OPTIONS
 
@@ -1299,6 +1300,83 @@ def test_preserve_newline_from_input(runner, linesep, must_exclude):
     if must_exclude in linesep:
         txt = txt.replace(linesep, "")
     assert must_exclude not in txt
+
+
+def test_preserve_newline_from_parsed_input_without_reopening_source(
+    runner, tmp_path, monkeypatch
+):
+    _mock_resolver_cls(monkeypatch)
+
+    captured_writer_linesep = []
+
+    class CaptureOutputWriter:
+        def __init__(self, *args, linesep, **kwargs):
+            captured_writer_linesep.append(linesep)
+
+        def write(self, **kwargs):
+            pass
+
+    monkeypatch.setattr(compile_module, "OutputWriter", CaptureOutputWriter)
+
+    determine_linesep_calls = []
+    determine_linesep = compile_module._determine_linesep
+
+    def capture_determine_linesep(*args, **kwargs):
+        determine_linesep_calls.append(kwargs)
+        return determine_linesep(*args, **kwargs)
+
+    monkeypatch.setattr(compile_module, "_determine_linesep", capture_determine_linesep)
+
+    req_in = tmp_path / "requirements.in"
+    req_out = tmp_path / "requirements.txt"
+    req_in.write_bytes(b"six\r\n")
+
+    out = runner.invoke(
+        cli,
+        [
+            "--newline=preserve",
+            "--output-file",
+            req_out.as_posix(),
+            req_in.as_posix(),
+        ],
+    )
+
+    assert out.exit_code == 0, out
+    assert captured_writer_linesep == ["\r\n"]
+    assert determine_linesep_calls == [
+        {
+            "strategy": "preserve",
+            "filenames": (req_out.as_posix(),),
+            "input_contents": ("six\r\n",),
+        }
+    ]
+
+
+def test_determine_linesep_skips_non_regular_files(monkeypatch, tmp_path):
+    special_file = tmp_path / "requirements.in"
+    path_is_file = pathlib.Path.is_file
+    path_open = pathlib.Path.open
+
+    def is_file(self):
+        if self == special_file:
+            return False
+        return path_is_file(self)
+
+    def open_file(self, *args, **kwargs):
+        if self == special_file:
+            pytest.fail("non-regular files must not be opened for newline detection")
+        return path_open(self, *args, **kwargs)
+
+    monkeypatch.setattr(pathlib.Path, "is_file", is_file)
+    monkeypatch.setattr(pathlib.Path, "open", open_file)
+
+    linesep = compile_module._determine_linesep(
+        strategy="preserve",
+        filenames=(special_file.as_posix(),),
+        input_contents=("six\r\n",),
+    )
+
+    assert linesep == "\r\n"
 
 
 def test_generate_hashes_with_split_style_annotations(pip_conf, runner, tmpdir_cwd):
