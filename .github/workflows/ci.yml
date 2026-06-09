@@ -152,6 +152,7 @@ jobs:
             && 1 || 0
           }}
         ref: ${{ inputs.release-committish }}
+        persist-credentials: false
     - name: Scan static PEP 621 core packaging metadata
       id: metadata
       run: |
@@ -342,6 +343,8 @@ jobs:
         }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
       - name: Set up Python ${{ matrix.python-version }} from GitHub
         id: python-install
         if: "!endsWith(matrix.python-version, '-dev')"
@@ -457,6 +460,8 @@ jobs:
       TOXENV: pip${{ matrix.pip-version }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
