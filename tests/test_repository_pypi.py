@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from unittest import mock
 
 import pytest
@@ -8,6 +9,7 @@ from pip._internal.models.candidate import InstallationCandidate
 from pip._internal.models.link import Link
 from pip._internal.utils.urls import path_to_url
 from pip._vendor.requests import HTTPError, Session
+from pytest_mock import MockerFixture
 
 from piptools.repositories import PyPIRepository
 from piptools.repositories.pypi import open_local_or_remote_file
@@ -167,6 +169,52 @@ def test_pip_cache_dir_is_empty(from_line, tmpdir):
     )
 
     assert not pypi_repository.options.cache_dir
+
+
+@pytest.fixture
+def repo_with_cache_dir(tmp_path: Path) -> PyPIRepository:
+    return PyPIRepository([], cache_dir=str(tmp_path / "cache"))
+
+
+def test_clear_caches_removes_existing_download_dir(
+    repo_with_cache_dir: PyPIRepository,
+) -> None:
+    download_dir = Path(repo_with_cache_dir._download_dir)
+    download_dir.mkdir(parents=True, exist_ok=True)
+    (download_dir / "marker").write_text("x")
+
+    repo_with_cache_dir.clear_caches()
+
+    assert not download_dir.exists()
+
+
+def test_clear_caches_when_download_dir_missing_is_a_no_op(
+    repo_with_cache_dir: PyPIRepository,
+) -> None:
+    assert not Path(repo_with_cache_dir._download_dir).exists()
+
+    repo_with_cache_dir.clear_caches()
+
+    assert not Path(repo_with_cache_dir._download_dir).exists()
+
+
+def test_clear_caches_swallows_replace_failure(
+    repo_with_cache_dir: PyPIRepository, mocker: MockerFixture
+) -> None:
+    download_dir = Path(repo_with_cache_dir._download_dir)
+    download_dir.mkdir(parents=True, exist_ok=True)
+    replace = mocker.patch(
+        "piptools.repositories.pypi.os.replace",
+        side_effect=OSError("racing peer renamed first"),
+    )
+    rmtree = mocker.patch("piptools.repositories.pypi.rmtree")
+
+    repo_with_cache_dir.clear_caches()
+
+    # The rename targets the live download dir; the OSError short-circuits
+    # before the rmtree so a racing peer keeps ownership of the tree.
+    assert replace.call_args.args[0] == str(download_dir)
+    rmtree.assert_not_called()
 
 
 @pytest.mark.parametrize(
