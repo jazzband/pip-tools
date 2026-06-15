@@ -8,6 +8,10 @@ on:
 jobs:
   main:
     name: CI
+
+    permissions:
+      security-events: write  # Needed by the nested Zizmor workflow
+
     uses: ./.github/workflows/ci.yml
     with:
       cpython-versions: >-
