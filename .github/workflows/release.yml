@@ -59,6 +59,10 @@ jobs:
         github.event.action == 'published'
         && 'release' || 'nightly'
       }}]
+
+    permissions:
+      security-events: write  # Needed by the nested Zizmor workflow
+
     uses: ./.github/workflows/ci.yml
     with:
       release-version: ${{ github.ref_name }}
