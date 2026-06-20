@@ -29,23 +29,17 @@ from piptools.utils import COMPILE_EXCLUDE_OPTIONS
 
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
 
-legacy_resolver_only = pytest.mark.parametrize(
-    "current_resolver",
-    ("legacy",),
-    indirect=("current_resolver",),
-)
-
-backtracking_resolver_only = pytest.mark.parametrize(
-    "current_resolver",
-    ("backtracking",),
-    indirect=("current_resolver",),
-)
-
-
 skip_if_pip_does_not_support_editables_in_constraints = pytest.mark.skipif(
     _pip_api.PIP_VERSION_MAJOR_MINOR >= (26, 0),
     reason="pip v26.0 and later does not support editables in constraints files",
 )
+
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers",
+        "skip_resolver(resolver): mark a test to skip runs with a specific resolver",
+    )
 
 
 @pytest.fixture(scope="session")
@@ -133,6 +127,17 @@ def current_resolver(request, monkeypatch):
     resolver_name = request.param
     monkeypatch.setenv("PIP_TOOLS_RESOLVER", resolver_name)
     return resolver_name
+
+
+@pytest.fixture(autouse=True)
+def _skip_if_skip_resolver(request, current_resolver):
+    marker = request.node.get_closest_marker("skip_resolver")
+    if not marker:
+        return
+
+    resolver_name = marker.args[0]
+    if resolver_name == current_resolver:
+        pytest.skip(f"test was marked to skip current_resolver={current_resolver!r}")
 
 
 @pytest.fixture(autouse=True)
@@ -585,7 +590,7 @@ def test_editable_package_without_non_editable_duplicate(pip_conf, runner):
     assert "small-fake-a==" not in out.stderr
 
 
-@legacy_resolver_only
+@pytest.mark.skip_resolver("backtracking")
 @skip_if_pip_does_not_support_editables_in_constraints
 def test_editable_package_constraint_without_non_editable_duplicate(pip_conf, runner):
     """
@@ -611,7 +616,7 @@ def test_editable_package_constraint_without_non_editable_duplicate(pip_conf, ru
     assert "small-fake-a==" not in out.stdout
 
 
-@legacy_resolver_only
+@pytest.mark.skip_resolver("backtracking")
 @skip_if_pip_does_not_support_editables_in_constraints
 @pytest.mark.parametrize("req_editable", ((True,), (False,)))
 def test_editable_package_in_constraints(pip_conf, runner, req_editable):
@@ -706,7 +711,7 @@ def test_compile_cached_vcs_package(runner, venv):
     assert vcs_package == out.stdout.strip()
 
 
-@legacy_resolver_only
+@pytest.mark.skip_resolver("backtracking")
 def test_locally_available_editable_package_is_not_archived_in_cache_dir(
     pip_conf, tmpdir, runner
 ):
@@ -1445,7 +1450,7 @@ def test_bad_setup_file(runner):
     assert f"Failed to parse {os.path.abspath('setup.py')}" in out.stderr
 
 
-@legacy_resolver_only
+@pytest.mark.skip_resolver("backtracking")
 def test_no_candidates(pip_conf, runner):
     with open("requirements", "w") as req_in:
         req_in.write("small-fake-a>0.3b1,<0.3b2")
@@ -1456,7 +1461,7 @@ def test_no_candidates(pip_conf, runner):
     assert "Skipped pre-versions:" in out.stderr
 
 
-@legacy_resolver_only
+@pytest.mark.skip_resolver("backtracking")
 def test_no_candidates_pre(pip_conf, runner):
     with open("requirements", "w") as req_in:
         req_in.write("small-fake-a>0.3b1,<0.3b1")
@@ -2175,7 +2180,7 @@ def test_options_in_requirements_file(runner, options):
         ),
     ),
 )
-@legacy_resolver_only
+@pytest.mark.skip_resolver("backtracking")
 def test_unreachable_index_urls(runner, cli_options, expected_message):
     """
     Test pip-compile raises an error if index URLs are not reachable.
@@ -2320,7 +2325,7 @@ def test_preserve_compiled_prerelease_version(pip_conf, runner):
     assert "small-fake-a==0.3b1" in out.stderr.splitlines()
 
 
-@backtracking_resolver_only
+@pytest.mark.skip_resolver("legacy")
 def test_ignore_compiled_unavailable_version(pip_conf, runner, current_resolver):
     with open("requirements.in", "w") as req_in:
         req_in.write("small-fake-a")
@@ -3014,7 +3019,7 @@ def _mock_build_project_metadata(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     return func
 
 
-@backtracking_resolver_only
+@pytest.mark.skip_resolver("legacy")
 @pytest.mark.network
 def test_all_extras_and_all_build_deps(
     fake_dists_with_build_deps,
@@ -3082,7 +3087,7 @@ def test_all_extras_and_all_build_deps(
         """)
 
 
-@backtracking_resolver_only
+@pytest.mark.skip_resolver("legacy")
 def test_all_build_deps(runner, tmp_path, monkeypatch):
     """
     Test that ``--all-build-deps`` is equivalent to specifying every
@@ -3109,7 +3114,7 @@ def test_all_build_deps(runner, tmp_path, monkeypatch):
     )
 
 
-@backtracking_resolver_only
+@pytest.mark.skip_resolver("legacy")
 def test_only_build_deps(runner, tmp_path, monkeypatch):
     """
     Test that ``--only-build-deps`` excludes dependencies other than build dependencies.
@@ -3132,7 +3137,7 @@ def test_only_build_deps(runner, tmp_path, monkeypatch):
     assert [c.name for c in cls.call_args.kwargs["constraints"]] == ["bdep0"]
 
 
-@backtracking_resolver_only
+@pytest.mark.skip_resolver("legacy")
 def test_all_build_deps_fail_with_build_target(runner):
     """
     Test that passing ``--all-build-deps`` and ``--build-deps-for`` fails.
@@ -3150,7 +3155,7 @@ def test_all_build_deps_fail_with_build_target(runner):
     assert exp in out.stderr
 
 
-@backtracking_resolver_only
+@pytest.mark.skip_resolver("legacy")
 def test_only_build_deps_fails_without_any_build_deps(runner):
     """
     Test that passing ``--only-build-deps`` fails when it is not specified how build deps should
@@ -3165,7 +3170,7 @@ def test_only_build_deps_fails_without_any_build_deps(runner):
     assert exp in out.stderr
 
 
-@backtracking_resolver_only
+@pytest.mark.skip_resolver("legacy")
 @pytest.mark.parametrize("option", ("--all-extras", "--extra=foo"))
 def test_only_build_deps_fails_with_conflicting_options(runner, option):
     """
@@ -3184,7 +3189,7 @@ def test_only_build_deps_fails_with_conflicting_options(runner, option):
     assert exp in out.stderr
 
 
-@backtracking_resolver_only
+@pytest.mark.skip_resolver("legacy")
 @pytest.mark.parametrize("option", ("--all-build-deps", "--build-deps-for=wheel"))
 def test_build_deps_fail_without_setup_file(runner, tmpdir, option):
     """
@@ -3544,7 +3549,7 @@ def test_raise_error_when_input_and_output_filenames_are_matched(
 
 
 @pytest.mark.network
-@backtracking_resolver_only
+@pytest.mark.skip_resolver("legacy")
 def test_pass_pip_cache_to_pip_args(tmpdir, runner, current_resolver):
     cache_dir = tmpdir.mkdir("cache_dir")
 
@@ -3563,7 +3568,7 @@ def test_pass_pip_cache_to_pip_args(tmpdir, runner, current_resolver):
     assert os.listdir(os.path.join(str(cache_dir), pip_http_cache_dir))
 
 
-@backtracking_resolver_only
+@pytest.mark.skip_resolver("legacy")
 def test_compile_recursive_extras_static(
     runner,
     tmp_path,
@@ -3608,7 +3613,7 @@ small-fake-b==0.3
         raise
 
 
-@backtracking_resolver_only
+@pytest.mark.skip_resolver("legacy")
 @pytest.mark.parametrize(
     "setuptools_version_info",
     (
@@ -3672,7 +3677,7 @@ small-fake-b==0.3
         raise
 
 
-@backtracking_resolver_only
+@pytest.mark.skip_resolver("legacy")
 @pytest.mark.network
 def test_compile_build_targets_setuptools_no_wheel_dep(
     runner,
