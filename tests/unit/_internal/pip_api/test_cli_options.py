@@ -17,7 +17,7 @@ def test_postprocess_cli_options_pre_adds_all_to_release_control_all_releases():
     cmd = create_command("install")
     options, _ = cmd.parse_args(["--pre"])
 
-    # initiall, 'all_releases' is empty
+    # initially, 'all_releases' is empty
     assert not options.release_control.all_releases
 
     _pip_api.postprocess_cli_options(options)

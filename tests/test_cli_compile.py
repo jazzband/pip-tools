@@ -3418,7 +3418,7 @@ def test_resolution_failure(runner):
 
 
 def test_resolver_reaches_max_rounds(runner):
-    """Test resolver reched max rounds and raises error."""
+    """Test resolver reached max rounds and raises error."""
     with open("requirements.in", "w") as reqs_out:
         reqs_out.write("six")
 
