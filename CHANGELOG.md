@@ -2,6 +2,140 @@
 
 <!-- towncrier release notes start -->
 
+## v7.6.0
+
+*2026-07-13*
+
+### Features
+
+- The `--help` output for `pip-compile` and `pip-sync`
+  commands has been extended to include usage examples
+  -- by {user}`Dzhud`.
+
+  *PRs and issues:* {issue}`1142`
+
+- Added `--uploaded-prior-to` as a passthrough option for `pip-compile`, allowing
+  users to restrict package candidates to versions uploaded before a given
+  datetime. Requires pip >= 26.0 -- by {user}`miettal`.
+
+  *PRs and issues:* {issue}`2288`
+
+- `pip-tools` is now compatible with `pip` 26.1 -- {user}`gaborbernat`.
+
+  *PRs and issues:* {issue}`2379`
+
+### Improved documentation
+
+- Fixed the contents sidebar for the index doc -- by {user}`sirosen`.
+
+  *PRs and issues:* {issue}`2169`
+
+- `pip-tools` now has a policy regarding LLM-generated contributions, noted in the
+  contributing documentation -- by {user}`sirosen`.
+
+  Thanks to {user}`0cjs`, {user}`gpshead`, {user}`mr-c`, {user}`samdoran`,
+  {user}`webknjaz`, and everyone else in the broader community who helped us
+  to craft a policy which is considerate of contributors and protective of the
+  project and its maintainers.
+
+  *PRs and issues:* {issue}`2318`
+
+- `pip-tools`' documentation now features a section titled "Reference" covering
+  the CLI commands and configuration. Configuration documentation has been removed
+  from the readme.
+
+  -- by {user}`sirosen`
+
+### Contributor-facing changes
+
+- CI testing now runs on Intel and ARM macOS runners, and is pinned to a specific
+  macOS version -- by {user}`sirosen`.
+
+  *PRs and issues:* {issue}`2079`, {issue}`2132`, {issue}`2348`
+
+- `pip-tools` now has a policy regarding LLM-generated contributions, noted in the
+  contributing documentation -- by {user}`sirosen`.
+
+  Thanks to {user}`0cjs`, {user}`gpshead`, {user}`mr-c`, {user}`samdoran`,
+  {user}`webknjaz`, and everyone else in the broader community who helped us
+  to craft a policy which is considerate of contributors and protective of the
+  project and its maintainers.
+
+  *PRs and issues:* {issue}`2278`, {issue}`2318`
+
+- Started running {pypi}`zizmor` as a part of CI pipelines to improve
+  security of how we configure GitHub Actions CI/CD
+  -- by {user}`webknjaz`.
+
+  *PRs and issues:* {issue}`2327`
+
+- pip-tools docs now support GitHub Flavored Markdown admonition blocks
+  -- by {user}`webknjaz`.
+
+  *PRs and issues:* {issue}`2343`
+
+- Coverage reporting in `pip-tools` now skips `_t.TYPE_CHECKING` blocks -- by
+  {user}`gaborbernat`.
+
+  *PRs and issues:* {issue}`2386`
+
+- {class}`~piptools.repositories.LocalRequirementsRepository` now accepts any
+  {class}`~piptools.repositories.BaseRepository` subclass as its proxied
+  repository, not only {class}`~piptools.repositories.PyPIRepository`
+  -- by {user}`gaborbernat`.
+
+  *PRs and issues:* {issue}`2387`
+
+- A handful of f-string conversions in {mod}`piptools.utils` and the CLI
+  entry points in {mod}`piptools.scripts.compile` and
+  {mod}`piptools.scripts.sync` carried a stray space before `!s` (e.g.
+  `f"...{value !s}..."`). PEP 498 forbids the whitespace before the
+  conversion flag and tooling differs on whether the form parses; the
+  literals are now in canonical `{value!s}` shape -- by
+  :user:`gaborbernat`.
+
+  *PRs and issues:* {issue}`2388`
+
+- A session-scoped autouse fixture in {file}`tests/conftest.py` now drops every
+  `PIP_*` environment variable before any other fixture runs, so the test
+  suite no longer flakes on contributor machines whose shell exports
+  `PIP_INDEX_URL`, `PIP_FIND_LINKS`, `PIP_TRUSTED_HOST`, and the rest of
+  the family for a corporate mirror. Tests that need a specific variable
+  keep their function-scoped {meth}`pytest:pytest.MonkeyPatch.setenv` and
+  supersede the session-level deletion -- by {user}`gaborbernat`.
+
+  *PRs and issues:* {issue}`2390`
+
+- The Sphinx configuration now resolves cross-references for
+  {external+packaging:doc}`packaging <index>`, {external+pip:doc}`pip <index>`,
+  {external+pip:doc}`click <index>`, {mod}`build`, and {mod}`importlib_metadata`
+  via intersphinx, and the deprecated `sphinx.util.console.bold` helper is
+  replaced with a plain `logger.info` call (the colour markup never rendered
+  in CI logs anyway). Cross-references in docstrings that previously fell
+  back to nitpick suppression now link to the upstream documentation -- by
+  {user}`gaborbernat`.
+
+  *PRs and issues:* {issue}`2391`
+
+- The `Notify Codecov` CI workflow job now only fails on privilege errors
+  in the upstream project repository runs. This fixes a problem
+  contributors face when running CI within their forks that are not filed
+  as true Codecov-side projects.
+
+  -- {user}`gaborbernat` and {user}`webknjaz`
+
+  *PRs and issues:* {issue}`2392`
+
+- Fixed incorrect nitpick ignore regexes -- by {user}`sirosen`.
+
+- `pip-tools` CI now pins GitHub Actions versions to hashes -- by {user}`sirosen`.
+
+- `pip-tools` now tests against PyPy 3.11 -- by {user}`sirosen` and {user}`webknjaz`.
+
+- `pip-tools`'s GitHub Actions config now specifies the Ubuntu and Windows runner
+  versions used.
+
+
 ## v7.5.3
 
 *2026-02-09*
