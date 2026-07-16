@@ -89,10 +89,10 @@
 - A handful of f-string conversions in {mod}`piptools.utils` and the CLI
   entry points in {mod}`piptools.scripts.compile` and
   {mod}`piptools.scripts.sync` carried a stray space before `!s` (e.g.
-  `f"...{value !s}..."`). PEP 498 forbids the whitespace before the
+  `f"...{value !s}..."`). {pep}`498` forbids the whitespace before the
   conversion flag and tooling differs on whether the form parses; the
   literals are now in canonical `{value!s}` shape -- by
-  :user:`gaborbernat`.
+  {user}`gaborbernat`.
 
   *PRs and issues:* {issue}`2388`
 
