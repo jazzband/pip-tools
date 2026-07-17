@@ -1,0 +1,70 @@
+from __future__ import annotations
+
+import typing as _t
+from collections.abc import Iterable
+
+import click
+from dependency_groups import DependencyGroupResolver
+from pip._internal.req import InstallRequirement
+from pip._vendor.packaging.requirements import Requirement
+
+from .._compat import _tomllib_compat
+from . import _cli
+
+
+def parse_dependency_groups(
+    params: tuple[_cli.ParsedDependencyGroupParam, ...],
+) -> list[InstallRequirement]:
+    resolvers = _build_resolvers(param.path for param in params)
+    reqs: list[InstallRequirement] = []
+    for param in params:
+        resolver = resolvers[param.path]
+        try:
+            reqs.extend(
+                InstallRequirement(
+                    Requirement(str(req)),
+                    comes_from=f"--group '{param}'",
+                )
+                for req in resolver.resolve(param.group)
+            )
+        except (ValueError, TypeError, LookupError) as e:
+            raise click.UsageError(
+                f"[dependency-groups] resolution failed for '{param.group}' "
+                f"from '{param.path}': {e}"
+            ) from e
+    return reqs
+
+
+def _build_resolvers(paths: Iterable[str]) -> dict[str, _t.Any]:
+    resolvers = {}
+    for path in paths:
+        if path in resolvers:
+            continue
+
+        pyproject = _load_pyproject(path)
+        if "dependency-groups" not in pyproject:
+            raise click.UsageError(
+                f"[dependency-groups] table was missing from '{path}'. "
+                "Cannot resolve '--group' option."
+            )
+        raw_dependency_groups = pyproject["dependency-groups"]
+        if not isinstance(raw_dependency_groups, dict):
+            raise click.UsageError(
+                f"[dependency-groups] table was malformed in {path}. "
+                "Cannot resolve '--group' option."
+            )
+
+        resolvers[path] = DependencyGroupResolver(raw_dependency_groups)
+    return resolvers
+
+
+def _load_pyproject(path: str) -> dict[str, _t.Any]:
+    try:
+        with open(path, "rb") as fp:
+            return _tomllib_compat.load(fp)
+    except FileNotFoundError:
+        raise click.UsageError(f"{path} not found. Cannot resolve '--group' option.")
+    except _tomllib_compat.TOMLDecodeError as e:
+        raise click.UsageError(f"Error parsing {path}: {e}") from e
+    except OSError as e:
+        raise click.UsageError(f"Error reading {path}: {e}") from e
