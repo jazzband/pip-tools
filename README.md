@@ -31,6 +31,25 @@ $ source /path/to/venv/bin/activate
 **Note**: all of the remaining example commands assume you've activated your
 project's virtual environment.
 
+## Shell completion
+
+`pip-compile` and `pip-sync` support shell completion through Click.
+For example, to install completion scripts for zsh in a user-level
+completion directory:
+
+```console
+$ mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}/zsh/site-functions"
+$ _PIP_COMPILE_COMPLETE=zsh_source pip-compile \
+  > "${XDG_DATA_HOME:-$HOME/.local/share}/zsh/site-functions/_pip-compile"
+$ _PIP_SYNC_COMPLETE=zsh_source pip-sync \
+  > "${XDG_DATA_HOME:-$HOME/.local/share}/zsh/site-functions/_pip-sync"
+```
+
+Make sure that directory is present in your zsh `fpath`. For Bash or Fish,
+use `bash_source` or `fish_source` instead, and write the generated script to
+the completion directory for that shell. See
+[Click's shell completion support][click-shell-completion] for more details.
+
 ## Example usage for `pip-compile`
 
 The `pip-compile` command lets you compile a `requirements.txt` file from
@@ -680,6 +699,7 @@ note that it is deprecated and will be removed in a future release.
 [buildstatus-gha-image]: https://github.com/jazzband/pip-tools/workflows/CI/badge.svg
 [codecov]: https://codecov.io/gh/jazzband/pip-tools
 [codecov-image]: https://codecov.io/gh/jazzband/pip-tools/branch/main/graph/badge.svg
+[click-shell-completion]: https://click.palletsprojects.com/shell-completion/
 [Matrix Room Badge]: https://img.shields.io/matrix/pip-tools:matrix.org?label=Discuss%20on%20Matrix%20at%20%23pip-tools%3Amatrix.org&logo=matrix&server_fqdn=matrix.org&style=flat
 [Matrix Room]: https://matrix.to/#/%23pip-tools:matrix.org
 [Matrix Space Badge]: https://img.shields.io/matrix/jazzband:matrix.org?label=Discuss%20on%20Matrix%20at%20%23jazzband%3Amatrix.org&logo=matrix&server_fqdn=matrix.org&style=flat
