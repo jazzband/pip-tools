@@ -11,6 +11,7 @@
 :maxdepth: 2
 :caption: Contents
 
+how-to/index
 reference/index
 contributing
 changelog
