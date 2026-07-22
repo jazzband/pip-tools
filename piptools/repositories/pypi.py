@@ -273,7 +273,15 @@ class PyPIRepository(BaseRepository):
         API reference: https://warehouse.readthedocs.io/api-reference/json/
         """
         package_indexes = (
-            PackageIndex(url=index_url, file_storage_domain="")
+            # Strip trailing slash(es): pip's PackageIndex derives
+            # pypi_url via urllib.parse.urljoin(url, "pypi"), which
+            # produces a different (and, with a trailing slash,
+            # incorrect/nested) result depending on whether url ends
+            # with a slash -- e.g. "https://pypi.org/simple/" yields
+            # ".../simple/pypi" instead of ".../pypi". Normalizing here
+            # ensures a consistent, correct pypi_url regardless of how
+            # the user formatted --index-url. See GH #1669.
+            PackageIndex(url=index_url.rstrip("/"), file_storage_domain="")
             for index_url in self.finder.search_scope.index_urls
         )
         for package_index in package_indexes:

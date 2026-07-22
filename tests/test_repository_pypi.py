@@ -429,6 +429,44 @@ def test_get_project__handles_404(from_line, tmpdir, monkeypatch, pypi_repositor
     assert actual_data is None
 
 
+def test_get_project__index_url_trailing_slash(from_line, tmpdir, monkeypatch):
+    """
+    Regression test for
+    https://github.com/jazzband/pip-tools/issues/1669
+
+    An --index-url ending with a trailing slash (e.g.
+    "https://pypi.org/simple/", matching PEP 503's own description of
+    PyPI's base URL) must still produce a correct, non-doubled JSON
+    API URL like "https://pypi.org/pypi/<name>/json" -- not
+    "https://pypi.org/simple/pypi/<name>/json".
+    """
+    pypi_repository = PyPIRepository(
+        [
+            "--index-url",
+            "https://pypi.org/simple/",
+            "--use-deprecated",
+            "legacy-resolver",
+        ],
+        cache_dir=(tmpdir / "pypi-repo"),
+    )
+
+    requested_urls = []
+
+    class MockResponse:
+        status_code = 404
+
+    def mock_get(url, *args, **kwargs):
+        requested_urls.append(url)
+        return MockResponse()
+
+    monkeypatch.setattr(pypi_repository.session, "get", mock_get)
+    ireq = from_line("fake-package==0.1")
+
+    pypi_repository._get_project(ireq)
+
+    assert requested_urls == ["https://pypi.org/pypi/fake-package/json"]
+
+
 def test_name_collision(from_line, pypi_repository, make_package, make_sdist, tmpdir):
     """
     Test to ensure we don't fail if there are multiple URL-based requirements
