@@ -1,29 +1,42 @@
 ---
 
 name: Bug report
-about: Create a report to help us improve
+description: Create a report to help us improve the package.
 
----
+body:
+    - type: textarea
+      attributes:
+        label: Describe the Bug
+        description: >-
+            A clear and concise description of what the bug is.
+        validation:
+            required: true
 
-<!-- Describe the issue briefly here. -->
+    - type: textarea
+      attributes:
+        label: Expected Behaviour
+        description: >-
+           A description of what were you expecting to happen.
+        validation:
+            required: true
 
-#### Environment Versions
+    - type: textarea
+      attributes:
+        label: Steps to Reproduce
+        description: >-
+            Describe the reproduce to reproduce the bug. 
+        placeholder: |
+            1. ...
+            2. ...
+            3. ...
 
-1. OS Type
-1. Python version: `$ python -V`
-1. pip version: `$ pip --version`
-1. pip-tools version: `$ pip-compile --version`
-
-#### Steps to replicate
-
-1. ...
-2. ...
-3. ...
-
-#### Expected result
-
-...
-
-#### Actual result
-
-...
+    - type: textarea
+      attributes:
+        label: Environment Versions
+        description: >-
+            Describe the environment versions used 
+        placeholder: |
+            1. OS Type
+            2. Python version: `$ python -V`
+            3. pip version: `$ pip --version`
+            4. pip-tools version: `$ pip-compile --version`
