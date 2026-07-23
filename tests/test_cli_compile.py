@@ -425,6 +425,7 @@ def test_trusted_host_option(pip_conf, runner):
     out = runner.invoke(
         cli, ["-v", "--trusted-host", "example.com", "--trusted-host", "example2.com"]
     )
+    assert out.exit_code == 0, out.stderr
     with open("requirements.txt") as _compiled:
         _compiled_text = _compiled.read()
     assert "--trusted-host example.com\n--trusted-host example2.com\n" in _compiled_text
@@ -435,6 +436,7 @@ def test_trusted_host_envvar(monkeypatch, pip_conf, runner):
         pass
     monkeypatch.setenv("PIP_TRUSTED_HOST", "example.com example2.com")
     out = runner.invoke(cli, ["-v"])
+    assert out.exit_code == 0, out.stderr
     with open("requirements.txt") as _compiled:
         _compiled_text = _compiled.read()
     assert "--trusted-host example.com\n--trusted-host example2.com\n" in _compiled_text
