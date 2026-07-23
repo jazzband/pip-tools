@@ -2034,9 +2034,7 @@ def test_default_verbosity_does_not_echo_resolved_lines_to_stderr(pip_conf, runn
     with open("requirements.in", "w") as req_in:
         req_in.write("small-fake-a\n")
 
-    out = runner.invoke(
-        cli, ["--no-annotate", "--output-file", "requirements.lock"]
-    )
+    out = runner.invoke(cli, ["--no-annotate", "--output-file", "requirements.lock"])
 
     assert out.exit_code == 0, out.stderr
     with open("requirements.lock") as lock:
