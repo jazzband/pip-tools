@@ -357,7 +357,11 @@ class _FileLineWriter:
         )
 
     def __call__(self, line: str) -> None:
-        log.info(line)
+        # Echo resolved lines only with -v/--verbose (or higher). At default
+        # verbosity the output file is the sole destination for the result,
+        # which keeps stderr for progress/logging and avoids the "double
+        # output" confusion with -o / --output-file (see #1987).
+        log.debug(line)
         self.dst_file.write(unstyle(line))
         self.dst_file.write("\n")
 
