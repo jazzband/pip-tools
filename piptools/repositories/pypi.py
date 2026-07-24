@@ -6,6 +6,7 @@ import itertools
 import optparse
 import os
 import typing as _t
+import urllib.parse
 from collections.abc import Iterator
 from contextlib import contextmanager
 from shutil import rmtree
@@ -16,7 +17,6 @@ from pip._internal.commands import create_command
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.models.candidate import InstallationCandidate
-from pip._internal.models.index import PackageIndex
 from pip._internal.models.link import Link
 from pip._internal.models.wheel import Wheel
 from pip._internal.network.session import PipSession
@@ -272,16 +272,16 @@ class PyPIRepository(BaseRepository):
 
         API reference: https://warehouse.readthedocs.io/api-reference/json/
         """
-        package_indexes = (
-            PackageIndex(url=index_url, file_storage_domain="")
+        index_base_urls = (
+            _get_true_base_from_index_url(index_url)
             for index_url in self.finder.search_scope.index_urls
         )
-        for package_index in package_indexes:
-            url = f"{package_index.pypi_url}/{ireq.name}/json"
+        for index_base_url in index_base_urls:
+            json_url = urllib.parse.urljoin(index_base_url, f"{ireq.name}/json")
             try:
-                response = self.session.get(url)
+                response = self.session.get(json_url)
             except RequestException as e:
-                log.debug(f"Fetch package info from PyPI failed: {url}: {e}")
+                log.debug(f"Fetch package info from PyPI failed: {json_url}: {e}")
                 continue
 
             # Skip this PyPI server, because there is no package
@@ -292,7 +292,7 @@ class PyPIRepository(BaseRepository):
             try:
                 data = response.json()
             except ValueError as e:
-                log.debug(f"Cannot parse JSON response from PyPI: {url}: {e}")
+                log.debug(f"Cannot parse JSON response from PyPI: {json_url}: {e}")
                 continue
             return data
         return None
@@ -520,3 +520,22 @@ def open_local_or_remote_file(link: Link, session: Session) -> Iterator[FileStre
 
 def candidate_version(candidate: InstallationCandidate) -> _BaseVersion:
     return candidate.version
+
+
+def _get_true_base_from_index_url(url: str) -> str:
+    """
+    Given an index URL (which may or may not end in `/simple`), get the base URL for
+    using the JSON API.
+
+    Even though PyPI's base URL is documented as `https://pypi.org/simple/`, that is
+    not the "true base URL" for using the JSON API.
+
+    It is not possible to accommodate all users perfectly -- we can ensure proper
+    behavior for pypi.org and test.pypi.org , and try not to break anyone else in the
+    process.
+    """
+    if url.endswith("/simple/"):
+        url = url[: -len("simple/")]
+    elif url.endswith("/simple"):
+        url = url[: -len("simple")]
+    return url
