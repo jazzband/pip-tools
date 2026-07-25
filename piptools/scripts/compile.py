@@ -56,6 +56,10 @@ def _determine_linesep(
     if strategy == "preserve":
         for fname in filenames:
             try:
+                if not os.path.isfile(fname):
+                    # Skip anything that is not a regular file, such as named
+                    # pipes, which would block forever on read.
+                    continue
                 with open(fname, "rb") as existing_file:
                     existing_text = existing_file.read()
             except FileNotFoundError:

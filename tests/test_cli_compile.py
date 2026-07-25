@@ -9,6 +9,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import threading
 import typing as _t
 from textwrap import dedent
 from unittest import mock
@@ -24,7 +25,7 @@ from pip._vendor.packaging.version import Version
 from piptools._compat import tempfile_compat
 from piptools._internal import _pip_api
 from piptools.build import ProjectMetadata
-from piptools.scripts.compile import cli
+from piptools.scripts.compile import _determine_linesep, cli
 from piptools.utils import COMPILE_EXCLUDE_OPTIONS
 
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
@@ -1299,6 +1300,27 @@ def test_preserve_newline_from_input(runner, linesep, must_exclude):
     if must_exclude in linesep:
         txt = txt.replace(linesep, "")
     assert must_exclude not in txt
+
+
+@pytest.mark.skipif(
+    not hasattr(os, "mkfifo"), reason="named pipes are not supported on this platform"
+)
+def test_determine_linesep_skips_named_pipes(tmp_path):
+    """Non-regular files must not be read, or reading blocks forever."""
+    named_pipe = tmp_path / "named-pipe"
+    os.mkfifo(named_pipe, 0o600)
+
+    result = []
+
+    def read_linesep():
+        result.append(_determine_linesep("preserve", (str(named_pipe),)))
+
+    thread = threading.Thread(target=read_linesep, daemon=True)
+    thread.start()
+    thread.join(timeout=5)
+
+    assert not thread.is_alive(), "_determine_linesep() blocked on a named pipe"
+    assert result == ["\n"]
 
 
 def test_generate_hashes_with_split_style_annotations(pip_conf, runner, tmpdir_cwd):
