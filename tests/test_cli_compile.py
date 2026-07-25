@@ -7,6 +7,7 @@ import pathlib
 import re
 import shlex
 import shutil
+import signal
 import subprocess
 import sys
 import typing as _t
@@ -24,7 +25,7 @@ from pip._vendor.packaging.version import Version
 from piptools._compat import tempfile_compat
 from piptools._internal import _pip_api
 from piptools.build import ProjectMetadata
-from piptools.scripts.compile import cli
+from piptools.scripts.compile import _determine_linesep, cli
 from piptools.utils import COMPILE_EXCLUDE_OPTIONS
 
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
@@ -1299,6 +1300,25 @@ def test_preserve_newline_from_input(runner, linesep, must_exclude):
     if must_exclude in linesep:
         txt = txt.replace(linesep, "")
     assert must_exclude not in txt
+
+
+@pytest.mark.skipif(
+    not hasattr(os, "mkfifo"), reason="named pipes are not available on this platform"
+)
+def test_preserve_newline_skips_named_pipes(tmpdir_cwd):
+    """A named pipe input must not be read when detecting the line separator."""
+    named_pipe = pathlib.Path(tmpdir_cwd) / "named-pipe"
+    os.mkfifo(named_pipe, 0o600)
+
+    def _fail_on_alarm(*args):
+        raise AssertionError(f"_determine_linesep() blocked reading {named_pipe}")
+
+    signal.signal(signal.SIGALRM, _fail_on_alarm)
+    signal.alarm(5)
+    try:
+        assert _determine_linesep("preserve", (str(named_pipe),)) == "\n"
+    finally:
+        signal.alarm(0)
 
 
 def test_generate_hashes_with_split_style_annotations(pip_conf, runner, tmpdir_cwd):
