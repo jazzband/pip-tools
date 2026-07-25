@@ -488,3 +488,43 @@ def test_tool_specific_config_option(run, runner, make_config_file):
 
     assert out.exit_code == 1
     assert "Would install:" in out.stdout
+
+
+@mock.patch("piptools.sync.run")
+def test_use_src_files_from_config_if_option_is_not_specified_from_cli(
+    run, runner, make_config_file
+):
+    config_file = make_config_file(
+        "src-files", ["requirements_lock.txt"], section="pip-tools", subsection="sync"
+    )
+
+    with open("requirements_lock.txt", "w") as reqs_txt:
+        reqs_txt.write("six==1.10.0")
+
+    out = runner.invoke(cli, ["--dry-run", "--config", config_file.as_posix()])
+
+    assert out.exit_code == 1
+    assert "Would install:" in out.stdout
+    assert "six==1.10.0" in out.stdout
+
+
+@mock.patch("piptools.sync.run")
+def test_use_src_files_from_cli_if_option_is_specified_in_both_config_and_cli(
+    run, runner, make_config_file
+):
+    config_file = make_config_file(
+        "src-files", ["requirements_lock.txt"], section="pip-tools", subsection="sync"
+    )
+
+    with open("requirements_lock.txt", "w") as reqs_txt:
+        reqs_txt.write("six==1.10.0")
+    with open("other.txt", "w") as reqs_txt:
+        reqs_txt.write("small-fake-a==0.1")
+
+    out = runner.invoke(
+        cli, ["other.txt", "--dry-run", "--config", config_file.as_posix()]
+    )
+
+    assert out.exit_code == 1
+    assert "small-fake-a==0.1" in out.stdout
+    assert "six==1.10.0" not in out.stdout
