@@ -24,7 +24,7 @@ body:
       attributes:
         label: Steps to Reproduce
         description: >-
-            Describe the reproduce to reproduce the bug. 
+            Describe the steps to reproduce the bug. 
         placeholder: |
             1. ...
             2. ...
