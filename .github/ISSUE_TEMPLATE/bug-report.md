@@ -1,7 +1,7 @@
 ---
 
 name: Bug report
-description: Create a report to help us improve the package.
+description: Create a report to help us improve pip-tools.
 
 body:
     - type: textarea
