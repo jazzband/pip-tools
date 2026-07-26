@@ -42,6 +42,7 @@ dependencies = [
   "click >= 8",
   "pip >= 22.2",
   "pyproject_hooks",
+  "typing_extensions >= 4.6.0; python_version < '3.11'",
   "tomli; python_version < '3.11'",
   # indirect dependencies
   "setuptools", # typically needed when pip-tools invokes setup.py
