@@ -20,7 +20,7 @@ body:
       description: >-
           A description of what were you expecting to happen.
     validations:
-          required: true
+      required: true
 
   - type: textarea
     id: reproduction-steps
