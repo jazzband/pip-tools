@@ -27,7 +27,7 @@ from pip._vendor.pkg_resources import get_distribution
 from piptools.locations import DEFAULT_CONFIG_FILE_NAMES
 
 from ._compat import _tomllib_compat, canonicalize_name
-from ._internal import _subprocess
+from ._internal import _cli, _subprocess
 
 _KT = _t.TypeVar("_KT")
 _VT = _t.TypeVar("_VT")
@@ -375,6 +375,10 @@ def get_compile_command(click_ctx: click.Context) -> str:
             value = [value]
 
         for val in value:
+            # use the input value for --group params
+            if isinstance(val, _cli.ParsedDependencyGroupParam):
+                val = val.input_arg
+
             # Flags don't have a value, thus add to args true or false option long name
             if option.is_flag:
                 # If there are false-options, choose an option name depending on a value
