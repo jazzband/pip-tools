@@ -6,6 +6,7 @@ and usage. It is a private API for the rest of ``piptools`` to leverage.
 from __future__ import annotations
 
 from .cli_options import postprocess_cli_options
+from .command_methods import make_requirement_preparer_from_command
 from .install_requirements import (
     copy_install_requirement,
     create_install_requirement,
@@ -33,4 +34,5 @@ __all__ = (
     "finder_allows_all_prereleases",
     "finder_allows_prereleases_of_req",
     "postprocess_cli_options",
+    "make_requirement_preparer_from_command",
 )
