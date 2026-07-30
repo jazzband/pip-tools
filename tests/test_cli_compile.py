@@ -4386,6 +4386,7 @@ def test_compile_with_generate_hashes_preserves_extra_index_url(
         cli,
         ["--output-file", "-", "--no-header", "--strip-extras", "--generate-hashes"],
     )
+    assert out.exit_code == 0, out
 
     # the output should contain
     # - the `--index-url` from the pip config

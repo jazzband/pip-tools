@@ -29,7 +29,7 @@ from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
 from pip._internal.utils.urls import path_to_url, url_to_path
 from pip._vendor.packaging.tags import Tag
 from pip._vendor.packaging.version import _BaseVersion
-from pip._vendor.requests import RequestException, Session
+from pip._vendor.requests import Session
 
 from .._compat import create_wheel_cache
 from .._internal import _pip_api
@@ -269,6 +269,10 @@ class PyPIRepository(BaseRepository):
         InstallRequirement. Return None on HTTP/JSON error or if a package
         is not found on PyPI server.
 
+        Because the JSON API is not standard, a wide class of errors are ignored in this
+        context. Failed connections, 404s, and non-JSON responses are all treated as
+        "no data".
+
         API reference: https://warehouse.readthedocs.io/api-reference/json/
         """
         index_base_urls = (
@@ -277,9 +281,11 @@ class PyPIRepository(BaseRepository):
         )
         for index_base_url in index_base_urls:
             json_url = urllib.parse.urljoin(index_base_url, f"{ireq.name}/json")
+
+            exc_types = _pip_api.request_failed_exception_types()
             try:
                 response = self.session.get(json_url)
-            except RequestException as e:
+            except exc_types as e:
                 log.debug(f"Fetch package info from PyPI failed: {json_url}: {e}")
                 continue
 
