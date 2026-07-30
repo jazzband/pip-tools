@@ -189,16 +189,15 @@ class PyPIRepository(BaseRepository):
             TempDirectory(kind="resolver") as temp_dir,
             indent_log(),
         ):
-            preparer_kwargs = {
-                "temp_build_dir": temp_dir,
-                "options": self.options,
-                "session": self.session,
-                "finder": self.finder,
-                "use_user_site": False,
-                "download_dir": download_dir,
-                "build_tracker": build_tracker,
-            }
-            preparer = self.command.make_requirement_preparer(**preparer_kwargs)
+            preparer = _pip_api.make_requirement_preparer_from_command(
+                self.command,
+                temp_build_dir=temp_dir,
+                options=self.options,
+                build_tracker=build_tracker,
+                session=self.session,
+                finder=self.finder,
+                download_dir=download_dir,
+            )
 
             reqset = RequirementSet()
             ireq.user_supplied = True

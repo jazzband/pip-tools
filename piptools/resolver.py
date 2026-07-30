@@ -597,15 +597,15 @@ class BacktrackingResolver(BaseResolver):
                 globally_managed=True,
             )
 
-            preparer_kwargs = {
-                "temp_build_dir": temp_dir,
-                "options": self.options,
-                "session": self.session,
-                "finder": self.finder,
-                "use_user_site": False,
-                "build_tracker": build_tracker,
-            }
-            preparer = self.command.make_requirement_preparer(**preparer_kwargs)
+            preparer = _pip_api.make_requirement_preparer_from_command(
+                self.command,
+                temp_build_dir=temp_dir,
+                options=self.options,
+                build_tracker=build_tracker,
+                session=self.session,
+                finder=self.finder,
+                download_dir=None,
+            )
 
             extra_resolver_kwargs = {}
             if _pip_api.PIP_VERSION_MAJOR_MINOR < (25, 3):  # pragma: <3.9 cover
