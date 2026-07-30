@@ -551,7 +551,6 @@ def cli(
         annotate=annotate,
         annotation_style=annotation_style,
         strip_extras=strip_extras,
-        generate_hashes=generate_hashes,
         default_index_url=repository.DEFAULT_INDEX_URL,
         index_urls=repository.finder.index_urls,
         trusted_hosts=repository.finder.trusted_hosts,

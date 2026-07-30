@@ -39,7 +39,6 @@ def writer(tmpdir_cwd):
             emit_trusted_host=True,
             annotate=True,
             annotation_style="split",
-            generate_hashes=False,
             default_index_url=None,
             index_urls=[],
             trusted_hosts=[],
