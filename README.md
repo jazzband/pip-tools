@@ -521,6 +521,21 @@ $ pip-sync requirements.txt --pip-args "--no-cache-dir --no-deps"
 `setuptools`, `pip`, or `pip-tools` itself.
 Use `python -m pip install --upgrade` to upgrade those packages.
 
+### Shell completion
+
+Both `pip-compile` and `pip-sync` support shell completion. Enable it by
+evaluating the completion script for your shell. For example, for `zsh`:
+
+```console
+$ eval "$(_PIP_COMPILE_COMPLETE=zsh_source pip-compile)"
+$ eval "$(_PIP_SYNC_COMPLETE=zsh_source pip-sync)"
+```
+
+For `bash` use `bash_source` instead of `zsh_source`, and for `fish` use
+`fish_source`. See the
+[Click shell completion docs](https://click.palletsprojects.com/en/8.1.x/shell-completion/#enabling-completion)
+for details on making the completion persist across shell sessions.
+
 ### Should I commit `requirements.in` and `requirements.txt` to source control?
 
 Generally, yes. If you want a reproducible environment installation available
