@@ -49,6 +49,7 @@ extensions = [
     "sphinxcontrib.programoutput",
     "sphinxcontrib.towncrier.ext",  # provides `.. towncrier-draft-entries::`
     "sphinx_issues",
+    "sphinx_design",
 ]
 
 # -- Options for HTML output -------------------------------------------------

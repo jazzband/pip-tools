@@ -6,4 +6,5 @@ These documents guide you through specific workflows using `pip-tools`!
 :maxdepth: 1
 
 customize-compiled-headers
+configure-completion
 ```
