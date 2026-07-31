@@ -453,17 +453,13 @@ def test_name_collision(from_line, pypi_repository, make_package, make_sdist, tm
             os.path.join(pkg_path, "main.zip"),
         )
 
-    name_collision_1 = "file://{dist_path}#egg=test_package_1".format(
-        dist_path=tmp_path / "test_package_1" / "main.zip"
-    )
-    ireq = from_line(name_collision_1)
+    dist_uri_1 = (tmp_path / "test_package_1" / "main.zip").as_uri()
+    ireq = from_line(f"{dist_uri_1}#egg=test_package_1")
     deps = pypi_repository.get_dependencies(ireq)
     assert len(deps) == 0
 
-    name_collision_2 = "file://{dist_path}#egg=test_package_2".format(
-        dist_path=tmp_path / "test_package_2" / "main.zip"
-    )
-    ireq = from_line(name_collision_2)
+    dist_uri_2 = (tmp_path / "test_package_2" / "main.zip").as_uri()
+    ireq = from_line(f"{dist_uri_2}#egg=test_package_2")
     deps = pypi_repository.get_dependencies(ireq)
     assert len(deps) == 1
     assert deps.pop().name == "test-package-1"
