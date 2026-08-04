@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import collections.abc as _c
+import functools
 import json
 import os
 import platform
@@ -10,10 +11,10 @@ import sys
 import typing as _t
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from functools import partial
 from importlib.metadata import version as version_of
 from pathlib import Path
 from textwrap import dedent
+from unittest import mock
 
 import pytest
 import tomli_w
@@ -118,17 +119,17 @@ class FakeRepository(BaseRepository):
     def options(self):
         return self._options
 
-    @property
+    @functools.cached_property
     def session(self) -> PipSession:
-        """Not used"""
+        return mock.Mock()
 
-    @property
+    @functools.cached_property
     def finder(self) -> PackageFinder:
-        """Not used"""
+        return mock.Mock()
 
-    @property
+    @functools.cached_property
     def command(self) -> InstallCommand:
-        """Not used"""
+        return mock.Mock()
 
 
 def pytest_collection_modifyitems(config, items):
@@ -188,7 +189,7 @@ def resolver(depcache, repository):
     # TODO: It'd be nicer if Resolver instance could be set up and then
     #       use .resolve(...) on the specset, instead of passing it to
     #       the constructor like this (it's not reusable)
-    return partial(
+    return functools.partial(
         LegacyResolver, repository=repository, cache=depcache, existing_constraints={}
     )
 
@@ -198,7 +199,7 @@ def backtracking_resolver(depcache):
     # TODO: It'd be nicer if Resolver instance could be set up and then
     #       use .resolve(...) on the specset, instead of passing it to
     #       the constructor like this (it's not reusable)
-    return partial(
+    return functools.partial(
         BacktrackingResolver,
         repository=FakeRepository(options=FakeOptions()),
         cache=depcache,
@@ -208,7 +209,7 @@ def backtracking_resolver(depcache):
 
 @pytest.fixture
 def base_resolver(depcache):
-    return partial(LegacyResolver, cache=depcache, existing_constraints={})
+    return functools.partial(LegacyResolver, cache=depcache, existing_constraints={})
 
 
 @pytest.fixture
