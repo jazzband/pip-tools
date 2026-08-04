@@ -196,7 +196,7 @@ def diff(
 
 def sync(
     to_install: Iterable[InstallRequirement],
-    to_uninstall: Iterable[InstallRequirement],
+    to_uninstall: Iterable[InstallRequirement | str],
     dry_run: bool = False,
     install_flags: list[str] | None = None,
     ask: bool = False,
