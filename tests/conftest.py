@@ -253,7 +253,10 @@ def runner():
 
 
 @pytest.fixture
-def tmp_path_cwd(tmp_path, monkeypatch):
+def tmp_path_cwd(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> _t.Iterator[Path]:
+    """Wrap ``tmp_path`` to also chdir into it."""
+    # use an explicit monkeypatch context, rather than calling monkeypatch.chdir, so
+    # that calls to `monkeypatch.undo()` won't accidentally revert
     with monkeypatch.context() as mp:
         mp.chdir(tmp_path)
         yield tmp_path
