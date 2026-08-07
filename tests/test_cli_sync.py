@@ -398,7 +398,7 @@ def test_default_python_executable_option(run, runner):
 
 
 @mock.patch("piptools.sync.run")
-def test_default_config_option(run, runner, make_config_file, tmpdir_cwd):
+def test_default_config_option(run, runner, make_config_file, tmp_path_cwd):
     make_config_file("dry-run", True)
 
     with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as reqs_txt:
