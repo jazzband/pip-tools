@@ -98,12 +98,12 @@ def test_open_local_or_remote_file__local_file(tmp_path, content, content_length
         assert file_stream.size == content_length
 
 
-def test_open_local_or_remote_file__directory(tmpdir):
+def test_open_local_or_remote_file__directory(tmp_path):
     """
     Test the `open_local_or_remote_file` raises a ValueError for a given `Link`
     to a directory.
     """
-    link = Link(path_to_url(tmpdir.strpath))
+    link = Link(path_to_url(str(tmp_path)))
     session = Session()
 
     with (
@@ -151,19 +151,19 @@ def test_relative_path_cache_dir_is_normalized(from_line):
     assert pypi_repository._cache_dir.endswith(relative_cache_dir)
 
 
-def test_relative_path_pip_cache_dir_is_normalized(from_line, tmpdir):
+def test_relative_path_pip_cache_dir_is_normalized(from_line, tmp_path):
     relative_cache_dir = "pip-cache"
     pypi_repository = PyPIRepository(
-        ["--cache-dir", relative_cache_dir], cache_dir=(tmpdir / "pypi-repo-cache")
+        ["--cache-dir", relative_cache_dir], cache_dir=(tmp_path / "pypi-repo-cache")
     )
 
     assert os.path.isabs(pypi_repository.options.cache_dir)
     assert pypi_repository.options.cache_dir.endswith(relative_cache_dir)
 
 
-def test_pip_cache_dir_is_empty(from_line, tmpdir):
+def test_pip_cache_dir_is_empty(from_line, tmp_path):
     pypi_repository = PyPIRepository(
-        ["--no-cache-dir"], cache_dir=(tmpdir / "pypi-repo-cache")
+        ["--no-cache-dir"], cache_dir=(tmp_path / "pypi-repo-cache")
     )
 
     assert not pypi_repository.options.cache_dir
@@ -270,7 +270,7 @@ def test_pip_cache_dir_is_empty(from_line, tmpdir):
         ),
     ),
 )
-def test_get_hashes_from_pypi(from_line, tmpdir, project_data, expected_hashes):
+def test_get_hashes_from_pypi(from_line, tmp_path, project_data, expected_hashes):
     """
     Test PyPIRepository._get_hashes_from_pypi() returns expected hashes or None.
     """
@@ -280,7 +280,7 @@ def test_get_hashes_from_pypi(from_line, tmpdir, project_data, expected_hashes):
             return project_data
 
     pypi_repository = MockPyPIRepository(
-        ["--no-cache-dir"], cache_dir=(tmpdir / "pypi-repo-cache")
+        ["--no-cache-dir"], cache_dir=(tmp_path / "pypi-repo-cache")
     )
     ireq = from_line("fake-package==0.1")
 
@@ -288,7 +288,7 @@ def test_get_hashes_from_pypi(from_line, tmpdir, project_data, expected_hashes):
     assert actual_hashes == expected_hashes
 
 
-def test_get_hashes_from_mixed(pip_conf, from_line, tmpdir):
+def test_get_hashes_from_mixed(pip_conf, from_line, tmp_path):
     """
     Test PyPIRepository.get_hashes() returns hashes from both PyPi and extra indexes/links
     """
@@ -335,7 +335,7 @@ def test_get_hashes_from_mixed(pip_conf, from_line, tmpdir):
             return file_hashes[link]
 
     pypi_repository = MockPyPIRepository(
-        ["--no-cache-dir"], cache_dir=(tmpdir / "pypi-repo-cache")
+        ["--no-cache-dir"], cache_dir=(tmp_path / "pypi-repo-cache")
     )
 
     ireq = from_line(f"{package_name}=={package_version}")
@@ -346,7 +346,7 @@ def test_get_hashes_from_mixed(pip_conf, from_line, tmpdir):
     assert actual_hashes == expected_hashes
 
 
-def test_get_project__returns_data(from_line, tmpdir, monkeypatch, pypi_repository):
+def test_get_project__returns_data(from_line, monkeypatch, pypi_repository):
     """
     Test PyPIRepository._get_project() returns expected project data.
     """
@@ -369,9 +369,7 @@ def test_get_project__returns_data(from_line, tmpdir, monkeypatch, pypi_reposito
     assert actual_data == expected_data
 
 
-def test_get_project__handles_http_error(
-    from_line, tmpdir, monkeypatch, pypi_repository
-):
+def test_get_project__handles_http_error(from_line, monkeypatch, pypi_repository):
     """
     Test PyPIRepository._get_project() returns None if HTTP error is raised.
     """
@@ -387,7 +385,7 @@ def test_get_project__handles_http_error(
 
 
 def test_get_project__handles_json_decode_error(
-    from_line, tmpdir, monkeypatch, pypi_repository
+    from_line, monkeypatch, pypi_repository
 ):
     """
     Test PyPIRepository._get_project() returns None if JSON decode error is raised.
@@ -410,7 +408,7 @@ def test_get_project__handles_json_decode_error(
     assert actual_data is None
 
 
-def test_get_project__handles_404(from_line, tmpdir, monkeypatch, pypi_repository):
+def test_get_project__handles_404(from_line, monkeypatch, pypi_repository):
     """
     Test PyPIRepository._get_project() returns None if PyPI
     response's status code is 404.
@@ -429,7 +427,7 @@ def test_get_project__handles_404(from_line, tmpdir, monkeypatch, pypi_repositor
     assert actual_data is None
 
 
-def test_name_collision(from_line, pypi_repository, make_package, make_sdist, tmpdir):
+def test_name_collision(from_line, pypi_repository, make_package, make_sdist, tmp_path):
     """
     Test to ensure we don't fail if there are multiple URL-based requirements
     ending with the same filename where later ones depend on earlier, e.g.
@@ -446,7 +444,7 @@ def test_name_collision(from_line, pypi_repository, make_package, make_sdist, tm
     }
 
     for pkg_name, pkg in packages.items():
-        pkg_path = tmpdir / pkg_name
+        pkg_path = tmp_path / pkg_name
 
         make_sdist(pkg, pkg_path, "--formats=zip")
 
@@ -456,14 +454,14 @@ def test_name_collision(from_line, pypi_repository, make_package, make_sdist, tm
         )
 
     name_collision_1 = "file://{dist_path}#egg=test_package_1".format(
-        dist_path=tmpdir / "test_package_1" / "main.zip"
+        dist_path=tmp_path / "test_package_1" / "main.zip"
     )
     ireq = from_line(name_collision_1)
     deps = pypi_repository.get_dependencies(ireq)
     assert len(deps) == 0
 
     name_collision_2 = "file://{dist_path}#egg=test_package_2".format(
-        dist_path=tmpdir / "test_package_2" / "main.zip"
+        dist_path=tmp_path / "test_package_2" / "main.zip"
     )
     ireq = from_line(name_collision_2)
     deps = pypi_repository.get_dependencies(ireq)

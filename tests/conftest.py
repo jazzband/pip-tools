@@ -167,7 +167,7 @@ def repository():
 
 
 @pytest.fixture
-def pypi_repository(tmpdir):
+def pypi_repository(tmp_path):
     return PyPIRepository(
         [
             "--index-url",
@@ -175,13 +175,13 @@ def pypi_repository(tmpdir):
             "--use-deprecated",
             "legacy-resolver",
         ],
-        cache_dir=(tmpdir / "pypi-repo"),
+        cache_dir=(tmp_path / "pypi-repo"),
     )
 
 
 @pytest.fixture
-def depcache(tmpdir):
-    return DependencyCache(tmpdir / "dep-cache")
+def depcache(tmp_path):
+    return DependencyCache(tmp_path / "dep-cache")
 
 
 @pytest.fixture
@@ -254,26 +254,30 @@ def runner():
 
 
 @pytest.fixture
-def tmpdir_cwd(tmpdir):
-    with tmpdir.as_cwd():
-        yield Path(tmpdir)
+def tmp_path_cwd(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> _t.Iterator[Path]:
+    """Wrap ``tmp_path`` to also chdir into it."""
+    # use an explicit monkeypatch context, rather than calling monkeypatch.chdir, so
+    # that calls to `monkeypatch.undo()` won't accidentally revert
+    with monkeypatch.context() as mp:
+        mp.chdir(tmp_path)
+        yield tmp_path
 
 
 @pytest.fixture
-def make_pip_conf(tmpdir, monkeypatch):
+def make_pip_conf(tmp_path, monkeypatch):
     created_paths = []
 
     def _make_pip_conf(content):
         pip_conf_file = "pip.conf" if os.name != "nt" else "pip.ini"
-        path = (tmpdir / pip_conf_file).strpath
+        path = tmp_path / pip_conf_file
+        path.write_text(content)
 
-        with open(path, "w") as f:
-            f.write(content)
+        path_str = str(path)
 
-        monkeypatch.setenv("PIP_CONFIG_FILE", path)
+        monkeypatch.setenv("PIP_CONFIG_FILE", path_str)
 
-        created_paths.append(path)
-        return path
+        created_paths.append(path_str)
+        return path_str
 
     try:
         yield _make_pip_conf
@@ -404,33 +408,30 @@ def make_sdist(run_setup_file):
 
 
 @pytest.fixture
-def make_module(tmpdir):
+def make_module(tmp_path):
     """
     Make a metadata file with the given name and content and a fake module.
     """
 
-    def _make_module(fname, content):
-        path = os.path.join(tmpdir, "sample_lib")
-        os.mkdir(path)
-        path = os.path.join(tmpdir, "sample_lib", "__init__.py")
-        with open(path, "w") as stream:
-            stream.write("'example module'\n__version__ = '1.2.3'")
+    def _make_module(fname, content) -> str:
+        path = tmp_path / "sample_lib"
+        path.mkdir()
+        path = tmp_path / "sample_lib" / "__init__.py"
+        path.write_text("'example module'\n__version__ = '1.2.3'")
         if fname == "setup.cfg":
-            path = os.path.join(tmpdir, "pyproject.toml")
-            with open(path, "w") as stream:
-                stream.write(
-                    "\n".join(
-                        (
-                            "[build-system]",
-                            'requires = ["setuptools"]',
-                            'build-backend = "setuptools.build_meta"',
-                        )
+            path = tmp_path / "pyproject.toml"
+            path.write_text(
+                "\n".join(
+                    (
+                        "[build-system]",
+                        'requires = ["setuptools"]',
+                        'build-backend = "setuptools.build_meta"',
                     )
                 )
-        path = os.path.join(tmpdir, fname)
-        with open(path, "w") as stream:
-            stream.write(dedent(content))
-        return path
+            )
+        path = tmp_path / fname
+        path.write_text(dedent(content))
+        return str(path)
 
     return _make_module
 
@@ -497,7 +498,7 @@ def _reset_log():
 
 
 @pytest.fixture
-def make_config_file(tmpdir_cwd):
+def make_config_file(tmp_path_cwd):
     """
     Make a config file for pip-tools with a given parameter set to a specific
     value, returning a ``pathlib.Path`` to the config file.
@@ -511,18 +512,18 @@ def make_config_file(tmpdir_cwd):
         subsection: str | None = None,
     ) -> Path:
         # Create a nested directory structure if config_file_name includes directories
-        config_dir = (tmpdir_cwd / config_file_name).parent
+        config_dir = (tmp_path_cwd / config_file_name).parent
         config_dir.mkdir(exist_ok=True, parents=True)
 
         # Make a config file with this one config default override
-        config_file = tmpdir_cwd / config_file_name
+        config_file = tmp_path_cwd / config_file_name
 
         nested_config = {pyproject_param: new_default}
         if subsection:
             nested_config = {subsection: nested_config}
         config_to_dump = {"tool": {section: nested_config}}
         config_file.write_text(tomli_w.dumps(config_to_dump))
-        return _t.cast(Path, config_file.relative_to(tmpdir_cwd))
+        return _t.cast(Path, config_file.relative_to(tmp_path_cwd))
 
     return _maker
 

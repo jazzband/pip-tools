@@ -17,7 +17,7 @@ from piptools.writer import (
 
 
 @pytest.fixture
-def writer(tmpdir_cwd):
+def writer(tmp_path_cwd):
     with open("src_file", "w"), open("src_file2", "w"):
         pass
 
