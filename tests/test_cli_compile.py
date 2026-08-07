@@ -48,6 +48,13 @@ skip_if_pip_does_not_support_editables_in_constraints = pytest.mark.skipif(
 )
 
 
+@pytest.fixture
+def tmp_path_cwd(tmp_path, monkeypatch):
+    with monkeypatch.context() as mp:
+        mp.chdir(tmp_path)
+        yield tmp_path
+
+
 @pytest.fixture(scope="session")
 def pip_produces_absolute_paths():
     # in pip v24.3, new normalization will occur because `comes_from` started
@@ -136,8 +143,8 @@ def current_resolver(request, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def _temp_dep_cache(tmpdir, monkeypatch):
-    monkeypatch.setenv("PIP_TOOLS_CACHE_DIR", str(tmpdir / "cache"))
+def _temp_dep_cache(tmp_path, monkeypatch):
+    monkeypatch.setenv("PIP_TOOLS_CACHE_DIR", str(tmp_path / "cache"))
 
 
 def test_default_pip_conf_read(pip_with_index_conf, runner):
@@ -247,13 +254,14 @@ def test_command_line_setuptools_output_file(runner, options, expected_output_fi
 
 
 @pytest.mark.network
-def test_command_line_setuptools_nested_output_file(tmpdir, runner):
+def test_command_line_setuptools_nested_output_file(tmp_path, runner):
     """
     Test the output file for setup.py in nested folder as a requirement file.
     """
-    proj_dir = tmpdir.mkdir("proj")
+    proj_dir = tmp_path / "proj"
+    proj_dir.mkdir()
 
-    with open(str(proj_dir / "setup.py"), "w") as package:
+    with open(proj_dir / "setup.py", "w") as package:
         package.write(dedent("""\
                 from setuptools import setup
                 setup(install_requires=[])
@@ -266,14 +274,14 @@ def test_command_line_setuptools_nested_output_file(tmpdir, runner):
 
 @pytest.mark.network
 def test_setuptools_preserves_environment_markers(
-    runner, make_package, make_wheel, make_pip_conf, tmpdir
+    runner, make_package, make_wheel, make_pip_conf, tmp_path
 ):
     make_pip_conf(dedent("""\
             [global]
             disable-pip-version-check = True
             """))
 
-    dists_dir = tmpdir / "dists"
+    dists_dir = tmp_path / "dists"
 
     foo_dir = make_package(name="foo", version="1.0")
     make_wheel(foo_dir, dists_dir)
@@ -708,12 +716,13 @@ def test_compile_cached_vcs_package(runner, venv):
 
 @legacy_resolver_only
 def test_locally_available_editable_package_is_not_archived_in_cache_dir(
-    pip_conf, tmpdir, runner
+    pip_conf, tmp_path, runner
 ):
     """
     piptools will not create an archive for a locally available editable requirement
     """
-    cache_dir = tmpdir.mkdir("cache_dir")
+    cache_dir = tmp_path / "cache_dir"
+    cache_dir.mkdir()
 
     fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
     fake_package_dir = path_to_url(fake_package_dir)
@@ -1063,7 +1072,7 @@ def test_upgrade_packages_version_option_and_upgrade_no_existing_file(pip_conf, 
     assert "small-fake-b==0.1" in out.stderr
 
 
-def test_upgrade_package_with_extra(runner, make_package, make_sdist, tmpdir):
+def test_upgrade_package_with_extra(runner, make_package, make_sdist, tmp_path):
     """
     piptools ignores extras on --upgrade-package/-P items if already constrained.
     """
@@ -1074,7 +1083,7 @@ def test_upgrade_package_with_extra(runner, make_package, make_sdist, tmpdir):
         "test_package_2",
         version="0.1",
     )
-    dists_dir = tmpdir / "dists"
+    dists_dir = tmp_path / "dists"
     for pkg in (test_package_1, test_package_2):
         make_sdist(pkg, dists_dir)
 
@@ -1301,8 +1310,8 @@ def test_preserve_newline_from_input(runner, linesep, must_exclude):
     assert must_exclude not in txt
 
 
-def test_generate_hashes_with_split_style_annotations(pip_conf, runner, tmpdir_cwd):
-    reqs_in = tmpdir_cwd / "requirements.in"
+def test_generate_hashes_with_split_style_annotations(pip_conf, runner, tmp_path_cwd):
+    reqs_in = tmp_path_cwd / "requirements.in"
     reqs_in.write_text(dedent("""\
             small_fake_with_deps
             small-fake-a
@@ -1334,8 +1343,8 @@ def test_generate_hashes_with_split_style_annotations(pip_conf, runner, tmpdir_c
         """)
 
 
-def test_generate_hashes_with_line_style_annotations(pip_conf, runner, tmpdir_cwd):
-    reqs_in = tmpdir_cwd / "requirements.in"
+def test_generate_hashes_with_line_style_annotations(pip_conf, runner, tmp_path_cwd):
+    reqs_in = tmp_path_cwd / "requirements.in"
     reqs_in.write_text(dedent("""\
             small_fake_with_deps
             small-fake-a
@@ -2342,13 +2351,13 @@ def test_ignore_compiled_unavailable_version(pip_conf, runner, current_resolver)
 
 
 def test_prefer_binary_dist(
-    pip_conf, make_package, make_sdist, make_wheel, tmpdir, runner
+    pip_conf, make_package, make_sdist, make_wheel, tmp_path, runner
 ):
     """
     Test pip-compile chooses a correct version of a package with
     a binary distribution when PIP_PREFER_BINARY environment variable is on.
     """
-    dists_dir = tmpdir / "dists"
+    dists_dir = tmp_path / "dists"
 
     # Make first-package==1.0 and wheels
     first_package_v1 = make_package(name="first-package", version="1.0")
@@ -2380,7 +2389,7 @@ def test_prefer_binary_dist(
 
 @pytest.mark.parametrize("prefer_binary", (True, False))
 def test_prefer_binary_dist_even_there_is_source_dists(
-    pip_conf, make_package, make_sdist, make_wheel, tmpdir, runner, prefer_binary
+    pip_conf, make_package, make_sdist, make_wheel, tmp_path, runner, prefer_binary
 ):
     """
     Test pip-compile chooses a correct version of a package with a binary distribution
@@ -2389,7 +2398,7 @@ def test_prefer_binary_dist_even_there_is_source_dists(
 
     Regression test for issue GH-1118.
     """
-    dists_dir = tmpdir / "dists"
+    dists_dir = tmp_path / "dists"
 
     # Make first version of package with only wheels
     package_v1 = make_package(name="test-package", version="1.0")
@@ -2415,7 +2424,7 @@ def test_prefer_binary_dist_even_there_is_source_dists(
 
 @pytest.mark.parametrize("output_content", ("test-package-1==0.1", ""))
 def test_duplicate_reqs_combined(
-    pip_conf, make_package, make_sdist, tmpdir, runner, output_content
+    pip_conf, make_package, make_sdist, tmp_path, runner, output_content
 ):
     """
     Test pip-compile tracks dependencies properly when install requirements are
@@ -2428,7 +2437,7 @@ def test_duplicate_reqs_combined(
         "test_package_2", version="0.1", install_requires=["test-package-1"]
     )
 
-    dists_dir = tmpdir / "dists"
+    dists_dir = tmp_path / "dists"
 
     for pkg in (test_package_1, test_package_2):
         make_sdist(pkg, dists_dir)
@@ -2509,7 +2518,7 @@ def test_combine_extras(pip_conf, runner, make_package):
 
 
 def test_combine_different_extras_of_the_same_package(
-    pip_conf, runner, tmpdir, make_package, make_wheel
+    pip_conf, runner, tmp_path, make_package, make_wheel
 ):
     """
     Loosely based on the example from https://github.com/jazzband/pip-tools/issues/1511.
@@ -2540,7 +2549,7 @@ def test_combine_different_extras_of_the_same_package(
         ),
     ]
 
-    dists_dir = tmpdir / "dists"
+    dists_dir = tmp_path / "dists"
     for pkg in pkgs:
         make_wheel(pkg, dists_dir)
 
@@ -2661,7 +2670,7 @@ def test_triple_equal_pinned_dependency_is_used(
     runner,
     make_package,
     make_wheel,
-    tmpdir,
+    tmp_path,
     pkg2_install_requires,
     req_in_content,
     out_expected_content,
@@ -2672,7 +2681,7 @@ def test_triple_equal_pinned_dependency_is_used(
     patches (e.g. torch 1.7.1+cu110), we want torch===1.7.1 without patches
     """
 
-    dists_dir = tmpdir / "dists"
+    dists_dir = tmp_path / "dists"
 
     test_package_1 = make_package("test_package_1", version="0.1.0")
     make_wheel(test_package_1, dists_dir)
@@ -3186,12 +3195,12 @@ def test_only_build_deps_fails_with_conflicting_options(runner, option):
 
 @backtracking_resolver_only
 @pytest.mark.parametrize("option", ("--all-build-deps", "--build-deps-for=wheel"))
-def test_build_deps_fail_without_setup_file(runner, tmpdir, option):
+def test_build_deps_fail_without_setup_file(runner, tmp_path, option):
     """
     Test that passing ``--build-deps-for`` or ``--all-build-deps`` fails when used with a
     requirements file as opposed to a setup file.
     """
-    path = pathlib.Path(tmpdir) / "requirements.in"
+    path = tmp_path / "requirements.in"
     path.write_text("\n")
     out = runner.invoke(cli, ["-n", option, os.fspath(path)])
     exp = (
@@ -3202,11 +3211,11 @@ def test_build_deps_fail_without_setup_file(runner, tmpdir, option):
     assert exp in out.stderr
 
 
-def test_extras_fail_with_requirements_in(runner, tmpdir):
+def test_extras_fail_with_requirements_in(runner, tmp_path):
     """
     Test that passing ``--extra`` with ``requirements.in`` input file fails.
     """
-    path = pathlib.Path(tmpdir) / "requirements.in"
+    path = tmp_path / "requirements.in"
     path.write_text("\n")
     out = runner.invoke(cli, ["-n", "--extra", "something", os.fspath(path)])
     assert out.exit_code == 2
@@ -3214,7 +3223,7 @@ def test_extras_fail_with_requirements_in(runner, tmpdir):
     assert exp in out.stderr
 
 
-def test_cli_compile_strip_extras(runner, make_package, make_sdist, tmpdir):
+def test_cli_compile_strip_extras(runner, make_package, make_sdist, tmp_path):
     """
     Assures that ``--strip-extras`` removes mention of extras from output.
     """
@@ -3225,7 +3234,7 @@ def test_cli_compile_strip_extras(runner, make_package, make_sdist, tmpdir):
         "test_package_2",
         version="0.1",
     )
-    dists_dir = tmpdir / "dists"
+    dists_dir = tmp_path / "dists"
 
     for pkg in (test_package_1, test_package_2):
         make_sdist(pkg, dists_dir)
@@ -3241,7 +3250,7 @@ def test_cli_compile_strip_extras(runner, make_package, make_sdist, tmpdir):
 
 
 def test_cli_compile_all_extras_with_multiple_packages(
-    runner, make_package, make_sdist, tmpdir
+    runner, make_package, make_sdist, tmp_path
 ):
     """
     Assures that ``--all-extras`` works when multiple sources are specified.
@@ -3371,7 +3380,7 @@ def test_resolver_drops_existing_conflicting_constraint(
     runner,
     make_package,
     make_sdist,
-    tmpdir,
+    tmp_path,
     package_specs,
     constraints,
     existing_reqs,
@@ -3386,7 +3395,7 @@ def test_resolver_drops_existing_conflicting_constraint(
     or not (cf. `issue #1977 <https://github.com/jazzband/pip-tools/issues/1977>`_).
     """
     expected_requirements = {line.strip() for line in expected_reqs.splitlines()}
-    dists_dir = tmpdir / "dists"
+    dists_dir = tmp_path / "dists"
 
     packages = [make_package(**spec) for spec in package_specs]
     for pkg in packages:
@@ -3469,7 +3478,7 @@ def test_preserve_via_requirements_constrained_dependencies_when_run_twice(
 
 
 def test_failure_of_legacy_resolver_prompts_for_backtracking(
-    pip_conf, runner, tmpdir, make_package, make_wheel, current_resolver
+    pip_conf, runner, tmp_path, make_package, make_wheel, current_resolver
 ):
     """Test that pip-compile prompts to use the backtracking resolver"""
     pkgs = [
@@ -3480,7 +3489,7 @@ def test_failure_of_legacy_resolver_prompts_for_backtracking(
         make_package("c", version="1", install_requires=["b==0.1", "a"]),
     ]
 
-    dists_dir = tmpdir / "dists"
+    dists_dir = tmp_path / "dists"
     for pkg in pkgs:
         make_wheel(pkg, dists_dir)
 
@@ -3545,8 +3554,9 @@ def test_raise_error_when_input_and_output_filenames_are_matched(
 
 @pytest.mark.network
 @backtracking_resolver_only
-def test_pass_pip_cache_to_pip_args(tmpdir, runner, current_resolver):
-    cache_dir = tmpdir.mkdir("cache_dir")
+def test_pass_pip_cache_to_pip_args(tmp_path, runner, current_resolver):
+    cache_dir = tmp_path / "cache_dir"
+    cache_dir.mkdir()
 
     with open("requirements.in", "w") as fp:
         fp.write("six==1.15.0")
@@ -3752,10 +3762,10 @@ def test_config_option(pip_conf, runner, tmp_path, make_config_file):
     assert "Dry-run, so nothing updated" in out.stderr
 
 
-def test_default_config_option(pip_conf, runner, make_config_file, tmpdir_cwd):
+def test_default_config_option(pip_conf, runner, make_config_file, tmp_path_cwd):
     make_config_file("dry-run", True)
 
-    req_in = tmpdir_cwd / "requirements.in"
+    req_in = tmp_path_cwd / "requirements.in"
     req_in.touch()
 
     out = runner.invoke(cli)
@@ -3809,11 +3819,11 @@ def test_raise_error_on_invalid_config_option(
 
 
 @pytest.mark.parametrize("option", ("-c", "--constraint"))
-def test_constraint_option(pip_conf, runner, tmpdir_cwd, make_config_file, option):
-    req_in = tmpdir_cwd / "requirements.in"
+def test_constraint_option(pip_conf, runner, tmp_path_cwd, make_config_file, option):
+    req_in = tmp_path_cwd / "requirements.in"
     req_in.write_text("small-fake-a")
 
-    constraints_txt = tmpdir_cwd / "constraints.txt"
+    constraints_txt = tmp_path_cwd / "constraints.txt"
     constraints_txt.write_text("small-fake-a==0.1")
 
     out = runner.invoke(
@@ -3956,7 +3966,7 @@ def test_do_not_show_warning_on_explicit_strip_extras_option(
 
 
 def test_origin_of_extra_requirement_not_written_to_annotations(
-    pip_conf, runner, make_package, make_wheel, tmp_path, tmpdir
+    pip_conf, runner, make_package, make_wheel, tmp_path
 ):
     req_in = tmp_path / "requirements.in"
     package_with_extras = make_package(
@@ -3968,7 +3978,7 @@ def test_origin_of_extra_requirement_not_written_to_annotations(
         },
     )
 
-    dists_dir = tmpdir / "dists"
+    dists_dir = tmp_path / "dists"
     make_wheel(package_with_extras, dists_dir)
 
     with open(req_in, "w") as req_out:
@@ -4362,7 +4372,7 @@ def test_compile_with_generate_hashes_preserves_extra_index_url(
     pip_with_index_conf,
     minimal_wheels_path,
     runner,
-    tmpdir_cwd,
+    tmp_path_cwd,
 ):
     """
     Regression test for
@@ -4372,7 +4382,7 @@ def test_compile_with_generate_hashes_preserves_extra_index_url(
     cache (``allow_all_wheels()``), and that code incorrectly cleared more information
     than desired, removing extra index URLs in addition to cached package info.
     """
-    reqs_in = tmpdir_cwd / "requirements.in"
+    reqs_in = tmp_path_cwd / "requirements.in"
     reqs_in.write_text(dedent("""\
             --extra-index-url http://extraindex1.com
 
