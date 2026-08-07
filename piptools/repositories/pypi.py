@@ -535,7 +535,8 @@ def _get_true_base_from_index_url(url: str) -> str:
     process.
     """
     if url.endswith("/simple/"):
-        url = url[: -len("simple/")]
+        return url.removesuffix("simple/")
     elif url.endswith("/simple"):
-        url = url[: -len("simple")]
+        return url.removesuffix("simple")
+
     return url
