@@ -428,7 +428,7 @@ def test_is_url_requirement_filename(caplog, from_line, line):
         ),
     ),
 )
-def test_get_compile_command(tmpdir_cwd, cli_args, expected_command):
+def test_get_compile_command(tmp_path_cwd, cli_args, expected_command):
     """
     Test general scenarios for the get_compile_command function.
     """
@@ -452,7 +452,7 @@ def test_get_compile_command(tmpdir_cwd, cli_args, expected_command):
         ),
     ),
 )
-def test_get_compile_command_with_config(tmpdir_cwd, config_file, expected_command):
+def test_get_compile_command_with_config(tmp_path_cwd, config_file, expected_command):
     """Test that get_compile_command excludes or includes config file."""
     with open(config_file, "w"):
         pass
@@ -470,7 +470,7 @@ def test_get_compile_command_with_config(tmpdir_cwd, config_file, expected_comma
     ),
 )
 def test_get_compile_command_does_not_include_default_config_if_reqs_file_in_subdir(
-    tmpdir_cwd, config_file, config_file_content
+    tmp_path_cwd, config_file, config_file_content
 ):
     """
     Test that ``get_compile_command`` does not include default config file
@@ -480,7 +480,7 @@ def test_get_compile_command_does_not_include_default_config_if_reqs_file_in_sub
     default_config_file = Path(config_file)
     default_config_file.write_text(config_file_content)
 
-    (tmpdir_cwd / "subdir").mkdir()
+    (tmp_path_cwd / "subdir").mkdir()
     req_file = Path("subdir/requirements.in")
     req_file.touch()
     req_file.write_bytes(b"")
@@ -490,7 +490,7 @@ def test_get_compile_command_does_not_include_default_config_if_reqs_file_in_sub
         assert get_compile_command(ctx) == f"pip-compile {req_file.as_posix()}"
 
 
-def test_get_compile_command_escaped_filenames(tmpdir_cwd):
+def test_get_compile_command_escaped_filenames(tmp_path_cwd):
     """
     Test that get_compile_command output (re-)escapes ' -- '-escaped filenames.
     """
@@ -503,7 +503,7 @@ def test_get_compile_command_escaped_filenames(tmpdir_cwd):
 @pytest.mark.parametrize(
     "filename", ("requirements.in", "my requirements.in", "απαιτήσεις.txt")
 )
-def test_get_compile_command_with_files(tmpdir_cwd, filename):
+def test_get_compile_command_with_files(tmp_path_cwd, filename):
     """
     Test that get_compile_command returns a command with correct
     and sanitized file names.
@@ -522,7 +522,7 @@ def test_get_compile_command_with_files(tmpdir_cwd, filename):
         )
 
 
-def test_get_compile_command_sort_args(tmpdir_cwd):
+def test_get_compile_command_sort_args(tmp_path_cwd):
     """
     Test that get_compile_command correctly sorts arguments.
 
@@ -755,7 +755,7 @@ def test_callback_config_file_defaults_unreadable_toml(make_config_file):
         )
 
 
-def test_select_config_file_no_files(tmpdir_cwd):
+def test_select_config_file_no_files(tmp_path_cwd):
     assert select_config_file(()) is None
 
 
@@ -765,19 +765,19 @@ def test_select_config_file_returns_config_in_cwd(make_config_file, filename):
     assert select_config_file(()) == config_file
 
 
-def test_select_config_file_returns_empty_config_file_in_cwd(tmpdir_cwd):
+def test_select_config_file_returns_empty_config_file_in_cwd(tmp_path_cwd):
     config_file = Path(".pip-tools.toml")
     config_file.touch()
 
     assert select_config_file(()) == config_file
 
 
-def test_select_config_file_cannot_find_config_in_cwd(tmpdir_cwd, make_config_file):
+def test_select_config_file_cannot_find_config_in_cwd(tmp_path_cwd, make_config_file):
     make_config_file("dry-run", True, "subdir/pyproject.toml")
     assert select_config_file(()) is None
 
 
-def test_select_config_file_with_config_file_in_subdir(tmpdir_cwd, make_config_file):
+def test_select_config_file_with_config_file_in_subdir(tmp_path_cwd, make_config_file):
     config_file = make_config_file("dry-run", True, "subdir/.pip-tools.toml")
 
     requirement_file = Path("subdir/requirements.in")
@@ -786,7 +786,7 @@ def test_select_config_file_with_config_file_in_subdir(tmpdir_cwd, make_config_f
     assert select_config_file((requirement_file.as_posix(),)) == config_file
 
 
-def test_select_config_file_prefers_pip_tools_toml_over_pyproject_toml(tmpdir_cwd):
+def test_select_config_file_prefers_pip_tools_toml_over_pyproject_toml(tmp_path_cwd):
     pip_tools_file = Path(".pip-tools.toml")
     pip_tools_file.touch()
 
