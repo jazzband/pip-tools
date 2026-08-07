@@ -65,26 +65,26 @@ def test_read_cache_file_successful():
         assert "success" == read_cache_file(cache_file_name)
 
 
-def test_read_cache_does_not_exist(tmpdir):
-    cache = DependencyCache(cache_dir=tmpdir)
+def test_read_cache_does_not_exist(tmp_path):
+    cache = DependencyCache(cache_dir=tmp_path)
     assert cache.cache == {}
 
 
 @pytest.mark.skipif(
     sys.platform == "win32", reason="os.fchmod() not available on Windows"
 )
-def test_read_cache_permission_error(tmpdir):
-    cache = DependencyCache(cache_dir=tmpdir)
+def test_read_cache_permission_error(tmp_path):
+    cache = DependencyCache(cache_dir=tmp_path)
     with open(cache._cache_file, "w") as fp:
         os.fchmod(fp.fileno(), 0o000)
     with pytest.raises(IOError, match="Permission denied"):
         cache.cache
 
 
-def test_reverse_dependencies(from_line, tmpdir):
+def test_reverse_dependencies(from_line, tmp_path):
     # Create a cache object. The keys are packages, and the values are lists
     # of packages on which the keys depend.
-    cache = DependencyCache(cache_dir=tmpdir)
+    cache = DependencyCache(cache_dir=tmp_path)
     cache[from_line("top==1.2")] = ["middle>=0.3", "bottom>=5.1.2"]
     cache[from_line("top[xtra]==1.2")] = ["middle>=0.3", "bottom>=5.1.2", "bonus==0.4"]
     cache[from_line("middle==0.4")] = ["bottom<6"]
@@ -120,4 +120,4 @@ def test_reverse_dependencies(from_line, tmpdir):
     }
 
     # Clean up our temp directory
-    rmtree(tmpdir)
+    rmtree(tmp_path)
