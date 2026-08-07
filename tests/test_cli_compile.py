@@ -48,13 +48,6 @@ skip_if_pip_does_not_support_editables_in_constraints = pytest.mark.skipif(
 )
 
 
-@pytest.fixture
-def tmp_path_cwd(tmp_path, monkeypatch):
-    with monkeypatch.context() as mp:
-        mp.chdir(tmp_path)
-        yield tmp_path
-
-
 @pytest.fixture(scope="session")
 def pip_produces_absolute_paths():
     # in pip v24.3, new normalization will occur because `comes_from` started

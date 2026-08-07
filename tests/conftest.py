@@ -253,6 +253,13 @@ def runner():
 
 
 @pytest.fixture
+def tmp_path_cwd(tmp_path, monkeypatch):
+    with monkeypatch.context() as mp:
+        mp.chdir(tmp_path)
+        yield tmp_path
+
+
+@pytest.fixture
 def tmpdir_cwd(tmpdir):
     with tmpdir.as_cwd():
         yield Path(tmpdir)
