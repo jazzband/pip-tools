@@ -7,10 +7,32 @@ provide compatible interfaces which wrap methods and attributes.
 
 from __future__ import annotations
 
+from pip._internal import exceptions as _pip_internal_exceptions
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.req import InstallRequirement
+from pip._vendor.requests import RequestException
 
 from . import pip_version as _pip_version
+
+
+def request_failed_exception_types() -> tuple[type[Exception], ...]:
+    """
+    Errors that indicate a connection failure, as might be experienced by a client
+    trying to reach an index server's JSON API when that API is not available.
+
+    These are only the errors that indicate some kind of failure to connect.
+    Errors about SSL configuration, etc, should not be included here, so that they
+    raise all the way to the user.
+    """
+    if _pip_version.PIP_VERSION_MAJOR_MINOR < (26, 2):
+        return (RequestException,)
+    else:
+        return (
+            RequestException,
+            _pip_internal_exceptions.ConnectionFailedError,
+            _pip_internal_exceptions.ConnectionTimeoutError,
+            _pip_internal_exceptions.ProxyConnectionError,
+        )
 
 
 def finder_allows_prereleases_of_req(

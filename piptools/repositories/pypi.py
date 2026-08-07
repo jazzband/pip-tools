@@ -29,7 +29,7 @@ from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
 from pip._internal.utils.urls import path_to_url, url_to_path
 from pip._vendor.packaging.tags import Tag
 from pip._vendor.packaging.version import _BaseVersion
-from pip._vendor.requests import RequestException, Session
+from pip._vendor.requests import Session
 
 from .._compat import create_wheel_cache
 from .._internal import _pip_api
@@ -189,16 +189,15 @@ class PyPIRepository(BaseRepository):
             TempDirectory(kind="resolver") as temp_dir,
             indent_log(),
         ):
-            preparer_kwargs = {
-                "temp_build_dir": temp_dir,
-                "options": self.options,
-                "session": self.session,
-                "finder": self.finder,
-                "use_user_site": False,
-                "download_dir": download_dir,
-                "build_tracker": build_tracker,
-            }
-            preparer = self.command.make_requirement_preparer(**preparer_kwargs)
+            preparer = _pip_api.make_requirement_preparer_from_command(
+                self.command,
+                temp_build_dir=temp_dir,
+                options=self.options,
+                build_tracker=build_tracker,
+                session=self.session,
+                finder=self.finder,
+                download_dir=download_dir,
+            )
 
             reqset = RequirementSet()
             ireq.user_supplied = True
@@ -270,6 +269,10 @@ class PyPIRepository(BaseRepository):
         InstallRequirement. Return None on HTTP/JSON error or if a package
         is not found on PyPI server.
 
+        Because the JSON API is not standard, a wide class of errors are ignored in this
+        context. Failed connections, 404s, and non-JSON responses are all treated as
+        "no data".
+
         API reference: https://warehouse.readthedocs.io/api-reference/json/
         """
         package_indexes = (
@@ -278,9 +281,11 @@ class PyPIRepository(BaseRepository):
         )
         for package_index in package_indexes:
             url = f"{package_index.pypi_url}/{ireq.name}/json"
+
+            exc_types = _pip_api.request_failed_exception_types()
             try:
                 response = self.session.get(url)
-            except RequestException as e:
+            except exc_types as e:
                 log.debug(f"Fetch package info from PyPI failed: {url}: {e}")
                 continue
 
