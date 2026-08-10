@@ -24,7 +24,7 @@ def test_finder_with_pre_allows_specific_package_prereleases(finder_with_pre):
     assert _pip_api.finder_allows_prereleases_of_req(finder_with_pre, req)
 
 
-def test_get_request_exc_types_always_provides_tuple_with_base_request_exc_type():
+def test_get_request_exc_types_provides_tuple_with_base_request_exc_type() -> None:
     # Always clear cache before exercising this test, so that we're really calling the
     # function. This ensures that if there is breakage inside of the cached function, we
     # will get it reported as a failure here. That helps us to isolate the issue.
