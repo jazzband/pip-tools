@@ -5,7 +5,7 @@ repos:
       - id: black
         args: [--target-version=py39]
   - repo: https://github.com/PyCQA/isort
-    rev: 9.0.0b1
+    rev: 9.0.0b2
     hooks:
       - id: isort
   - repo: https://github.com/asottile/pyupgrade
@@ -15,7 +15,7 @@ repos:
         args: [--py39-plus]
 
   - repo: https://github.com/python-jsonschema/check-jsonschema.git
-    rev: 0.37.4
+    rev: 0.38.0
     hooks:
       - id: check-github-actions
       - id: check-github-workflows
