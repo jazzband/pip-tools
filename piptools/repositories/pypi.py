@@ -282,7 +282,7 @@ class PyPIRepository(BaseRepository):
         for index_base_url in index_base_urls:
             json_url = urllib.parse.urljoin(index_base_url, f"{ireq.name}/json")
 
-            exc_types = _pip_api.request_failed_exception_types()
+            exc_types = _pip_api.get_pip_request_failed_exception_types()
             try:
                 response = self.session.get(json_url)
             except exc_types as e:

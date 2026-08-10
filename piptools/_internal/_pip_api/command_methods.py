@@ -1,7 +1,14 @@
+"""
+Interfaces for interacting with methods on RequirementCommand and other ``pip``-defined
+command types.
+
+Because these classes change over time, pip-tools needs functional interfaces which wrap
+methods, making their usage compatible across versions.
+"""
+
 from __future__ import annotations
 
 import optparse
-import typing as _t
 
 from pip._internal.cli.req_command import RequirementCommand
 from pip._internal.index.package_finder import PackageFinder
@@ -44,9 +51,9 @@ def make_requirement_preparer_from_command(
     # per-requirement object to tracked centrally on the preparer object
     # this takes the form of a new `allow_editables` bool flag
     # see also: https://github.com/pypa/pip/pull/14206
-    add_kwargs: dict[str, _t.Any] = {}
+    pip_version_specific_kwargs: dict[str, object] = {}
     if _pip_version.PIP_VERSION_MAJOR_MINOR >= (26, 2):
-        add_kwargs["allow_editables"] = allow_editables
+        pip_version_specific_kwargs["allow_editables"] = allow_editables
 
     return command.make_requirement_preparer(
         temp_build_dir=temp_build_dir,
@@ -55,5 +62,5 @@ def make_requirement_preparer_from_command(
         finder=finder,
         use_user_site=use_user_site,
         build_tracker=build_tracker,
-        **add_kwargs,
+        **pip_version_specific_kwargs,
     )
