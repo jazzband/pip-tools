@@ -279,15 +279,18 @@ class PyPIRepository(BaseRepository):
             _get_true_base_from_index_url(index_url)
             for index_url in self.finder.search_scope.index_urls
         )
-        exc_types = _pip_api.get_pip_request_failed_exception_types()
+        request_failed_error_types = _pip_api.get_pip_request_failed_exception_types()
 
         for index_base_url in index_base_urls:
             json_url = urllib.parse.urljoin(index_base_url, f"{ireq.name}/json")
 
             try:
                 response = self.session.get(json_url)
-            except exc_types as e:
-                log.debug(f"Fetch package info from PyPI failed: {json_url}: {e}")
+            except request_failed_error_types as request_failed_error:
+                log.debug(
+                    "Fetch package info from PyPI failed: "
+                    f"{json_url}: {request_failed_error}"
+                )
                 continue
 
             # Skip this PyPI server, because there is no package
