@@ -2,6 +2,48 @@
 
 <!-- towncrier release notes start -->
 
+## v7.6.1
+
+*2026-08-11*
+
+### Bug fixes
+
+- Fixed handling of index URLs ending in `/simple/` by improving URL normalization
+  logic.
+  These URLs would previously make `pip-compile` fail to use the PyPI JSON API.
+
+  -- by {user}`sirosen`
+
+  *PRs and issues:* {issue}`1669`
+
+- Added a missing dependency on {pypi}`typing-extensions` for Python 3.9 and 3.10
+  -- by {user}`sirosen`.
+
+  *PRs and issues:* {issue}`2424`
+
+### Features
+
+- pip-tools is now compatible with pip version 26.2 -- by {user}`sirosen`.
+
+  *PRs and issues:* {issue}`2436`, {issue}`2437`
+
+### Improved documentation
+
+- `pip-tools` documentation now features a how-to section, featuring initial
+  docs which cover controlling output file headers and configuring completion
+  -- by {user}`sirosen`.
+
+
+### Contributor-facing changes
+
+- Fixed CI triggers so that release tags won't create spurious failing runs --
+  by {user}`sirosen`.
+
+  *PRs and issues:* {issue}`2421`
+
+- Refactored the bug report template for better reporting -- by {user}`psthindal`.
+
+
 ## v7.6.0
 
 *2026-07-13*
