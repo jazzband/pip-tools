@@ -210,14 +210,3 @@ def create_wheel_cache(cache_dir: str, format_control: str | None = None) -> Whe
     if _pip_api.PIP_VERSION_MAJOR_MINOR <= (23, 0):
         kwargs["format_control"] = format_control
     return WheelCache(**kwargs)
-
-
-def get_dev_pkgs() -> set[str]:
-    if _pip_api.PIP_VERSION_MAJOR_MINOR <= (23, 1):
-        from pip._internal.commands.freeze import DEV_PKGS
-
-        return _t.cast(set[str], DEV_PKGS)
-
-    from pip._internal.commands.freeze import _dev_pkgs
-
-    return _t.cast(set[str], _dev_pkgs())
