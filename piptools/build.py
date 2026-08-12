@@ -4,7 +4,6 @@ import collections
 import contextlib
 import os
 import pathlib
-import sys
 import tempfile
 import typing as _t
 from collections.abc import Iterator
@@ -25,18 +24,6 @@ from ._internal import _environment_variables, _pip_api
 PYPROJECT_TOML = "pyproject.toml"
 
 _T = _t.TypeVar("_T")
-
-
-if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
-    from importlib.metadata import PackageMetadata
-else:  # pragma: <3.10 cover
-
-    class PackageMetadata(_t.Protocol):
-        @_t.overload
-        def get_all(self, name: str, failobj: None = None) -> list[_t.Any] | None: ...
-
-        @_t.overload
-        def get_all(self, name: str, failobj: _T) -> list[_t.Any] | _T: ...
 
 
 @dataclass
@@ -260,20 +247,20 @@ def _create_project_builder(
 
 def _build_project_wheel_metadata(
     builder: build.ProjectBuilder,
-) -> PackageMetadata:
+) -> importlib_metadata.PackageMetadata:
     with tempfile.TemporaryDirectory() as tmpdir:
         path = pathlib.Path(builder.metadata_path(tmpdir))
         return importlib_metadata.PathDistribution(path).metadata
 
 
-def _get_name(metadata: PackageMetadata) -> str:
+def _get_name(metadata: importlib_metadata.PackageMetadata) -> str:
     retval = metadata.get_all("Name")[0]  # type: ignore[index]
     assert isinstance(retval, str)
     return retval
 
 
 def _prepare_requirements(
-    metadata: PackageMetadata, src_file: pathlib.Path
+    metadata: importlib_metadata.PackageMetadata, src_file: pathlib.Path
 ) -> Iterator[InstallRequirement]:
     package_name = _get_name(metadata)
     comes_from = f"{package_name} ({src_file.as_posix()})"
