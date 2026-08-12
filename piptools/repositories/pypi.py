@@ -21,7 +21,7 @@ from pip._internal.models.link import Link
 from pip._internal.models.wheel import Wheel
 from pip._internal.network.session import PipSession
 from pip._internal.operations.build.build_tracker import get_build_tracker
-from pip._internal.req import InstallRequirement, RequirementSet
+from pip._internal.req import InstallRequirement
 from pip._internal.utils.hashes import FAVORITE_HASH
 from pip._internal.utils.logging import indent_log, setup_logging
 from pip._internal.utils.misc import normalize_path
@@ -199,13 +199,6 @@ class PyPIRepository(BaseRepository):
                 download_dir=download_dir,
             )
 
-            reqset = RequirementSet()
-            ireq.user_supplied = True
-            if getattr(ireq, "name", None):
-                reqset.add_named_requirement(ireq)
-            else:
-                reqset.add_unnamed_requirement(ireq)
-
             resolver = self.command.make_resolver(
                 preparer=preparer,
                 finder=self.finder,
@@ -217,13 +210,10 @@ class PyPIRepository(BaseRepository):
                 force_reinstall=False,
                 upgrade_strategy="to-satisfy-only",
             )
-            results = resolver._resolve_one(reqset, ireq)
-            if not ireq.prepared:
-                # If still not prepared, e.g. a constraint, do enough to assign
-                # the ireq a name:
-                resolver._get_dist_for(ireq)
+            results = resolver.resolve([ireq], check_supported_wheels=True)
 
-        return set(results)
+        result_set = set(results.all_requirements)
+        return {r for r in result_set if r.req != ireq.req}
 
     def get_dependencies(self, ireq: InstallRequirement) -> set[InstallRequirement]:
         """

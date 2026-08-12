@@ -31,9 +31,3 @@ The directory to use for `pip-tools`' caching. Defaults to a directory named
 `pip-tools/` inside of the user's cache directory.
 This can also be set by the `--cache-dir` option.
 ```
-
-```{envvar} PIP_TOOLS_RESOLVER
-Select which resolver to use, either `legacy` or `backtracking`. The legacy
-resolver will be removed in a future release.
-This can also be set by the `--resolver` option.
-```

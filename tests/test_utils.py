@@ -679,7 +679,6 @@ def test_get_sys_path_for_python_executable():
         ("build-isolation", False),
         ("emit-find-links", False),
         ("cache-dir", "changed"),
-        ("resolver", "backtracking"),
         ("emit-index-url", False),
         ("emit-options", False),
         ("unsafe-package", ["changed"]),

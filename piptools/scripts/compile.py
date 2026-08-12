@@ -21,7 +21,7 @@ from ..exceptions import NoCandidateFound, PipToolsError
 from ..logging import log
 from ..repositories import LocalRequirementsRepository, PyPIRepository
 from ..repositories.base import BaseRepository
-from ..resolver import BacktrackingResolver, LegacyResolver
+from ..resolver import BacktrackingResolver
 from ..utils import (
     dedup,
     drop_extras,
@@ -132,7 +132,6 @@ Examples:
 @options.emit_find_links
 @options.cache_dir
 @options.pip_args
-@options.resolver
 @options.emit_index_url
 @options.emit_options
 @options.unsafe_package
@@ -178,7 +177,6 @@ def cli(
     emit_find_links: bool,
     cache_dir: str,
     pip_args_str: str | None,
-    resolver_name: str,
     emit_index_url: bool,
     emit_options: bool,
     unsafe_package: tuple[str, ...],
@@ -272,12 +270,6 @@ def cli(
     if config:
         log.debug(f"Using pip-tools configuration defaults found in '{config!s}'.")
 
-    if resolver_name == "legacy":
-        log.warning(
-            "WARNING: the legacy dependency resolver is deprecated and will be removed"
-            " in future versions of pip-tools."
-        )
-
     ###
     # Setup
     ###
@@ -310,9 +302,7 @@ def cli(
         pip_args.extend(["--uploaded-prior-to", uploaded_prior_to])
     if not build_isolation:
         pip_args.append("--no-build-isolation")
-    if resolver_name == "legacy":
-        pip_args.extend(["--use-deprecated", "legacy-resolver"])
-    if resolver_name == "backtracking" and cache_dir:
+    if cache_dir:
         pip_args.extend(["--cache-dir", cache_dir])
     pip_args.extend(right_args)
     pip_args = filter_deprecated_pip_args(pip_args)
@@ -492,30 +482,20 @@ def cli(
 
     unsafe_package = tuple(canonicalize_name(pkg_name) for pkg_name in unsafe_package)
 
-    resolver_cls = LegacyResolver if resolver_name == "legacy" else BacktrackingResolver
+    resolver = BacktrackingResolver(
+        constraints=constraints,
+        existing_constraints=existing_pins,
+        repository=repository,
+        prereleases=(pre or _pip_api.finder_allows_all_prereleases(repository.finder)),
+        cache=DependencyCache(cache_dir),
+        clear_caches=rebuild,
+        allow_unsafe=allow_unsafe,
+        unsafe_packages=set(unsafe_package),
+    )
     try:
-        resolver = resolver_cls(
-            constraints=constraints,
-            existing_constraints=existing_pins,
-            repository=repository,
-            prereleases=(
-                pre or _pip_api.finder_allows_all_prereleases(repository.finder)
-            ),
-            cache=DependencyCache(cache_dir),
-            clear_caches=rebuild,
-            allow_unsafe=allow_unsafe,
-            unsafe_packages=set(unsafe_package),
-        )
         results = resolver.resolve(max_rounds=max_rounds)
         hashes = resolver.resolve_hashes(results) if generate_hashes else None
     except NoCandidateFound as e:
-        if resolver_cls == LegacyResolver:  # pragma: no branch
-            log.error(
-                "Using legacy resolver. "
-                "Consider using backtracking resolver with "
-                "`--resolver=backtracking`."
-            )
-
         log.error(str(e))
         sys.exit(2)
     except PipToolsError as e:

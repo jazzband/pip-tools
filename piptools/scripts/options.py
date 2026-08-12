@@ -330,15 +330,6 @@ pip_args = click.option(
     help="Arguments to pass directly to the pip command.",
 )
 
-resolver = click.option(
-    "--resolver",
-    "resolver_name",
-    type=click.Choice(("legacy", "backtracking")),
-    default="backtracking",
-    envvar="PIP_TOOLS_RESOLVER",
-    help="Choose the dependency resolver.",
-)
-
 emit_index_url = click.option(
     "--emit-index-url/--no-emit-index-url",
     is_flag=True,

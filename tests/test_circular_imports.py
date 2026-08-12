@@ -84,12 +84,6 @@ def _allowed_deprecation_warning_filters() -> list[str]:
                     "ignore:path is deprecated. Use files() instead."
                     ":DeprecationWarning:"
                 ),
-                "-W",
-                (
-                    "ignore:Creating a LegacyVersion has been deprecated "
-                    "and will be removed in the next major release"
-                    ":DeprecationWarning:"
-                ),
             )
         )
     return flags

@@ -48,7 +48,7 @@ dry-run = true
 ## Key and Value Syntax
 
 Keys are canonically the same as long option names, but with the leading `--` removed.
-Therefore, `--resolver` is configured under the name `resolver`.
+Therefore, `--cache-dir` is configured under the name `cache-dir`.
 
 > [!NOTE]
 > Configuration keys may contain underscores instead of dashes.
