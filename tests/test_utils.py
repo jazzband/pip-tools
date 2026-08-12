@@ -755,6 +755,24 @@ def test_callback_config_file_defaults_unreadable_toml(make_config_file):
         )
 
 
+def test_config_file_loading_overwrites_prior_default_map(make_config_file):
+    # any config value work for this test -- for simplicity, use `verbose=True/False`
+
+    # it's set in the config to True
+    piptools_config_file = make_config_file("verbose", True)
+
+    # the context already has a loaded default of False
+    ctx = Context(compile_cli)
+    ctx.default_map = {"verbose": False}
+
+    # when we load the config...
+    found_config_file = override_defaults_from_config_file(ctx, "config", None)
+    assert found_config_file == piptools_config_file
+
+    # the True value should win out
+    assert ctx.default_map["verbose"] is True
+
+
 def test_select_config_file_no_files(tmp_path_cwd):
     assert select_config_file(()) is None
 
