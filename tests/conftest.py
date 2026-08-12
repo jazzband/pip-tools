@@ -135,7 +135,8 @@ class FakeRepository(BaseRepository):
 def pytest_collection_modifyitems(config, items):
     for item in items:
         # Mark network tests as flaky
-        if item.get_closest_marker("network") and looks_like_ci():
+        # marked as no cover because this only applies in CI
+        if item.get_closest_marker("network") and looks_like_ci():  # pragma: no cover
             item.add_marker(pytest.mark.flaky(reruns=3, reruns_delay=2))
 
 
@@ -238,7 +239,10 @@ def _isolate_pip_env() -> _c.Iterator[None]:
     # this is important for direct runs of the testsuite when contributors have
     # pip configurations in their env (e.g., for corporate index servers)
     with pytest.MonkeyPatch.context() as mp:
-        for env_var in (name for name in os.environ if name.startswith("PIP_")):
+        # marked as no-cover because there's no guarantee that there are any such vars
+        for env_var in (
+            name for name in os.environ if name.startswith("PIP_")
+        ):  # pragma: no cover
             mp.delenv(env_var)
         yield
 

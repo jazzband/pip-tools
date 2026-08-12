@@ -36,7 +36,8 @@ _STDLIB_PKGS = {"python", "wsgiref", "argparse"}
 # similarly, this set is lifted out of pip for a simpler future-facing compatibility
 # story
 _DEV_PKGS: set[str] = set()
-if sys.version_info < (3, 12):  # older python build backend inclusions
+if sys.version_info < (3, 12):  # pragma: <3.12 cover
+    # older python build backend inclusions
     _DEV_PKGS |= {"setuptools", "distribute", "wheel"}
 
 PACKAGES_TO_IGNORE = [
