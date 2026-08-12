@@ -25,22 +25,8 @@ from piptools._compat import tempfile_compat
 from piptools._internal import _pip_api
 from piptools.build import ProjectMetadata
 from piptools.scripts.compile import cli
-from piptools.utils import COMPILE_EXCLUDE_OPTIONS
 
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
-
-legacy_resolver_only = pytest.mark.parametrize(
-    "current_resolver",
-    ("legacy",),
-    indirect=("current_resolver",),
-)
-
-backtracking_resolver_only = pytest.mark.parametrize(
-    "current_resolver",
-    ("backtracking",),
-    indirect=("current_resolver",),
-)
-
 
 skip_if_pip_does_not_support_editables_in_constraints = pytest.mark.skipif(
     _pip_api.PIP_VERSION_MAJOR_MINOR >= (26, 0),
@@ -114,25 +100,6 @@ class PackageVersionParam:
 
     def as_req(self) -> str:
         return f"{self.name}=={self.version}"
-
-
-@pytest.fixture(
-    autouse=True,
-    params=[
-        pytest.param("legacy", id="legacy resolver"),
-        pytest.param("backtracking", id="backtracking resolver"),
-    ],
-)
-def current_resolver(request, monkeypatch):
-    # Hide --resolver option from pip-compile header, so that we don't have to
-    # inject it every time to tests outputs.
-    exclude_options = COMPILE_EXCLUDE_OPTIONS | {"--resolver"}
-    monkeypatch.setattr("piptools.utils.COMPILE_EXCLUDE_OPTIONS", exclude_options)
-
-    # Setup given resolver name
-    resolver_name = request.param
-    monkeypatch.setenv("PIP_TOOLS_RESOLVER", resolver_name)
-    return resolver_name
 
 
 @pytest.fixture(autouse=True)
@@ -586,57 +553,6 @@ def test_editable_package_without_non_editable_duplicate(pip_conf, runner):
     assert "small-fake-a==" not in out.stderr
 
 
-@legacy_resolver_only
-@skip_if_pip_does_not_support_editables_in_constraints
-def test_editable_package_constraint_without_non_editable_duplicate(pip_conf, runner):
-    """
-    piptools keeps editable constraint,
-    without also adding a duplicate "non-editable" requirement variation
-    """
-    fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_a")
-    fake_package_dir = path_to_url(fake_package_dir)
-    with open("constraints.txt", "w") as constraints:
-        constraints.write("-e " + fake_package_dir)  # require editable fake package
-
-    with open("requirements.in", "w") as req_in:
-        req_in.write(
-            "-c constraints.txt"  # require editable fake package
-            "\nsmall_fake_with_unpinned_deps"  # This one also requires small_fake_a
-        )
-
-    out = runner.invoke(cli, ["--output-file", "-", "--quiet"])
-
-    assert out.exit_code == 0
-    assert fake_package_dir in out.stdout
-    # Shouldn't include a non-editable small-fake-a==<version>.
-    assert "small-fake-a==" not in out.stdout
-
-
-@legacy_resolver_only
-@skip_if_pip_does_not_support_editables_in_constraints
-@pytest.mark.parametrize("req_editable", ((True,), (False,)))
-def test_editable_package_in_constraints(pip_conf, runner, req_editable):
-    """
-    piptools can compile an editable that appears in both primary requirements
-    and constraints
-    """
-    fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
-    fake_package_dir = path_to_url(fake_package_dir)
-
-    with open("constraints.txt", "w") as constraints_in:
-        constraints_in.write("-e " + fake_package_dir)
-
-    with open("requirements.in", "w") as req_in:
-        prefix = "-e " if req_editable else ""
-        req_in.write(prefix + fake_package_dir + "\n-c constraints.txt")
-
-    out = runner.invoke(cli, ["-n"])
-
-    assert out.exit_code == 0
-    assert fake_package_dir in out.stderr
-    assert "small-fake-a==0.1" in out.stderr
-
-
 @pytest.mark.network
 def test_editable_package_vcs(runner):
     vcs_package = (
@@ -667,7 +583,7 @@ def test_compile_cached_vcs_package(runner, venv):
 
     # Install and cache VCS package.
     subprocess.run(
-        [os.fspath(venv / "python"), "-m" "pip", "install", vcs_package],
+        [os.fspath(venv / "python"), "-mpip", "install", vcs_package],
         check=True,
     )
     assert (
@@ -675,7 +591,7 @@ def test_compile_cached_vcs_package(runner, venv):
         in subprocess.run(
             [
                 sys.executable,
-                "-m" "pip",
+                "-mpip",
                 "cache",
                 "list",
                 "--format=abspath",
@@ -705,32 +621,6 @@ def test_compile_cached_vcs_package(runner, venv):
 
     assert out.exit_code == 0, out
     assert vcs_package == out.stdout.strip()
-
-
-@legacy_resolver_only
-def test_locally_available_editable_package_is_not_archived_in_cache_dir(
-    pip_conf, tmp_path, runner
-):
-    """
-    piptools will not create an archive for a locally available editable requirement
-    """
-    cache_dir = tmp_path / "cache_dir"
-    cache_dir.mkdir()
-
-    fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
-    fake_package_dir = path_to_url(fake_package_dir)
-
-    with open("requirements.in", "w") as req_in:
-        req_in.write("-e " + fake_package_dir)  # require editable fake package
-
-    out = runner.invoke(cli, ["-n", "--rebuild", "--cache-dir", str(cache_dir)])
-
-    assert out.exit_code == 0
-    assert fake_package_dir in out.stderr
-    assert "small-fake-a==0.1" in out.stderr
-
-    # we should not find any archived file in {cache_dir}/pkgs
-    assert not os.listdir(os.path.join(str(cache_dir), "pkgs"))
 
 
 @pytest.mark.parametrize(
@@ -1447,28 +1337,6 @@ def test_bad_setup_file(runner):
     assert f"Failed to parse {os.path.abspath('setup.py')}" in out.stderr
 
 
-@legacy_resolver_only
-def test_no_candidates(pip_conf, runner):
-    with open("requirements", "w") as req_in:
-        req_in.write("small-fake-a>0.3b1,<0.3b2")
-
-    out = runner.invoke(cli, ["-n", "requirements"])
-
-    assert out.exit_code == 2
-    assert "Skipped pre-versions:" in out.stderr
-
-
-@legacy_resolver_only
-def test_no_candidates_pre(pip_conf, runner):
-    with open("requirements", "w") as req_in:
-        req_in.write("small-fake-a>0.3b1,<0.3b1")
-
-    out = runner.invoke(cli, ["-n", "requirements", "--pre"])
-
-    assert out.exit_code == 2
-    assert "Tried pre-versions:" in out.stderr
-
-
 @pytest.mark.parametrize(
     ("url", "expected_url"),
     (
@@ -2157,43 +2025,6 @@ def test_options_in_requirements_file(runner, options):
         assert options in reqs_txt.read().splitlines()
 
 
-@pytest.mark.parametrize(
-    ("cli_options", "expected_message"),
-    (
-        pytest.param(
-            ["--index-url", "scheme://foo"],
-            "Was scheme://foo reachable?",
-            id="single index url",
-        ),
-        pytest.param(
-            ["--index-url", "scheme://foo", "--extra-index-url", "scheme://bar"],
-            "Were scheme://foo or scheme://bar reachable?",
-            id="multiple index urls",
-        ),
-        pytest.param(
-            ["--index-url", "scheme://username:password@host"],
-            "Was scheme://username:****@host reachable?",
-            id="index url with credentials",
-        ),
-    ),
-)
-@legacy_resolver_only
-def test_unreachable_index_urls(runner, cli_options, expected_message):
-    """
-    Test pip-compile raises an error if index URLs are not reachable.
-    """
-    with open("requirements.in", "w") as reqs_in:
-        reqs_in.write("some-package")
-
-    out = runner.invoke(cli, cli_options)
-
-    assert out.exit_code == 2, out
-
-    stderr_lines = out.stderr.splitlines()
-    assert "No versions found" in stderr_lines
-    assert expected_message in stderr_lines
-
-
 @pytest.mark.parametrize("subdep_already_pinned", (True, False))
 @pytest.mark.parametrize(
     ("current_package", "upgraded_package"),
@@ -2322,8 +2153,7 @@ def test_preserve_compiled_prerelease_version(pip_conf, runner):
     assert "small-fake-a==0.3b1" in out.stderr.splitlines()
 
 
-@backtracking_resolver_only
-def test_ignore_compiled_unavailable_version(pip_conf, runner, current_resolver):
+def test_ignore_compiled_unavailable_version(pip_conf, runner):
     with open("requirements.in", "w") as req_in:
         req_in.write("small-fake-a")
 
@@ -2994,7 +2824,6 @@ def _mock_resolver_cls(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     cls = MagicMock(return_value=obj)
 
     monkeypatch.setattr("piptools.scripts.compile.BacktrackingResolver", cls)
-    monkeypatch.setattr("piptools.scripts.compile.LegacyResolver", cls)
 
     return cls
 
@@ -3016,14 +2845,12 @@ def _mock_build_project_metadata(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     return func
 
 
-@backtracking_resolver_only
 @pytest.mark.network
 def test_all_extras_and_all_build_deps(
     fake_dists_with_build_deps,
     runner,
     tmp_path,
     monkeypatch,
-    current_resolver,
 ):
     """
     Test that trying to lock all dependencies gives the expected output.
@@ -3084,7 +2911,6 @@ def test_all_extras_and_all_build_deps(
         """)
 
 
-@backtracking_resolver_only
 def test_all_build_deps(runner, tmp_path, monkeypatch):
     """
     Test that ``--all-build-deps`` is equivalent to specifying every
@@ -3111,7 +2937,6 @@ def test_all_build_deps(runner, tmp_path, monkeypatch):
     )
 
 
-@backtracking_resolver_only
 def test_only_build_deps(runner, tmp_path, monkeypatch):
     """
     Test that ``--only-build-deps`` excludes dependencies other than build dependencies.
@@ -3134,7 +2959,6 @@ def test_only_build_deps(runner, tmp_path, monkeypatch):
     assert [c.name for c in cls.call_args.kwargs["constraints"]] == ["bdep0"]
 
 
-@backtracking_resolver_only
 def test_all_build_deps_fail_with_build_target(runner):
     """
     Test that passing ``--all-build-deps`` and ``--build-deps-for`` fails.
@@ -3152,7 +2976,6 @@ def test_all_build_deps_fail_with_build_target(runner):
     assert exp in out.stderr
 
 
-@backtracking_resolver_only
 def test_only_build_deps_fails_without_any_build_deps(runner):
     """
     Test that passing ``--only-build-deps`` fails when it is not specified how build deps should
@@ -3167,7 +2990,6 @@ def test_only_build_deps_fails_without_any_build_deps(runner):
     assert exp in out.stderr
 
 
-@backtracking_resolver_only
 @pytest.mark.parametrize("option", ("--all-extras", "--extra=foo"))
 def test_only_build_deps_fails_with_conflicting_options(runner, option):
     """
@@ -3186,7 +3008,6 @@ def test_only_build_deps_fails_with_conflicting_options(runner, option):
     assert exp in out.stderr
 
 
-@backtracking_resolver_only
 @pytest.mark.parametrize("option", ("--all-build-deps", "--build-deps-for=wheel"))
 def test_build_deps_fail_without_setup_file(runner, tmp_path, option):
     """
@@ -3470,53 +3291,6 @@ def test_preserve_via_requirements_constrained_dependencies_when_run_twice(
     assert second_output == expected_output
 
 
-def test_failure_of_legacy_resolver_prompts_for_backtracking(
-    pip_conf, runner, tmp_path, make_package, make_wheel, current_resolver
-):
-    """Test that pip-compile prompts to use the backtracking resolver"""
-    pkgs = [
-        make_package("a", version="0.1", install_requires=["b==0.1"]),
-        make_package("a", version="0.2", install_requires=["b==0.2"]),
-        make_package("b", version="0.1"),
-        make_package("b", version="0.2"),
-        make_package("c", version="1", install_requires=["b==0.1", "a"]),
-    ]
-
-    dists_dir = tmp_path / "dists"
-    for pkg in pkgs:
-        make_wheel(pkg, dists_dir)
-
-    with open("requirements.in", "w") as req_in:
-        req_in.writelines(["c"])
-
-    out = runner.invoke(
-        cli,
-        ["--resolver", current_resolver, "--find-links", str(dists_dir)],
-    )
-
-    if current_resolver == "legacy":
-        assert out.exit_code == 2, out
-        assert "Consider using backtracking resolver with" in out.stderr
-    elif current_resolver == "backtracking":
-        assert out.exit_code == 0, out
-    else:
-        raise AssertionError("unreachable")
-
-
-def test_print_deprecation_warning_if_using_legacy_resolver(runner, current_resolver):
-    with open("requirements.in", "w"):
-        pass
-
-    out = runner.invoke(cli)
-    assert out.exit_code == 0, out
-
-    expected_warning = "WARNING: the legacy dependency resolver is deprecated"
-    if current_resolver == "legacy":
-        assert expected_warning in out.stderr
-    else:
-        assert expected_warning not in out.stderr
-
-
 @pytest.mark.parametrize(
     "input_filenames",
     (
@@ -3546,17 +3320,14 @@ def test_raise_error_when_input_and_output_filenames_are_matched(
 
 
 @pytest.mark.network
-@backtracking_resolver_only
-def test_pass_pip_cache_to_pip_args(tmp_path, runner, current_resolver):
+def test_pass_pip_cache_to_pip_args(tmp_path, runner):
     cache_dir = tmp_path / "cache_dir"
     cache_dir.mkdir()
 
     with open("requirements.in", "w") as fp:
         fp.write("six==1.15.0")
 
-    out = runner.invoke(
-        cli, ["--cache-dir", str(cache_dir), "--resolver", current_resolver]
-    )
+    out = runner.invoke(cli, ["--cache-dir", str(cache_dir)])
     assert out.exit_code == 0
     # TODO: Remove hack once testing only on v23.3+
     if _pip_api.PIP_VERSION >= Version("23.3.dev0"):
@@ -3566,13 +3337,7 @@ def test_pass_pip_cache_to_pip_args(tmp_path, runner, current_resolver):
     assert os.listdir(os.path.join(str(cache_dir), pip_http_cache_dir))
 
 
-@backtracking_resolver_only
-def test_compile_recursive_extras_static(
-    runner,
-    tmp_path,
-    minimal_wheels_path,
-    current_resolver,
-):
+def test_compile_recursive_extras_static(runner, tmp_path, minimal_wheels_path):
     (tmp_path / "pyproject.toml").write_text(dedent("""
             [project]
             name = "foo"
@@ -3611,7 +3376,6 @@ small-fake-b==0.3
         raise
 
 
-@backtracking_resolver_only
 @pytest.mark.parametrize(
     "setuptools_version_info",
     (
@@ -3621,11 +3385,7 @@ small-fake-b==0.3
     ids=str,
 )
 def test_compile_recursive_extras_build_targets(
-    runner,
-    tmp_path,
-    minimal_wheels_path,
-    current_resolver,
-    setuptools_version_info,
+    runner, tmp_path, minimal_wheels_path, setuptools_version_info
 ):
     (tmp_path / "pyproject.toml").write_text(dedent(f"""
             [build-system]
@@ -3675,13 +3435,9 @@ small-fake-b==0.3
         raise
 
 
-@backtracking_resolver_only
 @pytest.mark.network
 def test_compile_build_targets_setuptools_no_wheel_dep(
-    runner,
-    tmp_path,
-    minimal_wheels_path,
-    current_resolver,
+    runner, tmp_path, minimal_wheels_path
 ):
     """Check that user requests apply to build dependencies.
 
@@ -4057,7 +3813,9 @@ def test_stdout_should_not_be_read_when_stdin_is_not_a_plain_file(
             "absolute_include",
             {
                 "requirements2.in": "small-fake-a\n",
-                "requirements.in": lambda tmpdir: f"-r {(tmpdir / 'requirements2.in').as_posix()}",
+                "requirements.in": lambda tmpdir: (
+                    f"-r {(tmpdir / 'requirements2.in').as_posix()}"
+                ),
             },
         ),
     ),

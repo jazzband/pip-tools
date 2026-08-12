@@ -10,7 +10,6 @@ import subprocess
 import sys
 import typing as _t
 from contextlib import contextmanager
-from dataclasses import dataclass, field
 from importlib.metadata import version as version_of
 from pathlib import Path
 from textwrap import dedent
@@ -40,7 +39,7 @@ from piptools.locations import DEFAULT_CONFIG_FILE_NAMES
 from piptools.logging import log
 from piptools.repositories import PyPIRepository
 from piptools.repositories.base import BaseRepository
-from piptools.resolver import BacktrackingResolver, LegacyResolver
+from piptools.resolver import BacktrackingResolver
 from piptools.utils import (
     as_tuple,
     is_url_requirement,
@@ -51,15 +50,17 @@ from .constants import MINIMAL_WHEELS_PATH, TEST_DATA_PATH
 from .utils import looks_like_ci
 
 
-@dataclass
-class FakeOptions:
-    features_enabled: list[str] = field(default_factory=list)
-    deprecated_features_enabled: list[str] = field(default_factory=list)
-    target_dir: str | None = None
+def make_fake_options():
+    opts = mock.Mock()
+    opts.features_enabled = []
+    opts.deprecated_features_enabled = []
+    opts.target_dir = None
+    opts.cache_dir = None
+    return opts
 
 
 class FakeRepository(BaseRepository):
-    def __init__(self, options: FakeOptions):
+    def __init__(self, options):
         self._options = options
 
         with open(os.path.join(TEST_DATA_PATH, "fake-index.json")) as f:
@@ -161,20 +162,13 @@ def fake_dist():
 
 @pytest.fixture
 def repository():
-    return FakeRepository(
-        options=FakeOptions(deprecated_features_enabled=["legacy-resolver"])
-    )
+    return FakeRepository(options=make_fake_options())
 
 
 @pytest.fixture
 def pypi_repository(tmp_path):
     return PyPIRepository(
-        [
-            "--index-url",
-            PyPIRepository.DEFAULT_INDEX_URL,
-            "--use-deprecated",
-            "legacy-resolver",
-        ],
+        ["--index-url", PyPIRepository.DEFAULT_INDEX_URL],
         cache_dir=(tmp_path / "pypi-repo"),
     )
 
@@ -190,26 +184,11 @@ def resolver(depcache, repository):
     #       use .resolve(...) on the specset, instead of passing it to
     #       the constructor like this (it's not reusable)
     return functools.partial(
-        LegacyResolver, repository=repository, cache=depcache, existing_constraints={}
-    )
-
-
-@pytest.fixture
-def backtracking_resolver(depcache):
-    # TODO: It'd be nicer if Resolver instance could be set up and then
-    #       use .resolve(...) on the specset, instead of passing it to
-    #       the constructor like this (it's not reusable)
-    return functools.partial(
         BacktrackingResolver,
-        repository=FakeRepository(options=FakeOptions()),
+        repository=repository,
         cache=depcache,
         existing_constraints={},
     )
-
-
-@pytest.fixture
-def base_resolver(depcache):
-    return functools.partial(LegacyResolver, cache=depcache, existing_constraints={})
 
 
 @pytest.fixture

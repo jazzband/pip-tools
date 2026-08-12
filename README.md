@@ -628,22 +628,9 @@ This section lists `pip-tools` features that are currently deprecated.
   default (https://github.com/jazzband/pip-tools/issues/989).
   Use `--no-allow-unsafe` to keep the old behavior. It is recommended
   to pass `--allow-unsafe` now to adapt to the upcoming change.
-- The legacy resolver is deprecated and will be removed in future versions.
-  The new default is `--resolver=backtracking`.
 - In the next major release, the `--strip-extras` behavior will be enabled by
   default (https://github.com/jazzband/pip-tools/issues/1613).
   Use `--no-strip-extras` to keep the old behavior.
-
-### A Note on Resolvers
-
-You can choose from either default backtracking resolver or the deprecated
-legacy resolver.
-
-The legacy resolver will occasionally fail to resolve dependencies. The
-backtracking resolver is more robust, but can take longer to run in general.
-
-You can continue using the legacy resolver with `--resolver=legacy` although
-note that it is deprecated and will be removed in a future release.
 
 [jazzband]: https://jazzband.co/
 [jazzband-image]: https://jazzband.co/static/img/badge.svg
