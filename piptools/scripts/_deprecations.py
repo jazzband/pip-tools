@@ -19,8 +19,6 @@ def filter_deprecated_pip_args(args: list[str]) -> list[str]:
     """
     if _pip_api.PIP_VERSION_MAJOR_MINOR >= (25, 3):  # pragma: pip>=25.3 cover
         args = _filter_args_deprecated_in_pip_25_3(args)
-    else:  # pragma: pip>=25.3 no cover
-        pass
     return args
 
 

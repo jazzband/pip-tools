@@ -30,6 +30,9 @@ COMPARATORS: list[tuple[str, _t.Callable[[tuple[int, int], tuple[int, int]], boo
     ("==", operator.eq),
 ]
 
+# a regex for all of the pragmas we will generate
+ANY_PIP_VERSION_PRAGMA = r"# pragma: pip(<|<=|>|>=|==)\d+\.\d+ (no )?cover\b"
+
 
 # pip uses 2-digit calver, so the current year is the latest possibly supported version
 def get_max_pip_major_version() -> int:
@@ -122,6 +125,10 @@ class PipVersionPragmas(CoveragePlugin):  # type: ignore[misc]
             | compute_pip_version_exclude_pragmas()
         )
         config.set_option("report:exclude_lines", sorted(exclude_lines))
+
+        partial_branches = set(config.get_option("report:partial_branches") or {})
+        partial_branches |= {ANY_PIP_VERSION_PRAGMA}
+        config.set_option("report:partial_branches", sorted(partial_branches))
 
 
 def coverage_init(registry: Plugins, options: dict[str, object]) -> None:

@@ -220,8 +220,6 @@ def from_line():
             options = kwargs.pop("options", {})
             options["hashes"] = hash_options
             kwargs["options"] = options
-        else:  # pragma: pip<=23.0 no cover
-            pass
         return install_req_from_line(*args, **kwargs)
 
     return _from_line

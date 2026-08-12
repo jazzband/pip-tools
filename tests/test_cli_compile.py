@@ -4170,8 +4170,6 @@ def test_second_order_requirements_relative_path_in_separate_dir(
         output_path = (
             pathlib.Path(input_path).parent / ("../" * relative_segments) / output_path
         ).as_posix()
-    else:  # pragma: pip<24.3 no cover
-        pass
 
     with monkeypatch.context() as revertable_ctx:
         revertable_ctx.chdir(tmp_path)

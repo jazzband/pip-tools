@@ -18,5 +18,3 @@ def postprocess_cli_options(options: optparse.Values) -> None:
     """
     if _pip_version.PIP_VERSION_MAJOR_MINOR >= (26, 0):  # pragma: pip>=26.0 cover
         cmdoptions.check_release_control_exclusive(options)
-    else:  # pragma: pip>=26.0 no cover
-        pass
