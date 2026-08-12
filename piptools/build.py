@@ -20,7 +20,7 @@ from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.requirements import Requirement
 
 from ._compat import _tomllib_compat
-from ._internal import _pip_api
+from ._internal import _environment_variables, _pip_api
 
 PYPROJECT_TOML = "pyproject.toml"
 
@@ -186,29 +186,6 @@ def build_project_metadata(
 
 
 @contextlib.contextmanager
-def _env_var(
-    env_var_name: str,
-    env_var_value: str,
-    /,
-) -> Iterator[None]:
-    sentinel = object()
-    original_pip_constraint = os.getenv(env_var_name, sentinel)
-    pip_constraint_was_unset = original_pip_constraint is sentinel
-
-    os.environ[env_var_name] = env_var_value
-    try:
-        yield
-    finally:
-        if pip_constraint_was_unset:
-            del os.environ[env_var_name]
-        else:
-            # Assert here is necessary because MyPy can't infer type
-            # narrowing in the complex case.
-            assert isinstance(original_pip_constraint, str)
-            os.environ[env_var_name] = original_pip_constraint
-
-
-@contextlib.contextmanager
 def _temporary_constraints_file_set_for_pip(
     upgrade_packages: tuple[str, ...],
 ) -> Iterator[None]:
@@ -243,7 +220,7 @@ def _temporary_constraints_file_set_for_pip(
         tmpfile.close()
 
         try:
-            with _env_var("PIP_CONSTRAINT", tmpfile.name):
+            with _environment_variables.setenv_context("PIP_CONSTRAINT", tmpfile.name):
                 yield
         finally:
             # FIXME: replace `delete` with `delete_on_close` in Python 3.12+
