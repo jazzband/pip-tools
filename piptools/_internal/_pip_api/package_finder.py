@@ -32,9 +32,9 @@ def get_pip_request_failed_exception_types() -> tuple[type[Exception], ...]:
     resilience of some ``pip-tools`` usages to changes in ``pip``, for when
     ``pip-tools`` is used with new and untested versions.
     """
-    if _pip_version.PIP_VERSION_MAJOR_MINOR < (26, 2):
+    if _pip_version.PIP_VERSION_MAJOR_MINOR < (26, 2):  # pragma: pip<26.2 cover
         return (RequestException,)
-    else:
+    else:  # pragma: pip<26.2 no cover
         return (
             RequestException,
             _pip_internal_exceptions.ConnectionFailedError,
