@@ -5,7 +5,7 @@ plugins =
 omit =
     piptools/_compat/*
     # any local plugins we use aren't part of normal testing/coverage
-    plugins/*
+    tests/_plugins/*
 
 [report]
 exclude_also =
