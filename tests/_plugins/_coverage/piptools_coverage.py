@@ -12,8 +12,8 @@ else:
     import tomli as tomllib
 
 from coverage import CoveragePlugin
-from coverage.config import CoverageConfig
 from coverage.plugin_support import Plugins
+from coverage.types import TConfigurable
 from packaging.requirements import Requirement
 from packaging.version import Version
 
@@ -128,18 +128,24 @@ def compute_pip_version_exclude_pragmas() -> set[str]:
     return result
 
 
-# mypy flags CoveragePlugin as being of type Any, type ignore "subclassing Any"
-class PipVersionPragmas(CoveragePlugin):  # type: ignore[misc]
-    def configure(self, config: CoverageConfig) -> None:
-        exclude_lines = (
-            set(config.get_option("report:exclude_lines"))
-            | compute_pip_version_exclude_pragmas()
-        )
+class PipVersionPragmas(CoveragePlugin):
+    def configure(self, config: TConfigurable) -> None:
+        exclude_lines: set[str] = set(_get_list_config(config, "report:exclude_lines"))
+        exclude_lines |= compute_pip_version_exclude_pragmas()
         config.set_option("report:exclude_lines", sorted(exclude_lines))
 
-        partial_branches = set(config.get_option("report:partial_branches") or {})
+        partial_branches: set[str] = set(
+            _get_list_config(config, "report:partial_branches")
+        )
         partial_branches |= {ANY_PIP_VERSION_PRAGMA}
         config.set_option("report:partial_branches", sorted(partial_branches))
+
+
+def _get_list_config(config: TConfigurable, key: str) -> list[str]:
+    value = config.get_option(key)
+    if not isinstance(value, list):
+        return []
+    return value
 
 
 def coverage_init(registry: Plugins, options: dict[str, object]) -> None:
