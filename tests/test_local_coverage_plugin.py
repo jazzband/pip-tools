@@ -86,32 +86,32 @@ def test_computed_pragmas_state_no_cover_above_next_major_version():
     current_major, minor = _pip_api.PIP_VERSION_MAJOR_MINOR
     max_major = piptools_coverage.get_max_pip_major_version()
 
-    if current_major >= max_major:
+    if current_major >= max_major:  # pragma: pip>=MAX.0 cover
         pytest.skip(
             "cannot test piptools_coverage handling of next major version when at or "
             "above the computed maximum"
         )
+    else:  # pragma: pip<MAX.0 cover
+        next_major = current_major + 1
 
-    next_major = current_major + 1
+        cover_eq_pragma = rf"# pragma: pip=={next_major}.{minor} cover\b"
+        nocover_eq_pragma = rf"# pragma: pip=={next_major}.{minor} no cover\b"
+        cover_ge_pragma = rf"# pragma: pip>={next_major}.{minor} cover\b"
+        nocover_ge_pragma = rf"# pragma: pip>={next_major}.{minor} no cover\b"
 
-    cover_eq_pragma = rf"# pragma: pip=={next_major}.{minor} cover\b"
-    nocover_eq_pragma = rf"# pragma: pip=={next_major}.{minor} no cover\b"
-    cover_ge_pragma = rf"# pragma: pip>={next_major}.{minor} cover\b"
-    nocover_ge_pragma = rf"# pragma: pip>={next_major}.{minor} no cover\b"
+        computed_pragmas = piptools_coverage.compute_pip_version_exclude_pragmas()
 
-    computed_pragmas = piptools_coverage.compute_pip_version_exclude_pragmas()
-
-    assert cover_eq_pragma in computed_pragmas
-    assert nocover_eq_pragma not in computed_pragmas
-    assert cover_ge_pragma in computed_pragmas
-    assert nocover_ge_pragma not in computed_pragmas
+        assert cover_eq_pragma in computed_pragmas
+        assert nocover_eq_pragma not in computed_pragmas
+        assert cover_ge_pragma in computed_pragmas
+        assert nocover_ge_pragma not in computed_pragmas
 
 
 def test_computed_pragmas_state_no_cover_below_previous_major_version():
     current_major, minor = _pip_api.PIP_VERSION_MAJOR_MINOR
     min_major = piptools_coverage.get_min_supported_pip_major_version()
 
-    if current_major <= min_major:
+    if current_major <= min_major:  # pragma: pip<=MIN.3 cover
         pytest.skip(
             "cannot test piptools_coverage handling of previous major version when at or "
             "below the computed minimum"

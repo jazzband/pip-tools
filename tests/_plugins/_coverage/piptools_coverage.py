@@ -31,7 +31,7 @@ COMPARATORS: list[tuple[str, _t.Callable[[tuple[int, int], tuple[int, int]], boo
 ]
 
 # a regex for all of the pragmas we will generate
-ANY_PIP_VERSION_PRAGMA = r"# pragma: pip(<|<=|>|>=|==)\d+\.\d+ (no )?cover\b"
+ANY_PIP_VERSION_PRAGMA = r"# pragma: pip(<|<=|>|>=|==)(\d+|MIN|MAX)\.\d+ (no )?cover\b"
 
 
 # pip uses 2-digit calver, so the current year is the latest possibly supported version
@@ -103,6 +103,10 @@ def get_pip_major_minor() -> tuple[int, int]:
 
 def compute_pip_version_exclude_pragmas() -> set[str]:
     current_major, current_minor = get_pip_major_minor()
+    min_major, max_major = (
+        get_min_supported_pip_major_version(),
+        get_max_pip_major_version(),
+    )
 
     result: set[str] = {
         rf"# pragma: pip=={current_major}.{current_minor} no cover\b",
@@ -113,6 +117,13 @@ def compute_pip_version_exclude_pragmas() -> set[str]:
             comparator_applies = opfunc((current_major, current_minor), (major, minor))
             designator = "no cover" if comparator_applies else "cover"
             result.add(rf"# pragma: pip{opname}{major}.{minor} {designator}\b")
+
+            # special "MIN" and "MAX" designators at the outer bounds
+            # allow us to specify coverage only for the max or min versions of pip
+            if major == min_major:
+                result.add(rf"# pragma: pip{opname}MIN.{minor} {designator}\b")
+            elif major == max_major:
+                result.add(rf"# pragma: pip{opname}MAX.{minor} {designator}\b")
 
     return result
 
