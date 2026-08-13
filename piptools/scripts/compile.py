@@ -144,7 +144,6 @@ Examples:
 @options.only_build_deps
 def cli(
     ctx: click.Context,
-    color: bool | None,
     verbose: int,
     quiet: int,
     dry_run: bool,
@@ -195,8 +194,6 @@ def cli(
     Valid sources are requirements.in, pyproject.toml, setup.cfg,
     or setup.py specs.
     """
-    if color is not None:
-        ctx.color = color
     log.verbosity = verbose - quiet
 
     # If ``src-files` was not provided as an input, but rather as config,
