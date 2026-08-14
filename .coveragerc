@@ -9,6 +9,7 @@ omit =
 
 [report]
 exclude_also =
+    ^\s*pytest\.fail\(
     ^\s*@pytest\.mark\.xfail
     ^\s*if _t\.TYPE_CHECKING:
 include = piptools/*, tests/*
