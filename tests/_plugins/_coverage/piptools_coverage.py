@@ -1,0 +1,152 @@
+from __future__ import annotations
+
+import datetime
+import operator
+import pathlib
+import sys
+import typing as _t
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:
+    import tomli as tomllib
+
+from coverage import CoveragePlugin
+from coverage.plugin_support import Plugins
+from coverage.types import TConfigurable
+from packaging.requirements import Requirement
+from packaging.version import Version
+
+
+class UnrecognizedPipDependency(ValueError):
+    pass
+
+
+COMPARATORS: list[tuple[str, _t.Callable[[tuple[int, int], tuple[int, int]], bool]]] = [
+    ("<", operator.lt),
+    ("<=", operator.le),
+    (">", operator.gt),
+    (">=", operator.ge),
+    ("==", operator.eq),
+]
+
+# a regex for all of the pragmas we will generate
+ANY_PIP_VERSION_PRAGMA = r"# pragma: pip(<|<=|>|>=|==)(\d+|MIN|MAX)\.\d+ (no )?cover\b"
+
+
+# pip uses 2-digit calver, so the current year is the latest possibly supported version
+def get_max_pip_major_version() -> int:
+    return datetime.date.today().year - 2000
+
+
+def read_project_pyproject_dependencies() -> list[Requirement]:
+    # the path to pyproject.toml is taken always from the CWD
+    # since tests should always run under tox, this is always expected to be the repo root
+    pyproject_path = pathlib.Path.cwd() / "pyproject.toml"
+    with pyproject_path.open("rb") as pyproject_file:
+        pyproject_toml = tomllib.load(pyproject_file)
+
+    return [Requirement(d) for d in pyproject_toml["project"]["dependencies"]]
+
+
+def get_min_supported_pip_major_version() -> int:
+    parsed_dependencies = read_project_pyproject_dependencies()
+    pip_requirements = [r for r in parsed_dependencies if r.name == "pip"]
+
+    # we will presently assume that there's exactly one declared dependency on 'pip'
+    # which sets the lower bound
+    # if this changes in the future (e.g., we have different data for different markers)
+    # then the plugin will need to be updated to ensure it parses that data correctly
+    if len(pip_requirements) != 1:
+        raise UnrecognizedPipDependency(
+            "piptools_coverage is unable to determine the pip lower bound. "
+            "Please update the plugin to handle changes to piptools metadata."
+        )
+
+    pip_specifier_set = pip_requirements[0].specifier
+    if len(pip_specifier_set) != 1:
+        raise UnrecognizedPipDependency(
+            "piptools_coverage is unable to determine the pip lower bound. "
+            "Please update the plugin to handle changes to piptools metadata."
+        )
+
+    pip_specifier = next(iter(pip_specifier_set))
+    if pip_specifier.operator != ">=":
+        raise UnrecognizedPipDependency(
+            "piptools_coverage is unable to determine the pip lower bound. "
+            "Please update the plugin to handle changes to piptools metadata."
+        )
+
+    version = Version(pip_specifier.version)
+    return version.major
+
+
+def list_supported_pip_versions() -> list[tuple[int, int]]:
+    return [
+        (major, minor)
+        for major in range(
+            get_min_supported_pip_major_version(), get_max_pip_major_version() + 1
+        )
+        for minor in (0, 1, 2, 3)
+    ]
+
+
+def get_pip_major_minor() -> tuple[int, int]:
+    import pip
+    from pip._vendor.packaging.version import parse as parse_version
+
+    base_version = parse_version(pip.__version__).base_version
+    major_str, minor_str = base_version.split(".")[:2]
+
+    return int(major_str), int(minor_str)
+
+
+def compute_pip_version_exclude_pragmas() -> set[str]:
+    current_major, current_minor = get_pip_major_minor()
+    min_major, max_major = (
+        get_min_supported_pip_major_version(),
+        get_max_pip_major_version(),
+    )
+
+    result: set[str] = {
+        rf"# pragma: pip=={current_major}.{current_minor} no cover\b",
+    }
+
+    for major, minor in list_supported_pip_versions():
+        for opname, opfunc in COMPARATORS:
+            comparator_applies = opfunc((current_major, current_minor), (major, minor))
+            designator = "no cover" if comparator_applies else "cover"
+            result.add(rf"# pragma: pip{opname}{major}.{minor} {designator}\b")
+
+            # special "MIN" and "MAX" designators at the outer bounds
+            # allow us to specify coverage only for the max or min versions of pip
+            if major == min_major:
+                result.add(rf"# pragma: pip{opname}MIN.{minor} {designator}\b")
+            elif major == max_major:
+                result.add(rf"# pragma: pip{opname}MAX.{minor} {designator}\b")
+
+    return result
+
+
+class PipVersionPragmas(CoveragePlugin):
+    def configure(self, config: TConfigurable) -> None:
+        exclude_lines: set[str] = set(_get_list_config(config, "report:exclude_lines"))
+        exclude_lines |= compute_pip_version_exclude_pragmas()
+        config.set_option("report:exclude_lines", sorted(exclude_lines))
+
+        partial_branches: set[str] = set(
+            _get_list_config(config, "report:partial_branches")
+        )
+        partial_branches |= {ANY_PIP_VERSION_PRAGMA}
+        config.set_option("report:partial_branches", sorted(partial_branches))
+
+
+def _get_list_config(config: TConfigurable, key: str) -> list[str]:
+    value = config.get_option(key)
+    if not isinstance(value, list):
+        return []
+    return value
+
+
+def coverage_init(registry: Plugins, options: dict[str, object]) -> None:
+    registry.add_configurer(PipVersionPragmas())

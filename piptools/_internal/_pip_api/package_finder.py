@@ -32,9 +32,9 @@ def get_pip_request_failed_exception_types() -> tuple[type[Exception], ...]:
     resilience of some ``pip-tools`` usages to changes in ``pip``, for when
     ``pip-tools`` is used with new and untested versions.
     """
-    if _pip_version.PIP_VERSION_MAJOR_MINOR < (26, 2):
+    if _pip_version.PIP_VERSION_MAJOR_MINOR < (26, 2):  # pragma: pip<26.2 cover
         return (RequestException,)
-    else:
+    else:  # pragma: pip<26.2 no cover
         return (
             RequestException,
             _pip_internal_exceptions.ConnectionFailedError,
@@ -52,9 +52,9 @@ def finder_allows_prereleases_of_req(
     On older pip versions, this is not specific to the requirement, but on newer ones it
     is.
     """
-    if _pip_version.PIP_VERSION_MAJOR_MINOR < (26, 0):
+    if _pip_version.PIP_VERSION_MAJOR_MINOR < (26, 0):  # pragma: pip<26.0 cover
         return finder.allow_all_prereleases  # type: ignore[no-any-return]
-    else:
+    else:  # pragma: pip<26.0 no cover
         return finder.release_control.allows_prereleases(  # type: ignore[no-any-return]
             ireq.req.name
         )
@@ -67,7 +67,7 @@ def finder_allows_all_prereleases(finder: PackageFinder) -> bool:
     On older pip versions, this is not specific to the requirement, but on newer ones it
     is. However, ``--pre`` is translated internally to ``":all:"`` on those versions.
     """
-    if _pip_version.PIP_VERSION_MAJOR_MINOR < (26, 0):
+    if _pip_version.PIP_VERSION_MAJOR_MINOR < (26, 0):  # pragma: pip<26.0 cover
         return bool(finder.allow_all_prereleases)
-    else:
+    else:  # pragma: pip<26.0 no cover
         return ":all:" in finder.release_control.all_releases

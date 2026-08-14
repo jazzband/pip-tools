@@ -52,7 +52,7 @@ def make_requirement_preparer_from_command(
     # this takes the form of a new `allow_editables` bool flag
     # see also: https://github.com/pypa/pip/pull/14206
     pip_version_specific_kwargs: dict[str, object] = {}
-    if _pip_version.PIP_VERSION_MAJOR_MINOR >= (26, 2):
+    if _pip_version.PIP_VERSION_MAJOR_MINOR >= (26, 2):  # pragma: pip>=26.2 cover
         pip_version_specific_kwargs["allow_editables"] = allow_editables
 
     return command.make_requirement_preparer(
