@@ -1,13 +1,16 @@
+---
 repos:
   - repo: https://github.com/psf/black-pre-commit-mirror
     rev: 26.5.1
     hooks:
       - id: black
         args: [--target-version=py39]
+
   - repo: https://github.com/PyCQA/isort
     rev: 9.0.0b1
     hooks:
       - id: isort
+
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.21.2
     hooks:
@@ -47,6 +50,7 @@ repos:
         additional_dependencies:
           - flake8-pytest-style == 2.2.0
           - flake8-typing-as-t == 1.1.0
+
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v2.3.0
     hooks:
@@ -63,6 +67,7 @@ repos:
           - build==1.0.0
           - pyproject_hooks==1.0.0
           - pytest==7.4.2
+
   - repo: https://github.com/PyCQA/bandit
     rev: 1.9.4
     hooks:
@@ -122,6 +127,7 @@ repos:
     hooks:
       - id: actionlint
         additional_dependencies:
+          # yamllint disable-line rule:line-length
           # actionlint has a shellcheck integration which extracts shell scripts in `run:` steps from GitHub Actions
           # and checks these with shellcheck.
           # The integration only works if shellcheck is installed.
@@ -145,6 +151,7 @@ repos:
           - --disable-rules=blanks-around-headings,no-duplicate-heading,no-emphasis-as-heading,no-multiple-blanks
           - scan
         files: ^CHANGELOG\.md$
+
       - id: pymarkdown
         alias: md-changelog-fragments
         name: PyMarkdown (change log fragments)
@@ -154,6 +161,7 @@ repos:
           - --disable-rules=first-line-heading
           - scan
         files: ^changelog\.d/(.*\..*|\.draft_changelog_partial)\.md$
+
       - id: pymarkdown
         alias: md-issue-pr-templates
         name: PyMarkdown (issue and pull request templates)
@@ -167,6 +175,7 @@ repos:
           - --disable-rules=first-line-heading
           - scan
         files: ^\.github/(ISSUE_TEMPLATE/[^/]*|PULL_REQUEST_TEMPLATE)\.md$
+
       - id: pymarkdown
         alias: md-generic
         name: PyMarkdown (remaining)

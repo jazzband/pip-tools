@@ -1,3 +1,4 @@
+---
 - id: pip-compile
   name: pip-compile
   description: Automatically compile requirements.
@@ -5,3 +6,4 @@
   language: python
   files: ^requirements\.(in|txt)$
   pass_filenames: false
+...

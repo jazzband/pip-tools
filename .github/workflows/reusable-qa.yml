@@ -1,3 +1,4 @@
+---
 name: QA
 
 on:
@@ -23,11 +24,15 @@ jobs:
       TOXENV: ${{ matrix.toxenv }}
       TOX_PARALLEL_NO_SPINNER: 1
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      # yamllint disable-line rule:line-length
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        # v6.0.2
         with:
           persist-credentials: false
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
+        # yamllint disable-line rule:line-length
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+        # v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Get pip cache dir
@@ -35,7 +40,8 @@ jobs:
         run: |
           echo "dir=$(pip cache dir)" >> "${GITHUB_OUTPUT}"
       - name: Pip cache
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7
+        # v5.0.4
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: >-
@@ -47,10 +53,13 @@ jobs:
             ${{ runner.os }}-
       - name: Prepare cache key
         id: cache-key
+        # yamllint disable-line rule:line-length
         run: echo "sha-256=$(python -VV | sha256sum | cut -d' ' -f1)" >> "${GITHUB_OUTPUT}"
-      - uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
+      - uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7
+        # v5.0.4
         with:
           path: ~/.cache/pre-commit
+          # yamllint disable-line rule:line-length
           key: pre-commit|${{ steps.cache-key.outputs.sha-256 }}|${{ hashFiles('.pre-commit-config.yaml') }}
       - name: Install tox
         run: pip install tox
@@ -58,3 +67,4 @@ jobs:
         run: tox -vv --notest -p auto --parallel-live
       - name: Test ${{ matrix.toxenv }}
         run: tox --skip-pkg-install
+...

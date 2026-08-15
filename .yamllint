@@ -23,7 +23,7 @@ rules:
       - "false"
       - "true"
       # Allow "on" key name in GHA CI/CD workflow definitions
-      # Have to disable this, otherwise the linter removes the quotes.
+      # Have to disable this, otherwise the linter removes the quotes and fails.
       # yamllint disable-line rule:quoted-strings
       - "on"
 
