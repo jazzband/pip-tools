@@ -196,10 +196,12 @@ def cli(
     """
     log.verbosity = verbose - quiet
 
-    # If ``src-files` was not provided as an input, but rather as config,
-    # it will be part of the click context ``ctx``.
-    # However, if ``src_files`` is specified, then we want to use that.
-    if not src_files and ctx.default_map and "src_files" in ctx.default_map:
+    # NOTE: On older `click` versions, `src_files` is not populated automatically from
+    # NOTE: config, so it has to be done explicitly here. These align with older Python
+    # NOTE: support, so the entire block is marked with a version pragma.
+    if (
+        not src_files and ctx.default_map and "src_files" in ctx.default_map
+    ):  # pragma: <=3.9 cover
         src_files = ctx.default_map["src_files"]
 
     if all_build_deps and build_deps_targets:
