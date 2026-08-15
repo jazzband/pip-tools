@@ -452,9 +452,9 @@ jobs:
     env:
       TOXENV: test-coverage-plugin
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Get pip cache dir
@@ -463,7 +463,7 @@ jobs:
         run: |
           echo "dir=$(pip cache dir)" >> "${GITHUB_OUTPUT}"
       - name: Pip cache
-        uses: actions/cache@v4
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7  # v5.0.4
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: >-
@@ -506,7 +506,7 @@ jobs:
         if: >-
           !cancelled()
           && !inputs.cpython-pip-version
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7.0.0
         with:
           files: ./coverage.xml
           flags: >-
