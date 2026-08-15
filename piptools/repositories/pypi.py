@@ -6,6 +6,7 @@ import itertools
 import optparse
 import os
 import typing as _t
+import urllib.parse
 from collections.abc import Iterator
 from contextlib import contextmanager
 from shutil import rmtree
@@ -16,7 +17,6 @@ from pip._internal.commands import create_command
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.models.candidate import InstallationCandidate
-from pip._internal.models.index import PackageIndex
 from pip._internal.models.link import Link
 from pip._internal.models.wheel import Wheel
 from pip._internal.network.session import PipSession
@@ -29,7 +29,7 @@ from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
 from pip._internal.utils.urls import path_to_url, url_to_path
 from pip._vendor.packaging.tags import Tag
 from pip._vendor.packaging.version import _BaseVersion
-from pip._vendor.requests import RequestException, Session
+from pip._vendor.requests import Session
 
 from .._compat import create_wheel_cache
 from .._internal import _pip_api
@@ -125,10 +125,10 @@ class PyPIRepository(BaseRepository):
         # but on newer versions, it's a simple method, and the underlying cache is a
         # dict on the instance
         # the same holds for `finder.find_best_candidate`
-        if _pip_api.PIP_VERSION_MAJOR_MINOR >= (25, 1):
+        if _pip_api.PIP_VERSION_MAJOR_MINOR >= (25, 1):  # pragma: pip>=25.1 cover
             self.finder._all_candidates.clear()
             self.finder._best_candidates.clear()
-        else:
+        else:  # pragma: pip>=25.1 no cover
             self.finder.find_all_candidates.cache_clear()
             self.finder.find_best_candidate.cache_clear()
 
@@ -189,16 +189,15 @@ class PyPIRepository(BaseRepository):
             TempDirectory(kind="resolver") as temp_dir,
             indent_log(),
         ):
-            preparer_kwargs = {
-                "temp_build_dir": temp_dir,
-                "options": self.options,
-                "session": self.session,
-                "finder": self.finder,
-                "use_user_site": False,
-                "download_dir": download_dir,
-                "build_tracker": build_tracker,
-            }
-            preparer = self.command.make_requirement_preparer(**preparer_kwargs)
+            preparer = _pip_api.make_requirement_preparer_from_command(
+                self.command,
+                temp_build_dir=temp_dir,
+                options=self.options,
+                build_tracker=build_tracker,
+                session=self.session,
+                finder=self.finder,
+                download_dir=download_dir,
+            )
 
             reqset = RequirementSet()
             ireq.user_supplied = True
@@ -270,18 +269,28 @@ class PyPIRepository(BaseRepository):
         InstallRequirement. Return None on HTTP/JSON error or if a package
         is not found on PyPI server.
 
+        Because the JSON API is not standard, a wide class of errors are ignored in this
+        context. Failed connections, 404s, and non-JSON responses are all treated as
+        "no data".
+
         API reference: https://warehouse.readthedocs.io/api-reference/json/
         """
-        package_indexes = (
-            PackageIndex(url=index_url, file_storage_domain="")
+        index_base_urls = (
+            _get_true_base_from_index_url(index_url)
             for index_url in self.finder.search_scope.index_urls
         )
-        for package_index in package_indexes:
-            url = f"{package_index.pypi_url}/{ireq.name}/json"
+        request_failed_error_types = _pip_api.get_pip_request_failed_exception_types()
+
+        for index_base_url in index_base_urls:
+            json_url = urllib.parse.urljoin(index_base_url, f"{ireq.name}/json")
+
             try:
-                response = self.session.get(url)
-            except RequestException as e:
-                log.debug(f"Fetch package info from PyPI failed: {url}: {e}")
+                response = self.session.get(json_url)
+            except request_failed_error_types as request_failed_error:
+                log.debug(
+                    "Fetch package info from PyPI failed: "
+                    f"{json_url}: {request_failed_error}"
+                )
                 continue
 
             # Skip this PyPI server, because there is no package
@@ -292,7 +301,7 @@ class PyPIRepository(BaseRepository):
             try:
                 data = response.json()
             except ValueError as e:
-                log.debug(f"Cannot parse JSON response from PyPI: {url}: {e}")
+                log.debug(f"Cannot parse JSON response from PyPI: {json_url}: {e}")
                 continue
             return data
         return None
@@ -520,3 +529,23 @@ def open_local_or_remote_file(link: Link, session: Session) -> Iterator[FileStre
 
 def candidate_version(candidate: InstallationCandidate) -> _BaseVersion:
     return candidate.version
+
+
+def _get_true_base_from_index_url(url: str) -> str:
+    """
+    Given an index URL (which may or may not end in ``/simple``), get the base URL for
+    using the JSON API.
+
+    Even though PyPI's base URL is documented as ``https://pypi.org/simple/``, that is
+    not the "true base URL" for using the JSON API.
+
+    It is not possible to accommodate all users perfectly -- we can ensure proper
+    behavior for pypi.org and test.pypi.org , and try not to break anyone else in the
+    process.
+    """
+    if url.endswith("/simple/"):
+        return url.removesuffix("simple/")
+    elif url.endswith("/simple"):
+        return url.removesuffix("simple")
+
+    return url

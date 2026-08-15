@@ -44,7 +44,7 @@ class LocalRequirementsRepository(BaseRepository):
 
     def __init__(
         self,
-        existing_pins: Mapping[str, InstallationCandidate],
+        existing_pins: Mapping[str, InstallRequirement],
         proxied_repository: BaseRepository,
         reuse_hashes: bool = True,
     ):

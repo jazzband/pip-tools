@@ -10,13 +10,12 @@ from subprocess import run  # nosec
 import click
 from pip._internal.models.direct_url import ArchiveInfo, DirectUrl
 from pip._internal.req import InstallRequirement
-from pip._internal.utils.compat import stdlib_pkgs
 from pip._internal.utils.direct_url_helpers import (
     direct_url_as_pep440_direct_reference,
     direct_url_from_link,
 )
 
-from ._compat import Distribution, canonicalize_name, get_dev_pkgs
+from ._compat import Distribution, canonicalize_name
 from .exceptions import IncompatibleRequirements
 from .logging import log
 from .utils import (
@@ -28,14 +27,27 @@ from .utils import (
     key_from_req,
 )
 
+# Parts of the stdlib which may historically have metadata associated.
+# This is sourced from pip internals, but copied here for simpler compat.
+# These should probably be safe to remove but require some assessment;
+# see: https://github.com/pypa/pip/pull/14133#pullrequestreview-4620284449
+_STDLIB_PKGS = {"python", "wsgiref", "argparse"}
+
+# similarly, this set is lifted out of pip for a simpler future-facing compatibility
+# story
+_DEV_PKGS: set[str] = set()
+if sys.version_info < (3, 12):  # pragma: <3.12 cover
+    # older python build backend inclusions
+    _DEV_PKGS |= {"setuptools", "distribute", "wheel"}
+
 PACKAGES_TO_IGNORE = [
     "-markerlib",
     "pip",
     "pip-tools",
     "pip-review",
     "pkg-resources",
-    *stdlib_pkgs,
-    *get_dev_pkgs(),
+    *_STDLIB_PKGS,
+    *_DEV_PKGS,
 ]
 
 
@@ -196,7 +208,7 @@ def diff(
 
 def sync(
     to_install: Iterable[InstallRequirement],
-    to_uninstall: Iterable[InstallRequirement],
+    to_uninstall: Iterable[InstallRequirement | str],
     dry_run: bool = False,
     install_flags: list[str] | None = None,
     ask: bool = False,

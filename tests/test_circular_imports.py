@@ -72,11 +72,12 @@ def _allowed_deprecation_warning_filters() -> list[str]:
     # https://github.com/python/cpython/pull/138149 allows regex usage, but is not
     # yet supported on all Python versions we support
     flags: list[str] = []
-    if _pip_api.PIP_VERSION_MAJOR_MINOR < (25, 3):
+    if _pip_api.PIP_VERSION_MAJOR_MINOR < (25, 3):  # pragma: pip<25.3 cover
         flags.extend(
             ("-W", "ignore:pkg_resources is deprecated as an API.:DeprecationWarning:")
         )
-    if _pip_api.PIP_VERSION_MAJOR_MINOR <= (22, 2):
+
+    if _pip_api.PIP_VERSION_MAJOR_MINOR <= (22, 2):  # pragma: pip<=22.2 cover
         flags.extend(
             (
                 "-W",
@@ -92,6 +93,7 @@ def _allowed_deprecation_warning_filters() -> list[str]:
                 ),
             )
         )
+
     return flags
 
 

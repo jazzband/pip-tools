@@ -94,7 +94,6 @@ class OutputWriter:
         annotate: bool,
         annotation_style: str,
         strip_extras: bool,
-        generate_hashes: bool,
         default_index_url: str,
         index_urls: Iterable[str],
         trusted_hosts: Iterable[str],
@@ -114,7 +113,6 @@ class OutputWriter:
         self.annotate = annotate
         self.annotation_style = annotation_style
         self.strip_extras = strip_extras
-        self.generate_hashes = generate_hashes
         self.default_index_url = default_index_url
         self.index_urls = index_urls
         self.trusted_hosts = trusted_hosts

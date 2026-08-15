@@ -108,12 +108,15 @@ sphinx==9.1.0
     #   furo
     #   myst-parser
     #   sphinx-basic-ng
+    #   sphinx-design
     #   sphinx-issues
     #   sphinxcontrib-apidoc
     #   sphinxcontrib-programoutput
     #   sphinxcontrib-towncrier
 sphinx-basic-ng==1.0.0b2
     # via furo
+sphinx-design==0.7.0
+    # via -r docs/requirements.in
 sphinx-issues==5.0.1
     # via -r docs/requirements.in
 sphinxcontrib-apidoc==0.6.0
@@ -152,7 +155,7 @@ wheel==0.47.0
 # The following packages are considered to be unsafe in a requirements file:
 pip==26.1.1
     # via pip-tools (pyproject.toml)
-setuptools==80.10.2
+setuptools==83.0.0
     # via
     #   pbr
     #   pip-tools (pyproject.toml)
