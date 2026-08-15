@@ -264,11 +264,10 @@ jobs:
               replace('.', '_').
               lower()
           )
-          # yamllint disable-line rule:line-length
-          # yamllint disable-line rule:line-length
-          # yamllint disable-line rule:line-length
-          # yamllint disable-line rule:line-length
-          dist_version = "${{ steps.normalize-dist-version.outputs.dist-version }}"
+
+          dist_version = (
+              "${{ steps.normalize-dist-version.outputs.dist-version }}"
+          )
 
           with Path(environ['GITHUB_OUTPUT']).open(
                   mode=FILE_APPEND_MODE,
@@ -278,11 +277,8 @@ jobs:
                   file=outputs_file,
               )
               print(
-                  # yamllint disable-line rule:line-length
-                  # yamllint disable-line rule:line-length
-                  # yamllint disable-line rule:line-length
-                  # yamllint disable-line rule:line-length
-                  f"wheel={whl_file_prj_base_name !s}-{dist_version}-py3-none-any.whl",
+                  f"wheel={whl_file_prj_base_name !s}-"
+                  f"{dist_version}-py3-none-any.whl",
                   file=outputs_file,
               )
 
