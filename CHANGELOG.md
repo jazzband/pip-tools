@@ -565,7 +565,7 @@
   annotations ({pr}`2011`) -- by {user}`chrysle`.
 - Make BacktrackingResolver ignore extras when dropping existing constraints ({pr}`1984`)
   -- by {user}`chludwig-haufe`.
-- Display `pyproject.toml`'s metatada parsing errors in verbose mode ({pr}`1979`)
+- Display `pyproject.toml`'s metadata parsing errors in verbose mode ({pr}`1979`)
   -- by {user}`szobov`.
 
 ### Other Changes
