@@ -48,3 +48,20 @@ from piptools.repositories.pypi import _get_true_base_from_index_url
 )
 def test_true_base_url_strips_simple_suffix(url: str, expect_result: str) -> None:
     assert _get_true_base_from_index_url(url) == expect_result
+
+
+@pytest.mark.parametrize(
+    "requirement_string",
+    (
+        pytest.param("django", id="unbound"),
+        pytest.param("django > 1", id="lower-bound"),
+    ),
+)
+def test_get_dependencies_helper_rejects_unpinned_reqs(
+    pypi_repository, from_line, requirement_string
+):
+    ireq = from_line(requirement_string)
+    with pytest.raises(
+        TypeError, match="Expected url, pinned or editable InstallRequirement"
+    ):
+        pypi_repository.get_dependencies(ireq)
