@@ -1,3 +1,4 @@
+---
 name: CI
 
 on:
@@ -27,7 +28,7 @@ on:
         required: false
         type: string
       release-committish:
-        default: ''
+        default: ""
         description: >-
           The commit to be released to PyPI and tagged
           in Git as `release-version`. Normally, you
@@ -51,17 +52,18 @@ on:
         value: ${{ jobs.pre-setup.outputs.dist-version }}
 
 concurrency:
+  # yamllint disable-line rule:line-length
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
 env:
-  FORCE_COLOR: 1 # Request colored output from CLI tools supporting it
-  MYPY_FORCE_COLOR: 1 # MyPy's color enforcement
+  FORCE_COLOR: 1  # Request colored output from CLI tools supporting it
+  MYPY_FORCE_COLOR: 1  # MyPy's color enforcement
   PIP_DISABLE_PIP_VERSION_CHECK: 1
   PIP_NO_PYTHON_VERSION_WARNING: 1
   PIP_NO_WARN_SCRIPT_LOCATION: 1
   PRE_COMMIT_COLOR: 1
-  PY_COLORS: 1 # Recognized by the `py` package, dependency of `pytest`
+  PY_COLORS: 1  # Recognized by the `py` package, dependency of `pytest`
   TOX_PARALLEL_NO_SPINNER: 1
   TOX_TESTENV_PASSENV: >-
     FORCE_COLOR
@@ -105,177 +107,186 @@ jobs:
         ${{ toJSON(env.UPSTREAM_REPOSITORY_ID == github.repository_id) }}
 
     steps:
-    - name: Switch to using Python 3.14 by default
-      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
-      with:
-        python-version: 3.14
-    - name: >-
-        Mark the build as untagged '${{
-            github.event.repository.default_branch
-        }}' branch build
-      id: untagged-check
-      if: >-
-        github.event_name == 'push' &&
-        github.ref_type == 'branch' &&
-        github.ref_name == github.event.repository.default_branch
-      run: |
-        from os import environ
-        from pathlib import Path
+      - name: Switch to using Python 3.14 by default
+        # yamllint disable-line rule:line-length
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+        # v6.2.0
+        with:
+          python-version: 3.14
+      - name: >-
+          Mark the build as untagged '${{
+              github.event.repository.default_branch
+          }}' branch build
+        id: untagged-check
+        if: >-
+          github.event_name == 'push' &&
+          github.ref_type == 'branch' &&
+          github.ref_name == github.event.repository.default_branch
+        run: |
+          from os import environ
+          from pathlib import Path
 
-        FILE_APPEND_MODE = 'a'
+          FILE_APPEND_MODE = 'a'
 
-        with Path(environ['GITHUB_OUTPUT']).open(
-                mode=FILE_APPEND_MODE,
-        ) as outputs_file:
-            print('is-untagged-devel=true', file=outputs_file)
-    - name: Mark the build as "release request"
-      id: request-check
-      if: inputs.release-version != ''
-      run: |
-        from os import environ
-        from pathlib import Path
+          with Path(environ['GITHUB_OUTPUT']).open(
+                  mode=FILE_APPEND_MODE,
+          ) as outputs_file:
+              print('is-untagged-devel=true', file=outputs_file)
+      - name: Mark the build as "release request"
+        id: request-check
+        if: inputs.release-version != ''
+        run: |
+          from os import environ
+          from pathlib import Path
 
-        FILE_APPEND_MODE = 'a'
+          FILE_APPEND_MODE = 'a'
 
-        with Path(environ['GITHUB_OUTPUT']).open(
-                mode=FILE_APPEND_MODE,
-        ) as outputs_file:
-            print('release-requested=true', file=outputs_file)
-    - name: Check out src from Git
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      with:
-        fetch-depth: >-
-          ${{
-            steps.request-check.outputs.release-requested == 'true'
-            && 1 || 0
-          }}
-        ref: ${{ inputs.release-committish }}
-        persist-credentials: false
-    - name: Scan static PEP 621 core packaging metadata
-      id: metadata
-      run: |
-        from os import environ
-        from pathlib import Path
-        from tomllib import loads as parse_toml_from_string
+          with Path(environ['GITHUB_OUTPUT']).open(
+                  mode=FILE_APPEND_MODE,
+          ) as outputs_file:
+              print('release-requested=true', file=outputs_file)
+      - name: Check out src from Git
+        # yamllint disable-line rule:line-length
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: >-
+            ${{
+              steps.request-check.outputs.release-requested == 'true'
+              && 1 || 0
+            }}
+          ref: ${{ inputs.release-committish }}
+          persist-credentials: false
+      - name: Scan static PEP 621 core packaging metadata
+        id: metadata
+        run: |
+          from os import environ
+          from pathlib import Path
+          from tomllib import loads as parse_toml_from_string
 
-        FILE_APPEND_MODE = 'a'
+          FILE_APPEND_MODE = 'a'
 
-        pyproject_toml_txt = Path('pyproject.toml').read_text()
-        metadata = parse_toml_from_string(pyproject_toml_txt)['project']
-        project_name = metadata["name"]
+          pyproject_toml_txt = Path('pyproject.toml').read_text()
+          metadata = parse_toml_from_string(pyproject_toml_txt)['project']
+          project_name = metadata["name"]
 
-        with Path(environ['GITHUB_OUTPUT']).open(
-                mode=FILE_APPEND_MODE,
-        ) as outputs_file:
-            print(f'project-name={project_name}', file=outputs_file)
-    - name: >-
-        Calculate dependency files' combined hash value
-        for use in the cache key
-      if: >-
-        steps.request-check.outputs.release-requested != 'true'
-      id: calc-cache-key-files
-      uses: ./.github/actions/cache-keys
-    - name: Set up pip cache
-      if: >-
-        steps.request-check.outputs.release-requested != 'true'
-      uses: re-actors/cache-python-deps@810325a232f2a28ea124dfba85c7c72fd1774b38  # v1.0.0
-      with:
-        cache-key-for-dependency-files: >-
-          ${{ steps.calc-cache-key-files.outputs.cache-key-for-dep-files }}
-    - name: Drop Git tags from HEAD for non-release requests
-      if: >-
-        steps.request-check.outputs.release-requested != 'true'
-      run: >-
-        git tag --points-at HEAD
-        |
-        xargs git tag --delete
-      shell: bash -eEuxo pipefail {0}
-    - name: Set up versioning prerequisites
-      if: >-
-        steps.request-check.outputs.release-requested != 'true'
-      run: >-
-        python -m
-        pip install
-        --user
-        setuptools-scm
-      shell: bash -eEuxo pipefail {0}
-    - name: Set the current dist version from Git
-      if: steps.request-check.outputs.release-requested != 'true'
-      id: scm-version
-      run: |
-        from os import environ
-        from pathlib import Path
+          with Path(environ['GITHUB_OUTPUT']).open(
+                  mode=FILE_APPEND_MODE,
+          ) as outputs_file:
+              print(f'project-name={project_name}', file=outputs_file)
+      - name: >-
+          Calculate dependency files' combined hash value
+          for use in the cache key
+        if: >-
+          steps.request-check.outputs.release-requested != 'true'
+        id: calc-cache-key-files
+        uses: ./.github/actions/cache-keys
+      - name: Set up pip cache
+        if: >-
+          steps.request-check.outputs.release-requested != 'true'
+        # yamllint disable-line rule:line-length
+        uses: re-actors/cache-python-deps@810325a232f2a28ea124dfba85c7c72fd1774b38  # v1.0.0
+        with:
+          cache-key-for-dependency-files: >-
+            ${{ steps.calc-cache-key-files.outputs.cache-key-for-dep-files }}
+      - name: Drop Git tags from HEAD for non-release requests
+        if: >-
+          steps.request-check.outputs.release-requested != 'true'
+        run: >-
+          git tag --points-at HEAD
+          |
+          xargs git tag --delete
+        shell: bash -eEuxo pipefail {0}
+      - name: Set up versioning prerequisites
+        if: >-
+          steps.request-check.outputs.release-requested != 'true'
+        run: >-
+          python -m
+          pip install
+          --user
+          setuptools-scm
+        shell: bash -eEuxo pipefail {0}
+      - name: Set the current dist version from Git
+        if: steps.request-check.outputs.release-requested != 'true'
+        id: scm-version
+        run: |
+          from os import environ
+          from pathlib import Path
 
-        import setuptools_scm
+          import setuptools_scm
 
-        FILE_APPEND_MODE = 'a'
+          FILE_APPEND_MODE = 'a'
 
-        ver = setuptools_scm.get_version(local_scheme='dirty-tag')
-        with Path(environ['GITHUB_OUTPUT']).open(
-                mode=FILE_APPEND_MODE,
-        ) as outputs_file:
-            print(f'dist-version={ver}', file=outputs_file)
-            print(
-                f'dist-version-for-filenames={ver.replace("+", "-")}',
-                file=outputs_file,
-            )
-    - name: Normalize dist version
-      id: normalize-dist-version
-      run: |
-        from os import environ
-        from pathlib import Path
+          ver = setuptools_scm.get_version(local_scheme='dirty-tag')
+          with Path(environ['GITHUB_OUTPUT']).open(
+                  mode=FILE_APPEND_MODE,
+          ) as outputs_file:
+              print(f'dist-version={ver}', file=outputs_file)
+              print(
+                  f'dist-version-for-filenames={ver.replace("+", "-")}',
+                  file=outputs_file,
+              )
+      - name: Normalize dist version
+        id: normalize-dist-version
+        run: |
+          from os import environ
+          from pathlib import Path
 
-        FILE_APPEND_MODE = 'a'
+          FILE_APPEND_MODE = 'a'
 
-        dist_version = "${{
-            steps.request-check.outputs.release-requested == 'true'
-            && inputs.release-version
-            || steps.scm-version.outputs.dist-version
-        }}".lstrip("v")
+          dist_version = "${{
+              steps.request-check.outputs.release-requested == 'true'
+              && inputs.release-version
+              || steps.scm-version.outputs.dist-version
+          }}".lstrip("v")
 
-        with Path(environ['GITHUB_OUTPUT']).open(
-                mode=FILE_APPEND_MODE,
-        ) as outputs_file:
-            print(
-                f"dist-version={dist_version}",
-                file=outputs_file,
-            )
-    - name: Set the expected dist artifact names
-      id: artifact-name
-      env:
-        PROJECT_NAME: ${{ steps.metadata.outputs.project-name }}
-      run: |
-        from os import environ
-        from pathlib import Path
+          with Path(environ['GITHUB_OUTPUT']).open(
+                  mode=FILE_APPEND_MODE,
+          ) as outputs_file:
+              print(
+                  f"dist-version={dist_version}",
+                  file=outputs_file,
+              )
+      - name: Set the expected dist artifact names
+        id: artifact-name
+        env:
+          PROJECT_NAME: ${{ steps.metadata.outputs.project-name }}
+        run: |
+          from os import environ
+          from pathlib import Path
 
-        FILE_APPEND_MODE = 'a'
+          FILE_APPEND_MODE = 'a'
 
-        whl_file_prj_base_name = environ['PROJECT_NAME'].replace('-', '_')
-        sdist_file_prj_base_name = (
-            whl_file_prj_base_name.
-            replace('.', '_').
-            lower()
-        )
-        dist_version = "${{ steps.normalize-dist-version.outputs.dist-version }}"
+          whl_file_prj_base_name = environ['PROJECT_NAME'].replace('-', '_')
+          sdist_file_prj_base_name = (
+              whl_file_prj_base_name.
+              replace('.', '_').
+              lower()
+          )
 
-        with Path(environ['GITHUB_OUTPUT']).open(
-                mode=FILE_APPEND_MODE,
-        ) as outputs_file:
-            print(
-                f"sdist={sdist_file_prj_base_name !s}-{dist_version}.tar.gz",
-                file=outputs_file,
-            )
-            print(
-                f"wheel={whl_file_prj_base_name !s}-{dist_version}-py3-none-any.whl",
-                file=outputs_file,
-            )
+          dist_version = (
+              "${{ steps.normalize-dist-version.outputs.dist-version }}"
+          )
+
+          with Path(environ['GITHUB_OUTPUT']).open(
+                  mode=FILE_APPEND_MODE,
+          ) as outputs_file:
+              print(
+                  f"sdist={sdist_file_prj_base_name !s}-{dist_version}.tar.gz",
+                  file=outputs_file,
+              )
+              print(
+                  f"wheel={whl_file_prj_base_name !s}-"
+                  f"{dist_version}-py3-none-any.whl",
+                  file=outputs_file,
+              )
 
   build:
     name: >-
       📦 Build dists
     needs:
-    - pre-setup  # transitive, for accessing settings
+      - pre-setup  # transitive, for accessing settings
 
+    # yamllint disable-line rule:line-length
     uses: tox-dev/workflow/.github/workflows/reusable-tox.yml@1bb961580e20073f66ccb9024f248357f8c8fecb  # unstable/v1  # yamllint disable-line rule:line-length
     with:
       cache-key-for-dependency-files: >-
@@ -302,9 +313,10 @@ jobs:
     uses: ./.github/workflows/reusable-qa.yml
 
   test:
+    # yamllint disable-line rule:line-length
     name: ${{ matrix.runner-vm }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
     needs:
-    - pre-setup  # transitive, for accessing settings
+      - pre-setup  # transitive, for accessing settings
     runs-on: ${{ matrix.runner-vm }}
     timeout-minutes: 15
     strategy:
@@ -340,17 +352,20 @@ jobs:
           || ''
         }}
     steps:
+      # yamllint disable-line rule:line-length
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           persist-credentials: false
       - name: Set up Python ${{ matrix.python-version }} from GitHub
         id: python-install
         if: "!endsWith(matrix.python-version, '-dev')"
+        # yamllint disable-line rule:line-length
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: Set up Python ${{ matrix.python-version }} from deadsnakes
         if: endsWith(matrix.python-version, '-dev')
+        # yamllint disable-line rule:line-length
         uses: deadsnakes/action@e640ac8743173a67cca4d7d77cd837e514bf98e8  # v3.2.0
         with:
           python-version: ${{ matrix.python-version }}
@@ -418,6 +433,7 @@ jobs:
         if: >-
           !cancelled()
           && !inputs.cpython-pip-version
+        # yamllint disable-line rule:line-length
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7.0.0
         with:
           fail_ci_if_error: >-
@@ -436,6 +452,7 @@ jobs:
             Pip-${{ matrix.pip-version }}
 
   pypy:
+    # yamllint disable-line rule:line-length
     name: ${{ matrix.runner-vm }} / ${{ matrix.python-version }} / ${{ matrix.pip-version }}
     runs-on: ${{ matrix.runner-vm }}
     timeout-minutes: 15
@@ -457,10 +474,12 @@ jobs:
     env:
       TOXENV: pip${{ matrix.pip-version }}
     steps:
+      # yamllint disable-line rule:line-length
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           persist-credentials: false
       - name: Set up Python ${{ matrix.python-version }}
+        # yamllint disable-line rule:line-length
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
           python-version: ${{ matrix.python-version }}
@@ -535,6 +554,7 @@ jobs:
       - name: Notify Codecov that all coverage reports have been uploaded
         if: >-
           !cancelled()
+        # yamllint disable-line rule:line-length
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7.0.0
         with:
           fail_ci_if_error: >-
@@ -549,7 +569,7 @@ jobs:
     # yamllint disable-line rule:line-length
     uses: zizmorcore/workflow/.github/workflows/reusable-zizmor.yml@1e20adb0862e932363a4d85d68c92e5cc6fcb5d4
 
-  check: # This job does nothing and is only used for the branch protection
+  check:  # This job does nothing and is only used for the branch protection
     if: always()
 
     needs:
@@ -564,6 +584,8 @@ jobs:
 
     steps:
       - name: Decide whether the needed jobs succeeded or failed
+        # yamllint disable-line rule:line-length
         uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe  # v1.2.2
         with:
           jobs: ${{ toJSON(needs) }}
+...

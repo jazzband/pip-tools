@@ -1,5 +1,4 @@
 ---
-
 inputs:
   calling-job-context:
     description: A JSON with the calling job inputs
@@ -25,58 +24,57 @@ inputs:
 runs:
   using: composite
   steps:
-  - name: Verify that the artifacts with expected names got created
-    if: fromJSON(inputs.calling-job-context).toxenv == 'build-dists'
-    run: >
-      # Verify that the artifacts with expected names got created
+    - name: Verify that the artifacts with expected names got created
+      if: fromJSON(inputs.calling-job-context).toxenv == 'build-dists'
+      run: >
+        # Verify that the artifacts with expected names got created
 
 
-      ls -1
-      'dist/${{
-        fromJSON(
-          inputs.job-dependencies-context
-        ).pre-setup.outputs.sdist-artifact-name
-      }}'
-      'dist/${{
-        fromJSON(
-          inputs.job-dependencies-context
-        ).pre-setup.outputs.wheel-artifact-name
-      }}'
-    shell: bash
-  - name: Store the distribution packages
-    if: fromJSON(inputs.calling-job-context).toxenv == 'build-dists'
-    uses: actions/upload-artifact@v4
-    with:
-      name: >-
-        ${{
-          fromJSON(
-            inputs.job-dependencies-context
-          ).pre-setup.outputs.dists-artifact-name
-        }}
-      # NOTE: Exact expected file names are specified here
-      # NOTE: as a safety measure — if anything weird ends
-      # NOTE: up being in this dir or not all dists will be
-      # NOTE: produced, this will fail the workflow.
-      path: |
-        dist/${{
+        ls -1
+        'dist/${{
           fromJSON(
             inputs.job-dependencies-context
           ).pre-setup.outputs.sdist-artifact-name
-        }}
-        dist/${{
+        }}'
+        'dist/${{
           fromJSON(
             inputs.job-dependencies-context
           ).pre-setup.outputs.wheel-artifact-name
-        }}
-      retention-days: >-
-        ${{
+        }}'
+      shell: bash
+    - name: Store the distribution packages
+      if: fromJSON(inputs.calling-job-context).toxenv == 'build-dists'
+      uses: actions/upload-artifact@v4
+      with:
+        name: >-
+          ${{
             fromJSON(
+              inputs.job-dependencies-context
+            ).pre-setup.outputs.dists-artifact-name
+          }}
+        # NOTE: Exact expected file names are specified here
+        # NOTE: as a safety measure — if anything weird ends
+        # NOTE: up being in this dir or not all dists will be
+        # NOTE: produced, this will fail the workflow.
+        path: |
+          dist/${{
+            fromJSON(
+              inputs.job-dependencies-context
+            ).pre-setup.outputs.sdist-artifact-name
+          }}
+          dist/${{
+            fromJSON(
+              inputs.job-dependencies-context
+            ).pre-setup.outputs.wheel-artifact-name
+          }}
+        retention-days: >-
+          ${{
               fromJSON(
-                inputs.job-dependencies-context
-              ).pre-setup.outputs.release-requested
-            )
-            && 90
-            || 30
-        }}
-
+                fromJSON(
+                  inputs.job-dependencies-context
+                ).pre-setup.outputs.release-requested
+              )
+              && 90
+              || 30
+          }}
 ...

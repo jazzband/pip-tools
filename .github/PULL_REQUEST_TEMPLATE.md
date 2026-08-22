@@ -1,9 +1,10 @@
+---
 <!--- Describe the changes here. --->
 
 ##### Contributor checklist
 
 - [ ] Included tests for the changes.
-- [ ] A change note is created in `changelog.d/` (see [`changelog.d/README.md`]
+- [] A change note is created in `changelog.d/` (see [`changelog.d/README.md`]
       for instructions) or the PR text says "no changelog needed".
 
 [`changelog.d/README.md`]:

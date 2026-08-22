@@ -1,5 +1,4 @@
 ---
-
 name: placeholder
 description: placeholder
 
@@ -12,37 +11,36 @@ outputs:
 runs:
   using: composite
   steps:
-  - name: >-
-      Calculate dependency files' combined hash value
-      for use in the cache key
-    id: calc-cache-key-files
-    run: |
-      from os import environ
-      from pathlib import Path
+    - name: >-
+        Calculate dependency files' combined hash value
+        for use in the cache key
+      id: calc-cache-key-files
+      run: |
+        from os import environ
+        from pathlib import Path
 
-      FILE_APPEND_MODE = 'a'
+        FILE_APPEND_MODE = 'a'
 
-      files_derived_hash = '${{
-          hashFiles(
-            'tox.ini',
-            'pyproject.toml',
-            '.pre-commit-config.yaml',
-            'pytest.ini',
-            'dependencies/**',
-            'dependencies/*/**',
-            'setup.cfg'
-          )
-      }}'
+        files_derived_hash = '${{
+            hashFiles(
+              'tox.ini',
+              'pyproject.toml',
+              '.pre-commit-config.yaml',
+              'pytest.ini',
+              'dependencies/**',
+              'dependencies/*/**',
+              'setup.cfg'
+            )
+        }}'
 
-      print(f'Computed file-derived hash is {files_derived_hash}.')
+        print(f'Computed file-derived hash is {files_derived_hash}.')
 
-      with Path(environ['GITHUB_OUTPUT']).open(
-              mode=FILE_APPEND_MODE,
-      ) as outputs_file:
-          print(
-              f'files-hash-key={files_derived_hash}',
-              file=outputs_file,
-          )
-    shell: python
-
+        with Path(environ['GITHUB_OUTPUT']).open(
+                mode=FILE_APPEND_MODE,
+        ) as outputs_file:
+            print(
+                f'files-hash-key={files_derived_hash}',
+                file=outputs_file,
+            )
+      shell: python
 ...

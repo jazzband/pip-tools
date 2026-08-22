@@ -7,17 +7,17 @@ on:
       - published
 
 env:
-  FORCE_COLOR: 1 # Request colored output from CLI tools supporting it
-  MYPY_FORCE_COLOR: 1 # MyPy's color enforcement
-  PIP_DISABLE_PIP_VERSION_CHECK: 1 # Hide "there's a newer pip" message
-  PIP_NO_PYTHON_VERSION_WARNING: 1 # Hide "this Python is deprecated" message
-  PIP_NO_WARN_SCRIPT_LOCATION: 1 # Hide "script dir is not in $PATH" message
+  FORCE_COLOR: 1  # Request colored output from CLI tools supporting it
+  MYPY_FORCE_COLOR: 1  # MyPy's color enforcement
+  PIP_DISABLE_PIP_VERSION_CHECK: 1  # Hide "there's a newer pip" message
+  PIP_NO_PYTHON_VERSION_WARNING: 1  # Hide "this Python is deprecated" message
+  PIP_NO_WARN_SCRIPT_LOCATION: 1  # Hide "script dir is not in $PATH" message
   PRE_COMMIT_COLOR: always
-  PY_COLORS: 1 # Recognized by the `py` package, dependency of `pytest`
+  PY_COLORS: 1  # Recognized by the `py` package, dependency of `pytest`
   PYTHONIOENCODING: utf-8
   PYTHONUTF8: 1
-  TOX_PARALLEL_NO_SPINNER: 1 # Disable tox's parallel run spinner animation
-  TOX_TESTENV_PASSENV: >- # Make tox-wrapped tools see color requests
+  TOX_PARALLEL_NO_SPINNER: 1  # Disable tox's parallel run spinner animation
+  TOX_TESTENV_PASSENV: >-  # Make tox-wrapped tools see color requests
     FORCE_COLOR
     MYPY_FORCE_COLOR
     NO_COLOR
@@ -66,7 +66,7 @@ jobs:
     uses: ./.github/workflows/ci.yml
     with:
       release-version: ${{ github.ref_name }}
-      release-committish: ''
+      release-committish: ""
 
   publish-pypi:
     name: >-
@@ -82,7 +82,7 @@ jobs:
 
     runs-on: ubuntu-24.04
 
-    timeout-minutes: 2 # docker+network are slow sometimes
+    timeout-minutes: 2  # docker+network are slow sometimes
 
     environment:
       name: pypi
@@ -94,11 +94,13 @@ jobs:
         }}
 
     permissions:
-      id-token: write # PyPI Trusted Publishing (OIDC)
+      id-token: write  # PyPI Trusted Publishing (OIDC)
 
     steps:
       - name: Download all the dists
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        # yamllint disable-line rule:line-length
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        # v8.0.1
         with:
           name: >-
             ${{ needs.build-and-test.outputs.dists-artifact-name }}
@@ -109,11 +111,15 @@ jobs:
             needs.build-and-test.outputs.project-version
           }} to PyPI
           🔏
-        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e  # v1.13.0
+        # yamllint disable-line rule:line-length
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e
+        # v1.13.0
       - name: Clean up the publish attestation leftovers
         run: rm -fv dist/*.publish.attestation
       - name: Upload packages to Jazzband
-        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e  # v1.13.0
+        # yamllint disable-line rule:line-length
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e
+        # v1.13.0
         with:
           user: jazzband
           password: ${{ secrets.JAZZBAND_RELEASE_KEY }}
@@ -121,3 +127,4 @@ jobs:
             https://jazzband.co/projects/${{
               needs.build-and-test.outputs.project-name
             }}/upload
+...

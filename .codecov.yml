@@ -6,7 +6,7 @@ codecov:
 
   require_ci_to_pass: false
 
-comment: false # avoid spamming reviews
+comment: false  # avoid spamming reviews
 
 ignore:
   - "tests/_plugins/_coverage/*"

@@ -1,0 +1,30 @@
+---
+
+extends: default
+
+rules:
+  document-start:
+    present: true
+
+  indentation:
+    spaces: 2
+    level: error
+    indent-sequences: true
+
+  line-length:
+    max: 80
+    allow-non-breakable-words: true
+
+  quoted-strings:
+    required: only-when-needed
+
+  truthy:
+    allowed-values:
+      - "false"
+      - "true"
+      # Allow "on" key name in GHA CI/CD workflow definitions
+      # Have to disable this, otherwise the linter removes the quotes and fails.
+      # yamllint disable-line rule:quoted-strings
+      - "on"
+
+...
