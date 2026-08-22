@@ -1,8 +1,14 @@
 from __future__ import annotations
 
-import pytest
+import pathlib
+import typing as _t
 
-from piptools.repositories.pypi import _get_true_base_from_index_url
+import pytest
+from pip._internal.req import InstallRequirement
+from pytest_mock import MockerFixture
+
+from piptools.repositories.pypi import PyPIRepository, _get_true_base_from_index_url
+from tests.constants import PACKAGES_PATH
 
 
 @pytest.mark.parametrize(
@@ -48,3 +54,40 @@ from piptools.repositories.pypi import _get_true_base_from_index_url
 )
 def test_true_base_url_strips_simple_suffix(url: str, expect_result: str) -> None:
     assert _get_true_base_from_index_url(url) == expect_result
+
+
+@pytest.mark.parametrize(
+    "requirement_string",
+    (
+        pytest.param("django", id="unbound"),
+        pytest.param("django > 1", id="lower-bound"),
+    ),
+)
+def test_get_dependencies_helper_rejects_unpinned_reqs(
+    pypi_repository: PyPIRepository,
+    from_line: _t.Callable[[str], InstallRequirement],
+    requirement_string: str,
+) -> None:
+    ireq = from_line(requirement_string)
+    with pytest.raises(
+        TypeError, match="Expected url, pinned or editable InstallRequirement"
+    ):
+        pypi_repository.get_dependencies(ireq)
+
+
+def test_find_best_match_short_circuits_on_editables(
+    mocker: MockerFixture,
+    pypi_repository: PyPIRepository,
+    from_editable: _t.Callable[[str], InstallRequirement],
+) -> None:
+    package_path = pathlib.Path(PACKAGES_PATH) / "small_fake_a"
+    ireq = from_editable(str(package_path))
+
+    mock_find_all_candidates = mocker.patch.object(
+        pypi_repository,
+        "find_all_candidates",
+        wraps=pypi_repository.find_all_candidates,
+    )
+
+    assert pypi_repository.find_best_match(ireq) is ireq
+    mock_find_all_candidates.assert_not_called()
