@@ -847,7 +847,7 @@ def test_url_package(runner, line, dependency, generate_hashes):
         ),
     ),
 )
-@pytest.mark.parametrize("generate_hashes", ((True,), (False,)))
+@pytest.mark.parametrize("generate_hashes", (True, False, "update"))
 def test_local_file_uri_package(
     pip_conf, runner, line, dependency, rewritten_line, generate_hashes
 ):
@@ -855,6 +855,9 @@ def test_local_file_uri_package(
         rewritten_line = line
     with open("requirements.in", "w") as req_in:
         req_in.write(line)
+    if generate_hashes == "update":
+        with open("requirements.txt", "w") as fp:
+            fp.write(rewritten_line)
     out = runner.invoke(
         cli, ["-n", "--rebuild"] + (["--generate-hashes"] if generate_hashes else [])
     )
@@ -1208,6 +1211,30 @@ def test_generate_hashes_with_annotations(runner):
         ],
     )
     assert out.stdout == dedent("""\
+        six==1.15.0 \\
+            --hash=sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259 \\
+            --hash=sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced
+            # via -r requirements.in
+        """)
+
+
+@pytest.mark.network
+def test_generate_hashes_with_existing_pins(runner, tmp_path_cwd):
+    (tmp_path_cwd / "requirements.in").write_text("six\n")
+    (tmp_path_cwd / "requirements.txt").write_text("six==1.15.0\n")
+
+    out = runner.invoke(
+        cli,
+        [
+            "--quiet",
+            "--no-header",
+            "--generate-hashes",
+        ],
+    )
+    assert out.exit_code == 0
+
+    result = (tmp_path_cwd / "requirements.txt").read_text()
+    assert result == dedent("""\
         six==1.15.0 \\
             --hash=sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259 \\
             --hash=sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced
