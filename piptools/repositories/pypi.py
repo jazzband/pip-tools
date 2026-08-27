@@ -378,9 +378,11 @@ class PyPIRepository(BaseRepository):
             log.debug("Filtering down to the best file")
             best_candidate_link = self._best_candidate_link(ireq)
             return {
-                pypi_hashes_by_link[best_candidate_link.url]
-                if best_candidate_link.url in pypi_hashes_by_link
-                else self._get_file_hash(best_candidate_link)
+                (
+                    pypi_hashes_by_link[best_candidate_link.url]
+                    if best_candidate_link.url in pypi_hashes_by_link
+                    else self._get_file_hash(best_candidate_link)
+                )
             }
 
         matching_candidates = self._get_matching_candidates(ireq)
