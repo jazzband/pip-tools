@@ -55,6 +55,11 @@ def _determine_linesep(
     """
     if strategy == "preserve":
         for fname in filenames:
+            # Skip stdin ("-") and any non-regular file (e.g. named pipes),
+            # since reading them can block forever or produce no useful
+            # newline information. Fall back to the default separator.
+            if fname == "-" or not os.path.isfile(fname):
+                continue
             try:
                 with open(fname, "rb") as existing_file:
                     existing_text = existing_file.read()
