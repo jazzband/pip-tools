@@ -42,9 +42,7 @@ def test_determine_linesep_falls_back_to_default_when_no_regular_file() -> None:
     Test that the default separator is returned when none of the given
     filenames is a regular, existing file.
     """
-    assert (
-        _determine_linesep(filenames=("-", "/no/such/file/exists.in")) == "\n"
-    )
+    assert _determine_linesep(filenames=("-", "/no/such/file/exists.in")) == "\n"
 
 
 @pytest.mark.parametrize(
@@ -64,6 +62,4 @@ def test_determine_linesep_still_detects_regular_file(
     req_in = tmp_path / "requirements.in"
     req_in.write_bytes(b"six" + linesep)
 
-    assert (
-        _determine_linesep(filenames=("-", str(req_in))) == expected_strategy_char
-    )
+    assert _determine_linesep(filenames=("-", str(req_in))) == expected_strategy_char
