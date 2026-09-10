@@ -14,7 +14,6 @@ from pathlib import Path
 
 import click
 from click.core import ParameterSource
-from click.utils import LazyFile
 from pip._internal.req import InstallRequirement
 from pip._internal.resolution.resolvelib.base import Requirement as PipRequirement
 from pip._internal.utils.misc import redact_auth_from_url
@@ -33,6 +32,8 @@ _KT = _t.TypeVar("_KT")
 _VT = _t.TypeVar("_VT")
 _T = _t.TypeVar("_T")
 _S = _t.TypeVar("_S")
+
+_CLICK_UNSET = getattr(click.core, "UNSET", object())
 
 UNSAFE_PACKAGES = {"setuptools", "distribute", "pip"}
 COMPILE_EXCLUDE_OPTIONS = {
@@ -363,12 +364,18 @@ def get_compile_command(click_ctx: click.Context) -> str:
             continue
 
         # Skip options with a default value
-        if option.default == value:
+        if option.default == value or (
+            option.default is _CLICK_UNSET and value is False
+        ):
             continue
 
-        # Use a file name for file-like objects
-        if isinstance(value, LazyFile):
-            value = value.name
+        # Use a file name for file-like objects.  Click's lazy file wrapper is
+        # intentionally private and is being removed, so identify it by the
+        # public file-like interface instead.
+        if not isinstance(value, (str, bytes, os.PathLike)):
+            value_name = getattr(value, "name", None)
+            if value_name is not None:
+                value = value_name
 
         # Convert value to the list
         if not isinstance(value, (tuple, list)):

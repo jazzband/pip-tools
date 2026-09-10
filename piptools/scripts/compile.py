@@ -5,11 +5,11 @@ import os
 import shlex
 import sys
 import typing as _t
+from contextlib import suppress
 from pathlib import Path
 
 import click
 from build import BuildBackendException
-from click.utils import LazyFile, safecall
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.misc import redact_auth_from_url
 
@@ -32,6 +32,14 @@ from ..writer import OutputWriter
 from . import options
 from ._deprecations import filter_deprecated_pip_args
 from .options import BuildTargetT
+
+
+def _close_file_intelligently(file: _t.IO[_t.Any]) -> None:
+    close_intelligently = getattr(file, "close_intelligently", None)
+    if close_intelligently is not None:
+        with suppress(Exception):
+            close_intelligently()
+
 
 DEFAULT_REQUIREMENTS_FILES = (
     "requirements.in",
@@ -166,7 +174,7 @@ def cli(
     annotation_style: str,
     upgrade: bool,
     upgrade_packages: tuple[str, ...],
-    output_file: LazyFile | _t.IO[_t.Any] | None,
+    output_file: _t.IO[_t.Any] | None,
     newline: str,
     allow_unsafe: bool,
     strip_extras: bool | None,
@@ -262,9 +270,12 @@ def cli(
 
         # Close the file at the end of the context execution
         assert output_file is not None
-        # only LazyFile has close_intelligently, newer _t.IO[_t.Any] does not
-        if isinstance(output_file, LazyFile):  # pragma: no cover
-            ctx.call_on_close(safecall(output_file.close_intelligently))
+        # Only Click's lazy file wrapper has close_intelligently; regular file
+        # objects do not need a callback here.
+        if (
+            getattr(output_file, "close_intelligently", None) is not None
+        ):  # pragma: no cover
+            ctx.call_on_close(lambda: _close_file_intelligently(output_file))
 
     if output_file.name != "-" and output_file.name in src_files:
         raise click.BadArgumentUsage(
