@@ -460,7 +460,7 @@ def test_get_compile_command_with_config(tmp_path_cwd, config_file, expected_com
         assert get_compile_command(ctx) == expected_command
 
 
-def test_get_compile_command_no_index_not_added_by_default(tmp_path_cwd):
+def test_get_compile_command_no_index_not_added_by_default(tmp_path_cwd: Path) -> None:
     """
     --no-index must not show up in the recorded command unless it was
     actually passed. See GH-2472.

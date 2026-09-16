@@ -27,16 +27,20 @@ def open_output_file(ctx: click.Context, filename: str) -> _t.BinaryIO:
 
 def _defer_lazy_file_close(ctx: click.Context, fileobj: _t.BinaryIO) -> None:
     """Setup a click "lazy file" to close on exit."""
-    ctx.call_on_close(lambda: _safe_close(fileobj))
+    ctx.call_on_close(lambda: _close_intelligently(fileobj))
 
 
-def _safe_close(fileobj: _t.BinaryIO) -> None:
+def _close_intelligently(fileobj: _t.BinaryIO) -> None:
     """
-    Suppress *all* errors and call ``close_intelligently()``.
+    Close the file if it defines ``should_close`` and gives it a truthy value.
 
-    This will not error even if the object does not support ``close_intelligently()``.
+    This relies on click's internal ``LazyFile`` type's ``should_close`` behavior, and
+    suppresses errors which may occur when closing a file.
     """
     # Note that the LazyFile type is not public, so we are passed a BinaryIO and we will
-    # try to use the method (which we know `click` provides).
-    with contextlib.suppress(Exception):
-        fileobj.close_intelligently()  # type: ignore[attr-defined]
+    # try to use the attribute (which we know `click` provides).
+    if not getattr(fileobj, "should_close", None):
+        return
+
+    with contextlib.suppress(OSError):
+        fileobj.close()
