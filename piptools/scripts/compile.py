@@ -9,11 +9,15 @@ from pathlib import Path
 
 import click
 from build import BuildBackendException
-from click.utils import LazyFile, safecall
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.misc import redact_auth_from_url
 
-from .._compat import canonicalize_name, parse_requirements, tempfile_compat
+from .._compat import (
+    _click_compat,
+    canonicalize_name,
+    parse_requirements,
+    tempfile_compat,
+)
 from .._internal import _pip_api
 from ..build import ProjectMetadata, build_project_metadata
 from ..cache import DependencyCache
@@ -166,7 +170,7 @@ def cli(
     annotation_style: str,
     upgrade: bool,
     upgrade_packages: tuple[str, ...],
-    output_file: LazyFile | _t.IO[_t.Any] | None,
+    output_file: _t.BinaryIO | None,
     newline: str,
     allow_unsafe: bool,
     strip_extras: bool | None,
@@ -258,13 +262,7 @@ def cli(
             base_name = src_files[0].rsplit(".", 1)[0]
             file_name = base_name + ".txt"
 
-        output_file = click.open_file(file_name, "w+b", atomic=True, lazy=True)
-
-        # Close the file at the end of the context execution
-        assert output_file is not None
-        # only LazyFile has close_intelligently, newer _t.IO[_t.Any] does not
-        if isinstance(output_file, LazyFile):  # pragma: no cover
-            ctx.call_on_close(safecall(output_file.close_intelligently))
+        output_file = _click_compat.open_output_file(ctx, file_name)
 
     if output_file.name != "-" and output_file.name in src_files:
         raise click.BadArgumentUsage(
@@ -544,7 +542,7 @@ def cli(
     ##
 
     writer = OutputWriter(
-        _t.cast(_t.BinaryIO, output_file),
+        output_file,
         click_ctx=ctx,
         dry_run=dry_run,
         emit_header=header,

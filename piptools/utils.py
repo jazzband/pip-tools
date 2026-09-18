@@ -14,7 +14,6 @@ from pathlib import Path
 
 import click
 from click.core import ParameterSource
-from click.utils import LazyFile
 from pip._internal.req import InstallRequirement
 from pip._internal.resolution.resolvelib.base import Requirement as PipRequirement
 from pip._internal.utils.misc import redact_auth_from_url
@@ -362,12 +361,15 @@ def get_compile_command(click_ctx: click.Context) -> str:
         if value is None:
             continue
 
-        # Skip options with a default value
-        if option.default == value:
+        # Skip options with a default value.
+        # Use a new Context so that values from config files are
+        # not treated as defaults.
+        if option.get_default(click.Context(click_ctx.command)) == value:
             continue
 
-        # Use a file name for file-like objects
-        if isinstance(value, LazyFile):
+        # Use a file name for file-like objects; detect this purely via 'hasattr' to
+        # handle click's special lazy file wrapper.
+        if hasattr(value, "name"):
             value = value.name
 
         # Convert value to the list

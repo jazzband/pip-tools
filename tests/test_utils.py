@@ -460,6 +460,16 @@ def test_get_compile_command_with_config(tmp_path_cwd, config_file, expected_com
         assert get_compile_command(ctx) == expected_command
 
 
+def test_get_compile_command_no_index_not_added_by_default(tmp_path_cwd: Path) -> None:
+    """
+    --no-index must not show up in the recorded command unless it was
+    actually passed. See GH-2472.
+    """
+    (tmp_path_cwd / "requirements.in").touch()
+    with compile_cli.make_context("pip-compile", ["requirements.in"]) as ctx:
+        assert get_compile_command(ctx) == "pip-compile requirements.in"
+
+
 @pytest.mark.parametrize("config_file", ("pyproject.toml", ".pip-tools.toml"))
 @pytest.mark.parametrize(
     "config_file_content",
