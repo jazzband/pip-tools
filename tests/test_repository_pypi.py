@@ -6,6 +6,7 @@ from unittest import mock
 import pytest
 from pip._internal.models.candidate import InstallationCandidate
 from pip._internal.models.link import Link
+from pip._internal.models.target_python import TargetPython
 from pip._internal.utils.urls import path_to_url
 from pip._vendor.requests import HTTPError, Session
 
@@ -30,6 +31,26 @@ def test_generate_hashes_all_platforms(capsys, pip_conf, from_line, pypi_reposit
 
     with pypi_repository.allow_all_wheels():
         assert pypi_repository.get_hashes(ireq) == expected
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == ""
+
+
+def test_generate_hashes_single_hash_filter(
+    capsys, tmpdir, monkeypatch, pip_conf, from_line, pypi_repository
+):
+    expected = {
+        "sha256:24afa5b317b302f356fd3fc3b1cfb0aad114d509cf635ea9566052424191b944",
+    }
+    # force a single platform so test case doesn't depend on the host platform
+    monkeypatch.setattr(
+        pypi_repository._finder,
+        "_target_python",
+        TargetPython(platforms=["manylinux1_x86_64"]),
+    )
+
+    ireq = from_line("small-fake-multi-arch==0.1")
+    assert pypi_repository.get_hashes(ireq, single_hash=True) == expected
     captured = capsys.readouterr()
     assert captured.out == ""
     assert captured.err == ""
@@ -344,6 +365,55 @@ def test_get_hashes_from_mixed(pip_conf, from_line, tmp_path):
 
     actual_hashes = pypi_repository.get_hashes(ireq)
     assert actual_hashes == expected_hashes
+
+
+def test_get_hashes_from_mixed_single_hash(pip_conf, from_line, tmp_path):
+    """
+    Test PyPIRepository.get_hashes() returns only the best candidate hash.
+    """
+
+    package_name = "small-fake-multi-arch"
+    package_version = "0.1"
+    best_link = Link("https://pypi-link")
+    other_link = Link("https://extra-index-link")
+    pypi_hash = "pypi-hash"
+
+    class MockPyPIRepository(PyPIRepository):
+        def _get_project(self, ireq):
+            return {
+                "releases": {
+                    package_version: [
+                        {
+                            "packagetype": "bdist_wheel",
+                            "digests": {"sha256": pypi_hash},
+                            "url": str(best_link),
+                        },
+                    ]
+                }
+            }
+
+        def find_best_match(self, ireq, prereleases=None):
+            result = super().find_best_match(ireq, prereleases)
+            result.link = best_link
+            return result
+
+        def find_all_candidates(self, req_name):
+            return [
+                InstallationCandidate(package_name, package_version, best_link),
+                InstallationCandidate(package_name, package_version, other_link),
+            ]
+
+        def _get_file_hash(self, link):
+            return "sha256:other-hash"
+
+    pypi_repository = MockPyPIRepository(
+        ["--no-cache-dir"], cache_dir=(tmp_path / "pypi-repo-cache")
+    )
+
+    ireq = from_line(f"{package_name}=={package_version}")
+
+    actual_hashes = pypi_repository.get_hashes(ireq, single_hash=True)
+    assert actual_hashes == {"sha256:" + pypi_hash}
 
 
 def test_get_project__returns_data(from_line, monkeypatch, pypi_repository):
