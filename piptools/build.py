@@ -4,7 +4,6 @@ import collections
 import contextlib
 import os
 import pathlib
-import sys
 import tempfile
 import typing as _t
 from collections.abc import Iterator
@@ -20,23 +19,11 @@ from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.requirements import Requirement
 
 from ._compat import _tomllib_compat
-from ._internal import _pip_api
+from ._internal import _environment_variables, _pip_api
 
 PYPROJECT_TOML = "pyproject.toml"
 
 _T = _t.TypeVar("_T")
-
-
-if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
-    from importlib.metadata import PackageMetadata
-else:  # pragma: <3.10 cover
-
-    class PackageMetadata(_t.Protocol):
-        @_t.overload
-        def get_all(self, name: str, failobj: None = None) -> list[_t.Any] | None: ...
-
-        @_t.overload
-        def get_all(self, name: str, failobj: _T) -> list[_t.Any] | _T: ...
 
 
 @dataclass
@@ -186,29 +173,6 @@ def build_project_metadata(
 
 
 @contextlib.contextmanager
-def _env_var(
-    env_var_name: str,
-    env_var_value: str,
-    /,
-) -> Iterator[None]:
-    sentinel = object()
-    original_pip_constraint = os.getenv(env_var_name, sentinel)
-    pip_constraint_was_unset = original_pip_constraint is sentinel
-
-    os.environ[env_var_name] = env_var_value
-    try:
-        yield
-    finally:
-        if pip_constraint_was_unset:
-            del os.environ[env_var_name]
-        else:
-            # Assert here is necessary because MyPy can't infer type
-            # narrowing in the complex case.
-            assert isinstance(original_pip_constraint, str)
-            os.environ[env_var_name] = original_pip_constraint
-
-
-@contextlib.contextmanager
 def _temporary_constraints_file_set_for_pip(
     upgrade_packages: tuple[str, ...],
 ) -> Iterator[None]:
@@ -243,7 +207,7 @@ def _temporary_constraints_file_set_for_pip(
         tmpfile.close()
 
         try:
-            with _env_var("PIP_CONSTRAINT", tmpfile.name):
+            with _environment_variables.setenv_context("PIP_CONSTRAINT", tmpfile.name):
                 yield
         finally:
             # FIXME: replace `delete` with `delete_on_close` in Python 3.12+
@@ -283,20 +247,20 @@ def _create_project_builder(
 
 def _build_project_wheel_metadata(
     builder: build.ProjectBuilder,
-) -> PackageMetadata:
+) -> importlib_metadata.PackageMetadata:
     with tempfile.TemporaryDirectory() as tmpdir:
         path = pathlib.Path(builder.metadata_path(tmpdir))
         return importlib_metadata.PathDistribution(path).metadata
 
 
-def _get_name(metadata: PackageMetadata) -> str:
+def _get_name(metadata: importlib_metadata.PackageMetadata) -> str:
     retval = metadata.get_all("Name")[0]  # type: ignore[index]
     assert isinstance(retval, str)
     return retval
 
 
 def _prepare_requirements(
-    metadata: PackageMetadata, src_file: pathlib.Path
+    metadata: importlib_metadata.PackageMetadata, src_file: pathlib.Path
 ) -> Iterator[InstallRequirement]:
     package_name = _get_name(metadata)
     comes_from = f"{package_name} ({src_file.as_posix()})"
