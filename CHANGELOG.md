@@ -1801,7 +1801,7 @@
 *17 Nov 2016*
 
 - Adds support for upgrading individual packages with a new option `--upgrade-package`.
-  To upgrade a _specific_ package to the latest or a specific version use
+  To upgrade a *specific* package to the latest or a specific version use
   `--upgrade-package <pkg>`. To upgrade all packages, you can still use
   `pip-compile --upgrade`. ({pr}`409`)
 - Adds support for pinning dependencies even further by including the hashes

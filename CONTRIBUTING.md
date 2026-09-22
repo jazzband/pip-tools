@@ -116,7 +116,5 @@ This is the current release process:
 https://github.com/jazzband/pip-tools/actions/workflows/release.yml
 [`pip-tools-leads` team]:
 https://github.com/orgs/jazzband/teams/pip-tools-leads
-[LLM Policy Discussion]:
-https://github.com/jazzband/pip-tools/discussions/2278
 [`good first issue` label]:
 https://github.com/jazzband/pip-tools/labels/good%20first%20issue%22
