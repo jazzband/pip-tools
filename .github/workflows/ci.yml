@@ -314,7 +314,6 @@ jobs:
           - ubuntu-24.04
           - windows-2025
           - macos-26
-          - macos-15-intel
         python-version: >-
           ${{
             fromJSON(
@@ -445,7 +444,6 @@ jobs:
         runner-vm:
           - ubuntu-24.04
           - macos-26
-          - macos-26-intel
         python-version:
           - pypy-3.11
         pip-version:
