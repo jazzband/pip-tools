@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import os
+import pathlib
 
-TEST_DATA_PATH = os.path.join(os.path.dirname(__file__), "test_data")
-MINIMAL_WHEELS_PATH = os.path.join(TEST_DATA_PATH, "minimal_wheels")
-PACKAGES_PATH = os.path.join(TEST_DATA_PATH, "packages")
-PACKAGES_RELATIVE_PATH = os.path.relpath(
-    PACKAGES_PATH, os.path.commonpath([os.getcwd(), PACKAGES_PATH])
-)
+TEST_DATA_PATH = pathlib.Path(__file__).parent / "test_data"
+MINIMAL_WHEELS_PATH = TEST_DATA_PATH / "minimal_wheels"
+PACKAGES_PATH = TEST_DATA_PATH / "packages"
+PACKAGES_RELATIVE_PATH = PACKAGES_PATH.relative_to(pathlib.Path.cwd())

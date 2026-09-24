@@ -5,20 +5,21 @@ import functools
 import json
 import os
 import platform
+import shlex
 import shutil
 import subprocess
 import sys
+import textwrap
 import typing as _t
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from importlib.metadata import version as version_of
 from pathlib import Path
-from textwrap import dedent
 from unittest import mock
 
+import click.testing
 import pytest
 import tomli_w
-from click.testing import CliRunner
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.models.candidate import InstallationCandidate
@@ -130,6 +131,99 @@ class FakeRepository(BaseRepository):
     @functools.cached_property
     def command(self) -> InstallCommand:
         return mock.Mock()
+
+
+class PipToolsCliRunner:
+    """
+    A wrapper over click.testing.CliRunner to make invocations simpler.
+
+    Features:
+    - 'pip_sync' and 'pip_compile' aliases for 'invoke'
+    - automatically checks exit codes
+    - accepts a string for args (shlex.split) as a convenience
+    - 'catch_exceptions' defaults to False, not True
+    """
+
+    def __init__(self) -> None:
+        # mix_stderr is only used on older click versions, which we only test on py3.9
+        if Version(version_of("click")) < Version("8.2"):  # pragma: <3.10 cover
+            self.click_runner = click.testing.CliRunner(mix_stderr=False)
+        else:  # pragma: >=3.10 cover
+            self.click_runner = click.testing.CliRunner()
+
+    def invoke(
+        self,
+        cli_entry_point: click.BaseCommand,
+        args: _c.Sequence[str] | str | None = None,
+        input: str | None = None,
+        env: _c.Mapping[str, str | None] | None = None,
+        catch_exceptions: bool = False,
+        expect_exit_code: int | None = 0,
+    ) -> click.testing.Result:
+        __tracebackhide__ = True
+
+        if isinstance(args, str):
+            args = shlex.split(args)
+        result = self.click_runner.invoke(
+            cli_entry_point,
+            args,
+            input=input,
+            env=env,
+            catch_exceptions=catch_exceptions,
+        )
+        if expect_exit_code is not None and result.exit_code != expect_exit_code:
+            pytest.fail(
+                f"Expected exit({expect_exit_code}), saw exit({result.exit_code}).\n"
+                "Result:\n"
+                "  stderr:\n"
+                + textwrap.indent(result.stderr, "    ")
+                + "  stdout:\n"
+                + textwrap.indent(result.stdout, "    ")
+            )
+
+        return result
+
+    def pip_sync(
+        self,
+        args: _c.Sequence[str] | str | None = None,
+        input: str | None = None,
+        env: _c.Mapping[str, str | None] | None = None,
+        catch_exceptions: bool = False,
+        expect_exit_code: int | None = 0,
+    ) -> click.testing.Result:
+        __tracebackhide__ = True
+
+        from piptools.scripts.sync import cli
+
+        return self.invoke(
+            cli,
+            args,
+            input=input,
+            env=env,
+            catch_exceptions=catch_exceptions,
+            expect_exit_code=expect_exit_code,
+        )
+
+    def pip_compile(
+        self,
+        args: _c.Sequence[str] | str | None = None,
+        input: str | None = None,
+        env: _c.Mapping[str, str | None] | None = None,
+        catch_exceptions: bool = False,
+        expect_exit_code: int | None = 0,
+    ) -> click.testing.Result:
+        __tracebackhide__ = True
+
+        from piptools.scripts.compile import cli
+
+        return self.invoke(
+            cli,
+            args,
+            input=input,
+            env=env,
+            catch_exceptions=catch_exceptions,
+            expect_exit_code=expect_exit_code,
+        )
 
 
 def pytest_collection_modifyitems(config, items):
@@ -248,17 +342,6 @@ def _isolate_pip_env() -> _c.Iterator[None]:
 
 
 @pytest.fixture
-def runner():
-    # Coverage is excluded because we only test with the latest Click
-    if Version(version_of("click")) < Version("8.2"):  # pragma: no cover
-        cli_runner = CliRunner(mix_stderr=False)
-    else:
-        cli_runner = CliRunner()
-    with cli_runner.isolated_filesystem():
-        yield cli_runner
-
-
-@pytest.fixture
 def tmp_path_cwd(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> _t.Iterator[Path]:
     """Wrap ``tmp_path`` to also chdir into it."""
     # use an explicit monkeypatch context, rather than calling monkeypatch.chdir, so
@@ -266,6 +349,11 @@ def tmp_path_cwd(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> _t.Iterator
     with monkeypatch.context() as mp:
         mp.chdir(tmp_path)
         yield tmp_path
+
+
+@pytest.fixture
+def runner(tmp_path_cwd):
+    return PipToolsCliRunner()
 
 
 @pytest.fixture
@@ -293,7 +381,7 @@ def make_pip_conf(tmp_path, monkeypatch):
 
 @pytest.fixture
 def pip_conf(make_pip_conf, minimal_wheels_path):
-    return make_pip_conf(dedent(f"""\
+    return make_pip_conf(textwrap.dedent(f"""\
             [global]
             no-index = true
             find-links = {minimal_wheels_path.as_posix()}
@@ -302,7 +390,7 @@ def pip_conf(make_pip_conf, minimal_wheels_path):
 
 @pytest.fixture
 def pip_with_index_conf(make_pip_conf, minimal_wheels_path):
-    return make_pip_conf(dedent(f"""\
+    return make_pip_conf(textwrap.dedent(f"""\
             [global]
             index-url = http://example.com
             find-links = {minimal_wheels_path.as_posix()}
@@ -336,7 +424,7 @@ def make_package(tmp_path_factory):
         package_dir.mkdir(parents=True)
 
         with (package_dir / "setup.py").open("w") as fp:
-            fp.write(dedent(f"""\
+            fp.write(textwrap.dedent(f"""\
                     from setuptools import setup
                     setup(
                         name={name!r},
@@ -358,7 +446,7 @@ def make_package(tmp_path_factory):
 
         if build_system_requires:
             with (package_dir / "pyproject.toml").open("w") as fp:
-                fp.write(dedent(f"""\
+                fp.write(textwrap.dedent(f"""\
                         [build-system]
                         requires = {json.dumps(build_system_requires)}
                         """))
@@ -435,7 +523,7 @@ def make_module(tmp_path):
                 )
             )
         path = tmp_path / fname
-        path.write_text(dedent(content))
+        path.write_text(textwrap.dedent(content))
         return str(path)
 
     return _make_module

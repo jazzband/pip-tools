@@ -24,7 +24,8 @@ from pip._vendor.packaging.version import Version
 from piptools._compat import tempfile_compat
 from piptools._internal import _pip_api
 from piptools.build import ProjectMetadata
-from piptools.scripts.compile import cli
+from piptools.exceptions import PipToolsError
+from piptools.repositories import PyPIRepository
 from piptools.utils import COMPILE_EXCLUDE_OPTIONS
 
 from .constants import MINIMAL_WHEELS_PATH, PACKAGES_PATH
@@ -140,22 +141,18 @@ def _temp_dep_cache(tmp_path, monkeypatch):
     monkeypatch.setenv("PIP_TOOLS_CACHE_DIR", str(tmp_path / "cache"))
 
 
-def test_default_pip_conf_read(pip_with_index_conf, runner):
-    # preconditions
-    with open("requirements.in", "w"):
-        pass
-    out = runner.invoke(cli, ["-v"])
+def test_default_pip_conf_read(pip_with_index_conf, runner, tmp_path_cwd):
+    (tmp_path_cwd / "requirements.in").touch()
+    out = runner.pip_compile("-v")
 
     # check that we have our index-url as specified in pip.conf
     assert "Using indexes:\n  http://example.com" in out.stderr
     assert "--index-url http://example.com" in out.stderr
 
 
-def test_command_line_overrides_pip_conf(pip_with_index_conf, runner):
-    # preconditions
-    with open("requirements.in", "w"):
-        pass
-    out = runner.invoke(cli, ["-v", "-i", "http://override.com"])
+def test_command_line_overrides_pip_conf(pip_with_index_conf, runner, tmp_path_cwd):
+    (tmp_path_cwd / "requirements.in").touch()
+    out = runner.pip_compile("-v -i http://override.com")
 
     # check that we have our index-url as specified in pip.conf
     assert "Using indexes:\n  http://override.com" in out.stderr
@@ -195,8 +192,7 @@ def test_command_line_setuptools_read(
         install_requires=(install_requires,),
     )
 
-    out = runner.invoke(
-        cli,
+    runner.pip_compile(
         (
             str(package_dir / "setup.py"),
             "--find-links",
@@ -204,7 +200,6 @@ def test_command_line_setuptools_read(
             "--no-build-isolation",
         ),
     )
-    assert out.exit_code == 0
 
     # check that pip-compile generated a configuration file
     output_file = package_dir / "requirements.txt"
@@ -230,19 +225,20 @@ def test_command_line_setuptools_read(
         (["setup.py", "--output-file", "output.txt"], "output.txt"),
     ),
 )
-def test_command_line_setuptools_output_file(runner, options, expected_output_file):
+def test_command_line_setuptools_output_file(
+    runner, tmp_path_cwd, options, expected_output_file
+):
     """
     Test the output files for setup.py as a requirement file.
     """
+    setup_py = tmp_path_cwd / "setup.py"
 
-    with open("setup.py", "w") as package:
-        package.write(dedent("""\
-                from setuptools import setup
-                setup(install_requires=[])
-                """))
+    setup_py.write_text(dedent("""\
+        from setuptools import setup
+        setup(install_requires=[])
+        """))
 
-    out = runner.invoke(cli, ["--no-build-isolation"] + options)
-    assert out.exit_code == 0
+    runner.pip_compile(["--no-build-isolation"] + options)
     assert os.path.exists(expected_output_file)
 
 
@@ -254,14 +250,14 @@ def test_command_line_setuptools_nested_output_file(tmp_path, runner):
     proj_dir = tmp_path / "proj"
     proj_dir.mkdir()
 
-    with open(proj_dir / "setup.py", "w") as package:
-        package.write(dedent("""\
-                from setuptools import setup
-                setup(install_requires=[])
-                """))
+    setup_py = proj_dir / "setup.py"
 
-    out = runner.invoke(cli, [str(proj_dir / "setup.py"), "--no-build-isolation"])
-    assert out.exit_code == 0
+    setup_py.write_text(dedent("""\
+        from setuptools import setup
+        setup(install_requires=[])
+        """))
+
+    runner.pip_compile([str(setup_py), "--no-build-isolation"])
     assert (proj_dir / "requirements.txt").exists()
 
 
@@ -282,8 +278,7 @@ def test_setuptools_preserves_environment_markers(
     bar_dir = make_package(
         name="bar", version="2.0", install_requires=['foo ; python_version >= "1"']
     )
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             str(bar_dir / "setup.py"),
             "--output-file",
@@ -297,7 +292,6 @@ def test_setuptools_preserves_environment_markers(
         ],
     )
 
-    assert out.exit_code == 0, out.stderr
     assert out.stdout == 'foo==1.0 ; python_version >= "1"\n'
 
 
@@ -305,52 +299,45 @@ def test_no_index_option(runner, tmp_path):
     req_in = tmp_path / "requirements.in"
     req_in.touch()
 
-    out = runner.invoke(cli, [req_in.as_posix(), "--no-index", "--verbose"])
-
-    assert out.exit_code == 0
+    out = runner.pip_compile([req_in.as_posix(), "--no-index", "--verbose"])
     assert "Ignoring indexes." in out.stderr
 
 
-def test_find_links_option(runner):
-    with open("requirements.in", "w") as req_in:
-        req_in.write("-f ./libs3")
+def test_find_links_option(runner, tmp_path_cwd):
+    (tmp_path_cwd / "requirements.in").write_text("-f ./libs3")
 
-    out = runner.invoke(cli, ["-v", "-f", "./libs1", "-f", "./libs2"])
+    out = runner.pip_compile("-v -f ./libs1 -f ./libs2")
 
     # Check that find-links has been passed to pip
     assert "Using links:\n  ./libs1\n  ./libs2\n  ./libs3\n" in out.stderr
 
     # Check that find-links has been written to a requirements.txt
-    with open("requirements.txt") as req_txt:
-        assert (
-            "--find-links ./libs1\n--find-links ./libs2\n--find-links ./libs3\n"
-            in req_txt.read()
-        )
+    output = (tmp_path_cwd / "requirements.txt").read_text()
+    assert (
+        "--find-links ./libs1\n--find-links ./libs2\n--find-links ./libs3\n" in output
+    )
 
 
-def test_find_links_envvar(monkeypatch, runner):
-    with open("requirements.in", "w") as req_in:
-        req_in.write("-f ./libs3")
-
+def test_find_links_envvar(monkeypatch, runner, tmp_path_cwd):
+    (tmp_path_cwd / "requirements.in").write_text("-f ./libs3")
     monkeypatch.setenv("PIP_FIND_LINKS", "./libs1 ./libs2")
-    out = runner.invoke(cli, ["-v"])
+
+    out = runner.pip_compile("-v")
 
     # Check that find-links has been passed to pip
     assert "Using links:\n  ./libs1\n  ./libs2\n  ./libs3\n" in out.stderr
 
     # Check that find-links has been written to a requirements.txt
-    with open("requirements.txt") as req_txt:
-        assert (
-            "--find-links ./libs1\n--find-links ./libs2\n--find-links ./libs3\n"
-            in req_txt.read()
-        )
+    output = (tmp_path_cwd / "requirements.txt").read_text()
+    assert (
+        "--find-links ./libs1\n--find-links ./libs2\n--find-links ./libs3\n" in output
+    )
 
 
-def test_extra_index_option(pip_with_index_conf, runner):
-    with open("requirements.in", "w"):
-        pass
-    out = runner.invoke(
-        cli,
+def test_extra_index_option(pip_with_index_conf, runner, tmp_path_cwd):
+    (tmp_path_cwd / "requirements.in").touch()
+
+    out = runner.pip_compile(
         [
             "-v",
             "--extra-index-url",
@@ -372,15 +359,14 @@ def test_extra_index_option(pip_with_index_conf, runner):
     )
 
 
-def test_extra_index_envvar(monkeypatch, runner):
-    with open("requirements.in", "w"):
-        pass
+def test_extra_index_envvar(monkeypatch, runner, tmp_path_cwd):
+    (tmp_path_cwd / "requirements.in").touch()
 
     monkeypatch.setenv("PIP_INDEX_URL", "http://example.com")
     monkeypatch.setenv(
         "PIP_EXTRA_INDEX_URL", "http://extraindex1.com http://extraindex2.com"
     )
-    out = runner.invoke(cli, ["-v"])
+    out = runner.pip_compile("-v")
     assert (
         "Using indexes:\n"
         "  http://example.com\n"
@@ -395,15 +381,13 @@ def test_extra_index_envvar(monkeypatch, runner):
 
 
 @pytest.mark.parametrize("option", ("--extra-index-url", "--find-links"))
-def test_redacted_urls_in_verbose_output(runner, option):
+def test_redacted_urls_in_verbose_output(runner, tmp_path_cwd, option):
     """
     Test that URLs with sensitive data don't leak to the output.
     """
-    with open("requirements.in", "w"):
-        pass
+    (tmp_path_cwd / "requirements.in").touch()
 
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--no-header",
             "--no-emit-index-url",
@@ -418,20 +402,19 @@ def test_redacted_urls_in_verbose_output(runner, option):
     assert "password" not in out.stderr
 
 
-def test_trusted_host_option(pip_conf, runner):
-    with open("requirements.in", "w"):
-        pass
-    out = runner.invoke(
-        cli, ["-v", "--trusted-host", "example.com", "--trusted-host", "example2.com"]
+def test_trusted_host_option(pip_conf, runner, tmp_path_cwd):
+    (tmp_path_cwd / "requirements.in").touch()
+    out = runner.pip_compile(
+        "-v --trusted-host example.com --trusted-host example2.com"
     )
     assert "--trusted-host example.com\n--trusted-host example2.com\n" in out.stderr
 
 
-def test_trusted_host_envvar(monkeypatch, pip_conf, runner):
-    with open("requirements.in", "w"):
-        pass
+def test_trusted_host_envvar(monkeypatch, pip_conf, runner, tmp_path_cwd):
+    (tmp_path_cwd / "requirements.in").touch()
+
     monkeypatch.setenv("PIP_TRUSTED_HOST", "example.com example2.com")
-    out = runner.invoke(cli, ["-v"])
+    out = runner.pip_compile("-v")
     assert "--trusted-host example.com\n--trusted-host example2.com\n" in out.stderr
 
 
@@ -450,11 +433,11 @@ def test_trusted_host_envvar(monkeypatch, pip_conf, runner):
         ),
     ),
 )
-def test_all_no_emit_options(runner, options):
-    with open("requirements.in", "w"):
-        pass
-    out = runner.invoke(
-        cli, ["--output-file", "-", "--no-header", "--strip-extras", *options]
+def test_all_no_emit_options(runner, tmp_path_cwd, options):
+    (tmp_path_cwd / "requirements.in").touch()
+
+    out = runner.pip_compile(
+        ["--output-file", "-", "--no-header", "--strip-extras", *options]
     )
     assert out.stdout.strip().splitlines() == []
 
@@ -468,12 +451,10 @@ def test_all_no_emit_options(runner, options):
         pytest.param("--no-emit-index-url", [], id="no index"),
     ),
 )
-def test_emit_index_url_option(runner, option, expected_output):
-    with open("requirements.in", "w"):
-        pass
+def test_emit_index_url_option(runner, tmp_path_cwd, option, expected_output):
+    (tmp_path_cwd / "requirements.in").touch()
 
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--output-file",
             "-",
@@ -489,8 +470,8 @@ def test_emit_index_url_option(runner, option, expected_output):
 
 
 @pytest.mark.network
-def test_realistic_complex_sub_dependencies(runner, tmp_path):
-    wheels_dir = tmp_path / "wheels"
+def test_realistic_complex_sub_dependencies(runner, tmp_path_cwd):
+    wheels_dir = tmp_path_cwd / "wheels"
     wheels_dir.mkdir()
 
     # make a temporary wheel of a fake package
@@ -506,12 +487,10 @@ def test_realistic_complex_sub_dependencies(runner, tmp_path):
         check=True,
     )
 
-    with open("requirements.in", "w") as req_in:
-        req_in.write("fake_with_deps")  # require fake package
+    # require fake package
+    (tmp_path_cwd / "requirements.in").write_text("fake_with_deps")
 
-    out = runner.invoke(cli, ["-n", "--rebuild", "-f", wheels_dir.as_posix()])
-
-    assert out.exit_code == 0
+    runner.pip_compile(["-n", "--rebuild", "-f", wheels_dir.as_posix()])
 
 
 def test_run_as_module_compile():
@@ -529,10 +508,8 @@ def test_run_as_module_compile():
 
 
 def test_compile_help_opt_supports_short_and_long_flag(runner):
-    shortflag_result = runner.invoke(cli, ["-h"])
-    longflag_result = runner.invoke(cli, ["--help"])
-    assert shortflag_result.exit_code == 0
-    assert longflag_result.exit_code == 0
+    shortflag_result = runner.pip_compile("-h")
+    longflag_result = runner.pip_compile("--help")
 
     assert shortflag_result.stdout.startswith("Usage:")
     assert longflag_result.stdout.startswith("Usage:")
@@ -540,8 +517,7 @@ def test_compile_help_opt_supports_short_and_long_flag(runner):
 
 
 def test_compile_help_opt_shows_examples_section(runner):
-    result = runner.invoke(cli, ["-h"])
-    assert result.exit_code == 0
+    result = runner.pip_compile("-h")
     assert result.stdout.startswith("Usage:")
 
     # not only should there be an `Examples` section in the output, but it should have
@@ -549,38 +525,37 @@ def test_compile_help_opt_shows_examples_section(runner):
     assert "\nExamples:\n" in result.stdout
 
 
-def test_editable_package(pip_conf, runner):
+def test_editable_package(pip_conf, runner, tmp_path_cwd):
     """piptools can compile an editable"""
     fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
     fake_package_dir = path_to_url(fake_package_dir)
-    with open("requirements.in", "w") as req_in:
-        req_in.write("-e " + fake_package_dir)  # require editable fake package
+    # require editable fake package
+    (tmp_path_cwd / "requirements.in").write_text("-e " + fake_package_dir)
 
-    out = runner.invoke(cli, ["-n"])
+    out = runner.pip_compile("-n")
 
-    assert out.exit_code == 0
     assert fake_package_dir in out.stderr
     assert "small-fake-a==0.1" in out.stderr
 
 
-def test_editable_package_without_non_editable_duplicate(pip_conf, runner):
+def test_editable_package_without_non_editable_duplicate(
+    pip_conf, runner, tmp_path_cwd
+):
     """
     piptools keeps editable requirement,
     without also adding a duplicate "non-editable" requirement variation
     """
     fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_a")
     fake_package_dir = path_to_url(fake_package_dir)
-    with open("requirements.in", "w") as req_in:
+    (tmp_path_cwd / "requirements.in").write_text(
         # small_fake_with_unpinned_deps also requires small_fake_a
-        req_in.write(
-            "-e "
-            + fake_package_dir
-            + "\nsmall_fake_with_unpinned_deps"  # require editable fake package
-        )
+        "-e "
+        + fake_package_dir
+        + "\nsmall_fake_with_unpinned_deps"  # require editable fake package
+    )
 
-    out = runner.invoke(cli, ["-n"])
+    out = runner.pip_compile("-n")
 
-    assert out.exit_code == 0
     assert fake_package_dir in out.stderr
     # Shouldn't include a non-editable small-fake-a==<version>.
     assert "small-fake-a==" not in out.stderr
@@ -589,26 +564,23 @@ def test_editable_package_without_non_editable_duplicate(pip_conf, runner):
 @legacy_resolver_only
 @skip_if_pip_does_not_support_editables_in_constraints
 def test_editable_package_constraint_without_non_editable_duplicate(
-    pip_conf, runner
+    pip_conf, runner, tmp_path_cwd
 ):  # pragma: pip>=26.0 no cover
     """
     piptools keeps editable constraint,
     without also adding a duplicate "non-editable" requirement variation
     """
-    fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_a")
-    fake_package_dir = path_to_url(fake_package_dir)
-    with open("constraints.txt", "w") as constraints:
-        constraints.write("-e " + fake_package_dir)  # require editable fake package
+    fake_package_dir = path_to_url(str(PACKAGES_PATH / "small_fake_a"))
+    # require editable fake package
+    (tmp_path_cwd / "constraints.txt").write_text(f"-e {fake_package_dir}")
 
-    with open("requirements.in", "w") as req_in:
-        req_in.write(
-            "-c constraints.txt"  # require editable fake package
-            "\nsmall_fake_with_unpinned_deps"  # This one also requires small_fake_a
-        )
+    (tmp_path_cwd / "requirements.in").write_text(
+        "-c constraints.txt"  # require editable fake package
+        "\nsmall_fake_with_unpinned_deps"  # This one also requires small_fake_a
+    )
 
-    out = runner.invoke(cli, ["--output-file", "-", "--quiet"])
+    out = runner.pip_compile("--output-file - --quiet")
 
-    assert out.exit_code == 0
     assert fake_package_dir in out.stdout
     # Shouldn't include a non-editable small-fake-a==<version>.
     assert "small-fake-a==" not in out.stdout
@@ -618,7 +590,7 @@ def test_editable_package_constraint_without_non_editable_duplicate(
 @skip_if_pip_does_not_support_editables_in_constraints
 @pytest.mark.parametrize("req_editable", ((True,), (False,)))
 def test_editable_package_in_constraints(
-    pip_conf, runner, req_editable
+    pip_conf, runner, tmp_path_cwd, req_editable
 ):  # pragma: pip>=26.0 no cover
     """
     piptools can compile an editable that appears in both primary requirements
@@ -627,37 +599,34 @@ def test_editable_package_in_constraints(
     fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
     fake_package_dir = path_to_url(fake_package_dir)
 
-    with open("constraints.txt", "w") as constraints_in:
-        constraints_in.write("-e " + fake_package_dir)
+    (tmp_path_cwd / "constraints.txt").write_text("-e " + fake_package_dir)
 
-    with open("requirements.in", "w") as req_in:
-        prefix = "-e " if req_editable else ""
-        req_in.write(prefix + fake_package_dir + "\n-c constraints.txt")
+    (tmp_path_cwd / "requirements.in").write_text(
+        ("-e " if req_editable else "") + fake_package_dir + "\n-c constraints.txt"
+    )
 
-    out = runner.invoke(cli, ["-n"])
+    out = runner.pip_compile("-n")
 
-    assert out.exit_code == 0
     assert fake_package_dir in out.stderr
     assert "small-fake-a==0.1" in out.stderr
 
 
 @pytest.mark.network
-def test_editable_package_vcs(runner):
+def test_editable_package_vcs(runner, tmp_path_cwd):
     vcs_package = (
         "git+https://github.com/jazzband/pip-tools@"
         "5f31d8a79b5fd16305372cf700b01cc7f16c2ccf"
         "#egg=pip-tools"
     )
-    with open("requirements.in", "w") as req_in:
-        req_in.write("-e " + vcs_package)
-    out = runner.invoke(cli, ["-n", "--rebuild"])
-    assert out.exit_code == 0
+    (tmp_path_cwd / "requirements.in").write_text("-e " + vcs_package)
+
+    out = runner.pip_compile("-n --rebuild")
     assert vcs_package in out.stderr
     assert "click" in out.stderr  # dependency of pip-tools
 
 
 @pytest.mark.network
-def test_compile_cached_vcs_package(runner, venv):
+def test_compile_cached_vcs_package(runner, tmp_path_cwd, venv):
     """
     Test pip-compile doesn't write local paths for cached wheels of VCS packages.
 
@@ -671,7 +640,7 @@ def test_compile_cached_vcs_package(runner, venv):
 
     # Install and cache VCS package.
     subprocess.run(
-        [os.fspath(venv / "python"), "-m" "pip", "install", vcs_package],
+        [os.fspath(venv / "python"), "-mpip", "install", vcs_package],
         check=True,
     )
     assert (
@@ -679,7 +648,7 @@ def test_compile_cached_vcs_package(runner, venv):
         in subprocess.run(
             [
                 sys.executable,
-                "-m" "pip",
+                "-mpip",
                 "cache",
                 "list",
                 "--format=abspath",
@@ -691,11 +660,9 @@ def test_compile_cached_vcs_package(runner, venv):
         ).stdout
     )
 
-    with open("requirements.in", "w") as req_in:
-        req_in.write(vcs_package)
+    (tmp_path_cwd / "requirements.in").write_text(vcs_package)
 
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--output-file",
             "-",
@@ -707,29 +674,27 @@ def test_compile_cached_vcs_package(runner, venv):
         ],
     )
 
-    assert out.exit_code == 0, out
     assert vcs_package == out.stdout.strip()
 
 
 @legacy_resolver_only
 def test_locally_available_editable_package_is_not_archived_in_cache_dir(
-    pip_conf, tmp_path, runner
+    pip_conf, tmp_path_cwd, runner
 ):
     """
     piptools will not create an archive for a locally available editable requirement
     """
-    cache_dir = tmp_path / "cache_dir"
+    cache_dir = tmp_path_cwd / "cache_dir"
     cache_dir.mkdir()
 
     fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
     fake_package_dir = path_to_url(fake_package_dir)
 
-    with open("requirements.in", "w") as req_in:
-        req_in.write("-e " + fake_package_dir)  # require editable fake package
+    # require editable fake package
+    (tmp_path_cwd / "requirements.in").write_text(f"-e {fake_package_dir}")
 
-    out = runner.invoke(cli, ["-n", "--rebuild", "--cache-dir", str(cache_dir)])
+    out = runner.pip_compile(["-n", "--rebuild", "--cache-dir", str(cache_dir)])
 
-    assert out.exit_code == 0
     assert fake_package_dir in out.stderr
     assert "small-fake-a==0.1" in out.stderr
 
@@ -773,15 +738,12 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
 )
 @pytest.mark.parametrize("generate_hashes", ((True,), (False,)))
 @pytest.mark.network
-def test_url_package(runner, line, dependency, generate_hashes):
-    with open("requirements.in", "w") as req_in:
-        req_in.write(line)
-    out = runner.invoke(
-        cli,
+def test_url_package(runner, tmp_path_cwd, line, dependency, generate_hashes):
+    (tmp_path_cwd / "requirements.in").write_text(line)
+    out = runner.pip_compile(
         ["-n", "--rebuild", "--no-build-isolation"]
         + (["--generate-hashes"] if generate_hashes else []),
     )
-    assert out.exit_code == 0
     assert dependency in out.stderr
 
 
@@ -849,24 +811,21 @@ def test_url_package(runner, line, dependency, generate_hashes):
 )
 @pytest.mark.parametrize("generate_hashes", (True, False, "update"))
 def test_local_file_uri_package(
-    pip_conf, runner, line, dependency, rewritten_line, generate_hashes
+    pip_conf, runner, tmp_path_cwd, line, dependency, rewritten_line, generate_hashes
 ):
     if rewritten_line is None:
         rewritten_line = line
-    with open("requirements.in", "w") as req_in:
-        req_in.write(line)
+    (tmp_path_cwd / "requirements.in").write_text(line)
     if generate_hashes == "update":
-        with open("requirements.txt", "w") as fp:
-            fp.write(rewritten_line)
-    out = runner.invoke(
-        cli, ["-n", "--rebuild"] + (["--generate-hashes"] if generate_hashes else [])
+        (tmp_path_cwd / "requirements.txt").write_text(rewritten_line)
+    out = runner.pip_compile(
+        ["-n", "--rebuild"] + (["--generate-hashes"] if generate_hashes else [])
     )
-    assert out.exit_code == 0
     assert rewritten_line in out.stderr
     assert dependency in out.stderr
 
 
-def test_relative_file_uri_package(pip_conf, runner):
+def test_relative_file_uri_package(pip_conf, runner, tmp_path_cwd):
     # Copy wheel into temp dir
     shutil.copy(
         os.path.join(
@@ -874,20 +833,18 @@ def test_relative_file_uri_package(pip_conf, runner):
         ),
         ".",
     )
-    with open("requirements.in", "w") as req_in:
-        req_in.write("file:small_fake_with_deps-0.1-py2.py3-none-any.whl")
-    out = runner.invoke(cli, ["-n", "--rebuild"])
-    assert out.exit_code == 0
+    (tmp_path_cwd / "requirements.in").write_text(
+        "file:small_fake_with_deps-0.1-py2.py3-none-any.whl"
+    )
+    out = runner.pip_compile("-n --rebuild")
     assert "file:small_fake_with_deps-0.1-py2.py3-none-any.whl" in out.stderr
 
 
-def test_direct_reference_with_extras(runner):
-    with open("requirements.in", "w") as req_in:
-        req_in.write(
-            "pip-tools[testing,coverage] @ git+https://github.com/jazzband/pip-tools@v7.5.3"
-        )
-    out = runner.invoke(cli, ["-n", "--rebuild", "--no-build-isolation"])
-    assert out.exit_code == 0
+def test_direct_reference_with_extras(runner, tmp_path_cwd):
+    (tmp_path_cwd / "requirements.in").write_text(
+        "pip-tools[testing,coverage] @ git+https://github.com/jazzband/pip-tools@v7.5.3"
+    )
+    out = runner.pip_compile("-n --rebuild --no-build-isolation")
     assert (
         "pip-tools[coverage,testing] @ git+https://github.com/jazzband/pip-tools@v7.5.3"
         in out.stderr
@@ -896,78 +853,70 @@ def test_direct_reference_with_extras(runner):
     assert "pytest-cov==" in out.stderr
 
 
-def test_input_file_without_extension(pip_conf, runner):
+def test_input_file_without_extension(pip_conf, runner, tmp_path_cwd):
     """
     piptools can compile a file without an extension,
     and add .txt as the default output file extension.
     """
-    with open("requirements", "w") as req_in:
-        req_in.write("small-fake-a==0.1")
+    (tmp_path_cwd / "requirements").write_text("small-fake-a==0.1")
 
-    out = runner.invoke(cli, ["requirements"])
+    out = runner.pip_compile("requirements")
 
-    assert out.exit_code == 0
     assert "small-fake-a==0.1" in out.stderr
     assert os.path.exists("requirements.txt")
 
 
-def test_ignore_incompatible_existing_pins(pip_conf, runner):
+def test_ignore_incompatible_existing_pins(pip_conf, runner, tmp_path_cwd):
     """
     Successfully compile when existing output pins conflict with input.
     """
-    with open("requirements.txt", "w") as req_txt:
-        req_txt.write("small-fake-a==0.2\nsmall-fake-b==0.2")
-    with open("requirements.in", "w") as req_in:
-        req_in.write("small-fake-with-deps\nsmall-fake-b<0.2")
+    (tmp_path_cwd / "requirements.txt").write_text(
+        "small-fake-a==0.2\nsmall-fake-b==0.2"
+    )
+    (tmp_path_cwd / "requirements.in").write_text(
+        "small-fake-with-deps\nsmall-fake-b<0.2"
+    )
 
-    out = runner.invoke(cli, [])
-
-    assert out.exit_code == 0
+    runner.pip_compile()
 
 
-def test_upgrade_packages_option(pip_conf, runner):
+def test_upgrade_packages_option(pip_conf, runner, tmp_path_cwd):
     """
     piptools respects --upgrade-package/-P inline list.
     """
-    with open("requirements.in", "w") as req_in:
-        req_in.write("small-fake-a\nsmall-fake-b")
-    with open("requirements.txt", "w") as req_in:
-        req_in.write("small-fake-a==0.1\nsmall-fake-b==0.1")
+    (tmp_path_cwd / "requirements.in").write_text("small-fake-a\nsmall-fake-b")
+    (tmp_path_cwd / "requirements.txt").write_text(
+        "small-fake-a==0.1\nsmall-fake-b==0.1"
+    )
 
-    out = runner.invoke(cli, ["--no-annotate", "-P", "small-fake-b"])
+    out = runner.pip_compile("--no-annotate -P small-fake-b")
 
-    assert out.exit_code == 0
     assert "small-fake-a==0.1" in out.stderr.splitlines()
     assert "small-fake-b==0.3" in out.stderr.splitlines()
 
 
-def test_upgrade_packages_option_irrelevant(pip_conf, runner):
+def test_upgrade_packages_option_irrelevant(pip_conf, runner, tmp_path_cwd):
     """
     piptools ignores --upgrade-package/-P items not already constrained.
     """
-    with open("requirements.in", "w") as req_in:
-        req_in.write("small-fake-a")
-    with open("requirements.txt", "w") as req_in:
-        req_in.write("small-fake-a==0.1")
+    (tmp_path_cwd / "requirements.in").write_text("small-fake-a")
+    (tmp_path_cwd / "requirements.txt").write_text("small-fake-a==0.1")
 
-    out = runner.invoke(cli, ["--no-annotate", "--upgrade-package", "small-fake-b"])
+    out = runner.pip_compile("--no-annotate --upgrade-package small-fake-b")
 
-    assert out.exit_code == 0
     assert "small-fake-a==0.1" in out.stderr.splitlines()
     assert "small-fake-b==0.3" not in out.stderr.splitlines()
 
 
-def test_upgrade_packages_option_no_existing_file(pip_conf, runner):
+def test_upgrade_packages_option_no_existing_file(pip_conf, runner, tmp_path_cwd):
     """
     piptools respects --upgrade-package/-P inline list when the output file
     doesn't exist.
     """
-    with open("requirements.in", "w") as req_in:
-        req_in.write("small-fake-a\nsmall-fake-b")
+    (tmp_path_cwd / "requirements.in").write_text("small-fake-a\nsmall-fake-b")
 
-    out = runner.invoke(cli, ["--no-annotate", "-P", "small-fake-b"])
+    out = runner.pip_compile("--no-annotate -P small-fake-b")
 
-    assert out.exit_code == 0
     assert "small-fake-a==0.2" in out.stderr.splitlines()
     assert "small-fake-b==0.3" in out.stderr.splitlines()
     assert (
@@ -976,19 +925,16 @@ def test_upgrade_packages_option_no_existing_file(pip_conf, runner):
     )
 
 
-def test_upgrade_packages_empty_target_file_warning(pip_conf, runner):
+def test_upgrade_packages_empty_target_file_warning(pip_conf, runner, tmp_path_cwd):
     """
     piptools warns the user if --upgrade-package/-P is specified and the
     output file exists, but is empty.
     """
-    with open("requirements.in", "w") as req_in:
-        req_in.write("small-fake-a==0.2")
-    with open("requirements.txt", "w") as req_txt:
-        req_txt.write("")
+    (tmp_path_cwd / "requirements.in").write_text("small-fake-a==0.2")
+    (tmp_path_cwd / "requirements.txt").touch()
 
-    out = runner.invoke(cli, ["--no-annotate", "-P", "small-fake-a"])
+    out = runner.pip_compile("--no-annotate -P small-fake-a")
 
-    assert out.exit_code == 0
     assert "small-fake-a==0.2" in out.stderr.splitlines()
     assert "WARNING: the output file requirements.txt exists but is empty" in out.stderr
 
@@ -1001,34 +947,33 @@ def test_upgrade_packages_empty_target_file_warning(pip_conf, runner):
     ),
 )
 def test_upgrade_packages_version_option(
-    pip_conf, runner, current_package, upgraded_package
+    pip_conf, runner, tmp_path_cwd, current_package, upgraded_package
 ):
     """
     piptools respects --upgrade-package/-P inline list with specified versions.
     """
-    with open("requirements.in", "w") as req_in:
-        req_in.write("small-fake-a\nsmall-fake-b")
-    with open("requirements.txt", "w") as req_in:
-        req_in.write("small-fake-a==0.1\n" + current_package)
+    (tmp_path_cwd / "requirements.in").write_text("small-fake-a\nsmall-fake-b")
+    (tmp_path_cwd / "requirements.txt").write_text(
+        "small-fake-a==0.1\n" + current_package
+    )
 
-    out = runner.invoke(cli, ["--no-annotate", "--upgrade-package", upgraded_package])
+    out = runner.pip_compile(["--no-annotate", "--upgrade-package", upgraded_package])
 
-    assert out.exit_code == 0
     stderr_lines = out.stderr.splitlines()
     assert "small-fake-a==0.1" in stderr_lines
     assert upgraded_package in stderr_lines
 
 
-def test_upgrade_packages_version_option_no_existing_file(pip_conf, runner):
+def test_upgrade_packages_version_option_no_existing_file(
+    pip_conf, runner, tmp_path_cwd
+):
     """
     piptools respects --upgrade-package/-P inline list with specified versions.
     """
-    with open("requirements.in", "w") as req_in:
-        req_in.write("small-fake-a\nsmall-fake-b")
+    (tmp_path_cwd / "requirements.in").write_text("small-fake-a\nsmall-fake-b")
 
-    out = runner.invoke(cli, ["-P", "small-fake-b==0.2"])
+    out = runner.pip_compile("-P small-fake-b==0.2")
 
-    assert out.exit_code == 0
     assert "small-fake-a==0.2" in out.stderr
     assert "small-fake-b==0.2" in out.stderr
 
@@ -1040,39 +985,40 @@ def test_upgrade_packages_version_option_no_existing_file(pip_conf, runner):
         pytest.param("small-fake-with-unpinned-deps", id="parent req"),
     ),
 )
-def test_upgrade_packages_version_option_and_upgrade(pip_conf, runner, reqs_in):
+def test_upgrade_packages_version_option_and_upgrade(
+    pip_conf, runner, tmp_path_cwd, reqs_in
+):
     """
     piptools respects --upgrade-package/-P inline list with specified versions
     whilst also doing --upgrade.
     """
-    with open("requirements.in", "w") as req_in:
-        req_in.write(reqs_in)
-    with open("requirements.txt", "w") as req_in:
-        req_in.write("small-fake-a==0.1\nsmall-fake-b==0.1")
+    (tmp_path_cwd / "requirements.in").write_text(reqs_in)
+    (tmp_path_cwd / "requirements.txt").write_text(
+        "small-fake-a==0.1\nsmall-fake-b==0.1"
+    )
 
-    out = runner.invoke(cli, ["--upgrade", "-P", "small-fake-b==0.1"])
+    out = runner.pip_compile("--upgrade -P small-fake-b==0.1")
 
-    assert out.exit_code == 0
     assert "small-fake-a==0.2" in out.stderr
     assert "small-fake-b==0.1" in out.stderr
 
 
-def test_upgrade_packages_version_option_and_upgrade_no_existing_file(pip_conf, runner):
+def test_upgrade_packages_version_option_and_upgrade_no_existing_file(
+    pip_conf, runner, tmp_path_cwd
+):
     """
     piptools respects --upgrade-package/-P inline list with specified versions
     whilst also doing --upgrade and the output file doesn't exist.
     """
-    with open("requirements.in", "w") as req_in:
-        req_in.write("small-fake-a\nsmall-fake-b")
+    (tmp_path_cwd / "requirements.in").write_text("small-fake-a\nsmall-fake-b")
 
-    out = runner.invoke(cli, ["--upgrade", "-P", "small-fake-b==0.1"])
+    out = runner.pip_compile("--upgrade -P small-fake-b==0.1")
 
-    assert out.exit_code == 0
     assert "small-fake-a==0.2" in out.stderr
     assert "small-fake-b==0.1" in out.stderr
 
 
-def test_upgrade_package_with_extra(runner, make_package, make_sdist, tmp_path):
+def test_upgrade_package_with_extra(runner, make_package, make_sdist, tmp_path_cwd):
     """
     piptools ignores extras on --upgrade-package/-P items if already constrained.
     """
@@ -1083,18 +1029,16 @@ def test_upgrade_package_with_extra(runner, make_package, make_sdist, tmp_path):
         "test_package_2",
         version="0.1",
     )
-    dists_dir = tmp_path / "dists"
+    dists_dir = tmp_path_cwd / "dists"
     for pkg in (test_package_1, test_package_2):
         make_sdist(pkg, dists_dir)
 
     # Constrain our requirement with an extra
-    with open("requirements.in", "w") as req_in:
-        req_in.write("test-package-1[more]")
+    (tmp_path_cwd / "requirements.in").write_text("test-package-1[more]")
 
     # Run update on test-package-1[more] -- this should be equivalent
     # to running an update on test-package-1
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--output-file",
             "-",
@@ -1110,34 +1054,32 @@ def test_upgrade_package_with_extra(runner, make_package, make_sdist, tmp_path):
         ],
     )
 
-    assert out.exit_code == 0, out
     assert dedent("""\
             test-package-1[more]==0.1
             test-package-2==0.1
             """) == out.stdout
 
 
-def test_quiet_option(pip_conf, runner):
-    with open("requirements.in", "w") as req_in:
-        req_in.write("small-fake-a")
+def test_quiet_option(pip_conf, runner, tmp_path_cwd):
+    (tmp_path_cwd / "requirements.in").write_text("small-fake-a")
 
-    out = runner.invoke(cli, ["--quiet"])
+    out = runner.pip_compile("--quiet")
     # Pinned requirements result has not been written to stderr:
     assert b"small-fake-a" not in out.stderr_bytes
 
 
-def test_dry_run_noisy_option(runner):
-    with open("requirements.in", "w"):
-        pass
-    out = runner.invoke(cli, ["--dry-run"])
+def test_dry_run_noisy_option(runner, tmp_path_cwd):
+    (tmp_path_cwd / "requirements.in").touch()
+
+    out = runner.pip_compile("--dry-run")
     # Dry-run message has been written to output
     assert "Dry-run, so nothing updated." in out.stderr.splitlines()
 
 
-def test_dry_run_quiet_option(runner):
-    with open("requirements.in", "w"):
-        pass
-    out = runner.invoke(cli, ["--output-file", "-", "--dry-run", "--quiet"])
+def test_dry_run_quiet_option(runner, tmp_path_cwd):
+    (tmp_path_cwd / "requirements.in").touch()
+
+    out = runner.pip_compile("--output-file - --dry-run --quiet")
     # Neither dry-run message nor pinned requirements written to output:
     assert not out.stdout_bytes
     # Dry-run message has not been written to stderr:
@@ -1146,62 +1088,56 @@ def test_dry_run_quiet_option(runner):
     assert "# " in out.stderr
 
 
-def test_generate_hashes_with_editable(pip_conf, runner):
+def test_generate_hashes_with_editable(pip_conf, runner, tmp_path_cwd):
     small_fake_package_dir = os.path.join(PACKAGES_PATH, "small_fake_with_deps")
     small_fake_package_url = path_to_url(small_fake_package_dir)
-    with open("requirements.in", "w") as fp:
-        fp.write(f"-e {small_fake_package_url}\n")
-    out = runner.invoke(cli, ["--no-annotate", "--generate-hashes"])
+    (tmp_path_cwd / "requirements.in").write_text(f"-e {small_fake_package_url}\n")
+
+    out = runner.pip_compile("--no-annotate --generate-hashes")
     expected = (
-        "-e {}\n"
+        f"-e {small_fake_package_url}\n"
         "small-fake-a==0.1 \\\n"
         "    --hash=sha256:5e6071ee6e4c59e0d0408d366f"
         "e9b66781d2cf01be9a6e19a2433bb3c5336330\n"
         "small-fake-b==0.1 \\\n"
         "    --hash=sha256:acdba8f8b8a816213c30d5310c"
         "3fe296c0107b16ed452062f7f994a5672e3b3f\n"
-    ).format(small_fake_package_url)
-    assert out.exit_code == 0
+    )
     assert expected in out.stderr
 
 
 @pytest.mark.network
-def test_generate_hashes_with_url(runner):
-    with open("requirements.in", "w") as fp:
-        fp.write(
-            "https://github.com/jazzband/pip-tools/archive/"
-            "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3.zip#egg=pip-tools\n"
-        )
-    out = runner.invoke(cli, ["--no-annotate", "--generate-hashes"])
+def test_generate_hashes_with_url(runner, tmp_path_cwd):
+    (tmp_path_cwd / "requirements.in").write_text(
+        "https://github.com/jazzband/pip-tools/archive/"
+        "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3.zip#egg=pip-tools\n"
+    )
+    out = runner.pip_compile("--no-annotate --generate-hashes")
     expected = (
         "pip-tools @ https://github.com/jazzband/pip-tools/archive/"
         "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3.zip \\\n"
         "    --hash=sha256:d24de92e18ad5bf291f25cfcdcf"
         "0171be6fa70d01d0bef9eeda356b8549715e7\n"
     )
-    assert out.exit_code == 0
     assert expected in out.stderr
 
 
-def test_generate_hashes_verbose(pip_conf, runner):
+def test_generate_hashes_verbose(pip_conf, runner, tmp_path_cwd):
     """
     The hashes generation process should show a progress.
     """
-    with open("requirements.in", "w") as fp:
-        fp.write("small-fake-a==0.1")
+    (tmp_path_cwd / "requirements.in").write_text("small-fake-a==0.1")
 
-    out = runner.invoke(cli, ["--generate-hashes", "-v"])
+    out = runner.pip_compile("--generate-hashes -v")
     expected_verbose_text = "Generating hashes:\n  small-fake-a\n"
     assert expected_verbose_text in out.stderr
 
 
 @pytest.mark.network
-def test_generate_hashes_with_annotations(runner):
-    with open("requirements.in", "w") as fp:
-        fp.write("six==1.15.0")
+def test_generate_hashes_with_annotations(runner, tmp_path_cwd):
+    (tmp_path_cwd / "requirements.in").write_text("six==1.15.0")
 
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--output-file",
             "-",
@@ -1223,15 +1159,13 @@ def test_generate_hashes_with_existing_pins(runner, tmp_path_cwd):
     (tmp_path_cwd / "requirements.in").write_text("six\n")
     (tmp_path_cwd / "requirements.txt").write_text("six==1.15.0\n")
 
-    out = runner.invoke(
-        cli,
+    runner.pip_compile(
         [
             "--quiet",
             "--no-header",
             "--generate-hashes",
         ],
     )
-    assert out.exit_code == 0
 
     result = (tmp_path_cwd / "requirements.txt").read_text()
     assert result == dedent("""\
@@ -1285,8 +1219,8 @@ def test_override_newline(
     out_path = example_dir / "requirements.txt"
     in_path.write_bytes(b"small-fake-a==0.1\nsmall-fake-b\n")
 
-    runner.invoke(
-        cli, [*opts, f"--output-file={os.fsdecode(out_path)}", os.fsdecode(in_path)]
+    runner.pip_compile(
+        [*opts, f"--output-file={os.fsdecode(out_path)}", os.fsdecode(in_path)]
     )
     txt = out_path.read_bytes()
 
@@ -1302,8 +1236,8 @@ def test_override_newline(
     if gen_hashes:
         opts += ("--generate-hashes",)
 
-    runner.invoke(
-        cli, [*opts, f"--output-file={os.fsdecode(out_path)}", os.fsdecode(in_path)]
+    runner.pip_compile(
+        [*opts, f"--output-file={os.fsdecode(out_path)}", os.fsdecode(in_path)]
     )
     txt = out_path.read_bytes()
 
@@ -1319,13 +1253,11 @@ def test_override_newline(
     ("linesep", "must_exclude"),
     (pytest.param("\n", "\r\n", id="LF"), pytest.param("\r\n", "\n", id="CRLF")),
 )
-def test_preserve_newline_from_input(runner, linesep, must_exclude):
-    with open("requirements.in", "wb") as req_in:
-        req_in.write(f"six{linesep}".encode())
+def test_preserve_newline_from_input(runner, tmp_path_cwd, linesep, must_exclude):
+    (tmp_path_cwd / "requirements.in").write_bytes(f"six{linesep}".encode())
 
-    runner.invoke(cli, ["--newline=preserve", "requirements.in"])
-    with open("requirements.txt", "rb") as req_txt:
-        txt = req_txt.read().decode()
+    runner.pip_compile("--newline=preserve requirements.in")
+    txt = (tmp_path_cwd / "requirements.txt").read_bytes().decode()
 
     assert linesep in txt
 
@@ -1341,8 +1273,7 @@ def test_generate_hashes_with_split_style_annotations(pip_conf, runner, tmp_path
             small-fake-a
             """))
 
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--output-file",
             "-",
@@ -1374,8 +1305,7 @@ def test_generate_hashes_with_line_style_annotations(pip_conf, runner, tmp_path_
             small-fake-a
             """))
 
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--output-file",
             "-",
@@ -1400,14 +1330,14 @@ def test_generate_hashes_with_line_style_annotations(pip_conf, runner, tmp_path_
 
 @pytest.mark.network
 def test_generate_hashes_with_mixed_sources(
-    runner, make_package, make_wheel, make_sdist, tmp_path
+    runner, make_package, make_wheel, make_sdist, tmp_path_cwd
 ):
     """
     Test that pip-compile generate hashes for every file from all given sources:
     PyPI and/or --find-links.
     """
 
-    wheels_dir = tmp_path / "wheels"
+    wheels_dir = tmp_path_cwd / "wheels"
     wheels_dir.mkdir()
 
     dummy_six_pkg = make_package(name="six", version="1.16.0")
@@ -1417,11 +1347,9 @@ def test_generate_hashes_with_mixed_sources(
     fav_hasher.update((wheels_dir / "six-1.16.0-123-py3-none-any.whl").read_bytes())
     dummy_six_wheel_digest = fav_hasher.hexdigest()
 
-    with open("requirements.in", "w") as fp:
-        fp.write("six==1.16.0\n")
+    (tmp_path_cwd / "requirements.in").write_text("six==1.16.0\n")
 
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--output-file",
             "-",
@@ -1454,49 +1382,43 @@ def test_generate_hashes_with_mixed_sources(
     assert out.stdout == expected_output
 
 
-def test_filter_pip_markers(pip_conf, runner):
+def test_filter_pip_markers(pip_conf, runner, tmp_path_cwd):
     """
     Check that pip-compile works with pip environment markers (PEP496)
     """
-    with open("requirements.in", "w") as req_in:
-        req_in.write("small-fake-a==0.1\nunknown_package==0.1; python_version == '1'")
+    (tmp_path_cwd / "requirements.in").write_text(
+        "small-fake-a==0.1\nunknown_package==0.1; python_version == '1'"
+    )
 
-    out = runner.invoke(cli, ["--output-file", "-", "--quiet"])
+    out = runner.pip_compile("--output-file - --quiet")
 
-    assert out.exit_code == 0
     assert "small-fake-a==0.1" in out.stdout
     assert "unknown_package" not in out.stdout
 
 
-def test_bad_setup_file(runner):
-    with open("setup.py", "w") as package:
-        package.write("BAD SYNTAX")
+def test_bad_setup_file(runner, tmp_path_cwd):
+    (tmp_path_cwd / "setup.py").write_text("BAD SYNTAX")
 
-    out = runner.invoke(cli, ["--no-build-isolation"])
+    out = runner.pip_compile("--no-build-isolation", expect_exit_code=2)
 
-    assert out.exit_code == 2
     assert f"Failed to parse {os.path.abspath('setup.py')}" in out.stderr
 
 
 @legacy_resolver_only
-def test_no_candidates(pip_conf, runner):
-    with open("requirements", "w") as req_in:
-        req_in.write("small-fake-a>0.3b1,<0.3b2")
+def test_no_candidates(pip_conf, runner, tmp_path_cwd):
+    (tmp_path_cwd / "requirements").write_text("small-fake-a>0.3b1,<0.3b2")
 
-    out = runner.invoke(cli, ["-n", "requirements"])
+    out = runner.pip_compile("-n requirements", expect_exit_code=2)
 
-    assert out.exit_code == 2
     assert "Skipped pre-versions:" in out.stderr
 
 
 @legacy_resolver_only
-def test_no_candidates_pre(pip_conf, runner):
-    with open("requirements", "w") as req_in:
-        req_in.write("small-fake-a>0.3b1,<0.3b1")
+def test_no_candidates_pre(pip_conf, runner, tmp_path_cwd):
+    (tmp_path_cwd / "requirements").write_text("small-fake-a>0.3b1,<0.3b1")
 
-    out = runner.invoke(cli, ["-n", "requirements", "--pre"])
+    out = runner.pip_compile("-n requirements --pre", expect_exit_code=2)
 
-    assert out.exit_code == 2
     assert "Tried pre-versions:" in out.stderr
 
 
@@ -1533,9 +1455,8 @@ def test_stdin_without_output_file(runner):
     """
     The --output-file option is required for STDIN.
     """
-    out = runner.invoke(cli, ["-n", "-"])
+    out = runner.pip_compile("-n -", expect_exit_code=2)
 
-    assert out.exit_code == 2
     assert "--output-file is required if input is from stdin" in out.stderr
 
 
@@ -1543,8 +1464,7 @@ def test_stdin(pip_conf, runner):
     """
     Test compile requirements from STDIN.
     """
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         ["-", "--output-file", "-", "--quiet", "--no-emit-options", "--no-header"],
         input="small-fake-a==0.1",
     )
@@ -1590,8 +1510,7 @@ def test_tmpfile_for_stdin_is_cleaned_up(pip_conf, runner):
     with mock.patch(
         "piptools._compat.tempfile_compat.named_temp_file", NamedTempfileSpy
     ):
-        out = runner.invoke(
-            cli,
+        out = runner.pip_compile(
             ["-", "--output-file", "-", "--quiet", "--no-emit-options", "--no-header"],
             input="small-fake-a==0.1",
         )
@@ -1603,22 +1522,18 @@ def test_tmpfile_for_stdin_is_cleaned_up(pip_conf, runner):
         """)
 
 
-def test_multiple_input_files_without_output_file(runner):
+def test_multiple_input_files_without_output_file(runner, tmp_path_cwd):
     """
     The --output-file option is required for multiple requirement input files.
     """
-    with open("src_file1.in", "w") as req_in:
-        req_in.write("six==1.10.0")
+    (tmp_path_cwd / "src_file1.in").write_text("six==1.10.0")
+    (tmp_path_cwd / "src_file2.in").write_text("django==2.1")
 
-    with open("src_file2.in", "w") as req_in:
-        req_in.write("django==2.1")
-
-    out = runner.invoke(cli, ["src_file1.in", "src_file2.in"])
+    out = runner.pip_compile("src_file1.in src_file2.in", expect_exit_code=2)
 
     assert (
         "--output-file is required if two or more input files are given" in out.stderr
     )
-    assert out.exit_code == 2
 
 
 @pytest.mark.parametrize(
@@ -1654,22 +1569,19 @@ def test_multiple_input_files_without_output_file(runner):
         ),
     ),
 )
-def test_annotate_option(pip_conf, runner, options, expected):
+def test_annotate_option(pip_conf, runner, tmp_path_cwd, options, expected):
     """
     The output lines have annotations if the option is turned on.
     """
-    with open("constraints.txt", "w") as constraints_in:
-        constraints_in.write("small-fake-a==0.1")
-    with open("requirements.in", "w") as req_in:
-        req_in.write("-c constraints.txt\n")
-        req_in.write("small_fake_with_deps")
+    (tmp_path_cwd / "constraints.txt").write_text("small-fake-a==0.1")
+    (tmp_path_cwd / "requirements.in").write_text(
+        "-c constraints.txt\nsmall_fake_with_deps\n"
+    )
 
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [*options, "--output-file", "-", "--quiet", "--no-emit-options", "--no-header"],
     )
 
-    assert out.exit_code == 0, out
     assert out.stdout == dedent(expected)
 
 
@@ -1711,17 +1623,18 @@ def test_annotate_option(pip_conf, runner, options, expected):
         ),
     ),
 )
-def test_allow_unsafe_option(pip_conf, monkeypatch, runner, option, expected):
+def test_allow_unsafe_option(
+    pip_conf, monkeypatch, runner, tmp_path_cwd, option, expected
+):
     """
     Unsafe packages are printed as expected with and without --allow-unsafe.
     """
     monkeypatch.setattr("piptools.resolver.UNSAFE_PACKAGES", {"small-fake-with-deps"})
-    with open("requirements.in", "w") as req_in:
-        req_in.write("small-fake-b\n")
-        req_in.write("small-fake-with-deps")
+    (tmp_path_cwd / "requirements.in").write_text(
+        "small-fake-b\nsmall-fake-with-deps\n"
+    )
 
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--output-file",
             "-",
@@ -1733,7 +1646,6 @@ def test_allow_unsafe_option(pip_conf, monkeypatch, runner, option, expected):
         ],
     )
 
-    assert out.exit_code == 0, out
     assert out.stdout == expected
 
 
@@ -1762,14 +1674,13 @@ def test_allow_unsafe_option(pip_conf, monkeypatch, runner, option, expected):
         ),
     ),
 )
-def test_unsafe_package_option(pip_conf, monkeypatch, runner, unsafe_package, expected):
+def test_unsafe_package_option(
+    pip_conf, monkeypatch, runner, tmp_path_cwd, unsafe_package, expected
+):
     monkeypatch.setattr("piptools.resolver.UNSAFE_PACKAGES", {"small-fake-with-deps"})
-    with open("requirements.in", "w") as req_in:
-        req_in.write("small-fake-b\n")
-        req_in.write("small-fake-with-deps")
+    (tmp_path_cwd / "requirements.in").write_text("small-fake-b\nsmall-fake-with-deps")
 
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--output-file",
             "-",
@@ -1782,7 +1693,6 @@ def test_unsafe_package_option(pip_conf, monkeypatch, runner, unsafe_package, ex
         ],
     )
 
-    assert out.exit_code == 0, out
     assert out.stdout == expected
 
 
@@ -1794,11 +1704,13 @@ def test_unsafe_package_option(pip_conf, monkeypatch, runner, unsafe_package, ex
         pytest.param("Small_Fake_With_Deps", id="mixed-case"),
     ),
 )
-def test_unsafe_package_option_normalizes(pip_conf, runner, unsafe_package):
+def test_unsafe_package_option_normalizes(
+    pip_conf, runner, tmp_path_cwd, unsafe_package
+):
     """
     The --unsafe-package option should normalize package names.
     """
-    pathlib.Path("requirements.in").write_text(
+    (tmp_path_cwd / "requirements.in").write_text(
         dedent("""\
         small_fake_b
         small-fake-with-deps
@@ -1806,8 +1718,7 @@ def test_unsafe_package_option_normalizes(pip_conf, runner, unsafe_package):
         encoding="utf-8",
     )
 
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--output-file",
             "-",
@@ -1821,7 +1732,6 @@ def test_unsafe_package_option_normalizes(pip_conf, runner, unsafe_package):
         ],
     )
 
-    assert out.exit_code == 0, out
     assert out.stdout == dedent("""\
             small-fake-a==0.1
             small-fake-b==0.3
@@ -1836,17 +1746,16 @@ def test_unsafe_package_option_normalizes(pip_conf, runner, unsafe_package):
     (("--cert", "cert", "foo.crt"), ("--client-cert", "client_cert", "bar.pem")),
 )
 @mock.patch("piptools.scripts.compile.parse_requirements")
-def test_cert_option(parse_requirements, runner, option, attr, expected):
+def test_cert_option(parse_requirements, runner, tmp_path_cwd, option, attr, expected):
     """
     The options --cert and --client-cert have to be passed to the PyPIRepository.
     """
-    with open("requirements.in", "w"):
-        pass
+    (tmp_path_cwd / "requirements.in").touch()
 
-    runner.invoke(cli, [option, expected])
+    runner.pip_compile([option, expected])
 
     # Ensure the options in parse_requirements has the expected option
-    args, kwargs = parse_requirements.call_args
+    _args, kwargs = parse_requirements.call_args
     assert getattr(kwargs["options"], attr) == expected
 
 
@@ -1856,19 +1765,18 @@ def test_cert_option(parse_requirements, runner, option, attr, expected):
 )
 @mock.patch("piptools.scripts.compile.parse_requirements")
 def test_parse_requirements_build_isolation_option(
-    parse_requirements, runner, option, expected
+    parse_requirements, runner, tmp_path_cwd, option, expected
 ):
     """
     A value of the --build-isolation/--no-build-isolation flag
     must be passed to parse_requirements().
     """
-    with open("requirements.in", "w"):
-        pass
+    (tmp_path_cwd / "requirements.in").touch()
 
-    runner.invoke(cli, [option])
+    runner.pip_compile([option])
 
     # Ensure the options in parse_requirements has the expected build_isolation option
-    args, kwargs = parse_requirements.call_args
+    _args, kwargs = parse_requirements.call_args
     assert kwargs["options"].build_isolation is expected
 
 
@@ -1878,72 +1786,77 @@ def test_parse_requirements_build_isolation_option(
 )
 @mock.patch("piptools.scripts.compile.build_project_metadata")
 def test_build_project_metadata_isolation_option(
-    build_project_metadata, runner, option, expected
+    build_project_metadata, runner, tmp_path_cwd, option, expected
 ):
     """
     A value of the --build-isolation/--no-build-isolation flag
     must be passed to build_project_metadata().
     """
 
-    with open("setup.py", "w") as package:
-        package.write(dedent("""\
-                from setuptools import setup
-                setup(install_requires=[])
-                """))
+    (tmp_path_cwd / "setup.py").write_text(dedent("""\
+            from setuptools import setup
+            setup(install_requires=[])
+            """))
 
-    runner.invoke(cli, [option])
+    runner.pip_compile([option])
 
     # Ensure the options in build_project_metadata has the isolated kwarg
     _, kwargs = build_project_metadata.call_args
     assert kwargs["isolated"] is expected
 
 
-@mock.patch("piptools.scripts.compile.PyPIRepository")
-def test_uploaded_prior_to_option(PyPIRepository, runner):
+@pytest.mark.skipif(
+    _pip_api.PIP_VERSION_MAJOR_MINOR < (26, 0),
+    reason="pip v26.0+ is needed for --uploaded-prior-to support",
+)
+def test_uploaded_prior_to_option(runner, tmp_path_cwd):  # pragma: pip>=26.0 cover
     """
-    The --uploaded-prior-to option must be passed to PyPIRepository when pip >= 26.0.
+    The --uploaded-prior-to option must be passed to PyPIRepository.
     """
-    with open("requirements.in", "w"):
-        pass
+    (tmp_path_cwd / "requirements.in").touch()
 
     with (
         mock.patch.object(_pip_api, "PIP_VERSION_MAJOR_MINOR", (26, 0)),
         mock.patch.object(_pip_api, "PIP_VERSION", Version("26.0")),
+        mock.patch(
+            "piptools.scripts.compile.PyPIRepository", wraps=PyPIRepository
+        ) as mock_repo_type,
     ):
-        runner.invoke(cli, ["--uploaded-prior-to", "2025-01-01T00:00:00Z"])
+        runner.pip_compile(["--uploaded-prior-to", "2025-01-01T00:00:00Z"])
 
-    args, kwargs = PyPIRepository.call_args
+    args, _ = mock_repo_type.call_args
     assert "--uploaded-prior-to" in args[0]
     assert "2025-01-01T00:00:00Z" in args[0]
 
 
 @mock.patch("piptools.scripts.compile.PyPIRepository")
-def test_uploaded_prior_to_requires_pip_26(PyPIRepository, runner):
+def test_uploaded_prior_to_requires_pip_26(PyPIRepository, runner, tmp_path_cwd):
     """
     The --uploaded-prior-to option must raise an error when pip < 26.0.
     """
-    with open("requirements.in", "w"):
-        pass
+    (tmp_path_cwd / "requirements.in").touch()
 
     with mock.patch.object(_pip_api, "PIP_VERSION_MAJOR_MINOR", (25, 3)):
-        result = runner.invoke(cli, ["--uploaded-prior-to", "2025-01-01T00:00:00Z"])
+        result = runner.pip_compile(
+            ["--uploaded-prior-to", "2025-01-01T00:00:00Z"], expect_exit_code=2
+        )
 
-    assert result.exit_code != 0
     assert "requires pip >= 26.0" in result.stderr
 
 
-@mock.patch("piptools.scripts.compile.PyPIRepository")
-def test_forwarded_args(PyPIRepository, runner):
+def test_forwarded_args(runner, tmp_path_cwd):
     """
     Test the forwarded cli args (--pip-args 'arg...') are passed to the pip command.
     """
-    with open("requirements.in", "w"):
-        pass
+    (tmp_path_cwd / "requirements.in").touch()
 
     cli_args = ("--no-annotate", "--generate-hashes")
     pip_args = ("--no-color", "--isolated", "--disable-pip-version-check")
-    runner.invoke(cli, [*cli_args, "--pip-args", " ".join(pip_args)])
-    args, kwargs = PyPIRepository.call_args
+    with mock.patch(
+        "piptools.scripts.compile.PyPIRepository", wraps=PyPIRepository
+    ) as mock_repo_type:
+        runner.pip_compile([*cli_args, "--pip-args", " ".join(pip_args)])
+    args, _ = mock_repo_type.call_args
     assert set(pip_args).issubset(set(args[0]))
 
 
@@ -1954,24 +1867,24 @@ def test_forwarded_args(PyPIRepository, runner):
             ("--use-pep517", "--global-option=build_ext"),
             id="use-pep517 and global-option",
         ),
-        pytest.param(
-            ("--no-use-pep517", "--build-option=build_ext"),
-            id="no-use-pep517 and build-option",
-        ),
+        pytest.param(("--no-use-pep517",), id="no-use-pep517"),
     ),
 )
-@mock.patch("piptools.scripts.compile.PyPIRepository")
-def test_forwarded_args_filter_deprecated(PyPIRepository, runner, pip_args):
+def test_forwarded_args_filter_deprecated(runner, tmp_path_cwd, pip_args):
     """
-    Test the cli args (``--pip-args 'arg...'``) are filtered out if pip no longer supports them.
+    Test the cli args (``--pip-args 'arg...'``) are filtered out if pip no longer
+    supports them.
     """
-    pathlib.Path("requirements.in").write_text("", encoding="utf-8")
+    (tmp_path_cwd / "requirements.in").write_text("", encoding="utf-8")
 
     cli_args = ("--no-annotate", "--generate-hashes")
-    runner.invoke(cli, [*cli_args, "--pip-args", shlex.join(pip_args)])
+    with mock.patch(
+        "piptools.scripts.compile.PyPIRepository", wraps=PyPIRepository
+    ) as mock_repo_type:
+        runner.pip_compile([*cli_args, "--pip-args", shlex.join(pip_args)])
     pip_option_keys = {pip_arg.split("=")[0] for pip_arg in pip_args}
 
-    (first_posarg, *_tail_args), _kwargs = PyPIRepository.call_args
+    (first_posarg, *_tail_args), _kwargs = mock_repo_type.call_args
 
     if _pip_api.PIP_VERSION_MAJOR_MINOR >= (25, 3):  # pragma: pip>=25.3 cover
         assert set(first_posarg) ^ pip_option_keys
@@ -1990,20 +1903,20 @@ def test_forwarded_args_filter_deprecated(PyPIRepository, runner, pip_args):
         (True, True, "small-fake-a==0.3b1"),
     ),
 )
-def test_pre_option(pip_conf, runner, cli_option, infile_option, expected_package):
+def test_pre_option(
+    pip_conf, runner, tmp_path_cwd, cli_option, infile_option, expected_package
+):
     """
     Tests pip-compile respects --pre option.
     """
-    with open("requirements.in", "w") as req_in:
-        if infile_option:
-            req_in.write("--pre\n")
-        req_in.write("small-fake-a\n")
-
-    out = runner.invoke(
-        cli, ["--no-annotate", "-n"] + (["--pre"] if cli_option else [])
+    (tmp_path_cwd / "requirements.in").write_text(
+        ("--pre\n" if infile_option else "") + "small-fake-a\n"
     )
 
-    assert out.exit_code == 0, out.stderr
+    out = runner.pip_compile(
+        ["--no-annotate", "-n"] + (["--pre"] if cli_option else [])
+    )
+
     assert expected_package in out.stderr.splitlines(), out.stderr
 
 
@@ -2018,16 +1931,14 @@ def test_pre_option(pip_conf, runner, cli_option, infile_option, expected_packag
         ["--upgrade-package", "small-fake-a", "--output-file", "requirements.txt"],
     ),
 )
-def test_dry_run_option(pip_conf, runner, add_options):
+def test_dry_run_option(pip_conf, runner, tmp_path_cwd, add_options):
     """
     Tests pip-compile doesn't create requirements.txt file on dry-run.
     """
-    with open("requirements.in", "w") as req_in:
-        req_in.write("small-fake-a\n")
+    (tmp_path_cwd / "requirements.in").write_text("small-fake-a\n")
 
-    out = runner.invoke(cli, ["--no-annotate", "--dry-run", *add_options])
+    out = runner.pip_compile(["--no-annotate", "--dry-run", *add_options])
 
-    assert out.exit_code == 0, out.stderr
     assert "small-fake-a==0.2" in out.stderr.splitlines()
     assert not os.path.exists("requirements.txt")
 
@@ -2047,30 +1958,27 @@ def test_dry_run_option(pip_conf, runner, add_options):
     ),
 )
 def test_dry_run_doesnt_touch_output_file(
-    pip_conf, runner, add_options, expected_cli_output_package
+    pip_conf, runner, tmp_path_cwd, add_options, expected_cli_output_package
 ):
     """
     Tests pip-compile doesn't touch requirements.txt file on dry-run.
     """
-    with open("requirements.in", "w") as req_in:
-        req_in.write("small-fake-a\n")
+    (tmp_path_cwd / "requirements.in").write_text("small-fake-a\n")
+    requirements_txt = tmp_path_cwd / "requirements.txt"
+    requirements_txt.write_text("small-fake-a==0.1\n")
 
-    with open("requirements.txt", "w") as req_txt:
-        req_txt.write("small-fake-a==0.1\n")
+    before_compile_mtime = requirements_txt.stat().st_mtime
 
-    before_compile_mtime = os.stat("requirements.txt").st_mtime
+    out = runner.pip_compile(["--no-annotate", "--dry-run", *add_options])
 
-    out = runner.invoke(cli, ["--no-annotate", "--dry-run", *add_options])
-
-    assert out.exit_code == 0, out.stderr
     assert expected_cli_output_package in out.stderr.splitlines()
 
     # The package version must NOT be updated in the output file
-    with open("requirements.txt") as req_txt:
-        assert "small-fake-a==0.1" in req_txt.read().splitlines()
+    result = requirements_txt.read_text()
+    assert "small-fake-a==0.1" in result.splitlines()
 
     # The output file must not be touched
-    after_compile_mtime = os.stat("requirements.txt").st_mtime
+    after_compile_mtime = requirements_txt.stat().st_mtime
     assert after_compile_mtime == before_compile_mtime
 
 
@@ -2083,63 +1991,62 @@ def test_dry_run_doesnt_touch_output_file(
         ("# Nothing to see here", "small-fake-a==0.1\n"),
     ),
 )
-def test_empty_input_file_no_header(runner, empty_input_pkg, prior_output_pkg):
+def test_empty_input_file_no_header(
+    runner, tmp_path_cwd, empty_input_pkg, prior_output_pkg
+):
     """
     Tests pip-compile creates an empty requirements.txt file,
     given --no-header and empty requirements.in
     """
-    with open("requirements.in", "w") as req_in:
-        req_in.write(empty_input_pkg)  # empty input file
+    (tmp_path_cwd / "requirements.in").write_text(empty_input_pkg)
+    (tmp_path_cwd / "requirements.txt").write_text(prior_output_pkg)
 
-    with open("requirements.txt", "w") as req_txt:
-        req_txt.write(prior_output_pkg)
+    runner.pip_compile("--no-header requirements.in")
 
-    runner.invoke(cli, ["--no-header", "requirements.in"])
-
-    with open("requirements.txt") as req_txt:
-        assert req_txt.read().strip() == ""
+    result = (tmp_path_cwd / "requirements.txt").read_text()
+    assert result.strip() == ""
 
 
-def test_upgrade_package_doesnt_remove_annotation(pip_conf, runner):
+def test_upgrade_package_doesnt_remove_annotation(pip_conf, runner, tmp_path_cwd):
     """
     Tests pip-compile --upgrade-package shouldn't remove "via" annotation.
     See: GH-929
     """
-    with open("requirements.in", "w") as req_in:
-        req_in.write("small-fake-with-deps\n")
+    (tmp_path_cwd / "requirements.in").write_text("small-fake-with-deps\n")
 
-    runner.invoke(cli)
+    runner.pip_compile()
 
     # Downgrade small-fake-a to 0.1
-    with open("requirements.txt", "w") as req_txt:
-        req_txt.write(
-            "small-fake-with-deps==0.1\n"
-            "small-fake-a==0.1         # via small-fake-with-deps\n"
-        )
+    (tmp_path_cwd / "requirements.txt").write_text(
+        "small-fake-with-deps==0.1\n"
+        "small-fake-a==0.1         # via small-fake-with-deps\n"
+    )
 
-    runner.invoke(cli, ["-P", "small-fake-a", "--no-emit-options", "--no-header"])
-    with open("requirements.txt") as req_txt:
-        assert req_txt.read() == dedent("""\
-            small-fake-a==0.1
-                # via small-fake-with-deps
-            small-fake-with-deps==0.1
-                # via -r requirements.in
-            """)
+    runner.pip_compile("-P small-fake-a --no-emit-options --no-header")
+
+    result = (tmp_path_cwd / "requirements.txt").read_text()
+    assert result == dedent("""\
+        small-fake-a==0.1
+            # via small-fake-with-deps
+        small-fake-with-deps==0.1
+            # via -r requirements.in
+        """)
 
 
 @pytest.mark.parametrize(("num_inputs"), (2, 3, 10))
-def test_many_inputs_includes_all_annotations(pip_conf, runner, tmp_path, num_inputs):
+def test_many_inputs_includes_all_annotations(
+    pip_conf, runner, tmp_path_cwd, num_inputs
+):
     """
     Tests that an entry required by multiple input files is attributed to all of them in the
     annotation.
     See: https://github.com/jazzband/pip-tools/issues/1853
     """
-    req_ins = [tmp_path / f"requirements{n:02d}.in" for n in range(num_inputs)]
+    req_ins = [tmp_path_cwd / f"requirements{n:02d}.in" for n in range(num_inputs)]
     for req_in in req_ins:
         req_in.write_text("small-fake-a==0.1\n")
 
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--output-file",
             "-",
@@ -2149,7 +2056,6 @@ def test_many_inputs_includes_all_annotations(pip_conf, runner, tmp_path, num_in
         ]
         + [str(r) for r in req_ins],
     )
-    assert out.exit_code == 0, out.stderr
     assert (
         out.stdout
         == "\n".join(
@@ -2174,18 +2080,16 @@ def test_many_inputs_includes_all_annotations(pip_conf, runner, tmp_path, num_in
         "--only-binary :all:",
     ),
 )
-def test_options_in_requirements_file(runner, options):
+def test_options_in_requirements_file(runner, tmp_path_cwd, options):
     """
     Test the options from requirements.in is copied to requirements.txt.
     """
-    with open("requirements.in", "w") as reqs_in:
-        reqs_in.write(options)
+    (tmp_path_cwd / "requirements.in").write_text(options)
 
-    out = runner.invoke(cli)
-    assert out.exit_code == 0, out
+    runner.pip_compile()
 
-    with open("requirements.txt") as reqs_txt:
-        assert options in reqs_txt.read().splitlines()
+    result = (tmp_path_cwd / "requirements.txt").read_text()
+    assert options in result.splitlines()
 
 
 @pytest.mark.parametrize(
@@ -2209,16 +2113,13 @@ def test_options_in_requirements_file(runner, options):
     ),
 )
 @legacy_resolver_only
-def test_unreachable_index_urls(runner, cli_options, expected_message):
+def test_unreachable_index_urls(runner, tmp_path_cwd, cli_options, expected_message):
     """
     Test pip-compile raises an error if index URLs are not reachable.
     """
-    with open("requirements.in", "w") as reqs_in:
-        reqs_in.write("some-package")
+    (tmp_path_cwd / "requirements.in").write_text("some-package")
 
-    out = runner.invoke(cli, cli_options)
-
-    assert out.exit_code == 2, out
+    out = runner.pip_compile(cli_options, expect_exit_code=2)
 
     stderr_lines = out.stderr.splitlines()
     assert "No versions found" in stderr_lines
@@ -2234,23 +2135,27 @@ def test_unreachable_index_urls(runner, cli_options, expected_message):
     ),
 )
 def test_upgrade_packages_option_subdependency(
-    pip_conf, runner, current_package, upgraded_package, subdep_already_pinned
+    pip_conf,
+    runner,
+    tmp_path_cwd,
+    current_package,
+    upgraded_package,
+    subdep_already_pinned,
 ):
     """
     Test that pip-compile --upgrade-package/-P upgrades/downgrades subdependencies.
     """
 
-    with open("requirements.in", "w") as reqs:
-        reqs.write("small-fake-with-unpinned-deps\n")
+    (tmp_path_cwd / "requirements.in").write_text("small-fake-with-unpinned-deps\n")
 
-    with open("requirements.txt", "w") as reqs:
-        reqs.write("small-fake-a==0.1\n")
-        if subdep_already_pinned:
-            reqs.write(current_package + "\n")
-        reqs.write("small-fake-with-unpinned-deps==0.1\n")
+    (tmp_path_cwd / "requirements.txt").write_text(
+        "small-fake-a==0.1\n"
+        + (current_package + "\n" if subdep_already_pinned else "")
+        + "small-fake-with-unpinned-deps==0.1\n"
+    )
 
-    out = runner.invoke(
-        cli, ["--no-annotate", "--dry-run", "--upgrade-package", upgraded_package]
+    out = runner.pip_compile(
+        ["--no-annotate", "--dry-run", "--upgrade-package", upgraded_package]
     )
 
     stderr_lines = out.stderr.splitlines()
@@ -2300,36 +2205,30 @@ def test_upgrade_packages_option_subdependency(
         ),
     ),
 )
-def test_remove_outdated_options(runner, input_opts, output_opts):
+def test_remove_outdated_options(runner, tmp_path_cwd, input_opts, output_opts):
     """
     Test that the options from the current requirements.txt wouldn't stay
     after compile if they were removed from requirements.in file.
     """
-    with open("requirements.in", "w") as req_in:
-        req_in.write(input_opts)
-    with open("requirements.txt", "w") as req_txt:
-        req_txt.write(output_opts)
+    (tmp_path_cwd / "requirements.in").write_text(input_opts)
+    (tmp_path_cwd / "requirements.txt").write_text(output_opts)
 
-    out = runner.invoke(cli, ["--output-file", "-", "--quiet", "--no-header"])
+    out = runner.pip_compile(["--output-file", "-", "--quiet", "--no-header"])
 
-    assert out.exit_code == 0, out
     assert out.stdout.strip() == input_opts
 
 
-def test_sub_dependencies_with_constraints(pip_conf, runner):
+def test_sub_dependencies_with_constraints(pip_conf, runner, tmp_path_cwd):
     # Write constraints file
-    with open("constraints.txt", "w") as constraints_in:
-        constraints_in.write("small-fake-a==0.1\n")
-        constraints_in.write("small-fake-b==0.2\n")
-        constraints_in.write("small-fake-with-unpinned-deps==0.1")
+    (tmp_path_cwd / "constraints.txt").write_text(
+        "small-fake-a==0.1\nsmall-fake-b==0.2\nsmall-fake-with-unpinned-deps==0.1"
+    )
 
-    with open("requirements.in", "w") as req_in:
-        req_in.write("-c constraints.txt\n")
-        req_in.write("small_fake_with_deps_and_sub_deps")  # require fake package
+    (tmp_path_cwd / "requirements.in").write_text(
+        "-c constraints.txt\nsmall_fake_with_deps_and_sub_deps"
+    )
 
-    out = runner.invoke(cli, ["--no-annotate"])
-
-    assert out.exit_code == 0
+    out = runner.pip_compile("--no-annotate")
 
     req_out_lines = set(out.stderr.splitlines())
     assert {
@@ -2340,30 +2239,24 @@ def test_sub_dependencies_with_constraints(pip_conf, runner):
     }.issubset(req_out_lines)
 
 
-def test_preserve_compiled_prerelease_version(pip_conf, runner):
-    with open("requirements.in", "w") as req_in:
-        req_in.write("small-fake-a")
+def test_preserve_compiled_prerelease_version(pip_conf, runner, tmp_path_cwd):
+    (tmp_path_cwd / "requirements.in").write_text("small-fake-a")
+    (tmp_path_cwd / "requirements.txt").write_text("small-fake-a==0.3b1")
 
-    with open("requirements.txt", "w") as req_txt:
-        req_txt.write("small-fake-a==0.3b1")
+    out = runner.pip_compile("--no-annotate --no-header")
 
-    out = runner.invoke(cli, ["--no-annotate", "--no-header"])
-
-    assert out.exit_code == 0, out
     assert "small-fake-a==0.3b1" in out.stderr.splitlines()
 
 
 @backtracking_resolver_only
-def test_ignore_compiled_unavailable_version(pip_conf, runner, current_resolver):
-    with open("requirements.in", "w") as req_in:
-        req_in.write("small-fake-a")
+def test_ignore_compiled_unavailable_version(
+    pip_conf, runner, tmp_path_cwd, current_resolver
+):
+    (tmp_path_cwd / "requirements.in").write_text("small-fake-a")
+    (tmp_path_cwd / "requirements.txt").write_text("small-fake-a==9999")
 
-    with open("requirements.txt", "w") as req_txt:
-        req_txt.write("small-fake-a==9999")
+    out = runner.pip_compile("--no-annotate --no-header")
 
-    out = runner.invoke(cli, ["--no-annotate", "--no-header"])
-
-    assert out.exit_code == 0, out
     assert "small-fake-a==" in out.stderr
     assert "small-fake-a==9999" not in out.stderr.splitlines()
 
@@ -2375,13 +2268,13 @@ def test_ignore_compiled_unavailable_version(pip_conf, runner, current_resolver)
 
 
 def test_prefer_binary_dist(
-    pip_conf, make_package, make_sdist, make_wheel, tmp_path, runner
+    pip_conf, make_package, make_sdist, make_wheel, tmp_path_cwd, runner
 ):
     """
     Test pip-compile chooses a correct version of a package with
     a binary distribution when PIP_PREFER_BINARY environment variable is on.
     """
-    dists_dir = tmp_path / "dists"
+    dists_dir = tmp_path_cwd / "dists"
 
     # Make first-package==1.0 and wheels
     first_package_v1 = make_package(name="first-package", version="1.0")
@@ -2397,23 +2290,20 @@ def test_prefer_binary_dist(
     )
     make_wheel(second_package_v1, dists_dir)
 
-    with open("requirements.in", "w") as req_in:
-        req_in.write("second-package")
+    (tmp_path_cwd / "requirements.in").write_text("second-package")
 
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         ["--no-annotate", "--find-links", str(dists_dir)],
         env={"PIP_PREFER_BINARY": "1"},
     )
 
-    assert out.exit_code == 0, out
     assert "first-package==1.0" in out.stderr.splitlines(), out.stderr
     assert "second-package==1.0" in out.stderr.splitlines(), out.stderr
 
 
 @pytest.mark.parametrize("prefer_binary", (True, False))
 def test_prefer_binary_dist_even_there_is_source_dists(
-    pip_conf, make_package, make_sdist, make_wheel, tmp_path, runner, prefer_binary
+    pip_conf, make_package, make_sdist, make_wheel, tmp_path_cwd, runner, prefer_binary
 ):
     """
     Test pip-compile chooses a correct version of a package with a binary distribution
@@ -2422,7 +2312,7 @@ def test_prefer_binary_dist_even_there_is_source_dists(
 
     Regression test for issue GH-1118.
     """
-    dists_dir = tmp_path / "dists"
+    dists_dir = tmp_path_cwd / "dists"
 
     # Make first version of package with only wheels
     package_v1 = make_package(name="test-package", version="1.0")
@@ -2433,22 +2323,19 @@ def test_prefer_binary_dist_even_there_is_source_dists(
     make_wheel(package_v2, dists_dir)
     make_sdist(package_v2, dists_dir)
 
-    with open("requirements.in", "w") as req_in:
-        req_in.write("test-package")
+    (tmp_path_cwd / "requirements.in").write_text("test-package")
 
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         ["--no-annotate", "--find-links", str(dists_dir)],
         env={"PIP_PREFER_BINARY": str(int(prefer_binary))},
     )
 
-    assert out.exit_code == 0, out
     assert "test-package==2.0" in out.stderr.splitlines(), out.stderr
 
 
 @pytest.mark.parametrize("output_content", ("test-package-1==0.1", ""))
 def test_duplicate_reqs_combined(
-    pip_conf, make_package, make_sdist, tmp_path, runner, output_content
+    pip_conf, make_package, make_sdist, tmp_path_cwd, runner, output_content
 ):
     """
     Test pip-compile tracks dependencies properly when install requirements are
@@ -2461,27 +2348,24 @@ def test_duplicate_reqs_combined(
         "test_package_2", version="0.1", install_requires=["test-package-1"]
     )
 
-    dists_dir = tmp_path / "dists"
+    dists_dir = tmp_path_cwd / "dists"
 
     for pkg in (test_package_1, test_package_2):
         make_sdist(pkg, dists_dir)
 
-    with open("requirements.in", "w") as reqs_in:
-        reqs_in.write(f"file:{test_package_2}\n")
-        reqs_in.write(f"file:{test_package_2}#egg=test-package-2\n")
-
+    (tmp_path_cwd / "requirements.in").write_text(
+        f"file:{test_package_2}\nfile:{test_package_2}#egg=test-package-2\n"
+    )
     if output_content:
-        with open("requirements.txt", "w") as reqs_out:
-            reqs_out.write(output_content)
+        (tmp_path_cwd / "requirements.txt").write_text(output_content)
 
-    out = runner.invoke(cli, ["--find-links", str(dists_dir)])
+    out = runner.pip_compile(["--find-links", str(dists_dir)])
 
-    assert out.exit_code == 0, out
     assert str(test_package_2) in out.stderr
     assert "test-package-1==0.1" in out.stderr
 
 
-def test_local_duplicate_subdependency_combined(runner, make_package):
+def test_local_duplicate_subdependency_combined(runner, tmp_path_cwd, make_package):
     """
     Test pip-compile tracks subdependencies properly when install requirements
     are combined, especially when local paths are passed as urls, and those reqs
@@ -2492,24 +2376,20 @@ def test_local_duplicate_subdependency_combined(runner, make_package):
     package_a = make_package("project-a", install_requires=["pip-tools==6.3.0"])
     package_b = make_package("project-b", install_requires=["project-a"])
 
-    with open("requirements.in", "w") as req_in:
-        req_in.writelines(
-            [
-                f"{path_to_url(str(package_a))}#egg=project-a\n",
-                f"{path_to_url(str(package_b))}#egg=project-b",
-            ]
-        )
+    (tmp_path_cwd / "requirements.in").write_text(
+        f"{path_to_url(str(package_a))}#egg=project-a\n"
+        f"{path_to_url(str(package_b))}#egg=project-b"
+    )
 
-    out = runner.invoke(cli, ["-n"])
+    out = runner.pip_compile("-n")
 
-    assert out.exit_code == 0
     assert "project-b" in out.stderr
     assert "project-a" in out.stderr
     assert "pip-tools==6.3.0" in out.stderr
     assert "click" in out.stderr  # dependency of pip-tools
 
 
-def test_combine_extras(pip_conf, runner, make_package):
+def test_combine_extras(pip_conf, runner, tmp_path_cwd, make_package):
     """
     Ensure that multiple declarations of a dependency that specify different
     extras produces a requirement for that package with the union of the extras
@@ -2522,27 +2402,23 @@ def test_combine_extras(pip_conf, runner, make_package):
         },
     )
 
-    with open("requirements.in", "w") as req_in:
-        req_in.writelines(
-            [
-                "-r ./requirements-second.in\n",
-                f"{package_with_extras}[extra1]",
-            ]
-        )
+    (tmp_path_cwd / "requirements.in").write_text(
+        f"-r ./requirements-second.in\n{package_with_extras}[extra1]"
+    )
 
-    with open("requirements-second.in", "w") as req_sec_in:
-        req_sec_in.write(f"{package_with_extras}[extra2]")
+    (tmp_path_cwd / "requirements-second.in").write_text(
+        f"{package_with_extras}[extra2]"
+    )
 
-    out = runner.invoke(cli, ["-n"])
+    out = runner.pip_compile("-n")
 
-    assert out.exit_code == 0
     assert "package-with-extras" in out.stderr
     assert "small-fake-a==" in out.stderr
     assert "small-fake-b==" in out.stderr
 
 
 def test_combine_different_extras_of_the_same_package(
-    pip_conf, runner, tmp_path, make_package, make_wheel
+    pip_conf, runner, tmp_path_cwd, make_package, make_wheel
 ):
     """
     Loosely based on the example from https://github.com/jazzband/pip-tools/issues/1511.
@@ -2573,20 +2449,15 @@ def test_combine_different_extras_of_the_same_package(
         ),
     ]
 
-    dists_dir = tmp_path / "dists"
+    dists_dir = tmp_path_cwd / "dists"
     for pkg in pkgs:
         make_wheel(pkg, dists_dir)
 
-    with open("requirements.in", "w") as req_in:
-        req_in.writelines(
-            [
-                "fake-ray[default]==0.1\n",
-                "fake-tune-sklearn==0.7\n",
-            ]
-        )
+    (tmp_path_cwd / "requirements.in").write_text(
+        "fake-ray[default]==0.1\nfake-tune-sklearn==0.7\n"
+    )
 
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--output-file",
             "-",
@@ -2597,7 +2468,6 @@ def test_combine_different_extras_of_the_same_package(
             "--no-emit-options",
         ],
     )
-    assert out.exit_code == 0
     assert dedent("""\
         fake-colorful==0.3
             # via fake-ray
@@ -2612,7 +2482,7 @@ def test_combine_different_extras_of_the_same_package(
         """) == out.stdout
 
 
-def test_canonicalize_extras(pip_conf, runner, tmp_path, make_package, make_wheel):
+def test_canonicalize_extras(pip_conf, runner, tmp_path_cwd, make_package, make_wheel):
     """
     Ensure extras are written in a consistent format.
     """
@@ -2628,15 +2498,15 @@ def test_canonicalize_extras(pip_conf, runner, tmp_path, make_package, make_whee
         ),
     ]
 
-    dists_dir = tmp_path / "dists"
+    dists_dir = tmp_path_cwd / "dists"
     for pkg in pkgs:
         make_wheel(pkg, dists_dir)
 
-    with open("requirements.in", "w") as req_in:
-        req_in.write("fake-sqlalchemy[FAKE_postgresql-psycopg2binary]\n")
+    (tmp_path_cwd / "requirements.in").write_text(
+        "fake-sqlalchemy[FAKE_postgresql-psycopg2binary]\n"
+    )
 
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--output-file",
             "-",
@@ -2648,7 +2518,6 @@ def test_canonicalize_extras(pip_conf, runner, tmp_path, make_package, make_whee
             "--no-strip-extras",
         ],
     )
-    assert out.exit_code == 0
     assert (
         "fake-sqlalchemy[fake-postgresql-psycopg2binary]==0.1"
         in out.stdout.splitlines()
@@ -2694,7 +2563,7 @@ def test_triple_equal_pinned_dependency_is_used(
     runner,
     make_package,
     make_wheel,
-    tmp_path,
+    tmp_path_cwd,
     pkg2_install_requires,
     req_in_content,
     out_expected_content,
@@ -2705,7 +2574,7 @@ def test_triple_equal_pinned_dependency_is_used(
     patches (e.g. torch 1.7.1+cu110), we want torch===1.7.1 without patches
     """
 
-    dists_dir = tmp_path / "dists"
+    dists_dir = tmp_path_cwd / "dists"
 
     test_package_1 = make_package("test_package_1", version="0.1.0")
     make_wheel(test_package_1, dists_dir)
@@ -2715,13 +2584,10 @@ def test_triple_equal_pinned_dependency_is_used(
     )
     make_wheel(test_package_2, dists_dir)
 
-    with open("requirements.in", "w") as reqs_in:
-        for line in req_in_content:
-            reqs_in.write(line)
+    (tmp_path_cwd / "requirements.in").write_text("\n".join(req_in_content) + "\n")
 
-    out = runner.invoke(cli, ["--find-links", str(dists_dir)])
+    out = runner.pip_compile(["--find-links", str(dists_dir)])
 
-    assert out.exit_code == 0, out
     for line in out_expected_content:
         assert line in out.stderr
 
@@ -2821,8 +2687,7 @@ def test_not_specified_input_file(
     """
     meta_path = make_module(fname=fname, content=content)
     monkeypatch.chdir(os.path.dirname(meta_path))
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--output-file",
             "-",
@@ -2836,7 +2701,6 @@ def test_not_specified_input_file(
     )
     monkeypatch.undo()
 
-    assert out.exit_code == 0, out.stderr
     assert "small-fake-a==0.1\n" == out.stdout
 
 
@@ -2845,8 +2709,7 @@ def test_not_specified_input_file_without_allowed_files(runner):
     It should raise an error if there are no input files or default input files
     such as "setup.py" or "requirements.in".
     """
-    out = runner.invoke(cli)
-    assert out.exit_code == 2
+    out = runner.pip_compile(expect_exit_code=2)
     expected_error = (
         "Error: Invalid value: If you do not specify an input file, the default "
         "is one of: requirements.in, setup.py, pyproject.toml, setup.cfg"
@@ -2861,10 +2724,9 @@ def test_input_formats(fake_dists, runner, make_module, fname, content):
     Test different dependency formats as input file.
     """
     meta_path = make_module(fname=fname, content=content)
-    out = runner.invoke(
-        cli, ["-n", "--no-build-isolation", "--find-links", fake_dists, meta_path]
+    out = runner.pip_compile(
+        ["-n", "--no-build-isolation", "--find-links", fake_dists, meta_path]
     )
-    assert out.exit_code == 0, out.stderr
     assert "small-fake-a==0.1" in out.stderr
     assert "small-fake-b" not in out.stderr
     assert "small-fake-c" not in out.stderr
@@ -2893,9 +2755,8 @@ def test_error_in_pyproject_toml(
         ["-n", "--no-build-isolation", "--find-links", fake_dists, meta_path]
     )
 
-    out = runner.invoke(cli, options)
+    runner.pip_compile(options, expect_exit_code=2)
 
-    assert out.exit_code == 2, out.stderr
     captured = capfd.readouterr()
 
     assert (
@@ -2910,8 +2771,7 @@ def test_one_extra(fake_dists, runner, make_module, fname, content):
     Test one ``--extra`` (dev) passed, other extras (test) must be ignored.
     """
     meta_path = make_module(fname=fname, content=content)
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "-n",
             "--extra",
@@ -2922,7 +2782,6 @@ def test_one_extra(fake_dists, runner, make_module, fname, content):
             meta_path,
         ],
     )
-    assert out.exit_code == 0, out.stderr
     assert "small-fake-a==0.1" in out.stderr
     assert "small-fake-b==0.2" in out.stderr
     assert "extra ==" not in out.stderr
@@ -2942,8 +2801,7 @@ def test_multiple_extras(fake_dists, runner, make_module, fname, content, extra_
     Test passing multiple ``--extra`` params.
     """
     meta_path = make_module(fname=fname, content=content)
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "-n",
             *extra_opts,
@@ -2953,7 +2811,6 @@ def test_multiple_extras(fake_dists, runner, make_module, fname, content, extra_
             meta_path,
         ],
     )
-    assert out.exit_code == 0, out.stderr
     assert "small-fake-a==0.1" in out.stderr
     assert "small-fake-b==0.2" in out.stderr
     assert "extra ==" not in out.stderr
@@ -2966,8 +2823,7 @@ def test_all_extras(fake_dists, runner, make_module, fname, content):
     Test passing ``--all-extras`` includes all applicable extras.
     """
     meta_path = make_module(fname=fname, content=content)
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--output-file",
             "-",
@@ -2982,7 +2838,6 @@ def test_all_extras(fake_dists, runner, make_module, fname, content):
             meta_path,
         ],
     )
-    assert out.exit_code == 0, out
     assert dedent("""\
             small-fake-a==0.1
             small-fake-b==0.2
@@ -2997,8 +2852,7 @@ def test_all_extras_fail_with_extra(fake_dists, runner, make_module, fname, cont
     Test that passing ``--all-extras`` and ``--extra`` fails.
     """
     meta_path = make_module(fname=fname, content=content)
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "-n",
             "--all-extras",
@@ -3012,8 +2866,8 @@ def test_all_extras_fail_with_extra(fake_dists, runner, make_module, fname, cont
             "--no-build-isolation",
             meta_path,
         ],
+        expect_exit_code=2,
     )
-    assert out.exit_code == 2
     exp = "--extra has no effect when used with --all-extras"
     assert exp in out.stderr
 
@@ -3021,7 +2875,7 @@ def test_all_extras_fail_with_extra(fake_dists, runner, make_module, fname, cont
 def _mock_resolver_cls(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     obj = MagicMock()
     obj.resolve = MagicMock(return_value=set())
-    obj.resolve_hashes = MagicMock(return_value=dict())
+    obj.resolve_hashes = MagicMock(return_value={})
     cls = MagicMock(return_value=obj)
 
     monkeypatch.setattr("piptools.scripts.compile.BacktrackingResolver", cls)
@@ -3063,10 +2917,9 @@ def test_all_extras_and_all_build_deps(
     # When used as argument to the runner it is not passed to pip
     monkeypatch.setenv("PIP_FIND_LINKS", fake_dists_with_build_deps)
 
-    with runner.isolated_filesystem(tmp_path) as tmp_pkg_path:
+    with runner.click_runner.isolated_filesystem(tmp_path) as tmp_pkg_path:
         shutil.copytree(src_pkg_path, tmp_pkg_path, dirs_exist_ok=True)
-        out = runner.invoke(
-            cli,
+        out = runner.pip_compile(
             [
                 "--allow-unsafe",
                 "--output-file",
@@ -3079,7 +2932,6 @@ def test_all_extras_and_all_build_deps(
             ],
         )
 
-    assert out.exit_code == 0
     # Note that the build dependencies of our build dependencies are not resolved.
     # This means that if our build dependencies are not available as wheels then we will not get
     # reproducible results.
@@ -3127,14 +2979,12 @@ def test_all_build_deps(runner, tmp_path, monkeypatch):
     src_file = tmp_path / "pyproject.toml"
     src_file.touch()
 
-    out = runner.invoke(
-        cli,
+    runner.pip_compile(
         [
             "--all-build-deps",
             os.fspath(src_file),
         ],
     )
-    assert out.exit_code == 0
     assert func.call_args.kwargs["build_targets"] == (
         "editable",
         "sdist",
@@ -3153,16 +3003,25 @@ def test_only_build_deps(runner, tmp_path, monkeypatch):
     src_file = tmp_path / "pyproject.toml"
     src_file.touch()
 
-    out = runner.invoke(
-        cli,
+    runner.pip_compile(
         [
             "--all-build-deps",
             "--only-build-deps",
             os.fspath(src_file),
         ],
     )
-    assert out.exit_code == 0
     assert [c.name for c in cls.call_args.kwargs["constraints"]] == ["bdep0"]
+
+
+@backtracking_resolver_only
+def test_compile_command_captures_pip_tools_errors(runner, tmp_path_cwd, monkeypatch):
+    (tmp_path_cwd / "requirements.in").touch()
+
+    cls = _mock_resolver_cls(monkeypatch)
+    cls.return_value.resolve.side_effect = PipToolsError("improper usage detected")
+
+    out = runner.pip_compile(expect_exit_code=2)
+    assert "improper usage detected" in out.stderr
 
 
 @backtracking_resolver_only
@@ -3170,16 +3029,15 @@ def test_all_build_deps_fail_with_build_target(runner):
     """
     Test that passing ``--all-build-deps`` and ``--build-deps-for`` fails.
     """
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--all-build-deps",
             "--build-deps-for",
             "sdist",
         ],
+        expect_exit_code=2,
     )
     exp = "--build-deps-for has no effect when used with --all-build-deps"
-    assert out.exit_code == 2
     assert exp in out.stderr
 
 
@@ -3189,12 +3047,11 @@ def test_only_build_deps_fails_without_any_build_deps(runner):
     Test that passing ``--only-build-deps`` fails when it is not specified how build deps should
     be gathered.
     """
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         ["--only-build-deps"],
+        expect_exit_code=2,
     )
     exp = "--only-build-deps requires either --build-deps-for or --all-build-deps"
-    assert out.exit_code == 2
     assert exp in out.stderr
 
 
@@ -3204,16 +3061,15 @@ def test_only_build_deps_fails_with_conflicting_options(runner, option):
     """
     Test that passing ``--all-build-deps`` and conflicting option fails.
     """
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--all-build-deps",
             "--only-build-deps",
             option,
         ],
+        expect_exit_code=2,
     )
     exp = "--only-build-deps cannot be used with any of --extra, --all-extras"
-    assert out.exit_code == 2
     assert exp in out.stderr
 
 
@@ -3226,12 +3082,11 @@ def test_build_deps_fail_without_setup_file(runner, tmp_path, option):
     """
     path = tmp_path / "requirements.in"
     path.write_text("\n")
-    out = runner.invoke(cli, ["-n", option, os.fspath(path)])
+    out = runner.pip_compile(["-n", option, os.fspath(path)], expect_exit_code=2)
     exp = (
         "--build-deps-for and --all-build-deps can be used only with the "
         "setup.py, setup.cfg and pyproject.toml specs."
     )
-    assert out.exit_code == 2
     assert exp in out.stderr
 
 
@@ -3241,13 +3096,14 @@ def test_extras_fail_with_requirements_in(runner, tmp_path):
     """
     path = tmp_path / "requirements.in"
     path.write_text("\n")
-    out = runner.invoke(cli, ["-n", "--extra", "something", os.fspath(path)])
-    assert out.exit_code == 2
+    out = runner.pip_compile(
+        ["-n", "--extra", "something", os.fspath(path)], expect_exit_code=2
+    )
     exp = "--extra has effect only with setup.py and PEP-517 input formats"
     assert exp in out.stderr
 
 
-def test_cli_compile_strip_extras(runner, make_package, make_sdist, tmp_path):
+def test_cli_compile_strip_extras(runner, make_package, make_sdist, tmp_path_cwd):
     """
     Assures that ``--strip-extras`` removes mention of extras from output.
     """
@@ -3258,17 +3114,15 @@ def test_cli_compile_strip_extras(runner, make_package, make_sdist, tmp_path):
         "test_package_2",
         version="0.1",
     )
-    dists_dir = tmp_path / "dists"
+    dists_dir = tmp_path_cwd / "dists"
 
     for pkg in (test_package_1, test_package_2):
         make_sdist(pkg, dists_dir)
 
-    with open("requirements.in", "w") as reqs_out:
-        reqs_out.write("test_package_1[more]")
+    (tmp_path_cwd / "requirements.in").write_text("test_package_1[more]")
 
-    out = runner.invoke(cli, ["--strip-extras", "--find-links", str(dists_dir)])
+    out = runner.pip_compile(["--strip-extras", "--find-links", str(dists_dir)])
 
-    assert out.exit_code == 0, out
     assert "test-package-2==0.1" in out.stderr
     assert "[more]" not in out.stderr
 
@@ -3290,8 +3144,7 @@ def test_cli_compile_all_extras_with_multiple_packages(
         extras_require={"more": []},
     )
 
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--all-extras",
             "--output-file",
@@ -3301,7 +3154,6 @@ def test_cli_compile_all_extras_with_multiple_packages(
         ],
     )
 
-    assert out.exit_code == 0, out
     assert "--all-extras" in out.stderr
     assert f"test_package_1{os.path.sep}0.1{os.path.sep}setup.py" in out.stderr
     assert f"test_package_2{os.path.sep}0.1{os.path.sep}setup.py" in out.stderr
@@ -3404,7 +3256,7 @@ def test_resolver_drops_existing_conflicting_constraint(
     runner,
     make_package,
     make_sdist,
-    tmp_path,
+    tmp_path_cwd,
     package_specs,
     constraints,
     existing_reqs,
@@ -3419,75 +3271,75 @@ def test_resolver_drops_existing_conflicting_constraint(
     or not (cf. `issue #1977 <https://github.com/jazzband/pip-tools/issues/1977>`_).
     """
     expected_requirements = {line.strip() for line in expected_reqs.splitlines()}
-    dists_dir = tmp_path / "dists"
+    dists_dir = tmp_path_cwd / "dists"
 
     packages = [make_package(**spec) for spec in package_specs]
     for pkg in packages:
         make_sdist(pkg, dists_dir)
 
-    with open("requirements.txt", "w") as existing_reqs_out:
-        existing_reqs_out.write(dedent(existing_reqs))
+    (tmp_path_cwd / "requirements.in").write_text(dedent(constraints))
+    (tmp_path_cwd / "requirements.txt").write_text(dedent(existing_reqs))
 
-    with open("requirements.in", "w") as constraints_out:
-        constraints_out.write(dedent(constraints))
+    runner.pip_compile(["--strip-extras", "--find-links", str(dists_dir)])
 
-    out = runner.invoke(cli, ["--strip-extras", "--find-links", str(dists_dir)])
-
-    assert out.exit_code == 0, out
-
-    with open("requirements.txt") as req_txt:
-        req_txt_content = req_txt.read()
-        assert expected_requirements.issubset(req_txt_content.splitlines())
+    req_txt_content = (tmp_path_cwd / "requirements.txt").read_text()
+    assert expected_requirements.issubset(req_txt_content.splitlines())
 
 
-def test_resolution_failure(runner):
+def test_resolution_failure(current_resolver, runner, tmp_path_cwd):
     """Test resolution impossible for unknown package."""
-    with open("requirements.in", "w") as reqs_out:
-        reqs_out.write("unknown-package")
+    (tmp_path_cwd / "requirements.in").write_text("unknown-package")
 
-    out = runner.invoke(cli)
+    out = runner.pip_compile(
+        expect_exit_code=(2 if current_resolver == "legacy" else 1),
+        catch_exceptions=True,
+    )
+    if current_resolver == "backtracking":
+        msg = "Could not find a version that satisfies the requirement unknown-package"
+    else:
+        msg = "Could not find a version that matches unknown-package"
+    assert msg in out.stderr
 
-    assert out.exit_code != 0, out
 
-
-def test_resolver_reaches_max_rounds(runner):
+def test_resolver_reaches_max_rounds(runner, tmp_path_cwd):
     """Test resolver reched max rounds and raises error."""
-    with open("requirements.in", "w") as reqs_out:
-        reqs_out.write("six")
+    (tmp_path_cwd / "requirements.in").write_text("six")
 
-    out = runner.invoke(cli, ["--max-rounds", 0])
-
-    assert out.exit_code != 0, out
+    # NOTE: The exception raised in this case is not caught, so it is not captured in
+    # NOTE: stdout/stderr on the test runner result. This indicates missing exception
+    # NOTE: handling in pip-compile which should probably be added.
+    out = runner.pip_compile(
+        "--max-rounds 0", expect_exit_code=1, catch_exceptions=True
+    )
+    assert (
+        "No stable configuration of concrete packages could be found for the given "
+        "constraints after 0 rounds of resolving."
+    ) in str(out.exception)
 
 
 def test_preserve_via_requirements_constrained_dependencies_when_run_twice(
-    pip_conf, runner
+    pip_conf, runner, tmp_path_cwd
 ):
     """
     Test that 2 consecutive runs of pip-compile (first with a non-existing requirements.txt file,
     second with an existing file) produce the same output.
     """
-    with open("constraints.txt", "w") as constraints_in:
-        constraints_in.write("small-fake-a==0.1")
-
-    with open("requirements.in", "w") as req_in:
-        req_in.write("-c constraints.txt\nsmall_fake_with_deps")
+    (tmp_path_cwd / "constraints.txt").write_text("small-fake-a==0.1")
+    (tmp_path_cwd / "requirements.in").write_text(
+        "-c constraints.txt\nsmall_fake_with_deps"
+    )
 
     cli_arguments = ["--no-emit-options", "--no-header"]
 
     # First run of the command will generate `requirements.txt`, which doesn't yet exist.
-    first_out = runner.invoke(cli, cli_arguments)
-    assert first_out.exit_code == 0, first_out
+    runner.pip_compile(cli_arguments)
 
-    with open("requirements.txt") as req_txt:
-        first_output = req_txt.read()
+    first_output = (tmp_path_cwd / "requirements.txt").read_text()
 
     # Second run of the command will update `requirements.txt`.
-    second_out = runner.invoke(cli, cli_arguments)
-    assert second_out.exit_code == 0, second_out
+    runner.pip_compile(cli_arguments)
 
-    with open("requirements.txt") as req_txt:
-        second_output = req_txt.read()
+    second_output = (tmp_path_cwd / "requirements.txt").read_text()
 
     expected_output = dedent("""\
         small-fake-a==0.1
@@ -3502,7 +3354,7 @@ def test_preserve_via_requirements_constrained_dependencies_when_run_twice(
 
 
 def test_failure_of_legacy_resolver_prompts_for_backtracking(
-    pip_conf, runner, tmp_path, make_package, make_wheel, current_resolver
+    pip_conf, runner, tmp_path_cwd, make_package, make_wheel, current_resolver
 ):
     """Test that pip-compile prompts to use the backtracking resolver"""
     pkgs = [
@@ -3513,33 +3365,31 @@ def test_failure_of_legacy_resolver_prompts_for_backtracking(
         make_package("c", version="1", install_requires=["b==0.1", "a"]),
     ]
 
-    dists_dir = tmp_path / "dists"
+    dists_dir = tmp_path_cwd / "dists"
     for pkg in pkgs:
         make_wheel(pkg, dists_dir)
 
-    with open("requirements.in", "w") as req_in:
-        req_in.writelines(["c"])
+    (tmp_path_cwd / "requirements.in").write_text("c\n")
 
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         ["--resolver", current_resolver, "--find-links", str(dists_dir)],
+        expect_exit_code=(2 if current_resolver == "legacy" else 0),
     )
 
     if current_resolver == "legacy":
-        assert out.exit_code == 2, out
         assert "Consider using backtracking resolver with" in out.stderr
     elif current_resolver == "backtracking":
-        assert out.exit_code == 0, out
+        pass
     else:
         raise AssertionError("unreachable")
 
 
-def test_print_deprecation_warning_if_using_legacy_resolver(runner, current_resolver):
-    with open("requirements.in", "w"):
-        pass
+def test_print_deprecation_warning_if_using_legacy_resolver(
+    runner, tmp_path_cwd, current_resolver
+):
+    (tmp_path_cwd / "requirements.in").touch()
 
-    out = runner.invoke(cli)
-    assert out.exit_code == 0, out
+    out = runner.pip_compile()
 
     expected_warning = "WARNING: the legacy dependency resolver is deprecated"
     if current_resolver == "legacy":
@@ -3567,8 +3417,9 @@ def test_raise_error_when_input_and_output_filenames_are_matched(
     req_out = tmp_path / "requirements.txt"
     req_out_path = req_out.as_posix()
 
-    out = runner.invoke(cli, req_in_paths + ["--output-file", req_out_path])
-    assert out.exit_code == 2
+    out = runner.pip_compile(
+        req_in_paths + ["--output-file", req_out_path], expect_exit_code=2
+    )
 
     expected_error = (
         f"Error: input and output filenames must not be matched: {req_out_path}"
@@ -3578,17 +3429,13 @@ def test_raise_error_when_input_and_output_filenames_are_matched(
 
 @pytest.mark.network
 @backtracking_resolver_only
-def test_pass_pip_cache_to_pip_args(tmp_path, runner, current_resolver):
-    cache_dir = tmp_path / "cache_dir"
+def test_pass_pip_cache_to_pip_args(tmp_path_cwd, runner, current_resolver):
+    cache_dir = tmp_path_cwd / "cache_dir"
     cache_dir.mkdir()
 
-    with open("requirements.in", "w") as fp:
-        fp.write("six==1.15.0")
+    (tmp_path_cwd / "requirements.in").write_text("six==1.15.0")
 
-    out = runner.invoke(
-        cli, ["--cache-dir", str(cache_dir), "--resolver", current_resolver]
-    )
-    assert out.exit_code == 0
+    runner.pip_compile(["--cache-dir", str(cache_dir), "--resolver", current_resolver])
     # TODO: Remove hack once testing only on v23.3+
     if _pip_api.PIP_VERSION >= Version("23.3.dev0"):  # pragma: pip>=23.3 cover
         pip_http_cache_dir = "http-v2"
@@ -3613,8 +3460,7 @@ def test_compile_recursive_extras_static(
             footest = ["small-fake-b"]
             dev = ["foo[footest]"]
             """))
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--no-build-isolation",
             "--no-header",
@@ -3633,13 +3479,7 @@ def test_compile_recursive_extras_static(
 small-fake-a==0.2
 small-fake-b==0.3
 """
-    try:
-        assert out.exit_code == 0
-        assert expected == out.stdout
-    except Exception:  # pragma: no cover
-        print(out.stdout)
-        print(out.stderr)
-        raise
+    assert expected == out.stdout
 
 
 @backtracking_resolver_only
@@ -3671,8 +3511,7 @@ def test_compile_recursive_extras_build_targets(
             dev = ["foo[footest]"]
             """))
 
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--no-build-isolation",
             "--no-header",
@@ -3697,13 +3536,7 @@ small-fake-b==0.3
 # The following packages are considered to be unsafe in a requirements file:
 {setuptools_version_info.as_req()}
 """
-    try:
-        assert out.exit_code == 0
-        assert expected == out.stdout
-    except Exception:  # pragma: no cover
-        print(out.stdout)
-        print(out.stderr)
-        raise
+    assert expected == out.stdout
 
 
 @backtracking_resolver_only
@@ -3736,8 +3569,7 @@ def test_compile_build_targets_setuptools_no_wheel_dep(
             dependencies = ["small-fake-a"]
             """))
     (tmp_path / "constraints.txt").write_text("wheel<0.43")
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--build-isolation",
             "--no-header",
@@ -3765,24 +3597,17 @@ wheel==0.42.0
 # The following packages are considered to be unsafe in a requirements file:
 # setuptools
 """
-    try:
-        assert out.exit_code == 0
-        assert expected == out.stdout
-    except Exception:  # pragma: no cover
-        print(out.stdout)
-        print(out.stderr)
-        raise
+    assert expected == out.stdout
 
 
-def test_config_option(pip_conf, runner, tmp_path, make_config_file):
+def test_config_option(pip_conf, runner, tmp_path_cwd, make_config_file):
     config_file = make_config_file("dry-run", True)
 
-    req_in = tmp_path / "requirements.in"
+    req_in = tmp_path_cwd / "requirements.in"
     req_in.touch()
 
-    out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
+    out = runner.pip_compile([req_in.as_posix(), "--config", config_file.as_posix()])
 
-    assert out.exit_code == 0
     assert "Dry-run, so nothing updated" in out.stderr
 
 
@@ -3792,9 +3617,8 @@ def test_default_config_option(pip_conf, runner, make_config_file, tmp_path_cwd)
     req_in = tmp_path_cwd / "requirements.in"
     req_in.touch()
 
-    out = runner.invoke(cli)
+    out = runner.pip_compile()
 
-    assert out.exit_code == 0
     assert "Dry-run, so nothing updated" in out.stderr
 
 
@@ -3806,25 +3630,25 @@ def test_no_config_option_overrides_config_with_defaults(
     req_in = tmp_path / "requirements.in"
     req_in.touch()
 
-    out = runner.invoke(
-        cli, [req_in.as_posix(), "--no-config", "--config", config_file.as_posix()]
+    out = runner.pip_compile(
+        [req_in.as_posix(), "--no-config", "--config", config_file.as_posix()]
     )
 
-    assert out.exit_code == 0
     assert "Dry-run, so nothing updated" not in out.stderr
 
 
 def test_raise_error_on_unknown_config_option(
-    pip_conf, runner, tmp_path, make_config_file
+    pip_conf, runner, tmp_path_cwd, make_config_file
 ):
     config_file = make_config_file("unknown-option", True)
 
-    req_in = tmp_path / "requirements.in"
+    req_in = tmp_path_cwd / "requirements.in"
     req_in.touch()
 
-    out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
+    out = runner.pip_compile(
+        [req_in.as_posix(), "--config", config_file.as_posix()], expect_exit_code=2
+    )
 
-    assert out.exit_code == 2
     assert "No such config key 'unknown_option'" in out.stderr
 
 
@@ -3836,9 +3660,10 @@ def test_raise_error_on_invalid_config_option(
     req_in = tmp_path / "requirements.in"
     req_in.touch()
 
-    out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
+    out = runner.pip_compile(
+        [req_in.as_posix(), "--config", config_file.as_posix()], expect_exit_code=2
+    )
 
-    assert out.exit_code == 2
     assert "Invalid value for config key 'dry_run': ['invalid', 'value']" in out.stderr
 
 
@@ -3850,8 +3675,7 @@ def test_constraint_option(pip_conf, runner, tmp_path_cwd, make_config_file, opt
     constraints_txt = tmp_path_cwd / "constraints.txt"
     constraints_txt.write_text("small-fake-a==0.1")
 
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             req_in.name,
             option,
@@ -3863,7 +3687,6 @@ def test_constraint_option(pip_conf, runner, tmp_path_cwd, make_config_file, opt
         ],
     )
 
-    assert out.exit_code == 0
     assert out.stdout == dedent("""\
         small-fake-a==0.1
             # via
@@ -3878,11 +3701,10 @@ def test_allow_in_config_pip_sync_option(pip_conf, runner, tmp_path, make_config
     req_in = tmp_path / "requirements.in"
     req_in.touch()
 
-    out = runner.invoke(
-        cli, [req_in.as_posix(), "--verbose", "--config", config_file.as_posix()]
+    out = runner.pip_compile(
+        [req_in.as_posix(), "--verbose", "--config", config_file.as_posix()]
     )
 
-    assert out.exit_code == 0
     assert "Using pip-tools configuration defaults found" in out.stderr
 
 
@@ -3897,9 +3719,8 @@ def test_use_src_files_from_config_if_option_is_not_specified_from_cli(
     req_in.write_text("small-fake-a==0.1", encoding="utf-8")
     foo_in.write_text("small-fake-b==0.1", encoding="utf-8")
 
-    out = runner.invoke(cli, ["--config", config_file.as_posix()])
+    out = runner.pip_compile(["--config", config_file.as_posix()])
 
-    assert out.exit_code == 0, out
     assert "small-fake-b" in out.stderr
     assert "small-fake-a" not in out.stderr
 
@@ -3915,9 +3736,8 @@ def test_use_src_files_from_cli_if_option_is_specified_in_both_config_and_cli(
     req_in.write_text("small-fake-a==0.1", encoding="utf-8")
     foo_in.write_text("small-fake-b==0.1", encoding="utf-8")
 
-    out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
+    out = runner.pip_compile([req_in.as_posix(), "--config", config_file.as_posix()])
 
-    assert out.exit_code == 0, out
     assert "small-fake-a" in out.stderr
     assert "small-fake-b" not in out.stderr
 
@@ -3929,8 +3749,7 @@ def test_cli_boolean_flag_config_option_has_valid_context(
 
     req_in = tmp_path / "requirements.in"
     req_in.write_text("small-fake-a==0.1")
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             req_in.as_posix(),
             "--config",
@@ -3941,7 +3760,6 @@ def test_cli_boolean_flag_config_option_has_valid_context(
             "-",
         ],
     )
-    assert out.exit_code == 0
     assert out.stdout == "small-fake-a==0.1\n"
 
 
@@ -3953,9 +3771,10 @@ def test_invalid_cli_boolean_flag_config_option_captured(
     req_in = tmp_path / "requirements.in"
     req_in.touch()
 
-    out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
+    out = runner.pip_compile(
+        [req_in.as_posix(), "--config", config_file.as_posix()], expect_exit_code=2
+    )
 
-    assert out.exit_code == 2
     assert "No such config key 'annnotate'." in out.stderr
 
 
@@ -3970,9 +3789,8 @@ def test_show_warning_on_default_strip_extras_option(
     req_in = tmp_path / "requirements.in"
     req_in.touch()
 
-    out = runner.invoke(cli, req_in.as_posix())
+    out = runner.pip_compile(req_in.as_posix())
 
-    assert out.exit_code == 0
     assert strip_extras_warning in out.stderr
 
 
@@ -3983,16 +3801,15 @@ def test_do_not_show_warning_on_explicit_strip_extras_option(
     req_in = tmp_path / "requirements.in"
     req_in.touch()
 
-    out = runner.invoke(cli, [option, req_in.as_posix()])
+    out = runner.pip_compile([option, req_in.as_posix()])
 
-    assert out.exit_code == 0
     assert strip_extras_warning not in out.stderr
 
 
 def test_origin_of_extra_requirement_not_written_to_annotations(
-    pip_conf, runner, make_package, make_wheel, tmp_path
+    pip_conf, runner, make_package, make_wheel, tmp_path_cwd
 ):
-    req_in = tmp_path / "requirements.in"
+    req_in = tmp_path_cwd / "requirements.in"
     package_with_extras = make_package(
         "package_with_extras",
         version="0.1",
@@ -4002,14 +3819,12 @@ def test_origin_of_extra_requirement_not_written_to_annotations(
         },
     )
 
-    dists_dir = tmp_path / "dists"
+    dists_dir = tmp_path_cwd / "dists"
     make_wheel(package_with_extras, dists_dir)
 
-    with open(req_in, "w") as req_out:
-        req_out.write("package-with-extras[extra1,extra2]")
+    req_in.write_text("package-with-extras[extra1,extra2]")
 
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         [
             "--output-file",
             "-",
@@ -4023,7 +3838,6 @@ def test_origin_of_extra_requirement_not_written_to_annotations(
         ],
     )
 
-    assert out.exit_code == 0, out
     assert dedent(f"""\
         package-with-extras[extra1,extra2]==0.1
             # via -r {req_in.as_posix()}
@@ -4042,9 +3856,8 @@ def test_tool_specific_config_option(pip_conf, runner, tmp_path, make_config_fil
     req_in = tmp_path / "requirements.in"
     req_in.touch()
 
-    out = runner.invoke(cli, [req_in.as_posix(), "--config", config_file.as_posix()])
+    out = runner.pip_compile([req_in.as_posix(), "--config", config_file.as_posix()])
 
-    assert out.exit_code == 0
     assert "Dry-run, so nothing updated" in out.stderr
 
 
@@ -4066,9 +3879,7 @@ def test_stdout_should_not_be_read_when_stdin_is_not_a_plain_file(
 
     os.mkfifo(fifo)
 
-    out = runner.invoke(cli, [req_in.as_posix(), "--output-file", fifo.as_posix()])
-
-    assert out.exit_code == 0, out
+    runner.pip_compile([req_in.as_posix(), "--output-file", fifo.as_posix()])
 
 
 @pytest.mark.parametrize(
@@ -4088,7 +3899,9 @@ def test_stdout_should_not_be_read_when_stdin_is_not_a_plain_file(
             "absolute_include",
             {
                 "requirements2.in": "small-fake-a\n",
-                "requirements.in": lambda tmpdir: f"-r {(tmpdir / 'requirements2.in').as_posix()}",
+                "requirements.in": lambda tmpdir: (
+                    f"-r {(tmpdir / 'requirements2.in').as_posix()}"
+                ),
             },
         ),
     ),
@@ -4121,8 +3934,7 @@ def test_second_order_requirements_path_handling(
     with monkeypatch.context() as revertable_ctx:
         revertable_ctx.chdir(tmp_path)
 
-        out = runner.invoke(
-            cli,
+        out = runner.pip_compile(
             [
                 "--output-file",
                 "-",
@@ -4134,7 +3946,6 @@ def test_second_order_requirements_path_handling(
             ],
         )
 
-    assert out.exit_code == 0
     assert out.stdout == dedent(f"""\
         small-fake-a==0.2
             # via -r {output_path}
@@ -4200,8 +4011,7 @@ def test_second_order_requirements_relative_path_in_separate_dir(
 
     with monkeypatch.context() as revertable_ctx:
         revertable_ctx.chdir(tmp_path)
-        out = runner.invoke(
-            cli,
+        out = runner.pip_compile(
             [
                 "--output-file",
                 "-",
@@ -4213,7 +4023,6 @@ def test_second_order_requirements_relative_path_in_separate_dir(
             ],
         )
 
-    assert out.exit_code == 0
     assert out.stdout == dedent(f"""\
         small-fake-a==0.2
             # via -r {output_path}
@@ -4242,8 +4051,7 @@ def test_second_order_requirements_can_be_in_parent_of_cwd(
     with monkeypatch.context() as revertable_ctx:
         # cd into the subdir where the initial requirements are
         revertable_ctx.chdir(tmp_path / "subdir1")
-        out = runner.invoke(
-            cli,
+        out = runner.pip_compile(
             [
                 "--output-file",
                 "-",
@@ -4255,7 +4063,6 @@ def test_second_order_requirements_can_be_in_parent_of_cwd(
             ],
         )
 
-    assert out.exit_code == 0
     assert out.stdout == dedent("""\
         small-fake-a==0.2
             # via -r ../requirements2.in
@@ -4309,8 +4116,7 @@ def test_url_constraints_are_not_treated_as_file_paths(
     with monkeypatch.context() as revertable_ctx:
         revertable_ctx.chdir(tmp_path)
         revertable_ctx.setattr(PipSession, "get", mock_get)
-        out = runner.invoke(
-            cli,
+        out = runner.pip_compile(
             [
                 "--output-file",
                 "-",
@@ -4325,7 +4131,6 @@ def test_url_constraints_are_not_treated_as_file_paths(
     # sanity check, pip should have tried to fetch the constraints
     mock_get.assert_called_once_with(constraints_url)
 
-    assert out.exit_code == 0
     assert out.stdout == dedent(f"""\
         small-fake-a==0.2
             # via
@@ -4366,8 +4171,7 @@ def test_that_self_referential_pyproject_toml_extra_can_be_compiled(
 
     with monkeypatch.context() as revertable_ctx:
         revertable_ctx.chdir(tmp_path)
-        out = runner.invoke(
-            cli,
+        out = runner.pip_compile(
             [
                 "--output-file",
                 "-",
@@ -4383,7 +4187,6 @@ def test_that_self_referential_pyproject_toml_extra_can_be_compiled(
             ],
         )
 
-    assert out.exit_code == 0
     assert out.stdout == dedent(f"""\
         foo[ext1] @ {src_file.parent.absolute().as_uri()}
             # via foo ({input_path})
@@ -4413,11 +4216,9 @@ def test_compile_with_generate_hashes_preserves_extra_index_url(
             small-fake-a
             """))
 
-    out = runner.invoke(
-        cli,
+    out = runner.pip_compile(
         ["--output-file", "-", "--no-header", "--strip-extras", "--generate-hashes"],
     )
-    assert out.exit_code == 0, out
 
     # the output should contain
     # - the `--index-url` from the pip config
