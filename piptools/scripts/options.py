@@ -61,9 +61,19 @@ def _get_default_option(option_name: str) -> _t.Any:
 
 version = click.version_option(package_name="pip-tools")
 
+
+def _color_callback(
+    ctx: click.Context, param: click.Parameter, value: bool | None
+) -> None:
+    if value is not None:
+        ctx.color = value
+
+
 color = click.option(
     "--color/--no-color",
     default=None,
+    callback=_color_callback,
+    expose_value=False,
     help="Force output to be colorized or not, instead of auto-detecting color support",
 )
 
