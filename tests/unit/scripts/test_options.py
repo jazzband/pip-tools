@@ -4,7 +4,7 @@ import click
 import pytest
 from click.testing import CliRunner
 
-from piptools.scripts.options import help_option
+from piptools.scripts.options import color, help_option
 
 
 def test_help_opt_no_epilog(runner: CliRunner) -> None:
@@ -40,3 +40,27 @@ def test_help_opt_with_epilog(runner: CliRunner) -> None:
     assert result.stdout.startswith("Usage: my-command")
     # the epilog should be last, whitespace aside
     assert result.stdout.rstrip().endswith("hello there")
+
+
+@pytest.mark.parametrize(
+    ("args", "expect_setting"),
+    (
+        ([], None),
+        (["--color"], True),
+        (["--no-color"], False),
+        # last one wins semantics
+        (["--color", "--no-color"], False),
+        (["--no-color", "--color"], True),
+    ),
+)
+def test_color_opt_sets_context_color(
+    runner: CliRunner, args: list[str], expect_setting: bool | None
+) -> None:
+    @click.command("my-command")
+    @color
+    @click.pass_context
+    def my_command(ctx: click.Context) -> None:
+        assert ctx.color == expect_setting
+
+    result = runner.invoke(my_command, args)
+    assert result.exit_code == 0
