@@ -494,9 +494,12 @@ Any valid `pip install` flags or arguments may be passed with `pip-sync`'s
 $ pip-sync requirements.txt --pip-args "--no-cache-dir --no-deps"
 ```
 
-**Note**: `pip-sync` will not upgrade or uninstall packaging tools like
-`setuptools`, `pip`, or `pip-tools` itself.
-Use `python -m pip install --upgrade` to upgrade those packages.
+**Note**: `pip-sync` will not uninstall packaging tools like `setuptools`,
+`pip`, or `pip-tools` itself just because they are absent from the requirements
+file. If they are included, however, `pip-sync` will attempt to install the
+specified versions, including upgrading or downgrading an installed version.
+To upgrade these tools independently of the requirements file, use
+`python -m pip install --upgrade`.
 
 ### Should I commit `requirements.in` and `requirements.txt` to source control?
 
