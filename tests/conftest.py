@@ -155,6 +155,8 @@ class PipToolsCliRunner:
         self,
         cli_entry_point: click.BaseCommand,
         args: _c.Sequence[str] | str | None = None,
+        /,
+        *,
         input: str | None = None,
         env: _c.Mapping[str, str | None] | None = None,
         catch_exceptions: bool = False,
@@ -186,6 +188,8 @@ class PipToolsCliRunner:
     def pip_sync(
         self,
         args: _c.Sequence[str] | str | None = None,
+        /,
+        *,
         input: str | None = None,
         env: _c.Mapping[str, str | None] | None = None,
         catch_exceptions: bool = False,
@@ -207,6 +211,8 @@ class PipToolsCliRunner:
     def pip_compile(
         self,
         args: _c.Sequence[str] | str | None = None,
+        /,
+        *,
         input: str | None = None,
         env: _c.Mapping[str, str | None] | None = None,
         catch_exceptions: bool = False,
@@ -352,7 +358,7 @@ def tmp_path_cwd(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> _t.Iterator
 
 
 @pytest.fixture
-def runner(tmp_path_cwd):
+def runner(tmp_path_cwd: Path) -> PipToolsCliRunner:
     return PipToolsCliRunner()
 
 
