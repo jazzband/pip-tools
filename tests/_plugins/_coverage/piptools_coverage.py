@@ -6,9 +6,9 @@ import pathlib
 import sys
 import typing as _t
 
-if sys.version_info >= (3, 11):
+if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     import tomllib
-else:
+else:  # pragma: <3.11 cover
     import tomli as tomllib
 
 from coverage import CoveragePlugin

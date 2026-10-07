@@ -8,7 +8,4 @@ codecov:
 
 comment: false # avoid spamming reviews
 
-ignore:
-  - "tests/_plugins/_coverage/*"
-
 ...
