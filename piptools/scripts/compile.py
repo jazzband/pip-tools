@@ -129,6 +129,7 @@ Examples:
 @options.allow_unsafe
 @options.strip_extras
 @options.generate_hashes
+@options.single_hash
 @options.reuse_hashes
 @options.max_rounds
 @options.src_files
@@ -175,6 +176,7 @@ def cli(
     allow_unsafe: bool,
     strip_extras: bool | None,
     generate_hashes: bool,
+    single_hash: bool,
     reuse_hashes: bool,
     src_files: tuple[str, ...],
     max_rounds: int,
@@ -507,7 +509,11 @@ def cli(
             unsafe_packages=set(unsafe_package),
         )
         results = resolver.resolve(max_rounds=max_rounds)
-        hashes = resolver.resolve_hashes(results) if generate_hashes else None
+        hashes = (
+            resolver.resolve_hashes(results, single_hash=single_hash)
+            if generate_hashes
+            else None
+        )
     except NoCandidateFound as e:
         if resolver_cls == LegacyResolver:  # pragma: no branch
             log.error(

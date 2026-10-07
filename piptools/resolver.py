@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import collections
 import copy
-import typing as _t
 from abc import ABCMeta, abstractmethod
 from collections.abc import Container, Iterable, Iterator
+from contextlib import nullcontext
 from functools import partial
 from itertools import chain, count, groupby
 
@@ -158,15 +158,24 @@ class BaseResolver(metaclass=ABCMeta):
         """
 
     def resolve_hashes(
-        self, ireqs: set[InstallRequirement]
+        self, ireqs: set[InstallRequirement], single_hash: bool
     ) -> dict[InstallRequirement, set[str]]:
         r"""
         Find acceptable hashes for all of the given ``InstallRequirement``\ s.
+
+        If single_hash is True, the set for each given requirement will only have the hash for the
+        best matching file to install based on the current execution environment. When False,
+        hashes for all release files will be included for a given requirement.
         """
         log.debug("")
         log.debug("Generating hashes:")
-        with self.repository.allow_all_wheels(), log.indentation():
-            return {ireq: self.repository.get_hashes(ireq) for ireq in ireqs}
+        allow_all_wheels = (
+            nullcontext() if single_hash else self.repository.allow_all_wheels()
+        )
+        with allow_all_wheels, log.indentation():
+            return {
+                ireq: self.repository.get_hashes(ireq, single_hash) for ireq in ireqs
+            }
 
     def _filter_out_unsafe_constraints(
         self,
@@ -515,7 +524,7 @@ class BacktrackingResolver(BaseResolver):
         repository: BaseRepository,
         allow_unsafe: bool = False,
         unsafe_packages: set[str] | None = None,
-        **kwargs: _t.Any,
+        **kwargs: object,
     ) -> None:
         self.constraints = list(constraints)
         self.repository = repository

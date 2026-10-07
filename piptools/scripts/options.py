@@ -271,6 +271,17 @@ generate_hashes = click.option(
     help="Generate pip 8 style hashes in the resulting requirements file.",
 )
 
+single_hash = click.option(
+    "--single-hash/--no-single-hash",
+    is_flag=True,
+    default=False,
+    help=(
+        "When generating hashes only include a hash for the best match file "
+        "for the current environment instead of hashes for every release file "
+        "for the matching version."
+    ),
+)
+
 reuse_hashes = click.option(
     "--reuse-hashes/--no-reuse-hashes",
     is_flag=True,
