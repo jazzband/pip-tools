@@ -2,6 +2,34 @@
 
 <!-- towncrier release notes start -->
 
+## v7.6.2
+
+*2026-10-06*
+
+### Bug fixes
+
+- Fixed `pip-compile` sometimes adding `--no-index` to the recorded command
+  even when it was not passed, with click 8.5.0 -- by {user}`mnencia`.
+
+  *PRs and issues:* {issue}`2472`
+
+- Make `pip-tools` compatible with {pypi}`click` version `8.5` -- by {user}`sirosen`.
+
+  *PRs and issues:* {issue}`2474`
+
+### Packaging updates and notes for downstreams
+
+- License metadata has updated to use :pep:`639` ``License-Expression`` data
+  -- by {user}`sirosen`.
+
+### Contributor-facing changes
+
+- `pip-tools` now has a local `coverage` plugin for conditional coverage based on
+  the installed `pip` version -- by {user}`sirosen`.
+
+  *PRs and issues:* {issue}`2264`
+
+
 ## v7.6.1
 
 *2026-08-11*
