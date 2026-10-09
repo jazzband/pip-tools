@@ -3,6 +3,7 @@ from __future__ import annotations
 import itertools
 import os
 import shlex
+import stat
 import sys
 import typing as _t
 from pathlib import Path
@@ -59,10 +60,18 @@ def _determine_linesep(
     """
     if strategy == "preserve":
         for fname in filenames:
+            # A named pipe blocks on read until another writer shows up.
+            # Newline detection already consumed the input once, so skip
+            # anything that is not a regular file (#2232).
+            try:
+                if fname == "-" or not stat.S_ISREG(os.stat(fname).st_mode):
+                    continue
+            except OSError:
+                continue
             try:
                 with open(fname, "rb") as existing_file:
                     existing_text = existing_file.read()
-            except FileNotFoundError:
+            except OSError:
                 continue
             if b"\r\n" in existing_text:
                 strategy = "CRLF"

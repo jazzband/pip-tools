@@ -1334,6 +1334,31 @@ def test_preserve_newline_from_input(runner, linesep, must_exclude):
     assert must_exclude not in txt
 
 
+def test_preserve_newline_skips_a_named_pipe(tmp_path):
+    import threading
+
+    from piptools.scripts.compile import _determine_linesep
+
+    fifo = tmp_path / "named-pipe"
+    os.mkfifo(fifo)
+    regular = tmp_path / "requirements.in"
+    regular.write_bytes(b"pkg\r\n")
+    done: list[str] = []
+
+    def run() -> None:
+        done.append(
+            _determine_linesep(
+                "preserve", ("-", os.fsdecode(fifo), os.fsdecode(regular))
+            )
+        )
+
+    thread = threading.Thread(target=run, daemon=True)
+    thread.start()
+    thread.join(2)
+    assert not thread.is_alive()
+    assert done == ["\r\n"]
+
+
 def test_generate_hashes_with_split_style_annotations(pip_conf, runner, tmp_path_cwd):
     reqs_in = tmp_path_cwd / "requirements.in"
     reqs_in.write_text(dedent("""\
