@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from shutil import rmtree
 from unittest import mock
 
 import pytest
@@ -141,6 +142,27 @@ def test_open_local_or_remote_file__remote_file(
                 assert file_stream.size == expected_content_length
 
         mock_response.close.assert_called_once()
+
+
+def test_clear_caches_moves_the_download_dir_aside_before_delete(tmp_path, monkeypatch):
+    """A concurrent rebuild must not observe a half-deleted package cache."""
+    repo = PyPIRepository([], cache_dir=str(tmp_path))
+    os.makedirs(repo._download_dir)
+    with open(os.path.join(repo._download_dir, "pkg.whl"), "w") as fh:
+        fh.write("x")
+    seen = []
+
+    def tracking_rmtree(path, ignore_errors=False):
+        seen.append(os.path.abspath(path))
+        assert not os.path.exists(repo._download_dir)
+        rmtree(path, ignore_errors=ignore_errors)
+
+    monkeypatch.setattr("piptools.repositories.pypi.rmtree", tracking_rmtree)
+    repo.clear_caches()
+    assert seen
+    assert ".deleting-" in seen[0]
+    assert not os.path.exists(repo._download_dir)
+    assert not os.path.exists(seen[0])
 
 
 def test_relative_path_cache_dir_is_normalized(from_line):

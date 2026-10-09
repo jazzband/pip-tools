@@ -104,7 +104,25 @@ class PyPIRepository(BaseRepository):
         )
 
     def clear_caches(self) -> None:
-        rmtree(self._download_dir, ignore_errors=True)
+        """Drop the on-disk download cache.
+
+        ``rmtree`` deletes one entry at a time, so a second
+        ``pip-compile --rebuild`` can read the directory while it is half
+        gone (#2393). Move it aside first. The live path is then either
+        complete or missing.
+        """
+        download_dir = self._download_dir
+        if not os.path.isdir(download_dir):
+            return
+        aside = f"{download_dir}.deleting-{os.getpid()}-{os.urandom(4).hex()}"
+        try:
+            os.replace(download_dir, aside)
+        except FileNotFoundError:
+            return
+        except OSError:
+            rmtree(download_dir, ignore_errors=True)
+            return
+        rmtree(aside, ignore_errors=True)
 
     @property
     def options(self) -> optparse.Values:
