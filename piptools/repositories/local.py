@@ -7,7 +7,6 @@ from contextlib import contextmanager
 
 from pip._internal.commands.install import InstallCommand
 from pip._internal.index.package_finder import PackageFinder
-from pip._internal.models.candidate import InstallationCandidate
 from pip._internal.network.session import PipSession
 from pip._internal.req import InstallRequirement
 from pip._internal.utils.hashes import FAVORITE_HASH
@@ -18,7 +17,7 @@ from .base import BaseRepository
 
 
 def ireq_satisfied_by_existing_pin(
-    ireq: InstallRequirement, existing_pin: InstallationCandidate
+    ireq: InstallRequirement, existing_pin: InstallRequirement
 ) -> bool:
     """
     Return :py:data:`True` if the given ``InstallRequirement`` is satisfied by the
@@ -74,7 +73,7 @@ class LocalRequirementsRepository(BaseRepository):
 
     def find_best_match(
         self, ireq: InstallRequirement, prereleases: bool | None = None
-    ) -> InstallationCandidate:
+    ) -> InstallRequirement:
         key = key_from_ireq(ireq)
         existing_pin = self.existing_pins.get(key)
         if existing_pin and ireq_satisfied_by_existing_pin(ireq, existing_pin):
