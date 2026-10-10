@@ -6,13 +6,13 @@ import typing as _t
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._vendor.packaging.utils import canonicalize_name
-from pip._vendor.packaging.version import Version
+from pip._vendor.packaging.version import _BaseVersion, Version
 
 from . import pip_version as _pip_version
 
 
 def create_install_requirement(
-    name: str, version: str | Version, ireq: InstallRequirement
+    name: str, version: str | _BaseVersion, ireq: InstallRequirement
 ) -> InstallRequirement:
     # If no extras are specified, the extras string is blank
     extras_string = ""
@@ -45,7 +45,10 @@ def copy_install_requirement(
 ) -> InstallRequirement:
     """Make a copy of a template ``InstallRequirement`` with extra kwargs."""
     # Prepare install requirement kwargs.
-    kwargs = {
+    # Typed as dict[str, Any] because the keys are version-conditional and
+    # pip's InstallRequirement.__init__ has overloaded signatures that vary
+    # across pip versions; precise typing is not feasible here.
+    kwargs: dict[str, _t.Any] = {
         "comes_from": template.comes_from,
         "editable": template.editable,
         "link": template.link,
@@ -68,7 +71,9 @@ def copy_install_requirement(
         kwargs.pop("global_options", None)
 
     if _pip_version.PIP_VERSION_MAJOR_MINOR <= (23, 0):  # pragma: pip<=23.0 cover
-        kwargs["install_options"] = template.install_options
+        # `install_options` was removed in pip 23.1; use getattr for
+        # version-agnostic access so type checking passes against newer pip.
+        kwargs["install_options"] = getattr(template, "install_options")
 
     # Original link does not belong to install requirements constructor,
     # pop it now to update later.
