@@ -6,7 +6,7 @@ import typing as _t
 from pip._internal.req import InstallRequirement
 from pip._internal.req.constructors import install_req_from_line
 from pip._vendor.packaging.utils import canonicalize_name
-from pip._vendor.packaging.version import _BaseVersion, Version
+from pip._vendor.packaging.version import Version, _BaseVersion
 
 from . import pip_version as _pip_version
 
