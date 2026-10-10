@@ -36,7 +36,7 @@ def help_option(*, epilog: str | None = None) -> _t.Callable[[_FC], _FC]:
                 click.echo("\n" + formatter.getvalue().rstrip("\n"), color=ctx.color)
             ctx.exit()
 
-    return click.option(  # type: ignore[return-value]
+    return click.option(
         "-h",
         "--help",
         help="Show this message and exit.",
