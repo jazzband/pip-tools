@@ -9,6 +9,7 @@ methods, making their usage compatible across versions.
 from __future__ import annotations
 
 import optparse
+import typing as _t
 
 from pip._internal.cli.req_command import RequirementCommand
 from pip._internal.index.package_finder import PackageFinder
@@ -51,7 +52,9 @@ def make_requirement_preparer_from_command(
     # per-requirement object to tracked centrally on the preparer object
     # this takes the form of a new `allow_editables` bool flag
     # see also: https://github.com/pypa/pip/pull/14206
-    pip_version_specific_kwargs: dict[str, object] = {}
+    # Typed as dict[str, Any] because the keys are version-conditional and
+    # pip's signature varies across versions; precise typing is not feasible.
+    pip_version_specific_kwargs: dict[str, _t.Any] = {}
     if _pip_version.PIP_VERSION_MAJOR_MINOR >= (26, 2):  # pragma: pip>=26.2 cover
         pip_version_specific_kwargs["allow_editables"] = allow_editables
 
