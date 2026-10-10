@@ -17,7 +17,7 @@ from click.core import ParameterSource
 from pip._internal.req import InstallRequirement
 from pip._internal.resolution.resolvelib.base import Requirement as PipRequirement
 from pip._internal.utils.misc import redact_auth_from_url
-from pip._internal.vcs import is_url
+from pip._internal.vcs.versioncontrol import is_url
 from pip._vendor.packaging.markers import Marker
 from pip._vendor.packaging.requirements import Requirement
 from pip._vendor.packaging.specifiers import SpecifierSet
@@ -55,6 +55,7 @@ def key_from_ireq(ireq: InstallRequirement) -> str:
     if ireq.req is None and ireq.link is not None:
         return str(ireq.link)
     else:
+        assert ireq.req is not None
         return key_from_req(ireq.req)
 
 
@@ -72,7 +73,9 @@ def key_from_req(req: InstallRequirement | Requirement | PipRequirement) -> str:
     :param req: the requirement the key is computed for
     :return: the canonical name of the requirement
     """
-    return canonicalize_name(req.name)
+    name = req.name
+    assert name is not None, "requirement must have a name"
+    return canonicalize_name(name)
 
 
 def comment(text: str) -> str:
@@ -98,12 +101,14 @@ def format_requirement(
     in a less verbose way than using its ``__str__`` method.
     """
     if ireq.editable:
+        assert ireq.link is not None  # editable installs always have a link
         line = f"-e {ireq.link.url}"
     elif is_url_requirement(ireq):
         line = _build_direct_reference_best_efforts(ireq)
     else:
         # Canonicalize the requirement name
         # https://packaging.pypa.io/en/latest/utils.html#packaging.utils.canonicalize_name
+        assert ireq.req is not None
         req = copy.copy(ireq.req)
         req.name = canonicalize_name(req.name)
         line = str(req)
@@ -126,11 +131,13 @@ def _build_direct_reference_best_efforts(ireq: InstallRequirement) -> str:
     """
     # If the requirement has no name then we cannot build a direct reference.
     if not ireq.name:
-        return _t.cast(str, ireq.link.url)
+        assert ireq.link is not None
+        return ireq.link.url
 
     # Look for a relative file path, the direct reference currently does not work with it.
+    assert ireq.link is not None
     if ireq.link.is_file and not ireq.link.path.startswith("/"):
-        return _t.cast(str, ireq.link.url)
+        return ireq.link.url
 
     # If we get here then we have a requirement that supports direct reference.
     # We need to remove the egg if it exists and keep the rest of the fragments.
@@ -159,11 +166,13 @@ def format_specifier(ireq: InstallRequirement) -> str:
     InstallRequirements to the terminal.
     """
     # TODO: Ideally, this is carried over to the pip library itself
-    specs = ireq.specifier if ireq.req is not None else SpecifierSet()
+    specs: SpecifierSet | list[_t.Any] = (
+        ireq.specifier if ireq.req is not None else SpecifierSet()
+    )
     # FIXME: remove ignore type marker once the following issue get fixed
     #        https://github.com/python/mypy/issues/9656
-    specs = sorted(specs, key=lambda x: x.version)
-    return ",".join(str(s) for s in specs) or "<any>"
+    sorted_specs = sorted(specs, key=lambda x: x.version)
+    return ",".join(str(s) for s in sorted_specs) or "<any>"
 
 
 def is_pinned_requirement(ireq: InstallRequirement) -> bool:
@@ -407,14 +416,17 @@ def get_required_pip_specification() -> SpecifierSet:
     """
     Return pip version specifier requested by current pip-tools installation.
     """
-    project_dist = get_distribution("pip-tools")
+    # get_distribution is untyped in pip's vendored pkg_resources
+    project_dist: _t.Any = get_distribution(  # type: ignore[no-untyped-call]
+        "pip-tools"
+    )
     requirement = next(
         (r for r in project_dist.requires() if r.name == "pip"), None
     )  # pragma: no branch
     assert (
         requirement is not None
     ), "'pip' is expected to be in the list of pip-tools requirements"
-    return requirement.specifier
+    return _t.cast(SpecifierSet, requirement.specifier)
 
 
 def get_sys_path_for_python_executable(python_executable: str) -> list[str]:
