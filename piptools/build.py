@@ -22,6 +22,9 @@ from pip._vendor.packaging.requirements import Requirement
 from ._compat import _tomllib_compat
 from ._internal import _environment_variables, _pip_api
 
+if _t.TYPE_CHECKING:
+    from .scripts.options import BuildTargetT
+
 PYPROJECT_TOML = "pyproject.toml"
 
 _T = _t.TypeVar("_T")
@@ -116,7 +119,7 @@ def maybe_statically_parse_project_metadata(
 
 def build_project_metadata(
     src_file: pathlib.Path,
-    build_targets: tuple[str, ...],
+    build_targets: tuple[BuildTargetT, ...],
     *,
     upgrade_packages: tuple[str, ...] | None = None,
     attempt_static_parse: bool,
@@ -281,7 +284,7 @@ def _prepare_requirements(
 
     for req in metadata.get_all("Requires-Dist") or []:
         parts = parse_req_from_line(req, comes_from)
-        if parts.requirement.name == package_name:
+        if parts.requirement is not None and parts.requirement.name == package_name:
             # Replace package name with package directory in the requirement
             # string so that pip can find the package as self-referential.
             # Note the string can contain extras, so we need to replace only
@@ -303,7 +306,7 @@ def _prepare_requirements(
 def _prepare_build_requirements(
     builder: build.ProjectBuilder,
     src_file: pathlib.Path,
-    build_targets: tuple[str, ...],
+    build_targets: tuple[BuildTargetT, ...],
     package_name: str,
 ) -> Iterator[InstallRequirement]:
     result = collections.defaultdict(set)
