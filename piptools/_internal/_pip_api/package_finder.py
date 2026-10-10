@@ -12,7 +12,7 @@ import functools
 from pip._internal import exceptions as _pip_internal_exceptions
 from pip._internal.index.package_finder import PackageFinder
 from pip._internal.req import InstallRequirement
-from pip._vendor.requests import RequestException
+from pip._vendor.requests.exceptions import RequestException
 
 from . import pip_version as _pip_version
 
@@ -35,11 +35,13 @@ def get_pip_request_failed_exception_types() -> tuple[type[Exception], ...]:
     if _pip_version.PIP_VERSION_MAJOR_MINOR < (26, 2):  # pragma: pip<26.2 cover
         return (RequestException,)
     else:  # pragma: pip<26.2 no cover
+        # These exception types were added in pip 26.2; use getattr for
+        # version-agnostic access so type checking passes against older pip.
         return (
             RequestException,
-            _pip_internal_exceptions.ConnectionFailedError,
-            _pip_internal_exceptions.ConnectionTimeoutError,
-            _pip_internal_exceptions.ProxyConnectionError,
+            getattr(_pip_internal_exceptions, "ConnectionFailedError"),
+            getattr(_pip_internal_exceptions, "ConnectionTimeoutError"),
+            getattr(_pip_internal_exceptions, "ProxyConnectionError"),
         )
 
 
@@ -53,11 +55,13 @@ def finder_allows_prereleases_of_req(
     is.
     """
     if _pip_version.PIP_VERSION_MAJOR_MINOR < (26, 0):  # pragma: pip<26.0 cover
-        return finder.allow_all_prereleases  # type: ignore[no-any-return]
+        return bool(finder.allow_all_prereleases)
     else:  # pragma: pip<26.0 no cover
-        return finder.release_control.allows_prereleases(  # type: ignore[no-any-return]
-            ireq.req.name
-        )
+        # `release_control` was added in pip 26.0; use getattr for
+        # version-agnostic access so type checking passes against older pip.
+        release_control = getattr(finder, "release_control")
+        assert ireq.req is not None
+        return bool(release_control.allows_prereleases(ireq.req.name))
 
 
 def finder_allows_all_prereleases(finder: PackageFinder) -> bool:
@@ -70,4 +74,7 @@ def finder_allows_all_prereleases(finder: PackageFinder) -> bool:
     if _pip_version.PIP_VERSION_MAJOR_MINOR < (26, 0):  # pragma: pip<26.0 cover
         return bool(finder.allow_all_prereleases)
     else:  # pragma: pip<26.0 no cover
-        return ":all:" in finder.release_control.all_releases
+        # `release_control` was added in pip 26.0; use getattr for
+        # version-agnostic access so type checking passes against older pip.
+        release_control = getattr(finder, "release_control")
+        return ":all:" in release_control.all_releases
