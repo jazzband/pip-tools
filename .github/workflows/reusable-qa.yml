@@ -18,6 +18,17 @@ jobs:
           - changelog-draft
         python-version:
           - "3.13"
+        include:
+          # Run mypy against the lowest and highest supported Python versions,
+          # each with the lowest and latest pip (see issue #1928).
+          - toxenv: py39-piplowest-mypy
+            python-version: "3.9"
+          - toxenv: py39-piplatest-mypy
+            python-version: "3.9"
+          - toxenv: py314-piplowest-mypy
+            python-version: "3.14"
+          - toxenv: py314-piplatest-mypy
+            python-version: "3.14"
     env:
       PY_COLORS: 1
       TOXENV: ${{ matrix.toxenv }}
