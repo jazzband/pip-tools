@@ -144,7 +144,10 @@ def diff_key_from_ireq(ireq: InstallRequirement) -> str:
     if the contents at the URL have changed but the version has not.
     """
     if is_url_requirement(ireq):
+        # URL requirements always have a link
+        assert ireq.link is not None
         if getattr(ireq.req, "name", None) and ireq.link.has_hash:
+            assert ireq.req is not None
             return str(
                 direct_url_as_pep440_direct_reference(
                     direct_url_from_link(ireq.link), ireq.req.name
@@ -208,7 +211,7 @@ def diff(
 
 def sync(
     to_install: Iterable[InstallRequirement],
-    to_uninstall: Iterable[InstallRequirement | str],
+    to_uninstall: Iterable[str],
     dry_run: bool = False,
     install_flags: list[str] | None = None,
     ask: bool = False,
