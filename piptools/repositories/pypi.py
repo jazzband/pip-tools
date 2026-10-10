@@ -29,7 +29,7 @@ from pip._internal.utils.temp_dir import TempDirectory, global_tempdir_manager
 from pip._internal.utils.urls import path_to_url, url_to_path
 from pip._vendor.packaging.tags import Tag
 from pip._vendor.packaging.version import _BaseVersion
-from pip._vendor.requests import Session
+from pip._vendor.requests.sessions import Session
 
 from .._compat import create_wheel_cache
 from .._internal import _pip_api
@@ -65,7 +65,8 @@ class PyPIRepository(BaseRepository):
         # Use pip's parser for pip.conf management and defaults.
         # General options (find_links, index_url, extra_index_url, trusted_host,
         # and pre) are deferred to pip.
-        self._command: InstallCommand = create_command("install")
+        # create_command("install") always returns an InstallCommand
+        self._command = _t.cast(InstallCommand, create_command("install"))
 
         options, _ = self.command.parse_args(pip_args)
         _pip_api.postprocess_cli_options(options)
@@ -126,8 +127,10 @@ class PyPIRepository(BaseRepository):
         # dict on the instance
         # the same holds for `finder.find_best_candidate`
         if _pip_api.PIP_VERSION_MAJOR_MINOR >= (25, 1):  # pragma: pip>=25.1 cover
-            self.finder._all_candidates.clear()
-            self.finder._best_candidates.clear()
+            # These private caches were added in pip 25.1; use getattr for
+            # version-agnostic access so type checking passes against older pip.
+            getattr(self.finder, "_all_candidates").clear()
+            getattr(self.finder, "_best_candidates").clear()
         else:  # pragma: pip>=25.1 no cover
             self.finder.find_all_candidates.cache_clear()
             self.finder.find_best_candidate.cache_clear()
@@ -153,6 +156,7 @@ class PyPIRepository(BaseRepository):
         if ireq.editable or is_url_requirement(ireq):
             return ireq  # return itself as the best match
 
+        assert ireq.name is not None
         all_candidates = self.find_all_candidates(ireq.name)
         candidates_by_version = lookup_table(all_candidates, key=candidate_version)
         matching_versions = ireq.specifier.filter(
@@ -170,6 +174,7 @@ class PyPIRepository(BaseRepository):
         evaluator = self.finder.make_candidate_evaluator(ireq.name)
         best_candidate_result = evaluator.compute_best_candidate(matching_candidates)
         best_candidate = best_candidate_result.best_candidate
+        assert best_candidate is not None
 
         # Turn the candidate into a pinned InstallRequirement
         return _pip_api.create_install_requirement(
@@ -183,7 +188,7 @@ class PyPIRepository(BaseRepository):
         download_dir: str | None,
         ireq: InstallRequirement,
         wheel_cache: WheelCache,
-    ) -> set[InstallationCandidate]:
+    ) -> set[InstallRequirement]:
         with (
             get_build_tracker() as build_tracker,
             TempDirectory(kind="resolver") as temp_dir,
@@ -217,11 +222,14 @@ class PyPIRepository(BaseRepository):
                 force_reinstall=False,
                 upgrade_strategy="to-satisfy-only",
             )
-            results = resolver._resolve_one(reqset, ireq)
+            # These are private methods of pip's legacy resolver; use getattr
+            # for version-agnostic access so type checking passes across pip
+            # versions.
+            results = getattr(resolver, "_resolve_one")(reqset, ireq)
             if not ireq.prepared:
                 # If still not prepared, e.g. a constraint, do enough to assign
                 # the ireq a name:
-                resolver._get_dist_for(ireq)
+                getattr(resolver, "_get_dist_for")(ireq)
 
         return set(results)
 
@@ -351,6 +359,7 @@ class PyPIRepository(BaseRepository):
         if not is_pinned_requirement(ireq):
             raise TypeError(f"Expected pinned requirement, got {ireq}")
 
+        assert ireq.name is not None
         log.debug(ireq.name)
 
         with log.indentation():
@@ -413,6 +422,7 @@ class PyPIRepository(BaseRepository):
         # We need to get all of the candidates that match our current version
         # pin, these will represent all of the files that could possibly
         # satisfy this constraint.
+        assert ireq.name is not None
         all_candidates = self.find_all_candidates(ireq.name)
         candidates_by_version = lookup_table(all_candidates, key=candidate_version)
         matching_versions = list(
@@ -471,8 +481,10 @@ class PyPIRepository(BaseRepository):
         original_support_index_min = Wheel.support_index_min
         original_cache = self._available_candidates_cache
 
-        Wheel.supported = _wheel_supported
-        Wheel.support_index_min = _wheel_support_index_min
+        # Use setattr for monkey-patching (mypy does not allow direct
+        # assignment to methods, and the signatures vary across pip versions)
+        setattr(Wheel, "supported", _wheel_supported)
+        setattr(Wheel, "support_index_min", _wheel_support_index_min)
         self._available_candidates_cache = {}
 
         # Finder internally caches results. If we don't clear this cache then it can
@@ -483,8 +495,8 @@ class PyPIRepository(BaseRepository):
         try:
             yield
         finally:
-            Wheel.supported = original_wheel_supported
-            Wheel.support_index_min = original_support_index_min
+            setattr(Wheel, "supported", original_wheel_supported)
+            setattr(Wheel, "support_index_min", original_support_index_min)
             self._available_candidates_cache = original_cache
 
 
@@ -512,7 +524,8 @@ def open_local_or_remote_file(link: Link, session: Session) -> Iterator[FileStre
     else:
         # Remote URL
         headers = {"Accept-Encoding": "identity"}
-        response = session.get(url, headers=headers, stream=True)
+        # session.get is untyped in pip's vendored requests
+        response = session.get(url, headers=headers, stream=True)  # type: ignore[no-untyped-call]
 
         # Content length must be int or None
         content_length: int | None
