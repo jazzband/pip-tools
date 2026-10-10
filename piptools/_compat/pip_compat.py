@@ -53,12 +53,15 @@ class Distribution:
         if isinstance(dist, _PkgResourcesDist):
             return cls._from_pkg_resources(dist)
         else:
-            return cls._from_importlib(dist)
+            return cls._from_importlib(_t.cast("_ImportLibDist", dist))
 
     @classmethod
     def _from_pkg_resources(cls, dist: _PkgResourcesDist) -> Distribution:
         return cls(
-            dist._dist.key, dist._dist.version, dist._dist.requires(), dist.direct_url
+            dist._dist.key,
+            dist._dist.version,
+            dist._dist.requires(),  # type: ignore[no-untyped-call]
+            dist.direct_url,
         )
 
     @classmethod
@@ -69,7 +72,10 @@ class Distribution:
         This doesn't fulfill that API's ``extras`` parameter but
         satisfies the needs of pip-tools.
         """
-        reqs = (Requirement.parse(req) for req in (dist._dist.requires or ()))
+        reqs = (
+            Requirement.parse(req)  # type: ignore[no-untyped-call]
+            for req in (dist._dist.requires or ())
+        )
         requires = [
             req
             for req in reqs
@@ -78,7 +84,7 @@ class Distribution:
         return cls(dist._dist.name, dist._dist.version, requires, dist.direct_url)
 
 
-class FileLink(Link):  # type: ignore[misc]
+class FileLink(Link):
     """Wrapper for ``pip``'s ``Link`` class."""
 
     _url: str
@@ -120,11 +126,13 @@ def parse_requirements(
         if install_req.editable and not parsed_req.requirement.startswith("file://"):
             # ``Link.url`` is what is saved to the output file
             # we set the url directly to undo the transformation in pip's Link class
+            assert install_req.link is not None  # editable installs always have a link
             file_link = FileLink(install_req.link.url)
             file_link._url = parsed_req.requirement
             install_req.link = file_link
         install_req = _pip_api.copy_install_requirement(install_req)
 
+        assert isinstance(install_req.comes_from, str)
         install_req.comes_from = rewrite_comes_from(install_req.comes_from)
 
         yield install_req
@@ -206,7 +214,9 @@ def _is_remote_pip_uri(value: str) -> bool:
 
 
 def create_wheel_cache(cache_dir: str, format_control: str | None = None) -> WheelCache:
-    kwargs: dict[str, str | None] = {"cache_dir": cache_dir}
+    # Typed as dict[str, Any] because `format_control` was removed in pip 23.1
+    # and the kwargs are version-conditional; precise typing is not feasible.
+    kwargs: dict[str, _t.Any] = {"cache_dir": cache_dir}
     if _pip_api.PIP_VERSION_MAJOR_MINOR <= (23, 0):
         kwargs["format_control"] = format_control
     return WheelCache(**kwargs)
