@@ -15,6 +15,7 @@ from pip._internal.operations.build.build_tracker import (
     update_env_context_manager,
 )
 from pip._internal.req import InstallRequirement
+from pip._internal.resolution.base import BaseResolver as PipBaseResolver
 from pip._internal.resolution.resolvelib.base import Candidate
 from pip._internal.resolution.resolvelib.candidates import ExtrasCandidate
 from pip._internal.resolution.resolvelib.resolver import Resolver
@@ -107,7 +108,7 @@ def combine_install_requirements(
             req.specifier &= ireq.req.specifier
 
         constraint &= ireq.constraint
-        extras |= ireq.extras
+        extras.update(ireq.extras)
         if req is not None:
             req.extras = set(extras)
 
@@ -140,7 +141,9 @@ def combine_install_requirements(
         extras=extras,
         **link_attrs,
     )
-    combined_ireq._source_ireqs = source_ireqs
+    # _source_ireqs is a pip-tools-specific attribute not present in pip's
+    # type stubs; use setattr for version-agnostic access.
+    setattr(combined_ireq, "_source_ireqs", source_ireqs)
 
     return combined_ireq
 
@@ -382,11 +385,11 @@ class LegacyResolver(BaseResolver):
             log.debug("")
             log.debug("New dependencies found in this round:")
             with log.indentation():
-                for new_dependency in sorted(diff, key=key_from_ireq):
+                for new_dependency in sorted(diff, key=lambda x: x.key):
                     log.debug(f"adding {new_dependency}")
             log.debug("Removed dependencies in this round:")
             with log.indentation():
-                for removed_dependency in sorted(removed, key=key_from_ireq):
+                for removed_dependency in sorted(removed, key=lambda x: x.key):
                     log.debug(f"removing {removed_dependency}")
 
         # Store the last round's results in the their_constraints
@@ -434,7 +437,7 @@ class LegacyResolver(BaseResolver):
         )
         best_match.comes_from = ireq.comes_from
         if hasattr(ireq, "_source_ireqs"):
-            best_match._source_ireqs = ireq._source_ireqs
+            setattr(best_match, "_source_ireqs", ireq._source_ireqs)
         return best_match
 
     def _iter_dependencies(
@@ -646,7 +649,9 @@ class BacktrackingResolver(BaseResolver):
                 if is_resolved:
                     break
 
-        resolver_result = resolver._result
+        # _result is a private attribute of pip's Resolver not present in the
+        # type stubs; use getattr for version-agnostic access.
+        resolver_result = getattr(resolver, "_result")
         assert isinstance(resolver_result, Result)
 
         # Prepare set of install requirements from resolver result.
@@ -663,7 +668,7 @@ class BacktrackingResolver(BaseResolver):
 
     def _do_resolve(
         self,
-        resolver: Resolver,
+        resolver: PipBaseResolver,
         compatible_existing_constraints: dict[str, InstallRequirement],
     ) -> bool:
         """
@@ -744,8 +749,10 @@ class BacktrackingResolver(BaseResolver):
         for extras_candidate in extras_candidates:
             project_name = canonicalize_name(extras_candidate.project_name)
             ireq = result_ireqs[project_name]
-            ireq.extras |= extras_candidate.extras
-            ireq.req.extras |= extras_candidate.extras
+            # extras is a set at runtime (typed as Collection in pip's stubs)
+            ireq.extras = set(ireq.extras) | set(extras_candidate.extras)
+            assert ireq.req is not None
+            ireq.req.extras = set(ireq.req.extras) | set(extras_candidate.extras)
 
         return set(result_ireqs.values())
 
@@ -803,6 +810,7 @@ class BacktrackingResolver(BaseResolver):
 
         # Canonicalize name
         assert ireq.name is not None
+        assert pinned_ireq.req is not None
         pinned_ireq.req.name = canonicalize_name(ireq.name)
 
         # Pin requirement to a resolved version
@@ -811,17 +819,19 @@ class BacktrackingResolver(BaseResolver):
         )
 
         # Save reverse dependencies for annotation
+        # _required_by is a pip-tools-specific attribute not present in pip's
+        # type stubs; use setattr for version-agnostic access.
         ireq_key = key_from_ireq(ireq)
-        pinned_ireq._required_by = reverse_dependencies.get(ireq_key, set())
+        setattr(pinned_ireq, "_required_by", reverse_dependencies.get(ireq_key, set()))
 
         # Save sources for annotation
         constraint_ireq = self._constraints_map.get(ireq_key)
         if constraint_ireq is not None:
             if hasattr(constraint_ireq, "_source_ireqs"):
                 # If the constraint is combined (has _source_ireqs), use those
-                pinned_ireq._source_ireqs = constraint_ireq._source_ireqs
+                setattr(pinned_ireq, "_source_ireqs", constraint_ireq._source_ireqs)
             else:
                 # Otherwise (the constraint is not combined) it is the source
-                pinned_ireq._source_ireqs = [constraint_ireq]
+                setattr(pinned_ireq, "_source_ireqs", [constraint_ireq])
 
         return pinned_ireq
