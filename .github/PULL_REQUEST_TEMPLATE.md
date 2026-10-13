@@ -7,7 +7,7 @@
       for instructions) or the PR text says "no changelog needed".
 
 [`changelog.d/README.md`]:
-https://github.com/jazzband/pip-tools/blob/main/changelog.d/#readme
+https://github.com/pypa/pip-tools/blob/main/changelog.d/#readme
 
 ##### Maintainer checklist
 
