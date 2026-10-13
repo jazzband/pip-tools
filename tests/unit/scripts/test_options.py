@@ -45,12 +45,12 @@ def test_help_opt_with_epilog(runner: CliRunner) -> None:
 @pytest.mark.parametrize(
     ("args", "expect_setting"),
     (
-        ([], None),
-        (["--color"], True),
-        (["--no-color"], False),
+        pytest.param([], None, id="default"),
+        pytest.param(["--color"], True, id="enable"),
+        pytest.param(["--no-color"], False, id="disable"),
         # last one wins semantics
-        (["--color", "--no-color"], False),
-        (["--no-color", "--color"], True),
+        pytest.param(["--color", "--no-color"], False, id="disable_overrides_enable"),
+        pytest.param(["--no-color", "--color"], True, id="enable_overrides_disable"),
     ),
 )
 def test_color_opt_sets_context_color(
