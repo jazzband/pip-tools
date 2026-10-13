@@ -366,7 +366,7 @@
   GitHub Checks pages. And the reported check name is now set to `Change log entry`.
 
   [change log entry bot]: https://github.com/sanitizers/chronographer-github-app
-  [`bot:chronographer:skip` label]: https://github.com/jazzband/pip-tools/labels/bot:chronographer:skip
+  [`bot:chronographer:skip` label]: https://github.com/pypa/pip-tools/labels/bot:chronographer:skip
 
   *PRs and issues:* {issue}`2201`
 
