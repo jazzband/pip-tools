@@ -1,4 +1,5 @@
 <!-- pyml disable-next-line first-line-heading -->
+![PyPA badge]
 [![pypi][pypi-image]][pypi]
 [![pyversions][pyversions-image]][pyversions]
 [![pre-commit][pre-commit-image]][pre-commit]
@@ -643,6 +644,9 @@ backtracking resolver is more robust, but can take longer to run in general.
 
 You can continue using the legacy resolver with `--resolver=legacy` although
 note that it is deprecated and will be removed in a future release.
+
+[PyPA badge]:
+https://img.shields.io/badge/project-yellow?label=PyPA&labelColor=ffd242&color=3775a9
 
 [pypi]: https://pypi.org/project/pip-tools/
 [pypi-image]: https://img.shields.io/pypi/v/pip-tools.svg
