@@ -57,13 +57,13 @@ def copy_install_requirement(
         "user_supplied": template.user_supplied,
     }
     if _pip_version.PIP_VERSION_MAJOR_MINOR < (25, 3):  # pragma: pip<25.3 cover
-        # Ref: https://github.com/jazzband/pip-tools/issues/2252
+        # Ref: https://github.com/pypa/pip-tools/issues/2252
         kwargs["use_pep517"] = template.use_pep517
         kwargs["global_options"] = template.global_options
     kwargs.update(extra_kwargs)
 
     if _pip_version.PIP_VERSION_MAJOR_MINOR >= (25, 3):  # pragma: pip>=25.3 cover
-        # Ref: https://github.com/jazzband/pip-tools/issues/2252
+        # Ref: https://github.com/pypa/pip-tools/issues/2252
         kwargs.pop("use_pep517", None)
         kwargs.pop("global_options", None)
 

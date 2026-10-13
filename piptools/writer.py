@@ -36,7 +36,7 @@ else:  # pragma: <3.11 cover
 MESSAGE_UNHASHED_PACKAGE = comment(
     "# WARNING: pip install will require the following package to be hashed."
     "\n# Consider using a hashable URL like "
-    "https://github.com/jazzband/pip-tools/archive/SOMECOMMIT.zip"
+    "https://github.com/pypa/pip-tools/archive/SOMECOMMIT.zip"
 )
 
 MESSAGE_UNSAFE_PACKAGES_UNPINNED = comment(
@@ -311,7 +311,7 @@ class OutputWriter:
             }
 
         # Filter out the origin install requirements for extras.
-        # See https://github.com/jazzband/pip-tools/issues/2003
+        # See https://github.com/pypa/pip-tools/issues/2003
         if ireq.comes_from and (
             isinstance(ireq.comes_from, str) or ireq.comes_from.name != ireq.name
         ):
