@@ -1,0 +1,11 @@
+# a customized coverage config for generating coverage data when testing the plugin itself
+[run]
+plugins =
+    covdefaults
+
+[report]
+exclude_also =
+    ^\s*@pytest\.mark\.xfail
+
+include =
+    tests/_plugins/_coverage/*
