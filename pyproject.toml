@@ -52,7 +52,7 @@ dependencies = [
 
 [project.urls]
 homepage = "https://github.com/pypa/pip-tools/"
-documentation = "https://pip-tools.pypa.io/en/latest/"
+documentation = "https://pip-tools.pypa.io"
 repository = "https://github.com/pypa/pip-tools"
 changelog = "https://github.com/pypa/pip-tools/releases"
 

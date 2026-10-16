@@ -1,5 +1,5 @@
 <!-- pyml disable-next-line first-line-heading -->
-![PyPA badge]
+[![PyPA badge]][PyPA]
 [![pypi][pypi-image]][pypi]
 [![pyversions][pyversions-image]][pyversions]
 [![pre-commit][pre-commit-image]][pre-commit]
@@ -648,6 +648,7 @@ note that it is deprecated and will be removed in a future release.
 [PyPA badge]:
 https://img.shields.io/badge/project-yellow?label=PyPA&labelColor=ffd242&color=3775a9
 
+[PyPA]: https://pypa.io/
 [pypi]: https://pypi.org/project/pip-tools/
 [pypi-image]: https://img.shields.io/pypi/v/pip-tools.svg
 [pyversions]: https://pypi.org/project/pip-tools/
