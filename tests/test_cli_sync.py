@@ -9,7 +9,6 @@ import pytest
 from pip._vendor.packaging.version import Version
 
 from piptools.scripts import sync
-from piptools.scripts.sync import cli
 
 
 @pytest.fixture(autouse=True)
@@ -34,10 +33,8 @@ def test_run_as_module_sync():
 
 
 def test_sync_help_opt_supports_short_and_long_flag(runner):
-    shortflag_result = runner.invoke(cli, ["-h"])
-    longflag_result = runner.invoke(cli, ["--help"])
-    assert shortflag_result.exit_code == 0
-    assert longflag_result.exit_code == 0
+    shortflag_result = runner.pip_sync("-h")
+    longflag_result = runner.pip_sync("--help")
 
     assert shortflag_result.stdout.startswith("Usage:")
     assert longflag_result.stdout.startswith("Usage:")
@@ -45,8 +42,7 @@ def test_sync_help_opt_supports_short_and_long_flag(runner):
 
 
 def test_sync_help_opt_shows_examples_section(runner):
-    result = runner.invoke(cli, ["-h"])
-    assert result.exit_code == 0
+    result = runner.pip_sync("-h")
     assert result.stdout.startswith("Usage:")
 
     # not only should there be an `Examples` section in the output, but it should have
@@ -55,15 +51,12 @@ def test_sync_help_opt_shows_examples_section(runner):
 
 
 @mock.patch("piptools.sync.run")
-def test_quiet_option(run, runner):
+def test_quiet_option(run, runner, tmp_path_cwd):
     """sync command can be run with `--quiet` or `-q` flag."""
+    (tmp_path_cwd / sync.DEFAULT_REQUIREMENTS_FILE).write_text("six==1.10.0")
 
-    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as req_in:
-        req_in.write("six==1.10.0")
-
-    out = runner.invoke(cli, ["-q"])
+    out = runner.pip_sync("-q")
     assert not out.stderr_bytes
-    assert out.exit_code == 0
 
     # for every call to pip ensure the `-q` flag is set
     assert run.call_count == 2
@@ -72,18 +65,16 @@ def test_quiet_option(run, runner):
 
 
 @mock.patch("piptools.sync.run")
-def test_quiet_option_when_up_to_date(run, runner):
+def test_quiet_option_when_up_to_date(run, runner, tmp_path_cwd):
     """
     Sync should output nothing when everything is up to date and quiet option is set.
     """
-    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w"):
-        pass
+    (tmp_path_cwd / sync.DEFAULT_REQUIREMENTS_FILE).touch()
 
     with mock.patch("piptools.sync.diff", return_value=(set(), set())):
-        out = runner.invoke(cli, ["-q"])
+        out = runner.pip_sync("-q")
 
     assert not out.stderr_bytes
-    assert out.exit_code == 0
     run.assert_not_called()
 
 
@@ -92,10 +83,9 @@ def test_no_requirements_file(runner):
     It should raise an error if there are no input files
     and a requirements.txt file does not exist.
     """
-    out = runner.invoke(cli)
+    out = runner.pip_sync(expect_exit_code=2)
 
     assert "No requirement files given" in out.stderr
-    assert out.exit_code == 2
 
 
 def test_input_files_with_dot_in_extension(runner, tmp_path):
@@ -105,10 +95,9 @@ def test_input_files_with_dot_in_extension(runner, tmp_path):
     req_in = tmp_path / "requirements.in"
     req_in.write_text("six==1.10.0")
 
-    out = runner.invoke(cli, [str(req_in)])
+    out = runner.pip_sync([str(req_in)], expect_exit_code=2)
 
     assert "ERROR: Some input files have the .in extension" in out.stderr
-    assert out.exit_code == 2
 
 
 def test_force_files_with_dot_in_extension(runner, tmp_path):
@@ -120,10 +109,9 @@ def test_force_files_with_dot_in_extension(runner, tmp_path):
     req_in.write_text("six==1.10.0")
 
     with mock.patch("piptools.sync.run"):
-        out = runner.invoke(cli, [str(req_in), "--force"])
+        out = runner.pip_sync([str(req_in), "--force"])
 
     assert "WARNING: Some input files have the .in extension" in out.stderr
-    assert out.exit_code == 0
 
 
 @pytest.mark.parametrize(
@@ -136,24 +124,21 @@ def test_force_files_with_dot_in_extension(runner, tmp_path):
         ),
     ),
 )
-def test_merge_error(req_lines, should_raise, runner):
+def test_merge_error(req_lines, should_raise, runner, tmp_path_cwd):
     """
     Sync command should raise an error if there are merge errors.
     It should not raise an error if otherwise incompatible requirements
     are isolated by exclusive environment markers.
     """
-    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as req_in:
-        for line in req_lines:
-            req_in.write(line + "\n")
+    (tmp_path_cwd / sync.DEFAULT_REQUIREMENTS_FILE).write_text(
+        "\n".join(req_lines) + "\n"
+    )
 
     with mock.patch("piptools.sync.run"):
-        out = runner.invoke(cli, ["-n"])
+        out = runner.pip_sync("-n", expect_exit_code=2 if should_raise else 1)
 
     if should_raise:
-        assert out.exit_code == 2
         assert "Incompatible requirements found" in out.stderr
-    else:
-        assert out.exit_code == 1
 
 
 @pytest.mark.parametrize(
@@ -175,8 +160,7 @@ def test_merge_no_name_urls(run, req_line, runner, tmp_path):
     for reqs_path in reqs_paths:
         reqs_path.write_text(f"{req_line} \n")
 
-    out = runner.invoke(cli, [str(path) for path in reqs_paths])
-    assert out.exit_code == 0
+    runner.pip_sync([str(path) for path in reqs_paths])
     assert run.call_count == 2
 
 
@@ -215,20 +199,19 @@ def test_merge_no_name_urls(run, req_line, runner, tmp_path):
     ),
 )
 @mock.patch("piptools.sync.run")
-def test_pip_install_flags(run, cli_flags, expected_install_flags, runner):
+def test_pip_install_flags(
+    run, cli_flags, expected_install_flags, runner, tmp_path_cwd
+):
     """
     Test the cli flags have to be passed to the pip install command.
     """
-    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as req_in:
-        req_in.write("six==1.10.0")
+    (tmp_path_cwd / sync.DEFAULT_REQUIREMENTS_FILE).write_text("six==1.10.0")
 
-    runner.invoke(cli, cli_flags)
+    runner.pip_sync(cli_flags)
 
     call_args = [call[0][0] for call in run.call_args_list]
     called_install_options = [args[6:] for args in call_args if args[3] == "install"]
-    assert called_install_options == [expected_install_flags], "Called args: {}".format(
-        call_args
-    )
+    assert called_install_options == [expected_install_flags], f"call_args: {call_args}"
 
 
 @pytest.mark.parametrize(
@@ -244,16 +227,17 @@ def test_pip_install_flags(run, cli_flags, expected_install_flags, runner):
     ),
 )
 @mock.patch("piptools.sync.run")
-def test_pip_install_flags_in_requirements_file(run, runner, install_flags):
+def test_pip_install_flags_in_requirements_file(
+    run, runner, tmp_path_cwd, install_flags
+):
     """
     Test the options from requirements.txt file pass to the pip install command.
     """
-    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as reqs:
-        reqs.write(" ".join(install_flags) + "\n")
-        reqs.write("six==1.10.0")
+    (tmp_path_cwd / sync.DEFAULT_REQUIREMENTS_FILE).write_text(
+        " ".join(install_flags) + "\nsix==1.10.0"
+    )
 
-    out = runner.invoke(cli)
-    assert out.exit_code == 0, out
+    runner.pip_sync()
 
     # Make sure pip install command has expected options
     call_args = [call[0][0] for call in run.call_args_list]
@@ -262,59 +246,49 @@ def test_pip_install_flags_in_requirements_file(run, runner, install_flags):
 
 
 @mock.patch("piptools.sync.run")
-def test_sync_ask_declined(run, runner):
+def test_sync_ask_declined(run, runner, tmp_path_cwd):
     """
     Make sure nothing is installed if the confirmation is declined
     """
-    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as req_in:
-        req_in.write("small-fake-a==1.10.0")
+    (tmp_path_cwd / sync.DEFAULT_REQUIREMENTS_FILE).write_text("small-fake-a==1.10.0")
 
-    runner.invoke(cli, ["--ask"], input="n\n")
+    runner.pip_sync(["--ask"], input="n\n", expect_exit_code=1)
 
     run.assert_not_called()
 
 
 @mock.patch("piptools.sync.run")
-def test_sync_ask_accepted(run, runner):
+def test_sync_ask_accepted(run, runner, tmp_path_cwd):
     """
     Make sure pip is called when the confirmation is accepted (even if
     --dry-run is given)
     """
-    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as req_in:
-        req_in.write("small-fake-a==1.10.0")
+    (tmp_path_cwd / sync.DEFAULT_REQUIREMENTS_FILE).write_text("small-fake-a==1.10.0")
 
-    runner.invoke(cli, ["--ask", "--dry-run"], input="y\n")
+    runner.pip_sync("--ask --dry-run", input="y\n")
 
     assert run.call_count == 2
 
 
-def test_sync_dry_run_returns_non_zero_exit_code(runner):
+def test_sync_dry_run_returns_non_zero_exit_code(runner, tmp_path_cwd):
     """
     Make sure non-zero exit code is returned when --dry-run is given.
     """
-    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as req_in:
-        req_in.write("small-fake-a==1.10.0")
+    (tmp_path_cwd / sync.DEFAULT_REQUIREMENTS_FILE).write_text("small-fake-a==1.10.0")
 
-    out = runner.invoke(cli, ["--dry-run"])
-
-    assert out.exit_code == 1
+    runner.pip_sync("--dry-run", expect_exit_code=1)
 
 
 @mock.patch("piptools.sync.run")
-def test_python_executable_option(
-    run,
-    runner,
-    fake_dist,
-):
+def test_python_executable_option(run, runner, tmp_path_cwd, fake_dist):
     """
     Make sure sync command can run with `--python-executable` option.
     """
-    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as req_in:
-        req_in.write("small-fake-a==1.10.0")
+    (tmp_path_cwd / sync.DEFAULT_REQUIREMENTS_FILE).write_text("small-fake-a==1.10.0")
 
     custom_executable = os.path.abspath(sys.executable)
 
-    runner.invoke(cli, ["--python-executable", custom_executable])
+    runner.pip_sync(["--python-executable", custom_executable])
 
     assert run.call_count == 2
 
@@ -337,34 +311,33 @@ def test_python_executable_option(
         "invalid_python",
     ),
 )
-def test_invalid_python_executable(runner, python_executable):
-    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as req_in:
-        req_in.write("small-fake-a==1.10.0")
+def test_invalid_python_executable(runner, tmp_path_cwd, python_executable):
+    (tmp_path_cwd / sync.DEFAULT_REQUIREMENTS_FILE).write_text("small-fake-a==1.10.0")
 
-    out = runner.invoke(cli, ["--python-executable", python_executable])
-    assert out.exit_code == 2, out
+    out = runner.pip_sync(
+        ["--python-executable", python_executable], expect_exit_code=2
+    )
     message = "Could not resolve '{}' as valid executable path or alias.\n"
     assert out.stderr == message.format(python_executable)
 
 
 @mock.patch("piptools._internal._pip_api.get_pip_version_for_python_executable")
 def test_invalid_pip_version_in_python_executable(
-    get_pip_version_for_python_executable, runner, tmp_path
+    get_pip_version_for_python_executable, runner, tmp_path_cwd
 ):
-    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as req_in:
-        req_in.write("small-fake-a==1.10.0")
+    (tmp_path_cwd / sync.DEFAULT_REQUIREMENTS_FILE).write_text("small-fake-a==1.10.0")
 
     # a dummy executable on Windows needs to end in `.exe` in order for
     # `shutil.which` to find it
-    custom_executable = tmp_path / "custom_executable.exe"
-    custom_executable.write_text("")
-
+    custom_executable = tmp_path_cwd / "custom_executable.exe"
+    custom_executable.touch()
     custom_executable.chmod(0o700)
 
     get_pip_version_for_python_executable.return_value = Version("19.1")
 
-    out = runner.invoke(cli, ["--python-executable", str(custom_executable)])
-    assert out.exit_code == 2, out
+    out = runner.pip_sync(
+        ["--python-executable", str(custom_executable)], expect_exit_code=2
+    )
     message = (
         "Target python executable '{}' has pip version 19.1 installed. "
         "Version"  # ">=20.3 is expected.\n" part is omitted
@@ -373,14 +346,13 @@ def test_invalid_pip_version_in_python_executable(
 
 
 @mock.patch("piptools.sync.run")
-def test_default_python_executable_option(run, runner):
+def test_default_python_executable_option(run, runner, tmp_path_cwd):
     """
     Make sure sys.executable is used when --python-executable is not provided.
     """
-    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as req_in:
-        req_in.write("small-fake-a==1.10.0")
+    (tmp_path_cwd / sync.DEFAULT_REQUIREMENTS_FILE).write_text("small-fake-a==1.10.0")
 
-    runner.invoke(cli)
+    runner.pip_sync()
 
     assert run.call_count == 2
 
@@ -400,91 +372,78 @@ def test_default_python_executable_option(run, runner):
 @mock.patch("piptools.sync.run")
 def test_default_config_option(run, runner, make_config_file, tmp_path_cwd):
     make_config_file("dry-run", True)
+    (tmp_path_cwd / sync.DEFAULT_REQUIREMENTS_FILE).write_text("six==1.10.0")
 
-    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as reqs_txt:
-        reqs_txt.write("six==1.10.0")
+    out = runner.pip_sync(expect_exit_code=1)
 
-    out = runner.invoke(cli)
-
-    assert out.exit_code == 1
     assert "Would install:" in out.stdout
 
 
 @mock.patch("piptools.sync.run")
-def test_config_option(run, runner, make_config_file):
+def test_config_option(run, runner, tmp_path_cwd, make_config_file):
     config_file = make_config_file("dry-run", True)
+    (tmp_path_cwd / sync.DEFAULT_REQUIREMENTS_FILE).write_text("six==1.10.0")
 
-    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as reqs_txt:
-        reqs_txt.write("six==1.10.0")
+    out = runner.pip_sync(["--config", config_file.as_posix()], expect_exit_code=1)
 
-    out = runner.invoke(cli, ["--config", config_file.as_posix()])
-
-    assert out.exit_code == 1
     assert "Would install:" in out.stdout
 
 
 @mock.patch("piptools.sync.run")
-def test_no_config_option_overrides_config_with_defaults(run, runner, make_config_file):
+def test_no_config_option_overrides_config_with_defaults(
+    run, runner, tmp_path_cwd, make_config_file
+):
     config_file = make_config_file("dry-run", True)
+    (tmp_path_cwd / sync.DEFAULT_REQUIREMENTS_FILE).write_text("six==1.10.0")
 
-    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as reqs_txt:
-        reqs_txt.write("six==1.10.0")
+    out = runner.pip_sync(["--no-config", "--config", config_file.as_posix()])
 
-    out = runner.invoke(cli, ["--no-config", "--config", config_file.as_posix()])
-
-    assert out.exit_code == 0
     assert "Would install:" not in out.stdout
 
 
 @mock.patch("piptools.sync.run")
-def test_raise_error_on_unknown_config_option(run, runner, tmp_path, make_config_file):
+def test_raise_error_on_unknown_config_option(
+    run, runner, tmp_path_cwd, make_config_file
+):
     config_file = make_config_file("unknown-option", True)
+    (tmp_path_cwd / sync.DEFAULT_REQUIREMENTS_FILE).write_text("six==1.10.0")
 
-    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as reqs_txt:
-        reqs_txt.write("six==1.10.0")
+    out = runner.pip_sync(["--config", config_file.as_posix()], expect_exit_code=2)
 
-    out = runner.invoke(cli, ["--config", config_file.as_posix()])
-
-    assert out.exit_code == 2
     assert "No such config key 'unknown_option'" in out.stderr
 
 
 @mock.patch("piptools.sync.run")
-def test_raise_error_on_invalid_config_option(run, runner, tmp_path, make_config_file):
+def test_raise_error_on_invalid_config_option(
+    run, runner, tmp_path_cwd, make_config_file
+):
     config_file = make_config_file("dry-run", ["invalid", "value"])
+    (tmp_path_cwd / sync.DEFAULT_REQUIREMENTS_FILE).write_text("six==1.10.0")
 
-    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as reqs_txt:
-        reqs_txt.write("six==1.10.0")
+    out = runner.pip_sync(["--config", config_file.as_posix()], expect_exit_code=2)
 
-    out = runner.invoke(cli, ["--config", config_file.as_posix()])
-
-    assert out.exit_code == 2
     assert "Invalid value for config key 'dry_run': ['invalid', 'value']" in out.stderr
 
 
 @mock.patch("piptools.sync.run")
-def test_allow_in_config_pip_compile_option(run, runner, tmp_path, make_config_file):
+def test_allow_in_config_pip_compile_option(
+    run, runner, tmp_path_cwd, make_config_file
+):
     config_file = make_config_file("generate-hashes", True)  # pip-compile's option
+    (tmp_path_cwd / sync.DEFAULT_REQUIREMENTS_FILE).write_text("six==1.10.0")
 
-    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as reqs_txt:
-        reqs_txt.write("six==1.10.0")
+    out = runner.pip_sync(["--verbose", "--config", config_file.as_posix()])
 
-    out = runner.invoke(cli, ["--verbose", "--config", config_file.as_posix()])
-
-    assert out.exit_code == 0
     assert "Using pip-tools configuration defaults found" in out.stderr
 
 
 @mock.patch("piptools.sync.run")
-def test_tool_specific_config_option(run, runner, make_config_file):
+def test_tool_specific_config_option(run, runner, tmp_path_cwd, make_config_file):
     config_file = make_config_file(
         "dry-run", True, section="pip-tools", subsection="sync"
     )
+    (tmp_path_cwd / sync.DEFAULT_REQUIREMENTS_FILE).write_text("six==1.10.0")
 
-    with open(sync.DEFAULT_REQUIREMENTS_FILE, "w") as reqs_txt:
-        reqs_txt.write("six==1.10.0")
+    out = runner.pip_sync(["--config", config_file.as_posix()], expect_exit_code=1)
 
-    out = runner.invoke(cli, ["--config", config_file.as_posix()])
-
-    assert out.exit_code == 1
     assert "Would install:" in out.stdout
