@@ -74,7 +74,7 @@ intersphinx_mapping = {
     "pytest": ("https://docs.pytest.org/en/stable", None),
 }
 
-issues_github_path = "jazzband/pip-tools"
+issues_github_path = "pypa/pip-tools"
 
 towncrier_draft_autoversion_mode = "draft"
 towncrier_draft_include_empty = True
@@ -88,11 +88,11 @@ nitpicky = True
 linkcheck_ignore = [
     r"^https://matrix\.to/#",
     r"^https://img.shields.io/matrix",
-    r"^https://results\.pre-commit\.ci/latest/github/jazzband/pip-tools/",
+    r"^https://results\.pre-commit\.ci/latest/github/pypa/pip-tools/",
     # checking sphinx-issues links to GitHub results in rate limiting errors
     # skip any username validation and pip-tools link checking
     # (this also means we won't get spurious errors when users delete their GitHub accounts)
-    r"^https://github\.com/jazzband/pip-tools/(issues|pull|commit)/",
+    r"^https://github\.com/pypa/pip-tools/(issues|pull|commit)/",
     r"^https://github\.com/sponsors/",
 ]
 

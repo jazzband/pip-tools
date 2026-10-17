@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "fake_with_deps"
 description = "Fake package with dependencies"
-authors = [{name = "jazzband"}]
+authors = [{name = "fakeauthor101"}]
 license = "0BSD"
 version = "0.1"
 dependencies = [

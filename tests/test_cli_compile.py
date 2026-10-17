@@ -167,13 +167,13 @@ def test_command_line_overrides_pip_conf(pip_with_index_conf, runner):
     (
         pytest.param("small-fake-a==0.1", "small-fake-a==0.1", id="regular"),
         pytest.param(
-            "pip-tools @ https://github.com/jazzband/pip-tools/archive/7d86c8d3.zip",
-            "pip-tools @ https://github.com/jazzband/pip-tools/archive/7d86c8d3.zip",
+            "pip-tools @ https://github.com/pypa/pip-tools/archive/7d86c8d3.zip",
+            "pip-tools @ https://github.com/pypa/pip-tools/archive/7d86c8d3.zip",
             id="zip URL",
         ),
         pytest.param(
-            "pip-tools @ git+https://github.com/jazzband/pip-tools@7d86c8d3",
-            "pip-tools @ git+https://github.com/jazzband/pip-tools@7d86c8d3",
+            "pip-tools @ git+https://github.com/pypa/pip-tools@7d86c8d3",
+            "pip-tools @ git+https://github.com/pypa/pip-tools@7d86c8d3",
             id="scm URL",
         ),
         pytest.param(
@@ -644,7 +644,7 @@ def test_editable_package_in_constraints(
 @pytest.mark.network
 def test_editable_package_vcs(runner):
     vcs_package = (
-        "git+https://github.com/jazzband/pip-tools@"
+        "git+https://github.com/pypa/pip-tools@"
         "5f31d8a79b5fd16305372cf700b01cc7f16c2ccf"
         "#egg=pip-tools"
     )
@@ -743,13 +743,13 @@ def test_locally_available_editable_package_is_not_archived_in_cache_dir(
         # use pip-tools version prior to its use of setuptools_scm,
         # which is incompatible with https: install
         pytest.param(
-            "https://github.com/jazzband/pip-tools/archive/"
+            "https://github.com/pypa/pip-tools/archive/"
             "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3.zip",
             "\nclick==",
             id="Zip URL",
         ),
         pytest.param(
-            "git+https://github.com/jazzband/pip-tools@"
+            "git+https://github.com/pypa/pip-tools@"
             "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3",
             "\nclick==",
             id="VCS URL",
@@ -884,12 +884,12 @@ def test_relative_file_uri_package(pip_conf, runner):
 def test_direct_reference_with_extras(runner):
     with open("requirements.in", "w") as req_in:
         req_in.write(
-            "pip-tools[testing,coverage] @ git+https://github.com/jazzband/pip-tools@v7.5.3"
+            "pip-tools[testing,coverage] @ git+https://github.com/pypa/pip-tools@v7.5.3"
         )
     out = runner.invoke(cli, ["-n", "--rebuild", "--no-build-isolation"])
     assert out.exit_code == 0
     assert (
-        "pip-tools[coverage,testing] @ git+https://github.com/jazzband/pip-tools@v7.5.3"
+        "pip-tools[coverage,testing] @ git+https://github.com/pypa/pip-tools@v7.5.3"
         in out.stderr
     )
     assert "pytest==" in out.stderr
@@ -1169,12 +1169,12 @@ def test_generate_hashes_with_editable(pip_conf, runner):
 def test_generate_hashes_with_url(runner):
     with open("requirements.in", "w") as fp:
         fp.write(
-            "https://github.com/jazzband/pip-tools/archive/"
+            "https://github.com/pypa/pip-tools/archive/"
             "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3.zip#egg=pip-tools\n"
         )
     out = runner.invoke(cli, ["--no-annotate", "--generate-hashes"])
     expected = (
-        "pip-tools @ https://github.com/jazzband/pip-tools/archive/"
+        "pip-tools @ https://github.com/pypa/pip-tools/archive/"
         "7d86c8d3ecd1faa6be11c7ddc6b29a30ffd1dae3.zip \\\n"
         "    --hash=sha256:d24de92e18ad5bf291f25cfcdcf"
         "0171be6fa70d01d0bef9eeda356b8549715e7\n"
@@ -2132,7 +2132,7 @@ def test_many_inputs_includes_all_annotations(pip_conf, runner, tmp_path, num_in
     """
     Tests that an entry required by multiple input files is attributed to all of them in the
     annotation.
-    See: https://github.com/jazzband/pip-tools/issues/1853
+    See: https://github.com/pypa/pip-tools/issues/1853
     """
     req_ins = [tmp_path / f"requirements{n:02d}.in" for n in range(num_inputs)]
     for req_in in req_ins:
@@ -2545,7 +2545,7 @@ def test_combine_different_extras_of_the_same_package(
     pip_conf, runner, tmp_path, make_package, make_wheel
 ):
     """
-    Loosely based on the example from https://github.com/jazzband/pip-tools/issues/1511.
+    Loosely based on the example from https://github.com/pypa/pip-tools/issues/1511.
     """
     pkgs = [
         make_package(
@@ -3416,7 +3416,7 @@ def test_resolver_drops_existing_conflicting_constraint(
 
     This must succeed even if the conflicting requirement includes some extra,
     no matter whether the extra is mentioned in the existing requirements
-    or not (cf. `issue #1977 <https://github.com/jazzband/pip-tools/issues/1977>`_).
+    or not (cf. `issue #1977 <https://github.com/pypa/pip-tools/issues/1977>`_).
     """
     expected_requirements = {line.strip() for line in expected_reqs.splitlines()}
     dists_dir = tmp_path / "dists"
@@ -3727,7 +3727,7 @@ def test_compile_build_targets_setuptools_no_wheel_dep(
     into the resolved output.
 
     This is a regression test for
-    https://github.com/jazzband/pip-tools/pull/1681#issuecomment-2212541289.
+    https://github.com/pypa/pip-tools/pull/1681#issuecomment-2212541289.
     """
     (tmp_path / "pyproject.toml").write_text(dedent("""
             [project]
@@ -4048,7 +4048,7 @@ def test_tool_specific_config_option(pip_conf, runner, tmp_path, make_config_fil
     assert "Dry-run, so nothing updated" in out.stderr
 
 
-@pytest.mark.xfail(reason="https://github.com/jazzband/pip-tools/issues/2012")
+@pytest.mark.xfail(reason="https://github.com/pypa/pip-tools/issues/2012")
 @mock.patch("piptools.scripts.compile.parse_requirements")
 def test_stdout_should_not_be_read_when_stdin_is_not_a_plain_file(
     parse_req,
@@ -4278,7 +4278,7 @@ def test_url_constraints_are_not_treated_as_file_paths(
     The constraints should be preserved verbatim.
 
     This is a regression test for
-    https://github.com/jazzband/pip-tools/issues/2223
+    https://github.com/pypa/pip-tools/issues/2223
     """
     constraints_url = "https://example.com/files/common_constraints.txt"
 
@@ -4347,7 +4347,7 @@ def test_that_self_referential_pyproject_toml_extra_can_be_compiled(
     which point back to the original package name.
 
     This is a regression test for:
-    https://github.com/jazzband/pip-tools/issues/2215
+    https://github.com/pypa/pip-tools/issues/2215
     """
     src_file = tmp_path / "pyproject.toml"
     src_file.write_text(dedent("""
@@ -4400,7 +4400,7 @@ def test_compile_with_generate_hashes_preserves_extra_index_url(
 ):
     """
     Regression test for
-    https://github.com/jazzband/pip-tools/issues/2220
+    https://github.com/pypa/pip-tools/issues/2220
 
     Using ``--generate-hashes`` triggers the codepath which clears the package finder
     cache (``allow_all_wheels()``), and that code incorrectly cleared more information

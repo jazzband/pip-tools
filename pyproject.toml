@@ -51,10 +51,10 @@ dependencies = [
 ]
 
 [project.urls]
-homepage = "https://github.com/jazzband/pip-tools/"
-documentation = "https://pip-tools.readthedocs.io/en/latest/"
-repository = "https://github.com/jazzband/pip-tools"
-changelog = "https://github.com/jazzband/pip-tools/releases"
+homepage = "https://github.com/pypa/pip-tools/"
+documentation = "https://pip-tools.pypa.io"
+repository = "https://github.com/pypa/pip-tools"
+changelog = "https://github.com/pypa/pip-tools/releases"
 
 [project.optional-dependencies]
 testing = [

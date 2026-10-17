@@ -1,5 +1,5 @@
 <!-- pyml disable-next-line first-line-heading -->
-[![jazzband-image]][jazzband]
+[![PyPA badge]][PyPA]
 [![pypi][pypi-image]][pypi]
 [![pyversions][pyversions-image]][pyversions]
 [![pre-commit][pre-commit-image]][pre-commit]
@@ -401,7 +401,7 @@ Sample `.pre-commit-config.yaml`:
 
 ```yaml
 repos:
-  - repo: https://github.com/jazzband/pip-tools
+  - repo: https://github.com/pypa/pip-tools
     rev: 7.4.1
     hooks:
       - id: pip-compile
@@ -412,7 +412,7 @@ You might want to customize `pip-compile` args by configuring `args` and/or
 
 ```yaml
 repos:
-  - repo: https://github.com/jazzband/pip-tools
+  - repo: https://github.com/pypa/pip-tools
     rev: 7.4.1
     hooks:
       - id: pip-compile
@@ -425,7 +425,7 @@ file.
 
 ```yaml
 repos:
-  - repo: https://github.com/jazzband/pip-tools
+  - repo: https://github.com/pypa/pip-tools
     rev: 7.4.1
     hooks:
       - id: pip-compile
@@ -625,13 +625,13 @@ https://marketplace.visualstudio.com/items?itemName=ms-python.python
 This section lists `pip-tools` features that are currently deprecated.
 
 - In the next major release, the `--allow-unsafe` behavior will be enabled by
-  default (https://github.com/jazzband/pip-tools/issues/989).
+  default (https://github.com/pypa/pip-tools/issues/989).
   Use `--no-allow-unsafe` to keep the old behavior. It is recommended
   to pass `--allow-unsafe` now to adapt to the upcoming change.
 - The legacy resolver is deprecated and will be removed in future versions.
   The new default is `--resolver=backtracking`.
 - In the next major release, the `--strip-extras` behavior will be enabled by
-  default (https://github.com/jazzband/pip-tools/issues/1613).
+  default (https://github.com/pypa/pip-tools/issues/1613).
   Use `--no-strip-extras` to keep the old behavior.
 
 ### A Note on Resolvers
@@ -645,23 +645,25 @@ backtracking resolver is more robust, but can take longer to run in general.
 You can continue using the legacy resolver with `--resolver=legacy` although
 note that it is deprecated and will be removed in a future release.
 
-[jazzband]: https://jazzband.co/
-[jazzband-image]: https://jazzband.co/static/img/badge.svg
+[PyPA badge]:
+https://img.shields.io/badge/project-yellow?label=PyPA&labelColor=ffd242&color=3775a9
+
+[PyPA]: https://pypa.io/
 [pypi]: https://pypi.org/project/pip-tools/
 [pypi-image]: https://img.shields.io/pypi/v/pip-tools.svg
 [pyversions]: https://pypi.org/project/pip-tools/
 [pyversions-image]: https://img.shields.io/pypi/pyversions/pip-tools.svg
-[pre-commit]: https://results.pre-commit.ci/latest/github/jazzband/pip-tools/main
-[pre-commit-image]: https://results.pre-commit.ci/badge/github/jazzband/pip-tools/main.svg
-[buildstatus-gha]: https://github.com/jazzband/pip-tools/actions?query=workflow%3ACI
-[buildstatus-gha-image]: https://github.com/jazzband/pip-tools/workflows/CI/badge.svg
-[codecov]: https://codecov.io/gh/jazzband/pip-tools
-[codecov-image]: https://codecov.io/gh/jazzband/pip-tools/branch/main/graph/badge.svg
+[pre-commit]: https://results.pre-commit.ci/latest/github/pypa/pip-tools/main
+[pre-commit-image]: https://results.pre-commit.ci/badge/github/pypa/pip-tools/main.svg
+[buildstatus-gha]: https://github.com/pypa/pip-tools/actions?query=workflow%3ACI
+[buildstatus-gha-image]: https://github.com/pypa/pip-tools/workflows/CI/badge.svg
+[codecov]: https://codecov.io/gh/pypa/pip-tools
+[codecov-image]: https://codecov.io/gh/pypa/pip-tools/branch/main/graph/badge.svg
 [Matrix Room Badge]: https://img.shields.io/matrix/pip-tools:matrix.org?label=Discuss%20on%20Matrix%20at%20%23pip-tools%3Amatrix.org&logo=matrix&server_fqdn=matrix.org&style=flat
 [Matrix Room]: https://matrix.to/#/%23pip-tools:matrix.org
 [Matrix Space Badge]: https://img.shields.io/matrix/jazzband:matrix.org?label=Discuss%20on%20Matrix%20at%20%23jazzband%3Amatrix.org&logo=matrix&server_fqdn=matrix.org&style=flat
 [Matrix Space]: https://matrix.to/#/%23jazzband:matrix.org
-[pip-tools-overview]: https://github.com/jazzband/pip-tools/raw/main/img/pip-tools-overview.svg
+[pip-tools-overview]: https://github.com/pypa/pip-tools/raw/main/img/pip-tools-overview.svg
 [environment-markers]: https://peps.python.org/pep-0508/#environment-markers
 [PEP 517]: https://peps.python.org/pep-0517/
 [PEP 660]: https://peps.python.org/pep-0660/

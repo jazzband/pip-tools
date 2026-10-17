@@ -343,7 +343,7 @@ def make_package(tmp_path_factory):
                         version={version!r},
                         author="pip-tools",
                         author_email="pip-tools@localhost",
-                        url="https://github.com/jazzband/pip-tools",
+                        url="https://github.com/pypa/pip-tools",
                         install_requires={install_requires_str},
                         extras_require={extras_require},
                         py_modules=[{name!r}],

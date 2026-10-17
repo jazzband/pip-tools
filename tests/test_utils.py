@@ -334,7 +334,7 @@ def test_key_from_req_on_specifier_requirement(
         ("file:///example.zip", True),
         ("https://example.com/example.zip", True),
         ("https://example.com/example.zip#egg=example", True),
-        ("git+https://github.com/jazzband/pip-tools@main", True),
+        ("git+https://github.com/pypa/pip-tools@main", True),
     ),
 )
 def test_is_url_requirement(caplog, from_line, line, expected):

@@ -102,8 +102,8 @@ Example contributor update, [`2214.contrib.md`]:
 -- by {user}`sirosen`.
 ```
 
-[`2223.bugfix.md`]: https://github.com/jazzband/pip-tools/pull/2224
-[`2214.contrib.md`]: https://github.com/jazzband/pip-tools/pull/2214
+[`2223.bugfix.md`]: https://github.com/pypa/pip-tools/pull/2224
+[`2214.contrib.md`]: https://github.com/pypa/pip-tools/pull/2214
 
 ### Rationale
 

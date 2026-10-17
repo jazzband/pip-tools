@@ -2,13 +2,10 @@
 
 <!-- sphinx-inclusion-post-this-line -->
 
-[![Jazzband](https://jazzband.co/static/img/jazzband.svg)](https://jazzband.co)
+Everyone interacting with and contributing to pip-tools is expected to follow
+the [PSF Code of Conduct][coc].
 
-This is a [Jazzband](https://jazzband.co) project. By contributing you agree
-to abide by the [Contributor Code of Conduct][coc]
-and follow the [guidelines](https://jazzband.co/about/guidelines).
-
-[coc]: https://jazzband.co/about/conduct
+[coc]: https://github.com/pypa/.github/blob/main/CODE_OF_CONDUCT.md
 
 ## Project Contribution Guidelines
 
@@ -21,8 +18,7 @@ to `pip-tools`:
   are passing the checks locally.
 - Give a clear one-line description in the PR (that the maintainers can add to
   [CHANGELOG] afterwards).
-- Wait for the review of at least one other contributor before merging (even if
-  you're a Jazzband member).
+- Wait for the review of at least one other contributor before merging.
 - Before merging, assign the PR to a milestone for a version to help with the
   release process.
 
@@ -113,8 +109,8 @@ This is the current release process:
 
 [changelog]: ./CHANGELOG.md
 [GitHub Release Workflow]:
-https://github.com/jazzband/pip-tools/actions/workflows/release.yml
+https://github.com/pypa/pip-tools/actions/workflows/release.yml
 [`pip-tools-leads` team]:
 https://github.com/orgs/jazzband/teams/pip-tools-leads
 [`good first issue` label]:
-https://github.com/jazzband/pip-tools/labels/good%20first%20issue%22
+https://github.com/pypa/pip-tools/labels/good%20first%20issue%22
