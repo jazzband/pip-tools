@@ -183,7 +183,7 @@ class PyPIRepository(BaseRepository):
         download_dir: str | None,
         ireq: InstallRequirement,
         wheel_cache: WheelCache,
-    ) -> set[InstallationCandidate]:
+    ) -> set[InstallRequirement]:
         with (
             get_build_tracker() as build_tracker,
             TempDirectory(kind="resolver") as temp_dir,
